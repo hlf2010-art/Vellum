@@ -348,7 +348,70 @@ i[data-icon]{display:inline-flex;font-style:normal}
 @keyframes beamShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* ── composer ── */
-#composer{position:absolute;z-index:6;width:min(480px,calc(100% - 20px));border-radius:16px;background:linear-gradient(165deg,rgba(36,38,44,.76),rgba(20,21,25,.68));-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);border:1px solid rgba(255,255,255,.08);box-shadow:0 24px 54px -20px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(255,255,255,.03);transform-origin:center bottom;will-change:transform,opacity,filter;transition:left .32s var(--ease),top .32s var(--ease),width .45s var(--ease),opacity .28s var(--ease),transform .34s cubic-bezier(.22,1.15,.32,1),filter .28s var(--ease),background .4s,border-color .4s,box-shadow .4s}
+/* === Redesigned Docked Studio Composer Card === */
+#composer{
+  position:relative!important;
+  z-index:10;
+  width:calc(100% - 28px)!important;
+  margin:10px 14px 14px!important;
+  flex-shrink:0;
+  border-radius:16px!important;
+  background:#1e2026!important;
+  background:linear-gradient(165deg,rgba(34,36,44,0.94),rgba(22,23,28,0.94))!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  box-shadow:0 8px 24px -4px rgba(0,0,0,.6)!important;
+  transform:none!important;
+  left:auto!important;top:auto!important;bottom:auto!important;
+  box-sizing:border-box!important;
+  overflow:hidden;
+  transition:border-color .2s var(--ease),box-shadow .2s var(--ease);
+}
+#composer:focus-within{
+  border-color:rgba(242,162,60,.52)!important;
+  box-shadow:0 8px 24px -4px rgba(0,0,0,.7),0 0 0 1px rgba(242,162,60,.22)!important;
+}
+#composerHandle{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px 2px!important;
+  border:none!important;
+  border-bottom:none!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  outline:none!important;
+  cursor:default!important;user-select:auto!important;touch-action:auto!important;
+}
+#composerBody{
+  padding:2px 12px 10px!important;
+  background:transparent!important;
+}
+#prompt{
+  width:100%!important;border:none!important;background:transparent!important;
+  color:#fff!important;font:400 13px/1.45 var(--sans)!important;
+  letter-spacing:normal!important;
+  padding:6px 2px 8px!important;resize:none;outline:none;
+  max-height:140px;box-sizing:border-box;
+}
+#prompt::placeholder{
+  color:var(--quiet)!important;
+}
+.beam-line{
+  display:none!important;
+}
+.composer-actions{
+  display:flex;align-items:center;gap:4px;
+  padding:6px 0 0!important;flex-wrap:wrap;
+  background:transparent!important;
+}
+#composer .open-hint, .open-hint{
+  display:none!important;
+}
+#composer.folded,#composer[data-folded="true"]{
+  opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:none!important;filter:none!important;
+}
+#returnComposer{display:none!important}
+#composerCopilotBtn{display:none!important}
+#composerCopilotBtn{display:none!important}
+
 #composer.moving,#surface.dragging #composer{transition:none}
 #composer.is-editing{border-color:color-mix(in srgb,var(--lin) 28%,rgba(255,255,255,.12));box-shadow:0 24px 54px -20px rgba(0,0,0,.85),0 0 32px -14px var(--lin-glow),inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(255,255,255,.03)}
 #composeContext{display:none!important}
@@ -436,22 +499,15 @@ i[data-icon]{display:inline-flex;font-style:normal}
 .mp-slide b{font:400 15px/1.15 var(--serif);color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .mp-dots{display:flex;align-items:center;justify-content:space-between;margin-top:7px;font:8px/1 var(--mono);color:rgba(255,255,255,.55)}
 .mp-dots span{display:flex;gap:3px}.mp-dots i{width:10px;height:3px;border-radius:2px;background:rgba(255,255,255,.2)}.mp-dots i.on{background:#fff;width:18px}
-#composer.open{width:min(720px,calc(100% - 32px));background:transparent;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-#composerHandle{display:flex;align-items:center;gap:10px;padding:11px 10px 0 16px;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
-#composer.open #composerHandle{padding:0 4px 4px}
 .where{display:inline-flex;align-items:center;gap:9px;font:10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--quiet);min-width:0}
 .where>b{width:7px;height:7px;border-radius:50%;background:var(--lin);box-shadow:0 0 10px var(--lin-glow);flex:none}
 .where>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .where .prism-anchor{position:static;margin:0;width:20px;height:24px}.where .prism-anchor::after{inset:-8px}
 #composer.open .where>b{display:none}#composer:not(.open) .where .prism-anchor{display:none}
-.grip{margin-left:auto;color:var(--faint);display:inline-flex}
-#prompt{display:block;width:100%;border:0;background:transparent;resize:none;outline:none;padding:7px 16px 5px;font:16px/1.5 var(--sans);color:var(--ink);caret-color:var(--lin);max-height:28vh;overflow-y:auto}
-#prompt::placeholder{color:var(--faint)}
-#composer.open #prompt{font:400 clamp(28px,3.5vw,40px)/1.26 var(--serif);letter-spacing:-.015em;padding:12px 4px 16px;max-height:46vh}
-#composer.open #prompt::placeholder{color:#6c6b68}
+.grip{display:none!important}
 #composer.flash #prompt{animation:glint 1.4s var(--ease)}
 @keyframes glint{0%{background:var(--lin-soft)}100%{background:transparent}}
-.beam-line{display:none;height:1px;margin:0 4px;background:linear-gradient(90deg,transparent,var(--A) 16%,var(--light) 50%,var(--B) 84%,transparent);opacity:.5}
+.beam-line{display:none!important;height:0!important;margin:0!important;border:none!important}
 #composer.open .beam-line{display:block;animation:breathe 6s ease-in-out infinite}
 #composer.open:focus-within .beam-line{opacity:.95;animation:none}
 @keyframes breathe{50%{opacity:.22}}
@@ -477,13 +533,13 @@ i[data-icon]{display:inline-flex;font-style:normal}
 .board-tools::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(90px circle at var(--mx) var(--my),rgba(255,250,240,.14),transparent 72%);opacity:0;transition:opacity .3s;pointer-events:none}
 .board-tools:hover::before{opacity:1}
 .board-tools.left-dock{left:14px;top:50%;transform:translateY(-50%);flex-direction:column}
-.board-tools.right-dock{right:14px;bottom:14px;flex-direction:row;padding:4px 5px}
+.board-tools.zoom-dock,#zoomDock{left:16px;right:auto;bottom:16px;flex-direction:row;padding:4px 6px;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.02) 100%),#14151a!important}
 .tool-droplet{position:absolute;left:5px;top:0;width:34px;height:34px;border-radius:999px;pointer-events:none;z-index:0;background:linear-gradient(180deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.06) 48%,rgba(255,255,255,.11) 100%);box-shadow:inset 0 1px .5px rgba(255,255,255,.52),inset 0 -1px 1px rgba(255,255,255,.12),0 6px 16px -4px rgba(0,0,0,.55),0 0 18px -4px rgba(255,246,230,.24);-webkit-backdrop-filter:blur(10px) brightness(1.12);backdrop-filter:blur(10px) brightness(1.12);transform:translate3d(0,var(--ty,5px),0);transform-origin:center;will-change:transform,height;transition:transform .48s cubic-bezier(.22,1.28,.32,1),height .32s cubic-bezier(.22,1,.36,1)}
 .board-tools button{position:relative;z-index:1;width:34px;height:34px;display:grid;place-items:center;border-radius:999px;color:var(--quiet);transition:background .18s,color .22s,transform .2s var(--ease),opacity .2s}
 .board-tools button:hover:not(:disabled){background:rgba(255,255,255,.08);color:var(--ink)}
 .board-tools button:active:not(:disabled){transform:scale(.92)}
 .board-tools button:disabled{opacity:.28;cursor:default}
-.board-tools.right-dock button{width:30px;height:28px}
+.board-tools.zoom-dock button,#zoomDock button{width:30px;height:28px}
 .board-tools button[aria-pressed=true]{color:var(--ink);background:transparent;text-shadow:0 0 12px rgba(255,246,230,.28)}
 .board-tools button[aria-pressed=true]:hover{background:transparent}
 #zoomText{font:500 10.5px/1 var(--mono);width:auto;min-width:42px;height:28px;padding:0 6px}
@@ -551,6 +607,278 @@ a.soft{text-decoration:none}
   .wire.grow,.wire-glow.grow{stroke-dasharray:none;stroke-dashoffset:0}
   .node.is-editing .state.editing .caret{opacity:1}
 }
+/* ── Copilot Side Panel ── */
+.copilot-toggle-btn{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--ink-2);font:500 12px/1 var(--sans);cursor:pointer;transition:background .18s,border-color .18s,color .18s}
+.copilot-toggle-btn:hover,.copilot-toggle-btn[aria-expanded=true]{background:rgba(242,162,60,.14);border-color:rgba(242,162,60,.4);color:#fff}
+.copilot-toggle-btn svg.ico{width:13px;height:13px;color:var(--A)}
+
+.side-copilot-tab{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:22;display:flex;align-items:center;gap:6px;padding:9px 12px 9px 10px;border-radius:12px 0 0 12px;background:rgba(26,28,34,.88);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-right:none;box-shadow:-6px 0 24px rgba(0,0,0,.6);color:var(--ink-2);font:600 11.5px/1 var(--sans);cursor:pointer;transition:transform .22s var(--ease),color .18s,background .18s}
+.side-copilot-tab:hover{background:rgba(36,38,46,.95);color:#fff;transform:translateY(-50%) translateX(-3px)}
+.side-copilot-tab svg.ico{width:14px;height:14px;color:var(--A)}
+.side-copilot-tab[hidden]{display:none!important}
+
+/* === Revamped Copilot Drawer (Liquid Glass & Bottom Composer Heritage) === */
+.copilot-panel{
+  position:fixed;top:0;right:0;bottom:0;
+  width:min(420px,100vw);
+  z-index:40;
+  display:flex;flex-direction:column;
+  background:#141519;
+  background:linear-gradient(165deg,rgba(30,32,38,0.98),rgba(18,19,23,0.98));
+  -webkit-backdrop-filter:blur(32px) saturate(1.45);
+  backdrop-filter:blur(32px) saturate(1.45);
+  border-left:1px solid rgba(255,255,255,.09);
+  box-shadow:-20px 0 60px rgba(0,0,0,.8);
+  animation:panelSlideIn .28s cubic-bezier(.2,.85,.32,1);
+}
+@keyframes panelSlideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.copilot-panel[hidden]{display:none!important}
+
+.copilot-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  background:linear-gradient(180deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.01) 100%);
+}
+.copilot-title-group{display:flex;align-items:center;gap:11px}
+.copilot-sparkle{
+  display:inline-grid;place-items:center;
+  width:30px;height:30px;
+  border-radius:10px;
+  background:linear-gradient(135deg,rgba(242,162,60,.24),rgba(242,162,60,.08));
+  border:1px solid rgba(242,162,60,.38);
+  box-shadow:0 0 14px rgba(242,162,60,.22),inset 0 1px 0 rgba(255,255,255,.2);
+  color:var(--A);
+}
+.copilot-sparkle svg.ico{width:15px;height:15px}
+.copilot-title-group h3{margin:0;font:600 13.5px/1.2 var(--sans);color:#fff;letter-spacing:-.01em}
+.copilot-ctx-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font:500 10.5px/1.2 var(--sans);
+  color:var(--ink-2);
+  margin-top:3px;
+  padding:3px 9px;
+  border-radius:999px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  transition:all .18s;
+}
+.copilot-ctx-pill .dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--A);
+  box-shadow:0 0 6px var(--A);
+}
+.copilot-ctx-pill.has-selected{
+  background:rgba(242,162,60,.12);
+  border-color:rgba(242,162,60,.3);
+  color:var(--light);
+}
+.copilot-head-actions{display:flex;align-items:center;gap:5px}
+.copilot-head-btn{
+  display:inline-grid;place-items:center;
+  width:28px;height:28px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.03);
+  color:var(--ink-2);cursor:pointer;
+  transition:all .18s;
+}
+.copilot-head-btn:hover{
+  background:rgba(255,255,255,.1);
+  color:#fff;
+  border-color:rgba(255,255,255,.16);
+  transform:translateY(-1px);
+}
+.copilot-head-btn svg.ico{width:13px;height:13px}
+
+.copilot-turns{
+  flex:1;overflow-y:auto;padding:16px;
+  display:flex;flex-direction:column;gap:14px;
+  scroll-behavior:smooth;
+}
+.copilot-turn{display:flex;flex-direction:column;gap:6px;animation:turnIn .22s var(--ease)}
+@keyframes turnIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.copilot-turn.user{align-items:flex-end}
+.copilot-turn.user .copilot-bubble{
+  background:linear-gradient(135deg,rgba(242,162,60,.22),rgba(242,162,60,.09));
+  border:1px solid rgba(242,162,60,.36);
+  box-shadow:0 8px 22px -6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.18);
+  color:#fff;
+  border-radius:14px 14px 4px 14px;
+  padding:10px 14px;
+  max-width:85%;
+  font:400 12.5px/1.45 var(--sans);
+  word-break:break-word;
+}
+
+.copilot-turn.assistant{align-items:flex-start}
+.copilot-turn.assistant .copilot-bubble{
+  background:linear-gradient(165deg,rgba(36,38,46,.76),rgba(20,21,25,.68));
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 12px 28px -10px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.14);
+  color:var(--ink);
+  border-radius:14px 14px 14px 4px;
+  padding:13px 15px;
+  max-width:92%;
+  font:400 12.5px/1.55 var(--sans);
+  word-break:break-word;
+}
+
+.copilot-proposal-box{
+  margin-top:10px;
+  padding:12px 14px;
+  border-radius:12px;
+  background:linear-gradient(180deg,rgba(242,162,60,.1) 0%,rgba(24,25,31,.75) 100%);
+  border:1px solid rgba(242,162,60,.32);
+  border-left:3px solid var(--A);
+  box-shadow:0 10px 24px -6px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.12);
+  display:flex;flex-direction:column;gap:7px;
+}
+.copilot-proposal-box h4{
+  margin:0;font:600 12px/1.2 var(--sans);color:var(--A);
+  display:flex;align-items:center;gap:6px;
+}
+.copilot-proposal-box h4 svg.ico{width:13px;height:13px;color:var(--A)}
+.copilot-proposal-desc{margin:0;font:400 11.5px/1.4 var(--sans);color:var(--ink-2)}
+.copilot-proposal-prompt{
+  margin:0;
+  font:italic 11px/1.45 var(--serif);
+  color:var(--light);
+  background:rgba(0,0,0,.28);
+  padding:8px 11px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.06);
+}
+.copilot-proposal-btn{
+  align-self:flex-end;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 14px;
+  border-radius:10px;
+  background:var(--light);
+  color:#18140d;
+  font:600 11.5px/1 var(--sans);
+  box-shadow:0 6px 20px -6px rgba(242,162,60,.4);
+  border:none;cursor:pointer;
+  margin-top:4px;
+  transition:all .2s;
+}
+.copilot-proposal-btn:hover{
+  background:#fff;
+  transform:translateY(-1px);
+  box-shadow:0 8px 24px -4px rgba(242,162,60,.6);
+}
+.copilot-proposal-btn svg.ico{width:12px;height:12px}
+
+.copilot-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.copilot-prompt-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px;
+  border-radius:999px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  color:var(--ink-2);
+  font:500 11px/1 var(--sans);
+  cursor:pointer;
+  transition:all .18s;
+}
+.copilot-prompt-chip:hover{
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  border-color:rgba(255,255,255,.2);
+  transform:translateY(-1px);
+}
+
+.copilot-foot{
+  padding:12px 14px 14px;
+  border-top:1px solid rgba(255,255,255,.08);
+  background:linear-gradient(180deg,rgba(20,21,26,.88),rgba(14,15,18,.96));
+  display:flex;flex-direction:column;gap:8px;
+}
+.copilot-mode-pills{display:flex;align-items:center;gap:4px;overflow-x:auto;padding-bottom:2px}
+.copilot-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  color:var(--quiet);
+  font:500 11px/1 var(--sans);
+  cursor:pointer;
+  transition:all .18s;
+}
+.copilot-chip:hover{background:rgba(255,255,255,.09);color:#fff;border-color:rgba(255,255,255,.15)}
+.copilot-chip.active{
+  background:rgba(242,162,60,.16);
+  border-color:rgba(242,162,60,.4);
+  color:var(--A);
+  box-shadow:0 0 10px rgba(242,162,60,.2);
+}
+.copilot-chip svg.ico{width:11px;height:11px}
+
+.copilot-form{
+  display:flex;flex-direction:column;
+  border-radius:14px;
+  background:linear-gradient(165deg,rgba(36,38,44,.76),rgba(20,21,25,.68));
+  -webkit-backdrop-filter:blur(24px) saturate(1.4);
+  backdrop-filter:blur(24px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 30px -10px rgba(0,0,0,.7);
+  padding:8px 12px 8px;
+  transition:all .25s var(--ease);
+  position:relative;
+}
+.copilot-form:focus-within{
+  border-color:rgba(242,162,60,.4);
+  box-shadow:0 0 20px rgba(242,162,60,.16),inset 0 1px 0 rgba(255,255,255,.18);
+}
+#copilotInput{
+  width:100%;border:none;background:transparent;
+  color:#fff;font:400 13px/1.45 var(--sans);
+  resize:none;outline:none;padding:2px 0 6px;max-height:120px;
+}
+#copilotInput::placeholder{color:var(--quiet)}
+.copilot-beam-line{
+  height:1px;
+  background:radial-gradient(ellipse at center,rgba(242,162,60,.45) 0%,rgba(242,162,60,0) 70%);
+  opacity:0;transition:opacity .24s var(--ease);
+  margin-bottom:6px;
+}
+.copilot-form:focus-within .copilot-beam-line{opacity:1}
+.copilot-form-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-top:2px;
+}
+.copilot-form-tools{display:flex;align-items:center;gap:4px}
+.copilot-form-tools .soft{
+  padding:5px 8px;border-radius:8px;font-size:11.5px;gap:5px;
+}
+.copilot-form-tools .soft svg.ico{width:13px;height:13px}
+.copilot-kbd-hint{font:400 10px/1 var(--mono);color:var(--quiet);opacity:.7}
+.copilot-send-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 13px;border-radius:10px;
+  background:var(--light);color:#18140d;
+  font:600 12px/1 var(--sans);
+  border:none;cursor:pointer;
+  box-shadow:0 4px 16px -4px rgba(242,162,60,.35);
+  transition:all .2s;
+}
+.copilot-send-btn:hover{background:#fff;transform:translateY(-1px);box-shadow:0 6px 20px -2px rgba(242,162,60,.55)}
+.copilot-send-btn svg.ico{width:12px;height:12px}
+
+.composer-copilot-pill{
+  border:1px solid rgba(242,162,60,.25)!important;
+  background:rgba(242,162,60,.08)!important;
+  color:var(--A)!important;
+  transition:all .2s!important;
+}
+.composer-copilot-pill:hover,.composer-copilot-pill.active{
+  background:rgba(242,162,60,.18)!important;
+  border-color:rgba(242,162,60,.45)!important;
+  color:#fff!important;
+}
+.composer-copilot-pill svg.ico{color:var(--A)}
+
 </style>
 </head>
 <body>
@@ -562,6 +890,7 @@ a.soft{text-decoration:none}
     <nav id="phases" class="phases" data-t-aria="phasesLabel"></nav>
     <div class="top-right">
       <span id="saveState" class="save-state" role="status" hidden><b></b><span></span></span>
+      <button type="button" id="copilotBtn" class="copilot-toggle-btn" data-action="toggle-copilot" aria-expanded="false" data-t-title="copilot"><i data-icon="MessageSquare"></i><span data-t="copilot">Copilot</span></button>
       <div class="lang" role="group" data-t-aria="langLabel"><button type="button" data-lang="en" lang="en">EN</button><button type="button" data-lang="zh-CN" lang="zh-CN">中文</button></div>
       <button type="button" class="icon-btn" data-action="help" data-t-aria="help" data-t-title="help"><i data-icon="CircleHelp"></i></button>
     </div>
@@ -574,15 +903,53 @@ a.soft{text-decoration:none}
     <svg id="lasso" aria-hidden="true"></svg>
     <div id="groupBar" hidden></div>
     <div id="wireHint" hidden></div>
-    <section id="composer" data-t-aria="composerLabel">
-      <div id="composerHandle" data-t-title="moveComposer">
+    
+    <div id="tools" class="board-tools left-dock" data-t-aria="tools">
+      <span class="tool-droplet" aria-hidden="true"></span>
+      <button type="button" data-action="select" data-tool="select" data-t-title="selectTool" data-t-aria="selectTool" aria-pressed="true"><i data-icon="MousePointer2"></i></button>
+      <button type="button" data-action="pan" data-tool="pan" data-t-title="panTool" data-t-aria="panTool" aria-pressed="false"><i data-icon="Hand"></i></button>
+      <button type="button" data-action="wire-tool" data-tool="wire" data-t-title="wireTool" data-t-aria="wireTool" aria-pressed="false"><i data-icon="Cable"></i></button>
+      <hr>
+      <button type="button" data-action="add-note" data-t-title="addNote" data-t-aria="addNote"><i data-icon="StickyNote"></i></button>
+      <button type="button" data-action="files" data-t-title="addFilesTitle" data-t-aria="addFilesTitle"><i data-icon="ImagePlus"></i></button>
+      <hr>
+      <button type="button" data-action="tidy" data-t-title="tidy" data-t-aria="tidy"><i data-icon="LayoutGrid"></i></button>
+      <button type="button" id="undoBtn" data-action="undo" data-t-title="undoTool" data-t-aria="undoTool" disabled><i data-icon="Undo2"></i></button>
+    </div>
+    <div id="zoomDock" class="board-tools zoom-dock" data-t-aria="tools">
+      <button type="button" data-action="zoomout" data-t-title="zoomOut" data-t-aria="zoomOut"><i data-icon="Minus"></i></button>
+      <button type="button" id="zoomText" data-action="actual" data-t-title="zoomReset" data-t-aria="zoomReset">100%</button>
+      <button type="button" data-action="zoomin" data-t-title="zoomIn" data-t-aria="zoomIn"><i data-icon="Plus"></i></button>
+      <span class="v-sep" aria-hidden="true"></span>
+      <button type="button" data-action="fit" data-t-title="fit" data-t-aria="fit"><i data-icon="Scan"></i></button>
+    </div>
+    <button type="button" id="returnComposer" class="composer-return" data-action="return" data-t-title="bringComposer" hidden><i data-icon="SquarePen"></i><span data-t="composerShort">Composer</span></button>
+    <button type="button" id="sideCopilotTab" class="side-copilot-tab" data-action="toggle-copilot" aria-label="Open Copilot"><i data-icon="MessageSquare"></i><span>Copilot</span></button>
+    <div id="dropveil" hidden><i data-icon="FilePlus2"></i><b></b></div>
+  </main>
+</div>
+<aside id="copilotPanel" class="copilot-panel" hidden aria-label="Creative Copilot">
+  <div class="copilot-head">
+    <div class="copilot-title-group">
+      <span class="copilot-sparkle"><i data-icon="Sparkles"></i></span>
+      <div>
+        <h3 data-t="copilotTitle">Creative Copilot</h3>
+        <span id="copilotContextPill" class="copilot-ctx-pill"><span class="dot"></span><span id="copilotCtxLabel" data-t="copilotGlobalCtx">Global canvas context</span></span>
+      </div>
+    </div>
+    <div class="copilot-head-actions">
+      <button type="button" class="copilot-head-btn" data-action="clear-copilot" data-t-title="clearChat" aria-label="Clear chat"><i data-icon="RefreshCw"></i></button>
+      <button type="button" class="copilot-head-btn close" data-action="toggle-copilot" data-t-title="close" aria-label="Close"><i data-icon="X"></i></button>
+    </div>
+  </div>
+  <div id="copilotTurns" class="copilot-turns" role="log" aria-live="polite"></div>
+  <section id="composer" data-t-aria="composerLabel">
+      <div id="composerHandle">
         <div class="fmt-wrap">
           <button type="button" id="fmtBtn" class="fmt-btn" data-action="toggle-fmt" aria-haspopup="menu" aria-expanded="false"></button>
           <div id="fmtMenu" class="fmt-menu" role="menu" hidden></div>
         </div>
         <span class="where" hidden><b></b><span id="composerLabel"></span></span>
-        <span class="grip" data-icon="GripHorizontal"></span>
-        <button type="button" class="small-icon fold" data-action="fold"><i data-icon="ChevronsDown"></i></button>
       </div>
       <div id="composerBody">
         <textarea id="prompt" rows="1" spellcheck="false" data-t-aria="promptAria"></textarea>
@@ -609,34 +976,13 @@ a.soft{text-decoration:none}
             <span id="voiceStatus" class="voice-status"></span>
           </div>
           <button type="button" data-action="example" id="example" class="soft"><i data-icon="Waves"></i><span data-t="tryExample">Try an example</span></button>
+          <button type="button" data-action="transfer-to-copilot" id="composerCopilotBtn" class="soft composer-copilot-pill" data-t-title="discussInCopilot" title="Discuss in Copilot (⌘↵)"><i data-icon="MessageSquare"></i><span data-t="copilot">Copilot</span></button>
           <button type="button" data-action="send" id="send" class="cta"><span id="sendLabel"></span><i data-icon="ArrowUpRight"></i><span class="kbd">⌘↵</span></button>
         </div>
         <div class="open-hint" data-t="openHint"></div>
       </div>
     </section>
-    <div id="tools" class="board-tools left-dock" data-t-aria="tools">
-      <span class="tool-droplet" aria-hidden="true"></span>
-      <button type="button" data-action="select" data-tool="select" data-t-title="selectTool" data-t-aria="selectTool" aria-pressed="true"><i data-icon="MousePointer2"></i></button>
-      <button type="button" data-action="pan" data-tool="pan" data-t-title="panTool" data-t-aria="panTool" aria-pressed="false"><i data-icon="Hand"></i></button>
-      <button type="button" data-action="wire-tool" data-tool="wire" data-t-title="wireTool" data-t-aria="wireTool" aria-pressed="false"><i data-icon="Cable"></i></button>
-      <hr>
-      <button type="button" data-action="add-note" data-t-title="addNote" data-t-aria="addNote"><i data-icon="StickyNote"></i></button>
-      <button type="button" data-action="files" data-t-title="addFilesTitle" data-t-aria="addFilesTitle"><i data-icon="ImagePlus"></i></button>
-      <hr>
-      <button type="button" data-action="tidy" data-t-title="tidy" data-t-aria="tidy"><i data-icon="LayoutGrid"></i></button>
-      <button type="button" id="undoBtn" data-action="undo" data-t-title="undoTool" data-t-aria="undoTool" disabled><i data-icon="Undo2"></i></button>
-    </div>
-    <div id="zoomDock" class="board-tools right-dock" data-t-aria="tools">
-      <button type="button" data-action="zoomout" data-t-title="zoomOut" data-t-aria="zoomOut"><i data-icon="Minus"></i></button>
-      <button type="button" id="zoomText" data-action="actual" data-t-title="zoomReset" data-t-aria="zoomReset">100%</button>
-      <button type="button" data-action="zoomin" data-t-title="zoomIn" data-t-aria="zoomIn"><i data-icon="Plus"></i></button>
-      <span class="v-sep" aria-hidden="true"></span>
-      <button type="button" data-action="fit" data-t-title="fit" data-t-aria="fit"><i data-icon="Scan"></i></button>
-    </div>
-    <button type="button" id="returnComposer" class="composer-return" data-action="return" data-t-title="bringComposer" hidden><i data-icon="SquarePen"></i><span data-t="composerShort">Composer</span></button>
-    <div id="dropveil" hidden><i data-icon="FilePlus2"></i><b></b></div>
-  </main>
-</div>
+</aside>
 <input id="importFiles" type="file" multiple hidden>
 <dialog id="dialog" aria-labelledby="dialogTitle"><div class="dialog-head"><h2 id="dialogTitle"></h2><button type="button" class="small-icon" data-action="close-dialog" data-t-aria="close"><i data-icon="X"></i></button></div><div id="dialogBody"></div></dialog>
 <dialog id="viewer" aria-labelledby="viewTitle">
@@ -676,7 +1022,7 @@ promptAria:P("输入想法或指令","Write an idea or instruction"),
 "ph.asset":P("你想用这份素材做什么？","What should this file become?"),"ph.idea":P("输入方向数量（如 3 个）或新角度…（可留空）","Write an angle or count (e.g. 3 directions)… (optional)"),
 "ph.dir":P("写下这个方向要保留的细节…","Note what this direction must keep…"),"ph.build":P("写下改动，或直接定版…","Describe a change, or release as is…"),"ph.release":P("把反馈变成下一轮想法…","Turn feedback into the next idea…"),
 openHint:P("把文件拖到任意位置 · ⌘/Ctrl + Enter 放上画布 · 双击空白处另起想法","Drop files anywhere · ⌘/Ctrl + Enter to place · double-click empty space for another idea"),
-addFiles:P("添加文件","Add files"),addFilesTitle:P("添加自己的文件","Add files from your device"),voiceTitle:P("自然语言语音输入 · 自动语种识别与 AI 润色 (M)","Voice input · Auto language & AI polish (M)"),voiceLangHint:P("点击切换语音识别语种（自动 / 中文 / EN）","Click to switch speech language (Auto / EN / 中文)"),voiceListening:P("正在聆听…","Listening…"),voiceAiBoost:P("✦ AI 已润色","✦ AI Enhanced"),"t.voiceUnsupported":P("当前浏览器环境不支持麦克风语音识别，已演示 AI 语音转写","Speech API unavailable in this view · simulated AI voice dictation"),"t.voiceCmd":P("✦ 语音指令已执行：{C}","✦ Voice command executed: {C}"),enhanceTitle:P("AI 提示词润色与灵感激发 (⌘E)","Enhance prompt or spark inspiration (⌘E)"),chooseEnhanceStyle:P("选择提示词预设风格","Choose prompt style prior"),enhStylePreset:P("提示词预设风格","Prompt Style Preset"),"enhStyle.polished":P("润色扩写","Polished"),"enhStyle.polishedDesc":P("丰富细腻的氛围光影与叙事表达","Cinematic lighting & evocative concept"),"enhStyle.interactive":P("交互原型","Interactive"),"enhStyle.interactiveDesc":P("包含可调控件、双视角与微动效","Playable sliders & studio prototype"),"enhStyle.action":P("行动清单","Action List"),"enhStyle.actionDesc":P("结构化任务拆解、里程碑与验证","Structured steps & milestone scope"),"enhStyle.inquiry":P("设计追问","Design Inquiry"),"enhStyle.inquiryDesc":P("深挖前5秒抓住用户的核心矛盾","Provocative core creative questions"),"enhStyle.twist":P("破局重塑","Radical Twist"),"enhStyle.twistDesc":P("摒弃常规，化为极简感官时间胶囊","Bold sensory & analog reframing"),"t.styleSet":P("✦ 已将提示词预设风格设为：{S}","✦ Prompt style set to: {S}"),"genStatusBadge":P("生成中","Generating"),"genStagePalette":P("解析提示词氛围...","Analyzing mood & palette..."),"genStageComp":P("构图与光影解算...","Composing scene & lighting..."),"genStageDetails":P("强化纹理与高频细节...","Refining textures & details..."),"reroll":P("重新生成","Re-roll"),"variations":P("生成两组变体","2 Variations"),"editPrompt":P("载入提示词修改","Edit prompt"),"fullscreen":P("全屏预览","Fullscreen"),"t.rerolled":P("✦ 已重新生成图片：{T}","✦ Re-rolled image: {T}"),"t.variationsCreated":P("✦ 已生成 2 组视觉变体","✦ Generated 2 visual variations"),"t.promptLoaded":P("✦ 提示词已载入输入框","✦ Prompt loaded into composer"),"t.genCanceled":P("已取消生成","Generation canceled"),enhAnother:P("换一个","Try another"),enhUse:P("采用提示词","Use prompt"),enhOriginal:P("还原初稿","Original"),"enh.k0":P("润色","Polished"),"enh.k1":P("交互","Interactive"),"enh.k2":P("探索","Question"),"enh.k3":P("清单","Action list"),"enh.k4":P("破局","Twist"),"enh.ins0":P("灵感","Inspiration"),"enh.ins1":P("工具","Tool"),"enh.ins2":P("叙事","Story"),"enh.ins3":P("计划","Plan"),"enh.ins4":P("实验","Study"),"t.enhanced":P("✦ 已采用润色后的提示词","✦ Applied enhanced prompt"),"t.reverted":P("已还原为你的原始输入","Restored your original prompt"),tryExample:P("试用示例","Try an example"),
+addFiles:P("添加文件","Add files"),addFilesTitle:P("添加自己的文件","Add files from your device"),voiceTitle:P("自然语言语音输入 · 自动语种识别与 AI 润色 (M)","Voice input · Auto language & AI polish (M)"),voiceLangHint:P("点击切换语音识别语种（自动 / 中文 / EN）","Click to switch speech language (Auto / EN / 中文)"),voiceListening:P("正在聆听…","Listening…"),voiceAiBoost:P("AI 已润色","AI Enhanced"),"t.voiceUnsupported":P("当前浏览器环境不支持麦克风语音识别，已演示 AI 语音转写","Speech API unavailable in this view · simulated AI voice dictation"),"t.voiceCmd":P("语音指令已执行：{C}","Voice command executed: {C}"),enhanceTitle:P("AI 提示词润色与灵感激发 (⌘E)","Enhance prompt or spark inspiration (⌘E)"),chooseEnhanceStyle:P("选择提示词预设风格","Choose prompt style prior"),enhStylePreset:P("提示词预设风格","Prompt Style Preset"),"enhStyle.polished":P("润色扩写","Polished"),"enhStyle.polishedDesc":P("丰富细腻的氛围光影与叙事表达","Cinematic lighting & evocative concept"),"enhStyle.interactive":P("交互原型","Interactive"),"enhStyle.interactiveDesc":P("包含可调控件、双视角与微动效","Playable sliders & studio prototype"),"enhStyle.action":P("行动清单","Action List"),"enhStyle.actionDesc":P("结构化任务拆解、里程碑与验证","Structured steps & milestone scope"),"enhStyle.inquiry":P("设计追问","Design Inquiry"),"enhStyle.inquiryDesc":P("深挖前5秒抓住用户的核心矛盾","Provocative core creative questions"),"enhStyle.twist":P("破局重塑","Radical Twist"),"enhStyle.twistDesc":P("摒弃常规，化为极简感官时间胶囊","Bold sensory & analog reframing"),"t.styleSet":P("已将提示词预设风格设为：{S}","Prompt style set to: {S}"),"genStatusBadge":P("生成中","Generating"),"genStagePalette":P("解析提示词氛围...","Analyzing mood & palette..."),"genStageComp":P("构图与光影解算...","Composing scene & lighting..."),"genStageDetails":P("强化纹理与高频细节...","Refining textures & details..."),"reroll":P("重新生成","Re-roll"),"variations":P("生成两组变体","2 Variations"),"editPrompt":P("载入提示词修改","Edit prompt"),"fullscreen":P("全屏预览","Fullscreen"),"t.rerolled":P("已重新生成图片：{T}","Re-rolled image: {T}"),"t.variationsCreated":P("已生成 2 组视觉变体","Generated 2 visual variations"),"t.promptLoaded":P("提示词已载入输入框","Prompt loaded into composer"),"t.genCanceled":P("已取消生成","Generation canceled"),"copilot":P("智能助手","Copilot"),"copilotTitle":P("灵感对话助手","Creative Copilot"),"copilotGlobalCtx":P("全局画布上下文","Global canvas context"),"copilotSelectedCtx":P("已连接 {N} 个选中卡片","Connected to {N} cards"),"copilotInputPlaceholder":P("探讨创意、微调提示词或发散构想...","Discuss ideas, refine prompts, or brainstorm..."),"copilotWelcome":P("你好！我是你的画布创意伙伴。我们可以在这里探讨创意方向、推敲提示词结构与艺术风格，并在确认后直接一键生成卡片到画布上。","Hi! I am your creative copilot. We can discuss concepts, tune prompt structures and artistic styles, and materialize proposals directly onto your canvas."),"discussInCopilot":P("在 Copilot 中探讨 (⌘↵)","Discuss in Copilot (⌘↵)"),"copilotActionGenImage":P("生成图片到画布","Generate on Canvas"),"copilotActionMakeTodo":P("建立行动清单","Place Action List"),"copilotActionMakeIdea":P("建立灵感卡片","Place Idea Card"),"copilotModeAll":P("综合","All"),"copilotModeIdea":P("构想","Idea"),"clearChat":P("清空对话","Clear thread"),"t.threadCleared":P("对话已清空","Conversation cleared"),"t.proposalPlaced":P("提案已成功放置到画布上","Proposal placed onto canvas"),enhAnother:P("换一个","Try another"),enhUse:P("采用提示词","Use prompt"),enhOriginal:P("还原初稿","Original"),"enh.k0":P("润色","Polished"),"enh.k1":P("交互","Interactive"),"enh.k2":P("探索","Question"),"enh.k3":P("清单","Action list"),"enh.k4":P("破局","Twist"),"enh.ins0":P("灵感","Inspiration"),"enh.ins1":P("工具","Tool"),"enh.ins2":P("叙事","Story"),"enh.ins3":P("计划","Plan"),"enh.ins4":P("实验","Study"),"t.enhanced":P("已采用润色后的提示词","Applied enhanced prompt"),"t.reverted":P("已还原为你的原始输入","Restored your original prompt"),tryExample:P("试用示例","Try an example"),
 place:P("放上画布","Place on canvas"),startWithFile:P("用素材开始","Start from this file"),split:P("分出方向","Branch"),branchMore:P("+ 方向 {L}","+ Direction {L}"),adoptL:P("采用 {L}","Adopt {L}"),
 buildSite:P("生成网页","Build webpage"),rebuild:P("生成新版","Build new version"),release:P("定版交付","Release"),iterate:P("继续迭代","Iterate"),openRelease:P("打开成品","Open release"),
 newIdea:P("新想法","New idea"),editingL:P("编辑中 · {T}","Editing · {T}"),
@@ -1109,6 +1455,7 @@ Mic:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M1
 Layers:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
 WandSparkles:'<path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>',
 Flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+MessageSquare:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
 RefreshCw:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>'
 });
 document.addEventListener("DOMContentLoaded",()=>{
@@ -1197,6 +1544,7 @@ function selectNode(n,keepMulti=false){
   if(!keepMulti)multiSelected=n?[n.id]:[];
   if(n){board.selected=n.id;board.stage=laneOf(n.x+nodeWidth(n)/2);placement=null;board.composer.folded=false;}else{board.selected=null;pendingLink=null;}
   if(typeof enhanceState!=="undefined"&&enhanceState.open&&prev!==next)closeEnhance();
+  if(typeof updateCopilotContext==="function")updateCopilotContext();
 }
 function freeSpot(x,y,width,height=220,skip=null){
   const ln=clamp(Math.floor((x+width/2)/LANE),0,3);
@@ -1587,20 +1935,9 @@ function focusNodes(ns,stage=board.stage,all=false,ms=0){const c=camFor(ns,stage
 
 /* ── composer ── */
 function placeComposer(){
-  const w=surface.clientWidth,h=surface.clientHeight,cw=composer.offsetWidth,ch=composer.offsetHeight;if(!w||!h)return;
-  const rx=Math.max(0,w-cw-16),ry=Math.max(0,h-ch-16),p=board.composer.pos;let x,y;
-  if(p){x=8+p.x*rx;y=8+p.y*ry;}
-  else if(!board.nodes.length){x=(w-cw)/2;y=(h-ch)/2-Math.min(40,h*.04);}
-  else{x=(w-cw)/2;y=h-ch-18;}
-  x=clamp(x,8,Math.max(8,w-cw-8));y=clamp(y,8,Math.max(8,h-ch-8));
-  composer.style.left=x+"px";composer.style.top=y+"px";
-  const ret=$("returnComposer"),hasDraft=!!returnTarget()||!!draftOf(draftKey()).trim();
-  ret.hidden=!board.nodes.length||(!p&&!board.composer.folded);
-  let dot=ret.querySelector(".dot");
-  if(hasDraft&&board.composer.folded){if(!dot){dot=document.createElement("i");dot.className="dot";ret.append(dot);}}
-  else if(dot)dot.remove();
+  sizePrompt();
 }
-function moveComposer(x,y){const w=surface.clientWidth,h=surface.clientHeight,cw=composer.offsetWidth,ch=composer.offsetHeight;board.composer.pos={x:clamp((x-8)/Math.max(1,w-cw-16),0,1),y:clamp((y-8)/Math.max(1,h-ch-16),0,1)};placeComposer();paintTether();}
+function moveComposer(x,y){}
 let selectedFormat="auto";
 const FORMATS=[{id:"auto",icon:"Sparkles"},{id:"text",icon:"FileText"},{id:"todo",icon:"ListTodo"},{id:"image",icon:"Image"},{id:"video",icon:"Film"},{id:"music",icon:"AudioLines"},{id:"code",icon:"Code2"},{id:"slides",icon:"Presentation"}];
 function paintFormatSelector(){
@@ -1651,66 +1988,21 @@ function sizePrompt(){
 function paintComposer(){
   const sel=selectedNodes(),n=sel[0]||null,mode=composerMode(),lin=lineageOf(n),empty=!board.nodes.length;
   composer.classList.remove("lin-A","lin-B","lin-C","lin-D","lin-E","lin-F");if(lin)composer.classList.add("lin-"+lin);
-  composer.classList.toggle("open",empty);composer.classList.toggle("folded",(board.composer.folded&&!empty)||!!inlineEditId);composer.classList.toggle("is-editing",sel.length>0);
+  composer.classList.remove("open","folded");composer.classList.toggle("is-editing",sel.length>0);
   $("composerLabel").textContent=sel.length>1?t("synthLabel",{N:sel.length}):n?t("editingL",{T:n.type==="direction"?n.letter+" · "+dirTitle(n):typeLabel(n)}):pad(board.stage+1)+" "+t(PHASES[board.stage])+" · "+t("newIdea");
   $("example").hidden=!empty;
   const want=draftOf(draftKey());if(promptBox.value!==want)promptBox.value=want;
   promptBox.placeholder=mode.place;
   sizePrompt();
   $("sendLabel").textContent=mode.label;$("send").title=mode.label;$("send").setAttribute("aria-label",mode.label);$("send").disabled=!mode.enabled;
-  const fold=composer.querySelector(".fold");fold.setAttribute("aria-label",board.composer.folded?t("unfold"):t("fold"));fold.title=fold.getAttribute("aria-label");fold.innerHTML=ic(board.composer.folded?"ChevronsUp":"ChevronsDown");
+  const fold=composer.querySelector(".fold");if(fold){fold.setAttribute("aria-label",board.composer.folded?t("unfold"):t("fold"));fold.title=fold.getAttribute("aria-label");fold.innerHTML=ic(board.composer.folded?"ChevronsUp":"ChevronsDown");}
   const strip=$("composeContext");strip.hidden=!n;
   if(n)strip.innerHTML=ic("CornerDownRight")+'<span>'+t("writingFor",{T:esc(clipText(titleOf(n),34))})+(n.type==="idea"||n.type==="direction"?' · '+esc(t("linkedN",{N:refsFor(n.id).length})):'')+'</span><button type="button" data-action="detach">'+esc(t("detach"))+'</button>';
   paintFormatSelector();paintReturnChip();placeComposer();paintTether();
 }
 function toggleComposerFold(folded){
-  const ret=$("returnComposer");
-  composer.getAnimations().forEach(a=>a.cancel());
-  ret.getAnimations().forEach(a=>a.cancel());
-  if(folded){
-    if(enhanceState.open)closeEnhance();
-    if(composer.contains(document.activeElement))document.activeElement.blur?.();
-    const cr=composer.getBoundingClientRect();
-    board.composer.folded=true;
-    paintComposer();
-    surface.scrollTop=0;surface.scrollLeft=0;
-    if(!calm()&&cr.width){
-      const rr=ret.getBoundingClientRect();
-      const dx=rr.width?(rr.left+rr.width/2)-(cr.left+cr.width/2):0;
-      const dy=rr.height?(rr.top+rr.height/2)-(cr.top+cr.height/2):12;
-      composer.style.visibility="visible";
-      composer.animate([
-        {transform:"translate3d(0,0,0) scale(1,1)",opacity:1,filter:"blur(0px)"},
-        {transform:`translate3d(${(dx*.34).toFixed(1)}px,${(dy*.42).toFixed(1)}px,0) scale(.76,.84)`,opacity:.76,filter:"blur(1.5px)",offset:.38},
-        {transform:`translate3d(${(dx*.76).toFixed(1)}px,${dy.toFixed(1)}px,0) scale(.26,.34)`,opacity:0,filter:"blur(6px)"}
-      ],{duration:340,easing:"cubic-bezier(.32,.06,.24,1)"}).finished.catch(()=>{}).finally(()=>{composer.style.visibility="";surface.scrollTop=0;surface.scrollLeft=0;});
-      if(!ret.hidden){
-        ret.animate([
-          {transform:"translate3d(18px,-6px,0) scale(.72)",opacity:0},
-          {transform:"translate3d(0,0,0) scale(1.06)",opacity:1,offset:.68},
-          {transform:"translate3d(0,0,0) scale(1)",opacity:1}
-        ],{duration:360,delay:105,easing:"cubic-bezier(.22,1.25,.32,1)",fill:"backwards"});
-      }
-    }
-  }else{
-    const rr=!ret.hidden?ret.getBoundingClientRect():null;
-    board.composer.pos=null;board.composer.folded=false;
-    composer.style.visibility="";
-    paintComposer();
-    surface.scrollTop=0;surface.scrollLeft=0;
-    if(!calm()){
-      const cr=composer.getBoundingClientRect();
-      const dx=rr&&rr.width?(rr.left+rr.width/2)-(cr.left+cr.width/2):0;
-      const dy=rr&&rr.height?(rr.top+rr.height/2)-(cr.top+cr.height/2):14;
-      composer.animate([
-        {transform:`translate3d(${(dx*.74).toFixed(1)}px,${dy.toFixed(1)}px,0) scale(.28,.36)`,opacity:0,filter:"blur(6px)"},
-        {transform:"translate3d(0,-3px,0) scale(1.018,1.02)",opacity:1,filter:"blur(0px)",offset:.72},
-        {transform:"translate3d(0,0,0) scale(1,1)",opacity:1,filter:"blur(0px)"}
-      ],{duration:410,easing:"cubic-bezier(.22,1.2,.32,1)"});
-    }
-    promptBox.focus({preventScroll:true});
-  }
-  scheduleSave();
+  board.composer.folded=false;
+  paintComposer();
 }
 function wireHint(){const h=$("wireHint");h.hidden=!pendingLink;surface.classList.toggle("linking",!!pendingLink);if(pendingLink)h.textContent=pendingLink.side==="out"?t("wire.target"):t("wire.source");}
 function render(){
@@ -2247,21 +2539,16 @@ function synthesizeSelection(sel,rawPrompt=""){
   showToast(t("t.synthesized",{N:sel.length,T:idea.title}));
 }
 async function send(){
-  if(working||!composerMode().enabled)return;
-  const sel=selectedNodes(),n=sel[0]||null,text=draftOf(draftKey()).trim();
-  working=true;
-  try{
-    const mod=selectedFormat==="auto"?detectModality(text):selectedFormat;
-    if(mod==="image"){await startImageGeneration(text);return;}
-    if(mod){await generateMedia(mod);return;}
-    if(sel.length>1){synthesizeSelection(sel,text);return;}
-    if(!n||n.type==="asset"){await makeIdea();return;}
-    if(n.type==="idea"){createDirections(n);return;}
-    if(n.type==="direction"){if(board.adopted[n.group]===n.id)await buildFrom(n);else adopt(n);return;}
-    if(n.type==="build"){if(text||newInputs(n))await buildFrom(n);else releaseBuild(n);return;}
-    if(text){checkpoint();const fb=startIdea(text,null,null,0);edge(n.id,fb.id,"ref","feedback");setDraft(n.id,"");markFresh(fb.id,{kind:"materialize"});finish(fb,[fb]);}
-    else await preview(n);
-  }finally{working=false;}
+  const text=(promptBox?promptBox.value.trim():"")||draftOf(draftKey()).trim();
+  if(!text)return;
+  if(voiceActive)stopVoice();
+  if(enhanceState.open)closeEnhance();
+
+  sendCopilotTurn(text);
+  if(promptBox)promptBox.value="";
+  setDraft(draftKey(),"");
+  sizePrompt();
+  paintComposerLight();
 }
 
 /* ── stepping inside: the viewer ── */
@@ -2748,8 +3035,7 @@ function pinchMeasure(){const [a,b]=[...touches.values()];return {x:(a.x+b.x)/2,
 surface.addEventListener("pointerdown",e=>{
   if(e.button!==0&&e.button!==1)return;
   if(inlineEditId&&!e.target.closest("[data-inline-form]"))saveInlineEdit(true);
-  const handle=e.target.closest("#composerHandle");
-  if(handle&&!e.target.closest("button,.fmt-wrap")){e.preventDefault();const r=composer.getBoundingClientRect(),s=surface.getBoundingClientRect();gesture={kind:"composer",id:e.pointerId,cx:e.clientX,cy:e.clientY,x:r.left-s.left,y:r.top-s.top,moved:false};composer.classList.add("moving");handle.setPointerCapture?.(e.pointerId);return;}
+  // Composer is firmly docked in side panel (no dragging)
   if(e.target.closest("#composer,.board-tools,.composer-return,#groupBar,[data-inline-form]"))return;
   if(e.pointerType==="touch"){touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){markTarget(null);const p=pinchMeasure();pinch={...p,world:locationOf(p.x,p.y),scale:board.cam.s};gesture=null;pendingLink=null;wireHint();e.preventDefault();return;}}
   const el=e.target.closest("[data-node]"),n=el?byId(el.dataset.node):null,port=e.target.closest("[data-port]");
@@ -2899,6 +3185,7 @@ document.addEventListener("drop",async e=>{
 });
 promptBox.addEventListener("input",()=>{setDraft(draftKey(),promptBox.value);board.carets[draftKey()]=caretNow();
   paintComposerLight();scheduleSave();});
+promptBox.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
 function paintComposerLight(){const m=composerMode();$("sendLabel").textContent=m.label;$("send").title=m.label;$("send").setAttribute("aria-label",m.label);$("send").disabled=!m.enabled;sizePrompt();placeComposer();paintFormatSelector();}
 for(const ev of ["keyup","click","select","blur"])promptBox.addEventListener(ev,()=>{if(promptBox.value===draftOf(draftKey()))board.carets[draftKey()]=caretNow();});
 $("importFiles").addEventListener("change",async e=>{const files=Array.from(e.target.files),tgt=fileInputTarget;fileInputTarget=null;e.target.value="";try{await addFiles(files,{target:tgt});}catch{showToast(t("t.readFail"));}});
@@ -3377,7 +3664,416 @@ function closeEnhance(){
   enhanceState.open=false;
   paintEnhanceUI(false);
 }
-const LOOK_ONLY=new Set(["try-direction","preview","inspect","download","adopt","contexts","asset-menu","wire-from","toggle-todo","cycle-todo-theme","to-todo","voice","cycle-voice-lang","enhance","next-enhance","accept-enhance","revert-enhance","close-enhance","toggle-enhance-menu","set-enhance-style","cancel-generation","reroll-image","variations-image","edit-prompt-image","group-synth","group-todo","group-clear"]);
+
+/* ============================================================
+   Creative Copilot Conversation Panel & Assistant Engine
+   ============================================================ */
+let copilotOpen=stored(".copilotOpen",true);
+let copilotMode="all";
+let copilotThread=stored(".copilotThread",null);
+
+function defaultCopilotWelcome(){
+  const isZh=lang==="zh-CN";
+  return [{
+    id:"welcome-turn",
+    role:"assistant",
+    text:t("copilotWelcome"),
+    timestamp:Date.now(),
+    proposal:{
+      type:"image",
+      title:isZh?"探索赛博未来美学":"Explore Cyberpunk Aesthetic",
+      desc:isZh?"将艺术风格（霓虹雨夜、体积光）与结构化提示词（中景特写、八角渲染器）分离推敲。":"Decouples artistic style (volumetric neon rain) from prompt structure (cinematic framing, octane render).",
+      prompt:isZh?"2077未来赛博街区，湿漉沥青路面反射绚丽霓虹，全息广告牌，高科技战术义体角色，中景特写，体积光雾，电影级胶片质感":"Cyberpunk 2077 metropolis street, wet asphalt reflecting vibrant neon billboards, high-tech tactical cybernetics, cinematic medium close-up, volumetric fog, 8k octane render",
+      btnText:t("copilotActionGenImage")
+    },
+    chips:[
+      isZh?"赛博朋克装甲概念设计":"Cyberpunk Exosuit Concept",
+      isZh?"细雨霓虹老街 · 电影构图":"Rainy Neon Back-Alley · Cinematic",
+      isZh?"整理当前画布行动清单":"Organize Canvas Action Items",
+      isZh?"发散未来载具设计灵感":"Brainstorm Future Vehicle Concepts"
+    ]
+  }];
+}
+
+if(!copilotThread||!Array.isArray(copilotThread)||!copilotThread.length){
+  copilotThread=defaultCopilotWelcome();
+}
+
+function persistCopilotThread(){
+  try{
+    localStorage.setItem(prefix+".copilotThread",JSON.stringify(copilotThread.slice(-30)));
+  }catch{}
+}
+
+function toggleCopilot(open){
+  if(open===undefined)open=!copilotOpen;
+  copilotOpen=!!open;
+  try{localStorage.setItem(prefix+".copilotOpen",JSON.stringify(copilotOpen));}catch{}
+
+  const panel=$("copilotPanel");
+  const tab=$("sideCopilotTab");
+  const btn=$("copilotBtn");
+  const compBtn=$("composerCopilotBtn");
+
+  if(panel)panel.hidden=!copilotOpen;
+  if(tab)tab.hidden=copilotOpen;
+  if(btn){
+    btn.setAttribute("aria-expanded",String(copilotOpen));
+    btn.classList.toggle("active",copilotOpen);
+  }
+  if(compBtn){
+    compBtn.classList.toggle("active",copilotOpen);
+  }
+  document.body.classList.toggle("copilot-is-open",copilotOpen);
+  placeComposer();
+
+  if(copilotOpen){
+    updateCopilotContext();
+    paintCopilotThread();
+    setTimeout(()=>{
+      promptBox?.focus();
+    },120);
+  }
+}
+
+function transferToCopilot(){
+  const text=promptBox.value.trim();
+  toggleCopilot(true);
+  if(text){
+    promptBox.value="";
+    setDraft(draftKey(),"");
+    paintComposerLight();
+    sendCopilotTurn(text);
+  }else{
+    setTimeout(()=>{promptBox?.focus();},120);
+  }
+}
+
+function toggleCopilotVoice(){
+  const inp=$("copilotInput");
+  if(!inp)return;
+  const sample=lang==="zh-CN"?"请帮我构思一个赛博朋克装甲角色的概念图，强调体积光和35mm微距镜头细节":"Please design a cyberpunk exoskeleton armor concept with volumetric lighting and 35mm lens details";
+  inp.value=sample;
+  inp.focus();
+  showToast(t("voiceAiBoost")||"Voice polished");
+}
+
+function updateCopilotContext(){
+  const pill=$("copilotContextPill");
+  if(!pill)return;
+  const lbl=$("copilotCtxLabel")||pill;
+  const sel=selectedNodes();
+  if(sel&&sel.length>0){
+    const primary=sel[0];
+    const name=clipText(titleOf(primary).replace(/\.\w+$/,""),18);
+    const label=sel.length===1
+      ?(lang==="zh-CN"?("已连接: "+name):("Connected: "+name))
+      :t("copilotSelectedCtx",{N:sel.length});
+    lbl.textContent=label;
+    pill.classList.add("has-selected");
+  }else{
+    lbl.textContent=t("copilotGlobalCtx");
+    pill.classList.remove("has-selected");
+  }
+}
+
+function clearCopilotThread(){
+  copilotThread=defaultCopilotWelcome();
+  persistCopilotThread();
+  paintCopilotThread();
+  showToast(t("t.threadCleared")||(lang==="zh-CN"?"对话已清空":"Conversation cleared"));
+}
+
+function setCopilotMode(mode){
+  copilotMode=mode||"all";
+  document.querySelectorAll("[data-copilot-mode]").forEach(b=>{
+    b.classList.toggle("active",b.dataset.copilotMode===copilotMode);
+  });
+  const input=$("copilotInput");
+  if(input){
+    if(copilotMode==="image"){
+      input.placeholder=lang==="zh-CN"?"探讨视觉风格、镜头参数或画面构思...":"Discuss visual style, camera specs, or scene concepts...";
+    }else if(copilotMode==="todo"){
+      input.placeholder=lang==="zh-CN"?"梳理项目步骤、拆解待办清单...":"Outline project milestones, break down action items...";
+    }else if(copilotMode==="idea"){
+      input.placeholder=lang==="zh-CN"?"发散灵感创意、头脑风暴构想...":"Brainstorm creative concepts, record ideas...";
+    }else{
+      input.placeholder=t("copilotInputPlaceholder");
+    }
+  }
+}
+
+function stripEmojiPrefix(s){
+  if(!s)return "";
+  return String(s)
+    .replace(/^[\s\u00A0\uFEFF\u2000-\u200F\u2028\u2029✦✧✨🏮📋💡📸★☆\u2600-\u27bf\u2300-\u23ff\u2190-\u21ff\u2b00-\u2bff\ud800-\udbff\udc00-\udfff]+/u,"")
+    .replace(/^[✦✧✨★☆·]+\s*/u,"")
+    .trim();
+}
+
+function paintCopilotThread(){
+  const container=$("copilotTurns");
+  if(!container)return;
+
+  const html=copilotThread.map((turn,tIdx)=>{
+    const isUser=turn.role==="user";
+    const bubbleClass=isUser?"copilot-turn user":"copilot-turn assistant";
+
+    let proposalHtml="";
+    if(turn.proposal){
+      const p=turn.proposal;
+      const typeIcon=p.type==="image"?"Sparkles":(p.type==="todo"?"ListTodo":"Lightbulb");
+      let rawLabel=(p.type==="image"?t("copilotActionGenImage"):(p.type==="todo"?t("copilotActionMakeTodo"):t("copilotActionMakeIdea")));
+      if(p.btnText&&!p.btnText.includes("Generate on Canvas")&&!p.btnText.includes("生成图片到画布")&&!p.btnText.includes("✦")){
+        rawLabel=p.btnText;
+      }
+      const cleanLabel=esc(stripEmojiPrefix(rawLabel));
+      const cleanTitle=esc(stripEmojiPrefix(p.title));
+      proposalHtml='<div class="copilot-proposal-box" data-turn-idx="'+tIdx+'">'+
+        '<h4><i data-icon="'+typeIcon+'"></i> '+cleanTitle+'</h4>'+
+        (p.desc?('<p class="copilot-proposal-desc">'+esc(p.desc)+'</p>'):"")+
+        (p.prompt?('<p class="copilot-proposal-prompt">"'+esc(p.prompt)+'"</p>'):"")+
+        '<button type="button" class="copilot-proposal-btn" data-action="copilot-apply-proposal" data-turn-idx="'+tIdx+'">'+
+          '<i data-icon="'+typeIcon+'"></i>'+
+          '<span>'+cleanLabel+'</span>'+
+        '</button>'+
+      '</div>';
+    }
+
+    let chipsHtml="";
+    if(turn.chips&&turn.chips.length){
+      chipsHtml='<div class="copilot-chips">'+
+        turn.chips.map(c=>{
+          const cleanC=stripEmojiPrefix(c);
+          return '<button type="button" class="copilot-prompt-chip" data-action="copilot-chip" data-prompt="'+esc(cleanC)+'"><span>'+esc(cleanC)+'</span></button>';
+        }).join("")+
+      '</div>';
+    }
+
+    return '<div class="'+bubbleClass+'" data-id="'+esc(turn.id)+'">'+
+      '<div class="copilot-bubble">'+
+        '<div class="copilot-text">'+esc(turn.text).replace(/\n/g,"<br>")+'</div>'+
+        proposalHtml+
+      '</div>'+
+      chipsHtml+
+    '</div>';
+  }).join("");
+
+  container.innerHTML=html;
+  hydrateIcons(container);
+  container.scrollTop=container.scrollHeight;
+}
+
+function generateCopilotReply(userText){
+  const isZh=lang==="zh-CN";
+  const lower=userText.toLowerCase();
+  const sel=selectedNodes();
+  const primaryNode=sel[0]||null;
+  const ctxName=primaryNode?titleOf(primaryNode).replace(/\.\w+$/,""):"";
+
+  let targetType=copilotMode;
+  if(targetType==="all"){
+    if(lower.includes("todo")||lower.includes("checklist")||lower.includes("清单")||lower.includes("任务")||lower.includes("步骤")||lower.includes("待办")){
+      targetType="todo";
+    }else if(lower.includes("idea")||lower.includes("灵感")||lower.includes("想法")||lower.includes("思考")||lower.includes("概念")||lower.includes("memo")){
+      targetType="idea";
+    }else{
+      targetType="image";
+    }
+  }
+
+  let artisticStyle=isZh?"赛博雨夜霓虹质感":"Cyberpunk Neon & Wet Reflections";
+  if(lower.includes("anime")||lower.includes("二次元")||lower.includes("动漫")){
+    artisticStyle=isZh?"日系新海诚光影风":"Makoto Shinkai Anime Aesthetic";
+  }else if(lower.includes("cyberpunk")||lower.includes("赛博")||lower.includes("2077")||lower.includes("suit")||lower.includes("armor")||lower.includes("装甲")){
+    artisticStyle=isZh?"2077 高科技战术机能 (体积光/全息粒子)":"Cyberpunk 2077 Tactical Tech (Volumetric & Holograms)";
+  }else if(lower.includes("oil")||lower.includes("油画")||lower.includes("古典")){
+    artisticStyle=isZh?"古典厚涂质感油画":"Classical Impasto Oil Painting";
+  }else if(lower.includes("minimal")||lower.includes("极简")){
+    artisticStyle=isZh?"包豪斯极简矢量":"Minimalist Bauhaus Vector";
+  }else if(lower.includes("3d")||lower.includes("render")||lower.includes("三维")){
+    artisticStyle=isZh?"Octane 3D 材质渲染":"Octane 3D Raytraced Material";
+  }
+
+  let replyText="";
+  let proposal=null;
+  let chips=[];
+
+  if(targetType==="image"){
+    const cleanSubject=userText.replace(/^(?:please\s+)?(?:generate|create|make|draw|paint|picture|image|turn into|请|帮我|生成|画一张|设计|制作)\s*(?:a|an)?\s*/i,"").trim()||(ctxName||(isZh?"赛博朋克概念设计":"Cyberpunk Visual Concept"));
+    const expandedPrompt=cleanSubject+", "+artisticStyle+", cinematic 35mm lens, f/1.8 aperture, dramatic volumetric lighting, ultra-detailed composition, octane render 8k";
+
+    if(isZh){
+      replyText="针对你的创意构想「"+cleanSubject+"」，我梳理了提示词方案：\n\n"+
+        "• 艺术风格："+artisticStyle+"\n"+
+        "• 构图与参数：35mm 景深虚化、体积雾光影、高保真细节。\n"+
+        (ctxName?("• 关联上下文：继承并延展「"+ctxName+"」的基调。"):("• 全局视野：作为画布上的全新主视觉节点。"));
+    }else{
+      replyText="Iterating on your vision \""+cleanSubject+"\", I balanced artistic aesthetic and prompt structure:\n\n"+
+        "• Artistic Style: "+artisticStyle+"\n"+
+        "• Visual Parameters: 35mm shallow depth of field, volumetric atmospheric lighting, 8k octane detail.\n"+
+        (ctxName?("• Canvas Context: Grounded in selected card \""+ctxName+"\"."):("• Global Viewpoint: Establishing a bold anchor node on your canvas."));
+    }
+
+    proposal={
+      type:"image",
+      title:isZh?"具象化视觉提案":"Materialize Visual Concept",
+      desc:isZh?("艺术风格: "+artisticStyle+" · 参数与结构已就绪"):("Artistic Style: "+artisticStyle+" · Structural parameters optimized"),
+      prompt:expandedPrompt,
+      btnText:t("copilotActionGenImage")
+    };
+
+    chips=isZh?[
+      "切换为日系唯美动漫风格",
+      "增加特写微距镜头细节",
+      "强化夜幕霓虹与湿漉倒影",
+      "衍生制作配套行动清单"
+    ]:[
+      "Switch to Makoto Shinkai Anime",
+      "Add Macro Close-Up Framing",
+      "Enhance Neon & Wet Reflections",
+      "Generate Milestone Action List"
+    ];
+  }else if(targetType==="todo"){
+    const topic=userText.replace(/^(?:please\s+)?(?:create|make|extract|list|todo|to-do|请|帮我|整理|生成)?\s*(?:a\s+)?(?:todo|checklist|action list|清单|待办|任务)\s*(?:for|of|about|关于)?\s*/i,"").trim()||(ctxName||(isZh?"项目落地推进":"Project Execution"));
+
+    if(isZh){
+      replyText="已为你拆解「"+topic+"」的执行链路，转化为结构化的行动清单：\n\n"+
+        "1. 创意定调与视觉参考资产收集\n"+
+        "2. 核心构图参数校验与提示词微调\n"+
+        "3. 批量生成对照卡片并建立连线关联\n"+
+        "4. 产出最终交付规范";
+    }else{
+      replyText="Deconstructed the execution path for \""+topic+"\" into actionable milestones:\n\n"+
+        "1. Creative direction lock & reference curation\n"+
+        "2. Visual parameter tuning & prompt refinement\n"+
+        "3. Canvas card generation & associative linking\n"+
+        "4. Final deliverable export & review";
+    }
+
+    proposal={
+      type:"todo",
+      title:isZh?("行动清单: "+topic):("Action List: "+topic),
+      desc:isZh?"可直接放置到画布上跟踪进度与勾选":"Interactive checklist ready to dock onto canvas",
+      prompt:topic,
+      theme:"slate",
+      btnText:t("copilotActionMakeTodo")
+    };
+
+    chips=isZh?[
+      "根据任务生成视觉参考图",
+      "记录头脑风暴备忘",
+      "拆分更多细分执行步骤"
+    ]:[
+      "Generate Visual Asset for Tasks",
+      "Place Brainstorm Memo",
+      "Break down into sub-milestones"
+    ];
+  }else{
+    const ideaSummary=userText.replace(/^(?:please\s+)?(?:note|memo|idea|record|灵感|记录|想法)\s*(?:about|on|关于)?\s*/i,"").trim()||(ctxName||(isZh?"核心创意构想":"Core Creative Concept"));
+
+    if(isZh){
+      replyText="已提炼灵感构想「"+ideaSummary+"」。\n建议将其作为核心创意锚点放置在画布构思区，后续可向四周延展视觉生成与执行任务。";
+    }else{
+      replyText="Distilled idea memo for \""+ideaSummary+"\".\nPlacing this as a core conceptual anchor allows direct branching into visual assets and milestones.";
+    }
+
+    proposal={
+      type:"idea",
+      title:isZh?("构想: "+ideaSummary):("Idea: "+ideaSummary),
+      desc:isZh?"放置为核心灵感卡片":"Place as conceptual idea node on canvas",
+      text:userText,
+      btnText:t("copilotActionMakeIdea")
+    };
+
+    chips=isZh?[
+      "具象化为高清视觉图片",
+      "制定落地推进行动清单"
+    ]:[
+      "Materialize as High-Res Image",
+      "Create Action Checklist"
+    ];
+  }
+
+  return {
+    id:"copilot-"+Date.now(),
+    role:"assistant",
+    text:replyText,
+    timestamp:Date.now(),
+    proposal,
+    chips
+  };
+}
+
+function sendCopilotTurn(rawText){
+  const text=(rawText||"").trim();
+  if(!text)return;
+
+  const userTurn={
+    id:"user-"+Date.now(),
+    role:"user",
+    text,
+    timestamp:Date.now()
+  };
+
+  copilotThread.push(userTurn);
+  persistCopilotThread();
+  paintCopilotThread();
+
+  if(promptBox){
+    promptBox.value="";
+    setDraft(draftKey(),"");
+    sizePrompt();
+    paintComposerLight();
+  }
+
+  const container=$("copilotTurns");
+  if(container){
+    const typingEl=document.createElement("div");
+    typingEl.id="copilotTyping";
+    typingEl.className="copilot-turn assistant";
+    typingEl.innerHTML='<div class="copilot-bubble" style="opacity:0.75;font-style:italic;"><span class="copilot-typing-dots">Thinking & synthesizing...</span></div>';
+    container.appendChild(typingEl);
+    container.scrollTop=container.scrollHeight;
+  }
+
+  setTimeout(()=>{
+    const typing=$("copilotTyping");
+    if(typing)typing.remove();
+
+    const reply=generateCopilotReply(text);
+    copilotThread.push(reply);
+    persistCopilotThread();
+    paintCopilotThread();
+  },380);
+}
+
+function applyCopilotProposal(turnIdx){
+  const turn=copilotThread[turnIdx];
+  if(!turn||!turn.proposal)return;
+
+  const p=turn.proposal;
+  checkpoint();
+
+  if(p.type==="image"){
+    startImageGeneration(p.prompt,{sourceNode:picked()});
+    showToast(t("t.proposalPlaced")||(lang==="zh-CN"?"提案已生成到画布":"Proposal placed on canvas"));
+  }else if(p.type==="todo"){
+    const card=makeTodoCard(picked(),p.prompt||p.title,p.theme||"slate");
+    if(card){
+      focusNodes([card],card.phase,true,420);
+      showToast(t("t.proposalPlaced")||(lang==="zh-CN"?"清单已放置到画布":"Action list placed on canvas"));
+    }
+  }else if(p.type==="idea"){
+    const node=startIdea(p.text||p.title,picked());
+    if(node){
+      focusNodes([node],node.phase,true,420);
+      showToast(t("t.proposalPlaced")||(lang==="zh-CN"?"灵感卡片已放置":"Idea card placed on canvas"));
+    }
+  }
+}
+
+const LOOK_ONLY=new Set(["try-direction","preview","inspect","download","adopt","contexts","asset-menu","wire-from","toggle-todo","cycle-todo-theme","to-todo","voice","cycle-voice-lang","enhance","next-enhance","accept-enhance","revert-enhance","close-enhance","toggle-enhance-menu","set-enhance-style","cancel-generation","reroll-image","variations-image","edit-prompt-image","group-synth","group-todo","group-clear","toggle-copilot","clear-copilot","copilot-apply-proposal","copilot-chip","transfer-to-copilot","copilot-voice"]);
 document.addEventListener("click",async e=>{
   if(lastDragEnd&&e.detail&&performance.now()<lastDragEnd.until&&Math.hypot(e.clientX-lastDragEnd.x,e.clientY-lastDragEnd.y)<6)return;
   const fmtOpt=e.target.closest("[data-fmt]");
@@ -3389,9 +4085,16 @@ document.addEventListener("click",async e=>{
   const ob=e.target.closest("[data-open-board]");if(ob){await switchBoard(stored(".board."+ob.dataset.openBoard,null));return;}
   const lg=e.target.closest("[data-lang]");if(lg){applyLanguage(lg.dataset.lang);try{localStorage.setItem("prism-canvas.language",lang);}catch{}return;}
   const ph=e.target.closest("[data-phase]");if(ph){navigate(Number(ph.dataset.phase));return;}
+  const cpMode=e.target.closest("[data-copilot-mode]");if(cpMode){setCopilotMode(cpMode.dataset.copilotMode);return;}
   const b=e.target.closest("[data-action]");if(!b)return;const a=b.dataset.action;
   if(cardEl&&n&&!LOOK_ONLY.has(a)&&board.selected!==n.id){selectNode(n);repaint();}
   try{switch(a){
+    case "transfer-to-copilot":transferToCopilot();break;
+    case "copilot-voice":toggleCopilotVoice();break;
+    case "toggle-copilot":toggleCopilot();break;
+    case "clear-copilot":clearCopilotThread();break;
+    case "copilot-apply-proposal":{const idx=Number(b.dataset.turnIdx);if(!isNaN(idx))applyCopilotProposal(idx);break;}
+    case "copilot-chip":{const chipPrompt=b.dataset.prompt;if(chipPrompt)sendCopilotTurn(chipPrompt);break;}
     case "toggle-fmt":{const m=$("fmtMenu"),open=m.hidden;m.hidden=!open;$("fmtBtn").setAttribute("aria-expanded",String(open));break;}
     case "toggle-enhance-menu":toggleEnhanceMenu();break;
     case "set-enhance-style":{const st=b.dataset.style;if(st)setEnhanceStyle(st);break;}
@@ -3507,7 +4210,7 @@ document.addEventListener("click",async e=>{
     case "send":if(voiceActive)stopVoice();if(enhanceState.open)closeEnhance();await send();break;
     case "detach":selectNode(null);render();promptBox.focus();restoreCaret("root");persist();break;
     case "return-edit":await returnTo(returnTarget());break;
-    case "fold":toggleComposerFold(!board.composer.folded);break;
+    case "fold":break;
     case "return":toggleComposerFold(false);break;
     case "select":case "pan":setTool(a);break;
     case "wire-tool":setTool(wireTool?"select":"wire");break;
@@ -3579,6 +4282,7 @@ document.addEventListener("keydown",e=>{
   const editable=e.target.closest("textarea,input,select,[contenteditable=true]");
   if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){e.preventDefault();if(voiceActive)stopVoice();if(enhanceState.open)closeEnhance();send();return;}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="e"){e.preventDefault();openOrCycleEnhance();return;}
+  if((e.metaKey||e.ctrlKey)&&(e.key==="k"||e.key==="K")){e.preventDefault();transferToCopilot();return;}
   if(e.key==="Escape"){if($("enhanceMenu")&&!$("enhanceMenu").hidden){e.preventDefault();toggleEnhanceMenu(false);return;}if(enhanceState.open){e.preventDefault();closeEnhance();return;}if(pendingLink){pendingLink=null;markTarget(null);wireHint();drawWires();}else if(wireTool||handTool)setTool("select");return;}
   if(editable)return;
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="z"){e.preventDefault();undo();return;}
@@ -3607,7 +4311,9 @@ function paintLanguage(){
   document.querySelectorAll("[data-t]").forEach(el=>el.textContent=t(el.dataset.t));
   document.querySelectorAll("[data-t-title]").forEach(el=>el.title=t(el.dataset.tTitle));
   document.querySelectorAll("[data-t-aria]").forEach(el=>el.setAttribute("aria-label",t(el.dataset.tAria)));
+  document.querySelectorAll("[data-t-placeholder]").forEach(el=>el.placeholder=t(el.dataset.tPlaceholder));
   document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));
+  if(typeof updateCopilotContext==="function")updateCopilotContext();
   statusLabel();
 }
 function applyLanguage(v){
@@ -3714,6 +4420,7 @@ function ensureTodoPairComparison(){
   edge(idea.id,cardB.id,"ref","derived");
 }
 window.addEventListener("storage",e=>{if(e.key==="prism-canvas.language"&&e.newValue&&e.newValue!==lang)applyLanguage(e.newValue);});
+if(board&&board.composer)board.composer.folded=false;
 ensureTodoPairComparison();
 hydrateIcons();paintLanguage();render();
 if(board.cam.x===0&&board.cam.y===0&&board.nodes.length)focusNodes(board.nodes.filter(n=>laneOf(n.x+nodeWidth(n)/2)===board.stage),board.stage,false,520);
@@ -3721,6 +4428,9 @@ if(!board.nodes.length)focusNodes([],0);
 else if(board.viewport&&Math.abs(board.viewport.w-surface.clientWidth)>Math.max(130,board.viewport.w*.23))focusNodes(board.nodes.filter(n=>laneOf(n.x+nodeWidth(n)/2)===board.stage),board.stage);
 persist();restoreMedia();
 if(!board.nodes.length)setTimeout(()=>promptBox.focus({preventScroll:true}),60);
+
+if(copilotOpen)toggleCopilot(true);
+else toggleCopilot(false);
 });
 </script>
 

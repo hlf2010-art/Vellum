@@ -1,0 +1,23 @@
+{
+  "zimage": {
+    "name": "Z-Image Turbo BF16",
+    "graph": "workflow-api.json",
+    "positive": [
+      "57:27",
+      "text"
+    ],
+    "output": "9",
+    "edit": true
+  },
+  "qwen21": {
+    "name": "Qwen Image 2.1",
+    "graph": "workflow-qwen.json",
+    "positive": [
+      "452",
+      "prompt"
+    ],
+    "output": "461",
+    "edit": true,
+    "notice": "Research license \u00b7 commercial use not approved"
+  }
+}

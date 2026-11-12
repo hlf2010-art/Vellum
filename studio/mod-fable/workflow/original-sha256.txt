@@ -1,0 +1,6 @@
+2666c4c89fea56a266895d5b0adba5086e0c4c93087a2e424ec9f1054001e3b1  MOD WORK - Fable Decision Canvas.html
+d4c8fb271ac6b603c0176926c9f98e3c41a80f9d8ab289cdb40d5203b209dadc  studio/mod-fable/build.py
+4fab243ccd6f1f3c74ea1d266505e041d9c7c5f4c8a31dbc20cb872a1dac5ad3  studio/mod-fable/interaction.js
+985431996880366fed490edf3239c484144bdb7f2b0da62f3fa24367148b7a49  studio/mod-fable/materials.js
+d3b625b7c777842fe468bfa7732b5847a4a4ac9a8bc1448ef2ce386b2bdf193d  studio/mod-fable/study.json
+9fb71b7ffc77527092409aa25828972ae3ec18614b1663f542c16e63840a921b  studio/mod-fable/visual.js

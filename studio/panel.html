@@ -1,0 +1,18 @@
+<aside id="studioSide" hidden aria-labelledby="sideTitle">
+  <header class="side-head"><h2 id="sideTitle" tabindex="-1"></h2><button type="button" class="plain-icon" id="closeSide" data-studio="close"><i data-icon="X"></i></button></header>
+  <div id="aiBody" hidden>
+    <div class="scope-box">
+      <div class="scope-line"><label for="aiScope" id="aiScopeLabel"></label><select id="aiScope"><option value="selection"></option><option value="all"></option></select></div>
+      <details class="scope-detail"><summary id="aiSourceCount"></summary><div id="sourceChoices"></div></details>
+    </div>
+    <div id="aiTurns" aria-label="Copilot conversation"></div>
+    <form id="aiForm">
+      <div class="ai-modes" id="aiModes"><button type="button" data-mode="suggest"></button><button type="button" data-mode="create"></button><button type="button" data-mode="edit"></button></div>
+      <label id="aiFormatRow" hidden><span id="aiFormatLabel"></span><select id="aiFormat"></select></label>
+      <textarea id="aiPrompt" rows="3"></textarea>
+      <div class="ai-submit-row"><span id="engineStatus" role="status"></span><button type="submit" id="aiSend"></button><button type="button" id="aiStop" data-studio="stop" hidden></button></div>
+      <small id="inputHint"></small>
+    </form>
+  </div>
+  <div id="historyBody" hidden><div id="historyTop"></div><ol id="historyList"></ol></div>
+</aside>

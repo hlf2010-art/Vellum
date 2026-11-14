@@ -21,50 +21,168 @@ from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 PORT = 59631
-MODEL_NAME = "Qwen3-VL-4B-Instruct"
 MODEL_DIR = Path.home() / "Library/Caches/InfiniteCanvas/models"
-MODEL_FILES = {
-    "Qwen3VL-4B-Instruct-Q4_K_M.gguf": "66358cb18bb6b3b1b6675aa412c7a88ef01d228f481184d13668e5201c730a0a",
-    "mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf": "30ba2c7dd3127a4561b6cba9d13d0f711c91bdb38742e2f56d73c8cb596bd06d",
+ACTIVE_FILE = MODEL_DIR / "active_model.txt"
+DEFAULT_MODEL_ID = "qwen3-vl-4b"
+MODELS = {
+    "qwen3-vl-4b": {
+        "id": "qwen3-vl-4b",
+        "label": "Qwen3-VL 4B",
+        "model": "Qwen3-VL-4B-Instruct",
+        "tier": "Fast",
+        "vision": True,
+        "base": "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/1cd86afb9a95c410a6038ab3b40d8b578c892266/",
+        "files": [
+            {"name": "Qwen3VL-4B-Instruct-Q4_K_M.gguf", "sha256": "66358cb18bb6b3b1b6675aa412c7a88ef01d228f481184d13668e5201c730a0a", "size": 2497281664},
+            {"name": "mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf", "sha256": "30ba2c7dd3127a4561b6cba9d13d0f711c91bdb38742e2f56d73c8cb596bd06d", "size": 453974304},
+        ],
+    },
+    "qwen3-vl-8b": {
+        "id": "qwen3-vl-8b",
+        "label": "Qwen3-VL 8B",
+        "model": "Qwen3-VL-8B-Instruct",
+        "tier": "Quality",
+        "vision": True,
+        "base": "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF/resolve/f982a07559d4a2f6c8744d840bf6fccab30eea96/",
+        "files": [
+            {"name": "Qwen3VL-8B-Instruct-Q4_K_M.gguf", "sha256": "67d1659bfe71b89d50b45a4ad1a9e5b997e5bb16ce5da66a6a6167abd569e9e2", "size": 5027784800},
+            {"name": "mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf", "sha256": "c6ba85508d82f42590e6eb77d5340369ab6fecf107a7561d809523d8aa5f3bfd", "size": 752289728},
+        ],
+    },
 }
-BASE = "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/1cd86afb9a95c410a6038ab3b40d8b578c892266/"
 SITE_NAME = "Infinite Canvas - Studio.html"
 SITE = Path(__file__).resolve().parent / SITE_NAME
 if not SITE.exists():
     SITE = SITE.parent.parent / SITE_NAME
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 ENGINE = None
+DL_PROC = None
 READY = threading.Event()
 MODEL_KEY = secrets.token_urlsafe(32)
 MODEL_PORT = 0
 START_ERROR = ""
+PROGRESS_TEXT = ""
+SWITCH_GEN = 0
 MODEL_LOCK = threading.Lock()
 MODEL_THREAD = None
 os.environ["PATH"] = "/opt/homebrew/bin:/usr/local/bin:" + os.environ.get("PATH", "")
 
 
-def ensure_weights():
+def load_active_id():
+    try:
+        mid = ACTIVE_FILE.read_text().strip()
+        if mid in MODELS:
+            return mid
+    except OSError:
+        pass
+    return DEFAULT_MODEL_ID
+
+
+def save_active_id(mid):
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    for name, digest in MODEL_FILES.items():
+    ACTIVE_FILE.write_text(mid)
+
+
+ACTIVE_ID = load_active_id()
+
+
+def active_spec():
+    return MODELS.get(ACTIVE_ID, MODELS[DEFAULT_MODEL_ID])
+
+
+def is_cached(spec):
+    return all((MODEL_DIR / f["name"]).exists() for f in spec["files"])
+
+
+def live_progress():
+    spec = active_spec()
+    if START_ERROR or (READY.is_set() and ENGINE and ENGINE.poll() is None):
+        return ""
+    for f in spec["files"]:
+        dest = MODEL_DIR / f["name"]
+        part = MODEL_DIR / (f["name"] + ".part")
+        if not dest.exists() and part.exists():
+            with contextlib.suppress(OSError):
+                got = part.stat().st_size
+                tot = f["size"]
+                pct = min(99, int(got * 100 / tot)) if tot else 0
+                return f"Downloading {spec['label']} · {pct}% ({got / 1e9:.1f} / {tot / 1e9:.1f} GB)"
+    return PROGRESS_TEXT
+
+
+def model_inventory():
+    items = []
+    for mid, spec in MODELS.items():
+        total_bytes = sum(f["size"] for f in spec["files"])
+        cached = is_cached(spec)
+        items.append({
+            "id": mid,
+            "label": spec["label"],
+            "model": spec["model"],
+            "tier": spec["tier"],
+            "vision": spec["vision"],
+            "bytes": total_bytes,
+            "cached": cached,
+            "active": mid == ACTIVE_ID,
+        })
+    return items
+
+
+def stop_download():
+    global DL_PROC
+    if DL_PROC and DL_PROC.poll() is None:
+        DL_PROC.terminate()
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            DL_PROC.wait(timeout=3)
+    DL_PROC = None
+
+
+def ensure_weights(spec, gen):
+    global DL_PROC, PROGRESS_TEXT
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    for f in spec["files"]:
+        if gen != SWITCH_GEN:
+            return False
+        name, digest = f["name"], f["sha256"]
         dest = MODEL_DIR / name
         if dest.exists():
             continue
         partial = MODEL_DIR / (name + ".part")
+        PROGRESS_TEXT = f"Preparing {spec['label']}…"
         print("Preparing", name, flush=True)
-        subprocess.run(["curl", "-fL", "--retry", "3", "-C", "-", "-o", str(partial), BASE + name], check=True)
+        DL_PROC = subprocess.Popen(
+            ["curl", "-fsSL", "--retry", "3", "-C", "-", "-o", str(partial), spec["base"] + name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        rc = DL_PROC.wait()
+        err_tail = (DL_PROC.stderr.read() if DL_PROC.stderr else "").strip()
+        DL_PROC = None
+        if gen != SWITCH_GEN:
+            return False
+        if rc != 0:
+            raise RuntimeError(err_tail or f"Could not download {name}")
+        PROGRESS_TEXT = f"Verifying {name}…"
         h = hashlib.sha256()
         with partial.open("rb") as src:
             for block in iter(lambda: src.read(8 << 20), b""):
+                if gen != SWITCH_GEN:
+                    return False
                 h.update(block)
         if h.hexdigest() != digest:
             partial.unlink(missing_ok=True)
-            raise ValueError("Model download incomplete. Relaunch to download it again.")
+            raise ValueError("Model download incomplete. Retry to download it again.")
         partial.replace(dest)
+    return gen == SWITCH_GEN
 
 
-def model_server():
-    global ENGINE, MODEL_PORT, START_ERROR
+def model_server(spec, gen):
+    global ENGINE, MODEL_PORT, START_ERROR, PROGRESS_TEXT
     try:
+        if gen != SWITCH_GEN:
+            return
+        PROGRESS_TEXT = f"Checking runtime for {spec['label']}…"
         tool = shutil.which("llama-server")
         if not tool:
             brew = shutil.which("brew")
@@ -72,47 +190,67 @@ def model_server():
                 raise RuntimeError("Install llama.cpp, then reopen Start Studio AI.command.")
             subprocess.run([brew, "install", "llama.cpp"], check=True)
             tool = shutil.which("llama-server")
-        ensure_weights()
+        if not ensure_weights(spec, gen):
+            return
+        PROGRESS_TEXT = f"Loading {spec['label']} into memory…"
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0))
             MODEL_PORT = sock.getsockname()[1]
-        model, vision = [str(MODEL_DIR / f) for f in MODEL_FILES]
+        model, vision = [str(MODEL_DIR / f["name"]) for f in spec["files"]]
         opts = [tool, "-m", model, "--mmproj", vision, "--host", "127.0.0.1", "--port", str(MODEL_PORT),
-                "--alias", MODEL_NAME, "--ctx-size", "16384", "--parallel", "1", "--cache-ram", "0",
+                "--alias", spec["model"], "--ctx-size", "16384", "--parallel", "1", "--cache-ram", "0",
                 "--no-webui", "--jinja", "--api-key", MODEL_KEY]
         # Release GPU memory during long editing sessions when the installed runtime supports idle sleep.
         help_text = subprocess.run([tool, "--help"], capture_output=True, text=True).stdout
         if "--sleep-idle-seconds" in help_text:
             opts += ["--sleep-idle-seconds", "300"]
-        ENGINE = subprocess.Popen(opts, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        proc = subprocess.Popen(opts, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        with MODEL_LOCK:
+            if gen != SWITCH_GEN:
+                proc.terminate()
+                return
+            ENGINE = proc
         for _ in range(180):
+            if gen != SWITCH_GEN:
+                return
             if ENGINE.poll() is not None:
                 raise RuntimeError("The local model stopped during startup. Reopen the launcher.")
             try:
                 with urlopen(f"http://127.0.0.1:{MODEL_PORT}/health", timeout=2) as res:
-                    if res.status == 200:
+                    if res.status == 200 and gen == SWITCH_GEN:
+                        PROGRESS_TEXT = ""
                         READY.set()
-                        print("Studio AI ready ·", MODEL_NAME, flush=True)
+                        print("Studio AI ready ·", spec["model"], flush=True)
                         return
             except (OSError, URLError):
                 time.sleep(1)
         raise RuntimeError("The local model did not finish loading. Reopen the launcher.")
     except Exception as err:
+        if gen != SWITCH_GEN:
+            return
+        PROGRESS_TEXT = ""
         START_ERROR = str(err)
         stop_model()
         print(START_ERROR, file=sys.stderr, flush=True)
 
 
-def start_model():
-    global MODEL_THREAD, START_ERROR
+def start_model(force=False):
+    global MODEL_THREAD, START_ERROR, SWITCH_GEN, PROGRESS_TEXT
     with MODEL_LOCK:
-        if MODEL_THREAD and MODEL_THREAD.is_alive():
-            return
-        if READY.is_set() and ENGINE and ENGINE.poll() is None:
-            return
+        if not force:
+            if MODEL_THREAD and MODEL_THREAD.is_alive():
+                return
+            if READY.is_set() and ENGINE and ENGINE.poll() is None:
+                return
+        SWITCH_GEN += 1
+        gen = SWITCH_GEN
         READY.clear()
         START_ERROR = ""
-        MODEL_THREAD = threading.Thread(target=model_server, daemon=True)
+        stop_download()
+        stop_model()
+        spec = active_spec()
+        PROGRESS_TEXT = f"Starting {spec['label']}…"
+        MODEL_THREAD = threading.Thread(target=model_server, args=(spec, gen), daemon=True)
         MODEL_THREAD.start()
 
 
@@ -187,11 +325,23 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.origin_allowed():
             return self.reply(403, {"error": "Local Studio only"})
-        if self.path.split("?")[0] == "/studio/health":
+        path = self.path.split("?")[0]
+        if path == "/studio/health":
+            spec = active_spec()
             ready = READY.is_set() and ENGINE and ENGINE.poll() is None
-            self.reply(200, {"service": "infinite-canvas", "model": MODEL_NAME,
-                             "status": "ready" if ready else "error" if START_ERROR or READY.is_set() else "loading"})
-        elif self.path.split("?")[0] in {"/", "/index.html"} and SITE.is_file():
+            self.reply(200, {
+                "service": "infinite-canvas",
+                "model": spec["model"],
+                "modelId": spec["id"],
+                "vision": spec["vision"],
+                "status": "ready" if ready else "error" if START_ERROR or READY.is_set() else "loading",
+                "progress": live_progress(),
+                "error": START_ERROR,
+                "models": model_inventory(),
+            })
+        elif path == "/studio/models":
+            self.reply(200, {"active": ACTIVE_ID, "models": model_inventory()})
+        elif path in {"/", "/index.html"} and SITE.is_file():
             html = SITE.read_bytes()
             self.headers_for(200, "text/html; charset=utf-8", len(html))
             self.end_headers()
@@ -200,23 +350,58 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(404, {"error": "Not found"})
 
     def do_POST(self):
-        if self.path not in {"/studio/generate", "/studio/transcribe", "/studio/start"} or not self.origin_allowed() or self.headers.get("X-Studio-Client") != "canvas":
+        global ACTIVE_ID
+        path = self.path.split("?")[0]
+        if path not in {"/studio/generate", "/studio/transcribe", "/studio/start", "/studio/model", "/studio/model/delete"} or not self.origin_allowed() or self.headers.get("X-Studio-Client") != "canvas":
             return self.reply(403, {"error": "Local Studio only"})
-        if self.path == "/studio/start":
+        if path == "/studio/start":
             start_model()
-            return self.reply(200, {"service": "infinite-canvas"})
-        if not READY.is_set() or ENGINE.poll() is not None:
+            return self.reply(200, {"service": "infinite-canvas", "active": ACTIVE_ID, "models": model_inventory()})
+        if path == "/studio/model":
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+                if not 0 < size <= 4096:
+                    raise ValueError("Invalid request size")
+                body = json.loads(self.rfile.read(size))
+                mid = str(body.get("id", "")).strip()
+                if mid not in MODELS:
+                    return self.reply(400, {"error": "Unknown local model"})
+                if mid != ACTIVE_ID or START_ERROR or not (READY.is_set() and ENGINE and ENGINE.poll() is None):
+                    ACTIVE_ID = mid
+                    save_active_id(mid)
+                    start_model(force=True)
+                return self.reply(200, {"service": "infinite-canvas", "active": ACTIVE_ID, "status": "loading", "models": model_inventory()})
+            except (ValueError, TypeError, KeyError, json.JSONDecodeError):
+                return self.reply(400, {"error": "Invalid model switch request"})
+        if path == "/studio/model/delete":
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+                if not 0 < size <= 4096:
+                    raise ValueError("Invalid request size")
+                body = json.loads(self.rfile.read(size))
+                mid = str(body.get("id", "")).strip()
+                if mid not in MODELS:
+                    return self.reply(400, {"error": "Unknown local model"})
+                if mid == ACTIVE_ID:
+                    return self.reply(409, {"error": "Switch away from this model before removing its files"})
+                for f in MODELS[mid]["files"]:
+                    (MODEL_DIR / f["name"]).unlink(missing_ok=True)
+                    (MODEL_DIR / (f["name"] + ".part")).unlink(missing_ok=True)
+                return self.reply(200, {"active": ACTIVE_ID, "models": model_inventory()})
+            except (ValueError, TypeError, KeyError, json.JSONDecodeError):
+                return self.reply(400, {"error": "Invalid delete request"})
+        if not READY.is_set() or not ENGINE or ENGINE.poll() is not None:
             return self.reply(503, {"error": "Local model is loading or offline"})
         try:
             size = int(self.headers.get("Content-Length", "0"))
             if not 0 < size <= 10 * 1024 * 1024:
                 return self.reply(413, {"error": "Request too large"})
-            if self.path == "/studio/transcribe":
+            if path == "/studio/transcribe":
                 if size > 3000000 or self.headers.get("Content-Type") != "audio/wav":
                     return self.reply(400, {"error": "Expected a 90-second mono WAV excerpt"})
                 return self.reply(200, {"text": transcribe(self.rfile.read(size))})
             body = json.loads(self.rfile.read(size))
-            args = {"model": MODEL_NAME, "messages": body["messages"], "response_format": body["response_format"],
+            args = {"model": active_spec()["model"], "messages": body["messages"], "response_format": body["response_format"],
                     "stream": True, "temperature": 0.45, "max_tokens": min(4600, int(body.get("max_tokens", 2400)))}
             if not isinstance(args["messages"], list) or not 1 <= len(args["messages"]) <= 8:
                 raise ValueError("Invalid request")
@@ -273,10 +458,12 @@ def main():
 
 
 def stop_model():
+    global ENGINE
     if ENGINE and ENGINE.poll() is None:
         ENGINE.terminate()
         with contextlib.suppress(subprocess.TimeoutExpired):
             ENGINE.wait(timeout=4)
+    ENGINE = None
 
 
 if __name__ == "__main__":
@@ -285,5 +472,6 @@ if __name__ == "__main__":
 
     signal.signal(signal.SIGTERM, closing)
     signal.signal(signal.SIGHUP, closing)
+    atexit.register(stop_download)
     atexit.register(stop_model)
     main()

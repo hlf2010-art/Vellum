@@ -2,19 +2,68 @@
 import base64
 import hashlib
 import json
+import os
+import threading
 import time
 import uuid
-from inventory import MODELS, graph, assets, inventory
+from inventory import MODELS, VIDEO_MODELS, graph, video_graph, assets, inventory, video_inventory
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, build_opener, ProxyHandler
 
-BASE = "http://10.0.11.55:8188"
+BASE = os.environ.get("COMFY_BASE_URL", "http://10.0.11.55:8188")
+STOP_URL = os.environ.get("WINDOWS_STOP_URL", "http://10.0.11.55:8189/stop")
 ROOT = Path(__file__).resolve().parent
 JOBS = ROOT / "jobs"
 JOBS.mkdir(exist_ok=True)
+TOKEN_FILE = Path(os.environ.get("STUDIO_CTRL_TOKEN_FILE", ROOT / ".ctrl_token"))
 http = build_opener(ProxyHandler({}))
+_stop_lock = threading.Lock()
+_service_stopped = False
+
+
+class ServiceStoppedError(RuntimeError):
+    pass
+
+
+def is_service_stopped():
+    with _stop_lock:
+        return _service_stopped
+
+
+def set_service_stopped(val: bool):
+    global _service_stopped
+    with _stop_lock:
+        _service_stopped = bool(val)
+
+
+def _ctrl_token():
+    tok = os.environ.get("STUDIO_CTRL_TOKEN", "").strip()
+    if tok:
+        return tok
+    if TOKEN_FILE.exists():
+        return TOKEN_FILE.read_text(encoding="utf-8").strip()
+    return ""
+
+
+def stop_windows_service():
+    # Authenticate before any remote operation; stopping must never interrupt work.
+    tok = _ctrl_token()
+    if not tok:
+        raise RuntimeError("Missing STUDIO_CTRL_TOKEN / .ctrl_token for authenticated Windows stop.")
+    req = Request(
+        STOP_URL,
+        data=b"{}",
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {tok}"},
+        method="POST",
+    )
+    with http.open(req, timeout=8) as resp:
+        res = json.load(resp)
+    if not isinstance(res, dict) or res.get("stopped") is not True:
+        raise RuntimeError("Windows did not acknowledge a completed stop.")
+    set_service_stopped(True)
+    return res
 
 def fetch(path, payload=None, timeout=12):
     request = Request(BASE + path, data=json.dumps(payload).encode() if payload is not None else None,
@@ -152,3 +201,180 @@ def generate(prompt, request_id, image=None, guide=None, model="zimage", variati
                 record["phase"]="Generating";store(path,record)
         time.sleep(2)
     raise RuntimeError("Windows job "+pid+" is still pending. Retry to check the same job.")
+
+
+def _video_job_path(request_id: str) -> Path:
+    return JOBS / (str(uuid.UUID(request_id)) + ".video.json")
+
+
+def _video_asset_path(request_id: str) -> Path:
+    return JOBS / (str(uuid.UUID(request_id)) + ".mp4")
+
+
+def _extract_mp4_location(outputs: dict, preferred_node: str):
+    nodes = [outputs.get(preferred_node)] if preferred_node in outputs else []
+    nodes.extend(v for k, v in outputs.items() if k != preferred_node)
+    for out in nodes:
+        if not isinstance(out, dict):
+            continue
+        for bucket in ("videos", "gifs", "images"):
+            for item in out.get(bucket) or []:
+                fn = str(item.get("filename", ""))
+                if fn.lower().endswith(".mp4"):
+                    return {k: item[k] for k in ("filename", "subfolder", "type") if k in item}
+    return None
+
+
+def submit_video(prompt: str, request_id: str, model: str = "h3", seed=None, image=None, tail_frame=None):
+    if is_service_stopped():
+        raise ServiceStoppedError("服务已停止，请先在 Windows 手动启动模型服务")
+    if image is not None or tail_frame is not None:
+        raise ValueError("v1 supports text-to-video only")
+    if model not in VIDEO_MODELS:
+        raise ValueError("Unknown video model")
+    if seed is not None and (type(seed) is not int or not 0 <= seed < 2**32):
+        raise ValueError("Invalid seed")
+    spec = VIDEO_MODELS[model]
+    vspec = spec.get("spec", {"width": 864, "height": 480, "fps": 24, "frames": 121, "duration_sec": 5, "steps": 8})
+    rid = str(uuid.UUID(request_id))
+    digest = hashlib.sha256(json.dumps({"model": model, "prompt": prompt, "seed": seed, "spec": vspec}, sort_keys=True).encode()).hexdigest()
+    jpath = _video_job_path(rid)
+    if jpath.exists():
+        rec = json.loads(jpath.read_text())
+        if rec.get("hash") != digest:
+            raise ValueError("Request ID reused with different video parameters.")
+        return rec, False
+    row = next((r for r in video_inventory(fetch) if r["id"] == model), None)
+    if not row or not row["available"]:
+        raise ValueError(row["reason"] if row else "Video model unavailable")
+    rec = {
+        "job_id": rid,
+        "kind": "video",
+        "model": model,
+        "model_name": spec["name"],
+        "prompt": prompt,
+        "seed": seed,
+        "spec": vspec,
+        "hash": digest,
+        "status": "queued",
+        "phase": "Queued",
+        "progress": 0,
+        "created": time.time(),
+    }
+    store(jpath, rec)
+    return rec, True
+
+
+def execute_video_job(request_id: str, gpu_lock: threading.Lock, observers: dict):
+    rid = str(uuid.UUID(request_id))
+    jpath = _video_job_path(rid)
+    if not jpath.exists():
+        return
+    rec = json.loads(jpath.read_text())
+    if rec.get("status") in ("completed", "failed", "cancelled"):
+        return
+    with gpu_lock:
+        if is_service_stopped():
+            rec.update(status="cancelled", phase="Cancelled", error="Service stopped")
+            store(jpath, rec)
+            return
+        spec = VIDEO_MODELS[rec["model"]]
+        wf = video_graph(rec["model"])
+        pnode, pfield = spec["positive"]
+        wf[pnode]["inputs"][pfield] = rec["prompt"]
+        if rec.get("seed") is not None and spec.get("seed_node"):
+            sn, sf = spec["seed_node"]
+            if sn in wf:
+                wf[sn]["inputs"][sf] = rec["seed"]
+        out_node = spec.get("output")
+        if out_node and out_node in wf and "filename_prefix" in wf[out_node].get("inputs", {}):
+            wf[out_node]["inputs"]["filename_prefix"] = f"vellum-h3/{rid[:8]}"
+        from sampling import Sampling
+        try:
+            with Sampling(BASE, rid, wf) as observer:
+                observers[rid] = observer
+                if not rec.get("prompt_id"):
+                    res = json.loads(fetch("/prompt", {"prompt": wf, "client_id": rid}))
+                    rec["prompt_id"] = res["prompt_id"]
+                rec.update(status="generating", phase="Generating", started=time.time())
+                store(jpath, rec)
+                pid = rec["prompt_id"]
+                deadline = time.monotonic() + 1800
+                while time.monotonic() < deadline:
+                    if is_service_stopped():
+                        rec.update(status="cancelled", phase="Cancelled", error="Service stopped")
+                        store(jpath, rec)
+                        return
+                    hist = json.loads(fetch("/history/" + pid)).get(pid)
+                    if hist:
+                        if hist.get("status", {}).get("status_str") == "error":
+                            raise RuntimeError("Windows ComfyUI video render error for " + pid)
+                        loc = _extract_mp4_location(hist.get("outputs", {}), spec.get("output", ""))
+                        if loc:
+                            mp4 = fetch("/view?" + urlencode(loc), timeout=120)
+                            if len(mp4) < 128:
+                                raise RuntimeError("Windows returned empty MP4.")
+                            apath = _video_asset_path(rid)
+                            tmp = apath.with_suffix(".mp4.tmp")
+                            tmp.write_bytes(mp4)
+                            tmp.replace(apath)
+                            rec.update(
+                                status="completed",
+                                phase="Complete",
+                                progress=100,
+                                completed=time.time(),
+                                output=loc,
+                                mp4_sha256=hashlib.sha256(mp4).hexdigest(),
+                                asset_url=f"/media/assets/{rid}.mp4",
+                                mime="video/mp4",
+                                duration_sec=rec["spec"].get("duration_sec", 5),
+                            )
+                            store(jpath, rec)
+                            return
+                    obs = observer.by_prompt.get(pid, {})
+                    if obs:
+                        step, total = obs.get("step"), obs.get("total")
+                        pct = round(step * 100 / total) if isinstance(step, int) and isinstance(total, int) and total > 0 else rec.get("progress", 0)
+                        rec.update(progress=pct, step=step, steps=total)
+                        store(jpath, rec)
+                    time.sleep(2)
+                raise RuntimeError("Video job timed out waiting for Windows render.")
+        except Exception as err:
+            rec.update(status="failed", phase="Failed", error=str(err), completed=time.time())
+            store(jpath, rec)
+        finally:
+            observers.pop(rid, None)
+
+
+def get_video_job(request_id: str, observers: dict):
+    rid = str(uuid.UUID(request_id))
+    jpath = _video_job_path(rid)
+    if not jpath.exists():
+        return None
+    rec = json.loads(jpath.read_text())
+    pid = rec.get("prompt_id")
+    if rec.get("status") in ("queued", "generating"):
+        obs = observers.get(rid)
+        if obs and pid and pid in obs.by_prompt:
+            o = obs.by_prompt[pid]
+            step, total = o.get("step"), o.get("total")
+            if isinstance(step, int) and isinstance(total, int) and total > 0:
+                rec["progress"] = round(step * 100 / total)
+                rec["step"] = step
+                rec["steps"] = total
+            if o.get("phase"):
+                rec["phase"] = o["phase"]
+        elif pid and not is_service_stopped():
+            try:
+                hist = json.loads(fetch("/history/" + pid, timeout=2)).get(pid)
+                if hist and hist.get("status", {}).get("status_str") == "error":
+                    rec.update(status="failed", phase="Failed", error="Windows ComfyUI execution error")
+                    store(jpath, rec)
+            except Exception:
+                pass
+    return {k: rec.get(k) for k in ("job_id", "kind", "model", "model_name", "status", "phase", "progress", "step", "steps", "asset_url", "mime", "duration_sec", "error", "spec") if rec.get(k) is not None or k in ("job_id", "status", "progress")}
+
+
+def get_video_asset_path(request_id: str):
+    p = _video_asset_path(request_id)
+    return p if p.exists() else None

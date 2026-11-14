@@ -54,12 +54,12 @@ class Sampling:
             return
         node = str(data.get("node"))
         op = self.nodes.get(node)
-        if kind == "progress" and op == "KSampler":
+        if kind == "progress" and op in ("KSampler", "SamplerCustomAdvanced"):
             step, total = data.get("value"), data.get("max")
             if type(step) is int and type(total) is int and 0 <= step <= total and total > 0:
                 self.by_prompt[pid] = dict(phase="Sampling", step=step, total=total)
         elif kind == "executing":
-            phase = {"KSampler":"Sampling", "VAEDecode":"Decoding image", "SaveImage":"Saving image"}.get(op, "Preparing image")
+            phase = {"KSampler":"Sampling", "SamplerCustomAdvanced":"Sampling", "VAEDecode":"Decoding frames", "VAEDecodeAudio":"Decoding audio", "CreateVideo":"Encoding video", "SaveImage":"Saving image", "SaveVideo":"Saving video"}.get(op, "Preparing")
             self.by_prompt[pid] = dict(phase=phase if data.get("node") is not None else "Receiving image")
         elif kind == "execution_success":
             self.by_prompt[pid] = dict(phase="Receiving image")

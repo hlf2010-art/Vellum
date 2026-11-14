@@ -1,0 +1,22 @@
+#canvasProposals{position:absolute;left:0;top:0;z-index:8;pointer-events:none}
+#canvasProposalWires{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:1}
+#canvasProposalWires path{fill:none;stroke-width:1.5;stroke-dasharray:6 6;opacity:.6}
+.canvas-proposal{position:absolute;width:350px;pointer-events:auto;border:1.5px dashed color-mix(in srgb,var(--proposal-color) 65%,transparent);border-radius:13px;background:color-mix(in srgb,var(--panel) 94%,transparent);color:var(--ink);box-shadow:0 14px 45px #0003;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font:13px/1.6 var(--sans);overflow:hidden}
+.canvas-proposal:focus-visible{outline:2px solid var(--proposal-color);outline-offset:5px}
+.cp-handle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 17px;border-bottom:1px dashed var(--hair-2);cursor:grab;touch-action:none;background:color-mix(in srgb,var(--proposal-color) 7%,transparent);font:10px/1.4 var(--mono);letter-spacing:.04em}
+.cp-handle>span{display:flex;align-items:center;gap:7px;color:var(--proposal-color)}
+.cp-handle>b{color:var(--ink-2);font-weight:400}.cp-dragging .cp-handle{cursor:grabbing}
+.cp-content{padding:16px 19px}.cp-version,.cp-label{font:10px/1.5 var(--mono);color:var(--proposal-color)}
+.cp-version{letter-spacing:.07em}.cp-content h3{font:400 25px/1.2 var(--serif);margin:7px 0 15px;overflow-wrap:anywhere}
+.cp-content p{margin:6px 0 14px;overflow-wrap:anywhere;white-space:pre-wrap}.cp-content details{margin-bottom:15px;border-bottom:1px solid var(--hair);padding-bottom:11px}
+.cp-content summary{cursor:pointer;color:var(--quiet);font-size:12px}.cp-content details p{color:var(--ink-2)}
+.cp-label{display:block;margin-top:10px}.cp-evidence{font:10px/1.6 var(--mono);color:var(--quiet);margin:16px 0 12px;overflow-wrap:anywhere}
+.cp-shared{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink-2);cursor:pointer}.cp-shared input{accent-color:var(--proposal-color);margin-top:4px;flex:none}
+.cp-content .cp-scope{font-size:11px;line-height:1.5;color:var(--quiet);margin:10px 0 0}.cp-content .cp-stale{font-size:12px;color:var(--A);margin:10px 0 0}
+.canvas-proposal footer{display:flex;gap:8px;align-items:center;padding:12px 17px;border-top:1px dashed var(--hair-2)}
+.canvas-proposal footer button{min-height:34px;border-radius:7px;padding:7px 13px;border:1px solid var(--hair-2);font:500 12px var(--sans);color:var(--ink)}
+.canvas-proposal footer button:hover{background:var(--glass-2)}.canvas-proposal footer button:disabled{opacity:.4;cursor:default}
+.canvas-proposal footer .cp-apply{background:var(--proposal-color);color:var(--table);border-color:transparent}.canvas-proposal footer .cp-open{margin-left:auto;padding:8px}
+#canvasProposalBadge{border:1px dashed var(--hair-2);border-radius:20px;padding:7px 11px;font:11px var(--sans);color:var(--ink-2);white-space:nowrap}
+#canvasProposalBadge:hover{color:var(--ink);border-color:var(--ink-2)}
+@media(max-width:640px){#canvasProposalBadge{position:fixed;top:65px;right:14px;z-index:45;background:var(--panel)}.canvas-proposal footer button{min-height:40px}}

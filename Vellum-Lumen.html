@@ -271,6 +271,14 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .fixed span.more{background:transparent;color:var(--label-3);padding:5px 4px}
 .drift{margin-top:10px;font:500 12.5px/1.4 var(--ui);color:var(--A);display:flex;gap:7px;align-items:flex-start}
 .drift .ico{margin-top:1px;width:14px;height:14px}
+.lineage-bar{margin-top:10px;padding:6px 9px;border-radius:10px;font:550 12px/1.35 var(--ui);display:flex;gap:6px;align-items:center;background:color-mix(in srgb,var(--A) 12%,transparent);color:color-mix(in srgb,var(--A) var(--ink-mix),var(--ink-to))}
+.lineage-bar.danger{background:color-mix(in srgb,var(--danger) 12%,transparent);color:color-mix(in srgb,var(--danger) 85%,var(--label))}
+.lineage-bar.muted{background:var(--hover);color:var(--label-2)}
+.card > .lineage-bar{margin:-6px 14px 14px}
+.card.print > .lineage-bar{background:rgba(0,0,0,.28);color:#fff}
+.lineage-bar .ico{width:13px;height:13px;flex:none}
+.lineage-bar .sp{flex:1;min-width:0}
+.card-rev{font:600 11px/1 var(--mono);color:var(--label-3);padding:2px 6px;border-radius:6px;background:var(--hover);margin-right:4px}
 /* a print is the most decided object there is: solid lineage colour, lit from within */
 .card.print{background:radial-gradient(125% 90% at 85% 0%,color-mix(in srgb,var(--pg,#555) 78%,#1a1a1a),color-mix(in srgb,var(--pg,#555) 84%,#000) 58%,color-mix(in srgb,var(--pg,#555) 62%,#000));color:#fff;
   box-shadow:0 0 0 .5px rgba(0,0,0,.14),0 22px 50px -18px color-mix(in srgb,var(--pg,#000) 75%,transparent)}
@@ -1717,11 +1725,15 @@ dialog.sheet:focus{outline:none}
 .find-pills{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:0 2px}
 .find-pills button{height:24px;padding:0 9px;border-radius:999px;background:var(--hover)}
 .find-pills button[aria-pressed="true"]{background:var(--act);color:var(--on-act)}
-.wire-pop{position:fixed;z-index:35;transform:translate(-50%,-100%);margin-top:-10px;display:inline-flex;align-items:center;gap:8px;padding:4px 4px 4px 12px;height:36px;border-radius:999px;animation:rise var(--t-snappy) var(--snappy)}
+.wire-pop{position:fixed;z-index:35;transform:translate(-50%,-100%);margin-top:-10px;display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 12px;height:36px;border-radius:999px;animation:rise var(--t-snappy) var(--snappy)}
 .wire-pop[hidden]{display:none}
-.wire-pop span{font:550 12px/1 var(--ui);color:var(--label-2);max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wire-pop button{height:28px;padding:0 11px;border-radius:999px;font:600 12px/1 var(--ui);color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
-.wire-pop button:hover{background:color-mix(in srgb,var(--danger) 20%,transparent)}
+.wire-pop span{font:550 12px/1 var(--ui);color:var(--label-2);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wire-pop .wp-seg{display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:999px;background:var(--hover)}
+.wire-pop .wp-seg button{height:24px;padding:0 8px;border-radius:999px;font:560 11px/1 var(--ui);color:var(--label-3);background:transparent}
+.wire-pop .wp-seg button:hover{color:var(--label);background:var(--press)}
+.wire-pop .wp-seg button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.15),0 0 0 .5px var(--hair-2)}
+.wire-pop button.wp-del{height:28px;padding:0 11px;border-radius:999px;font:600 12px/1 var(--ui);color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
+.wire-pop button.wp-del:hover{background:color-mix(in srgb,var(--danger) 20%,transparent)}
 .s-link-wrap{position:relative;width:100%;height:100%;max-width:1180px;border-radius:22px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.6),0 0 0 .5px rgba(255,255,255,.1);background:#121317}
 .s-link-wrap .s-frame{max-width:none;box-shadow:none;position:relative;z-index:1}
 .s-link-behind{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:32px;text-align:center;color:rgba(255,255,255,.72);z-index:0}
@@ -1753,6 +1765,33 @@ dialog.sheet.sys-sheet[open]{display:flex;flex-direction:column}
 .sys-row-txt small{display:block;margin-top:2px;font:400 11.8px/1.3 var(--ui);color:var(--label-3)}
 .sys-row .chev{width:14px;height:14px;color:var(--label-3);opacity:.65;flex:none}
 .sys-note{margin:8px 2px 0;font:400 11.5px/1.45 var(--ui);color:var(--label-3)}
+.src-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:.5px solid var(--hair)}
+.src-row:last-child{border-bottom:0}
+.src-row .src-main{flex:1;min-width:0;display:flex;align-items:center;gap:8px;text-align:left;font:550 13.5px/1.35 var(--ui);color:var(--label);padding:0}
+.src-row .src-main[disabled]{opacity:.72;cursor:default}
+.src-row .src-main .sp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-row .src-kind,.src-row .src-pill{flex:none;font:600 10.5px/1 var(--ui);padding:3px 6px;border-radius:6px;background:var(--hover);color:var(--label-3)}
+.src-row .src-pill.warn{background:color-mix(in srgb,var(--A) 15%,transparent);color:var(--A)}
+.src-row .src-pill.danger{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.src-row .src-act{flex:none;height:24px;padding:0 8px;border-radius:999px;font:600 11px/1 var(--ui);background:var(--hover);color:var(--label-2)}
+.src-row .src-act:hover{background:var(--press);color:var(--label)}
+.imp-ico{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--A) 14%,transparent);color:var(--A)}
+.imp-ico .ico{width:20px;height:20px}
+.imp-box{display:grid;gap:6px;padding:10px 12px;border-radius:12px;background:var(--well);box-shadow:inset 0 0 0 .5px var(--hair)}
+.imp-stat{display:flex;gap:12px;flex-wrap:wrap;font:560 12.5px/1.3 var(--ui);color:var(--label-2)}
+.imp-stat b{color:var(--label)}
+.imp-items{display:grid;gap:4px;max-height:145px;overflow-y:auto}
+.imp-item{display:flex;align-items:center;gap:8px;font:500 12.5px/1.35 var(--ui);color:var(--label-2)}
+.imp-item .src-kind{font:600 10px/1 var(--ui);padding:2px 6px;border-radius:5px;background:var(--card);color:var(--label-3);flex:none}
+.imp-item b{flex:1;min-width:0;font-weight:550;color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.imp-item small{font:500 11px/1 var(--ui);color:var(--label-3);flex:none}
+.sys-row.danger .sys-row-ico{color:var(--danger)}
+.sys-row.danger b{color:var(--danger)}
+.imp-confirm{margin-top:8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--danger) 10%,transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--danger) 35%,transparent);display:grid;gap:8px}
+.imp-confirm p{margin:0;font:450 12px/1.45 var(--ui);color:var(--label-2)}
+.imp-confirm-acts{display:flex;justify-content:flex-end;gap:8px}
+.arch-sec-lbl{font:600 11.5px/1 var(--ui);letter-spacing:.02em;text-transform:uppercase;color:var(--label-3);margin:12px 0 6px}
+.arch-sec-lbl:first-child{margin-top:2px}
 </style>
 <div id="app">
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
@@ -1943,6 +1982,7 @@ const ICONS={
   alignL:'<path d="M4 4v16M8 7h12v4H8zM8 14h8v4H8z"/>',
   alignT:'<path d="M4 4h16M7 8v12h4V8zM14 8v8h4V8z"/>',
   exportFile:'<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
+  eyeOff:'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/>',
   settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
 };
 const ic=(n,c="ico")=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||""}</svg>`;
@@ -1983,7 +2023,7 @@ const WEIGHTS={
 };
 const W={note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,direction:360,proof:360,print:320,list:320,kanban:540,synthesis:360,group:680};
 const HGUESS={note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,direction:330,proof:390,print:300,list:260,kanban:280,synthesis:300,group:440};
-const visibleNodes=()=>board.nodes.filter(n=>!n.archived);
+const visibleNodes=()=>board.nodes.filter(n=>n&&!n.hidden&&!n.archived&&!n.tombstone);
 const nodeW=n=>n?(n.type==="group"?Math.max(240,n.gw||W.group):(n.gw?clamp(n.gw,220,760):W[n.type]||320)):320;
 const nodeH=n=>n?(n.type==="group"?Math.max(160,n.gh||HGUESS.group):(n._h||(isHtmlSource(n)?290:HGUESS[n.type]||200))):200;
 const safeHref=u=>{try{const p=new URL(String(u||""),location.href);return /^https?:$/i.test(p.protocol)?p.href:"#"}catch{return "#"}};
@@ -1999,9 +2039,10 @@ const store={
 function blank(title=""){return {id:uid(),title,memory:"",mcpContext:[],nodes:[],edges:[],adopted:{},threads:{},pins:{},copilot:[],log:[],cam:null,created:NOW(),updated:NOW()}}
 let board, sel=[], undoStack=[], redoStack=[], saveT=0, storageOk=true, idbBoardOk=false, selectedEdgeId=null;
 const byId=id=>board.nodes.find(n=>n.id===id);
-const selected=()=>sel.map(byId).filter(Boolean);
-const one=()=>sel.length===1?byId(sel[0]):null;
-const snapOfBoard=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,log:board.log});
+const isNodeHidden=n=>!!(n&&(n.hidden||n.archived||n.tombstone));
+const selected=()=>sel.map(byId).filter(n=>n&&!isNodeHidden(n));
+const one=()=>{const s=selected();return s.length===1?s[0]:null};
+const snapOfBoard=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,log:board.log});
 function syncHistoryBtns(){
   if($("undoBtn"))$("undoBtn").disabled=!undoStack.length;
   if($("topUndoBtn"))$("topUndoBtn").disabled=!undoStack.length;
@@ -2023,24 +2064,53 @@ function checkpoint(){undoStack.push(snapOfBoard());if(undoStack.length>40)undoS
 function undo(){
   const s=undoStack.pop();if(!s){syncHistoryBtns();toast("Nothing to undo");return}
   redoStack.push(snapOfBoard());if(redoStack.length>40)redoStack.shift();
-  Object.assign(board,JSON.parse(s));sel=sel.filter(byId);selectedEdgeId=null;syncHistoryBtns();renderAll();persist();toast("Undone");
+  Object.assign(board,JSON.parse(s));sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;syncHistoryBtns();renderAll();persist();toast("Undone");
 }
 function redo(){
   const s=redoStack.pop();if(!s){syncHistoryBtns();toast("Nothing to redo");return}
   undoStack.push(snapOfBoard());if(undoStack.length>40)undoStack.shift();
-  Object.assign(board,JSON.parse(s));sel=sel.filter(byId);selectedEdgeId=null;syncHistoryBtns();renderAll();persist();toast("Redone");
+  Object.assign(board,JSON.parse(s));sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;syncHistoryBtns();renderAll();persist();toast("Redone");
 }
 function log(who,html,node){board.log.push({t:NOW(),who,html,node:node||null});if(board.log.length>300)board.log.shift();if(!$("ledger").hidden)renderLedger()}
 
 function node(type,props,pos){
-  const n={id:uid(),type,x:Math.round(pos?.x??0),y:Math.round(pos?.y??0),created:NOW(),by:"you",status:"ink",...props};
+  const n={id:uid(),type,x:Math.round(pos?.x??0),y:Math.round(pos?.y??0),created:NOW(),by:"you",status:"ink",rev:1,...props};
   board.nodes.push(n);return n;
 }
-function edge(a,b,kind="derive"){if(!a||!b||a===b)return;if(board.edges.some(e=>e.a===a&&e.b===b))return;const e={id:uid(),a,b,kind};board.edges.push(e);return e}
-const inputsOf=id=>board.edges.filter(e=>e.b===id).map(e=>byId(e.a)).filter(Boolean);
-const outputsOf=id=>board.edges.filter(e=>e.a===id).map(e=>byId(e.b)).filter(Boolean);
+const DEP_TYPES=new Set(["reference","frozen","live"]);
+function edgeDepType(e,srcNode=byId(e?.a),dstNode=byId(e?.b)){
+  if(e?.depType&&DEP_TYPES.has(e.depType))return e.depType;
+  if(e?.kind==="ask"||dstNode?.type==="question")return"reference";
+  if(dstNode&&(dstNode.type==="proof"||dstNode.type==="print"))return"frozen";
+  if(dstNode&&Array.isArray(dstNode.fixed)&&dstNode.fixed.some(f=>f.id===e?.a))return"frozen";
+  if(e?.kind==="derive")return"live";
+  return"reference";
+}
+function ackEdgeDep(srcId,dstId){
+  const a=byId(srcId),b=byId(dstId);
+  if(!a||!b||a.tombstone||b.tombstone)return;
+  if(!a.rev)a.rev=1;
+  b.depAck=b.depAck||{};
+  b.depAck[srcId]={rev:a.rev,digest:digest(a),title:prettyTitle(a,48)};
+}
+function edge(a,b,kind="derive",depType=null){
+  if(!a||!b||a===b)return;
+  const ex=board.edges.find(e=>e.a===a&&e.b===b);
+  if(ex){
+    if(depType&&DEP_TYPES.has(depType)&&ex.depType!==depType){ex.depType=depType;if(depType!=="reference")ackEdgeDep(a,b)}
+    return ex;
+  }
+  const srcNode=byId(a),dstNode=byId(b);
+  const dt=(depType&&DEP_TYPES.has(depType))?depType:edgeDepType({a,b,kind},srcNode,dstNode);
+  const e={id:uid(),a,b,kind,depType:dt};
+  board.edges.push(e);
+  if(dt!=="reference"&&srcNode&&dstNode)ackEdgeDep(a,b);
+  return e;
+}
+const inputsOf=id=>board.edges.filter(e=>e.b===id).map(e=>byId(e.a)).filter(n=>n&&!n.tombstone);
+const outputsOf=id=>board.edges.filter(e=>e.a===id).map(e=>byId(e.b)).filter(n=>n&&!n.tombstone);
 function lin(n,d=0){
-  if(!n||d>6)return null;
+  if(!n||n.tombstone||d>6)return null;
   if(n.type==="direction")return n.letter;
   if(n.type==="proof"||n.type==="print")return lin(byId(n.dir),d+1);
   if(n.type==="question")return lin(byId(n.on),d+1);
@@ -2111,11 +2181,235 @@ const clip=(s,k)=>{s=String(s||"").replace(/\s+/g," ").trim();return s.length>k?
 const clipDoc=(s,k)=>{s=String(s||"").trim();return s.length>k?s.slice(0,k-1).trimEnd()+"…":s};
 const fmtPadStat=t=>{const s=String(t||"").trim();const words=s?s.split(/\s+/).length:0;return `${words} ${words===1?"word":"words"}`};
 const tc=t=>{t=Math.max(0,t||0);const m=Math.floor(t/60),s=t-m*60;return m+":"+s.toFixed(1).padStart(4,"0")};
-function digest(n){const s=[n.title,n.text,n.full,n.weight,n.kind].join("|");let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return(h>>>0).toString(36)}
-function sourcesFor(n,seen=new Set()){
-  // every evidence-bearing card upstream of n
-  const out=[];const walk=(id,d)=>{if(seen.has(id)||d>8)return;seen.add(id);for(const p of inputsOf(id)){if(["source","image","recording","audio","link","frame","note","notepad","synthesis"].includes(p.type)&&p.status==="ink"&&!p.archived)out.push(p);walk(p.id,d+1)}};
+function digest(n){
+  if(!n||n.tombstone)return"";
+  const s=[n.title,n.text,n.full,n.weight,n.kind,n.test,n.url,n.media,n.items?JSON.stringify(n.items):"",n.cards?JSON.stringify(n.cards):"",n.points?JSON.stringify(n.points):""].join("|");
+  let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);
+  return(h>>>0).toString(36);
+}
+function ensureRevision(n){
+  if(!n||n.tombstone||n.status==="sketch")return;
+  if(!n.rev||n.rev<1)n.rev=1;
+  if(!n.digest)n.digest=digest(n);
+}
+function recordNodeEdit(n,prevDigest,prevTitle,prevText){
+  if(!n||n.tombstone||n.status==="sketch")return;
+  const nd=digest(n);
+  if(nd===prevDigest)return;
+  const prevRev=n.rev||1;
+  n.versions=Array.isArray(n.versions)?n.versions:[];
+  n.versions.push({rev:prevRev,t:n.updated||n.created||NOW(),digest:prevDigest,title:clip(prevTitle||"",80),text:clip(prevText||"",160)});
+  if(n.versions.length>8)n.versions.shift();
+  n.rev=prevRev+1;n.digest=nd;n.updated=NOW();
+}
+function captureDepSnapshot(child,srcs){
+  if(!child||child.tombstone)return;
+  child.depAck=child.depAck||{};
+  for(const s of srcs||[]){
+    if(!s||s.tombstone)continue;
+    ensureRevision(s);
+    child.depAck[s.id]={rev:s.rev||1,digest:digest(s),title:prettyTitle(s,48)};
+  }
+}
+function sourcesFor(n,optsOrSeen={}){
+  // every evidence-bearing card upstream of n (excludes archived/tombstones by default for new tasks; keeps canvas-hidden active sources)
+  const isSet=optsOrSeen instanceof Set;
+  const seen=isSet?optsOrSeen:new Set();
+  const includeArchived=!isSet&&!!optsOrSeen?.includeArchived;
+  const out=[];const walk=(id,d)=>{if(seen.has(id)||d>8)return;seen.add(id);for(const p of inputsOf(id)){if(["source","image","recording","audio","link","frame","note","notepad","synthesis"].includes(p.type)&&p.status==="ink"&&!p.tombstone&&(includeArchived||!p.archived))out.push(p);walk(p.id,d+1)}};
   walk(n.id,0);return [...new Map(out.map(o=>[o.id,o])).values()];
+}
+function structuralUpstreamRefs(n){
+  if(!n||n.tombstone)return[];
+  const refs=[];
+  if(n.dir)refs.push({sourceId:n.dir,depType:n.type==="proof"||n.type==="print"?"frozen":"live"});
+  if(n.idea)refs.push({sourceId:n.idea,depType:"live"});
+  if(n.proof)refs.push({sourceId:n.proof,depType:"frozen"});
+  if(n.on)refs.push({sourceId:n.on,depType:"reference"});
+  if(n.from)refs.push({sourceId:n.from,depType:"reference"});
+  if(Array.isArray(n.of))for(const sid of n.of)if(sid)refs.push({sourceId:sid,depType:"live"});
+  if(Array.isArray(n.fixed))for(const f of n.fixed)if(f?.id)refs.push({sourceId:f.id,depType:"frozen",fixedEntry:f});
+  return refs;
+}
+function inspectNodeDependencies(n){
+  if(!n||n.tombstone)return[];
+  const map=new Map();
+  for(const e of board.edges||[]){
+    if(e.b!==n.id||!e.a||e.a===n.id)continue;
+    const src=byId(e.a);
+    const dt=edgeDepType(e,src,n);
+    const fe=Array.isArray(n.fixed)?n.fixed.find(f=>f.id===e.a):null;
+    map.set(e.a,{sourceId:e.a,edge:e,depType:fe?"frozen":dt,fixedEntry:fe||null});
+  }
+  for(const r of structuralUpstreamRefs(n)){
+    if(!r.sourceId||r.sourceId===n.id)continue;
+    const cur=map.get(r.sourceId);
+    if(!cur)map.set(r.sourceId,{sourceId:r.sourceId,edge:null,depType:r.depType,fixedEntry:r.fixedEntry||null});
+    else if(r.fixedEntry&&!cur.fixedEntry){cur.fixedEntry=r.fixedEntry;cur.depType="frozen"}
+  }
+  const out=[];
+  for(const item of map.values()){
+    const src=byId(item.sourceId),ack=n.depAck?.[item.sourceId]||null;
+    const isTombstone=!src||!!src.tombstone;
+    let status="ok",label="";
+    if(isTombstone){
+      const ackCleared=ack?.digest==="__reviewed__";
+      status=ackCleared?"unavailable_acked":"unavailable";
+      label=ackCleared?L("Source removed (reviewed)","来源已删除（已确认）"):L("Source unavailable · Review required","来源已删除 · 需审阅");
+    }else if(src.archived){
+      status="archived";
+      label=L("Source archived","来源已归档");
+    }else{
+      const curDig=digest(src),curRev=src.rev||1;
+      if(item.depType==="frozen"){
+        const baseDig=item.fixedEntry?.d||ack?.digest;
+        const baseRev=item.fixedEntry?.rev||ack?.rev||1;
+        if(baseDig&&curDig!==baseDig){
+          status="frozen_changed";
+          label=L(`Frozen on v${baseRev} · Source now v${curRev}`,`已锁定 v${baseRev} · 上游现为 v${curRev}`);
+        }else if(src.hidden){
+          status="hidden";label=L("Hidden from canvas","已从画布隐藏");
+        }
+      }else if(item.depType==="live"){
+        if(ack?.digest&&ack.digest!=="__reviewed__"&&curDig!==ack.digest){
+          status="stale";
+          label=L(`Source changed v${ack.rev||1} → v${curRev} · Review required`,`上游已变更 v${ack.rev||1} → v${curRev} · 需审阅`);
+        }else if(src.hidden){
+          status="hidden";label=L("Hidden from canvas","已从画布隐藏");
+        }
+      }else if(src.hidden){
+        status="hidden";label=L("Hidden from canvas","已从画布隐藏");
+      }
+    }
+    const fallbackTitle=item.fixedEntry?.title||ack?.title||(src?.tombstone?L("Deleted source","已删除来源"):prettyTitle(src,48))||L("Deleted source","已删除来源");
+    out.push({sourceId:item.sourceId,node:src&&!src.tombstone?src:null,tombstoneNode:src?.tombstone?src:null,edge:item.edge,depType:item.depType,fixedEntry:item.fixedEntry,ackEntry:ack,isTombstone,status,label,title:src&&!src.tombstone?prettyTitle(src,48):fallbackTitle});
+  }
+  return out;
+}
+function nodeLineageSummary(n){
+  const deps=inspectNodeDependencies(n);
+  const unavailable=deps.filter(d=>d.status==="unavailable");
+  const unavailableAcked=deps.filter(d=>d.status==="unavailable_acked");
+  const archived=deps.filter(d=>d.status==="archived");
+  const stale=deps.filter(d=>d.status==="stale");
+  const frozenChanged=deps.filter(d=>d.status==="frozen_changed");
+  const hidden=deps.filter(d=>d.status==="hidden");
+  return {deps,unavailable,unavailableAcked,archived,stale,frozenChanged,hidden,needsReview:unavailable.length>0||stale.length>0};
+}
+function directChildrenOf(id,{includeSketch=false}={}){
+  const out=new Map();
+  const add=(nid,depType)=>{
+    if(!nid||nid===id)return;
+    const x=byId(nid);
+    if(!x||x.tombstone||(!includeSketch&&x.status==="sketch"))return;
+    if(!out.has(nid))out.set(nid,{node:x,depType});
+  };
+  for(const e of board.edges||[])if(e.a===id){const dst=byId(e.b);add(e.b,edgeDepType(e,byId(id),dst))}
+  for(const x of board.nodes||[]){
+    if(!x||x.tombstone||x.id===id)continue;
+    if(x.dir===id||x.proof===id||(Array.isArray(x.fixed)&&x.fixed.some(f=>f.id===id)))add(x.id,"frozen");
+    else if(x.idea===id||(Array.isArray(x.of)&&x.of.includes(id)))add(x.id,"live");
+    else if(x.on===id||x.from===id)add(x.id,"reference");
+  }
+  return [...out.values()];
+}
+function computeUpstreamImpact(rootIds,{includeSketch=false}={}){
+  const rootSet=new Set(rootIds);
+  const visited=new Set(rootIds);
+  const directIds=new Set(),transitiveIds=new Set(),items=[];
+  const q=[...rootIds.map(id=>({id,depth:0}))];
+  while(q.length){
+    const {id,depth}=q.shift();
+    for(const ch of directChildrenOf(id,{includeSketch})){
+      const cid=ch.node.id;
+      if(rootSet.has(cid))continue;
+      if(depth===0)directIds.add(cid);
+      if(!visited.has(cid)){
+        visited.add(cid);transitiveIds.add(cid);
+        items.push({node:ch.node,depth:depth+1,depType:ch.depType});
+        q.push({id:cid,depth:depth+1});
+      }
+    }
+  }
+  return {rootIds:[...rootSet],directIds,transitiveIds,items};
+}
+function markNodeReviewed(n){
+  if(!n||n.tombstone)return;
+  checkpoint();
+  n.depAck=n.depAck||{};
+  for(const d of inspectNodeDependencies(n)){
+    if(d.isTombstone){
+      n.depAck[d.sourceId]={rev:0,digest:"__reviewed__",reviewedAt:NOW()};
+    }else if(d.node&&d.depType==="live"){
+      ensureRevision(d.node);
+      n.depAck[d.sourceId]={rev:d.node.rev||1,digest:digest(d.node),title:prettyTitle(d.node,48)};
+    }
+  }
+  n.updated=NOW();
+  renderAll();persist();
+  toast(L("Marked dependencies as reviewed","已标记为已审阅"),{undo:true});
+}
+function clearUnavailableRef(n,sourceId){
+  if(!n||!sourceId)return;
+  checkpoint();
+  board.edges=board.edges.filter(e=>!(e.b===n.id&&e.a===sourceId));
+  if(Array.isArray(n.fixed))n.fixed=n.fixed.filter(f=>f.id!==sourceId);
+  if(Array.isArray(n.of))n.of=n.of.filter(id=>id!==sourceId);
+  if(n.dir===sourceId)delete n.dir;
+  if(n.idea===sourceId)delete n.idea;
+  if(n.proof===sourceId)delete n.proof;
+  if(n.on===sourceId)delete n.on;
+  if(n.from===sourceId)delete n.from;
+  if(n.depAck)delete n.depAck[sourceId];
+  sweepOrphanTombstones();
+  renderAll();persist();
+  toast(L("Cleared unavailable reference","已清理失效引用"),{undo:true});
+}
+function sweepOrphanTombstones(){
+  const tombs=board.nodes.filter(n=>n.tombstone);
+  if(!tombs.length)return;
+  const keep=new Set();
+  for(const t of tombs){
+    if(directChildrenOf(t.id,{includeSketch:true}).length>0)keep.add(t.id);
+  }
+  const rm=new Set(tombs.filter(t=>!keep.has(t.id)).map(t=>t.id));
+  if(rm.size){
+    board.nodes=board.nodes.filter(n=>!rm.has(n.id));
+    board.edges=board.edges.filter(e=>!rm.has(e.a)&&!rm.has(e.b));
+  }
+}
+function createNewVersionFromNode(n){
+  if(!n||n.tombstone)return;
+  if(n.type==="proof")return build(byId(n.dir),{from:n});
+  checkpoint();
+  const baseTitle=String(n.title||"").replace(/\s+v\d+$/,"").trim();
+  const siblingMax=Math.max(n.ver||1,...board.nodes.filter(x=>!x.tombstone&&(x._prevVerOf===n.id||x.id===n._prevVerOf)).map(x=>x.ver||1));
+  const nextVer=siblingMax+1;
+  const w=nodeW(n),h=nodeH(n);
+  const spot=freeSpot(n.x,n.y+h+36,w,h);
+  const cloneProps={...structuredClone(n)};
+  delete cloneProps.id;delete cloneProps._h;delete cloneProps.hidden;delete cloneProps.hiddenAt;delete cloneProps.archived;delete cloneProps.archivedAt;delete cloneProps.depAck;
+  if(Array.isArray(cloneProps.of))cloneProps.of=cloneProps.of.filter(id=>{const s=byId(id);return s&&!s.tombstone});
+  cloneProps.rev=nextVer;cloneProps.ver=nextVer;cloneProps._prevVerOf=n.id;cloneProps.created=NOW();cloneProps.updated=NOW();cloneProps.by="you";cloneProps.status="ink";
+  if(baseTitle)cloneProps.title=`${baseTitle} v${nextVer}`;
+  else if(cloneProps.text)cloneProps.text=cloneProps.text;
+  const nv=node(n.type,cloneProps,spot);
+  const liveInputs=[];
+  for(const e of board.edges.filter(x=>x.b===n.id)){
+    const src=byId(e.a);
+    if(!src||src.tombstone)continue;
+    edge(e.a,nv.id,e.kind,edgeDepType(e,src,nv));
+    liveInputs.push(src);
+  }
+  edge(n.id,nv.id,"derive","frozen");
+  captureDepSnapshot(nv,liveInputs);
+  nv.digest=digest(nv);
+  log("you",`Created <b>${esc(prettyTitle(nv,48))}</b> from updated upstream`,nv.id);
+  select([nv.id],{menus:false});renderAll();persist();
+  nodeEl(nv.id)?.classList.add("born");
+  focusNodes([n,nv],.82);
+  toast(L(`Created new version v${nextVer}`,`已创建新版本 v${nextVer}`));
+  return nv;
 }
 function ago(t){if(!t)return"";const s=(NOW()-t)/1000;if(s<60)return"now";if(s<3600)return Math.floor(s/60)+"min";if(s<86400)return Math.floor(s/3600)+"h";return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"})}
 function clock(t){return new Date(t).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit",hour12:false})}
@@ -2682,12 +2976,14 @@ async function saveHtmlCode(n,raw,opts={}){
   const prev=htmlSourceText(n);
   if(code===prev&&!opts.force)return;
   if(opts.checkpoint)checkpoint();
+  const prevD=digest(n),prevT=n.title,prevTx=n.text;
   if(!n.media)n.media="u:"+uid();
   htmlDocs.set(n.media,code);
   if(code.length<=40000)n.html=code;else delete n.html;
   delete n.full;
   n.kind="HTML";
-  n.updated=NOW();
+  if(opts.liveEdit)n.updated=NOW();
+  else recordNodeEdit(n,prevD,prevT,prevTx);
   await putBlob(n.media,new Blob([code],{type:"text/html"}));
   persist();
   const el=nodeEl(n.id);
@@ -2814,8 +3110,8 @@ function cardBody(n){
     return `<div class="thumb"><iframe title="" tabindex="-1" loading="lazy" data-srcdoc="1"></iframe><div class="open"><button type="button" data-a="try">${ic("eye")}Open Preview</button></div></div><div class="in">
     ${head(`<span class="chip">${L||"·"}</span>Proof · v${n.ver}`)}
     <h4>${esc(n.spec?.title||"Proof")}</h4>
-    <div class="fixed" title="The sources this proof was built from, fixed at build time">${shown.map(f=>`<span class="${dr.moved.includes(f.id)?"moved":""}">${dr.moved.includes(f.id)?"↻ ":""}${esc(f.title)}</span>`).join("")||"<span>No sources</span>"}${extra>0?`<span class="more">+${extra} more</span>`:""}</div>
-    ${dr.moved.length?`<div class="drift">${ic("warn")}<span>${dr.moved.length===1?"A source":dr.moved.length+" sources"} changed since this proof was built.</span></div>`:""}
+    <div class="fixed" title="The sources this proof was built from, fixed at build time">${shown.map(f=>{const cls=dr.unavailable.includes(f.id)?"unavailable":dr.moved.includes(f.id)?"moved":"";const prefix=dr.unavailable.includes(f.id)?"✕ ":dr.moved.includes(f.id)?"↻ ":"";return `<span class="${cls}">${prefix}${esc(f.title)}</span>`}).join("")||"<span>No sources</span>"}${extra>0?`<span class="more">+${extra} more</span>`:""}</div>
+    ${dr.unavailable.length?`<div class="drift">${ic("warn")}<span>${dr.unavailable.length===1?"A fixed source was permanently deleted; snapshot kept.":dr.unavailable.length+" fixed sources permanently deleted; snapshot kept."}</span></div>`:dr.changed.length?`<div class="drift">${ic("warn")}<span>${dr.changed.length===1?"A source":dr.changed.length+" sources"} changed since this proof was built.</span></div>`:""}
     ${sk?sketchActs(n):foot(mode?`<span>${mode}</span>`:`<span>Built from ${fx.length} sources</span>`,fR(mode?`<span>Built from ${fx.length} sources</span>`:"",threadCount(n)))}</div>`}
   case"print":return `<div class="in">${head(`<span class="chip">${L||"·"}</span>Print`)}
     <div class="edition" style="margin-top:14px">No. ${n.ed}<sup>of proof v${n.spec?.version||1}</sup></div><h4 style="margin-top:8px">${esc(n.spec?.title||"")}</h4><p>${esc(clip(n.spec?.lede,140))}</p>
@@ -2867,7 +3163,7 @@ function moveListItem(n,i,dir){
 }
 function editListItem(n,i,text){
   const t=String(text||"").trim();if(!n?.items||i<0||i>=n.items.length||!t||t===n.items[i].t)return;
-  checkpoint();n.items[i].t=t;n.updated=NOW();renderAll();persist();
+  checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;n.items[i].t=t;recordNodeEdit(n,prevD,prevT,prevTx);renderAll();persist();
 }
 function deleteListItem(n,i){
   if(!n?.items||i<0||i>=n.items.length)return;
@@ -2923,7 +3219,7 @@ function moveKanbanCard(n,cardId,dirOrCol){
 function editKanbanCard(n,cardId,text){
   const t=String(text||"").trim();if(!n?.cards)return;
   const card=n.cards.find(c=>c.id===cardId);if(!card||!t||t===card.title)return;
-  checkpoint();card.title=t;n.updated=NOW();renderAll();persist();
+  checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;card.title=t;recordNodeEdit(n,prevD,prevT,prevTx);renderAll();persist();
 }
 function deleteKanbanCard(n,cardId){
   if(!n?.cards)return;const idx=n.cards.findIndex(c=>c.id===cardId);if(idx<0)return;
@@ -2997,7 +3293,7 @@ function addSynPoint(n,text){
 }
 function editSynPoint(n,i,text){
   const t=String(text||"").trim();if(!n?.points||i<0||i>=n.points.length||!t||t===n.points[i])return;
-  checkpoint();n.points[i]=t;n.updated=NOW();renderAll();persist();
+  checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;n.points[i]=t;recordNodeEdit(n,prevD,prevT,prevTx);renderAll();persist();
 }
 function deleteSynPoint(n,i){
   if(!n?.points||i<0||i>=n.points.length)return;
@@ -3110,10 +3406,24 @@ function scaleHTML(t){if(!weighedCount(t))return"";const seg=(k,c)=>t[k]?`<i cla
 function scaleLabeledHTML(t){if(!weighedCount(t))return"";return `<div class="scale-cap"><span>Evidence mix</span><span>${esc(scaleSummary(t))}</span></div>${scaleHTML(t)}`}
 function scaleBar(label,t){const bar=scaleHTML(t);return bar?`<span style="display:flex;align-items:center;gap:8px;width:100%"><span style="white-space:nowrap">${label}</span><span style="flex:1">${bar.replace('class="scale"','class="scale" style="margin:0"')}</span></span>`:`<span>${label}</span>`}
 function evidenceScale(n){const s=sourcesFor(n);if(!s.length)return"No sources yet";const t=tally(s);return weighedCount(t)?scaleBar(`${weighedCount(t)}/${s.length} weighed`,t):`${s.length} ${s.length===1?"source":"sources"}`}
-function driftOf(p){const moved=[];for(const f of p.fixed||[]){const s=byId(f.id);if(!s||digest(s)!==f.d)moved.push(f.id)}return {moved}}
+function driftOf(p){
+  const moved=[],unavailable=[],archived=[],changed=[];
+  for(const f of p.fixed||[]){
+    const s=byId(f.id);
+    if(!s||s.tombstone){moved.push(f.id);unavailable.push(f.id);continue}
+    if(s.archived)archived.push(f.id);
+    if(digest(s)!==f.d){moved.push(f.id);changed.push(f.id)}
+  }
+  return {moved,unavailable,archived,changed};
+}
+function nodeLineageSig(n){
+  if(!n||n.tombstone||n.status==="sketch")return"";
+  const refs=inspectNodeDependencies(n);
+  return refs.map(r=>`${r.sourceId}:${r.depType}:${r.status}:${r.node?(r.node.rev||1)+":"+digest(r.node):"T"}`).join("|");
+}
 
-function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([n.type,n.status,n.vote,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid()])}
+function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([n.type,n.status,n.vote,n.rev,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n)])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -3154,7 +3464,7 @@ function renderNodes(){
     if(el._sig!==sig){
       if(el._sig&&el.querySelector("[contenteditable]:focus,input:focus,textarea:focus"))continue;
       const rszHTML=RESIZABLE_TYPES.has(n.type)?'<span class="card-resize" data-resize="w" title="Drag to resize width" aria-hidden="true"></span>':"";
-      el.innerHTML=cardBody(n)+advPinHTML(n)+'<span class="crop" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="port" data-port title="Drag onto another card to feed it"></span>'+rszHTML;el._sig=sig;
+      el.innerHTML=cardBody(n)+lineageCardHTML(n)+advPinHTML(n)+'<span class="crop" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="port" data-port title="Drag onto another card to feed it"></span>'+rszHTML;el._sig=sig;
       const fr=el.querySelector("iframe[data-srcdoc]");if(fr){if(fr.dataset.srcdoc==="html")populateHtmlIframe(fr,n);else{fr.onload=()=>fr.parentElement?.classList.add("ready");fr.srcdoc=pageHTML(n.spec,{thumb:true})}}
       const pdfFr=el.querySelector("iframe[data-src-pdf]");if(pdfFr){pdfFr.onload=()=>pdfFr.parentElement?.classList.add("ready");pdfFr.src=pdfFr.dataset.srcPdf+"#toolbar=0&navpanes=0&scrollbar=0";setTimeout(()=>pdfFr.parentElement?.classList.add("ready"),250)}
       const urlFr=el.querySelector("iframe[data-src-url]");if(urlFr){urlFr.onload=()=>urlFr.parentElement?.classList.add("ready");urlFr.src=urlFr.dataset.srcUrl}
@@ -3185,15 +3495,32 @@ function edgeEndpoints(a,b){
 function pathBetween(a,b){const p=edgeEndpoints(a,b);return `M${p.x1},${p.y1} C${p.cx1},${p.cy1} ${p.cx2},${p.cy2} ${p.x2},${p.y2}`}
 function edgeMidpoint(a,b){const p=edgeEndpoints(a,b);return {x:0.125*p.x1+0.375*p.cx1+0.375*p.cx2+0.125*p.x2,y:0.125*p.y1+0.375*p.cy1+0.375*p.cy2+0.125*p.y2}}
 const freshEdges=new Set();
+function lineageCardHTML(n){
+  if(!n||n.tombstone||n.status==="sketch"||n.type==="group")return"";
+  const s=nodeLineageSummary(n);
+  if(s.unavailable.length){
+    const txt=s.unavailable.length===1?L("Source unavailable · Review required","上游来源已删除 · 需审阅"):L(`${s.unavailable.length} sources unavailable · Review required`,`${s.unavailable.length} 个来源已删除 · 需审阅`);
+    return`<div class="lineage-bar danger" data-lin-st="unavailable">${ic("warn")}<span>${txt}</span></div>`;
+  }
+  if(s.stale.length){
+    const txt=s.stale.length===1?L("Source changed · Review required","上游已变更 · 需审阅"):L(`${s.stale.length} sources changed · Review required`,`${s.stale.length} 个上游变更 · 需审阅`);
+    return`<div class="lineage-bar" data-lin-st="stale">${ic("warn")}<span>${txt}</span></div>`;
+  }
+  if(n.type!=="proof"&&s.archived.length){
+    const txt=s.archived.length===1?L("Source archived","上游来源已归档"):L(`${s.archived.length} sources archived`,`${s.archived.length} 个上游已归档`);
+    return`<div class="lineage-bar muted" data-lin-st="archived">${ic("archive")}<span>${txt}</span></div>`;
+  }
+  return"";
+}
 function drawWires(){
   let h="",hits="";
   for(const e of board.edges){
-    const a=byId(e.a),b=byId(e.b);if(!a||!b||a.archived||b.archived)continue;
+    const a=byId(e.a),b=byId(e.b);if(!a||!b||isNodeHidden(a)||isNodeHidden(b))continue;
     const L=lin(b)||lin(a),sk=a.status==="sketch"||b.status==="sketch";
     const faded=b.type==="direction"&&board.adopted[b.idea]&&board.adopted[b.idea]!==b.id;
-    const d=pathBetween(a,b);
-    const cls=["w",e.kind==="src"?"src":"",L&&e.kind!=="src"?"pg"+L:"",sk?"sk":"",faded?"faded":"",selectedEdgeId===e.id?"edge-sel":"",freshEdges.has(e.id)?"grow":""].filter(Boolean).join(" ");
-    h+=`<path class="${cls}" d="${d}" ${freshEdges.has(e.id)?'style="--len:900"':""}/>`;
+    const d=pathBetween(a,b),dt=edgeDepType(e,a,b);
+    const cls=["w",e.kind==="src"||dt==="reference"?"src":"",L&&e.kind!=="src"?"pg"+L:"",sk?"sk":"",faded?"faded":"",selectedEdgeId===e.id?"edge-sel":"",freshEdges.has(e.id)?"grow":""].filter(Boolean).join(" ");
+    h+=`<path class="${cls}" data-dep="${dt}" d="${d}" ${freshEdges.has(e.id)?'style="--len:900"':""}/>`;
     hits+=`<path class="w-hit" data-edge="${e.id}" d="${d}"/>`;
   }
   h+=provenanceSVG()+hits;
@@ -3205,18 +3532,28 @@ function renderWirePop(){
   const pop=$("wirePop");if(!pop)return;
   const e=selectedEdgeId?board.edges.find(x=>x.id===selectedEdgeId):null;
   const a=e?byId(e.a):null,b=e?byId(e.b):null;
-  if(!e||!a||!b||a.archived||b.archived||stageOpen){selectedEdgeId=null;pop.hidden=true;return}
-  pop.innerHTML=`<span>${esc(clip(titleOf(a),20))} → ${esc(clip(titleOf(b),20))}</span><button type="button" data-wire-del="${e.id}">Disconnect</button>`;
+  if(!e||!a||!b||isNodeHidden(a)||isNodeHidden(b)||stageOpen){selectedEdgeId=null;pop.hidden=true;return}
+  const dt=edgeDepType(e,a,b);
+  const seg=(k,l,t)=>`<button type="button" data-wire-dep="${k}" data-wire-id="${e.id}" aria-pressed="${dt===k}" title="${esc(t)}">${l}</button>`;
+  pop.innerHTML=`<span>${esc(clip(titleOf(a),18))} → ${esc(clip(titleOf(b),18))}</span><div class="wp-seg" role="group" aria-label="Dependency type">${seg("reference",L("Ref","引用"),"Reference only — does not mark stale")}${seg("live",L("Live","活依赖"),"Live dependency — marks downstream stale when upstream changes")}${seg("frozen",L("Frozen","冻结"),"Frozen version — locks upstream snapshot")}</div><button type="button" class="wp-del" data-wire-del="${e.id}">Disconnect</button>`;
   pop.hidden=false;placeWirePop();
 }
 function placeWirePop(){
   const pop=$("wirePop");if(!pop||pop.hidden)return;
   const e=selectedEdgeId?board.edges.find(x=>x.id===selectedEdgeId):null;
   const a=e?byId(e.a):null,b=e?byId(e.b):null;
-  if(!e||!a||!b||a.archived||b.archived||stageOpen){pop.hidden=true;return}
+  if(!e||!a||!b||isNodeHidden(a)||isNodeHidden(b)||stageOpen){pop.hidden=true;return}
   const m=edgeMidpoint(a,b),sp=toScreen(m.x,m.y),r=wall.getBoundingClientRect();
-  pop.style.left=clamp(r.left+sp.x,140,innerWidth-140)+"px";
+  pop.style.left=clamp(r.left+sp.x,180,innerWidth-180)+"px";
   pop.style.top=clamp(r.top+sp.y,88,innerHeight-90)+"px";
+}
+function setEdgeDepType(id,depType){
+  const ed=board.edges.find(e=>e.id===id);if(!ed||!DEP_TYPES.has(depType))return;
+  checkpoint();
+  ed.depType=depType;
+  if(depType!=="reference")ackEdgeDep(ed.a,ed.b);
+  renderAll();persist();
+  toast(L(`Dependency set to ${depType}`,`已将连线设为 ${depType}`),{undo:true});
 }
 function deleteEdgeById(id){
   const idx=board.edges.findIndex(e=>e.id===id);if(idx<0)return;
@@ -3578,7 +3915,7 @@ function focusTitle(n){
 let marginHtmlEdit=false;
 function renderMargin(){queueMicrotask(placeBars);
   const m=$("margin"),n=focusId?byId(focusId):null;
-  if(selMenusSuppressed||!n||stageOpen||n.status==="sketch"||n.archived){m.hidden=true;marginFor=null;marginHtmlEdit=false;return}
+  if(selMenusSuppressed||!n||stageOpen||n.status==="sketch"||n.archived||n.tombstone||isNodeHidden(n)){m.hidden=true;marginFor=null;marginHtmlEdit=false;return}
   const fresh=marginFor!==n.id;if(fresh)marginHtmlEdit=false;
   const prevLen=fresh?0:marginThreadLen;marginFor=n.id;m.hidden=false;
   const L=lin(n),thread=board.threads[n.id]||[],hero=focusHero(n);
@@ -3588,6 +3925,8 @@ function renderMargin(){queueMicrotask(placeBars);
   const acts=marginActs(n);
   const madeBy=(n.by==="you"?"by you":"by "+(AGENTS[n.by]?.name||n.by))+" · "+clock(n.created)+" · "+ago(n.created);
   const extraFacts=[];
+  ensureRevision(n);
+  extraFacts.push(["Version",`v${n.rev}`]);
   if(n.updated&&n.updated!==n.created)extraFacts.push(["Changed",clock(n.updated)+" · "+ago(n.updated)]);
   if(L)extraFacts.push(["Lineage",`<span class="chip" style="width:16px;height:16px;font-size:9.5px;vertical-align:-3px">${L}</span> ${PIG[L]}`]);
   const mFmt=fileFormatOf(n),isHtml=isHtmlSource(n),hasAttach=(n.type==="source"||n.type==="audio"||n.type==="recording")&&(n.media||isHtml);
@@ -3602,8 +3941,36 @@ function renderMargin(){queueMicrotask(placeBars);
   const detailsHTML=extraFacts.length?`<div class="m-sec"><h5>Details</h5><dl class="facts">${extraFacts.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl></div>`:"";
   const ws=hasWeight?`<div class="m-sec"><h5>Evidence</h5><div class="seg" role="group" aria-label="How much this can carry">${Object.entries(WEIGHTS).map(([k,o])=>`<button type="button" aria-pressed="${n.weight===k}" data-m="weight" data-w="${k}" title="${esc(o.desc)}"><i class="w-dot" aria-hidden="true"></i>${o.label}</button>`).join("")}</div><p>${esc(WEIGHTS[n.weight]?.desc||"Not marked yet. Choose how much this can carry.")}</p></div>`:"";
   let srcs="";
-  if(n.type==="proof"){const dr=driftOf(n);srcs=`<div class="m-sec"><h5><span>Built From</span><span>v${n.ver}</span></h5><div class="srcs">${(n.fixed||[]).map(f=>`<button type="button" data-m="goto" data-id="${f.id}">${ic("lock")}<span class="sp">${esc(f.title)}</span>${dr.moved.includes(f.id)?'<span class="weight" style="color:var(--A)">Changed</span>':weightHTML(f.weight)}</button>`).join("")}</div>${dr.moved.length?`<p style="margin:10px 0 0;font:13px/1.5 var(--ui);color:var(--label-3)">The proof stays exactly as built. Build v${n.ver+1} to include the change.</p>`:""}</div>`}
-  else if(["idea","direction","question","synthesis","list","kanban","notepad"].includes(n.type)){const s=sourcesFor(n);if(s.length){const t=tally(s);srcs=`<div class="m-sec"><h5><span>Based On</span><span>${s.length}</span></h5><div class="srcs">${s.map(f=>`<button type="button" data-m="goto" data-id="${f.id}"><span class="src-kind">${esc(refKindShort(f))}</span><span class="sp">${esc(prettyTitle(f,72))}</span>${weightHTML(f.weight)}</button>`).join("")}</div>${scaleLabeledHTML(t)}</div>`}}
+  const linSum=nodeLineageSummary(n);
+  const renderSrcRow=(d,showWeight=true)=>{
+    let pill="";
+    if(d.status==="unavailable")pill=`<span class="src-pill danger">Unavailable</span>`;
+    else if(d.status==="unavailable_acked")pill=`<span class="src-pill muted">Removed · Reviewed</span>`;
+    else if(d.status==="stale")pill=`<span class="src-pill warn">Stale v${d.ackEntry?.rev||1}→v${d.node?.rev||1}</span>`;
+    else if(d.status==="frozen_changed")pill=`<span class="src-pill muted">Frozen v${d.fixedEntry?.rev||1}→v${d.node?.rev||1}</span>`;
+    else if(d.status==="archived")pill=`<span class="src-pill muted">Archived</span>`;
+    else if(d.status==="hidden")pill=`<span class="src-pill muted">Hidden</span>`;
+    else if(d.depType==="live")pill=`<span class="src-pill">Live</span>`;
+    else if(d.depType==="frozen")pill=`<span class="src-pill">Frozen</span>`;
+    else if(showWeight&&d.node)pill=weightHTML(d.fixedEntry?.weight??d.node.weight);
+    const main=d.node
+      ?`<button type="button" class="src-btn" data-m="goto" data-id="${d.sourceId}">${d.depType==="frozen"?ic("lock"):`<span class="src-kind">${esc(refKindShort(d.node))}</span>`}<span class="sp">${esc(d.title)}</span>${pill}</button>`
+      :`<div class="src-btn" style="opacity:.78;cursor:default"><span class="src-kind">✕</span><span class="sp">${esc(d.title)}</span>${pill}</div>`;
+    let actBtn="";
+    if(d.status==="hidden")actBtn=`<button type="button" class="src-act" data-m="restore-src" data-id="${d.sourceId}">Show</button>`;
+    else if(d.status==="archived")actBtn=`<button type="button" class="src-act" data-m="restore-src" data-id="${d.sourceId}">Reactivate</button>`;
+    else if(d.isTombstone)actBtn=`<button type="button" class="src-act" data-m="clear-broken" data-id="${d.sourceId}">Clear ref</button>`;
+    return `<div class="src-row">${main}${actBtn}</div>`;
+  };
+  if(n.type==="proof"||n.type==="print"){
+    const verLabel=n.type==="print"?`No. ${n.ed}`:`v${n.ver}`;
+    const hasDriftNote=linSum.frozenChanged.length||linSum.unavailable.length||linSum.unavailableAcked.length;
+    srcs=`<div class="m-sec"><h5><span>Built From</span><span>${esc(verLabel)}</span></h5><div class="srcs">${linSum.deps.map(d=>renderSrcRow(d,true)).join("")||`<p style="margin:0;font:12.5px/1.5 var(--ui);color:var(--label-3)">No upstream sources.</p>`}</div>${hasDriftNote?`<p style="margin:10px 0 0;font:12.5px/1.5 var(--ui);color:var(--label-3)">This snapshot stays frozen as built.${n.type==="proof"?` Build v${n.ver+1} to include upstream changes.`:""}</p>`:""}</div>`;
+  }else if(linSum.deps.length){
+    const s=sourcesFor(n,{includeArchived:true}),t=tally(s);
+    const reviewActs=linSum.needsReview?`<button type="button" class="m-clear" data-m="new-version" title="Fork updated v${(n.rev||1)+1} without overwriting">New v${(n.rev||1)+1}</button><button type="button" class="m-clear" data-m="mark-reviewed" title="Mark upstream changes as reviewed">Mark reviewed</button>`:"";
+    srcs=`<div class="m-sec"><h5><span>Based On</span><span class="m-hmeta"><span>${linSum.deps.length}</span>${reviewActs}</span></h5><div class="srcs">${linSum.deps.map(d=>renderSrcRow(d,true)).join("")}</div>${s.length?scaleLabeledHTML(t):""}</div>`;
+  }
   const listHTML=n.type==="list"?(()=>{const items=n.items||[],done=items.filter(it=>it.done).length;return `<div class="m-sec"><h5><span>Items</span><span class="m-hmeta"><span>${done}/${items.length}</span>${done?`<button type="button" class="m-clear" data-m="clear-done" title="Remove completed items">Clear done</button>`:""}</span></h5>${todoListHTML(n,true)}</div>`})():n.type==="kanban"?(()=>{const cols=kanbanColsOf(n),cards=n.cards||[],lastId=cols[cols.length-1]?.id,done=cards.filter(c=>c.col===lastId).length;return `<div class="m-sec"><h5><span>Board</span><span class="m-hmeta"><span>${done}/${cards.length} done</span>${done?`<button type="button" class="m-clear" data-m="clear-kb-done" title="Remove completed cards">Clear done</button>`:""}</span></h5>${kanbanHTML(n,true)}</div>`})():"";
   const synHTML=n.type==="synthesis"?`<div class="m-sec"><h5><span>Points</span><span>${(n.points||[]).length}</span></h5>${synPointsHTML(n,true)}</div>`:"";
   const padHTML=n.type==="notepad"?`<div class="m-sec"><h5><span>Document</span><span id="mPadStat">${fmtPadStat(n.text)} · ${(n.text||"").length.toLocaleString()} chars</span></h5><textarea id="mNotepadEd" class="m-notepad-ed" spellcheck="true" placeholder="Write a project brief, outline, spec, or long-form notes…">${esc(n.text||"")}</textarea></div>`:"";
@@ -3613,7 +3980,7 @@ function renderMargin(){queueMicrotask(placeBars);
   const fullHTML=fullSrc?`<div class="m-sec"><h5><span>Full Text</span><span>${fullSrc.length.toLocaleString()} chars</span></h5><pre class="m-fulltext">${esc(clip(fullSrc,20000))}</pre></div>`:"";
   const attachHTML=hasAttach?`<div class="m-sec"><h5><span>Attachment</span></h5><div class="m-attach">${mFmt?fmtBadgeHTML(mFmt):""}<span class="m-attach-name">${esc(n.path||n.title||"Attached file")}${n.size?` · ${esc(fmtFileSize(n.size))}`:""}</span><button type="button" class="cbtn" data-m="download-attach">${ic("down")}Download</button></div></div>`:"";
   const voteBtns=(n.by&&n.by!=="you")?`<button type="button" class="m-iconbtn vote-btn up${n.vote==="up"?" active":""}" data-m="vote-up" aria-pressed="${n.vote==="up"}" title="Approve / Like" aria-label="Like">${ic("thumbUp")}</button><button type="button" class="m-iconbtn vote-btn dn${n.vote==="down"?" active":""}" data-m="vote-dn" aria-pressed="${n.vote==="down"}" title="Dislike" aria-label="Dislike">${ic("thumbDown")}</button>`:"";
-  m.innerHTML=`<div class="grabber" data-m="close"></div><div class="m-head"><div class="row">${L?`<span class="chip">${L}</span>`:""}<span class="mono">${esc(kindLabel(n))}</span><span class="m-meta">· ${esc(madeBy)}</span><span class="sp"></span>${voteBtns}<button type="button" class="m-iconbtn" data-m="archive" title="Archive ${esc(kindLabel(n).toLowerCase())} (⇧H)" aria-label="Archive">${ic("archive")}</button><button type="button" class="m-iconbtn danger" data-m="delete-card" title="Delete ${esc(kindLabel(n).toLowerCase())}" aria-label="Delete">${ic("trash")}</button><button type="button" class="m-iconbtn" data-m="close" title="Close (Esc)" aria-label="Close">${ic("x")}</button></div></div>
+  m.innerHTML=`<div class="grabber" data-m="close"></div><div class="m-head"><div class="row">${L?`<span class="chip">${L}</span>`:""}<span class="mono">${esc(kindLabel(n))}</span><span class="m-meta">· ${esc(madeBy)}</span><span class="sp"></span>${voteBtns}<button type="button" class="m-iconbtn" data-m="hide-card" title="Hide from canvas (keep lineage)" aria-label="Hide from canvas">${ic("eyeOff")}</button><button type="button" class="m-iconbtn" data-m="archive" title="Archive ${esc(kindLabel(n).toLowerCase())} (⇧H)" aria-label="Archive">${ic("archive")}</button><button type="button" class="m-iconbtn danger" data-m="delete-card" title="Delete ${esc(kindLabel(n).toLowerCase())}" aria-label="Delete">${ic("trash")}</button><button type="button" class="m-iconbtn" data-m="close" title="Close (Esc)" aria-label="Close">${ic("x")}</button></div></div>
    <div class="m-body"><div class="m-intro">${focusTitle(n)}${acts?`<div class="m-acts">${acts}</div>`:""}</div>${htmlMain}${padHTML}${listHTML}${synHTML}${fullHTML}${attachHTML}${detailsHTML}${srcs}${ws}
    <div class="m-sec"><h5><span>Notes</span><span class="m-hmeta">${thread.length?`<span>${thread.length}</span>${thread.length>1?`<button type="button" class="m-clear" data-m="clear-msgs" title="Clear all notes">Clear all</button>`:""}`:""}</span></h5><div class="thread" id="mThread">${thread.length?thread.map((msg,idx)=>msgHTML(msg,idx)).join(""):`<p style="margin:0;font:13.5px/1.5 var(--ui);color:var(--label-3)">Notes stay attached to this card. Tap an agent below or type <code style="font:500 12px var(--mono);padding:1px 5px;border-radius:5px;background:var(--hover)">@</code> to ask here.</p>`}</div></div></div>
    <div class="m-foot"><div class="m-chips">${["critic","scout","muse","wright"].map(k=>`<button type="button" data-m="mention" data-k="${k}">@${AGENTS[k].name.toLowerCase()}</button>`).join("")}</div><div class="m-write"><label for="mInput" class="sr">Add a note</label><textarea id="mInput" rows="1" placeholder="Add a note, or ask @${AGENTS[defaultAgentFor(n)].name.toLowerCase()}">${esc(draft)}</textarea><button type="button" class="send" id="mSendBtn" data-m="post" aria-label="Post"${draft.trim()?"":" disabled"}><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div></div>`;
@@ -3626,17 +3993,18 @@ function renderMargin(){queueMicrotask(placeBars);
   const hf=qs("iframe[data-hero]",m);if(hf){if(hf.dataset.hero==="html")populateHtmlIframe(hf,n);else if(hf.dataset.hero==="pdf"||hf.dataset.hero==="url"){hf.onload=()=>hf.parentElement?.classList.add("ready");if(hf.dataset.hero==="pdf")setTimeout(()=>hf.parentElement?.classList.add("ready"),250)}else{hf.onload=()=>hf.parentElement?.classList.add("ready");hf.srcdoc=pageHTML(n.spec)}}
   const mEd=qs("#mHtmlEd",m);
   if(mEd){
+    let htmlDig=digest(n),htmlT=n.title,htmlTx=n.text;
     populateCodeField(mEd,n,qs("#mHtmlStat",m));
-    mEd.oninput=()=>{const t=fmtCodeStat(mEd.value),st=qs("#mHtmlStat",m),ln=qs("#mHtmlLen",m);if(st)st.textContent=t;if(ln)ln.textContent=t;saveHtmlCode(n,mEd.value,{skipMargin:true})};
-    mEd.onkeydown=e=>handleCodeKey(e,async()=>{await saveHtmlCode(n,mEd.value,{checkpoint:true,force:true});toast("Saved HTML changes")});
+    mEd.oninput=()=>{const t=fmtCodeStat(mEd.value),st=qs("#mHtmlStat",m),ln=qs("#mHtmlLen",m);if(st)st.textContent=t;if(ln)ln.textContent=t;saveHtmlCode(n,mEd.value,{skipMargin:true,liveEdit:true})};
+    mEd.onkeydown=e=>handleCodeKey(e,async()=>{await saveHtmlCode(n,mEd.value,{checkpoint:true,force:true,liveEdit:true});recordNodeEdit(n,htmlDig,htmlT,htmlTx);htmlDig=digest(n);htmlT=n.title;htmlTx=n.text;renderAll();persist();toast("Saved HTML changes")});
   }
   const mPad=qs("#mNotepadEd",m);
   if(mPad){
-    let padCheck=false;
+    let padCheck=false,padDig=digest(n),padT=n.title,padTx=n.text;
     const savePad=(commit=false)=>{
       const st=qs("#mPadStat",m);if(st)st.textContent=`${fmtPadStat(mPad.value)} · ${mPad.value.length.toLocaleString()} chars`;
       if(mPad.value!==(n.text||"")){if(!padCheck){checkpoint();padCheck=true}n.text=mPad.value;n.updated=NOW();renderNodes();persist()}
-      if(commit&&padCheck){log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id);padCheck=false;persist()}
+      if(commit&&padCheck){recordNodeEdit(n,padDig,padT,padTx);padDig=digest(n);padT=n.title;padTx=n.text;log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id);padCheck=false;renderAll();persist()}
     };
     mPad.oninput=()=>savePad(false);
     mPad.onblur=()=>savePad(true);
@@ -3687,7 +4055,7 @@ function renderSelbar(){
   if(ns.length<2||stageOpen){s.hidden=true;return}
   const hasVisual=ns.some(n=>["image","frame","recording"].includes(n.type));
   s.hidden=false;
-  s.innerHTML=`<span>${ns.length} Selected</span><button type="button" data-s="gather">Synthesize</button><button type="button" data-s="list">Action List</button><button type="button" data-s="kanban">Kanban</button>${hasVisual?`<button type="button" data-s="gif" title="Animate selected into a GIF">GIF</button><button type="button" data-s="video" title="Animate selected into a video">Video</button>`:""}<button type="button" data-s="critique">Critique</button><span class="sb-sep" aria-hidden="true"></span><button type="button" class="sb-ic" data-s="align-x" title="Align left edges" aria-label="Align left">${ic("alignL")}</button><button type="button" class="sb-ic" data-s="align-y" title="Align top edges" aria-label="Align top">${ic("alignT")}</button><button type="button" class="sb-ic" data-s="grid" title="Arrange selection neatly" aria-label="Tidy grid">${ic("grid")}</button><button type="button" class="sb-ic" data-s="dup" title="Duplicate (⌘D)" aria-label="Duplicate">${ic("copy")}</button><button type="button" data-s="group" title="Group selected cards">Group</button><button type="button" class="sb-ic" data-s="archive" title="Archive selected cards" aria-label="Archive">${ic("archive")}</button><button type="button" class="sb-ic" data-s="delete" title="Delete selected" aria-label="Delete">${ic("trash")}</button>`;
+  s.innerHTML=`<span>${ns.length} Selected</span><button type="button" data-s="gather">Synthesize</button><button type="button" data-s="list">Action List</button><button type="button" data-s="kanban">Kanban</button>${hasVisual?`<button type="button" data-s="gif" title="Animate selected into a GIF">GIF</button><button type="button" data-s="video" title="Animate selected into a video">Video</button>`:""}<button type="button" data-s="critique">Critique</button><span class="sb-sep" aria-hidden="true"></span><button type="button" class="sb-ic" data-s="align-x" title="Align left edges" aria-label="Align left">${ic("alignL")}</button><button type="button" class="sb-ic" data-s="align-y" title="Align top edges" aria-label="Align top">${ic("alignT")}</button><button type="button" class="sb-ic" data-s="grid" title="Arrange selection neatly" aria-label="Tidy grid">${ic("grid")}</button><button type="button" class="sb-ic" data-s="dup" title="Duplicate (⌘D)" aria-label="Duplicate">${ic("copy")}</button><button type="button" data-s="group" title="Group selected cards">Group</button><button type="button" class="sb-ic" data-s="hide" title="Hide from canvas (keep lineage)" aria-label="Hide from canvas">${ic("eyeOff")}</button><button type="button" class="sb-ic" data-s="archive" title="Archive selected cards" aria-label="Archive">${ic("archive")}</button><button type="button" class="sb-ic" data-s="delete" title="Delete selected" aria-label="Delete">${ic("trash")}</button>`;
 }
 function groups(){const g=new Map();for(const n of visibleNodes())if(n.status==="sketch"&&n.pid){if(!g.has(n.pid))g.set(n.pid,[]);g.get(n.pid).push(n)}return g}
 const latestPid=()=>{let best=null,t=-1;for(const [pid,ns] of groups()){const c=Math.max(...ns.map(n=>n.created));if(c>t){t=c;best=pid}}return best};
@@ -3769,8 +4137,10 @@ function renderLedger(){
 function renderAll(){
   litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();
   $("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";
-  const archCount=board.nodes.filter(n=>n.archived).length;
-  if($("archiveBtn")){$("archiveBtn").hidden=!archCount;$("archCount").textContent=archCount}
+  const archCount=board.nodes.filter(n=>!n.tombstone&&n.archived).length;
+  const hidCount=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived).length;
+  const offCount=archCount+hidCount;
+  if($("archiveBtn")){$("archiveBtn").hidden=!offCount;$("archCount").textContent=offCount;$("archiveBtn").title=hidCount&&archCount?`Hidden (${hidCount}) · Archived (${archCount})`:hidCount?`Hidden cards (${hidCount})`:`Archived cards (${archCount})`}
   renderStrip();renderReview();renderNarr();paintEdges();paintMap();renderAdvPop();if(typeof findOpen!=="undefined"&&findOpen)renderFindBar?.();
 }
 
@@ -4714,7 +5084,7 @@ Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count);
   checkpoint();const pid="p-"+uid();
-  const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",by:"muse",status:"sketch",pid},places[i]);const e=edge(idea.id,n.id);freshEdges.add(e.id);return n});
+  const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",by:"muse",status:"sketch",pid},places[i]);const e=edge(idea.id,n.id,"derive","live");captureDepSnapshot(n,[idea]);freshEdges.add(e.id);return n});
   setTimeout(()=>freshEdges.clear(),1200);
   log("muse",`Suggested ${made.map(d=>`<b>${d.letter} ${esc(d.title)}</b>`).join(", ")}${live?"":" (offline)"}`,made[0].id);
   sel=[];renderAll();persist();typeIn(made.map(m=>m.id));follow([idea,...made]);
@@ -4756,8 +5126,8 @@ Write the real content for this prototype as the people in the test would see it
   const spec={...specLocal(dir,mode),...(v&&typeof v==="object"?v:{})};spec.mode=mode;spec.letter=dir.letter;spec.version=ver;
   spec.items=(spec.items||[]).filter(i=>i&&i.title).slice(0,7);
   checkpoint();
-  const p=node("proof",{_src:(from||dir).id,dir:dir.id,ver,spec,by:"wright",status:"sketch",pid:"p-"+uid(),fixed:srcs.map(s=>({id:s.id,title:s.title||clip(s.text,32),weight:s.weight||null,d:digest(s)}))},spot);
-  const e=edge((from||dir).id,p.id);freshEdges.add(e.id);setTimeout(()=>freshEdges.clear(),1200);
+  const p=node("proof",{_src:(from||dir).id,dir:dir.id,ver,spec,by:"wright",status:"sketch",pid:"p-"+uid(),fixed:srcs.map(s=>({id:s.id,title:s.title||clip(s.text,32),weight:s.weight||null,d:digest(s),rev:s.rev||1}))},spot);
+  const e=edge((from||dir).id,p.id,"derive","frozen");captureDepSnapshot(p,srcs);freshEdges.add(e.id);setTimeout(()=>freshEdges.clear(),1200);
   log("wright",`Suggested <b>Proof ${dir.letter} v${ver}</b> from ${srcs.length} sources${live?"":" (offline)"}`,p.id);
   sel=[];renderAll();persist();typeIn([p.id]);
   follow([dir,p]);
@@ -4791,7 +5161,7 @@ async function gather(ns){
     if(cv&&!pts.some(p=>/reliability|confidence|observed|illustrative|source role/i.test(p)))pts.push("**Confidence.** "+cv);
   }
   checkpoint();const s=node("synthesis",{_src:ns[0].id,title:String(r.title||"").trim()||"Cross-Source Synthesis",points:pts.slice(0,5),of:evid.map(n=>n.id),weights:wt,by:"scout",status:"sketch",pid:"p-"+uid()},spot);
-  ns.forEach(n=>{const e=edge(n.id,s.id,"src");if(e)freshEdges.add(e.id)});setTimeout(()=>freshEdges.clear(),1200);
+  ns.forEach(n=>{const e=edge(n.id,s.id,"src","live");if(e)freshEdges.add(e.id)});captureDepSnapshot(s,evid);setTimeout(()=>freshEdges.clear(),1200);
   log("scout",`Suggested a synthesis of ${evid.length} cards${live?"":" (offline)"}`,s.id);sel=[];renderAll();persist();typeIn([s.id]);follow([s]);
 }
 function gatherLocal(ns){
@@ -4833,7 +5203,7 @@ async function makeList(ns){
   const {v,live}=await runAgent("wright",{read:ns,places,label:"listing next steps",work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt:`Turn this into a concise action list for the team:\n${wallText(ns)}\n\nReply with ONLY JSON: {"title": "2-5 words", "items": ["4 to 6 concrete actions starting with a verb; vary detail naturally from short 3-word steps to specific 10-14 word tasks naming concrete files, targets, or checks"]}`,images:imgNodes,json:true,modelTier:"quick"},()=>listLocal(ns))});
   const r=v&&v.items?v:listLocal(ns);
   checkpoint();const l=node("list",{_src:ns[0].id,title:r.title,items:r.items.slice(0,7).map(t=>({t:String(t),done:false})),dir:ns.find(n=>n.type==="direction")?.id||null,by:"wright",status:"sketch",pid:"p-"+uid()},spot);
-  ns.forEach(n=>edge(n.id,l.id,"src"));log("wright",`Suggested an action list${live?"":" (offline)"}`,l.id);sel=[];renderAll();persist();typeIn([l.id]);follow([l]);
+  ns.forEach(n=>edge(n.id,l.id,"src","live"));captureDepSnapshot(l,ns);log("wright",`Suggested an action list${live?"":" (offline)"}`,l.id);sel=[];renderAll();persist();typeIn([l.id]);follow([l]);
 }
 function listLocal(ns){
   const d=ns.find(n=>n.type==="direction"),p=ns.find(n=>n.type==="proof");
@@ -4868,7 +5238,7 @@ async function makeKanban(ns){
   const {v,live}=await runAgent("wright",{read:ns,places,label:"organizing Kanban tasks",work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt:`Turn this into a concise 3-column Kanban board (To Do, In Progress, Done):\n${wallText(ns)}\n\nReply with ONLY JSON: {"title": 2-5 words, "cols": ["To Do", "In Progress", "Done"], "cards": [{"title": "short task under 10 words", "col": 0}]} where col is 0 (To Do), 1 (In Progress), or 2 (Done), returning 4 to 8 total cards.`,images:imgNodes,json:true,modelTier:"quick"},()=>kanbanLocal(ns))});
   const spec=normalizeKanbanSpec(v&&Array.isArray(v.cards)?v:kanbanLocal(ns),"Kanban board");
   checkpoint();const k=node("kanban",{_src:ns[0].id,title:spec.title,cols:spec.cols,cards:spec.cards,dir:ns.find(n=>n.type==="direction")?.id||null,by:"wright",status:"sketch",pid:"p-"+uid()},spot);
-  ns.forEach(n=>edge(n.id,k.id,"src"));log("wright",`Suggested a Kanban board${live?"":" (offline)"}`,k.id);sel=[];renderAll();persist();typeIn([k.id]);follow([k]);
+  ns.forEach(n=>edge(n.id,k.id,"src","live"));captureDepSnapshot(k,ns);log("wright",`Suggested a Kanban board${live?"":" (offline)"}`,k.id);sel=[];renderAll();persist();typeIn([k.id]);follow([k]);
 }
 function kanbanLocal(ns){
   const list=listLocal(ns);
@@ -4953,21 +5323,50 @@ function rank(ns,text){
 function ink(ids){
   const ns=ids.map(byId).filter(n=>n&&n.status==="sketch");if(!ns.length)return;
   checkpoint();
-  ns.forEach(n=>{n.status="ink";delete n.pid;n.inked=NOW();if(n.type==="proof")n.fixed=(n.fixed||[]).map(f=>{const s=byId(f.id);return s?{...f,d:digest(s)}:f})});
+  ns.forEach(n=>{n.status="ink";delete n.pid;n.inked=NOW();ensureRevision(n);if(n.type==="proof")n.fixed=(n.fixed||[]).map(f=>{const s=byId(f.id);return s?{...f,d:digest(s),rev:s.rev||1}:f});captureDepSnapshot(n,inputsOf(n.id))});
   log("you",`Kept ${ns.map(n=>`<b>${esc(titleOf(n))}</b>`).join(", ")}`,ns[0].id);
   renderAll();persist();
   ns.forEach((n,i)=>{const el=nodeEl(n.id);if(el){el.classList.remove("inking");el.style.animationDelay=calm()?"":(i*70)+"ms";void el.offsetWidth;el.classList.add("inking");setTimeout(()=>{el.classList.remove("inking");el.style.animationDelay=""},950+i*70)}});
   [...new Set(ns.map(n=>n.by))].forEach(k=>{const s=qs(`[data-agent="${k}"]`);if(s&&!calm()){s.classList.add("thanks");setTimeout(()=>s.classList.remove("thanks"),750)}});
   toast(`Kept ${ns.length>1?ns.length+" suggestions":titleOf(ns[0])}`,{undo:true});
 }
-async function erase(ids){
-  const ns=ids.map(byId).filter(Boolean);if(!ns.length)return;checkpoint();
-  ns.forEach(n=>{const el=nodeEl(n.id);if(el){if(n.status==="sketch")dissolve(el);el.classList.add("erasing")}});await wait(calm()?0:360);
-  const gone=new Set(ns.map(n=>n.id));board.nodes=board.nodes.filter(n=>!gone.has(n.id));board.edges=board.edges.filter(e=>!gone.has(e.a)&&!gone.has(e.b));
-  for(const k in board.adopted)if(gone.has(board.adopted[k]))delete board.adopted[k];
-  sel=sel.filter(id=>!gone.has(id));
-  if(ns[0].status==="sketch")log("you",`Discarded ${ns.length>1?ns.length+" suggestions":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,null);
-  renderAll();persist();toast(ns[0].status==="sketch"?"Discarded":"Removed "+(ns.length>1?ns.length+" cards":titleOf(ns[0])),{undo:true});
+async function erase(ids,opts={}){
+  const ns=ids.map(byId).filter(n=>n&&!n.tombstone);if(!ns.length)return;
+  if(!opts.force){
+    if(ns.every(n=>n.status==="sketch")){
+      checkpoint();
+      ns.forEach(n=>{const el=nodeEl(n.id);if(el){dissolve(el);el.classList.add("erasing")}});await wait(calm()?0:320);
+      const gone=new Set(ns.map(n=>n.id));
+      board.nodes=board.nodes.filter(n=>!gone.has(n.id));
+      board.edges=board.edges.filter(e=>!gone.has(e.a)&&!gone.has(e.b));
+      for(const k in board.adopted)if(gone.has(board.adopted[k]))delete board.adopted[k];
+      sel=sel.filter(id=>!gone.has(id));
+      log("you",`Discarded ${ns.length>1?ns.length+" suggestions":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,null);
+      renderAll();persist();toast("Discarded",{undo:true});
+      return "deleted";
+    }
+    const impact=computeUpstreamImpact(ns.map(n=>n.id));
+    if(impact.transitiveIds.size>0){
+      upstreamDeleteDialog(ns.map(n=>n.id),impact);
+      return "prompted";
+    }
+    if(!opts.permanent){
+      checkpoint();
+      ns.forEach(n=>{const el=nodeEl(n.id);if(el)el.classList.add("erasing")});await wait(calm()?0:280);
+      const gone=new Set(ns.map(n=>n.id));
+      board.nodes=board.nodes.filter(n=>!gone.has(n.id));
+      board.edges=board.edges.filter(e=>!gone.has(e.a)&&!gone.has(e.b));
+      for(const k in board.adopted)if(gone.has(board.adopted[k]))delete board.adopted[k];
+      sel=sel.filter(id=>!gone.has(id));lineExtras=lineExtras.filter(id=>!gone.has(id));
+      if(focusId&&gone.has(focusId))closeFocus();
+      sweepOrphanTombstones();
+      log("you",`Removed ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,null);
+      renderAll();persist();toast("Removed "+(ns.length>1?ns.length+" cards":titleOf(ns[0])),{undo:true});
+      return "deleted";
+    }
+  }
+  await permanentlyDeleteNodes(ns.map(n=>n.id),opts);
+  return "deleted";
 }
 async function redraw(pid){
   const ns=board.nodes.filter(n=>n.pid===pid);if(!ns.length)return;const t=ns[0];
@@ -4995,7 +5394,7 @@ function pullPrint(p){
   if(prev){select([prev.id]);focusNodes([p,prev],.85);return toast("This proof is already printed as No. "+prev.ed)}
   checkpoint();const ed=1+board.nodes.filter(n=>n.type==="print").length;
   const spot=freeSpot(3*BAY+80,Math.max(0,p.y),W.print,300);
-  const pr=node("print",{_src:p.id,proof:p.id,dir:p.dir,ed,spec:structuredClone(p.spec)},spot);const e=edge(p.id,pr.id);freshEdges.add(e.id);setTimeout(()=>freshEdges.clear(),1200);
+  const pr=node("print",{_src:p.id,proof:p.id,dir:p.dir,ed,spec:structuredClone(p.spec),fixed:structuredClone(p.fixed||[])},spot);const e=edge(p.id,pr.id,"derive","frozen");captureDepSnapshot(pr,[p]);freshEdges.add(e.id);setTimeout(()=>freshEdges.clear(),1200);
   log("you",`Pulled <b>Print No. ${ed}</b> from ${esc(titleOf(p))}`,pr.id);select([pr.id],{menus:false});renderAll();persist();
   {const el=nodeEl(pr.id);if(el&&!calm()){el.style.setProperty("--fx",((p.x+W.proof/2)-(pr.x+W.print/2))+"px");el.style.setProperty("--fy",((p.y+(p._h||390)/2)-(pr.y+150))+"px");el.classList.add("born","inking");setTimeout(()=>el.classList.remove("born","inking"),1000)}}
   focusNodes([p,pr],.8,800);toast(`Print ${ed} is ready. It won’t change, even if the proof does.`);
@@ -5277,7 +5676,7 @@ function closeFocus(){
 $("scrim").addEventListener("click",closeFocus);
 $("margin").addEventListener("focusout",e=>{
   const t=e.target.closest("[data-f]");if(!t||!focusId)return;const n=byId(focusId),f=t.dataset.f,v=t.innerText.trim();
-  if(!n||v===(n[f]||"")||(!v&&n.type!=="note"))return;checkpoint();n[f]=v;n.updated=NOW();log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id);renderAll();persist();
+  if(!n||v===(n[f]||"")||(!v&&n.type!=="note"))return;checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;n[f]=v;recordNodeEdit(n,prevD,prevT,prevTx);log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id);renderAll();persist();
 });
 $("margin").addEventListener("keydown",e=>{const t=e.target.closest("[data-f]");if(t&&e.key==="Enter"&&!e.shiftKey&&t.classList.contains("m-title")){e.preventDefault();t.blur()}});
 
@@ -8368,6 +8767,7 @@ let idbP=null;
 function idb(){if(idbP)return idbP;idbP=new Promise(res=>{try{const r=indexedDB.open("vellum",2);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains("blobs"))db.createObjectStore("blobs");if(!db.objectStoreNames.contains("boards"))db.createObjectStore("boards")};r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch{res(null)}});return idbP}
 async function putBlob(k,b){const d=await idb();if(!d)return false;return new Promise(r=>{try{const t=d.transaction("blobs","readwrite");t.objectStore("blobs").put(b,k);t.oncomplete=()=>r(true);t.onerror=()=>r(false)}catch{r(false)}})}
 async function getBlob(k){const d=await idb();if(!d)return null;return new Promise(r=>{try{const q=d.transaction("blobs").objectStore("blobs").get(k);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null)}catch{r(null)}})}
+async function delBlob(k){if(!k)return false;const d=await idb();if(!d)return false;return new Promise(r=>{try{const tx=d.transaction("blobs","readwrite");tx.objectStore("blobs").delete(k);tx.oncomplete=()=>r(true);tx.onerror=tx.onabort=()=>r(false)}catch{r(false)}})}
 async function putBoardIdb(b){const d=await idb();if(!d||!b?.id||!d.objectStoreNames.contains("boards"))return false;return new Promise(r=>{try{const t=d.transaction("boards","readwrite");t.objectStore("boards").put(b,b.id);t.oncomplete=()=>r(true);t.onerror=()=>r(false)}catch{r(false)}})}
 async function getBoardIdb(id){const d=await idb();if(!d||!id||!d.objectStoreNames.contains("boards"))return null;return new Promise(r=>{try{const q=d.transaction("boards").objectStore("boards").get(id);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null)}catch{r(null)}})}
 async function delBoardIdb(id){const d=await idb();if(!d||!id||!d.objectStoreNames.contains("boards"))return false;return new Promise(r=>{try{const t=d.transaction("boards","readwrite");t.objectStore("boards").delete(id);t.oncomplete=()=>r(true);t.onerror=()=>r(false)}catch{r(false)}})}
@@ -8514,35 +8914,190 @@ function pinQuestionNode(text,ctx=[]){
   log("you",`Pinned question: <b>${esc(clip(text,60))}</b>`,n.id);select([n.id],{menus:false});renderAll();persist();
   nodeEl(n.id)?.classList.add("born");if(!visible(n))focusNodes([n],.9);return n;
 }
-function archiveNodes(ids){
-  const ns=ids.map(byId).filter(n=>n&&!n.archived&&n.status!=="sketch");if(!ns.length)return;
+function hideFromCanvasNodes(ids){
+  const ns=ids.map(byId).filter(n=>n&&!n.tombstone&&!n.hidden&&n.status!=="sketch");if(!ns.length)return;
   checkpoint();const now=NOW();
-  ns.forEach(n=>{n.archived=true;n.archivedAt=now});
+  ns.forEach(n=>{n.hidden=true;n.hiddenAt=now;delete n.archived;delete n.archivedAt});
+  const hidSet=new Set(ns.map(n=>n.id));
+  if(focusId&&hidSet.has(focusId))closeFocus();
+  if(selectedEdgeId){const se=board.edges.find(e=>e.id===selectedEdgeId);if(!se||hidSet.has(se.a)||hidSet.has(se.b))selectedEdgeId=null}
+  sel=sel.filter(id=>!hidSet.has(id));lineExtras=lineExtras.filter(id=>!hidSet.has(id));
+  log("you",`Hid ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"} from canvas`,ns.length===1?ns[0].id:null);
+  renderAll();persist();toast(`Hidden from canvas · lineage intact`,{undo:true});
+}
+function archiveNodes(ids){
+  const ns=ids.map(byId).filter(n=>n&&!n.tombstone&&!n.archived&&n.status!=="sketch");if(!ns.length)return;
+  checkpoint();const now=NOW();
+  ns.forEach(n=>{n.archived=true;n.archivedAt=now;delete n.hidden;delete n.hiddenAt});
   const archSet=new Set(ns.map(n=>n.id));
   if(focusId&&archSet.has(focusId))closeFocus();
   sel=sel.filter(id=>!archSet.has(id));lineExtras=lineExtras.filter(id=>!archSet.has(id));
-  log("you",`Archived ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,null);
-  renderAll();persist();toast(`Archived ${ns.length>1?ns.length+" cards":titleOf(ns[0])}`,{undo:true});
+  log("you",`Archived ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,ns.length===1?ns[0].id:null);
+  renderAll();persist();toast(`Archived ${ns.length>1?ns.length+" cards":titleOf(ns[0])} · excluded from new AI`,{undo:true});
 }
 function restoreNodes(ids){
-  const ns=ids.map(byId).filter(n=>n&&n.archived);if(!ns.length)return;
-  checkpoint();ns.forEach(n=>{delete n.archived;delete n.archivedAt});
-  log("you",`Restored ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,ns[0].id);
+  const ns=ids.map(byId).filter(n=>n&&!n.tombstone&&(n.archived||n.hidden));if(!ns.length)return;
+  checkpoint();const hadArch=ns.some(n=>n.archived);
+  ns.forEach(n=>{delete n.archived;delete n.archivedAt;delete n.hidden;delete n.hiddenAt});
+  log("you",`${hadArch?"Restored":"Showed"} ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,ns[0].id);
   select(ns.map(n=>n.id),{menus:false});renderAll();persist();
   if(ns.length===1&&!visible(ns[0]))focusNodes([ns[0]],.9);
-  toast(`Restored ${ns.length>1?ns.length+" cards":titleOf(ns[0])}`);
+  toast(`${hadArch?"Restored":"Showed"} ${ns.length>1?ns.length+" cards":titleOf(ns[0])}`);
+}
+function scrubNodeFromUndoRedo(goneSet,tombMap,scrubStrings=[]){
+  const matchesScrub=html=>scrubStrings.some(s=>s&&String(html||"").includes(s));
+  const scrubStack=stack=>stack.map(raw=>{
+    try{
+      const snap=JSON.parse(raw);
+      if(Array.isArray(snap.nodes)){
+        const nextNodes=[];
+        for(const x of snap.nodes){
+          if(!x)continue;
+          if(goneSet.has(x.id)){
+            if(tombMap.has(x.id))nextNodes.push(structuredClone(tombMap.get(x.id)));
+          }else{
+            if(Array.isArray(x.fixed))x.fixed=x.fixed.map(f=>goneSet.has(f.id)?{...f,title:"Deleted source",d:""}:f);
+            if(x.depAck){for(const gid of goneSet){if(x.depAck[gid])x.depAck[gid]={...x.depAck[gid],title:"Deleted source",digest:x.depAck[gid].digest==="__reviewed__"?"__reviewed__":""}}}
+            nextNodes.push(x);
+          }
+        }
+        snap.nodes=nextNodes;
+      }
+      if(Array.isArray(snap.edges)){
+        snap.edges=snap.edges.filter(e=>{
+          if(goneSet.has(e.b))return false;
+          if(goneSet.has(e.a)&&!tombMap.has(e.a))return false;
+          return true;
+        });
+      }
+      if(snap.adopted)for(const k of Object.keys(snap.adopted))if(goneSet.has(snap.adopted[k])||goneSet.has(k))delete snap.adopted[k];
+      if(snap.threads)for(const id of goneSet)delete snap.threads[id];
+      if(snap.pins)for(const id of goneSet)delete snap.pins[id];
+      if(Array.isArray(snap.log))snap.log=snap.log.filter(l=>!goneSet.has(l.node)&&!matchesScrub(l.html));
+      return JSON.stringify(snap);
+    }catch{return raw}
+  });
+  undoStack=scrubStack(undoStack);
+  redoStack=scrubStack(redoStack);
+  syncHistoryBtns();
+}
+async function permanentlyDeleteNodes(ids,opts={}){
+  const ns=ids.map(byId).filter(n=>n&&!n.tombstone);if(!ns.length)return;
+  const goneSet=new Set(ns.map(n=>n.id));
+  ns.forEach(n=>{const el=nodeEl(n.id);if(el)el.classList.add("erasing")});
+  if(opts.animate!==false)await wait(calm()?0:280);
+  const survRefs=new Set();
+  for(const x of board.nodes){
+    if(!x||x.tombstone||goneSet.has(x.id))continue;
+    for(const r of structuralUpstreamRefs(x))survRefs.add(r.id);
+  }
+  for(const e of board.edges){
+    if(!goneSet.has(e.b)&&byId(e.b)&&!byId(e.b).tombstone)survRefs.add(e.a);
+  }
+  const activeBlobKeys=new Set();
+  for(const x of board.nodes){
+    if(!x||x.tombstone||goneSet.has(x.id))continue;
+    if(x.media)activeBlobKeys.add(x.media);
+    if(x.poster)activeBlobKeys.add(x.poster);
+  }
+  const blobKeysToDelete=new Set();
+  const tombMap=new Map();
+  const scrubSet=new Set();
+  const addScrub=v=>{const s=String(v||"").trim();if(s.length>=3){scrubSet.add(s);scrubSet.add(esc(s))}};
+  const deletedLabel="Deleted source";
+  for(const n of ns){
+    addScrub(n.title);addScrub(titleOf(n));addScrub(n.url);addScrub(n.path);
+    if(n.media&&String(n.media).startsWith("u:")&&!activeBlobKeys.has(n.media))blobKeysToDelete.add(n.media);
+    if(n.poster&&String(n.poster).startsWith("u:")&&!activeBlobKeys.has(n.poster))blobKeysToDelete.add(n.poster);
+    if(survRefs.has(n.id)){
+      tombMap.set(n.id,{id:n.id,type:n.type,x:0,y:0,created:n.created||NOW(),deletedAt:NOW(),tombstone:true,status:"ink"});
+    }
+  }
+  const scrubStrings=[...scrubSet];
+  for(const k of blobKeysToDelete){
+    htmlDocs.delete(k);
+    const um=userMedia.get(k);
+    if(typeof um==="string"&&um.startsWith("blob:")){try{URL.revokeObjectURL(um)}catch{}}
+    userMedia.delete(k);
+    await delBlob(k);
+  }
+  const nextNodes=[];
+  for(const x of board.nodes){
+    if(!x)continue;
+    if(goneSet.has(x.id)){
+      if(tombMap.has(x.id))nextNodes.push(tombMap.get(x.id));
+    }else{
+      if(Array.isArray(x.fixed)){
+        x.fixed=x.fixed.map(f=>goneSet.has(f.id)?{...f,title:deletedLabel,d:""}:f);
+      }
+      if(x.depAck){
+        for(const gid of goneSet){
+          if(x.depAck[gid])x.depAck[gid]={...x.depAck[gid],title:deletedLabel,digest:x.depAck[gid].digest==="__reviewed__"?"__reviewed__":""};
+        }
+      }
+      nextNodes.push(x);
+    }
+  }
+  board.nodes=nextNodes;
+  board.edges=board.edges.filter(e=>{
+    if(goneSet.has(e.b))return false;
+    if(goneSet.has(e.a)&&!tombMap.has(e.a))return false;
+    return true;
+  });
+  for(const k of Object.keys(board.adopted||{}))if(goneSet.has(board.adopted[k])||goneSet.has(k))delete board.adopted[k];
+  for(const id of goneSet){delete board.threads[id];delete board.pins[id]}
+  board.log=(board.log||[]).filter(l=>!goneSet.has(l.node)&&!scrubStrings.some(s=>s&&String(l.html||"").includes(s)));
+  if(focusId&&goneSet.has(focusId))closeFocus();
+  if(selectedEdgeId){const se=board.edges.find(e=>e.id===selectedEdgeId);if(!se)selectedEdgeId=null}
+  sel=sel.filter(id=>!goneSet.has(id));lineExtras=lineExtras.filter(id=>!goneSet.has(id));
+  sweepOrphanTombstones();
+  scrubNodeFromUndoRedo(goneSet,tombMap,scrubStrings);
+  log("you",`Permanently deleted ${ns.length>1?ns.length+" cards":"1 card"}`+(tombMap.size?" (downstream references marked unavailable)":""),null);
+  renderAll();persistNow?.();
+  toast(tombMap.size?"Permanently deleted · downstream marked unavailable":"Permanently deleted (cannot be undone)");
+}
+function upstreamDeleteDialog(ids,impact){
+  const roots=ids.map(byId).filter(Boolean);
+  const title=roots.length===1?(titleOf(roots[0])||kindLabel(roots[0])):`${roots.length} selected cards`;
+  const rep=impact.items.slice(0,6),more=impact.items.length-rep.length;
+  const depTag=dt=>dt==="frozen"?"Frozen snapshot":dt==="live"?"Live dependency":"Reference";
+  dlg.className="sheet";
+  dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>Before deleting ${esc(clip(title,42))}</b><small>${impact.directIds.size} direct · ${impact.transitiveIds.size} total downstream card${impact.transitiveIds.size===1?"":"s"} affected</small></div><button type="button" class="sh-x" data-d="close" aria-label="Close">${ic("x")}</button></header>
+  <div class="sh-main"><div class="imp-lead">This card is referenced downstream. Choose how to handle it without losing downstream work:</div>
+    <div class="imp-list">${rep.map(({node:d,depth,depType})=>`<div class="imp-item"><span class="imp-kind">${esc(kindLabel(d))}</span><span class="imp-title">${esc(prettyTitle(d,52))}</span><span class="imp-tag">${esc(depTag(depType))}${depth>1?` · L${depth}`:""}</span></div>`).join("")}${more>0?`<div class="imp-item"><span class="imp-title" style="color:var(--label-3)">+${more} more downstream card${more===1?"":"s"}</span></div>`:""}</div>
+    <div class="imp-opts">
+      <div class="imp-opt primary"><div><b>Hide from canvas</b><small>Hides visually only. Keeps edges, lineage, and downstream snapshots intact. Show anytime.</small></div><button type="button" class="cbtn solid" data-imp="hide">Hide</button></div>
+      <div class="imp-opt"><div><b>Archive source</b><small>Excludes from new AI runs. Downstream cards stay inspectable and show “Source archived”.</small></div><button type="button" class="cbtn" data-imp="archive">Archive</button></div>
+      <div class="imp-opt"><div><b>Permanently delete</b><small>Scrubs content &amp; local media (cannot undo). Downstream cards remain and mark “Unavailable · Review required”.</small></div><button type="button" class="cbtn" style="color:#E0245E;border-color:color-mix(in srgb,#E0245E 40%,var(--hair))" data-imp="perm-step1">Delete…</button></div>
+    </div>
+    <div class="imp-confirm" id="impPermConfirm" hidden><b>Confirm permanent deletion — scrubbed data cannot be recovered via Undo.</b><div class="imp-confirm-acts"><button type="button" class="cbtn" data-imp="perm-cancel">Cancel</button><button type="button" class="cbtn" style="background:#E0245E;border-color:#E0245E;color:#fff" data-imp="perm-confirm">Confirm Permanent Delete</button></div></div>
+  </div>`;
+  if(!dlg.open)dlg.showModal();
+  qs('[data-imp="hide"]',dlg).onclick=()=>{dlg.close();hideFromCanvasNodes(ids)};
+  qs('[data-imp="archive"]',dlg).onclick=()=>{dlg.close();archiveNodes(ids)};
+  qs('[data-imp="perm-step1"]',dlg).onclick=()=>{const c=qs("#impPermConfirm",dlg);if(c)c.hidden=false};
+  qs('[data-imp="perm-cancel"]',dlg).onclick=()=>{const c=qs("#impPermConfirm",dlg);if(c)c.hidden=true};
+  qs('[data-imp="perm-confirm"]',dlg).onclick=()=>{dlg.close();permanentlyDeleteNodes(ids,{permanent:true})};
 }
 function archiveDialog(){
   const paint=()=>{
-    const list=board.nodes.filter(n=>n.archived).sort((a,b)=>(b.archivedAt||b.created)-(a.archivedAt||a.created));
+    const hiddenList=board.nodes.filter(n=>!n.tombstone&&n.hidden&&!n.archived).sort((a,b)=>(b.hiddenAt||b.created)-(a.hiddenAt||a.created));
+    const archList=board.nodes.filter(n=>!n.tombstone&&n.archived).sort((a,b)=>(b.archivedAt||b.created)-(a.archivedAt||a.created));
+    const total=hiddenList.length+archList.length;
     dlg.className="sheet";
-    dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>Archived cards</b><small>${list.length} ${list.length===1?"card":"cards"} hidden from the canvas</small></div>
-      <div style="display:flex;align-items:center;gap:8px">${list.length?`<button type="button" class="cbtn" data-arch-all>Restore all</button>`:""}<button type="button" class="sh-x" data-d="close" aria-label="Close">${ic("x")}</button></div></header>
-    <div class="sh-main"><div class="sh-list">${list.length?list.map(n=>`<div class="arch-row" data-arch-id="${n.id}"><div class="bt"><b>${esc(titleOf(n)||kindLabel(n))}</b><small>${esc(kindLabel(n))} · archived ${ago(n.archivedAt||n.created)}</small></div><button type="button" class="cbtn" data-arch-restore="${n.id}">Restore</button><button type="button" class="m-iconbtn danger" data-arch-del="${n.id}" title="Delete permanently" aria-label="Delete permanently">${ic("trash")}</button></div>`).join(""):`<p style="margin:12px 0;color:var(--label-3);font:14px/1.5 var(--ui)">No archived cards on this board.</p>`}</div></div>`;
+    dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>Hidden &amp; Archived cards</b><small>${hiddenList.length} hidden · ${archList.length} archived</small></div>
+      <div style="display:flex;align-items:center;gap:8px">${total?`<button type="button" class="cbtn" data-arch-all>Restore all</button>`:""}<button type="button" class="sh-x" data-d="close" aria-label="Close">${ic("x")}</button></div></header>
+    <div class="sh-main"><div class="sh-list">
+      ${hiddenList.length?`<div class="arch-sec-lbl">Hidden from canvas · Lineage &amp; AI context active (${hiddenList.length})</div>${hiddenList.map(n=>`<div class="arch-row" data-arch-id="${n.id}"><div class="bt"><b>${esc(titleOf(n)||kindLabel(n))}</b><small>${esc(kindLabel(n))} · hidden ${ago(n.hiddenAt||n.created)}</small></div><button type="button" class="cbtn" data-arch-restore="${n.id}">Show</button><button type="button" class="cbtn" data-hid-arch="${n.id}">Archive</button><button type="button" class="m-iconbtn danger" data-arch-del="${n.id}" title="Delete permanently" aria-label="Delete permanently">${ic("trash")}</button></div>`).join("")}`:""}
+      ${archList.length?`<div class="arch-sec-lbl">Archived sources · Excluded from new AI (${archList.length})</div>${archList.map(n=>`<div class="arch-row" data-arch-id="${n.id}"><div class="bt"><b>${esc(titleOf(n)||kindLabel(n))}</b><small>${esc(kindLabel(n))} · archived ${ago(n.archivedAt||n.created)}</small></div><button type="button" class="cbtn" data-arch-restore="${n.id}">Reactivate</button><button type="button" class="m-iconbtn danger" data-arch-del="${n.id}" title="Delete permanently" aria-label="Delete permanently">${ic("trash")}</button></div>`).join("")}`:""}
+      ${!total?`<p style="margin:12px 0;color:var(--label-3);font:14px/1.5 var(--ui)">No hidden or archived cards on this board.</p>`:""}
+    </div></div>`;
     if(!dlg.open)dlg.showModal();
-    qs("[data-arch-all]",dlg)?.addEventListener("click",()=>{restoreNodes(list.map(n=>n.id));dlg.close()});
-    dlg.querySelectorAll("[data-arch-restore]").forEach(b=>b.onclick=()=>{restoreNodes([b.dataset.archRestore]);if(board.nodes.some(n=>n.archived))paint();else dlg.close()});
-    dlg.querySelectorAll("[data-arch-del]").forEach(b=>b.onclick=()=>{erase([b.dataset.archDel]).then(()=>{if(board.nodes.some(n=>n.archived))paint();else dlg.close()})});
+    const allIds=[...hiddenList,...archList].map(n=>n.id);
+    qs("[data-arch-all]",dlg)?.addEventListener("click",()=>{restoreNodes(allIds);dlg.close()});
+    dlg.querySelectorAll("[data-arch-restore]").forEach(b=>b.onclick=()=>{restoreNodes([b.dataset.archRestore]);if(board.nodes.some(n=>!n.tombstone&&(n.archived||n.hidden)))paint();else dlg.close()});
+    dlg.querySelectorAll("[data-hid-arch]").forEach(b=>b.onclick=()=>{archiveNodes([b.dataset.hidArch]);paint()});
+    dlg.querySelectorAll("[data-arch-del]").forEach(b=>b.onclick=()=>{const id=b.dataset.archDel;erase([id],{permanent:true}).then(res=>{if(res==="prompted")return;if(board.nodes.some(n=>!n.tombstone&&(n.archived||n.hidden)))paint();else dlg.close()})});
   };
   paint();
 }
@@ -8568,6 +9123,7 @@ function act(a,n,el){
     case"open-url":return window.open(safeHref(n.url),"_blank","noopener,noreferrer");
     case"download-attach":return downloadAttachment(n);
     case"archive":return archiveNodes([n.id]);
+    case"hide":return hideFromCanvasNodes([n.id]);
     case"adopt":return adopt(n);
     case"build":return build(n);
     case"rebuild":return build(n);
@@ -8698,8 +9254,13 @@ nodesEl.addEventListener("dblclick",e=>{
 $("margin").addEventListener("click",e=>{
   const b=e.target.closest("[data-m]");if(!b)return;const n=one();const a=b.dataset.m;
   if(a==="close")return closeFocus();
+  if(a==="hide-card"){const id=n?.id;closeFocus();return setTimeout(()=>id&&hideFromCanvasNodes([id]),calm()?0:220)}
   if(a==="archive"){const id=n?.id;closeFocus();return setTimeout(()=>id&&archiveNodes([id]),calm()?0:220)}
   if(a==="delete-card"){const id=n?.id;closeFocus();return setTimeout(()=>id&&erase([id]),calm()?0:220)}
+  if(a==="restore-src"){const t=byId(b.dataset.id);if(t){restoreNodes([t.id]);if(n){select([n.id],{menus:false});openFocus(n.id)}}return}
+  if(a==="clear-broken"){if(n&&b.dataset.id)clearUnavailableRef(n,b.dataset.id);return}
+  if(a==="new-version"){if(n){const nv=createNewVersionFromNode(n);if(nv){select([nv.id]);openFocus(nv.id)}}return}
+  if(a==="mark-reviewed"){if(n)markNodeReviewed(n);return}
   if(a==="open-url")return n?.url&&window.open(safeHref(n.url),"_blank","noopener,noreferrer");
   if(a==="download-attach")return downloadAttachment(n);
   if(a==="html-mode"){const ed=qs("#mHtmlEd");if(ed&&n)saveHtmlCode(n,ed.value);marginHtmlEdit=b.dataset.v==="code";return renderMargin()}
@@ -8756,8 +9317,8 @@ $("overlays").addEventListener("click",e=>{const b=e.target.closest("[data-p]");
   if(b.dataset.p==="next")return nextReview(1);
   if(b.dataset.p==="ink")ink(ids);else if(b.dataset.p==="erase")erase(ids);else redraw(pid)});
 $("selbar").addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(!b)return;const ns=selected();
-  ({gather:()=>gather(ns),list:()=>makeList(ns),kanban:()=>makeKanban(ns),gif:()=>generateGif("",{sources:ns,from:ns[0]}),video:()=>generateVideo("",{sources:ns,from:ns[0]}),critique:()=>critique(ns[0]),"align-x":()=>alignSelected("x"),"align-y":()=>alignSelected("y"),grid:tidySelectedGrid,dup:duplicateSelection,group:()=>wrapSelectionInGroup(ns),archive:()=>archiveNodes(ns.map(n=>n.id)),delete:()=>erase(ns.map(n=>n.id))})[b.dataset.s]?.()});
-$("wirePop")?.addEventListener("click",e=>{const b=e.target.closest("[data-wire-del]");if(b)deleteEdgeById(b.dataset.wireDel)});
+  ({gather:()=>gather(ns),list:()=>makeList(ns),kanban:()=>makeKanban(ns),gif:()=>generateGif("",{sources:ns,from:ns[0]}),video:()=>generateVideo("",{sources:ns,from:ns[0]}),critique:()=>critique(ns[0]),"align-x":()=>alignSelected("x"),"align-y":()=>alignSelected("y"),grid:tidySelectedGrid,dup:duplicateSelection,group:()=>wrapSelectionInGroup(ns),hide:()=>hideFromCanvasNodes(ns.map(n=>n.id)),archive:()=>archiveNodes(ns.map(n=>n.id)),delete:()=>erase(ns.map(n=>n.id))})[b.dataset.s]?.()});
+$("wirePop")?.addEventListener("click",e=>{const db=e.target.closest("[data-wire-dep]");if(db){setEdgeDepType(db.dataset.wireEdge,db.dataset.wireDep);return}const b=e.target.closest("[data-wire-del]");if(b)deleteEdgeById(b.dataset.wireDel)});
 
 /* ── find bar, spatial align, duplicate/copy-paste, board backup ────── */
 function alignSelected(axis){
@@ -9281,7 +9842,7 @@ function startEdit(id,field){
   const f=t.dataset.edit;t.contentEditable="true";
   const done=save=>{t.contentEditable="false";t.removeEventListener("blur",onBlur);t.removeEventListener("keydown",onKey);
     const v=t.innerText.trim(),changed=save&&v!==(n[f]||"");
-    if(changed){checkpoint();n[f]=v;n.updated=NOW();log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id)}
+    if(changed){checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;n[f]=v;recordNodeEdit(n,prevD,prevT,prevTx);log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id)}
     if(n.type==="note"&&!n.text){board.nodes=board.nodes.filter(x=>x!==n);sel=sel.filter(x=>x!==n.id)}
     else if(changed&&n.type!=="group"&&v.length>=10)scheduleAdvisor(n.id,{delay:1400});
     el._sig="";renderAll();persist()};
@@ -9485,7 +10046,7 @@ function endPointer(e){
     return;
   }
   if(g.type==="wire"){qsa(".card.hit").forEach(c=>c.classList.remove("hit"));const over=cardAt(e.clientX,e.clientY);const a=wireDrag.from;wireDrag=null;
-    if(over&&over.dataset.id!==a.id){const b=byId(over.dataset.id);checkpoint();edge(a.id,b.id,"src");log("you",`Fed <b>${esc(titleOf(a))}</b> into <b>${esc(titleOf(b))}</b>`,b.id);renderAll();persist();toast(`${titleOf(a)} now feeds ${titleOf(b)}`)}else drawWires()}
+    if(over&&over.dataset.id!==a.id){const b=byId(over.dataset.id);checkpoint();edge(a.id,b.id,"src","reference");log("you",`Fed <b>${esc(titleOf(a))}</b> into <b>${esc(titleOf(b))}</b>`,b.id);renderAll();persist();toast(`${titleOf(a)} now feeds ${titleOf(b)}`)}else drawWires()}
 }
 wall.addEventListener("pointerup",endPointer);wall.addEventListener("pointercancel",endPointer);
 wall.addEventListener("wheel",e=>{

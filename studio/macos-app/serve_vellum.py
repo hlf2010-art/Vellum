@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Static and cutout HTTP server for the bundled Vellum macOS app."""
+import argparse
+import os
+import subprocess
+import threading
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+APP_DIR = Path(__file__).resolve().parents[2]
+CUTOUT = APP_DIR / "studio" / "cutout" / "foreground.swift"
+cutout_slot = threading.Lock()
+
+
+class VellumHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(APP_DIR), **kwargs)
+
+    def cutout_allowed(self):
+        origin = self.headers.get("Origin", "")
+        host = self.headers.get("Host", "").split(":")[0]
+        return host in ("127.0.0.1", "localhost") and (
+            origin in ("", "null")
+            or (urlsplit(origin).scheme in ("http", "https") and urlsplit(origin).hostname in ("localhost", "127.0.0.1"))
+        )
+
+    def do_OPTIONS(self):
+        if self.path != "/cutout" or not self.cutout_allowed():
+            return self.send_error(403)
+        self.send_response(204)
+        self.end_headers()
+
+    def do_POST(self):
+        if self.path != "/cutout" or not self.cutout_allowed() or self.headers.get("X-Studio-Client") != "canvas":
+            return self.send_error(403)
+        try:
+            size = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            return self.send_error(400)
+        if not 0 < size <= 48_000_000:
+            return self.send_error(413)
+        if not CUTOUT.is_file():
+            return self.send_error(404)
+        if not cutout_slot.acquire(False):
+            return self.send_error(429)
+        try:
+            result = subprocess.run(
+                ["/usr/bin/swift", str(CUTOUT)],
+                input=self.rfile.read(size),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                timeout=90,
+            )
+            if result.returncode or not result.stdout.startswith(b"\x89PNG"):
+                return self.send_error(422)
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(result.stdout)))
+            self.end_headers()
+            self.wfile.write(result.stdout)
+        except (OSError, subprocess.TimeoutExpired):
+            self.send_error(503)
+        finally:
+            cutout_slot.release()
+
+    def do_GET(self):
+        req_path = unquote(urlsplit(self.path).path)
+        if req_path in ("/", "/index.html"):
+            self.path = "/Vellum-Lumen.html"
+        elif req_path == "/app-health":
+            body = b'{"ok":true}'
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        super().do_GET()
+
+    def end_headers(self):
+        if self.path == "/cutout" and self.cutout_allowed():
+            self.send_header("Access-Control-Allow-Origin", self.headers.get("Origin", "null"))
+            self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Studio-Client")
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
+    def log_message(self, format, *args):
+        pass
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8791)
+    args = parser.parse_args()
+    os.chdir(APP_DIR)
+    server = ThreadingHTTPServer(("127.0.0.1", args.port), VellumHandler)
+    print(f"Vellum UI ready at http://127.0.0.1:{args.port}/Vellum-Lumen.html", flush=True)
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

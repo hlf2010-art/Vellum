@@ -1732,8 +1732,27 @@ dialog.sheet:focus{outline:none}
 .s-link-card .sl-url{font:500 13px/1.45 var(--mono);color:rgba(255,255,255,.6);word-break:break-all;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.08)}
 .s-link-card p{margin:0;font:450 14px/1.55 var(--ui);color:rgba(255,255,255,.72)}
 .s-link-card .sl-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px}
-.sh-io{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.sh-io{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;padding-top:10px;border-top:.5px solid var(--hair)}
 .sh-io .sh-new{margin-top:0}
+.sys-btn{width:36px;padding:0;justify-content:center}
+.boards-list{max-height:min(38vh,276px);overflow-y:auto;padding:0 2px 4px;scrollbar-width:thin}
+dialog.sheet.sys-sheet{width:min(468px,calc(100% - 24px));max-height:min(88vh,720px)}
+dialog.sheet.sys-sheet[open]{display:flex;flex-direction:column}
+.sys-sheet .sh-head{flex:none;padding:22px 20px 18px 24px}
+.sys-sheet .sh-main{overflow-y:auto;padding:0 24px 22px}
+.sys-ico{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--well);box-shadow:inset 0 0 0 .5px var(--hair-2);color:var(--label-2)}
+.sys-ico .ico{width:19px;height:19px}
+.sys-group{display:grid;border-radius:14px;background:var(--well);box-shadow:inset 0 0 0 .5px var(--hair);overflow:hidden}
+.sys-row{width:100%;display:flex;align-items:center;gap:12px;padding:11px 14px;text-align:left;transition:background var(--d-quick)}
+.sys-row+.sys-row{border-top:.5px solid var(--hair)}
+.sys-row:hover{background:var(--hover)}
+.sys-row-ico{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:8px;background:var(--card);box-shadow:0 0 0 .5px var(--hair);color:var(--label-2)}
+.sys-row-ico .ico{width:14px;height:14px}
+.sys-row-txt{flex:1;min-width:0}
+.sys-row-txt b{display:block;font:560 13.5px/1.25 var(--ui);color:var(--label)}
+.sys-row-txt small{display:block;margin-top:2px;font:400 11.8px/1.3 var(--ui);color:var(--label-3)}
+.sys-row .chev{width:14px;height:14px;color:var(--label-3);opacity:.65;flex:none}
+.sys-note{margin:8px 2px 0;font:400 11.5px/1.45 var(--ui);color:var(--label-3)}
 </style>
 <div id="app">
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
@@ -1752,7 +1771,7 @@ dialog.sheet:focus{outline:none}
 
   <header class="top">
     <div class="brand">
-      <button type="button" class="project" id="projectBtn" aria-haspopup="dialog" title="Boards, appearance and help">
+      <button type="button" class="project" id="projectBtn" aria-haspopup="dialog" title="Boards — switch, create or import">
         <span class="app" aria-hidden="true"></span>
         <span class="nm"><b id="projectName">Untitled</b><small id="saveNote">Saved</small></span>
         <svg class="ico" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
@@ -1762,6 +1781,7 @@ dialog.sheet:focus{outline:none}
       <button type="button" class="arch-btn" id="archiveBtn" hidden title="Archived cards"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="4" rx="1.2"/><path d="M5 8.5v9.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5M10 13h4"/></svg><span id="archCount">0</span></button>
       <button type="button" class="review" id="reviewBtn" hidden><i></i><span id="reviewTxt">1 waiting</span></button>
       <div class="crew" id="crew" role="group" aria-label="Crew"></div>
+      <button type="button" class="arch-btn sys-btn" id="settingsBtn" aria-haspopup="dialog" aria-label="System Settings" title="System Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
 
@@ -1923,6 +1943,7 @@ const ICONS={
   alignL:'<path d="M4 4v16M8 7h12v4H8zM8 14h8v4H8z"/>',
   alignT:'<path d="M4 4h16M7 8v12h4V8zM14 8v8h4V8z"/>',
   exportFile:'<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
 };
 const ic=(n,c="ico")=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||""}</svg>`;
 
@@ -4557,7 +4578,7 @@ function memoryDialog(){
       <textarea id="memStudio" class="mem-box" placeholder="Standing preferences for every project (like AGENTS.md): tone, conventions, research standards…">${esc(sMem)}</textarea>
     </div>
   </div>
-  <footer class="sh-foot"><button type="button" class="sh-link" data-act2="boards">Boards &amp; Settings</button><span class="sp"></span><span class="mem-status${active?" on":""}" id="memStatus" title="Saved in this browser and injected into Copilot &amp; crew prompts"><i></i><span>${active?"Active · Saved":"Not set"}</span></span><button type="button" class="cbtn solid" data-d="close" title="Done (⌘↵)" style="height:32px;padding:0 16px;font-size:13px">Done</button></footer>`;
+  <footer class="sh-foot"><button type="button" class="sh-link" data-act2="settings">${L("System Settings","系统设置")}</button><span class="sp"></span><span class="mem-status${active?" on":""}" id="memStatus" title="Saved in this browser and injected into Copilot &amp; crew prompts"><i></i><span>${active?"Active · Saved":"Not set"}</span></span><button type="button" class="cbtn solid" data-d="close" title="Done (⌘↵)" style="height:32px;padding:0 16px;font-size:13px">Done</button></footer>`;
   dlg.showModal();const d=dlg;
   const bIn=qs("#memBoard",d),sIn=qs("#memStudio",d),st=qs("#memStatus",d);
   const clrB=qs('[data-mem="clear-board"]',d),clrS=qs('[data-mem="clear-studio"]',d);
@@ -4584,7 +4605,7 @@ function memoryDialog(){
   };
   clrB.onclick=()=>{if(!bIn.value.trim())return;checkpoint();bIn.value="";syncMem();toast("Cleared project memory",{undo:true})};
   clrS.onclick=()=>{if(!sIn.value.trim())return;sIn.value="";syncMem();toast("Cleared studio rules")};
-  qs('[data-act2="boards"]',d).onclick=()=>{d.close();boardsDialog()};
+  qs('[data-act2="settings"]',d).onclick=()=>{d.close();systemSettingsDialog()};
   syncBtns();
   requestAnimationFrame(()=>{fitBox(bIn,112,220);fitBox(sIn,92,170)});
   if(!bMem.trim()&&!sMem.trim())setTimeout(()=>bIn.focus(),30);
@@ -6359,7 +6380,8 @@ function parseConfigIntent(raw,{explicit=false}={}){
   if(/\b(?:reconnect|refresh|wake(?:\s+up)?|check|ping)\s+(?:the\s+)?(?:local\s+)?(?:studio\s+)?ai\b/i.test(t))p.refreshAI=true;
   if(/\b(?:reconnect|refresh|check|ping)\s+(?:the\s+)?(?:local\s+)?image\s*(?:service|server|models?)\b/i.test(t))p.refreshImg=true;
   if(/\b(?:open|show|edit|view)\s+(?:the\s+)?(?:project\s+)?(?:memory|brief|agents\.md|instructions?|studio\s+rules)\b/i.test(t))p.openDialog="memory";
-  else if(/\b(?:open|show)\s+(?:the\s+)?(?:board\s+)?(?:settings?|preferences?|appearance)\b/i.test(t))p.openDialog="boards";
+  else if(/\b(?:open|show)\s+(?:the\s+)?(?:system\s+)?(?:settings?|preferences?|appearance)\b/i.test(t))p.openDialog="settings";
+  else if(/\b(?:open|show)\s+(?:the\s+)?boards?(?:\s+list)?\b/i.test(t))p.openDialog="boards";
   else if(/\b(?:open|show)\s+(?:the\s+)?(?:activity(?:\s+ledger)?|history|log)\b/i.test(t))p.openDialog="ledger";
   else if(/\b(?:open|show)\s+(?:the\s+)?(?:shortcuts?|help)\b/i.test(t))p.openDialog="help";
   if(!Object.keys(p).length)return null;
@@ -6438,7 +6460,8 @@ function applyConfigPatch(rawPatch,{source="line",silent=false}={}){
   if(p.refreshImg){refreshImageService({quiet:false});applied.push("Checking image service")}
   if(p.openDialog==="memory"){memoryDialog();applied.push("Opened memory")}
   else if(p.openDialog==="mcp"){mcpDialog();applied.push("Opened MCP sources")}
-  else if(p.openDialog==="boards"){boardsDialog();applied.push("Opened settings")}
+  else if(p.openDialog==="settings"){systemSettingsDialog();applied.push("Opened system settings")}
+  else if(p.openDialog==="boards"){boardsDialog();applied.push("Opened boards")}
   else if(p.openDialog==="ledger"){$("ledgerBtn").click();applied.push("Opened activity")}
   else if(p.openDialog==="help"){helpDialog();applied.push("Opened shortcuts")}
   if(persistUndoable){lastConfigSnap=snap;log("you",`Settings: ${esc(applied.join(", "))}`)}
@@ -6457,12 +6480,12 @@ Current: ${systemConfigSummary()}.`;
   return r?.v&&typeof r.v==="object"?r.v:null;
 }
 async function configureSystem(r){
-  if(r.explicit&&!r.arg&&!r.patch){boardsDialog();toast(systemConfigSummary());return}
+  if(r.explicit&&!r.arg&&!r.patch){systemSettingsDialog();toast(systemConfigSummary());return}
   let patch=r.patch;
   if(!patch&&r.arg&&(studioState.status==="ready"||sampleFn)){patch=await aiResolveConfig(r.arg)}
   if(!patch&&r.arg){patch=parseConfigIntent(r.arg,{explicit:true})}
   if(patch&&Object.keys(patch).length){applyConfigPatch(patch,{source:"line"});return}
-  boardsDialog();
+  systemSettingsDialog();
   toast("Try natural settings like “dark mode”, “16:9 ratio, 4 images”, or “rename board to Study 2”.");
 }
 function searchQuery(t){return t.replace(/^(?:please\s+)?(?:search(?:\s+the\s+web)?|look\s+up|look\s+for|google|find)\s+(?:me\s+)?(?:for\s+)?(?:some\s+)?(?:(?:reference\s+)?(?:photos?|images?|pictures?|references?)\s+(?:of|for)\s+)?/i,"").trim()||t}
@@ -8960,38 +8983,63 @@ function boardThumb(b){
   return `<span class="bthumb">${ns.slice(0,40).map(n=>{const l=L(n);return `<i style="left:${clamp(n.x/(BAY*4),0,.94)*100}%;top:${clamp((n.y+200)/1700,0,.88)*100}%${l?`;background:var(--${l})`:""}"></i>`}).join("")}</span>`;
 }
 function boardsDialog(){
-  // why people come here: see which board this is, rename it, switch or start another. Appearance is secondary; everything else is a quiet link.
+  // Boards List window: manage, switch, create, import JSON, or delete boards.
   const others=store.get(".list",[]).filter(b=>b.id!==board.id).map(b=>store.get(".board."+b.id,null)||b).filter(Boolean);
-  const theme=store.get(".theme",null)||"auto",count=b=>Array.isArray(b.nodes)?b.nodes.filter(n=>n.status==="ink").length:0;
+  const count=b=>Array.isArray(b.nodes)?b.nodes.filter(n=>n.status==="ink").length:0;
   const row=b=>`<button type="button" class="brow" data-open="${b.id}">${Array.isArray(b.nodes)?boardThumb(b):`<span class="bthumb plus">${ic("notepad")}</span>`}<span class="bt"><b>${esc(b.title||"Untitled board")}</b><small>${Array.isArray(b.nodes)?count(b)+" cards":"Stored locally"} · ${ago(b.updated)}</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>`;
   const seedRow=board.id==="modwork"||others.some(b=>b.id==="modwork")?"":`<button type="button" class="brow" data-seed><span class="bthumb plus"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3.5c.5 3.9 2 6.3 6.3 7.3-4.3 1-5.8 3.4-6.3 7.3-.5-3.9-2-6.3-6.3-7.3 4.3-1 5.8-3.4 6.3-7.3z"/></svg></span><span class="bt"><b>MOD WORK study</b><small>Restore confirmation example</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>`;
-  const showcaseRow=`<button type="button" class="brow" data-showcase><span class="bthumb plus"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3.5c.5 3.9 2 6.3 6.3 7.3-4.3 1-5.8 3.4-6.3 7.3-.5-3.9-2-6.3-6.3-7.3 4.3-1 5.8-3.4 6.3-7.3z"/></svg></span><span class="bt"><b>${board.id==="showcase"?"Reset ASHEN CROWN Showcase":"ASHEN CROWN · Faction HUD Showcase"}</b><small>Full capability sample · Gather → Diverge → Make → Release</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>`;
-  const opt=(t,l)=>`<button type="button" data-th="${t}" aria-pressed="${theme===t}"><i class="sw ${t}"></i>${l}</button>`;
+  const showcaseRow=`<button type="button" class="brow" data-showcase><span class="bthumb plus"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3.5c.5 3.9 2 6.3 6.3 7.3-4.3 1-5.8 3.4-6.3 7.3-.5-3.9-2-6.3-6.3-7.3 4.3-1 5.8-3.4 6.3-7.3z"/></svg></span><span class="bt"><b>${board.id==="showcase"?L("Reset ASHEN CROWN Showcase","重置 ASHEN CROWN 示例画板"):"ASHEN CROWN · Faction HUD Showcase"}</b><small>Full capability sample · Gather → Diverge → Make → Release</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>`;
   dlg.className="sheet";
   dlg.innerHTML=`<header class="sh-head">${boardThumb(board).replace('class="bthumb','class="bthumb big')}
     <div class="sh-id"><label for="bName" class="sr">Board name</label><input id="bName" value="${esc(board.title)}" placeholder="Untitled board" spellcheck="false" autocomplete="off"><small>${count(board)} cards · ${storageOk?"saved in this browser":"this session only"}</small></div>
     <button type="button" class="sh-x" data-d="close" aria-label="Close">${ic("x")}</button></header>
   <div class="sh-main">
-    <section class="sh-sec"><h3>Switch to</h3><div class="sh-list">${others.filter(b=>b.id!=="showcase").map(row).join("")}${showcaseRow}${seedRow}</div>
-    <div class="sh-io"><button type="button" class="sh-new" data-new><svg class="ico" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg>New board</button><button type="button" class="sh-new" data-import>${ic("down")}Import JSON</button></div></section>
-    <section class="sh-sec sh-row"><h3>${L("Appearance","外观")}</h3><div class="sh-seg" role="group" aria-label="${L("Appearance","外观")}">${opt("auto",L("Auto","自动"))}${opt("light",L("Light","浅色"))}${opt("dark",L("Dark","深色"))}</div></section>
-    <section class="sh-sec sh-row"><h3>${L("Language","语言")}</h3><div class="sh-seg" role="group" aria-label="${L("Language","语言")}"><button type="button" data-lang="en" aria-pressed="${uiLang()==="en"}">English</button><button type="button" data-lang="zh" aria-pressed="${uiLang()==="zh"}">中文</button></div></section>
+    <section class="sh-sec"><h3>${L("Boards","画板列表")}</h3><div class="sh-list boards-list">${others.filter(b=>b.id!=="showcase").map(row).join("")}${showcaseRow}${seedRow}</div>
+    <div class="sh-io"><button type="button" class="sh-new" data-new><svg class="ico" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg>${L("New board","新建画板")}</button><button type="button" class="sh-new" data-import>${ic("down")}${L("Import JSON","导入 JSON")}</button></div></section>
   </div>
-  <footer class="sh-foot"><button type="button" class="sh-link" data-act2="memory">Memory</button><button type="button" class="sh-link" data-act2="ledger">Activity</button><button type="button" class="sh-link" data-act2="help">Shortcuts</button><button type="button" class="sh-link" data-export>Export JSON</button><span class="sp"></span><button type="button" class="sh-link sh-del" data-del>Delete board</button></footer>`;
+  <footer class="sh-foot"><span class="sp"></span><button type="button" class="sh-link sh-del" data-del>${L("Delete board","删除当前画板")}</button></footer>`;
   dlg.showModal();const d=dlg;d.focus();
-  d.querySelectorAll("[data-th]").forEach(b=>b.onclick=()=>{const t=b.dataset.th;if(t==="auto"){store.del(".theme");delete document.documentElement.dataset.theme}else{store.set(".theme",t);document.documentElement.dataset.theme=t}
-    d.querySelectorAll("[data-th]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));qsa("[data-id]",nodesEl).forEach(el=>el._sig="");renderNodes();paintMap()});
-  d.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{const lg=b.dataset.lang==="zh"?"zh":"en";store.set(".lang",lg);document.documentElement.lang=lg==="zh"?"zh-CN":"en";renderCrew();if(studioPopOpen)renderStudioPop();if(!$("genOpts")?.hidden){const rr=route(lineText());renderGenOpts(true,lineMode||rr?.kind||"image")}boardsDialog()});
-  d.querySelectorAll("[data-act2]").forEach(b=>b.onclick=()=>{d.close();const a=b.dataset.act2;if(a==="memory")memoryDialog();else if(a==="help")helpDialog();else $("ledgerBtn").click()});
   const name=qs("#bName",d);name.onchange=()=>{board.title=name.value.trim();renderAll();persist()};name.onkeydown=e=>{if(e.key==="Enter"){name.blur()}};
   d.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{switchBoard(b.dataset.open);d.close()});
   qs("[data-new]",d).onclick=()=>{persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY*1.6,y1:820},.85),0);persist();d.close();setTimeout(()=>lineIn.focus(),100)};
   qs("[data-import]",d).onclick=()=>{d.close();$("boardImportIn").click()};
-  qs("[data-export]",d).onclick=()=>{d.close();exportCurrentBoard()};
   qs("[data-seed]",d)?.addEventListener("click",()=>{persistNow();const ex=store.get(".board.modwork",null);if(ex&&ex.nodes)board=ex;else board=seed();sel=[];undoStack=[];redoStack=[];syncHistoryBtns();renderAll();openingShot(false);persist();d.close()});
   qs("[data-showcase]",d)?.addEventListener("click",()=>{const reset=board.id==="showcase";persistNow();const ex=!reset&&store.get(".board.showcase",null);if(ex&&ex.nodes)board=ex;else board=sampleShowcase();sel=[];undoStack=[];redoStack=[];lineExtras=[];syncHistoryBtns();renderAll();ensureShowcaseAssets();restoreMedia();renderCopilot?.();openingShot(false);persist();d.close();if(reset)toast("Showcase board restored")});
-  const del=qs("[data-del]",d);del.onclick=()=>{if(del.dataset.sure){store.del(".board."+board.id);delBoardIdb(board.id);store.set(".list",store.get(".list",[]).filter(b=>b.id!==board.id));const nxt=store.get(".list",[])[0];if(nxt)switchBoard(nxt.id);else{board=seed();renderAll();openingShot(false);persist()}d.close();toast("Board deleted")}
-    else{del.dataset.sure=1;del.classList.add("sure");del.textContent="Delete this board?";setTimeout(()=>{if(del.isConnected){delete del.dataset.sure;del.classList.remove("sure");del.textContent="Delete board"}},4000)}};
+  const del=qs("[data-del]",d);del.onclick=()=>{if(del.dataset.sure){store.del(".board."+board.id);delBoardIdb(board.id);store.set(".list",store.get(".list",[]).filter(b=>b.id!==board.id));const nxt=store.get(".list",[])[0];if(nxt)switchBoard(nxt.id);else{board=seed();renderAll();openingShot(false);persist()}d.close();toast(L("Board deleted","画板已删除"))}
+    else{del.dataset.sure=1;del.classList.add("sure");del.textContent=L("Delete this board?","确认删除当前画板?");setTimeout(()=>{if(del.isConnected){delete del.dataset.sure;del.classList.remove("sure");del.textContent=L("Delete board","删除当前画板")}},4000)}};
+}
+function systemSettingsDialog(){
+  const theme=store.get(".theme",null)||"auto";
+  const opt=(t,l)=>`<button type="button" data-th="${t}" aria-pressed="${theme===t}"><i class="sw ${t}"></i>${l}</button>`;
+  dlg.className="sheet sys-sheet";
+  dlg.innerHTML=`<header class="sh-head">
+    <span class="sys-ico" aria-hidden="true">${ic("settings")}</span>
+    <div class="sh-id"><b style="display:block;font:650 17px/1.2 var(--ui);color:var(--label)">${L("System Settings","系统设置")}</b><small>${L("Appearance, language, workspace & data","外观、语言、工作区与数据")}</small></div>
+    <button type="button" class="sh-x" data-d="close" aria-label="Close">${ic("x")}</button>
+  </header>
+  <div class="sh-main">
+    <section class="sh-sec sh-row"><h3>${L("Appearance","外观")}</h3><div class="sh-seg" role="group" aria-label="${L("Appearance","外观")}">${opt("auto",L("Auto","自动"))}${opt("light",L("Light","浅色"))}${opt("dark",L("Dark","深色"))}</div></section>
+    <section class="sh-sec sh-row"><h3>${L("Language","语言")}</h3><div class="sh-seg" role="group" aria-label="${L("Language","语言")}"><button type="button" data-lang="en" aria-pressed="${uiLang()==="en"}">English</button><button type="button" data-lang="zh" aria-pressed="${uiLang()==="zh"}">中文</button></div></section>
+    <section class="sh-sec"><h3>${L("Workspace & Guides","工作区与指南")}</h3>
+      <div class="sys-group">
+        <button type="button" class="sys-row" data-act2="memory"><span class="sys-row-ico">${ic("notepad")}</span><span class="sys-row-txt"><b>${L("Memory","记忆规则")}</b><small>${L("Board brief & studio rules injected into Copilot","当前画板简报与全局规则（自动注入 Copilot）")}</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>
+        <button type="button" class="sys-row" data-act2="ledger"><span class="sys-row-ico">${ic("list")}</span><span class="sys-row-txt"><b>${L("Activity","活动记录")}</b><small>${L("Crew runs, outputs & board ledger","助手运行历史、输出与画板日志")}</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>
+        <button type="button" class="sys-row" data-act2="help"><span class="sys-row-ico">${ic("question")}</span><span class="sys-row-txt"><b>${L("Shortcuts & Tutorial","快捷键与教程")}</b><small>${L("How Lumen works & keyboard shortcuts","核心工作流原则与快捷键列表")}</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>
+      </div>
+    </section>
+    <section class="sh-sec"><h3>${L("Data Management","数据管理")}</h3>
+      <div class="sys-group">
+        <button type="button" class="sys-row" data-export><span class="sys-row-ico">${ic("exportFile")}</span><span class="sys-row-txt"><b>${L("Export JSON","导出画板 JSON")}</b><small>${L("Download current board (.vellum.json) for backup or transfer","将当前画板导出为 .vellum.json 文件用于备份或跨端迁移")}</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>
+      </div>
+      <p class="sys-note">${L("Boards auto-save in this browser’s local storage. Export JSON to keep an offline backup or move a board between browsers and the desktop app.","画板会自动保存在当前浏览器的本地存储中。导出 JSON 可用于本地备份，或在浏览器与桌面应用之间迁移画板。")}</p>
+    </section>
+  </div>`;
+  dlg.showModal();const d=dlg;d.focus();
+  d.querySelectorAll("[data-th]").forEach(b=>b.onclick=()=>{const t=b.dataset.th;if(t==="auto"){store.del(".theme");delete document.documentElement.dataset.theme}else{store.set(".theme",t);document.documentElement.dataset.theme=t}
+    d.querySelectorAll("[data-th]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));qsa("[data-id]",nodesEl).forEach(el=>el._sig="");renderNodes();paintMap()});
+  d.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{const lg=b.dataset.lang==="zh"?"zh":"en";store.set(".lang",lg);document.documentElement.lang=lg==="zh"?"zh-CN":"en";renderCrew();if(studioPopOpen)renderStudioPop();if(!$("genOpts")?.hidden){const rr=route(lineText());renderGenOpts(true,lineMode||rr?.kind||"image")}systemSettingsDialog()});
+  d.querySelectorAll("[data-act2]").forEach(b=>b.onclick=()=>{d.close();const a=b.dataset.act2;if(a==="memory")memoryDialog();else if(a==="help")helpDialog();else $("ledgerBtn").click()});
+  qs("[data-export]",d).onclick=()=>{d.close();exportCurrentBoard()};
 }
 function persistNow(){
   clearTimeout(saveT);board.updated=NOW();
@@ -9039,6 +9087,7 @@ qs(".zoom").addEventListener("click",e=>{const b=e.target.closest("button");if(!
   ({zout:()=>zoomAt(1/1.25,r.width/2,r.height/2),zin:()=>zoomAt(1.25,r.width/2,r.height/2),z100:()=>{const c=toWorld(r.width/2,r.height/2);flyTo({s:1,x:r.width/2-c.x,y:r.height/2-c.y},350)},fit:fitAll})[b.dataset.act]?.()});
 $("fileIn").addEventListener("change",e=>{addFiles(e.target.files);e.target.value=""});
 $("projectBtn").onclick=boardsDialog;
+$("settingsBtn").onclick=systemSettingsDialog;
 $("plusBtn").onclick=e=>{e.stopPropagation();const m=$("plusMenu");if(!m.hidden){m.hidden=true;syncLineClearance();return}
   const pmIco={
     files:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5V4.5M7.5 9 12 4.5 16.5 9M4.5 15.5v2A2.5 2.5 0 0 0 7 20h10a2.5 2.5 0 0 0 2.5-2.5v-2"/></svg>',

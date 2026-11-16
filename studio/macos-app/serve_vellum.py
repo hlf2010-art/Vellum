@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Static and cutout HTTP server for the bundled Vellum macOS app."""
 import argparse
+import html as html_lib
+import ipaddress
+import json
 import os
+import re
+import socket
 import subprocess
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
+from urllib.request import Request, urlopen
 
 APP_DIR = Path(__file__).resolve().parents[2]
 CUTOUT = APP_DIR / "studio" / "cutout" / "foreground.swift"
@@ -65,7 +71,8 @@ class VellumHandler(SimpleHTTPRequestHandler):
             cutout_slot.release()
 
     def do_GET(self):
-        req_path = unquote(urlsplit(self.path).path)
+        parsed = urlsplit(self.path)
+        req_path = unquote(parsed.path)
         if req_path in ("/", "/index.html"):
             self.path = "/Vellum-Lumen.html"
         elif req_path == "/app-health":
@@ -75,6 +82,18 @@ class VellumHandler(SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+            return
+        elif req_path == "/fetch-link":
+            if not self.cutout_allowed():
+                return self.send_error(403)
+            qs = parse_qs(parsed.query)
+            raw_url = (qs.get("url") or [""])[0].strip()
+            payload = json.dumps(fetch_link_summary(raw_url), ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
             return
         super().do_GET()
 
@@ -88,6 +107,48 @@ class VellumHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, format, *args):
         pass
+
+
+def _is_public_host(host: str) -> bool:
+    if not host or host.lower() in ("localhost", "ip6-localhost"):
+        return False
+    try:
+        infos = socket.getaddrinfo(host, None)
+        for info in infos:
+            ip = ipaddress.ip_address(info[4][0].split("%")[0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                return False
+        return bool(infos)
+    except OSError:
+        return False
+
+
+def fetch_link_summary(raw_url: str) -> dict:
+    try:
+        u = urlsplit(raw_url)
+        if u.scheme.lower() not in ("http", "https") or not u.hostname or not _is_public_host(u.hostname):
+            return {"ok": False, "error": "invalid_or_private_url"}
+        req = Request(raw_url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36", "Accept": "text/html,application/xhtml+xml"})
+        with urlopen(req, timeout=6) as resp:
+            ctype = (resp.headers.get("Content-Type") or "").lower()
+            if "html" not in ctype and "text" not in ctype:
+                return {"ok": False, "error": "non_html"}
+            raw = resp.read(524288)
+        text = raw.decode("utf-8", errors="replace")
+        def meta(prop):
+            m = re.search(rf'<meta[^>]+(?:name|property)=["\']{prop}["\'][^>]+content=["\']([^"\']+)["\']', text, re.I)
+            if not m:
+                m = re.search(rf'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:name|property)=["\']{prop}["\']', text, re.I)
+            return html_lib.unescape(m.group(1)).strip() if m else ""
+        tm = re.search(r"<title[^>]*>(.*?)</title>", text, re.I | re.S)
+        title = meta("og:title") or (html_lib.unescape(re.sub(r"\s+", " ", tm.group(1))).strip() if tm else "")
+        desc = meta("og:description") or meta("description")
+        cleaned = re.sub(r"<(script|style|noscript|svg|nav|footer|header)[^>]*>[\s\S]*?</\1>", " ", text, flags=re.I)
+        cleaned = re.sub(r"<[^>]+>", " ", cleaned)
+        cleaned = html_lib.unescape(re.sub(r"\s+", " ", cleaned)).strip()
+        return {"ok": True, "title": title[:160], "description": desc[:400], "excerpt": cleaned[:2200]}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:120]}
 
 
 def main():

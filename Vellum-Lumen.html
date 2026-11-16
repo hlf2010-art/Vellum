@@ -2461,7 +2461,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 @keyframes inkIn{from{color:var(--label-3)}}
 /* far out, a card is its title */
 #world.far .card:not(.group):not(.note)>*{visibility:hidden}
-#world.far .card:not(.group):not(.note) img,#world.far .card:not(.group):not(.note) video{visibility:visible}
+#world.far .card:not(.group):not(.note)>.adv-pin,#world.far .card:not(.group):not(.note)>.adv-pin *,#world.far .card:not(.group):not(.note) img,#world.far .card:not(.group):not(.note) video{visibility:visible}
 #world.far .card:not(.group):not(.note)::after{content:attr(data-t);position:absolute;inset:0;padding:calc(9px*var(--inv-s));background:none;opacity:1;pointer-events:none;overflow:hidden;
   font:600 calc(12px*var(--inv-s))/1.28 var(--ui);letter-spacing:-.01em;color:var(--label);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4}
 #world.far .card.sketch::after{color:var(--label-2)}
@@ -3377,11 +3377,11 @@ function sampleShowcase(){
 
   // Quiet Advisor Pins (demo co-work thoughts)
   b.pins[claim.id]=[
-    {id:"pin-sh-1",agent:"critic",note:"Love the **1.2s bar** inside a **14° cone** — super clear target 🎯 Just watch out for **cyan rain** or fast camera turns where rim color alone can vanish; pairing it with a shape or light haptic cue might save you later.",liftAct:"critique",liftLabel:"Draft a question card",t:T-140*min},
-    {id:"pin-sh-2",agent:"muse",note:"Glad we’re ditching noisy **corner toasts** 🙌 Quick sanity check though: could **NPC posture + spatial audio** carry 80% of this before we build a whole wrist gadget UI?",liftAct:"fork",liftLabel:"Explore alternatives",t:T-138*min}
+    {id:"pin-sh-1",agent:"critic",note:"Love the **1.2s bar** inside a **14° cone** — super clear target Just watch out for **cyan rain** or fast camera turns where rim color alone can vanish; pairing it with a shape or light haptic cue might save you later.",liftAct:"critique",liftLabel:"Draft a question card",t:T-140*min},
+    {id:"pin-sh-2",agent:"muse",note:"Glad we’re ditching noisy **corner toasts** Quick sanity check though: could **NPC posture + spatial audio** carry 80% of this before we build a whole wrist gadget UI?",liftAct:"fork",liftLabel:"Explore alternatives",t:T-138*min}
   ];
   b.pins[imgRef.id]=[
-    {id:"pin-sh-3",agent:"scout",note:"Nailed the moody **wet-brick bounce** and warm **wrist glow** here ✨ Just remember to keep this as **mood inspo** for now — we’ll still want real rain contrast numbers before locking brightness.",liftAct:"gather",liftLabel:"Synthesize with evidence",t:T-135*min}
+    {id:"pin-sh-3",agent:"scout",note:"Nailed the moody **wet-brick bounce** and warm **wrist glow** here Just remember to keep this as **mood inspo** for now — we’ll still want real rain contrast numbers before locking brightness.",liftAct:"gather",liftLabel:"Synthesize with evidence",t:T-135*min}
   ];
 
   // Activity Log
@@ -4149,7 +4149,7 @@ function deleteSynPoint(n,i){
   checkpoint();const [removed]=n.points.splice(i,1);n.updated=NOW();renderAll();persist();
   toast(removed?`Removed “${clip(removed,32)}”`:"Removed point",{undo:true});
 }
-const mdLite=s=>esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
+const mdLite=s=>esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g,"$1<i>$2</i>");
 function mdInline(s){
   const parts=String(s??"").split(/(`[^`]+`)/g);
   return parts.map((p,i)=>{
@@ -5148,7 +5148,7 @@ function renderAdvPop(){
   const a=AGENTS[p.agent]||AGENTS.critic;
   const body=(p.note||[p.take,p.edge].filter(Boolean).join(" ")).trim();
   const kws=(p.keywords&&p.keywords.length)?p.keywords:extractNodeKeywords(n);
-  const lift=p.liftLabel?`<button type="button" class="adv-lift" data-adv-lift="${esc(p.id)}">${ic("arrow")}${esc(p.liftLabel)}</button>`:"";
+  const lift=p.liftLabel&&!(p.replies||[]).length?`<button type="button" class="adv-lift" data-adv-lift="${esc(p.id)}">${ic("arrow")}${esc(p.liftLabel)}</button>`:"";
   const tools=`<button type="button" class="ib" data-adv-reroll title="${esc(L("Ask crew for a fresh angle","重新生成一条建议"))}" aria-label="Ask crew for a fresh angle">${ic("redo")}</button><button type="button" class="ib" data-adv-close title="${esc(L("Close","关闭"))}" aria-label="Close">${ic("x")}</button>`;
   const reps=Array.isArray(p.replies)?p.replies:[];
   const repsHTML=reps.length?`<div class="adv-replies">${reps.map(r=>{const isYou=r.who==="you",ra=isYou?null:(AGENTS[r.who]||a),tm=exactTime(r.t);return `<div class="adv-rep${isYou?" you":""}" data-adv-rep="${esc(r.id||"")}"><div class="adv-rep-h"><span>${esc(isYou?L("You","我"):ra.name)}</span>${tm?`<time>${esc(tm)}</time>`:""}</div><div class="adv-rep-tx${r.typing?" typing":""}">${mdLite(r.text||"")}</div></div>`}).join("")}</div>`:"";
@@ -5167,13 +5167,13 @@ async function replyToAdvPin(nodeId,pinId,rawText){
   p.replies.push(aiMsg);
   sfx("send");renderNodes();renderAdvPop();persist();
   const orig=(p.note||[p.take,p.edge].filter(Boolean).join(" ")).trim();
-  const hist=p.replies.slice(-8,-1).map(r=>(r.who==="you"?"Designer":(AGENTS[r.who]?.name||a.name))+": "+r.text).join("\n");
+  const hist=p.replies.slice(-8,-1).map(r=>(r.who==="you"?"Designer":(AGENTS[r.who]?.name||a.name)+" (you)")+": "+r.text).join("\n");
   const linked=[...inputsOf(n.id),...outputsOf(n.id)].filter((x,i,arr)=>x&&!x.archived&&!x.hidden&&!x.tombstone&&x.id!==n.id&&arr.findIndex(y=>y&&y.id===x.id)===i);
   const peers=rank(visibleNodes().filter(x=>x.id!==n.id&&x.type!=="group"&&x.status==="ink"&&!linked.some(l=>l.id===x.id)),`${titleOf(n)} ${text}`).slice(0,3);
   const directCtx=[n,...linked.slice(0,4)];
   const imgNodes=directCtx.filter(x=>x&&(x.type==="image"||x.type==="frame"));
   const peerText=peers.length?`\n\nOther relevant board cards (cross-reference by exact title only if genuinely helpful):\n${wallText(peers,{compactDocs:true,docCap:260,shortCap:160,totalCap:600})}`:"";
-  const prompt=`Initial pin you already left on “${titleOf(n)}” (the designer can already see this above — DO NOT repeat, paraphrase, or re-summarize it):
+  const prompt=`Initial pin you left on “${titleOf(n)}”. It is your own suggestion and the designer has not agreed to anything in it. They can already see it, so do not repeat or re-summarize it:
 "${orig}"
 
 This card & directly wired lineage:
@@ -5182,11 +5182,9 @@ ${wallText(directCtx,{docCap:1200,shortCap:260,totalCap:2200})}${peerText}
 Thread so far:
 ${hist}
 
-Reply directly to the designer in 1-3 concise, concrete sentences (matching their language):
-1. Push the conversation FORWARD from the initial pin: surface a new detail, a contrast or gap against another card on the board, or a concrete next check/experiment.
-2. NEVER restate the praise, caveats, or phrases already in the initial pin unless the designer explicitly asks to clarify them.
-3. Skip filler openings ("Good question", "Solid point", etc.).`;
-  const {v}=await runAgent(k,{read:directCtx.slice(0,3),places:[],label:`replying to comment`,work:()=>askAI({system:`${ROLE[k]}\n${STYLE}`,prompt,images:imgNodes,onText:({text:t})=>{
+Reply to the designer's last message in 1-3 plain sentences, in their language:
+${TALK_RULES}`;
+  const {v}=await runAgent(k,{read:directCtx.slice(0,3),places:[],label:`replying to comment`,work:()=>askAI({system:`${TALK(k)}\n${STYLE}`,prompt,images:imgNodes,onText:({text:t})=>{
     aiMsg.text=t;
     const tx=qs(`[data-adv-rep="${aiId}"] .adv-rep-tx`,$("advPop"));
     if(tx&&openAdvNodeId===nodeId){tx.innerHTML=mdLite(t);const ls=qs(".adv-scroll",$("advPop"));if(ls)ls.scrollTop=ls.scrollHeight}
@@ -5326,13 +5324,13 @@ function localAdvisorForNode(n){
     return {
       keywords:kws.slice(0,3).concat(["visual"]).slice(0,4),
       thoughts:[
-        `👀 Catching clues from “${clip(title,24)}”…`,
+        `Catching clues from “${clip(title,24)}”…`,
         `Running offline right now, so I can’t actually see inside photos yet.`,
-        `Flagging the quick switch to give me eyes ✨`
+        `Flagging the quick switch to give me eyes`
       ],
       pins:[{
         id:"pin-"+uid(),agent:"scout",t:NOW(),
-        note:`Ooh, dropped **“${clip(title,32)}”** on the board 👀 I’m on offline rules right now so I can’t actually see inside the photo yet — wake **Studio AI (Qwen3-VL)** or add a **Cloud API key** and I’ll give you real visual feedback ✨`,
+        note:`Ooh, dropped **“${clip(title,32)}”** on the board I’m on offline rules right now so I can’t actually see inside the photo yet — wake **Studio AI (Qwen3-VL)** or add a **Cloud API key** and I’ll give you real visual feedback`,
         liftAct:"open-ai",liftLabel:"Open AI engines"
       }]
     };
@@ -5341,15 +5339,15 @@ function localAdvisorForNode(n){
     return {
       keywords:kws.slice(0,3).concat([n.weight?WEIGHTS[n.weight]?.label||n.weight:"evidence"]).slice(0,4),
       thoughts:[
-        `📖 Picking up key points in “${clip(title,26)}”…`,
+        `Picking up key points in “${clip(title,26)}”…`,
         n.weight?`Tagged ${WEIGHTS[n.weight]?.label||n.weight} — checking how much weight it carries.`:`Checking whether this is firsthand observation or an early clue.`,
         `Leaving a quick note in the corner ✍️`
       ],
       pins:[{
         id:"pin-"+uid(),agent:"scout",t:NOW(),
         note:n.weight==="observed"
-          ?`Solid find on **“${clip(title,30)}”** 👍 Since it’s **observed firsthand**, worth linking it straight to whichever claim leans on it so nothing drifts.`
-          :`Nice reference to keep in the mix (**“${clip(title,30)}”**) 📌 Before betting a big call on it though, maybe mark whether it was **observed directly** or just an **early clue**?`,
+          ?`**“${clip(title,30)}”** was **observed firsthand**, so it is worth linking it straight to whichever claim leans on it so nothing drifts.`
+          :`Before betting a big call on **“${clip(title,30)}”**, maybe mark whether it was **observed directly** or just an **early clue**?`,
         liftAct:"gather",liftLabel:"Synthesize with nearby cards"
       }]
     };
@@ -5358,15 +5356,15 @@ function localAdvisorForNode(n){
     return {
       keywords:kws.slice(0,3).concat([hasNum?"target metrics":"sequence"]).slice(0,4),
       thoughts:[
-        `🔍 Scanning “${clip(title,26)}” for sneaky blockers…`,
+        `Scanning “${clip(title,26)}” for sneaky blockers…`,
         `Checking what has to go right first before building.`,
-        `Tucking a quick heads-up in the corner 💡`
+        `Tucking a quick heads-up in the corner`
       ],
       pins:[{
         id:"pin-"+uid(),agent:"critic",t:NOW(),
         note:hasNum
-          ?`Love how concrete **“${clip(title,30)}”** is 💪 Before sinking full build time into it, might be worth double-checking whichever **early step** is likeliest to fail first.`
-          :`Good momentum on **“${clip(title,30)}”** 🚀 Maybe add one quick **pass/fail check** to the top item so you’ll know right away if this direction holds up?`,
+          ?`**“${clip(title,30)}”** is concrete. Before sinking full build time into it, it may be worth double-checking whichever **early step** is likeliest to fail first.`
+          :`On **“${clip(title,30)}”**: maybe add one quick **pass/fail check** to the top item so you’ll know right away if this direction holds up?`,
         liftAct:"note",liftLabel:"Pin check as sticky note"
       }]
     };
@@ -5374,23 +5372,23 @@ function localAdvisorForNode(n){
   const pins=[{
     id:"pin-"+uid(),agent:"critic",t:NOW(),
     note:isVague
-      ?`Ooh, fun direction on **“${clip(title,28)}”** ✨ Quick gut check though — **“seamless / everyone”** assumes zero friction; what’s the **tiniest real case** that proves this works first? 🤔`
+      ?`On **“${clip(title,28)}”**: **“seamless / everyone”** assumes zero friction; what’s the **tiniest real case** that proves this works first?`
       :(hasNum
-        ?`Really like the **concrete target** on **“${clip(title,28)}”** 🎯 Just in case the metric misses on try one, worth jotting down a quick **fallback**?`
-        :`Nice spark on **“${clip(title,28)}”** 💡 Before expanding it further, maybe pick the **riskiest assumption** here and test it on **3 real examples** first?`),
+        ?`**“${clip(title,28)}”** has a **concrete target**. In case the metric misses on the first try, is it worth jotting down a quick **fallback**?`
+        :`On **“${clip(title,28)}”**: before expanding it further, maybe pick the **riskiest assumption** here and test it on **3 real examples** first?`),
     liftAct:"critique",liftLabel:"Draft a question card"
   }];
   if(txt.length>=28){
     pins.push({
       id:"pin-"+uid(),agent:"muse",t:NOW(),
-      note:`Wait — what if we tested a **half-size version** of this first? 🧩 Keep the **core magic**, cut half the setup steps, and see how fast it lands.`,
+      note:`Wait — what if we tested a **half-size version** of this first? Keep the **core magic**, cut half the setup steps, and see how fast it lands.`,
       liftAct:"fork",liftLabel:"Sketch 2 directions"
     });
   }
   return {
     keywords:kws.slice(0,3).concat([isVague?"testable core":hasNum?"fallback":"scope"]).slice(0,4),
     thoughts:[
-      `👀 Reading “${clip(title,26)}”…`,
+      `Reading “${clip(title,26)}”…`,
       isVague?`Checking broad words — looking for the sharpest testable core.`:`Weighing feasibility vs simpler angles.`,
       `Leaving ${pins.length===1?"a quick note":"2 quick notes"} in the corner ✍️`
     ],
@@ -5423,7 +5421,7 @@ async function askAdvisorForNode(n,onProgress,signal,{allowOffline=true}={}){
     :(isVisualNode(n)?(rel.length?`"note","critique","list","gather","visuals"`:`"note","critique","list","visuals"`):(rel.length?`"critique","note","list","gather","visuals"`:`"critique","note","list","visuals"`));
   const imgInstr=imgNodes.length?`\nIMPORTANT: An image/screenshot is attached. Look closely at what is visually inside it (layout, UI/copy, objects, labels/text, lighting, composition, mood) and base keywords, thoughts, AND note concretely on what you actually see — never give generic template filler. Prioritize "note" or "critique" (observing concrete details & asking one clarifying question) as liftAct instead of searching for more images; use "visuals" only when external visual references are clearly needed.`:"";
   const linkInstr=n.type==="link"?`\nIMPORTANT: This is an external web link card (${safeHref(n.url)}). You cannot read the webpage body unless the user wrote notes in Content. Base your keywords, thoughts, and note strictly on the domain, URL path/topic, and any user note — never fabricate webpage facts or borrow unrelated board jargon.`:"";
-  const prompt=`You are a sharp, warm, friendly senior colleague peeking at a card your boss just put on the canvas. Sound like a real teammate over Slack/Figma — respectful, encouraging, constructively candid, zero robotic template phrasing, never overstepping the boss's final call. Stay strictly grounded in THIS card's own Title, URL, and Content (and Connected lineage context only when directly wired below). Never invent connections or borrow metrics/jargon from unrelated cards.${imgInstr}${linkInstr}
+  const prompt=`You are a senior colleague looking at a card the designer just put on the canvas. Talk like a teammate: plain, specific and candid. Say what you actually think, doubts included. No praise openers, no emoji, no template phrasing. Anything you propose is a suggestion the designer has not agreed to; the decision is theirs. Stay strictly grounded in THIS card's own Title, URL, and Content (and Connected lineage context only when directly wired below). Never invent connections or borrow metrics/jargon from unrelated cards.${imgInstr}${linkInstr}
 Card (${kindLabel(n)}):
 Title: ${titleOf(n)}
 ${n.type==="link"&&n.url?`URL: ${safeHref(n.url)}\n`:""}Content: ${clip(fullTextOf(n),1000)}${ctxText}
@@ -5431,11 +5429,11 @@ ${n.type==="link"&&n.url?`URL: ${safeHref(n.url)}\n`:""}Content: ${clip(fullText
 Return ONLY compact JSON with keys in this EXACT order (keywords and thoughts stream to the user BEFORE your note finishes):
 {
   "keywords": ["3-4 short concrete 1-3 word keywords/clues you spot first in this card or image"],
-  "thoughts": ["3 tiny natural 1st-person inner thoughts (5-11 words each, light emoji optional) flowing logically from noticing concrete keywords -> spotting a question/connection -> deciding one helpful suggestion"],
+  "thoughts": ["3 tiny natural 1st-person inner thoughts (5-11 words each, no emoji) flowing logically from noticing concrete keywords -> spotting a question/connection -> deciding one helpful suggestion"],
   "pins": [
     {
       "agent": one of ${JSON.stringify(roles)},
-      "note": "One natural, conversational 1-2 sentence teammate note (max 42 words) with 1 well-placed emoji (e.g. 👀 ✨ 🤔 💡 🎯). Wrap 1-3 key concepts/clues in **bold** so the boss can skim fast. Weave what caught your eye AND one helpful angle/question smoothly — never split into stiff template halves.",
+      "note": "One natural, conversational 1-2 sentence teammate note (max 42 words). Wrap 1-3 key concepts/clues in **bold** so the boss can skim fast. Weave what caught your eye AND one helpful angle/question smoothly — never split into stiff template halves.",
       "liftAct": one of [${forkRule}],
       "liftLabel": "short 3-5 word action button label",
       "liftQuery": "optional 2-5 word image search query when liftAct is visuals"
@@ -5513,7 +5511,7 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
     const nw=nodeW(n);
     moveCursor(lead,n.x+nw*.22,n.y+28);
   }
-  curLines=[localRes.thoughts[0]||`👀 Reading “${clip(titleOf(n),26)}”…`];
+  curLines=[localRes.thoughts[0]||`Reading “${clip(titleOf(n),26)}”…`];
   showAdvStream(nodeId,lead,{keywords:curKws,lines:curLines,phase:"spotting keywords…"});
   await wait(calm()?0:460);
   if(advCtrl.signal.aborted||!byId(nodeId)||(!force&&!advisorMode)){advCtrl.abort();advAborts.delete(nodeId);advThinking.delete(nodeId);hideAdvStream(false);if(canCursor&&!crewState[lead]?.busy)goHome(lead);renderNodes();return}
@@ -5772,6 +5770,11 @@ async function studioChat({system,prompt,messages,images=[],json=false,maxTokens
     return await readChatStream(res,ctrl,{json,onText});
   }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
+const TALK=k=>`You are ${AGENTS[k].name} on a small design crew, talking with the designer about one card. Your craft: ${AGENTS[k].craft} In conversation you answer what was said; you do not run your usual procedure unless asked.`;
+const TALK_RULES=`1. Answer what the designer just said first, and use everything they gave you (if they named two things, address both).
+2. Ideas in your own earlier messages are only suggestions. Do not treat them as decided unless the designer said so; if you want to build on one, ask.
+3. Stay on this card's subject. Mention another card only if it clearly bears on what they just said. Do not invent tests, metrics or experiments unless asked.
+4. No filler openings, no emoji, no labels such as "Test:" or "Contrast:".`;
 const STYLE="Write plainly, like a senior designer talking to a colleague. No hype, no emoji, no markdown headings. Be specific to the material given.";
 const ROLE={
   scout:"You are Scout, the research & synthesis member of a small product design crew. When reviewing sources, connect patterns, contrasts, gaps, and practical takeaways across cards in plain human language—never summarize cards one by one or use robotic metadata headings like 'Weight.'. When sources vary in evidentiary weight (observed use, reported feedback, proposal, illustration), explain what they can reliably support only when relevant.",
@@ -6768,8 +6771,8 @@ async function reply(n,text,agentKey){
   const msg={who:k,t:NOW(),text:"",typing:true};(board.threads[n.id]=board.threads[n.id]||[]).push(msg);renderMargin();
   const ctx=[n,...sourcesFor(n).slice(0,6),...(n.type==="question"?[byId(n.on),byId(n.frame)].filter(Boolean):[])];
   const imgNodes=ctx.filter(x=>x&&(x.type==="image"||x.type==="frame"));
-  const hist=(board.threads[n.id]||[]).slice(-8,-1).map(m=>(AGENTS[m.who]?.name||"Designer")+": "+m.text).join("\n");
-  const {v,live}=await runAgent(k,{read:ctx.slice(0,3),places:[],label:"writing in the margin",work:()=>askAI({system:`${ROLE[k]}\n${STYLE}`,prompt:`You are answering in the margin of this card:\n${wallText(ctx)}\n\nThe margin so far:\n${hist||"(empty)"}\n\nThe designer just wrote: "${text}"\n\nAnswer in 1-4 sentences.`,images:imgNodes,memoryMode:(ctx.length<=1&&isStandaloneMediaOrLink([n]))?"none":"full",onText:({text:t})=>{msg.text=t;const tx=qs("#mThread .msg:last-child .tx");if(tx&&marginFor===n.id)tx.innerHTML=mdLite(t)}},()=>replyLocal(n,text,k))});
+  const hist=(board.threads[n.id]||[]).slice(-8,-1).map(m=>(AGENTS[m.who]?AGENTS[m.who].name+(m.who===k?" (you)":""):"Designer")+": "+m.text).join("\n");
+  const {v,live}=await runAgent(k,{read:ctx.slice(0,3),places:[],label:"writing in the margin",work:()=>askAI({system:`${TALK(k)}\n${STYLE}`,prompt:`You are answering in the margin of this card:\n${wallText(ctx)}\n\nThe margin so far:\n${hist||"(empty)"}\n\nThe designer just wrote: "${text}"\n\nAnswer in 1-4 plain sentences, in their language:\n${TALK_RULES}`,images:imgNodes,memoryMode:(ctx.length<=1&&isStandaloneMediaOrLink([n]))?"none":"full",onText:({text:t})=>{msg.text=t;const tx=qs("#mThread .msg:last-child .tx");if(tx&&marginFor===n.id)tx.innerHTML=mdLite(t)}},()=>replyLocal(n,text,k))});
   msg.text=v||replyLocal(n,text,k);delete msg.typing;
   log(k,`Replied in the notes on <b>${esc(titleOf(n))}</b>`,n.id);renderAll();persist();
 }
@@ -7026,7 +7029,7 @@ function planOf(r){
     case"image":{const c=clamp(genOpts.count,1,4);return {agent:"wright",reads:f?[f]:[],places:planImages(c,genOpts.ratio,f||null),label:`${c} image${c>1?"s":""}`}}
     case"video":return {agent:"wright",reads:ctx.length?ctx:[],places:planImages(1,genOpts.ratio,f||null,W.recording),label:"a video"};
     case"gif":return {agent:"wright",reads:ctx.length?ctx:[],places:planImages(1,genOpts.ratio,f||null,W.image),label:"an animated GIF"};
-    case"search":return {agent:"scout",reads:[],places:planSearch(4),label:"4 "+SEARCH_KINDS[searchKindOf(lineText())||searchPref][0].toLowerCase()};
+    case"search":return {agent:"scout",reads:[],places:planSearch(4),label:SEARCH_KINDS[searchKindOf(lineText())||searchPref][0].toLowerCase()};
     case"claim":{const s=freeSpot(BAY+80,300,W.idea,220);return {agent:null,reads:[],places:[{x:s.x,y:s.y,w:W.idea,h:220}],label:"Your claim"}}
   }
   return null;
@@ -7633,7 +7636,9 @@ const SERVICES={
       get(`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrlimit=6&gsroffset=${page*4}&prop=extracts|pageimages|info&exintro=1&explaintext=1&exchars=220&exlimit=max&piprop=thumbnail&pithumbsize=640&inprop=url&format=json&origin=*`).then(d=>Object.values(d.query?.pages||{}).sort((a,b)=>a.index-b.index).map(p=>({title:p.title,url:ok(p.fullurl),thumb:ok(p.thumbnail?.source),text:clip(strip(p.extract),200),source:"Wikipedia"}))),
       get(`https://hn.algolia.com/api/v1/search?query=${q}&tags=story&hitsPerPage=6&page=${page}`).then(d=>(d.hits||[]).map(h=>({title:strip(h.title),url:ok(h.url),thumb:"",text:`${h.points||0} points on Hacker News · ${String(h.created_at||"").slice(0,4)}`,source:"Hacker News"})))
     ];
-    const lists=(await Promise.allSettled(reqs)).map(s=>s.status==="fulfilled"?s.value.filter(it=>it&&it.url&&it.title):[]),out=[],seen=new Set();
+    const words=[...new Set(query.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>1&&!/^(the|an?|of|for|about|on|in|and|to|latest|new|best|some|news)$/.test(w)))];
+    const score=it=>{if(!words.length)return 1;const h=(it.title+" "+it.text).toLowerCase(),hs=h.replace(/\s+/g,"");return words.filter(w=>h.includes(w)||hs.includes(w)).length/words.length};
+    const lists=(await Promise.allSettled(reqs)).map(s=>s.status==="fulfilled"?s.value.filter(it=>it&&it.url&&it.title&&score(it)>=.5):[]),out=[],seen=new Set();
     for(let i=0;out.length<count&&lists.some(l=>l[i]);i++)for(const l of lists){const it=l[i];if(it&&!seen.has(it.url)&&out.length<count){seen.add(it.url);out.push(it)}}
     return out;
   },

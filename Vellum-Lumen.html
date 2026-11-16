@@ -6101,7 +6101,9 @@ function wallText(ns,{docCap=4500,shortCap=700,totalCap=14000,excludeIds=null,co
     return `- ${kindLabel(n)}${nTag}${tag}${w}: ${tClean?tClean+(doc?"\n":". "):""}${body}${n.test?"\n  Test: "+n.test:""}`;
   }).join("\n");
 }
-async function viaClaude(remote,local,opts={}){
+let aiRun=null;
+async function viaClaude(remote,local,opts={}){const r=await viaClaudeRaw(remote,local,opts);if(aiRun&&crewBusy())aiRun[r.live?"live":"local"]++;return r}
+async function viaClaudeRaw(remote,local,opts={}){
   if(aiPref==="auto"&&studioState.status==="ready"&&opts.studio){
     try{const v=await opts.studio();if(v!=null)return {v,live:true,engine:"studio"}}
     catch(e){if(e?.name==="AbortError")throw e}
@@ -7224,14 +7226,36 @@ async function erase(ids,opts={}){
   await permanentlyDeleteNodes(ns.map(n=>n.id),opts);
   return "deleted";
 }
+const modelExpected=()=>aiPref!=="local"&&(studioState.status==="ready"||hasApi()||!!sampleFn);
+const isStandIn=n=>!!(n?.gen?.preview||n?.src?.placeholder);
 async function redraw(pid){
-  const ns=board.nodes.filter(n=>n.pid===pid);if(!ns.length)return;const t=ns[0];
-  const srcNode=inputsOf(t.id)[0];await erase(ns.map(n=>n.id));
+  const ns=board.nodes.filter(n=>n.pid===pid);if(!ns.length)return;
+  /* the old drafts stay the truth until a real replacement exists: lift them out quietly, regenerate, then either keep the new version (one Undo brings the old back) or put the old ones back untouched */
+  const ins=inputsOf(ns[0].id),before=snapOfBoard(),undoAt=undoStack.length,oldIds=new Set(ns.map(n=>n.id)),slots=ns.map(n=>({x:n.x,y:n.y})).sort((a,b)=>a.y-b.y||a.x-b.x);
+  board.nodes=board.nodes.filter(n=>!oldIds.has(n.id));board.edges=board.edges.filter(e=>!oldIds.has(e.a)&&!oldIds.has(e.b));
+  sel=sel.filter(id=>!oldIds.has(id));renderAll();
+  aiRun={live:0,local:0};let made=[],failed=false;
+  try{await redrawMove(ns[0],ns,ins)}catch(e){console.warn("Try again failed:",e);failed=true}
+  const run=aiRun;aiRun=null;
+  made=board.nodes.filter(n=>n.status==="sketch"&&n.pid&&n.pid!==pid&&!before.includes('"id":"'+n.id+'"'));
+  const fellBack=modelExpected()&&run.local>0&&run.live===0;
+  if(failed||!made.length||fellBack||(made.length&&made.every(isStandIn)&&!ns.every(isStandIn))){
+    Object.assign(board,JSON.parse(before));undoStack.length=undoAt;syncHistoryBtns();sel=[];renderAll();persist();
+    toast(failed||!made.length?L("Couldn't make a new version. The previous one is kept.","没能生成新版本，已保留原来的版本。"):L("The model didn't answer, so nothing was replaced. The previous version is kept.","模型没有响应，未做替换，已保留原来的版本。"));
+    return;
+  }
+  undoStack.length=undoAt;undoStack.push(before);if(undoStack.length>40)undoStack.shift();redoStack=[];syncHistoryBtns();
+  const order=[...made].sort((a,b)=>a.y-b.y||a.x-b.x);if(order.length===slots.length)order.forEach((n,i)=>{n.x=slots[i].x;n.y=slots[i].y});
+  log("you",`Tried again: replaced ${ns.length>1?ns.length+" suggestions":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,null);
+  renderAll();persist();toast(L("New version. Undo brings back the previous one.","已生成新版本，撤销可恢复上一版。"),{undo:true});
+}
+async function redrawMove(t,ns,ins){
+  const srcNode=ins[0];
   if(t.type==="direction")return fork(byId(t.idea),ns.length);
   if(t.type==="proof")return build(byId(t.dir));
   if(t.type==="synthesis")return gather((t.of||[]).map(byId).filter(Boolean));
-  if(t.type==="list")return makeList(inputsOf(t.id).length?inputsOf(t.id):[srcNode].filter(Boolean));
-  if(t.type==="kanban")return makeKanban(inputsOf(t.id).length?inputsOf(t.id):[srcNode].filter(Boolean));
+  if(t.type==="list")return makeList(ins.length?ins:[srcNode].filter(Boolean));
+  if(t.type==="kanban")return makeKanban(ins.length?ins:[srcNode].filter(Boolean));
   if(t.type==="note"&&t.q)return askOnWall(t.q);
   if(t.type==="image"&&t.gen)return t.gen.format==="gif"?generateGif(t.gen.prompt,{from:byId(t._src)||null}):generateImages(t.gen.prompt,{from:byId(t._src)||null});
   if(t.type==="recording"&&t.gen)return generateVideo(t.gen.prompt,{from:byId(t._src)||null});
@@ -7461,7 +7485,7 @@ function renderStrip(){
   const s=$("strip"),n=one();
   const working=Object.values(crewState).some(c=>c.busy);
   if(selMenusSuppressed||!n||n.status==="sketch"||focusId||stageOpen||working||gesture?.type==="drag"){s.hidden=true;s._for=null;closeCardMenu();return}
-  const L=lin(n);s.className="strip"+(L?" pg-"+L:"");
+  const lt=lin(n);s.className="strip"+(lt?" pg-"+lt:"");
   const NOTE_TONES=[{k:"",l:L("Default","默认"),c:""},{k:"butter",l:L("Amber","琥珀"),c:"#FEF08A"},{k:"sky",l:L("Sky","天蓝"),c:"#BAE6FD"},{k:"mint",l:L("Mint","薄荷"),c:"#A7F3D0"},{k:"rose",l:L("Rose","浅粉"),c:"#FBCFE8"},{k:"lavender",l:L("Lavender","薰衣草"),c:"#DDD6FE"}];
   let h="";
   if(n.type==="note"){
@@ -8799,22 +8823,22 @@ const CMDS=[
   {c:"/treemap",a:"wright",d:"Turn the selection into an XMind-style Tree Map"},
   {c:"/gather",a:"scout",d:"Read the selection and weigh its evidence"},
   {c:"/critique",a:"critic",d:"Check the selection against its sources"},
-  {c:"/ask",a:"critic",d:"Ask a question anchored to the selection"},
+  {c:"/ask",a:"critic",d:"Ask a question anchored to the selection",text:true},
   {c:"/adopt",a:null,d:"Adopt the selected direction"},
   {c:"/print",a:null,d:"Print the selected proof"},
-  {c:"/claim",a:null,d:"Add a claim to Diverge"},
-  {c:"/note",a:null,d:"Add a note where you’re looking"},
+  {c:"/claim",a:null,d:"Add a claim to Diverge",text:true},
+  {c:"/note",a:null,d:"Add a note where you’re looking",text:true},
   {c:"/notepad",a:null,d:"Add a structured notepad document"},
-  {c:"/question",a:null,d:"Pin an open question on the canvas"},
+  {c:"/question",a:null,d:"Pin an open question on the canvas",text:true},
   {c:"/link",a:null,d:"Save a URL as a link card"},
   {c:"/group",a:null,d:"Create a group frame (or wrap selected cards)"},
   {c:"/organize",a:null,d:"Organize canvas cards cleanly by lane"},
-  {c:"/image",a:"wright",d:"Generate images from a description"},
+  {c:"/image",a:"wright",d:"Generate images from a description",text:true},
   {c:"/reverse",a:"scout",d:"Extract structured prompt pack from the selected image"},
-  {c:"/video",a:"wright",d:"Generate a short animated video"},
+  {c:"/video",a:"wright",d:"Generate a short animated video",text:true},
   {c:"/split",a:"scout",d:"Split selected video recording into key shot frames"},
-  {c:"/gif",a:"wright",d:"Generate a looping animated GIF"},
-  {c:"/search",a:"scout",d:"Search the web for reference images"},
+  {c:"/gif",a:"wright",d:"Generate a looping animated GIF",text:true},
+  {c:"/search",a:"scout",d:"Search the web for reference images",text:true},
   {c:"/find",a:null,d:"Search cards & notes on the canvas"},
   {c:"/copilot",a:null,d:"Discuss the board or plan moves with Copilot"},
   {c:"/memory",a:null,d:"View or edit Project Memory and Studio Rules"},
@@ -9032,7 +9056,8 @@ function searchKindOf(t){t=String(t||"");return /\b(articles?|papers?|essays?|po
 function stripSearchKind(q){return String(q||"").trim().replace(/^(?:for\s+)?(?:some\s+)?(?:(?:reference\s+)?(?:photos?|images?|pictures?|references?|articles?|papers?|essays?|posts?|videos?|clips?|footage|talks?)\b\s*(?:of|for|about|on)?\s*)?/i,"").trim()}
 function searchQuery(t){return t.replace(/^(?:(?:please|can\s+you|could\s+you|help\s+me(?:\s+to)?)\s+)*(?:search(?:\s+the\s+web)?|look\s+up|look\s+for|google|find)\s+(?:me\s+)?(?:for\s+)?(?:some\s+)?(?:(?:reference\s+)?(?:photos?|images?|pictures?|references?)\s+(?:of|for)\s+)?/i,"").trim()}
 function route(text){
-  const t=text.trim(),ctx=effectiveLineCtx(),f=ctx[0];if(!t||/^[/@]\w*$/.test(t))return null;
+  const t=text.trim(),ctx=effectiveLineCtx(),f=ctx[0];if(!t)return null;
+  {const lone=t.match(/^([/@])(\w*)$/);if(lone&&!(lone[1]==="/"&&CMDS.some(x=>x.c==="/"+lone[2].toLowerCase())))return null}
   const has=type=>ctx.find(n=>n.type===type);
   const mk=(kind,agent,label,extra={})=>({kind,agent,label,...extra});
   let m=t.match(/^\/(\w+)\s*([\s\S]*)$/);
@@ -9348,7 +9373,8 @@ function updateMenu(){
   syncLineClearance();
 }
 function closeMenu(){$("menu").hidden=true;menuItems=[];syncLineClearance()}
-function pickMenu(i){const it=menuItems[i];if(!it)return;lineIn.value=it.ins;lineIn._pick=true;closeMenu();lineIn.focus();renderRoute()}
+function pickMenu(i){const it=menuItems[i];if(!it)return;lineIn.value=it.ins;lineIn._pick=true;closeMenu();lineIn.focus();renderRoute();
+  const cmd=CMDS.find(x=>x.c===String(it.ins||"").trim());if(cmd&&!cmd.hint&&!cmd.text)sendLine()}
 
 /* sharpen: prompt refiner (presets, board & image context, disambiguation, variations, revert) */
 let sharpened=null,enhState={orig:"",history:[],preset:"",choices:null,busy:false,isImg:false,applied:false};
@@ -13379,7 +13405,7 @@ function endPointer(e){
   }
   if(g.type==="drag"){qsa(".dragging").forEach(c=>c.classList.remove("dragging"));
     if(g.moved){g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist()}
-    else{const a=g.target.closest("[data-a]");if(a&&!a.matches("button")){act(a.dataset.a,byId(g.id),a);return}const hit=byId(g.id);if(!g.shift&&g.wasSel&&g.editHit&&hit?.type==="note"&&hit.status!=="sketch"){startEdit(g.id,"text",{clientX:g.cx,clientY:g.cy});return}select(g.shift?g.ids:[g.id],{menus:!!g.wasSel})}}
+    else{const a=g.target.closest("[data-a]");if(a&&!a.matches("button")){act(a.dataset.a,byId(g.id),a);return}const hit=byId(g.id);if(!g.shift&&g.wasSel&&g.editHit&&hit?.type==="note"&&hit.status!=="sketch"){startEdit(g.id,"text",{clientX:g.cx,clientY:g.cy});return}select(g.shift?g.ids:[g.id])}}
   if(g.type==="marquee"){
     $("marquee").hidden=true;
     if(Math.hypot(e.clientX-g.sx,e.clientY-g.sy)<5)return;

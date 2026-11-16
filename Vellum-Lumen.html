@@ -2504,6 +2504,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
     <span class="tt-sep" aria-hidden="true"></span>
     <button type="button" id="uploadMediaBtn" data-tact="files" aria-label="Upload file or media (U)" data-tip="Upload file or media · U"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.4"/><path d="m21 15.5-4.5-4.5-6.5 6.5L7 14.5l-4 4"/></svg></button>
     <button type="button" id="organizeBtn" data-tact="tidy" aria-label="Organize canvas (T)" data-tip="Organize canvas · T"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2"/></svg></button>
+    <button type="button" id="findBtn" onclick="setOmniMode('search')" aria-label="Search cards (⌘F)" data-tip="Search cards · ⌘F"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
     <button type="button" id="topUndoBtn" data-tact="undo" disabled aria-label="Undo (⌘Z)" data-tip="Undo · ⌘Z"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button type="button" id="topRedoBtn" data-tact="redo" disabled aria-label="Redo (⌘⇧Z)" data-tip="Redo · ⌘⇧Z"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
@@ -2551,6 +2552,10 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
           <span id="modeChip" class="mode-chip cmd-only" hidden></span>
           <label for="lineInput" class="sr">Ask the crew</label>
           <textarea id="lineInput" class="cmd-only" rows="1" spellcheck="false" placeholder="What should we work on?"></textarea>
+          <div class="route-wrap cmd-only" id="routeWrap">
+            <button type="button" id="route" class="route" aria-haspopup="menu" aria-expanded="false" aria-live="polite" title="Copilot (Orchestrator) · Click to switch specialist"></button>
+            <div class="lc-pop" id="lcPop" role="menu" hidden></div>
+          </div>
           <button type="button" class="lbtn enhance-btn cmd-only" id="enhanceBtn" title="Enhance prompt (⌘E or Tab)" aria-label="Enhance prompt" aria-pressed="false" hidden><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l1.6 4 4 1.6-4 1.6L12 14.2l-1.6-4-4-1.6 4-1.6Z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/><path d="M5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6Z"/></svg></button>
           <button type="button" class="lbtn cmd-only" id="micBtn" title="Dictate" aria-label="Dictate" aria-pressed="false"><svg class="ico" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
           <button type="submit" class="send cmd-only" id="sendBtn" aria-label="Send" disabled><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
@@ -2568,10 +2573,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
             <button type="button" class="omni-btn" data-omni="cmd" role="tab" aria-pressed="true" aria-selected="true" data-tip="Command Mode · ⌘K" aria-label="Command Mode · Create &amp; act on canvas (⌘K)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></svg></button>
             <button type="button" class="omni-btn" data-omni="search" role="tab" aria-pressed="false" aria-selected="false" data-tip="Search Mode · ⌘F" aria-label="Search Mode · Find cards (⌘F)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
           </div>
-          <div class="route-wrap cmd-only" id="routeWrap">
-            <button type="button" id="route" class="route" aria-haspopup="menu" aria-expanded="false" aria-live="polite" title="Copilot (Orchestrator) · Click to switch specialist"></button>
-            <div class="lc-pop" id="lcPop" role="menu" hidden></div>
-          </div>
+          
         </div>
       </div>
     </div>
@@ -2619,6 +2621,14 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 #world.far .card.sketch::after{color:var(--label-2)}
 #world.far .card.image::after,#world.far .card.frame::after,#world.far .card.recording::after{content:none}
 @media (prefers-reduced-motion:reduce){.card.inking,.card.inking *{animation:none}}
+/* composer: one calm row; the route shows once there is something to route */
+.line-sub{display:none}
+.line-field{background:color-mix(in srgb,var(--card) 94%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+#line:not(.typed) #routeWrap{display:none}
+.route-wrap .lc-pop{bottom:calc(100% + 14px)}
+.send:disabled{background:transparent;color:var(--label-3);box-shadow:inset 0 0 0 1px var(--hair-2)}
+.line-hint:empty{display:none}
+@media (max-width:640px){#routeWrap{display:none}}
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="lensDefs"></defs></svg>
 <script>
@@ -9127,9 +9137,7 @@ function renderLineHint(){
   if(selectedEdgeId){h.textContent=L("Click Ref / Live / Frozen above to control update tracking · Esc to deselect","点击上方「引用 / 活依赖 / 冻结」切换联动方式 · Esc 取消");return}
   const ns=ctxNodes();
   if(linePending.length&&!ns.length){h.textContent=L("Image staged in composer — type your prompt and press Enter / Send, or click × to remove","图片已挂载到输入框 — 输入指令后按回车或点击 Send 随指令发出，点击 × 可取消");return}
-  if(ns.length>1){h.textContent=L("Use the floating bar above to synthesize, convert to Kanban, or align · ⌘G to group","使用上方悬浮栏一键综合、转看板或对齐 · ⌘G 成组");return}
-  if(ns.length===1){h.textContent=L("Double-click text to edit · Click evidence pill to rate · Drag ○ port to connect","双击卡片文字直接编辑 · 点击左下角证据胶囊可切换等级 · 拖拽 ○ 端口连线");return}
-  h.textContent=L("Double-click canvas to add a sticky · Drag card ○ port to connect · Drop files anywhere","双击画布空白新建便签 · 拖卡片边缘 ○ 端口连线 · 拖入文件直接解析");
+  h.textContent=board.nodes.length?"":L("Double-click the canvas for a sticky · drop files anywhere","双击画布新建便签 · 拖入文件即可添加");
 }
 function syncStaticLang(){
   const mt=qs(".map-title");if(mt)mt.textContent=L("Overview","画板总览");
@@ -9161,7 +9169,7 @@ function placeholderFor(ns){
   }
   if(innerWidth<=640)return ns.length?L("Act on this card…","对选中卡片下指令…"):L("Act on canvas…","给画布下指令…");
   const f=ns[0];
-  if(!f)return board.nodes.length?L("Act on canvas (add card, generate image, or type /)…","给画布下指令（建卡、生图、整理，或输入 /）…"):L("Write a rough idea or a claim, or drop anything here","写下你的核心想法，或拖入任何素材开始…");
+  if(!f)return board.nodes.length?L("Write an idea, or / for commands","写下想法，或输入 / 查看命令"):L("Write an idea, or drop anything here","写下你的核心想法，或拖入任何素材开始…");
   if(ns.some(n=>n.type==="frame"))return L("Ask about this frame or draft a question…","针对这一帧提问或生成问题卡片…");
   if(ns.length>1)return L("Synthesize selected cards, or ask Critic…","将选中卡片综合为结论，或请 Critic 评审…");
   switch(f.type){

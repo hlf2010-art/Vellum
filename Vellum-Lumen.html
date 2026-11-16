@@ -7008,7 +7008,7 @@ function drawPreview(){
   const r=route(text);
   const explicit=!!lineMode||/^[/@]/.test(raw);
   const spatialKinds=new Set(["fork","build","deck","gather","list","kanban","critique","reply","ask","image","video","gif","search"]);
-  if(!explicit||!spatialKinds.has(r.kind))return off();
+  if(!r||!explicit||!spatialKinds.has(r.kind))return off();
   const p=planOf(r);if(!p)return off();document.body.classList.add("previewing");
   const a=AGENTS[p.agent];let h="",paths="";
   (p.places||[]).forEach((pl,i)=>{h+=`<div class="ghost ${pl.pg?"pg pg-"+pl.pg:""}" style="left:${pl.x}px;top:${pl.y}px;width:${pl.w}px;height:${Math.min(pl.h,260)}px">${i===0?`${a?'<span class="o"></span>':""}<span>${a?`${a.name} will draft ${esc(p.label)} here`:esc(p.label)}</span>`:""}</div>`});
@@ -8584,6 +8584,8 @@ function route(text){
   if(/\b(checklist|to-?dos?|action list|next steps?|tasks)\b/i.test(t)&&ctx.length)return mk("list","wright","action list");
   if(/\b(summari[sz]e|synthesi[sz]e|patterns?|what do (these|the) (sources|cards) say|weigh)\b/i.test(t)&&ctx.length)return mk("gather","scout",`read ${ctx.length} cards`);
   if(/\b(critique|review|check|risks?|weak|holes?|poke)\b/i.test(t)&&f)return mk("critique","critic","check the sources");
+  /* front door: free text with nothing selected lands on the canvas as a card; questions still go to Copilot */
+  if(!ctx.length&&!q&&!linePending.length)return mk("seed",null,"add to canvas",{arg:t});
   return mk("copilot",null,f?`ask Copilot on ${clip(titleOf(f),20)}`:"ask Copilot",{arg:t});
 }
 let lastRouteKey="";
@@ -8697,7 +8699,7 @@ function placeholderFor(ns){
   }
   if(innerWidth<=640)return ns.length?L("Act on this card…","对选中卡片下指令…"):L("Act on canvas…","给画布下指令…");
   const f=ns[0];
-  if(!f)return board.nodes.length?L("Act on canvas (add card, generate image, or type /)…","给画布下指令（建卡、生图、整理，或输入 /）…"):L("What do you believe? Write a claim, or drop evidence anywhere","写下你的核心想法，或拖入任何素材开始…");
+  if(!f)return board.nodes.length?L("Act on canvas (add card, generate image, or type /)…","给画布下指令（建卡、生图、整理，或输入 /）…"):L("Write a rough idea or a claim, or drop anything here","写下你的核心想法，或拖入任何素材开始…");
   if(ns.some(n=>n.type==="frame"))return L("Ask about this frame or draft a question…","针对这一帧提问或生成问题卡片…");
   if(ns.length>1)return L("Synthesize selected cards, or ask Critic…","将选中卡片综合为结论，或请 Critic 评审…");
   switch(f.type){
@@ -8730,6 +8732,7 @@ async function execLineRequest(text){
     case"wallq":return askOnWall(body||text);
     case"ask":return askAnchored(body||text,ctx);
     case"claim":return pinCard("idea",body,{kind:"Claim"});
+    case"seed":return pinCard("idea",body,{kind:"Idea"});
     case"margin":addMsg(f,"you",body);log("you",`Added a note to <b>${esc(titleOf(f))}</b>`,f.id);renderAll();persist();return;
     case"note":return pinCard("note",body);
     case"notepad":return createNotepadNode(body);
@@ -8793,7 +8796,7 @@ function pinCard(type,text,props={}){
   if(!text)return toast(type==="idea"?"Write the claim after /claim":"Write the note after /note");
   checkpoint();let spot;
   if(type==="idea"){spot=freeSpot(BAY+80,300,W.idea,220)}else{const v=viewRect(),c=toWorld(v.w/2,v.h/2-40);spot=freeSpot(c.x-W.note/2,c.y-60,W.note,150)}
-  const n=node(type,{text,...props},spot);log("you",type==="idea"?`Wrote a claim`:`Pinned a note`,n.id);sfx("create");select([n.id],{menus:false});renderAll();persist();
+  const n=node(type,{text,...props},spot);log("you",type==="idea"?(props.kind==="Idea"?`Wrote an idea`:`Wrote a claim`):`Pinned a note`,n.id);sfx("create");select([n.id],{menus:false});renderAll();persist();
   const el=nodeEl(n.id);el?.classList.add("born");if(!visible(n))focusNodes([n],.9);
   scheduleAdvisor(n.id,{delay:1100});
   return n;

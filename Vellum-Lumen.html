@@ -6101,9 +6101,7 @@ function wallText(ns,{docCap=4500,shortCap=700,totalCap=14000,excludeIds=null,co
     return `- ${kindLabel(n)}${nTag}${tag}${w}: ${tClean?tClean+(doc?"\n":". "):""}${body}${n.test?"\n  Test: "+n.test:""}`;
   }).join("\n");
 }
-let aiRun=null;
-async function viaClaude(remote,local,opts={}){const r=await viaClaudeRaw(remote,local,opts);if(aiRun&&crewBusy())aiRun[r.live?"live":"local"]++;return r}
-async function viaClaudeRaw(remote,local,opts={}){
+async function viaClaude(remote,local,opts={}){
   if(aiPref==="auto"&&studioState.status==="ready"&&opts.studio){
     try{const v=await opts.studio();if(v!=null)return {v,live:true,engine:"studio"}}
     catch(e){if(e?.name==="AbortError")throw e}
@@ -6751,6 +6749,7 @@ async function runAgent(k,{read=[],places=[],label,work}){
   read.forEach(n=>{const e=nodeEl(n.id);if(e){delete e.dataset.extra;e.classList.remove("reading")}});
   outlines.forEach(o=>{o.style.transition="opacity .3s";o.style.opacity=0;setTimeout(()=>o.remove(),320)});
   goHome(k);setAgent(k,{busy:false,status:""});
+  crewState[k].lastRun={t:NOW(),live:err?false:(res&&typeof res==="object"&&"live" in res?!!res.live:null)};
   if(err)throw err;return res;
 }
 function freeSpot(x,y,w,h,ignore=[]){
@@ -7230,21 +7229,35 @@ const modelExpected=()=>aiPref!=="local"&&(studioState.status==="ready"||hasApi(
 const isStandIn=n=>!!(n?.gen?.preview||n?.src?.placeholder);
 async function redraw(pid){
   const ns=board.nodes.filter(n=>n.pid===pid);if(!ns.length)return;
-  /* the old drafts stay the truth until a real replacement exists: lift them out quietly, regenerate, then either keep the new version (one Undo brings the old back) or put the old ones back untouched */
-  const ins=inputsOf(ns[0].id),before=snapOfBoard(),undoAt=undoStack.length,oldIds=new Set(ns.map(n=>n.id)),slots=ns.map(n=>({x:n.x,y:n.y})).sort((a,b)=>a.y-b.y||a.x-b.x);
+  const t=ns[0],agent=t.by,t0=NOW();
+  if(agent&&crewState[agent]?.busy)return toast(L(`${AGENTS[agent]?.name||"The agent"} is still working. Try again when it's done.`,`${AGENTS[agent]?.name||"该成员"}仍在工作，完成后再重试。`));
+  /* The old drafts stay the truth until a real replacement exists. They are lifted out only so the move sees a clean slate
+     (letters, versions, placement); history never sees the lift, and nothing outside this run's own nodes is touched. */
+  const ins=inputsOf(t.id),oldIds=new Set(ns.map(n=>n.id)),known=new Set(board.nodes.map(n=>n.id)),undoAt=undoStack.length;
+  const lifted=board.nodes.map((n,i)=>oldIds.has(n.id)?{i,n:JSON.parse(JSON.stringify(n))}:null).filter(Boolean);
+  const liftedEdges=board.edges.filter(e=>oldIds.has(e.a)||oldIds.has(e.b)).map(e=>({...e}));
+  const slots=ns.map(n=>({x:n.x,y:n.y})).sort((a,b)=>a.y-b.y||a.x-b.x);
   board.nodes=board.nodes.filter(n=>!oldIds.has(n.id));board.edges=board.edges.filter(e=>!oldIds.has(e.a)&&!oldIds.has(e.b));
   sel=sel.filter(id=>!oldIds.has(id));renderAll();
-  aiRun={live:0,local:0};let made=[],failed=false;
-  try{await redrawMove(ns[0],ns,ins)}catch(e){console.warn("Try again failed:",e);failed=true}
-  const run=aiRun;aiRun=null;
-  made=board.nodes.filter(n=>n.status==="sketch"&&n.pid&&n.pid!==pid&&!before.includes('"id":"'+n.id+'"'));
-  const fellBack=modelExpected()&&run.local>0&&run.live===0;
-  if(failed||!made.length||fellBack||(made.length&&made.every(isStandIn)&&!ns.every(isStandIn))){
-    Object.assign(board,JSON.parse(before));undoStack.length=undoAt;syncHistoryBtns();sel=[];renderAll();persist();
+  let failed=false;
+  try{await redrawMove(t,ns,ins)}catch(e){console.warn("Try again failed:",e);failed=true}
+  const putBack=o=>{if(o.nodes.some(n=>oldIds.has(n.id)))return o;for(const {i,n} of lifted)o.nodes.splice(Math.min(i,o.nodes.length),0,JSON.parse(JSON.stringify(n)));const have=new Set(o.nodes.map(n=>n.id));o.edges=[...(o.edges||[]),...liftedEdges.filter(e=>have.has(e.a)&&have.has(e.b)&&!(o.edges||[]).some(x=>x.id===e.id))];return o};
+  for(let i=undoAt;i<undoStack.length;i++){try{undoStack[i]=JSON.stringify(putBack(JSON.parse(undoStack[i])))}catch{}}
+  const made=board.nodes.filter(n=>!known.has(n.id)&&n.status==="sketch"&&n.type===t.type&&n.by===t.by);
+  const lr=agent?crewState[agent]?.lastRun:null;
+  const fellBack=modelExpected()&&!!lr&&lr.t>=t0&&lr.live===false;
+  const standIns=made.length>0&&made.every(isStandIn)&&!ns.every(isStandIn);
+  if(failed||!made.length||fellBack||standIns){
+    const madeIds=new Set(made.map(n=>n.id));
+    board.nodes=board.nodes.filter(n=>!madeIds.has(n.id));board.edges=board.edges.filter(e=>!madeIds.has(e.a)&&!madeIds.has(e.b));
+    putBack(board);
+    const top=undoStack[undoStack.length-1],ids=o=>o.nodes.map(n=>n.id).sort().join();
+    if(undoStack.length>undoAt&&top){try{if(ids(JSON.parse(top))===ids(board))undoStack.pop()}catch{}}
+    syncHistoryBtns();renderAll();persist();
     toast(failed||!made.length?L("Couldn't make a new version. The previous one is kept.","没能生成新版本，已保留原来的版本。"):L("The model didn't answer, so nothing was replaced. The previous version is kept.","模型没有响应，未做替换，已保留原来的版本。"));
     return;
   }
-  undoStack.length=undoAt;undoStack.push(before);if(undoStack.length>40)undoStack.shift();redoStack=[];syncHistoryBtns();
+  syncHistoryBtns();
   const order=[...made].sort((a,b)=>a.y-b.y||a.x-b.x);if(order.length===slots.length)order.forEach((n,i)=>{n.x=slots[i].x;n.y=slots[i].y});
   log("you",`Tried again: replaced ${ns.length>1?ns.length+" suggestions":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,null);
   renderAll();persist();toast(L("New version. Undo brings back the previous one.","已生成新版本，撤销可恢复上一版。"),{undo:true});
@@ -7262,14 +7275,14 @@ async function redrawMove(t,ns,ins){
   if(t.type==="image"&&t.src)return searchWeb(t.src.query,{nextPage:true});
 }
 function adopt(d){
-  if(!d||d.type!=="direction")return;if(d.status==="sketch")return toast("Keep this direction first.");
+  if(!d||d.type!=="direction")return toast(L("Select a direction to adopt.","请先选中一个方向再采纳。"));if(d.status==="sketch")return toast("Keep this direction first.");
   if(board.adopted[d.idea]===d.id)return;checkpoint();board.adopted[d.idea]=d.id;
   log("you",`Adopted <b>${d.letter} ${esc(d.title)}</b>`,d.id);sfx("keep");renderAll();persist();
   const st=qs(`[data-stamp="${d.id}"]`);if(st&&!calm()){st.classList.add("slam")}
   toast(`Adopted ${d.title}`,{undo:true});
 }
 function pullPrint(p){
-  if(!p||p.type!=="proof")return;if(p.status==="sketch")return toast("Keep the proof before printing it.");
+  if(!p||p.type!=="proof")return toast(L("Select a proof to print.","请先选中一个原型再打印。"));if(p.status==="sketch")return toast("Keep the proof before printing it.");
   const prev=board.nodes.find(n=>n.type==="print"&&n.proof===p.id);
   if(prev){select([prev.id]);focusNodes([p,prev],.85);return toast("This proof is already printed as No. "+prev.ed)}
   checkpoint();const ed=1+board.nodes.filter(n=>n.type==="print").length;
@@ -8816,29 +8829,29 @@ async function commitLineAttachments({triggerAdvisor=false,selectNodes=true}={})
 const lineIn=$("lineInput");
 const CMDS=[
   {c:"/fork",a:"muse",d:"Explore directions from the selected claim",hint:"2–4"},
-  {c:"/build",a:"wright",d:"Build a proof from the selected direction"},
-  {c:"/deck",a:"wright",d:"Build the selected direction as a slide deck"},
-  {c:"/list",a:"wright",d:"Turn the selection into an action list"},
-  {c:"/kanban",a:"wright",d:"Turn the selection into a Kanban board"},
-  {c:"/treemap",a:"wright",d:"Turn the selection into an XMind-style Tree Map"},
-  {c:"/gather",a:"scout",d:"Read the selection and weigh its evidence"},
-  {c:"/critique",a:"critic",d:"Check the selection against its sources"},
-  {c:"/ask",a:"critic",d:"Ask a question anchored to the selection",text:true},
-  {c:"/adopt",a:null,d:"Adopt the selected direction"},
-  {c:"/print",a:null,d:"Print the selected proof"},
-  {c:"/claim",a:null,d:"Add a claim to Diverge",text:true},
-  {c:"/note",a:null,d:"Add a note where you’re looking",text:true},
+  {c:"/build",a:"wright",d:"Build a proof from the selected direction",run:true},
+  {c:"/deck",a:"wright",d:"Build the selected direction as a slide deck",run:true},
+  {c:"/list",a:"wright",d:"Turn the selection into an action list",run:true},
+  {c:"/kanban",a:"wright",d:"Turn the selection into a Kanban board",run:true},
+  {c:"/treemap",a:"wright",d:"Turn the selection into an XMind-style Tree Map",run:true},
+  {c:"/gather",a:"scout",d:"Read the selection and weigh its evidence",run:true},
+  {c:"/critique",a:"critic",d:"Check the selection against its sources",run:true},
+  {c:"/ask",a:"critic",d:"Ask a question anchored to the selection"},
+  {c:"/adopt",a:null,d:"Adopt the selected direction",run:true},
+  {c:"/print",a:null,d:"Print the selected proof",run:true},
+  {c:"/claim",a:null,d:"Add a claim to Diverge"},
+  {c:"/note",a:null,d:"Add a note where you’re looking"},
   {c:"/notepad",a:null,d:"Add a structured notepad document"},
-  {c:"/question",a:null,d:"Pin an open question on the canvas",text:true},
+  {c:"/question",a:null,d:"Pin an open question on the canvas"},
   {c:"/link",a:null,d:"Save a URL as a link card"},
   {c:"/group",a:null,d:"Create a group frame (or wrap selected cards)"},
-  {c:"/organize",a:null,d:"Organize canvas cards cleanly by lane"},
-  {c:"/image",a:"wright",d:"Generate images from a description",text:true},
-  {c:"/reverse",a:"scout",d:"Extract structured prompt pack from the selected image"},
-  {c:"/video",a:"wright",d:"Generate a short animated video",text:true},
-  {c:"/split",a:"scout",d:"Split selected video recording into key shot frames"},
-  {c:"/gif",a:"wright",d:"Generate a looping animated GIF",text:true},
-  {c:"/search",a:"scout",d:"Search the web for reference images",text:true},
+  {c:"/organize",a:null,d:"Organize canvas cards cleanly by lane",run:true},
+  {c:"/image",a:"wright",d:"Generate images from a description"},
+  {c:"/reverse",a:"scout",d:"Extract structured prompt pack from the selected image",run:true},
+  {c:"/video",a:"wright",d:"Generate a short animated video"},
+  {c:"/split",a:"scout",d:"Split selected video recording into key shot frames",run:true},
+  {c:"/gif",a:"wright",d:"Generate a looping animated GIF"},
+  {c:"/search",a:"scout",d:"Search the web for reference images"},
   {c:"/find",a:null,d:"Search cards & notes on the canvas"},
   {c:"/copilot",a:null,d:"Discuss the board or plan moves with Copilot"},
   {c:"/memory",a:null,d:"View or edit Project Memory and Studio Rules"},
@@ -9373,8 +9386,8 @@ function updateMenu(){
   syncLineClearance();
 }
 function closeMenu(){$("menu").hidden=true;menuItems=[];syncLineClearance()}
-function pickMenu(i){const it=menuItems[i];if(!it)return;lineIn.value=it.ins;lineIn._pick=true;closeMenu();lineIn.focus();renderRoute();
-  const cmd=CMDS.find(x=>x.c===String(it.ins||"").trim());if(cmd&&!cmd.hint&&!cmd.text)sendLine()}
+function pickMenu(i,{run=false}={}){const it=menuItems[i];if(!it)return;lineIn.value=it.ins;lineIn._pick=true;closeMenu();lineIn.focus();renderRoute();
+  const cmd=CMDS.find(x=>x.c===String(it.ins||"").trim());if(run&&cmd?.run)sendLine()}
 
 /* sharpen: prompt refiner (presets, board & image context, disambiguation, variations, revert) */
 let sharpened=null,enhState={orig:"",history:[],preset:"",choices:null,busy:false,isImg:false,applied:false};
@@ -13540,7 +13553,7 @@ lineIn.addEventListener("blur",()=>{$("line").classList.remove("focus");setTimeo
 lineIn.addEventListener("keydown",e=>{
   if(!$("menu").hidden){
     if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();menuIdx=(menuIdx+(e.key==="ArrowDown"?1:-1)+menuItems.length)%menuItems.length;updateMenu();return}
-    if(e.key==="Enter"||e.key==="Tab"){e.preventDefault();pickMenu(menuIdx);return}
+    if(e.key==="Enter"||e.key==="Tab"){e.preventDefault();pickMenu(menuIdx,{run:e.key==="Enter"});return}
     if(e.key==="Escape"){closeMenu();return}
   }
   if(e.key==="Tab"&&!e.shiftKey&&lineIn.value.trim()){e.preventDefault();if(sharpened)applySharpened(sharpened);else sharpen();return}
@@ -13559,7 +13572,7 @@ $("lineQueue")?.addEventListener("click",e=>{
   if(e.target.closest("[data-lq-clear]")){lineQueue=[];lineQueuePaused=false;renderLineQueue();return}
   if(e.target.closest("[data-lq-run]")){lineQueuePaused=false;renderLineQueue();drainLineQueue();return}
 });
-$("menu").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-mi]");if(b){e.preventDefault();pickMenu(+b.dataset.mi)}});
+$("menu").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-mi]");if(b){e.preventDefault();pickMenu(+b.dataset.mi,{run:true})}});
 $("line").addEventListener("submit",e=>{e.preventDefault();sendLine()});
 $("micBtn").onclick=()=>toggleVoice(lineIn);
 addEventListener("keydown",e=>{

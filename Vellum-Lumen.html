@@ -2627,6 +2627,8 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 #line:not(.typed) #routeWrap{display:none}
 .route-wrap .lc-pop{bottom:calc(100% + 14px)}
 .route-wrap{align-self:flex-end;height:36px}.route{height:32px}
+.mode-chip{margin:3px 2px 3px 0}.mode-chip .ml.pick{display:inline-flex;align-items:center;gap:2px;cursor:pointer}.mode-chip .ml.pick .ico{width:11px;height:11px;color:var(--label-3)}
+.thumb.link-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .send:disabled{background:transparent;color:var(--label-3);box-shadow:inset 0 0 0 1px var(--hair-2)}
 .line-hint:empty{display:none}
 @media (max-width:640px){#routeWrap{display:none}}
@@ -3888,7 +3890,8 @@ function cardBody(n){
     ${asrc?`<div class="aud-bar" data-aud-bar><audio preload="metadata" src="${asrc}"></audio><button type="button" class="aud-play" aria-label="Play audio">${ic("play")}</button><div class="aud-track" role="slider" aria-label="Audio progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div><span class="aud-tc">${n.dur?tc(n.dur).replace(/\.\d$/,""):"0:00"}</span></div>`:`<div class="meta">Audio unavailable</div>`}
     ${sk?sketchActs(n):foot(weightHTML(n.weight),fR(threadCount(n)))}</div>`;}
   case"link":{const href=safeHref(n.url),host=n.host||linkHost(n.url)||href,desc=(n.text&&n.text!==host&&n.text!==href)?`<p data-edit="text">${esc(n.text)}</p>`:"";
-    const linkThumb=href?`<div class="thumb link-thumb"><iframe tabindex="-1" loading="lazy" sandbox="allow-scripts allow-same-origin" data-src-url="${esc(href)}" title="${esc(n.title||host||"Link preview")}"></iframe><div class="link-fallback">${ic("link")}<span>${esc(clip(host||href,36))}</span></div>${thumbBadge(fmt)}<div class="open"><button type="button" data-a="open">${ic("eye")} Open Preview</button></div></div>`:"";
+    const still=n.thumb&&/^https:\/\//.test(n.thumb)?n.thumb:"";
+    const linkThumb=still?`<div class="thumb link-thumb ready"><img src="${esc(still)}" alt="" loading="lazy" referrerpolicy="no-referrer" draggable="false" onerror="this.parentElement.remove()">${thumbBadge(fmt)}</div>`:n.nopreview?"":href?`<div class="thumb link-thumb"><iframe tabindex="-1" loading="lazy" sandbox="allow-scripts allow-same-origin" data-src-url="${esc(href)}" title="${esc(n.title||host||"Link preview")}"></iframe><div class="link-fallback">${ic("link")}<span>${esc(clip(host||href,36))}</span></div>${thumbBadge(fmt)}<div class="open"><button type="button" data-a="open">${ic("eye")} Open Preview</button></div></div>`:"";
     const rawDisp=(href||n.url||"").replace(/^https?:\/\/(?:www\.)?/i,"").replace(/\/+$/,"");
     if(!href)return `<div class="in">${head(fmtBadgeHTML(fmt))}<h4 data-edit="title">${esc(n.title||host||"Link")}</h4>${desc}${sk?sketchActs(n):foot(weightHTML(n.weight),fR(threadCount(n)))}</div>`;
     const linkVotes=sk?"":cardVotesHTML(n);
@@ -7381,7 +7384,7 @@ function planOf(r){
     case"image":{const c=clamp(genOpts.count,1,4);return {agent:"wright",reads:f?[f]:[],places:planImages(c,genOpts.ratio,f||null),label:`${c} image${c>1?"s":""}`}}
     case"video":return {agent:"wright",reads:ctx.length?ctx:[],places:planImages(1,genOpts.ratio,f||null,W.recording),label:"a video"};
     case"gif":return {agent:"wright",reads:ctx.length?ctx:[],places:planImages(1,genOpts.ratio,f||null,W.image),label:"an animated GIF"};
-    case"search":return {agent:"scout",reads:[],places:planSearch(4),label:"4 results"};
+    case"search":return {agent:"scout",reads:[],places:planSearch(4),label:"4 "+SEARCH_KINDS[searchKindOf(lineText())||searchPref][0].toLowerCase()};
     case"claim":{const s=freeSpot(BAY+80,300,W.idea,220);return {agent:null,reads:[],places:[{x:s.x,y:s.y,w:W.idea,h:220}],label:"Your claim"}}
   }
   return null;
@@ -8061,6 +8064,20 @@ const SERVICES={
     if(!r.ok)throw new Error(d.error||("Video HTTP "+r.status));
     return d;
   },
+  searchLinks:async (query,{kind="article",count=4,page=0}={})=>{
+    const strip=s=>String(s||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim(),ok=u=>u&&/^https:\/\//.test(u)?u:"",q=encodeURIComponent(query);
+    const get=async u=>{const r=await fetch(u,{signal:timeoutSignal(6500)});if(!r.ok)throw new Error(r.status);return r.json()};
+    const reqs=kind==="video"?[
+      get(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query+" filetype:video")}&gsrnamespace=6&gsrlimit=6&gsroffset=${page*4}&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&format=json&origin=*`).then(d=>Object.values(d.query?.pages||{}).sort((a,b)=>a.index-b.index).map(p=>{const i=p.imageinfo?.[0],m=i?.extmetadata||{};return i&&{title:strip(m.ObjectName?.value||p.title?.replace(/^File:/,"").replace(/\.\w+$/,"")),url:ok(i.descriptionurl),thumb:ok(i.thumburl),text:clip(strip(m.ImageDescription?.value),160),source:"Wikimedia Commons"}})),
+      get(`https://archive.org/advancedsearch.php?q=${encodeURIComponent("("+query+") AND mediatype:movies")}&fl[]=identifier&fl[]=title&fl[]=description&rows=6&page=${page+1}&output=json`).then(d=>(d.response?.docs||[]).map(it=>({title:strip(it.title),url:`https://archive.org/details/${encodeURIComponent(it.identifier)}`,thumb:`https://archive.org/services/img/${encodeURIComponent(it.identifier)}`,text:clip(strip([].concat(it.description||"").join(" ")),160),source:"Internet Archive"})))
+    ]:[
+      get(`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrlimit=6&gsroffset=${page*4}&prop=extracts|pageimages|info&exintro=1&explaintext=1&exchars=220&exlimit=max&piprop=thumbnail&pithumbsize=640&inprop=url&format=json&origin=*`).then(d=>Object.values(d.query?.pages||{}).sort((a,b)=>a.index-b.index).map(p=>({title:p.title,url:ok(p.fullurl),thumb:ok(p.thumbnail?.source),text:clip(strip(p.extract),200),source:"Wikipedia"}))),
+      get(`https://hn.algolia.com/api/v1/search?query=${q}&tags=story&hitsPerPage=6&page=${page}`).then(d=>(d.hits||[]).map(h=>({title:strip(h.title),url:ok(h.url),thumb:"",text:`${h.points||0} points on Hacker News · ${String(h.created_at||"").slice(0,4)}`,source:"Hacker News"})))
+    ];
+    const lists=(await Promise.allSettled(reqs)).map(s=>s.status==="fulfilled"?s.value.filter(it=>it&&it.url&&it.title):[]),out=[],seen=new Set();
+    for(let i=0;out.length<count&&lists.some(l=>l[i]);i++)for(const l of lists){const it=l[i];if(it&&!seen.has(it.url)&&out.length<count){seen.add(it.url);out.push(it)}}
+    return out;
+  },
   search:async (query,{count=4,page=0}={})=>{
     const stripTags=s=>String(s||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
     const safeUrl=u=>u&&/^https?:\/\//.test(u)?u:"";
@@ -8624,6 +8641,15 @@ async function searchWeb(query,{nextPage=false,from=null}={}){
   log("scout",`Found ${made.length} images for <b>${esc(clip(query,50))}</b>`,made[0].id);
   sel=[];renderAll();restack(made);persist();typeIn(made.map(m=>m.id)).then(()=>evenRows(made));follow(made);
 }
+async function searchLinks(query,kind){
+  query=String(query||"").trim();if(!query)return;
+  const count=4,places=planSearch(count),qk=kind+":"+query.toLowerCase(),page=searchPages.get(qk)||0;searchPages.set(qk,page+1);
+  const res=await runAgent("scout",{read:[],places,label:kind==="video"?"searching Commons & Internet Archive":"searching Wikipedia & Hacker News",work:async()=>{try{return await SERVICES.searchLinks(query,{kind,count,page})}catch(e){console.warn("Search failed:",e);return []}}});
+  if(!res.length){toast(L(`No ${SEARCH_KINDS[kind][0].toLowerCase()} found for “${clip(query,40)}”. The search sources may be unreachable.`,`没有找到相关${SEARCH_KINDS[kind][1]}，搜索源可能无法访问。`));return}
+  checkpoint();const pid="p-"+uid(),made=res.map((it,i)=>node("link",{title:clip(it.title,90),url:it.url,host:linkHost(it.url),text:it.text||"",thumb:it.thumb||"",nopreview:!it.thumb,weight:"reported",src:{query,kind,source:it.source},by:"scout",status:"sketch",pid},places[i]));
+  log("scout",`Found ${made.length} ${SEARCH_KINDS[kind][0].toLowerCase()} for <b>${esc(clip(query,50))}</b>`,made[0].id);
+  sel=[];renderAll();restack(made);persist();typeIn(made.map(m=>m.id)).then(()=>evenRows(made));follow(made);
+}
 function evenRows(ns){
   const at=ns.map(n=>n.x+","+n.y);
   Promise.race([Promise.all(ns.map(n=>{const im=qs("img",nodeEl(n.id)||document.createElement("i"));return im&&!im.complete?new Promise(r=>{im.onload=im.onerror=r}):0})),wait(4000)]).then(()=>{
@@ -8995,6 +9021,10 @@ async function configureSystem(r){
   systemSettingsDialog();
   toast("Try natural settings like “dark mode”, “16:9 ratio, 4 images”, or “rename board to Study 2”.");
 }
+let searchPref="image";
+const SEARCH_KINDS={image:["Images","图片"],article:["Articles","文章"],video:["Videos","视频"]};
+function searchKindOf(t){t=String(t||"");return /\b(articles?|papers?|essays?|posts?|readings?)\b|文章|论文/i.test(t)?"article":/\b(videos?|clips?|footage|talks?)\b|视频/i.test(t)?"video":/\b(images?|photos?|pictures?)\b|图片|照片/i.test(t)?"image":null}
+function stripSearchKind(q){return String(q||"").trim().replace(/^(?:for\s+)?(?:some\s+)?(?:(?:reference\s+)?(?:photos?|images?|pictures?|references?|articles?|papers?|essays?|posts?|videos?|clips?|footage|talks?)\b\s*(?:of|for|about|on)?\s*)?/i,"").trim()}
 function searchQuery(t){return t.replace(/^(?:(?:please|can\s+you|could\s+you|help\s+me(?:\s+to)?)\s+)*(?:search(?:\s+the\s+web)?|look\s+up|look\s+for|google|find)\s+(?:me\s+)?(?:for\s+)?(?:some\s+)?(?:(?:reference\s+)?(?:photos?|images?|pictures?|references?)\s+(?:of|for)\s+)?/i,"").trim()}
 function route(text){
   const t=text.trim(),ctx=effectiveLineCtx(),f=ctx[0];if(!t||/^[/@]\w*$/.test(t))return null;
@@ -9046,7 +9076,7 @@ function route(text){
   if(/^(?:please\s+)?(?:animate|generate|make|create)\s+(?:me\s+)?(?:an?\s+)?(?:\w+\s+){0,2}(?:gif|animated\s+gif)s?\b/i.test(t))return mk("gif","wright","generate animated GIF",{arg:t});
   if(/^(?:please\s+)?(?:animate|generate|make|create|render)\s+(?:me\s+)?(?:a\s+)?(?:\w+\s+){0,2}(?:videos?|clips?|animations?|reels?|movies?)\b/i.test(t))return mk("video","wright","generate video",{arg:t});
   if(/^(?:please\s+)?(?:draw|illustrate|paint|sketch|render)\b|^(?:please\s+)?(?:generate|make|create)\s+(?:me\s+)?(?:an?\s+|some\s+|\d\s+)?(?:\w+\s+){0,2}(?:images?|pictures?|illustrations?|renders?|posters?|visuals?)\b/i.test(t))return mk("image","wright",`render ${genOpts.count} image${genOpts.count>1?"s":""}`,{arg:t});
-  if(/^(?:(?:please|can\s+you|could\s+you|help\s+me(?:\s+to)?)\s+)*(?:search|look up|google)\b|^(?:(?:please|can\s+you|could\s+you|help\s+me(?:\s+to)?)\s+)*find\s+(?:me\s+)?(?:some\s+)?(?:photos?|images?|pictures?|references?)\b/i.test(t))return mk("search","scout","search the web",{arg:searchQuery(t)});
+  if(/^(?:(?:please|can\s+you|could\s+you|help\s+me(?:\s+to)?)\s+)*(?:search|look up|google)\b|^(?:(?:please|can\s+you|could\s+you|help\s+me(?:\s+to)?)\s+)*find\s+(?:me\s+)?(?:some\s+)?(?:photos?|images?|pictures?|references?|articles?|papers?|essays?|posts?|videos?|clips?|footage|talks?)\b/i.test(t))return mk("search","scout","search the web",{arg:searchQuery(t)});
   if(/^https?:\/\/\S+$/i.test(t))return mk("link",null,"add link card",{arg:t});
   const cfg=parseConfigIntent(t);if(cfg)return mk("config",null,describeConfigPatch(cfg),{patch:cfg,arg:t});
   const noteCmd=t.match(/^(?:note|memo|jot|pin(?:\s+a)?\s+note|make(?:\s+a)?\s+note|add(?:\s+a)?\s+note|create(?:\s+a)?\s+note)[:：\s]+([\s\S]+)$/i)||t.match(/^(?:记一下|记一条|写个?便签|建个?便签|贴个?便签)[:：\s]+([\s\S]+)$/);
@@ -9077,7 +9107,7 @@ const MODES_LINE={
   image:{agent:"wright",label:"Image",ph:"Describe the image",prefix:"/image"},
   video:{agent:"wright",label:"Video",ph:"Describe the video motion or scene",prefix:"/video"},
   gif:{agent:"wright",label:"GIF",ph:"Describe the animated GIF",prefix:"/gif"},
-  search:{agent:"scout",label:"Search",ph:"Search web images",prefix:"/search"},
+  search:{agent:"scout",label:"Search",get ph(){const k=SEARCH_KINDS[searchPref];return L("Search "+k[0].toLowerCase(),"搜索"+k[1])},prefix:"/search"},
   scout:{agent:"scout",label:"@Scout",ph:"Ask Scout to search, gather, or answer…",prefix:"@scout",crew:true},
   muse:{agent:"muse",label:"@Strategist",ph:"Ask Strategist to fork directions or reply…",prefix:"@strategist",crew:true},
   wright:{agent:"wright",label:"@Wright",ph:"Ask Wright to build, render, or draft…",prefix:"@wright",crew:true},
@@ -9097,7 +9127,9 @@ function setLineMode(m){
   if(!M){$("line").classList.remove("moded");c.hidden=true;c.innerHTML="";renderLineCtx();lastRouteKey=null;renderRoute();renderLineCrew();autoGrow();return}
   c.innerHTML=`<span class="mk">${AGENTS[M.agent].mk}</span><span class="ml">${M.label}</span><button type="button" class="mx" aria-label="Leave ${M.label.toLowerCase()} mode" title="Leave ${M.label.toLowerCase()} mode">${ic("x")}</button>`;
   $("line").classList.add("moded");  c.hidden=false;c.style.animation="none";void c.offsetWidth;c.style.animation="";
-  qs(".mx",c).onclick=()=>{setLineMode(null);lineIn.focus()};lineIn.placeholder=M.ph;lastRouteKey=null;renderRoute();renderLineCrew();
+  qs(".mx",c).onclick=()=>{setLineMode(null);lineIn.focus()};lineIn.placeholder=M.ph;
+  if(lineMode==="search"){const ml=qs(".ml",c),order=Object.keys(SEARCH_KINDS),nm=SEARCH_KINDS[searchPref][uiLang()==="zh"?1:0];ml.classList.add("pick");ml.innerHTML=esc(nm)+ic("chev");ml.title=L("Switch between images, articles and videos","切换图片、文章、视频");
+    ml.onclick=()=>{searchPref=order[(order.indexOf(searchPref)+1)%order.length];setLineMode("search");lineIn.focus()};lineIn.placeholder=L("Search "+nm.toLowerCase(),"搜索"+nm)}lastRouteKey=null;renderRoute();renderLineCrew();
 }
 function absorbMode(){const m=lineIn.value.match(/^(?:\/(image|video|gif|search)|@(scout|strategist|muse|wright|critic))(?:\s+|$)/i);if(!m)return;
   if(!/\s/.test(lineIn.value)&&!lineIn._pick)return;
@@ -9123,7 +9155,7 @@ function renderRoute(){
   const genKind=lineMode==="image"||lineMode==="video"||lineMode==="gif"?lineMode:(r&&(r.kind==="image"||r.kind==="video"||r.kind==="gif")?r.kind:null);
   renderGenOpts(!!genKind,genKind||"image");syncLineSend();
   if(lineMode)lineIn.placeholder=MODES_LINE[lineMode].ph;
-    const key=(r?r.kind+(r.agent||"")+r.label+effectiveLineCtx().map(n=>n.id).join():"idle")+":"+uiLang();
+    const key=(r?r.kind+(r.agent||"")+r.label+(r.kind==="search"?searchKindOf(lineText())||searchPref:"")+effectiveLineCtx().map(n=>n.id).join():"idle")+":"+uiLang();
   if(key!==lastRouteKey){
     lastRouteKey=key;
     const chev='<svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
@@ -9224,7 +9256,9 @@ async function execLineRequest(text){
     case"video":return generateVideo(body,{sources:ctx,from:f||null});
     case"split":{const rec=has("recording");return rec?splitRecordingShots(rec):toast("Select a recording card first")}
     case"gif":return generateGif(body,{sources:ctx,from:f||null});
-    case"search":if(/^(?:for\s+)?(?:some\s*thing|anything|stuff|things?|it|this|that)?$/i.test(body)){setLineMode("search");lineIn.focus();return}return searchWeb(body);
+    case"search":{const kind=searchKindOf(text)||searchPref,q=stripSearchKind(body);
+      if(/^(?:some\s*thing|anything|stuff|things?|it|this|that)?$/i.test(q)){searchPref=kind;setLineMode("search");lineIn.focus();return}
+      return kind==="image"?searchWeb(q):searchLinks(q,kind)}
     case"find":if(body){findQuery=body;findIdx=0}toggleFindBar(true);return;
     case"copilot":openCopilot(true);if(body)sendCopilotMessage(body);return;
     case"memory":rememberFact(body,{scope:/\b(studio|all\s+boards|always|global)\b/i.test(body)?"studio":"board"});return;

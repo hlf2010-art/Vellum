@@ -5699,7 +5699,7 @@ Include 1 or at most 2 pins.`;
     if(ks!==lastK||ts!==lastT){lastK=ks;lastT=ts;onProgress({keywords:kws,thoughts:th})}
   }:undefined;
   try{
-    const {v}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, light human emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:750,signal,memoryMode:rel.length?"compact":"none",onText:handleText},local);
+    const {v}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:750,signal,memoryMode:rel.length?"compact":"none",onText:handleText},local);
     if(!v||!Array.isArray(v.pins)||!v.pins.length)return local();
     const kws=Array.isArray(v.keywords)&&v.keywords.length?v.keywords.slice(0,5).map(String):local().keywords;
     return {

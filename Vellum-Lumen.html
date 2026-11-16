@@ -2619,13 +2619,14 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 #world.far .card:not(.group):not(.note)::after{content:attr(data-t);position:absolute;inset:0;padding:calc(9px*var(--far-s));background:none;opacity:1;pointer-events:none;overflow:hidden;
   font:600 calc(12px*var(--far-s))/1.28 var(--ui);letter-spacing:-.01em;color:var(--label);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4}
 #world.far .card.sketch::after{color:var(--label-2)}
-#world.far .card.image::after,#world.far .card.frame::after,#world.far .card.recording::after{content:none}
+#world.far .card.image:not(.group):not(.note)::after,#world.far .card.frame:not(.group):not(.note)::after,#world.far .card.recording:not(.group):not(.note)::after{content:none}
 @media (prefers-reduced-motion:reduce){.card.inking,.card.inking *{animation:none}}
 /* composer: one calm row; the route shows once there is something to route */
 .line-sub{display:none}
 .line-field{background:color-mix(in srgb,var(--card) 94%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 #line:not(.typed) #routeWrap{display:none}
 .route-wrap .lc-pop{bottom:calc(100% + 14px)}
+.route-wrap{align-self:flex-end;height:36px}.route{height:32px}
 .send:disabled{background:transparent;color:var(--label-3);box-shadow:inset 0 0 0 1px var(--hair-2)}
 .line-hint:empty{display:none}
 @media (max-width:640px){#routeWrap{display:none}}
@@ -8621,7 +8622,16 @@ async function searchWeb(query,{nextPage=false,from=null}={}){
   }
   if(from)setTimeout(()=>freshEdges.clear(),1200);
   log("scout",`Found ${made.length} images for <b>${esc(clip(query,50))}</b>`,made[0].id);
-  sel=[];renderAll();restack(made);persist();typeIn(made.map(m=>m.id));follow(made);
+  sel=[];renderAll();restack(made);persist();typeIn(made.map(m=>m.id)).then(()=>evenRows(made));follow(made);
+}
+function evenRows(ns){
+  const at=ns.map(n=>n.x+","+n.y);
+  Promise.race([Promise.all(ns.map(n=>{const im=qs("img",nodeEl(n.id)||document.createElement("i"));return im&&!im.complete?new Promise(r=>{im.onload=im.onerror=r}):0})),wait(4000)]).then(()=>{
+    if(ns.some((n,i)=>!byId(n.id)||n.x+","+n.y!==at[i]))return;
+    const cols=new Map();for(const n of ns){const k=Math.round(n.x);if(!cols.has(k))cols.set(k,[]);cols.get(k).push(n)}
+    const cs=[...cols.values()].map(c=>c.sort((a,b)=>a.y-b.y)),rows=Math.max(...cs.map(c=>c.length));let y=Math.min(...ns.map(n=>n.y));
+    for(let r=0;r<rows;r++){const row=cs.map(c=>c[r]).filter(Boolean);row.forEach(n=>n.y=y);y+=Math.max(...row.map(n=>nodeEl(n.id)?.offsetHeight||n._h||300))+28}
+    renderAll();persist()})
 }
 
 /* settle a fresh grid by its real heights, so cards never overlap whatever their text */
@@ -8985,7 +8995,7 @@ async function configureSystem(r){
   systemSettingsDialog();
   toast("Try natural settings like “dark mode”, “16:9 ratio, 4 images”, or “rename board to Study 2”.");
 }
-function searchQuery(t){return t.replace(/^(?:please\s+)?(?:search(?:\s+the\s+web)?|look\s+up|look\s+for|google|find)\s+(?:me\s+)?(?:for\s+)?(?:some\s+)?(?:(?:reference\s+)?(?:photos?|images?|pictures?|references?)\s+(?:of|for)\s+)?/i,"").trim()||t}
+function searchQuery(t){return t.replace(/^(?:(?:please|can\s+you|could\s+you|help\s+me(?:\s+to)?)\s+)*(?:search(?:\s+the\s+web)?|look\s+up|look\s+for|google|find)\s+(?:me\s+)?(?:for\s+)?(?:some\s+)?(?:(?:reference\s+)?(?:photos?|images?|pictures?|references?)\s+(?:of|for)\s+)?/i,"").trim()}
 function route(text){
   const t=text.trim(),ctx=effectiveLineCtx(),f=ctx[0];if(!t||/^[/@]\w*$/.test(t))return null;
   const has=type=>ctx.find(n=>n.type===type);
@@ -9036,7 +9046,7 @@ function route(text){
   if(/^(?:please\s+)?(?:animate|generate|make|create)\s+(?:me\s+)?(?:an?\s+)?(?:\w+\s+){0,2}(?:gif|animated\s+gif)s?\b/i.test(t))return mk("gif","wright","generate animated GIF",{arg:t});
   if(/^(?:please\s+)?(?:animate|generate|make|create|render)\s+(?:me\s+)?(?:a\s+)?(?:\w+\s+){0,2}(?:videos?|clips?|animations?|reels?|movies?)\b/i.test(t))return mk("video","wright","generate video",{arg:t});
   if(/^(?:please\s+)?(?:draw|illustrate|paint|sketch|render)\b|^(?:please\s+)?(?:generate|make|create)\s+(?:me\s+)?(?:an?\s+|some\s+|\d\s+)?(?:\w+\s+){0,2}(?:images?|pictures?|illustrations?|renders?|posters?|visuals?)\b/i.test(t))return mk("image","wright",`render ${genOpts.count} image${genOpts.count>1?"s":""}`,{arg:t});
-  if(/^(?:please\s+)?(?:search|look up|google)\b|^(?:please\s+)?find\s+(?:me\s+)?(?:some\s+)?(?:photos?|images?|pictures?|references?)\b/i.test(t))return mk("search","scout","search the web",{arg:searchQuery(t)});
+  if(/^(?:(?:please|can\s+you|could\s+you|help\s+me(?:\s+to)?)\s+)*(?:search|look up|google)\b|^(?:(?:please|can\s+you|could\s+you|help\s+me(?:\s+to)?)\s+)*find\s+(?:me\s+)?(?:some\s+)?(?:photos?|images?|pictures?|references?)\b/i.test(t))return mk("search","scout","search the web",{arg:searchQuery(t)});
   if(/^https?:\/\/\S+$/i.test(t))return mk("link",null,"add link card",{arg:t});
   const cfg=parseConfigIntent(t);if(cfg)return mk("config",null,describeConfigPatch(cfg),{patch:cfg,arg:t});
   const noteCmd=t.match(/^(?:note|memo|jot|pin(?:\s+a)?\s+note|make(?:\s+a)?\s+note|add(?:\s+a)?\s+note|create(?:\s+a)?\s+note)[:：\s]+([\s\S]+)$/i)||t.match(/^(?:记一下|记一条|写个?便签|建个?便签|贴个?便签)[:：\s]+([\s\S]+)$/);
@@ -9214,7 +9224,7 @@ async function execLineRequest(text){
     case"video":return generateVideo(body,{sources:ctx,from:f||null});
     case"split":{const rec=has("recording");return rec?splitRecordingShots(rec):toast("Select a recording card first")}
     case"gif":return generateGif(body,{sources:ctx,from:f||null});
-    case"search":return searchWeb(body);
+    case"search":if(/^(?:for\s+)?(?:some\s*thing|anything|stuff|things?|it|this|that)?$/i.test(body)){setLineMode("search");lineIn.focus();return}return searchWeb(body);
     case"find":if(body){findQuery=body;findIdx=0}toggleFindBar(true);return;
     case"copilot":openCopilot(true);if(body)sendCopilotMessage(body);return;
     case"memory":rememberFact(body,{scope:/\b(studio|all\s+boards|always|global)\b/i.test(body)?"studio":"board"});return;
@@ -9283,7 +9293,7 @@ async function askAnchored(text,ctx){
   await wait(500);return reply(q,text,"critic");
 }
 const latestProof=()=>board.nodes.filter(n=>n.type==="proof"&&n.status==="ink").sort((a,b)=>b.created-a.created)[0];
-function autoGrow(){if(!lineIn.value){lineIn.style.height="";syncLineClearance?.();return}lineIn.style.height="auto";lineIn.style.height=Math.min(160,Math.max(40,lineIn.scrollHeight))+"px";syncLineClearance?.()}
+function autoGrow(){if(!lineIn.value){lineIn.style.height="";syncLineClearance?.();return}lineIn.style.height="auto";lineIn.style.height=Math.min(160,Math.max(36,lineIn.scrollHeight))+"px";syncLineClearance?.()}
 
 /* slash and @ menu */
 let menuIdx=0,menuItems=[];

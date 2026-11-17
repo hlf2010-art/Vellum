@@ -5601,6 +5601,9 @@ function setApiHealth(k,{cfg=apiCfg,ms=null,detail=""}={}){
   const prev=apiHealth.k;
   apiHealth={k,sig:apiCfgSig(cfg),at:Date.now(),ms,detail};
   if(prev!==k){try{renderCrew()}catch{}}
+  // apiRoutable() lets an unreachable host back in after a minute; re-render at that moment so the header flips with routing
+  clearTimeout(setApiHealth.t);
+  if(k==="unreachable")setApiHealth.t=setTimeout(()=>{try{renderCrew();if(studioPopOpen)renderStudioPop()}catch{}},60050);
   try{if(typeof studioPopOpen!=="undefined"&&studioPopOpen)renderStudioPop()}catch{}
 }
 /* One real, minimal request: proves the host answers, the key is accepted and the model exists. */
@@ -5648,7 +5651,9 @@ function connSummary(){
   const model=engine==="local"?(studioState.model||"").split("/").pop():engine==="api"?(apiCfg.model||"").split("/").pop():"";
   let issue="",tone="";
   if(aiPref==="local"){issue=L("AI turned off","AI 已关闭");tone="warn"}
-  else if(hasApi()&&API_BAD.has(h.k)&&engine!=="local"){issue=L(`Cloud API ${apiHealthLabel(h).txt.toLowerCase()}`,`云端 API ${apiHealthLabel(h).txt}`);tone="err"}
+  else if(hasApi()&&API_BAD.has(h.k)&&engine!=="local"&&!apiRoutable()){issue=L(`Cloud API ${apiHealthLabel(h).txt.toLowerCase()}`,`云端 API ${apiHealthLabel(h).txt}`);tone="err"}
+  else if(engine==="api"&&h.k==="unreachable"){issue=L("Retrying Cloud API","正在重试云端 API");tone="busy"}
+  else if(engine==="api"&&h.k==="error"){issue=L("Cloud API returned an error","云端 API 返回错误");tone="warn"}
   else if(aiPref==="api"&&!hasApi()){issue=L("Cloud API not configured","云端 API 未配置");tone="warn"}
   else if(aiPref==="auto"&&starting){issue=L("Local AI starting…","本地模型启动中…");tone="busy"}
   else if(engine==="api"&&h.k==="checking"){issue=L("Checking Cloud API…","正在检测云端 API…");tone="busy"}

@@ -1257,6 +1257,8 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .tbl-tag{display:inline-block;padding:1px 8px;border-radius:5px;font-weight:550;background:color-mix(in srgb,var(--c) 15%,var(--tbl-bg));color:color-mix(in srgb,var(--c) 62%,var(--label))}
 /* more to the right: fade the edge until scrolled to the end */
 .tbl-block{position:relative}
+.card .tbl-block{margin-top:12px;user-select:text;-webkit-user-select:text}
+.card .tbl-block .tbl-tools{margin-bottom:4px}
 .cp-bubble .tbl-block{margin:8px 0 10px}.cp-bubble .tbl-block .tbl-wrap{margin:0}
 .tbl-tools{display:flex;align-items:center;gap:6px;min-height:26px;margin:0 0 6px}
 .tbl-tool{width:24px;height:24px;display:grid;place-items:center;border-radius:6px;color:var(--label-3)}
@@ -3383,8 +3385,8 @@ const WEIGHTS={
 const WEIGHT_ORDER=["observed","reported","proposed","illustrative"];
 function weightLabel(w){const o=WEIGHTS[w];return o?(uiLang()==="zh"?o.zh:o.label):""}
 function weightDesc(w){const o=WEIGHTS[w];return o?(uiLang()==="zh"?o.zhDesc:o.desc):""}
-const W={note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
-const HGUESS={note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,direction:330,proof:390,print:300,list:260,kanban:280,treemap:280,synthesis:300,group:440};
+const W={table:480,note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
+const HGUESS={table:260,note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,direction:330,proof:390,print:300,list:260,kanban:280,treemap:280,synthesis:300,group:440};
 const visibleNodes=()=>board.nodes.filter(n=>n&&!n.hidden&&!n.archived&&!n.tombstone);
 const resizeBounds=n=>n?.type==="kanban"||n?.type==="treemap"?[360,920]:n?.type==="note"?[200,580]:[220,760];
 const nodeW=n=>n?(n.type==="group"?Math.max(240,n.gw||W.group):(n.gw?clamp(n.gw,...resizeBounds(n)):W[n.type]||320)):320;
@@ -4779,7 +4781,7 @@ function fmtBadgeHTML(fmt){return fmt?`<span class="fmt-chip" data-fmt="${esc(fm
 function cardBody(n){
   const sk=n.status==="sketch",L=lin(n),tm=timeTag(n);
   const head=k=>sk?sketchHead(n):`<div class="card-k">${k}<span class="sp"></span>${cardVotesHTML(n)}</div>`;
-  const group=(cls,...xs)=>{const a=xs.filter(Boolean);return a.length?`<span class="${cls}">${a.join('<span class="foot-sep">·</span>')}</span>`:""};
+  const group=(cls,...xs)=>{const a=xs.filter(Boolean);return a.length?`<span class="${cls}">${a.join('<span class="foot-sep" aria-hidden="true">·</span>')}</span>`:""};
   const fL=(...xs)=>group("foot-l",...xs);
   const fR=(...xs)=>group("foot-r",...xs,sk?"":tm);
   const foot=(left="",right=fR())=>(left||right)?`<div class="foot">${left}<span class="sp"></span>${right}</div>`:"";
@@ -4794,6 +4796,10 @@ function cardBody(n){
     const npHead=sk?head(`${byline(n)}<span class="note-tag notepad-tag"><span class="np-ico">${ic("notepad")}</span><span>${padTag}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag notepad-tag" data-a="edit-tag" title="${padTitle}"><span class="np-ico">${ic("notepad")}</span><span data-edit="tag" spellcheck="false">${padTag}</span></span><span class="sp"></span>${cardVotesHTML(n)}</div>`;
     return `<div class="in">${npHead}
     <h4 data-edit="title">${esc(n.title||"")}</h4><div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>${sk?sketchActs(n):foot(fL(weightHTML(n.weight),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
+  case"table":{/* L is shadowed by lin(n) in cardBody, so translate locally */const tr=(en,zh)=>uiLang()==="zh"?zh:en;const ds=n.data||{columns:[],rows:[]},src=ds.source||{};
+    const from=src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.label||"";
+    return `<div class="in">${head(`${byline(n)}${ic("grid")}<span>${tr("Table","表格")}</span>`)}
+    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds)}${sk?sketchActs(n):foot(fL(from?`<span>${esc(from)}</span>`:""),fR(threadCount(n)))}</div>`;}
   case"idea":return `<div class="in">${head(esc(n.kind||"Idea"))}
     <h4 data-edit="text">${esc(n.text)}</h4>${foot(evidenceScale(n),fR(threadCount(n)))}</div>`;
   case"source":{
@@ -5307,6 +5313,53 @@ function cleanCopilotMd(raw){
     .replace(/\n{3,}/g,"\n\n")
     .trim();
 }
+/* Tables: dataset -> model -> one renderer.
+   A dataset is only what was said: {columns:[{name}], rows:[[text]], source}. Column types (number, level, text),
+   units, direction, magnitude, best values and widths are inferred here every time, so there is one source of truth,
+   shared by tables in Copilot replies and table cards on the board. */
+function tableModel(ds){
+  const hdrRaw=(ds.columns||[]).map(c=>String(c?.name??"")),hdr=hdrRaw.map(mdInline),raw=(ds.rows||[]).map(r=>hdrRaw.map((_,ci)=>String(r?.[ci]??"")));
+  // A column is numeric when every filled cell is a number with the same unit; then it can show magnitude.
+  const NUM=/^([-+]?)([$€£¥]?)\s?(\d[\d,]*(?:\.\d+)?)\s?(%|[kKMB]|x|×)?$/;
+  const cols=hdr.map((_,ci)=>{const ms=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"")).filter(Boolean).map(t=>t.match(NUM));
+    if(raw.length<2||!ms.length||ms.some(m=>!m)||new Set(ms.map(m=>m[2]+(m[4]||""))).size>1)return null;
+    const vals=raw.map(r=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?Math.abs(parseFloat(m[3].replace(/,/g,""))):null});
+    const max=Math.max(...vals.filter(v=>v!=null));return max>0?vals.map(v=>v==null?null:v/max):null});
+  const SCALES=[["low","medium","high"],["low","moderate","high"],["none","low","medium","high","critical"],["minor","moderate","major","critical"],["低","中","高"]];
+  const BAD_HIGH=/risk|cost|effort|complex|difficult|severity|debt|price|danger|风险|成本|难度|代价|严重|复杂/i,GOOD_HIGH=/impact|value|benefit|confidence|quality|reach|upside|收益|价值|影响|质量|信心/i;
+  const levels=hdr.map((h,ci)=>{const ht=hdrRaw[ci];const dir=BAD_HIGH.test(ht)?-1:GOOD_HIGH.test(ht)?1:0;if(!dir||raw.length<2)return null;
+    const vs=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"").trim().toLowerCase().replace(/^med$/,"medium"));
+    const sc=SCALES.find(sc=>vs.filter(Boolean).length&&vs.every(v=>!v||sc.includes(v)));if(!sc)return null;
+    return vs.map(v=>{if(!v)return null;const q=sc.indexOf(v)/(sc.length-1),good=dir>0?q:1-q;return good>.66?"good":good<.34?"bad":"mid"})});
+  const LVL={good:"var(--C)",mid:"var(--warn,#d97706)",bad:"var(--D)"};
+  // Column width from content (Notion-like): columns keep a comfortable width and the table scrolls instead of squeezing.
+  const avgLen=ci=>{const ts=raw.map(r=>(r[ci]||"").replace(/[*_`]/g,"")).filter(Boolean);return ts.length?ts.reduce((a,t)=>a+t.length,0)/ts.length:0};
+  const LOWER_BETTER=/cost|price|time|week|day|hour|month|effort|risk|debt|latency|size|weight|bug|成本|价格|时间|周|天|小时|月|工作量|延迟|风险/i,HIGHER_BETTER=/impact|value|revenue|score|user|reach|rating|speed|throughput|growth|margin|收益|价值|收入|评分|用户|增长|利润/i;
+  const best=hdr.map((_,ci)=>{if(!cols[ci])return null;const ht=hdrRaw[ci];const dir=LOWER_BETTER.test(ht)?-1:HIGHER_BETTER.test(ht)?1:0;if(!dir)return null;
+    const ks=raw.map(r=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?(m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,"")):null});const ok=ks.filter(k=>k!=null);if(new Set(ok).size<2)return null;
+    const target=dir<0?Math.min(...ok):Math.max(...ok);return ks.map(k=>k===target)});
+  const colW=hdr.map((_,ci)=>cols[ci]?"":levels[ci]?"w-tag":ci===0?"w-first":avgLen(ci)>28?"w-long":"w-text");
+  const sortKey=(r,ci)=>{const v=(r[ci]||"").replace(/\*\*/g,"").trim();const m=cols[ci]&&v.match(NUM);if(m)return (m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,""));
+    const sc=levels[ci]&&SCALES.find(sc=>sc.includes(v.toLowerCase().replace(/^med$/,"medium")));return sc?sc.indexOf(v.toLowerCase().replace(/^med$/,"medium")):null};
+  return {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey};
+}
+/* Board width a table card needs, from the same column widths the renderer uses (clamped; wider tables scroll). */
+function tblCardWidth(ds){
+  const {raw,cols,colW}=tableModel(ds),base={"w-first":144,"w-text":96,"w-long":180,"w-tag":88};
+  const w=colW.reduce((sum,c,ci)=>sum+(cols[ci]?Math.max(72,Math.max(...raw.map(r=>(r[ci]||"").length),String(ds.columns[ci]?.name||"").length)*8+28):base[c]||96),0);
+  return Math.max(360,Math.min(760,Math.round(w+40)));
+}
+function tblBlockHTML(ds,{add=false}={}){
+  const {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey}=tableModel(ds);
+  const cell=(r,ci)=>{const t=mdInline(r[ci]||""),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)],k=sortKey(r,ci),dv=k==null?"":` data-v="${k}"`;
+    if(lv)return `<td class="lvl"${dv}><span class="tbl-tag" style="--c:${LVL[lv]}">${t}</span></td>`;
+    if(!c||c[raw.indexOf(r)]==null)return `<td${c?' class="num"':""}${dv}>${t}</td>`;
+    const isBest=best[ci]?.[raw.indexOf(r)];
+    return `<td class="num${isBest?" best":""}"${dv} style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${isBest?`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`:""}${t}${isBest?`<span class="sr-only"> ${L("(best)","（最优）")}</span>`:""}</span></td>`};
+  const hasNum=cols.some(Boolean);
+  const tools=`<div class="tbl-tools"><div class="tbl-sel" hidden><span class="tbl-selcount"></span><button type="button" class="sp-mini" data-tbl-ask>${L("Ask","追问")}</button><button type="button" class="tbl-tool" data-tbl-clear aria-label="${L("Clear selection","取消选择")}" title="${L("Clear selection","取消选择")}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><span class="tbl-gap"></span>${add?`<button type="button" class="tbl-tool" data-tbl-add title="${L("Add to board","添加到画板")}" aria-label="${L("Add to board","添加到画板")}">${ic("plus")}</button>`:""}${hasNum?`<div class="sp-seg sm" role="group" aria-label="${L("View","视图")}"><button type="button" data-tbl-view="table" aria-pressed="true">${L("Table","表格")}</button><button type="button" data-tbl-view="chart" aria-pressed="false">${L("Chart","图表")}</button></div>`:""}<button type="button" class="tbl-tool" data-tbl-copy title="${L("Copy as a table for Sheets, Excel or Notion","复制为表格，可粘贴到 Sheets、Excel 或 Notion")}" aria-label="${L("Copy table","复制表格")}">${ic("copy")}</button></div>`;
+  return `<div class="tbl-block">${tools}<div class="tbl-chart" hidden></div><div class="tbl-wrap"><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="none"`:""}>${ci===0?`<button type="button" class="tbl-check" role="checkbox" aria-checked="false" data-tbl-all aria-label="${L("Select all rows","全选")}"></button>`:""}${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${raw.map((r,ri)=>`<tr data-i="${ri}" aria-selected="false">${hdr.map((_,ci)=>ci===0?cell(r,ci).replace(/^<td([^>]*)>/,`<td$1><button type="button" class="tbl-check" role="checkbox" aria-checked="false" aria-label="${L("Select row","选择此行")}"></button>`):cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div></div>`;
+}
 function mdBlocksHtml(src){
   const lines=cleanCopilotMd(src).split("\n"),out=[];
   let i=0;
@@ -5341,39 +5394,10 @@ function mdBlocksHtml(src){
     if(tr.includes("|")&&i+1<lines.length&&/^\s*\|?[\s:-]+\|[\s|:-]*$/.test(lines[i+1])){
       flushPara(para);para=[];
       const rawCells=r=>r.trim().replace(/^\|/,"").replace(/\|$/,"").split("|").map(c=>c.trim());
-      const hdr=rawCells(tr).map(mdInline);i+=2;
-      const raw=[];
-      while(i<lines.length&&lines[i].includes("|")&&lines[i].trim()){raw.push(rawCells(lines[i]));i++}
-      // A column is numeric when every filled cell is a number with the same unit; then it can show magnitude.
-      const NUM=/^([-+]?)([$€£¥]?)\s?(\d[\d,]*(?:\.\d+)?)\s?(%|[kKMB]|x|×)?$/;
-      const cols=hdr.map((_,ci)=>{const ms=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"")).filter(Boolean).map(t=>t.match(NUM));
-        if(raw.length<2||!ms.length||ms.some(m=>!m)||new Set(ms.map(m=>m[2]+(m[4]||""))).size>1)return null;
-        const vals=raw.map(r=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?Math.abs(parseFloat(m[3].replace(/,/g,""))):null});
-        const max=Math.max(...vals.filter(v=>v!=null));return max>0?vals.map(v=>v==null?null:v/max):null});
-      const SCALES=[["low","medium","high"],["low","moderate","high"],["none","low","medium","high","critical"],["minor","moderate","major","critical"],["低","中","高"]];
-      const BAD_HIGH=/risk|cost|effort|complex|difficult|severity|debt|price|danger|风险|成本|难度|代价|严重|复杂/i,GOOD_HIGH=/impact|value|benefit|confidence|quality|reach|upside|收益|价值|影响|质量|信心/i;
-      const levels=hdr.map((h,ci)=>{const ht=String(raw.length?rawCells(tr)[ci]||"":"");const dir=BAD_HIGH.test(ht)?-1:GOOD_HIGH.test(ht)?1:0;if(!dir||raw.length<2)return null;
-        const vs=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"").trim().toLowerCase().replace(/^med$/,"medium"));
-        const sc=SCALES.find(sc=>vs.filter(Boolean).length&&vs.every(v=>!v||sc.includes(v)));if(!sc)return null;
-        return vs.map(v=>{if(!v)return null;const q=sc.indexOf(v)/(sc.length-1),good=dir>0?q:1-q;return good>.66?"good":good<.34?"bad":"mid"})});
-      const LVL={good:"var(--C)",mid:"var(--warn,#d97706)",bad:"var(--D)"};
-      // Column width from content (Notion-like): columns keep a comfortable width and the table scrolls instead of squeezing.
-      const avgLen=ci=>{const ts=raw.map(r=>(r[ci]||"").replace(/[*_`]/g,"")).filter(Boolean);return ts.length?ts.reduce((a,t)=>a+t.length,0)/ts.length:0};
-      const LOWER_BETTER=/cost|price|time|week|day|hour|month|effort|risk|debt|latency|size|weight|bug|成本|价格|时间|周|天|小时|月|工作量|延迟|风险/i,HIGHER_BETTER=/impact|value|revenue|score|user|reach|rating|speed|throughput|growth|margin|收益|价值|收入|评分|用户|增长|利润/i;
-      const best=hdr.map((_,ci)=>{if(!cols[ci])return null;const ht=rawCells(tr)[ci]||"";const dir=LOWER_BETTER.test(ht)?-1:HIGHER_BETTER.test(ht)?1:0;if(!dir)return null;
-        const ks=raw.map(r=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?(m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,"")):null});const ok=ks.filter(k=>k!=null);if(new Set(ok).size<2)return null;
-        const target=dir<0?Math.min(...ok):Math.max(...ok);return ks.map(k=>k===target)});
-      const colW=hdr.map((_,ci)=>cols[ci]?"":levels[ci]?"w-tag":ci===0?"w-first":avgLen(ci)>28?"w-long":"w-text");
-      const sortKey=(r,ci)=>{const v=(r[ci]||"").replace(/\*\*/g,"").trim();const m=cols[ci]&&v.match(NUM);if(m)return (m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,""));
-        const sc=levels[ci]&&SCALES.find(sc=>sc.includes(v.toLowerCase().replace(/^med$/,"medium")));return sc?sc.indexOf(v.toLowerCase().replace(/^med$/,"medium")):null};
-      const cell=(r,ci)=>{const t=mdInline(r[ci]||""),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)],k=sortKey(r,ci),dv=k==null?"":` data-v="${k}"`;
-        if(lv)return `<td class="lvl"${dv}><span class="tbl-tag" style="--c:${LVL[lv]}">${t}</span></td>`;
-        if(!c||c[raw.indexOf(r)]==null)return `<td${c?' class="num"':""}${dv}>${t}</td>`;
-        const isBest=best[ci]?.[raw.indexOf(r)];
-        return `<td class="num${isBest?" best":""}"${dv} style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${isBest?`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`:""}${t}${isBest?`<span class="sr-only"> ${L("(best)","（最优）")}</span>`:""}</span></td>`};
-      const hasNum=cols.some(Boolean);
-      const tools=`<div class="tbl-tools"><div class="tbl-sel" hidden><span class="tbl-selcount"></span><button type="button" class="sp-mini" data-tbl-ask>${L("Ask","追问")}</button><button type="button" class="tbl-tool" data-tbl-clear aria-label="${L("Clear selection","取消选择")}" title="${L("Clear selection","取消选择")}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><span class="tbl-gap"></span>${hasNum?`<div class="sp-seg sm" role="group" aria-label="${L("View","视图")}"><button type="button" data-tbl-view="table" aria-pressed="true">${L("Table","表格")}</button><button type="button" data-tbl-view="chart" aria-pressed="false">${L("Chart","图表")}</button></div>`:""}<button type="button" class="tbl-tool" data-tbl-copy title="${L("Copy as a table for Sheets, Excel or Notion","复制为表格，可粘贴到 Sheets、Excel 或 Notion")}" aria-label="${L("Copy table","复制表格")}">${ic("copy")}</button></div>`;
-      out.push(`<div class="tbl-block">${tools}<div class="tbl-chart" hidden></div><div class="tbl-wrap"><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="none"`:""}>${ci===0?`<button type="button" class="tbl-check" role="checkbox" aria-checked="false" data-tbl-all aria-label="${L("Select all rows","全选")}"></button>`:""}${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${raw.map((r,ri)=>`<tr data-i="${ri}" aria-selected="false">${hdr.map((_,ci)=>ci===0?cell(r,ci).replace(/^<td([^>]*)>/,`<td$1><button type="button" class="tbl-check" role="checkbox" aria-checked="false" aria-label="${L("Select row","选择此行")}"></button>`):cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div></div>`);
+      const head=rawCells(tr);i+=2;
+      const rows=[];
+      while(i<lines.length&&lines[i].includes("|")&&lines[i].trim()){rows.push(rawCells(lines[i]));i++}
+      out.push(tblBlockHTML({columns:head.map(name=>({name})),rows},{add:true}));
       continue;
     }
     if(/^[-*•]\s+/.test(tr)){
@@ -6087,6 +6111,18 @@ document.addEventListener("click",async e=>{
   if(v){const block=v.closest(".tbl-block"),chart=v.dataset.tblView==="chart";
     block.querySelectorAll("[data-tbl-view]").forEach(b=>b.setAttribute("aria-pressed",String(b===v)));
     block.querySelector(".tbl-wrap").hidden=chart;block.querySelector(".tbl-chart").hidden=!chart;if(chart)tblChart(block,+block.querySelector(".tbl-chart").dataset.col||null);return}
+  const add=e.target.closest("[data-tbl-add]");
+  if(add){const block=add.closest(".tbl-block"),tbl=block.querySelector("table");
+    const columns=[...tbl.tHead.rows[0].cells].map(th=>({name:tblText(th)})),rows=[...tbl.tBodies[0].rows].sort((a,b)=>+a.dataset.i - +b.dataset.i).map(r=>[...r.cells].map(tblText));
+    const msgEl=add.closest("[data-cp-msg-id],.cp-msg"),msgId=msgEl?.dataset?.cpMsgId||"";
+    let title="";for(let el=block.previousElementSibling;el&&!title;el=el.previousElementSibling){const t=(el.textContent||"").trim();if(/^H[3-6]$/.test(el.tagName)||(el.tagName==="P"&&t.length<=70&&/:$/.test(t)))title=t.replace(/:$/,"")}
+    if(!title)title=L(`${columns[0]?.name||"Table"} comparison`,`${columns[0]?.name||"表格"}对比`);
+    checkpoint();const ctx=ctxNodes(),f=ctx[0];
+    const data={v:1,columns,rows,source:{kind:"copilot",at:NOW(),msg:msgId}},gw=tblCardWidth(data);
+    const spot=f?planBeside([f],gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
+    const made=node("table",{title:clip(title,60),data,gw},spot);
+    if(f)edge(f.id,made.id,"src");sel=[made.id];
+    renderAll();persist();follow([made]);toast(L("Table added to the board","表格已添加到画板"));return}
   const col=e.target.closest("[data-tbl-col]");if(col){tblChart(col.closest(".tbl-block"),+col.dataset.tblCol);return}
   const cp=e.target.closest("[data-tbl-copy]");
   if(cp){const tbl=cp.closest(".tbl-block").querySelector("table"),sel=[...tbl.tBodies[0].rows].filter(r=>r.classList.contains("sel"));
@@ -7195,6 +7231,7 @@ function fullTextOf(n){
   if(n.type==="treemap")return flattenTreeNodes(treeMapOf(n),[]).map(x=>x.text).filter(Boolean).join(" -> ");
   if(n.type==="list")return (n.items||[]).map(it=>(it.done?"[x] ":"[ ] ")+it.t).join(" | ");
   if(n.type==="synthesis")return (n.points||[]).join(" | ");
+  if(n.type==="table"){const d=n.data||{};return [(d.columns||[]).map(c=>c.name).join("\t"),...(d.rows||[]).map(r=>r.join("\t"))].join("\n")}
   if(n.type==="source"&&n.full)return n.full;
   if(n.type==="link")return [n.text,n.full,n.url?safeHref(n.url):""].filter(Boolean).join("\n");
   const tagPfx=n.tag?`[Tag: ${n.tag}] `:"";
@@ -11475,7 +11512,17 @@ function pinCopilotVisualToBoard(msgId,vIdx){
   if(v.kind==="stance")full=[v.verdict,v.spectrum?`${v.spectrum.left} (${100-v.spectrum.pos}%) ↔ ${v.spectrum.right} (${v.spectrum.pos}%)`:"",...(v.pillars||[]).map(p=>`• ${p.label}: ${p.detail||""}`)].filter(Boolean).join("\n");
   else if(v.kind==="chart")full=[(v.subtitle||""),...(v.items||[]).map(it=>`• ${it.label}: ${it.value}${v.unit?" "+v.unit:""}${it.note?" — "+it.note:""}`)].filter(Boolean).join("\n");
   else if(v.kind==="diagram")full=v.layout==="matrix"?(v.cells||[]).map(c=>`• ${c.label}: ${c.text||(c.items||[]).join(", ")}`).join("\n"):(v.nodes||[]).map((nd,i)=>`${i+1}. ${nd.label}${nd.sub?" ("+nd.sub+")":""}${nd.detail?" — "+nd.detail:""}`).join("\n");
-  else if(v.kind==="compare")full=`${v.left} vs ${v.right}\n`+(v.rows||[]).map(r=>`• ${r.dim}: ${r.a} | ${r.b}`).join("\n");
+  else if(v.kind==="compare"){
+    checkpoint();const ctx=ctxNodes(),f=ctx[0];
+    const columns=[{name:L("Factor","因素")},{name:v.left},{name:v.right},{name:L("Better","更优")}];
+    const rows=(v.rows||[]).map(r=>[r.dim,r.a,r.b,r.winner==="left"?v.left:r.winner==="right"?v.right:"—"]);
+    const data={v:1,columns,rows,source:{kind:"copilot",at:NOW(),msg:msgId}},gw=tblCardWidth(data);
+    const spot=f?planBeside([f],gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
+    const made=node("table",{title:clip(v.title||`${v.left} vs ${v.right}`,60),data,gw,by:"muse",status:"ink",pid:"p-"+uid()},spot);
+    if(f)edge(f.id,made.id,"src");v._pinned=true;sel=[made.id];
+    log("muse",`Pinned table <b>${esc(titleOf(made))}</b>`,made.id);
+    renderAll();renderCopilot();persist();follow([made]);return;
+  }
   checkpoint();
   const isLong=full.length>220,kind=isLong?"notepad":"note",ctx=ctxNodes(),f=ctx[0];
   const spot=f?planBeside([f],W[kind],HGUESS[kind]||210):planCenter(W[kind],HGUESS[kind]||210,-140,-100);
@@ -14589,7 +14636,7 @@ wall.addEventListener("pointerdown",e=>{
   closeWirePopMenu();
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2){const [a,b]=[...pointers.values()];gesture={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y),c:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};return}
-  if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop"))return;
+  if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop,.tbl-block tbody td,.tbl-chart"))return;
   const card=e.target.closest(".card");const port=e.target.closest("[data-port]");const rsz=e.target.closest("[data-resize]");const wh=e.target.closest(".w-hit[data-edge]");stopCam();
   if(port&&card){selectedEdgeId=null;const n=byId(card.dataset.id);wireDrag={from:n,role:port.dataset.port==="in"?"in":"out",side:port.dataset.side||"right",d:""};gesture={type:"wire"};wall.setPointerCapture(e.pointerId);return}
   if(rsz&&card&&tool!=="hand"&&!spaceHeld&&e.button===0){selectedEdgeId=null;const n=byId(card.dataset.id);if(n){gesture={type:"resize",id:n.id,n,mode:rsz.dataset.resize||"both",sx:e.clientX,sy:e.clientY,ox:n.x,ow:nodeW(n),oh:nodeH(n),moved:false,snap:null,handleEl:rsz};wall.setPointerCapture(e.pointerId);return}}
@@ -14737,6 +14784,10 @@ wall.addEventListener("pointerup",endPointer);wall.addEventListener("pointercanc
 wall.addEventListener("wheel",e=>{
   closeCardMenu();
   if(e.target.closest(".margin"))return;
+  const tw=e.target.closest(".tbl-wrap");
+  if(tw&&!e.ctrlKey&&!e.metaKey&&Math.abs(e.deltaX)>Math.abs(e.deltaY)&&tw.scrollWidth>tw.clientWidth+1){
+    const atL=tw.scrollLeft<=0&&e.deltaX<0,atR=tw.scrollLeft+tw.clientWidth>=tw.scrollWidth-1&&e.deltaX>0;if(!atL&&!atR)return;
+  }
   const padBody=e.target.closest(".notepad-body");
   if(padBody&&!e.ctrlKey&&!e.metaKey&&padBody.scrollHeight>padBody.clientHeight+1){
     const atTop=padBody.scrollTop<=0&&e.deltaY<0,atBot=padBody.scrollTop+padBody.clientHeight>=padBody.scrollHeight-1&&e.deltaY>0;
@@ -14751,7 +14802,7 @@ wall.addEventListener("dblclick",e=>{
   const under=document.elementsFromPoint(e.clientX,e.clientY);
   const rszHit=under.map(x=>x.closest?.(".card-resize")).find(Boolean);
   if(rszHit){const c=rszHit.closest(".card"),n=c?byId(c.dataset.id):null;if(n)resetCardWidth(n);return}
-  if(under.some(x=>x.closest?.("button,textarea,input,audio,a,[contenteditable='true'],[data-a-item],[data-a-kb-item],[data-a-tm-item],[data-a-syn],.card-resize,.todo-add,.kb-add,.line,.margin,.tools,.top-tools,.find-bar,.find-scrim,.wire-pop,.w-hit,.zoom,.top,.pbar,.strip,.selbar,.map,.copilot-panel,.copilot-btn,.studio-pop,.ledger")))return;
+  if(under.some(x=>x.closest?.(".tbl-block tbody td,.tbl-chart,button,textarea,input,audio,a,[contenteditable='true'],[data-a-item],[data-a-kb-item],[data-a-tm-item],[data-a-syn],.card-resize,.todo-add,.kb-add,.line,.margin,.tools,.top-tools,.find-bar,.find-scrim,.wire-pop,.w-hit,.zoom,.top,.pbar,.strip,.selbar,.map,.copilot-panel,.copilot-btn,.studio-pop,.ledger")))return;
   const card=under.map(x=>x.closest?.(".card")).find(c=>c&&(byId(c.dataset.id)?.type!=="group"||under.some(x=>x.closest?.(".card-k,h4,.grp-resize")?.closest?.(".card")===c)));
   if(card){const n=byId(card.dataset.id);if(n&&n.status==="sketch"){ink(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);return}
     const tagHit=under.map(x=>x.closest?.(".note-tag,[data-edit='tag']")).find(Boolean);

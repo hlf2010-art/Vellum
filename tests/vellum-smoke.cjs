@@ -74,6 +74,7 @@ const LEGIBILITY = scope => {
   const out = [];
   document.querySelectorAll(scope + ' *').forEach(el => {
     if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+    if (el.closest('[aria-hidden="true"]')) return; // decorative (e.g. footer separators)
     const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
     const cs = getComputedStyle(el), bg = bgOf(el), fg = parse(cs.color), px = parseFloat(cs.fontSize);
     const need = px >= 24 || (parseInt(cs.fontWeight) >= 700 && px >= 18.66) ? 3 : 4.5;
@@ -491,10 +492,27 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
           click(td(0)); const one = names(); click(td(2), { metaKey: true }); const two = names(); click(td(0)); click(td(2), { shiftKey: true }); const range = names();
           click(td(1)); const single = names(); const bar = d.querySelector('.tbl-sel').hidden; d.remove(); return { one, two, range, single, bar };
         });
+        const card = await p.evaluate(() => {
+          const n0 = board.nodes.length, d = document.createElement('div');
+          d.innerHTML = `<div class="cp-msg ai" data-cp-msg-id="mX"><div class="cp-bubble">${mdBlocksHtml('Three ways to fix sync:\n\n| Option | Cost | Risk |\n|---|---|---|\n| Rebuild | $120k | High |\n| Patch | $38k | Low |').join('')}</div></div>`; document.body.append(d);
+          d.querySelector('[data-tbl-add]').click(); d.remove();
+          const n = board.nodes.at(-1), el = document.querySelector(`.card[data-id="${n.id}"]`);
+          const r = { added: board.nodes.length - n0, type: n.type, title: n.title, cols: n.data.columns.map(c => c.name).join('|'), rows: n.data.rows.map(x => x.join('/')).join(';'), src: n.data.source.kind, gw: n.gw, text: fullTextOf(n).split('\n').length, rendered: !!el?.querySelector('table.tbl'), id: n.id };
+          undo(); r.undone = !board.nodes.some(x => x.id === n.id); redo(); r.redone = board.nodes.some(x => x.id === n.id); persist(); return r;
+        });
+        check('Add to board turns a reply table into a table card with its data intact, sized to fit, readable by the crew, undoable', card.added === 1 && card.type === 'table' && card.title === 'Three ways to fix sync' && card.cols === 'Option|Cost|Risk' && card.rows === 'Rebuild/$120k/High;Patch/$38k/Low' && card.src === 'copilot' && card.gw >= 360 && card.text === 3 && card.rendered && card.undone && card.redone, JSON.stringify(card));
+        await p.waitForTimeout(1500); await p.reload(); await p.waitForTimeout(2500); // let the debounced save land first
+        check('a table card survives a reload', await p.evaluate(id => { const n = byId(id); return !!n && n.type === 'table' && n.data.rows.length === 2; }, card.id));
+        const pin = await p.evaluate(() => { board.copilot = board.copilot || []; board.copilot.push({ id: 'mP', role: 'ai', text: '', visuals: [{ kind: 'compare', title: 'Rebuild vs Patch', left: 'Rebuild', right: 'Patch', rows: [{ dim: 'Cost', a: '$120k', b: '$38k', winner: 'right' }] }] });
+          pinCopilotVisualToBoard('mP', 0); const n = board.nodes.at(-1); return { type: n.type, cols: n.data.columns.map(c => c.name).join('|'), row: n.data.rows[0].join('/') }; });
+        check('pinning a Copilot comparison keeps it as a table, with who is better as a column', pin.type === 'table' && pin.cols === 'Factor|Rebuild|Patch|Better' && pin.row === 'Cost/$120k/$38k/Patch', JSON.stringify(pin));
         check('table rows: click selects one, Cmd adds, Shift selects a range, and the selection bar appears', sel.one === 'A' && sel.two === 'A,C' && sel.range === 'A,B,C' && sel.single === 'B' && sel.bar === false, JSON.stringify(sel));
         check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
       }
-      check(`every text in the Connection and Crew popovers and in tables reaches 4.5:1 in ${theme} mode`, bad.length === 0, bad.join(' | '));
+      await p.evaluate(() => { const n = node('table', { title: 'Probe', data: { v: 1, columns: [{ name: 'Option' }, { name: 'Cost' }, { name: 'Risk' }], rows: [['A', '$1', 'High'], ['B', '$2', 'Low']] } }, { x: 0, y: 0 }); renderAll(); focusNodes([n], 1, 0); window._probeCard = n.id; }); await p.waitForTimeout(900);
+      bad.push(...(await p.evaluate(LEGIBILITY, '.card.table')).map(x => `table card: ${x}`));
+      await p.evaluate(() => { board.nodes = board.nodes.filter(n => n.id !== window._probeCard); renderAll(); });
+      check(`every text in the Connection and Crew popovers, tables and table cards reaches 4.5:1 in ${theme} mode`, bad.length === 0, bad.join(' | '));
       const sw = await p.evaluate(() => {
         const cs = getComputedStyle(document.documentElement), hex = v => { const n = parseInt(cs.getPropertyValue(v).trim().slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
         const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };

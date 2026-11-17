@@ -721,6 +721,11 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-state.ok i{background:var(--C);box-shadow:0 0 6px var(--C)}
 .sp-state.busy{color:var(--B)}
 .sp-state.busy i{background:var(--B)}
+.sp-state.err{color:var(--D)}
+.sp-state.err i{background:var(--D)}
+.sp-mode-note{padding:2px 2px 0;font:450 11px/1.4 var(--ui);color:var(--label-3)}
+.sp-mode-note.warn{color:color-mix(in srgb,var(--warn,#d97706) 85%,var(--label))}
+.sp-acts{display:flex;gap:6px;flex:none}
 .sp-models{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;min-width:0}
 .sp-subhdr{margin-top:4px;padding:0 6px;font:600 10px/1.2 var(--ui);letter-spacing:.05em;text-transform:uppercase;color:var(--label-4)}
 .sp-m-wrap{display:flex;align-items:center;gap:0;min-width:0;border-radius:9px;background:transparent;transition:background var(--d-quick)}
@@ -2769,6 +2774,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .crew-set .conn-dot{position:absolute;right:2px;top:2px;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 2px var(--canvas,#0b0c0e);background:var(--label-4,#666)}
 .crew-set .conn-dot.ok{background:var(--ok,#30a46c)}
 .crew-set .conn-dot.rules{background:var(--warn,#d97706)}
+.crew-set .conn-dot.error{background:var(--D,#e5484d)}
 /* why the crew is quiet: the avatars say so */
 .crew-group.quiet-pacing .seat .ring{outline:1.5px dashed color-mix(in srgb,var(--label-3) 70%,transparent);outline-offset:1px}
 .crew-group.quiet-pacing .seat,.crew-group.quiet-never .seat,.crew-group.quiet-nomodel .seat,.crew-group.quiet-ceiling .seat{opacity:.72}
@@ -3491,7 +3497,11 @@ function crewQuietReason(){
   if(!advLeft())return {k:"ceiling",tip:L("Resting until the hour is up","本小时已达上限，稍后继续")};
   return null;
 }
-function connHealth(){const k=aiPref==="local"?"rules":(studioState.status==="ready"||hasApi()||sampleFn)?"ok":"none";return {k,tip:{ok:L("A model is connected","已连接模型"),rules:L("Built-in rules only","只用内置规则"),none:L("No model connected","未连接模型")}[k]}}
+function connHealth(){
+  const m=aiSource();
+  const k=aiPref==="local"?"rules":(m.kind==="api"&&apiBad())?"error":(m.live||m.kind==="loading")?"ok":"none";
+  return {k,tip:{ok:L("A model is connected","已连接模型"),rules:L("AI is off · built-in rules only","AI 已关闭 · 只用内置规则"),error:L(`Cloud API isn't working: ${apiHealthLabel().txt}`,`云端 API 不可用：${apiHealthLabel().txt}`),none:L("No model connected","未连接模型")}[k]};
+}
 function renderCrewPop(){
   const pop=$("crewPop");if(!pop)return;
   pop.hidden=!crewPopOpen;renderCrew?.();if(!crewPopOpen)return;
@@ -5539,6 +5549,64 @@ const crewState={scout:{},muse:{},wright:{},critic:{}};
 let aiPref=(()=>{const v=store.get(".aiPref","auto");return v==="local"||v==="api"?v:"auto"})(),studioPopOpen=false,studioChecking=false,imgChecking=false;
 let apiCfg=(()=>{const d=store.get(".api",null)||{};return {enabled:!!d.enabled,baseUrl:String(d.baseUrl||"https://api.openai.com/v1"),model:String(d.model||"gpt-4o-mini"),key:String(d.key||"")}})();
 const hasApi=()=>!!(apiCfg.enabled&&apiCfg.key.trim()&&apiCfg.baseUrl.trim()&&apiCfg.model.trim());
+/* Cloud API health: what we actually observed, not what is configured.
+   k: unknown | checking | ok | auth | notfound | ratelimit | unreachable | error */
+const apiCfgSig=(c=apiCfg)=>[c.baseUrl,c.model,c.key].join("\u0001");
+let apiHealth={k:"unknown",sig:"",at:0,ms:null,detail:""};
+const API_BAD=new Set(["auth","notfound","unreachable","error"]);
+const apiHostOf=u=>{try{return new URL(u).host}catch{return String(u||"").replace(/^https?:\/\//,"").split("/")[0]||"server"}};
+function apiHealthNow(){return apiHealth.sig===apiCfgSig()?apiHealth:{k:"unknown",sig:"",at:0,ms:null,detail:""}}
+const apiBad=()=>hasApi()&&API_BAD.has(apiHealthNow().k);
+function classifyApiStatus(status){
+  if(status>=200&&status<300)return "ok";
+  if(status===401||status===403)return "auth";
+  if(status===404)return "notfound";
+  if(status===429)return "ratelimit";
+  return "error";
+}
+function setApiHealth(k,{cfg=apiCfg,ms=null,detail=""}={}){
+  if(apiCfgSig(cfg)!==apiCfgSig())return; // a result for settings that are no longer current
+  const prev=apiHealth.k;
+  apiHealth={k,sig:apiCfgSig(cfg),at:Date.now(),ms,detail};
+  if(prev!==k){try{renderCrew()}catch{}}
+  try{if(typeof studioPopOpen!=="undefined"&&studioPopOpen)renderStudioPop()}catch{}
+}
+/* One real, minimal request: proves the host answers, the key is accepted and the model exists. */
+async function probeApi(cfg){
+  const t0=performance.now();
+  try{
+    const r=await fetch(`${String(cfg.baseUrl).replace(/\/+$/,"")}/chat/completions`,{
+      method:"POST",signal:timeoutSignal(12000),
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+cfg.key},
+      body:JSON.stringify({model:cfg.model,messages:[{role:"user",content:"ping"}],max_tokens:1,stream:false})
+    });
+    const ms=Math.round(performance.now()-t0);
+    return {k:classifyApiStatus(r.status),ms,detail:r.ok?"":"HTTP "+r.status};
+  }catch(e){
+    return {k:"unreachable",ms:null,detail:e?.name==="TimeoutError"||e?.name==="AbortError"?"timeout":"network"};
+  }
+}
+async function testApi(){
+  if(!hasApi())return null;
+  const cfg={...apiCfg};
+  setApiHealth("checking",{cfg});
+  const r=await probeApi(cfg);
+  setApiHealth(r.k,{cfg,ms:r.ms,detail:r.detail});
+  return r;
+}
+function apiHealthLabel(h=apiHealthNow()){
+  const host=apiHostOf(apiCfg.baseUrl);
+  return {
+    unknown:{cls:"",txt:L("Not tested","未测试"),tip:L("Not tested yet","尚未测试")},
+    checking:{cls:"busy",txt:L("Testing…","测试中…"),tip:L(`Sending a test request to ${host}`,`正在向 ${host} 发送测试请求`)},
+    ok:{cls:"ok",txt:L("Connected","已连接"),tip:L(`${host} answered${h.ms!=null?" in "+h.ms+" ms":""}`,`${host} 已响应${h.ms!=null?"，"+h.ms+" ms":""}`)},
+    auth:{cls:"err",txt:L("Key rejected","密钥被拒绝"),tip:L(`${host} refused the API key`,`${host} 拒绝了这个 API 密钥`)},
+    notfound:{cls:"err",txt:L("Model not found","找不到模型"),tip:L(`${host} doesn't know “${apiCfg.model}”, or the URL is wrong`,`${host} 不认识「${apiCfg.model}」，或地址有误`)},
+    ratelimit:{cls:"busy",txt:L("Rate limited","被限流"),tip:L(`${host} is reachable but asked us to slow down`,`${host} 可以连通，但要求降低请求频率`)},
+    unreachable:{cls:"err",txt:L("Can't reach","无法连接"),tip:h.detail==="timeout"?L(`${host} didn't answer in time`,`${host} 响应超时`):L(`Can't reach ${host} (offline, wrong URL, or blocked by the browser)`,`无法连接 ${host}（离线、地址有误或被浏览器拦截）`)},
+    error:{cls:"err",txt:L("Error","出错"),tip:L(`${host} returned ${h.detail||"an error"}`,`${host} 返回 ${h.detail||"错误"}`)}
+  }[h.k]||{cls:"",txt:"",tip:""};
+}
 function uiLang(){return store.get(".lang","en")==="zh"?"zh":"en"}
 function L(en,zh){return uiLang()==="zh"?zh:en}
 function aiSource(){
@@ -5623,7 +5691,9 @@ function openApiDialog(){
     <label style="display:flex;align-items:center;gap:8px;font:500 13px/1 var(--ui);color:var(--label)">
       <input id="apiEnIn" type="checkbox" ${apiCfg.enabled?"checked":""}> Enable Cloud API fallback / routing
     </label>
-    <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px">
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;padding-top:4px">
+      <span id="apiTestOut" role="status" aria-live="polite" style="margin-right:auto;font:500 12px/1.3 var(--ui);color:var(--label-3)"></span>
+      <button type="button" class="sh-btn" data-api-test>Test connection</button>
       <button type="button" class="sh-btn" data-api-clear>Clear</button>
       <button type="button" class="sh-btn" style="background:var(--act);color:var(--on-act)" data-api-save>Save</button>
     </div>
@@ -5665,10 +5735,24 @@ function openApiDialog(){
     });
     renderModels(curProv,apiCfg.model);
     qs("[data-api-clear]",d).onclick=()=>{apiCfg={enabled:false,baseUrl:"https://api.openai.com/v1",model:"gpt-6.1-sol",key:""};store.set(".api",apiCfg);if(aiPref==="api")setAiPref("auto");else renderCrew();d.close()};
+    const formCfg=()=>({enabled:$("apiEnIn").checked,baseUrl:urlIn.value.trim().replace(/\/+$/,""),model:(curProv==="custom"||sel.value==="__custom__")?customIn.value.trim():sel.value,key:$("apiKeyIn").value.trim()});
+    let lastTest=null;
+    qs("[data-api-test]",d).onclick=async()=>{
+      const cfg=formCfg(),out=$("apiTestOut"),btn=qs("[data-api-test]",d);
+      if(!cfg.baseUrl||!cfg.model||!cfg.key){out.textContent="Fill in URL, model and key first";out.style.color="var(--D)";return}
+      btn.disabled=true;out.style.color="var(--label-3)";out.textContent="Testing…";
+      const r=await probeApi(cfg);btn.disabled=false;
+      lastTest={sig:apiCfgSig(cfg),r};
+      const host=apiHostOf(cfg.baseUrl);
+      out.textContent={ok:`Connected · ${r.ms} ms`,auth:"Key rejected",notfound:`Model not found on ${host}`,ratelimit:"Reachable, but rate limited",unreachable:r.detail==="timeout"?`${host} didn't answer`:`Can't reach ${host}`,error:`${host} returned ${r.detail}`}[r.k];
+      out.style.color=r.k==="ok"?"var(--C)":r.k==="ratelimit"?"var(--B)":"var(--D)";
+    };
     qs("[data-api-save]",d).onclick=()=>{
-      const model=(curProv==="custom"||sel.value==="__custom__")?customIn.value.trim():sel.value;
-      apiCfg={enabled:$("apiEnIn").checked,baseUrl:urlIn.value.trim().replace(/\/+$/,""),model,key:$("apiKeyIn").value.trim()};
-      store.set(".api",apiCfg);renderCrew();renderCopilot?.();d.close();
+      apiCfg=formCfg();
+      store.set(".api",apiCfg);
+      if(lastTest&&lastTest.sig===apiCfgSig())setApiHealth(lastTest.r.k,{ms:lastTest.r.ms,detail:lastTest.r.detail});
+      else if(hasApi())testApi();
+      renderCrew();renderCopilot?.();d.close();
     };
   });
 }
@@ -5700,6 +5784,7 @@ function renderStudioPop(){
   const headTitle=L("Connection","连接");
   const headSub=mode.kind==="studio"?L(`Using Local AI · ${modelShort||"Qwen3-VL"}${studioState.latency!=null?" · "+studioState.latency+"ms":""}`,`正在使用本地 AI · ${modelShort||"Qwen3-VL"}`)
     :mode.kind==="loading"?L("Starting Local AI…","正在启动本地 AI…")
+    :mode.kind==="api"&&apiBad()?L(`Cloud API not working · ${apiHealthLabel().txt}`,`云端 API 不可用 · ${apiHealthLabel().txt}`)
     :mode.kind==="api"?L(`Using Cloud API · ${(apiCfg.model||"").split("/").pop()}`,`正在使用云端 API · ${(apiCfg.model||"").split("/").pop()}`)
     :mode.kind==="claude"?L("Using Claude","正在使用 Claude")
     :aiPref==="local"?L("Built-in rules only, by your choice","按你的选择只用内置规则")
@@ -5709,13 +5794,13 @@ function renderStudioPop(){
     :`<span class="sp-state"><i></i>${stStopped?L("Stopped","已停止"):hasApi()&&aiPref!=="local"?L("Not running · not needed","未运行 · 当前不需要"):L("Not running","未运行")}</span>`;
   const stActHtml=(stReady||stLoad)
     ?`<button type="button" class="sp-mini danger" data-sp="stop-local" title="${esc(L("Stop local model and free memory","停止本地模型并释放内存"))}">${L("Stop","停止")}</button>`
-    :`<button type="button" class="sp-mini" data-sp="wake">${L("Wake","唤醒")}</button>`;
+    :`<button type="button" class="sp-mini" data-sp="wake" title="${esc(L("Start the local model","启动本地模型"))}">${L("Start","启动")}</button>`;
   const imStateHtml=svcStopped?`<span class="sp-state"><i></i>${L("Stopped","已停止")}</span>`
     :mediaUp?`<span class="sp-state ok"><i></i>${L("Ready","就绪")}</span>`
     :`<span class="sp-state"><i></i>${imgSvc.connected?L("Warming","等待中"):L("Offline","离线")}</span>`;
   const imActHtml=(imgSvc.connected&&!svcStopped)
     ?`<button type="button" class="sp-mini danger" data-sp="stop-svc" title="${esc(L("Stop Windows ComfyUI (image & video) and free VRAM","停止 Windows ComfyUI（同时停止出图和出视频）并释放显存"))}">${L("Stop","停止")}</button>`
-    :`<button type="button" class="sp-mini" data-sp="check-img">${imgChecking?"…":L("Check","检测")}</button>`;
+    :`<button type="button" class="sp-mini" data-sp="check-img" title="${esc(L("Test the connection to Media Studio","测试与媒体工作室的连接"))}">${imgChecking?L("Testing…","测试中…"):L("Test","测试")}</button>`;
   const imSub=svcStopped?L("Stopped · start manually on Windows","已停止 · 需在 Windows 手动启动")
     :(mediaUp?[avImgs.length?`${avImgs[0].name||avImgs[0].id}${avImgs.length>1?` +${avImgs.length-1}`:""}`:"",avVids.length?"MiniMax H3":""].filter(Boolean).join(" · ")
     :imgSvc.connected?L("Waiting for model","等待模型就绪"):L("Not running","Windows 端未连接"));
@@ -5732,7 +5817,12 @@ function renderStudioPop(){
     return `<div class="sp-m-wrap" data-active="${!!m.available}"><div class="sp-m" aria-pressed="${!!m.available}" title="${esc(m.reason||m.name||m.id)}" style="cursor:default"><span class="sp-m-info"><b>${esc(cleanName)}</b><span>${specTxt}</span></span><span class="sp-m-tag">${tag}</span></div></div>`;
   }).join("")}</div>`:"";
   const apiModelShort=hasApi()?(apiCfg.model||"").split("/").pop():"";
-  const apiSub=hasApi()?(()=>{try{return new URL(apiCfg.baseUrl).host}catch{return apiModelShort}})():L("Not configured","未配置");
+  const apiH=apiHealthNow(),apiLab=apiHealthLabel(apiH);
+  const apiSub=hasApi()?[apiHostOf(apiCfg.baseUrl),apiModelShort].filter(Boolean).join(" · ")
+    :apiCfg.key.trim()?L("Turned off","已关闭"):L("Not set up","未设置");
+  const modeNote=aiPref==="local"?{warn:true,t:L("AI is off. The crew uses simple built-in rules, so results will be basic.","AI 已关闭。助手只用简单的内置规则，结果会比较基础。")}
+    :aiPref==="api"?(hasApi()?{t:L("Always uses the Cloud API.","始终使用云端 API。")}:{warn:true,t:L("Cloud API isn't set up, so built-in rules are used for now.","云端 API 尚未设置，暂时使用内置规则。")})
+    :{t:L("Local AI when it's running, then Cloud API, then built-in rules.","本地模型运行时优先使用，其次云端 API，最后内置规则。")};
   const models=Array.isArray(studioState.models)?studioState.models:[];
   const gb=b=>b?(b/1e9).toFixed(1)+" GB":"";
   const modelsHtml=models.length?`<div class="sp-models">${models.map(m=>{
@@ -5751,10 +5841,11 @@ function renderStudioPop(){
     <div class="sp-row">
       <div class="sp-seg" role="group" aria-label="${L("AI routing mode","AI 路由模式")}">
         <button type="button" data-sp="pref" data-val="auto" aria-pressed="${aiPref==="auto"}">${L("Auto","自动")}</button>
-        <button type="button" data-sp="pref" data-val="api" aria-pressed="${aiPref==="api"}">API</button>
+        <button type="button" data-sp="pref" data-val="api" aria-pressed="${aiPref==="api"}">${L("Cloud API","云端 API")}</button>
         <button type="button" data-sp="pref" data-val="local" aria-pressed="${aiPref==="local"}">${L("Rules only","仅规则")}</button>
       </div>
     </div>
+    <div class="sp-mode-note${modeNote.warn?" warn":""}" role="status">${esc(modeNote.t)}</div>
     <div class="sp-services">
       ${models.length||!stReady?`<div class="sp-svc col">
         <div class="sp-svc-row">
@@ -5780,10 +5871,10 @@ function renderStudioPop(){
       </div>`}
       <div class="sp-svc">
         <div class="sp-svc-main">
-          <div class="sp-svc-top"><span>${L("Cloud API","云端 API")}</span>${hasApi()?`<span class="sp-state ok"><i></i>${L("On","已启用")}</span>`:""}</div>
-          <div class="sp-svc-sub" title="${esc(apiSub)}">${esc(apiSub)}</div>
+          <div class="sp-svc-top"><span>${L("Cloud API","云端 API")}</span>${hasApi()?`<span class="sp-state ${apiLab.cls}" data-api-health="${apiH.k}" title="${esc(apiLab.tip)}"><i></i>${esc(apiLab.txt)}</span>`:""}</div>
+          <div class="sp-svc-sub" title="${esc(hasApi()?apiLab.tip:apiSub)}">${esc(apiSub)}</div>
         </div>
-        <button type="button" class="sp-mini" data-sp="api">${hasApi()?L("Edit","编辑"):L("Set","配置")}</button>
+        <div class="sp-acts sp-hdr-acts">${hasApi()?`<button type="button" class="sp-mini" data-sp="test-api" ${apiH.k==="checking"?"disabled":""} title="${esc(L("Send a tiny test request","发送一个很小的测试请求"))}">${L("Test","测试")}</button>`:""}<button type="button" class="sp-mini" data-sp="api">${L("Set up","设置")}</button></div>
       </div>
     </div>
     ${showHint?`<div class="sp-hint">${L("Run","运行")} <code>Start Studio AI.command</code> ${L("for local vision & voice.","以启用本地视觉与语音。")}</div>`:oldLauncherHint}
@@ -5798,6 +5889,7 @@ function toggleStudioPopover(force){
   $("crewModeBtn")?.setAttribute("aria-expanded",String(studioPopOpen));
   renderStudioPop();
   if(studioPopOpen&&(!studioState.checked||NOW()-studioState.checked>8000))refreshStudioFromPop({wake:false});
+  if(studioPopOpen&&hasApi()&&aiPref!=="local"){const h=apiHealthNow();if(h.k==="unknown"||(h.k!=="checking"&&Date.now()-h.at>120000))testApi()}
 }
 async function refreshStudioFromPop({wake=true}={}){
   if(studioChecking)return;
@@ -6931,6 +7023,7 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
   const onAbort=()=>ctrl.abort();
   if(signal){if(signal.aborted)throw new DOMException("Aborted","AbortError");signal.addEventListener("abort",onAbort,{once:true})}
   const timer=setTimeout(()=>ctrl.abort(),timeoutMs);
+  const sentCfg={...apiCfg},t0=performance.now();let gotHeaders=false;
   try{
     const body={model:apiCfg.model,messages:msgs,stream:true,temperature:0.45,max_tokens:Math.min(4600,maxTokens)};
     if(json)body.response_format={type:"json_object"};
@@ -6939,8 +7032,19 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiCfg.key},
       body:JSON.stringify(body)
     });
-    if(!res.ok)throw new Error("API HTTP "+res.status);
+    gotHeaders=true;
+    if(!res.ok){
+      // Only definite setup problems change the connection status; a passing 5xx/429 is the call's own error.
+      const k=classifyApiStatus(res.status);
+      if(k==="auth"||k==="notfound")setApiHealth(k,{cfg:sentCfg,detail:"HTTP "+res.status});
+      throw new Error("API HTTP "+res.status);
+    }
+    setApiHealth("ok",{cfg:sentCfg,ms:Math.round(performance.now()-t0)});
     return await readChatStream(res,ctrl,{json,onText});
+  }catch(e){
+    if(e instanceof TypeError&&!signal?.aborted)setApiHealth("unreachable",{cfg:sentCfg,detail:"network"});
+    else if(e?.name==="AbortError"&&!signal?.aborted&&!gotHeaders)setApiHealth("unreachable",{cfg:sentCfg,detail:"timeout"});
+    throw e;
   }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
 /* ── PromptLens integration (reverse-prompt + multi-dialect export + video shot split) ── */
@@ -13411,6 +13515,7 @@ $("studioPop")?.addEventListener("click",async e=>{
   if(act==="stop-svc"){await stopModelService(false);return}
   if(act==="img-model"){setImageModel(b.dataset.id);return}
   if(act==="api"){toggleStudioPopover(false);openApiDialog();return}
+  if(act==="test-api"){await testApi();return}
   if(act==="adv-mode"){toggleAdvisorMode();return}
   if(act==="adv-level"){setAdvisorLevel(b.dataset.level);return}
   if(act==="autonomy"){toggleStudioPopover(false);openAutonomyDialog();return}

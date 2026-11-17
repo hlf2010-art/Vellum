@@ -15,6 +15,8 @@ const { chromium } = require('playwright');
 const FILE = path.resolve(__dirname, '..', 'Vellum-Lumen.html');
 let queue = [];
 const requests = [];
+const probes = [];
+const probe = { status: 200, delay: 0 };
 
 function serve() {
   return new Promise(res => {
@@ -24,7 +26,16 @@ function serve() {
       }
       if (req.method === 'POST' && req.url.endsWith('/chat/completions')) {
         let body = ''; req.on('data', c => body += c); req.on('end', async () => {
-          const msgs = (JSON.parse(body || '{}').messages || []);
+          const parsed = JSON.parse(body || '{}');
+          // Connection test from the app: a one-token, non-streamed "ping". Answer it separately so it
+          // never consumes scripted replies or shows up in `requests`.
+          if (parsed.max_tokens === 1 && !parsed.stream) {
+            probes.push({ auth: req.headers.authorization || '', model: parsed.model });
+            if (probe.delay) await new Promise(r => setTimeout(r, probe.delay));
+            rsp.writeHead(probe.status, { 'Content-Type': 'application/json' });
+            return rsp.end(JSON.stringify({ choices: [{ message: { content: '.' } }] }));
+          }
+          const msgs = (parsed.messages || []);
           const flat = msgs.map(m => typeof m.content === 'string' ? m.content : (m.content || []).map(p => p.text || '').join(' ')).join('\n');
           const i = queue.findIndex(e => new RegExp(e.match, 's').test(flat));
           const hit = i >= 0 ? queue.splice(i, 1)[0] : null;
@@ -309,6 +320,28 @@ async function page(browser, base, { model = true } = {}) {
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);
       const conn = await p.evaluate(() => document.getElementById('studioPop').innerText);
       check('the connection popover is only about the connection', /Connection/.test(conn) && /Using Cloud API/.test(conn) && !/Unasked thoughts|Agent permissions|Auto follow-up|Start Studio AI/.test(conn), conn.slice(0, 160));
+      // honest connection status: a real test request, not "On"
+      await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="ok"]'), null, { timeout: 4000 }).catch(() => {});
+      const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.querySelector('#crewSetBtn .conn-dot').className, note: document.querySelector('#studioPop .sp-mode-note')?.textContent }));
+      check('opening Connection tests the Cloud API for real and says Connected', ok.h === 'Connected' && probes.length >= 1 && probes.at(-1).auth === 'Bearer smoke' && requests.every(r => !/^ping$/.test(r.full)), JSON.stringify(ok));
+      check('engine verbs are Start · Test · Set up, and Auto is explained', ok.acts.includes('Start') && ok.acts.includes('Test') && ok.acts.includes('Set up') && !ok.acts.some(t => /Wake|Check|Edit/.test(t)) && /Local AI.*Cloud API.*built-in rules/.test(ok.note || ''), JSON.stringify(ok));
+      probe.status = 401;
+      await p.click('#studioPop [data-sp="test-api"]');
+      await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="auth"]'), null, { timeout: 4000 }).catch(() => {});
+      const bad = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, head: document.querySelector('#studioPop .sp-htxt small').textContent, dot: document.querySelector('#crewSetBtn .conn-dot').className }));
+      check('a rejected key reads "Key rejected" and turns the dot red', bad.h === 'Key rejected' && /not working/.test(bad.head) && /error/.test(bad.dot), JSON.stringify(bad));
+      probe.status = 200;
+      queue.push({ id: 'heal', match: 'heal-me', text: 'fine' });
+      await p.evaluate(() => apiChat({ prompt: 'heal-me' }));
+      await p.waitForTimeout(200);
+      check('a real successful call clears the error', await p.evaluate(() => apiHealthNow().k === 'ok' && /ok/.test(document.querySelector('#crewSetBtn .conn-dot').className)));
+      await p.evaluate(() => { apiCfg = { ...apiCfg, baseUrl: 'http://127.0.0.1:9/v1' }; });
+      await p.click('#studioPop [data-sp="test-api"]');
+      await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="unreachable"]'), null, { timeout: 6000 }).catch(() => {});
+      check('an unreachable host reads "Can\'t reach"', await p.evaluate(() => document.querySelector('#studioPop [data-api-health]')?.textContent === "Can't reach"));
+      await p.click('#studioPop [data-sp="pref"][data-val="local"]'); await p.waitForTimeout(200);
+      check('Rules only says plainly that AI is off', await p.evaluate(() => { const n = document.querySelector('#studioPop .sp-mode-note'); return n.classList.contains('warn') && /AI is off/.test(n.textContent) && /rules/.test(document.querySelector('#crewSetBtn .conn-dot').className); }));
+      await p.click('#studioPop [data-sp="pref"][data-val="auto"]'); await p.waitForTimeout(200);
       check('no page errors in the crew-level flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }

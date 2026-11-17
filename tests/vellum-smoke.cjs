@@ -18,6 +18,7 @@ const requests = [];
 const probes = [];
 const probe = { status: 200, delay: 0 };
 const notionPosts = [];
+const salesCsv = { text: 'Rank,Region,Q1\n1,North,120\n2,South,90' }; // the refresh check changes it
 const launcher = { on: false, posts: [] }; // stands in for serve_vellum.py's /launch/studio-ai
 
 function serve() {
@@ -26,7 +27,7 @@ function serve() {
       if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/Vellum-Lumen.html'))) {
         rsp.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return fs.createReadStream(FILE).pipe(rsp);
       }
-      if (req.url === '/data/sales.csv') { rsp.writeHead(200, { 'Content-Type': 'text/csv' }); return rsp.end('Rank,Region,Q1\n1,North,120\n2,South,90'); }
+      if (req.url === '/data/sales.csv') { rsp.writeHead(200, { 'Content-Type': 'text/csv' }); return rsp.end(salesCsv.text); }
       if (req.method === 'POST' && req.url === '/notion/database') { // stands in for serve_vellum.py's Notion reader
         let body = ''; req.on('data', c => body += c); req.on('end', () => {
           const b = JSON.parse(body || '{}'); notionPosts.push({ ...b, client: req.headers['x-studio-client'] });
@@ -475,6 +476,22 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('no page errors around the island', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+    // 9. composer: one row for one line; two rows (text full width, controls below) once the text wraps
+    {
+      const p = await page(browser, base, { model: false });
+      const rows = () => p.evaluate(() => { const f = document.querySelector('.line-field').getBoundingClientRect(), i = lineIn.getBoundingClientRect(), s = document.getElementById('sendBtn').getBoundingClientRect();
+        return { multi: document.getElementById('line').classList.contains('multi'), share: i.width / f.width, sendRight: f.right - s.right < 16, sendBelow: s.top >= i.bottom - 2 }; });
+      await p.click('#lineInput'); await p.keyboard.type('A short line'); await p.waitForTimeout(200);
+      const one = await rows();
+      check('a short line keeps the one-row composer', !one.multi, JSON.stringify(one));
+      await p.keyboard.type(", and then enough words that it has to wrap onto another line in the composer, and then some more"); await p.waitForTimeout(200);
+      const two = await rows();
+      check('wrapped text gets the full width with the controls underneath', two.multi && two.share > .9 && two.sendRight && two.sendBelow, JSON.stringify(two));
+      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.waitForTimeout(200);
+      check('clearing the text returns to one row', !(await rows()).multi);
+      check('no page errors in the composer', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
     // 10. what you type reaches the model: revising a draft, asking Critic, Scout on a draft
     {
       const p = await page(browser, base);
@@ -685,6 +702,34 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         }, base);
         check('a table from an address: the CSV becomes a drawn, selected table card that remembers its address and gets a readable title; bare numbers display grouped (years stay as written); ordinary links stay links; Sheets and GitHub links become data links; rank is not a quantity',
           url.type === 'table' && url.drawn && url.grouped && url.title === '2014 USA States' && url.cols === 'Rank|Region|Q1' && url.src === 'url:/data/sales.csv' && !url.rankIsQuantity && url.link === 'link' && url.sheet === 'https://docs.google.com/spreadsheets/d/AbC/export?format=csv&gid=7' && url.gh === 'https://raw.githubusercontent.com/a/b/main/x.csv' && !url.blog, JSON.stringify(url));
+        const rf = {};
+        const mk = await p.evaluate(async base => { const n = await tableFromUrl(base + '/data/sales.csv'); return { id: n.id, btn: !!document.querySelector(`.card[data-id="${n.id}"] [data-tbl-refresh] svg path`), local: canRefresh({ type: 'table', data: { source: { kind: 'paste' } } }) }; }, base);
+        const step = async fn => p.evaluate(fn, mk.id);
+        const rows = () => step(id => byId(id).data.rows.map(r => r.join('/')).join(';'));
+        await step(id => { document.querySelector(`.card[data-id="${id}"] [data-tbl-refresh]`).click(); }); await p.waitForTimeout(500);
+        rf.same = await rows();
+        salesCsv.text = 'Rank,Region,Q1\n1,North,150\n2,South,90\n3,East,40';
+        await step(id => tblRefresh(id)); await p.waitForTimeout(500);
+        rf.updated = await rows(); rf.toast = await p.evaluate(() => [...document.querySelectorAll('#toasts .toast span')].map(x => x.textContent).join(' | '));
+        await step(id => { tblCommit(byId(id), d => { d.rows[1][2] = '95'; }); });
+        await step(id => tblRefresh(id)); await p.waitForTimeout(500);
+        rf.keptNoChange = (await rows()).includes('South/95') && !(await step(id => !!document.querySelector(`.card[data-id="${id}"] .tbl-conflict`)));
+        salesCsv.text = 'Rank,Region,Q1\n1,North,160\n2,South,90\n3,East,40';
+        await step(id => tblRefresh(id)); await p.waitForTimeout(500);
+        rf.asked = await step(id => !!document.querySelector(`.card[data-id="${id}"] .tbl-conflict`)) && (await rows()).includes('South/95');
+        const before = await p.evaluate(() => board.nodes.length);
+        await step(id => document.querySelector(`.card[data-id="${id}"] [data-tbl-conflict="both"]`).click()); await p.waitForTimeout(300);
+        rf.both = (await p.evaluate(() => board.nodes.length)) === before + 1 && (await rows()).includes('South/95') && await p.evaluate(() => board.nodes.at(-1).data.rows[0].join('/') === '1/North/160' && board.nodes.at(-1).data.source.kind === 'url');
+        await p.evaluate(() => { board.nodes.pop(); renderAll(); });
+        salesCsv.text = 'Rank,Region,Q1\n1,North,170\n2,South,90';
+        await step(id => tblRefresh(id)); await p.waitForTimeout(500);
+        await step(id => document.querySelector(`.card[data-id="${id}"] [data-tbl-conflict="replace"]`).click()); await p.waitForTimeout(300);
+        rf.replaced = await rows(); rf.clean = await step(id => !byId(id).data.source.edited);
+        await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
+        rf.undone = await rows();
+        await step(id => { board.nodes = board.nodes.filter(x => x.id !== id); renderAll(); });
+        check('refresh re-reads the source: unchanged says so; changes apply with a summary and undo; your edits stay when only you changed it; when both changed it asks (Keep both adds the latest beside yours, Replace takes it and can be undone)',
+          mk.btn && !mk.local && rf.same === '1/North/120;2/South/90' && rf.updated === '1/North/150;2/South/90;3/East/40' && /1 new, 1 changed/.test(rf.toast) && rf.keptNoChange && rf.asked && rf.both && rf.replaced === '1/North/170;2/South/90' && rf.clean && rf.undone.includes('South/95'), JSON.stringify({ mk, rf }));
         const notion = await p.evaluate(async () => {
           const paste = t => { const dt = new DataTransfer(); dt.setData('text/plain', t); document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true })); };
           const toasts = () => [...document.querySelectorAll('#toasts .toast span')].map(x => x.textContent).join(' | ');

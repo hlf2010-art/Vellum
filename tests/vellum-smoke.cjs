@@ -28,7 +28,7 @@ function serve() {
           const flat = msgs.map(m => typeof m.content === 'string' ? m.content : (m.content || []).map(p => p.text || '').join(' ')).join('\n');
           const i = queue.findIndex(e => new RegExp(e.match, 's').test(flat));
           const hit = i >= 0 ? queue.splice(i, 1)[0] : null;
-          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200) });
+          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200), full: flat });
           if (hit && hit.delay) await new Promise(r => setTimeout(r, hit.delay));
           if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503); return rsp.end(); }
           rsp.writeHead(200, { 'Content-Type': 'text/event-stream' });
@@ -242,6 +242,41 @@ async function page(browser, base, { model = true } = {}) {
       check("a toast's Undo undoes exactly the change it announced", batchToast && await p.evaluate(() => !board.nodes.some(n => n.text === 'agent batch card') && board.nodes.some(n => n.text === 'mine after the batch')));
       check('the undo button is off when only agents have changes to undo', await p.evaluate(() => { const before = undoStack.slice(); undoStack = undoStack.filter(t => t.author !== 'you'); syncHistoryBtns(); const off = document.getElementById('topUndoBtn').disabled; undoStack = before; syncHistoryBtns(); return off; }));
       check('no page errors in history flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 6. unasked thoughts: one look per burst, an hourly budget, and a real Off
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      await p.evaluate(() => { advQuietMs = 300; advMaxWaitMs = 2000; setAdvisorLevel('quiet'); advSpent = []; advHeld = 0; });
+      const looks = () => requests.filter(r => /at most 2 pins/.test(r.prompt) || /pins/.test(r.prompt) && /keywords/.test(r.prompt)).length;
+      const advReqs = () => requests.filter(r => r.full && /Include 1 or at most 2 pins/.test(r.full));
+      let before = advReqs().length;
+      for (const t of ['note: Wukong sold about 30M copies', 'note: GTA VI launches in November', 'note: Ananta launches in January', 'note: Mainland rules bar organised crime', 'note: Sleeping Dogs was praised for melee']) { await p.evaluate(() => select([])); await p.type(t); await p.waitForTimeout(120); }
+      await p.waitForTimeout(2600); await p.idle();
+      const burst = advReqs().slice(before);
+      check('a burst of five new cards gets one look', burst.length === 1, `${burst.length} looks`);
+      check('the other cards in the burst are given as context', burst.length === 1 && /also just added/.test(burst[0].full));
+      await p.evaluate(() => { advSpent = Array.from({ length: 6 }, () => NOW()); });
+      before = advReqs().length;
+      for (const t of ['note: one more fact', 'note: and another fact']) { await p.evaluate(() => select([])); await p.type(t); await p.waitForTimeout(120); }
+      await p.waitForTimeout(1200); await p.idle();
+      check('no looks once the hourly budget is used', advReqs().length === before, `${advReqs().length - before} looks`);
+      check('cards held back are counted', await p.evaluate(() => advHeld >= 2));
+      before = advReqs().length;
+      await p.evaluate(() => scheduleAdvisor(board.nodes.find(n => n.type === 'note').id, { force: true })); await p.waitForTimeout(800); await p.idle();
+      check('a look you ask for ignores the budget', advReqs().length === before + 1, `${advReqs().length - before} looks`);
+      await p.evaluate(() => { setAdvisorLevel('off'); advSpent = []; });
+      before = advReqs().length;
+      await p.evaluate(() => select([])); await p.type('note: quiet please'); await p.waitForTimeout(1200); await p.idle();
+      check('Off means no unasked looks', advReqs().length === before);
+      await p.click('#crewModeBtn'); await p.waitForTimeout(400);
+      const seg = await p.evaluate(() => [...document.querySelectorAll('[data-sp="adv-level"]')].map(b => b.dataset.level + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(','));
+      check('settings offer Off, Quiet and Active', seg === 'off*,quiet,active', seg);
+      await p.click('[data-sp="adv-level"][data-level="active"]'); await p.waitForTimeout(300);
+      check('choosing Active takes effect', await p.evaluate(() => advisorLevel === 'active' && advisorMode === true && advLeft() === 20));
+      check('no page errors in the unasked-thoughts flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
   } finally {

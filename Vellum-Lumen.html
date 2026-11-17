@@ -2633,6 +2633,11 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .line-hint:empty{display:none}
 .card .prov-rules{margin-left:6px;font:500 10.5px/1 var(--ui);letter-spacing:.02em;padding:3px 6px;border-radius:999px;color:var(--label-2);background:var(--hover);box-shadow:inset 0 0 0 .5px var(--hair-2)}
 .m-sec.m-prov{padding-block:6px}
+.sp-svc.sp-col{flex-wrap:wrap;row-gap:8px}
+.sp-svc.sp-col .sp-svc-main{flex:1 1 100%;min-width:0}
+.sp-svc.sp-col .sp-svc-sub{white-space:normal;overflow:visible;text-overflow:clip}
+.sp-lvl{display:flex;gap:4px}
+.sp-lvl .sp-mini{padding-inline:10px}
 
 .card .prop-bar{position:relative;z-index:6;opacity:1;filter:none;margin:8px 10px 10px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--focus,#5b8cff) 12%,var(--card-2,var(--card)));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--focus,#5b8cff) 35%,transparent);font:500 12.5px/1.35 var(--ui);color:var(--label)}
 .card .prop-bar.is-del{background:color-mix(in srgb,var(--danger,#e5484d) 12%,var(--card-2,var(--card)));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--danger,#e5484d) 35%,transparent)}
@@ -5207,12 +5212,12 @@ function renderStudioPop(){
         </div>
         <button type="button" class="sp-mini" data-sp="api">${hasApi()?L("Edit","编辑"):L("Set","配置")}</button>
       </div>
-      <div class="sp-svc">
+      <div class="sp-svc sp-col">
         <div class="sp-svc-main">
-          <div class="sp-svc-top"><span>${L("Advisor pins","智能顾问角标")}</span></div>
-          <div class="sp-svc-sub">${L("Quietly leave constructive pins on new cards","在新卡片上静默附着建设性建议")}</div>
+          <div class="sp-svc-top"><span>${L("Unasked thoughts","主动建议")}</span></div>
+          <div class="sp-svc-sub">${advisorLevel==="off"?L("The crew only speaks when you ask","只在你询问时发言"):L(`One look per burst of new cards · ${advUsed()} of ${ADV_BUDGET[advisorLevel]} used this hour${advHeld?` · ${advHeld} held back`:""}`,`每批新卡片看一次 · 本小时已用 ${advUsed()}/${ADV_BUDGET[advisorLevel]}${advHeld?` · ${advHeld} 张未看`:""}`)}</div>
         </div>
-        <button type="button" class="sp-mini ${typeof advisorMode!=="undefined"&&advisorMode?"on":""}" data-sp="adv-mode" aria-pressed="${typeof advisorMode!=="undefined"&&advisorMode}">${typeof advisorMode!=="undefined"&&advisorMode?L("On","开启"):L("Off","关闭")}</button>
+        <div class="sp-lvl" role="group" aria-label="${esc(L("How proactive the crew is","主动程度"))}">${[["off",L("Off","关闭")],["quiet",L("Quiet","安静")],["active",L("Active","活跃")]].map(([k,l])=>`<button type="button" class="sp-mini${advisorLevel===k?" on":""}" data-sp="adv-level" data-level="${k}" aria-pressed="${advisorLevel===k}">${l}</button>`).join("")}</div>
       </div>
       ${typeof advisorMode==="undefined"||advisorMode?`<div class="sp-svc">
         <div class="sp-svc-main">
@@ -5552,7 +5557,22 @@ function renderAll(){if(board&&(!changeShadow||changeShadow.id!==board.id))chang
 }
 
 /* ── advisor co-work pins & humanized thinking whisper ─────────────────── */
-let advisorMode=store.get(".advisor",true);
+/* How proactive the crew is, unasked. Off: never. Quiet: one look per burst of new cards, at most ADV_BUDGET.quiet an hour.
+   Active: the same batching with a larger budget. Anything you ask for (a pin's Try again) is outside the budget. */
+const ADV_BUDGET={quiet:6,active:20};
+let advQuietMs=6000,advMaxWaitMs=20000;
+let advisorLevel=store.get(".advisorLevel",null)||(store.get(".advisor",true)?"quiet":"off");
+let advisorMode=advisorLevel!=="off";
+let advSpent=(store.get(".advSpent",[])||[]).filter(t=>NOW()-t<3600000);
+let advBurst=new Set(),advBurstT=0,advBurstStart=0,advBurstCtx=null,advHeld=0;
+const advUsed=()=>{advSpent=advSpent.filter(t=>NOW()-t<3600000);return advSpent.length};
+const advLeft=()=>Math.max(0,(ADV_BUDGET[advisorLevel]||0)-advUsed());
+function setAdvisorLevel(level){
+  advisorLevel=["off","quiet","active"].includes(level)?level:"quiet";advisorMode=advisorLevel!=="off";
+  store.set(".advisorLevel",advisorLevel);store.set(".advisor",advisorMode);
+  if(!advisorMode){for(const t of advTimers.values())clearTimeout(t);advTimers.clear();advBurst.clear();clearTimeout(advBurstT)}
+  renderCrew();renderStudioPop?.();
+}
 let advisorAuto=store.get(".advisorAuto",false);
 let openAdvNodeId=null;
 let openAdvIdx=0;
@@ -5561,8 +5581,8 @@ const advTimers=new Map();
 let advStreamState=null;
 
 function toggleAdvisorMode(force){
-  advisorMode=force===undefined?!advisorMode:!!force;
-  store.set(".advisor",advisorMode);
+  const on=force===undefined?!advisorMode:!!force;setAdvisorLevel(on?(advisorLevel==="off"?"quiet":advisorLevel):"off");
+  advisorMode=on;
   if(!advisorMode){
     for(const t of advTimers.values())clearTimeout(t);
     advTimers.clear();
@@ -5883,7 +5903,8 @@ async function askAdvisorForNode(n,onProgress,signal,{allowOffline=true}={}){
   const imgNodes=isVisualNode(n)?[n]:[];
   if(!advisorLiveReady(n))return local();
   const rel=[...inputsOf(n.id),...outputsOf(n.id)].filter((x,i,a)=>x&&!x.archived&&!x.hidden&&!x.tombstone&&x.id!==n.id&&a.findIndex(y=>y&&y.id===x.id)===i).slice(0,3);
-  const ctxText=rel.length?`\nConnected lineage context:\n${wallText(rel,{excludeIds:[n.id],compactDocs:true,shortCap:150,totalCap:750})}`:"";
+  const burst=advBurstCtx&&advBurstCtx.target===n.id?advBurstCtx.others.map(byId).filter(Boolean):[];advBurstCtx=null;
+  const ctxText=(rel.length?`\nConnected lineage context:\n${wallText(rel,{excludeIds:[n.id],compactDocs:true,shortCap:150,totalCap:750})}`:"")+(burst.length?`\nThe designer also just added these cards (context only; leave your note on THIS card, and mention one of them only if it clearly bears on it):\n${burst.map(b=>"- "+clip(titleOf(b),80)).join("\n")}`:"");
   const roles=advisorRolesFor(n);
   const forkRule=["idea","note","notepad"].includes(n.type)?`"fork","critique","list","gather","visuals","note"`
     :(isVisualNode(n)?(rel.length?`"note","critique","list","gather","visuals"`:`"note","critique","list","visuals"`):(rel.length?`"critique","note","list","gather","visuals"`:`"critique","note","list","visuals"`));
@@ -5947,8 +5968,21 @@ function scheduleAdvisor(nodeId,{force=false,delay=1400}={}){
   if(!force&&!advisorLiveReady(n))return;
   const raw=(fullTextOf(n)+" "+(n.title||"")).trim();
   if(!force&&raw.length<10&&!n.media&&!n.url)return;
-  if(advTimers.has(nodeId))clearTimeout(advTimers.get(nodeId));
-  advTimers.set(nodeId,setTimeout(()=>{advTimers.delete(nodeId);runAdvisorOnNode(nodeId,{force})},force?40:delay));
+  if(force){if(advTimers.has(nodeId))clearTimeout(advTimers.get(nodeId));advTimers.set(nodeId,setTimeout(()=>{advTimers.delete(nodeId);runAdvisorOnNode(nodeId,{force})},40));return}
+  if(!advBurst.size)advBurstStart=NOW();
+  advBurst.add(nodeId);clearTimeout(advBurstT);
+  const wait=Math.max(0,Math.min(Math.max(delay,advQuietMs),advBurstStart+advMaxWaitMs-NOW()));
+  advBurstT=setTimeout(fireAdvisorBurst,wait);
+}
+function fireAdvisorBurst(){
+  const ids=[...advBurst].filter(id=>{const n=byId(id);return n&&!n.archived&&n.status!=="sketch"&&n.type!=="group"});advBurst.clear();
+  if(!ids.length||!advisorMode)return;
+  if(!advLeft()){advHeld+=ids.length;renderStudioPop?.();return}
+  /* one look per burst: the card with the most to say about, preferring cards without a pin yet */
+  const score=id=>{const n=byId(id),txt=(fullTextOf(n)+" "+(n.title||"")).trim();return Math.min(txt.length,600)+(n.media||n.url?200:0)-((board.pins?.[id]||[]).length?1000:0)+(n.updated||n.created||0)/1e13};
+  ids.sort((a,b)=>score(b)-score(a));
+  advBurstCtx={target:ids[0],others:ids.slice(1,6)};
+  runAdvisorOnNode(ids[0],{});
 }
 async function runAdvisorOnNode(nodeId,{force=false}={}){
   const n=byId(nodeId);
@@ -5963,6 +5997,7 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
   const advCtrl=new AbortController();advAborts.set(nodeId,advCtrl);
   try{
     let curKws=(localRes.keywords||[]).slice(0,2),curLines=[],liveKws=false,liveLines=0;
+    if(!force&&advisorLiveReady(n)){advSpent.push(NOW());store.set(".advSpent",advSpent);renderStudioPop?.()}
     const dataP=askAdvisorForNode(n,({keywords,thoughts})=>{
       if(!advThinking.has(nodeId)||advCtrl.signal.aborted)return;
       if(keywords.length){liveKws=true;curKws=keywords.slice(0,5)}
@@ -12764,6 +12799,7 @@ $("studioPop")?.addEventListener("click",async e=>{
   if(act==="img-model"){setImageModel(b.dataset.id);return}
   if(act==="api"){toggleStudioPopover(false);openApiDialog();return}
   if(act==="adv-mode"){toggleAdvisorMode();return}
+  if(act==="adv-level"){setAdvisorLevel(b.dataset.level);return}
   if(act==="adv-auto"){toggleAdvisorAuto();return}
   if(act==="memory"){toggleStudioPopover(false);memoryDialog();return}
   if(act==="copilot"){toggleStudioPopover(false);openCopilot(true)}

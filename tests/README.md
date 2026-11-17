@@ -21,6 +21,16 @@ with a stand-in script, so nothing real is launched:
 python3 studio/macos-app/test_serve_launch.py
 ```
 
+## Data reader (local server)
+
+Tables from a web address read through `/fetch-data` when the site doesn't allow direct reads. It only
+fetches public hosts (redirects re-checked), refuses web pages and stops at 8 MB. Tested against a local
+stand-in for the internet:
+
+```bash
+python3 studio/macos-app/test_serve_fetch.py
+```
+
 ## Legibility in both themes
 
 Light and dark are designed separately; a colour that works in one is not assumed to work in the other.

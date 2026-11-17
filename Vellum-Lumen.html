@@ -3827,7 +3827,7 @@ function lin(n,d=0){
   return null;
 }
 const bayOf=n=>clamp(Math.floor((n.x+nodeW(n)/2)/BAY),0,3);
-const SLUG_ACRONYMS=new Set(["ai","api","ar","css","faq","fps","gif","gta","hd","html","hud","id","ios","json","md","npc","os","pdf","png","qa","rag","rgb","rpg","sdk","svg","ui","url","ux","vfx","vr","xr"]);
+const SLUG_ACRONYMS=new Set(["ai","api","ar","css","faq","fps","gif","gta","hd","html","hud","id","ios","json","md","npc","os","pdf","png","qa","rag","rgb","rpg","sdk","svg","ui","url","ux","vfx","vr","xr","usa","us","uk","eu","gdp","csv","kpi","roi","sku","b2b","b2c","q1","q2","q3","q4"]);
 const SLUG_SMALL=new Set(["a","an","and","as","at","by","for","from","in","of","on","or","the","to","vs","with"]);
 function isMachineHashToken(s){
   const t=String(s||"").trim();
@@ -5385,7 +5385,7 @@ function tableModel(ds){
     const ks=raw.map(r=>r[ci]?timeKey(r[ci],hdrRaw[ci],ci===0):null);return ks.every((k,i)=>k!=null||!raw[i][ci])?ks:null});
   time.forEach((t,ci)=>{if(t)cols[ci]=null});
   // Identifiers are numbers but not quantities: no magnitude, no "best".
-  hdrRaw.forEach((h,ci)=>{if(/^\s*(id|#|no\.?|num(ber)?|code|zip|post(al)?\s?code|phone|sku|ref|编号|序号|代码|邮编|电话)\s*$/i.test(h)){cols[ci]=null;best[ci]=null}});
+  hdrRaw.forEach((h,ci)=>{if(/^\s*(id|#|no\.?|num(ber)?|code|zip|post(al)?\s?code|phone|sku|ref|rank|position|编号|序号|代码|邮编|电话|排名|名次)\s*$/i.test(h)){cols[ci]=null;best[ci]=null}});
   // Share: a percentage column whose parts add up to about a whole.
   const share=hdr.map((_,ci)=>{if(!cols[ci])return false;const ms=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"").match(NUM)).filter(Boolean);
     if(!ms.length||ms.some(m=>m[4]!=="%"||m[1]==="-"))return false;const sum=ms.reduce((a,m)=>a+parseFloat(m[3].replace(/,/g,"")),0);return sum>=95&&sum<=105});
@@ -5441,6 +5441,42 @@ function makeTableCard(ds,{title,source,at,by}={}){
   const spot=at?freeSpot(at.x-gw/2,at.y-100,gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
   return node("table",{title:clip(title||L("Table","表格"),60),data,gw,...(by?{by}:{})},spot);
 }
+/* A table from an address: CSV, TSV or JSON at a URL. Share links become data links (Google Sheets -> CSV export of
+   that tab, GitHub file page -> raw file). Read directly; if the site blocks cross-origin reads and Vellum's local
+   server is serving the page, it reads it instead (public addresses only, redirects checked, data not web pages). */
+function dataUrlOf(u){try{const x=new URL(u);let m;
+  if(x.hostname==="docs.google.com"&&(m=x.pathname.match(/^\/spreadsheets\/d\/([^/]+)/))&&!/\/(export|pub|gviz)/.test(x.pathname)){const gid=((x.hash+x.search).match(/gid=(\d+)/)||[])[1]||"0";return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${gid}`}
+  if(x.hostname==="github.com"&&(m=x.pathname.match(/^\/([^/]+)\/([^/]+)\/blob\/(.+)$/)))return `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}`;
+  return x.href}catch{return u}}
+function looksLikeDataUrl(u){try{const x=new URL(u);return /^https?:$/.test(x.protocol)&&(/\.(csv|tsv|json)$/i.test(x.pathname)||/[?&](output|format)=(csv|tsv|json)\b/i.test(x.search)||/tqx=out:csv/i.test(x.search)||(x.hostname==="docs.google.com"&&/^\/spreadsheets\/d\//.test(x.pathname)))}catch{return false}}
+const viaLocalServer=()=>/^https?:$/.test(location.protocol)&&/^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+async function fetchDataText(url){
+  let err;
+  try{const r=await fetch(url,{signal:timeoutSignal(12000),credentials:"omit"});if(!r.ok)throw new Error("HTTP "+r.status);return {text:await r.text(),type:(r.headers.get("content-type")||"").toLowerCase()}}catch(e){err=e}
+  if(viaLocalServer()){let d=null;try{const r=await fetch(`/fetch-data?url=${encodeURIComponent(url)}`,{signal:timeoutSignal(20000)});d=/json/.test(r.headers.get("content-type")||"")?await r.json():null}catch{}
+    if(d?.ok)return {text:d.text,type:d.type||""};if(d)err=Object.assign(new Error(d.error||"failed"),{proxied:true});} // no JSON = no local reader here
+  throw err;
+}
+function dataFetchMessage(e,host){const k=String(e?.message||"");
+  return k==="web_page_not_data"?L(`${host} returned a web page, not data. If it's a Google Sheet, share it as "Anyone with the link".`,`${host} 返回的是网页而不是数据。如果是 Google 表格，请设置为"知道链接的任何人可查看"。`)
+    :k==="too_large"?L(`That file is over 8 MB. Download it and drop it here instead.`,`文件超过 8 MB，请下载后拖到画板上。`)
+    :/private|redirect/.test(k)?L(`Only public addresses can be read.`,`只能读取公开网址。`)
+    :/HTTP 40[13]/.test(k)?L(`${host} needs you to sign in. Share it publicly, or download the file and drop it here.`,`${host} 需要登录。请公开分享，或下载后拖到画板上。`)
+    :/HTTP 404/.test(k)?L(`Nothing at that address (404).`,`该网址不存在（404）。`)
+    :e?.proxied?L(`Couldn't read ${host}: ${k||"no response"}.`,`无法读取 ${host}：${k||"没有响应"}。`)
+    :L(`${host} doesn't let other pages read it. Download the file and drop it here, or open the address in the Vellum app.`,`${host} 不允许其他网页读取。请下载后拖到画板上，或在 Vellum 应用中打开。`)}
+async function tableFromUrl(raw,{at}={}){
+  const url=dataUrlOf(String(raw||"").trim());let host="",shown="";try{host=new URL(url).hostname.replace(/^www\./,"");shown=new URL(String(raw).trim()).hostname.replace(/^www\./,"")}catch{toast(L("That isn't a web address.","这不是一个网址。"));return null}
+  toast(L(`Reading ${shown||host}…`,`正在读取 ${shown||host}…`));
+  let res;try{res=await fetchDataText(url)}catch(e){toast(dataFetchMessage(e,host));return null}
+  if(/html/.test(res.type)||/^\s*<(!doctype|html)/i.test(res.text)){toast(dataFetchMessage(new Error("web_page_not_data"),host));return null}
+  const name=decodeURIComponent(new URL(url).pathname.split("/").pop()||""),ds=datasetFromText(res.text,/json/.test(res.type)?"data.json":name);
+  if(!ds){toast(L(`${host} didn't return a table (CSV, TSV or JSON).`,`${host} 返回的不是表格数据（CSV、TSV 或 JSON）。`));return null}
+  checkpoint();const v=viewRect(),title=host==="docs.google.com"?L("Google Sheet","Google 表格"):(humanFileTitle(name)||name.replace(/\.[^.]+$/,"")||host);
+  const n=makeTableCard(ds,{title,source:{kind:"url",label:shown||host,url,from:String(raw).trim()}/* label: the address people pasted */,at:at||toWorld(v.w/2,v.h/2)});
+  sel=[n.id];renderAll();persist();follow([n]);
+  toast(L(`Table added from ${shown||host}`,`已从 ${shown||host} 生成表格`),{undo:true});return n;
+}
 /* Board width a table card needs: measured, not guessed. The table is laid out once in a hidden card with the real
    fonts and column rules, at its natural width; the card takes that width plus its padding, between 320 and 960px.
    960 fits the usual 7-9 columns and stays about two thirds of a 1440px screen at 100%, so the cards around it stay in
@@ -5454,7 +5490,8 @@ function tblCardWidth(ds){
     host.innerHTML=`<div class="in">${tblBlockHTML(ds)}</div>`;(document.getElementById("nodes")||document.body).appendChild(host);
     const tbl=host.querySelector("table.tbl");tbl.style.width="max-content";host.querySelector(".tbl-wrap").style.overflow="visible";
     const pad=(()=>{const cs=getComputedStyle(host.querySelector(".in"));return parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight)})();
-    const w=tbl.offsetWidth;host.remove(); // layout width: unaffected by the canvas zoom transformif(w>0)return clamp(w+pad+2);
+    const w=tbl.offsetWidth;host.remove(); // layout width: unaffected by the canvas zoom transform
+    if(w>0)return clamp(w+pad+2);
   }catch{}
   // no layout available: estimate from the same column rules
   const {raw,cols,colW}=tableModel(ds),base={"w-first":144,"w-text":96,"w-long":180,"w-tag":88};
@@ -5462,7 +5499,11 @@ function tblCardWidth(ds){
 }
 function tblBlockHTML(ds,{add=false,view="table",col=null,editable=false,sort=null}={}){
   const {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey}=tableModel(ds);
-  const cell=(r,ci)=>{const t=mdInline(r[ci]||""),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)],k=sortKey(r,ci),dv=k==null?"":` data-v="${k}"`;
+  /* Bare machine numbers (4849377.0) read as digits to count, not amounts. Display only — editing and copy keep the
+     source text: drop a ".0" tail the whole column shares, and group thousands from five digits up (years stay 2014). */
+  const BARE=/^-?\d+(\.\d+)?$/,zeroTail=hdr.map((_,ci)=>{const v=raw.map(r=>String(r[ci]??"").trim()).filter(x=>BARE.test(x));return v.length>0&&v.every(x=>/\.0+$/.test(x))});
+  const shown=(x,ci)=>{const v=String(x??"").trim();if(!cols[ci]||!BARE.test(v))return x||"";const [i,f]=(zeroTail[ci]?v.replace(/\.0+$/,""):v).split(".");const neg=i.startsWith("-"),d=neg?i.slice(1):i;return (neg?"-":"")+(d.length>4?d.replace(/\B(?=(\d{3})+$)/g,","):d)+(f?"."+f:"")};
+  const cell=(r,ci)=>{const t=mdInline(shown(r[ci],ci)),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)],k=sortKey(r,ci),dv=k==null?"":` data-v="${k}"`;
     if(lv)return `<td class="lvl"${dv}><span class="tbl-tag" style="--c:${LVL[lv]}">${t}</span></td>`;
     if(!c||c[raw.indexOf(r)]==null)return `<td${c?' class="num"':""}${dv}>${t}</td>`;
     const isBest=best[ci]?.[raw.indexOf(r)];
@@ -10303,6 +10344,7 @@ const CMDS=[
   {c:"/notepad",a:null,d:"Add a structured notepad document"},
   {c:"/question",a:null,d:"Pin an open question on the canvas"},
   {c:"/link",a:null,d:"Save a URL as a link card"},
+  {c:"/table",a:null,d:"Make a table from a CSV, JSON or Google Sheet address"},
   {c:"/group",a:null,d:"Create a group frame (or wrap selected cards)"},
   {c:"/organize",a:null,d:"Organize canvas cards cleanly by lane",run:true},
   {c:"/image",a:"wright",d:"Generate images from a description"},
@@ -10551,6 +10593,7 @@ function route(text){
       case"/notepad":return (!arg&&has("treemap"))?mk("tm-brief",null,"Notepad Brief"):mk("notepad",null,"add a notepad",{arg});
       case"/question":return mk("question",null,"pin a question",{arg});
       case"/link":return mk("link",null,"add a link",{arg});
+      case"/table":return mk("table",null,"make a table",{arg});
       case"/group":return mk("group",null,ctx.length>1?"group selection":"add a group",{arg});
       case"/organize":case"/tidy":return mk("config",null,"organize canvas",{patch:{tidy:true},explicit:true});
       case"/image":return mk("image","wright",`render ${genOpts.count} image${genOpts.count>1?"s":""}`,{arg});
@@ -10752,6 +10795,7 @@ async function execLineRequest(text){
     case"notepad":return createNotepadNode(body);
     case"question":return body?pinQuestionNode(body,ctx):toast("Write your question after /question");
     case"link":return body?createLinkNode(body):openLinkDialog();
+    case"table":return body?tableFromUrl(body):toast(L("Paste a CSV, JSON or Google Sheet address after /table","请在 /table 后粘贴 CSV、JSON 或 Google 表格的网址"));
     case"group":return ctx.length>1?wrapSelectionInGroup(ctx,body||"Group"):createGroupNode(body||"Group");
     case"image":return generateImages(body,{from:f||null});
     case"reverse":{const im=has("image")||has("frame");return im?reversePromptNode(im):toast("Select an image or frame card first")}
@@ -15085,7 +15129,8 @@ addEventListener("paste",e=>{
   if(t&&t.trim()){
     e.preventDefault();
     const s=t.trim(),lines=s.split(/\r?\n/).length;
-    if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s);
+    if(/^https?:\/\/\S+$/i.test(s)&&looksLikeDataUrl(s))tableFromUrl(s).then(n=>{if(!n)createLinkNode(s)});
+    else if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s);
     else if(looksTabular(s)){const ds=datasetFromText(s);if(ds){checkpoint();const v=viewRect(),n=makeTableCard(ds,{title:L("Pasted table","粘贴的表格"),source:{kind:"paste"},at:toWorld(v.w/2,v.h/2)});sel=[n.id];renderAll();persist();follow([n]);toast(L("Pasted as a table","已粘贴为表格"),{undo:true})}else createNotepadNode(s)}
     else if(s.length>280||lines>=4)createNotepadNode(s);
     else pinCard("note",s);

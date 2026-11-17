@@ -25,6 +25,7 @@ function serve() {
       if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/Vellum-Lumen.html'))) {
         rsp.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return fs.createReadStream(FILE).pipe(rsp);
       }
+      if (req.url === '/data/sales.csv') { rsp.writeHead(200, { 'Content-Type': 'text/csv' }); return rsp.end('Rank,Region,Q1\n1,North,120\n2,South,90'); }
       if (req.url === '/launch/studio-ai' && launcher.on) {
         if (req.method === 'POST') launcher.posts.push({ client: req.headers['x-studio-client'], origin: req.headers.origin, host: req.headers.host });
         rsp.writeHead(200, { 'Content-Type': 'application/json' });
@@ -531,13 +532,13 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         check('import: CSV quotes, escapes and line breaks; "49,90" is not 4990; nested JSON flattens; ids are not quantities; big files keep 500 of N; tabular files become tables, broken ones stay files; pasted TSV becomes a table, prose does not',
           ing.csv === 'Name|Note ; Acme, Inc.|Said "hi"\nthen left ; Globex|ok' && !ing.euNumeric && ing.nestedCols === 'id|user.city|tags' && ing.nestedFirst === '1|Oslo|a, b' && !ing.idIsQuantity && ing.bigRows === 500 && ing.bigTotal === 700 && ing.files === 'table,source' && ing.fileSrc === 'growth.csv' && ing.pasted === 'table:Region|Q1' && ing.prose === false, JSON.stringify(ing));
         const fit = await p.evaluate(() => {
-          const mk = cols => ({ columns: Array.from({ length: cols }, (_, i) => ({ name: 'Field ' + (i + 1) })), rows: [Array.from({ length: cols }, (_, i) => 'value ' + i), Array.from({ length: cols }, (_, i) => 'value ' + i)] });
-          const z0 = cam.s, measure = ds => { const gw = tblCardWidth(ds), n = node('table', { title: 'w', data: { v: 1, ...ds }, gw }, { x: 0, y: 0 }); renderAll(); const w = document.querySelector(`.card[data-id="${n.id}"] .tbl-wrap`); const r = { gw, scrolls: w.scrollWidth > w.clientWidth + 1 }; board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll(); return r; };
+          const mk = cols => ({ columns: Array.from({ length: cols }, (_, i) => ({ name: 'Field number ' + (i + 1) })), rows: [Array.from({ length: cols }, (_, i) => 'a longer value ' + i), Array.from({ length: cols }, (_, i) => 'value ' + i)] });
+          const z0 = cam.s, measure = ds => { const gw = tblCardWidth(ds), n = node('table', { title: 'w', data: { v: 1, ...ds }, gw }, { x: 0, y: 0 }); renderAll(); const w = document.querySelector(`.card[data-id="${n.id}"] .tbl-wrap`); const tw = w.querySelector('table').offsetWidth, r = { gw, scrolls: w.scrollWidth > w.clientWidth + 1, slack: w.clientWidth - tw }; board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll(); return r; };
           const small = measure(mk(3)), wide = measure(mk(14)); cam.s = .33; const wideZoomed = measure(mk(14)); cam.s = z0;
           const n = node('table', { title: 'r', data: { v: 1, ...mk(3) }, gw: 900 }, { x: 0, y: 0 }); resetCardWidth(n); const refit = n.gw === small.gw; board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll();
           return { small, wide, wideZoomed, refit };
         });
-        check('table cards fit their table (no sideways scroll), stop at 960px and scroll beyond, measure the same at any zoom, and refit on reset', !fit.small.scrolls && fit.small.gw < 960 && fit.wide.gw === 960 && fit.wide.scrolls && fit.wideZoomed.gw === 960 && fit.refit, JSON.stringify(fit));
+        check('table cards fit their table (no sideways scroll), stop at 960px and scroll beyond, measure the same at any zoom, and refit on reset', !fit.small.scrolls && fit.small.gw < 960 && (fit.small.gw === 320 || fit.small.slack < 24) && fit.wide.gw === 960 && fit.wide.scrolls && fit.wideZoomed.gw === 960 && fit.refit, JSON.stringify(fit));
         const ed = await p.evaluate(async () => {
           const ds = { columns: [{ name: 'Option' }, { name: 'Cost' }], rows: [['Rebuild', '$120k'], ['Patch', '$38k'], ['Vendor', '$72k']] };
           const n = node('table', { title: 'E', data: { v: 1, ...ds, source: { kind: 'copilot' } }, gw: tblCardWidth(ds), tblSort: { col: 1, dir: 'ascending' } }, { x: 0, y: 0 }); renderAll(); focusNodes([n], 1, 0);
@@ -556,6 +557,17 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         });
         check('table cards edit in place: selecting does not move the table; Tab moves on; Enter commits, Esc cancels; headers rename; added rows sort last when empty; types re-infer; marked edited; undoable; reply tables stay read-only',
           ed.moved < 1 && ed.tabbed && ed.row1 === 'Patch it/$30k' && ed.header === 'Total cost' && ed.row0 === 'Rebuild' && ed.rows === 4 && ed.order === 'Patch it>Vendor>Rebuild>Do nothing' && ed.edited && ed.best === '$30k' && ed.undone === 3 && !ed.replyEditable, JSON.stringify(ed));
+        const url = await p.evaluate(async base => {
+          const before = board.nodes.length, n = await tableFromUrl(base + '/data/sales.csv'), m = tableModel(n.data);
+          const drawn = !!document.querySelector(`.card[data-id="${n.id}"] .tbl-wrap`) && sel.includes(n.id), title = humanFileTitle('2014_usa_states.csv');
+          const numHTML = tblBlockHTML({ columns: [{ name: 'State' }, { name: 'Year' }, { name: 'Population' }], rows: [['Alabama', '2014', '4849377.0'], ['Alaska', '2014', '736732.0']] }), grouped = numHTML.includes('4,849,377<') && numHTML.includes('736,732<') && numHTML.includes('>2014<') && !numHTML.includes('.0<');
+          const paste = t => { const dt = new DataTransfer(); dt.setData('text/plain', t); document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true })); };
+          paste('https://example.com/blog/post'); const link = board.nodes.at(-1).type;
+          return { made: board.nodes.length - before, drawn, title, grouped, type: n.type, cols: n.data.columns.map(c => c.name).join('|'), src: n.data.source.kind + ':' + n.data.source.url.replace(base, ''), rankIsQuantity: !!m.cols[0], link,
+            sheet: dataUrlOf('https://docs.google.com/spreadsheets/d/AbC/edit#gid=7'), gh: dataUrlOf('https://github.com/a/b/blob/main/x.csv'), blog: looksLikeDataUrl('https://example.com/blog/post') };
+        }, base);
+        check('a table from an address: the CSV becomes a drawn, selected table card that remembers its address and gets a readable title; bare numbers display grouped (years stay as written); ordinary links stay links; Sheets and GitHub links become data links; rank is not a quantity',
+          url.type === 'table' && url.drawn && url.grouped && url.title === '2014 USA States' && url.cols === 'Rank|Region|Q1' && url.src === 'url:/data/sales.csv' && !url.rankIsQuantity && url.link === 'link' && url.sheet === 'https://docs.google.com/spreadsheets/d/AbC/export?format=csv&gid=7' && url.gh === 'https://raw.githubusercontent.com/a/b/main/x.csv' && !url.blog, JSON.stringify(url));
         check('table rows: click selects one, Cmd adds, Shift selects a range, and the selection bar appears', sel.one === 'A' && sel.two === 'A,C' && sel.range === 'A,B,C' && sel.single === 'B' && sel.bar === false, JSON.stringify(sel));
         check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
       }

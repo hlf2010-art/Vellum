@@ -16,7 +16,7 @@ import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 APP_DIR = Path(__file__).resolve().parents[2]
 CUTOUT = APP_DIR / "studio" / "cutout" / "foreground.swift"
@@ -151,6 +151,12 @@ class VellumHandler(SimpleHTTPRequestHandler):
             return
         elif req_path == "/launch/studio-ai":
             return self.send_json(200, {"available": STUDIO_SCRIPT.is_file()})
+        elif req_path == "/fetch-data":
+            # Raw CSV/TSV/JSON for the page's "table from an address" (sites that block cross-origin reads).
+            if not self.cutout_allowed():
+                return self.send_error(403)
+            qs = parse_qs(parsed.query)
+            return self.send_json(200, fetch_data((qs.get("url") or [""])[0].strip()))
         elif req_path == "/fetch-link":
             if not self.cutout_allowed():
                 return self.send_error(403)
@@ -189,6 +195,41 @@ def _is_public_host(host: str) -> bool:
         return bool(infos)
     except OSError:
         return False
+
+
+DATA_MAX_BYTES = 8_000_000
+
+
+class _PublicRedirects(HTTPRedirectHandler):
+    """Follow redirects only to public hosts, so a public address can't bounce the fetch into the local network."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        target = urlsplit(newurl)
+        if target.scheme.lower() not in ("http", "https") or not target.hostname or not _is_public_host(target.hostname):
+            raise ValueError("redirect_to_private_url")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fetch_data(raw_url: str) -> dict:
+    try:
+        u = urlsplit(raw_url)
+        if u.scheme.lower() not in ("http", "https") or not u.hostname or not _is_public_host(u.hostname):
+            return {"ok": False, "error": "invalid_or_private_url"}
+        req = Request(raw_url, headers={"User-Agent": "Vellum/1.0 (+table import)", "Accept": "text/csv,text/tab-separated-values,application/json,text/plain;q=0.9,*/*;q=0.5"})
+        with build_opener(_PublicRedirects()).open(req, timeout=12) as resp:
+            ctype = (resp.headers.get("Content-Type") or "").lower()
+            if "html" in ctype:
+                return {"ok": False, "error": "web_page_not_data"}
+            raw = resp.read(DATA_MAX_BYTES + 1)
+        if len(raw) > DATA_MAX_BYTES:
+            return {"ok": False, "error": "too_large"}
+        charset = re.search(r"charset=([\w-]+)", ctype)
+        text = raw.decode(charset.group(1) if charset else "utf-8", errors="replace")
+        return {"ok": True, "text": text, "type": ctype}
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)[:80] or "invalid"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:120]}
 
 
 def fetch_link_summary(raw_url: str) -> dict:

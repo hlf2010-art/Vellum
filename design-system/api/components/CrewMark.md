@@ -1,4 +1,4 @@
-<!-- Generated from components/index.d.ts. -->
+<!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # CrewMark
 
 A crew member's avatar orb: Scout, Strategist, Wright or Critic.
@@ -8,19 +8,15 @@ A crew member's avatar orb: Scout, Strategist, Wright or Critic.
 ## Use
 
 ```jsx
-<Vellum.CrewMark />
-```
-
-```html
-<x-import component-from-global-scope="Vellum.CrewMark"></x-import>
+<Vellum.Root><Vellum.CrewMark /></Vellum.Root>
 ```
 
 ## Props (CrewMarkProps)
 
 | prop | type | note |
 | --- | --- | --- |
-| `member` | `'scout' \| 'strategist' \| 'wright' \| 'critic'` |  |
-| `state` | `'free' \| 'working' \| 'waiting'` |  |
+| `member` | `CrewMember` |  |
+| `state` | `CrewState` |  |
 | `working` | `boolean` |  |
 | `size` | `'md' \| 'sm' \| 'xs'` |  |
 

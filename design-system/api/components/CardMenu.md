@@ -1,4 +1,4 @@
-<!-- Generated from components/index.d.ts. -->
+<!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # CardMenu
 
 The right-click (or ⋯) menu for a card.
@@ -8,11 +8,7 @@ The right-click (or ⋯) menu for a card.
 ## Use
 
 ```jsx
-<Vellum.CardMenu />
-```
-
-```html
-<x-import component-from-global-scope="Vellum.CardMenu"></x-import>
+<Vellum.Root><Vellum.CardMenu /></Vellum.Root>
 ```
 
 ## Props (CardMenuProps)
@@ -23,15 +19,8 @@ The right-click (or ⋯) menu for a card.
 | `kind` | `string` |  |
 | `locked` | `boolean` |  |
 | `items` | `(CardMenuItem \| '-')[]` |  |
-
-### CardMenuItem
-
-| prop | type | note |
-| --- | --- | --- |
-| `label` * | `string` |  |
-| `icon` | `string` |  |
-| `key` | `string` |  |
-| `danger` | `boolean` |  |
+| `onClose` | `() => void` | Escape. Arrow keys, Home and End move between items. |
+| `autoFocus` | `boolean` | Focus the first item on open. Use when the menu opens from a right-click or keypress. |
 
 ## More
 

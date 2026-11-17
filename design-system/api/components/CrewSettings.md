@@ -1,4 +1,4 @@
-<!-- Generated from components/index.d.ts. -->
+<!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # CrewSettings
 
 The crew popover: how much the crew may say and do without asking, and which lanes only you can change.
@@ -8,11 +8,7 @@ The crew popover: how much the crew may say and do without asking, and which lan
 ## Use
 
 ```jsx
-<Vellum.CrewSettings />
-```
-
-```html
-<x-import component-from-global-scope="Vellum.CrewSettings"></x-import>
+<Vellum.Root><Vellum.CrewSettings /></Vellum.Root>
 ```
 
 ## Props (CrewSettingsProps)
@@ -20,10 +16,11 @@ The crew popover: how much the crew may say and do without asking, and which lan
 | prop | type | note |
 | --- | --- | --- |
 | `status` | `string` |  |
-| `speaks` | `'Never' \| 'When it matters' \| 'Often'` |  |
+| `speaks` | `'Never' \| 'When it matters' \| 'Often'` | Initial value; the control is interactive (arrow keys move between options). |
 | `acts` | `'Only drafts' \| 'Can create cards'` |  |
 | `lanes` | `string[]` |  |
 | `locked` | `string[]` |  |
+| `onChange` | `(v: { speaks: string; acts: string; locked: string[] }) => void` |  |
 
 ## More
 

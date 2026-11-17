@@ -1,4 +1,4 @@
-<!-- @dsCard group="Board" height=2420 -->
+<!-- @dsCard group="Board" height=2820 -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||"light"</script><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="../bundle.js"></script><style>
@@ -40,6 +40,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(V.Root, null,
     h(V.Card, { key: 1, kind: 'source', eyebrow: 'MD · Playtest Telemetry', title: '12-Player Eye-Tracking Audit', weight: 'observed', meta: '4:46 AM', proposal: { member: 'scout', op: 'edit', open: true, field: 'text', diff: ['during rooftop traversal.', 'during rooftop traversal; gaze stayed within 14° of the character.'] } }, '9 of 12 testers missed top-right faction notifications during rooftop traversal.'),
     h(V.Card, { key: 2, kind: 'direction', lineage: 'A', title: 'Corner Toast + Audio Chime', meta: 'Guided Tour', proposal: { member: 'critic', op: 'delete' } }, 'Keep top-right notifications and boost alert chime volume during combat.'),
     h(V.Card, { key: 3, kind: 'idea', locked: true, title: 'Players read faction shifts in under 1.2s when deltas come from the world.', rating: { observed: 4, reported: 1, unrated: 2 }, meta: '2 notes · 5:44 AM' })
+  ]),
+  sec('States', [
+    h(V.Card, { key: 1, kind: 'source', selected: true, eyebrow: 'MD · Playtest Telemetry', title: 'Selected', weight: 'observed', meta: '4:19 AM' }, 'A focus-colour ring. Tab moves through cards; Enter opens.'),
+    h(V.Card, { key: 2, kind: 'synthesis', by: 'scout', state: 'loading', title: 'Scout is reading 4 sources', rating: { observed: 2, reported: 1, unrated: 1 }, meta: '0:02' }, 'A soft light sweep while the crew works on the card.'),
+    h(V.Card, { key: 3, kind: 'idea', state: 'error', onRetry: function(){}, title: 'Players read faction shifts in under 1.2s.', meta: '5:44 AM' })
   ]),
   sec('Snapshot · decided', [
     h(V.Card, { key: 1, kind: 'snapshot', lineage: 'B', edition: 1, of: 'of proof v2', title: 'Diegetic Faction Dispatch HUD', footLeft: 'Standalone HTML', meta: '8:06 AM' }, 'Every faction delta fires on the wrist pager and NPC rim-glow within 0.85s.'),

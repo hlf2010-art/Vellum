@@ -1,4 +1,4 @@
-<!-- Generated from components/index.d.ts. -->
+<!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # LineageChip
 
 The A–D letter that ties a card, wire or proposal to its direction.
@@ -8,19 +8,16 @@ The A–D letter that ties a card, wire or proposal to its direction.
 ## Use
 
 ```jsx
-<Vellum.LineageChip />
-```
-
-```html
-<x-import component-from-global-scope="Vellum.LineageChip"></x-import>
+<Vellum.Root><Vellum.LineageChip /></Vellum.Root>
 ```
 
 ## Props (LineageChipProps)
 
 | prop | type | note |
 | --- | --- | --- |
-| `lineage` | `'A' \| 'B' \| 'C' \| 'D'` |  |
+| `lineage` | `Lineage` |  |
 | `size` | `'md' \| 'lg'` |  |
+| `selected` | `boolean` | Ring around the chip, e.g. the active filter. |
 
 ## More
 

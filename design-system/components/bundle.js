@@ -38,6 +38,7 @@
     archive: '<rect x="3" y="4.5" width="18" height="4" rx="1.2"/><path d="M5 8.5v9.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5M10 13h4"/>',
     trash: '<path d="M4.5 7h15M9.5 7V5.3c0-.7.5-1.3 1.2-1.3h2.6c.7 0 1.2.6 1.2 1.3V7M6.6 7l.8 11.6a1.6 1.6 0 0 0 1.6 1.4h6a1.6 1.6 0 0 0 1.6-1.4L17.4 7"/>',
     ask: '<path d="M4.5 6.5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-4.2 3.3a.5.5 0 0 1-.8-.4V16.5a2 2 0 0 1-.5-1.3z"/>',
+    alert: '<path d="M12 4 21 19.5H3Z"/><path d="M12 10v4.2M12 16.9v.1"/>',
     group: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5" stroke-dasharray="3.5 2.5"/><path d="M7.5 8.5h9M7.5 12h6"/>'
   };
   var CREW = {
@@ -52,7 +53,7 @@
 
   function LineageChip(p){
     var l = p.lineage || 'A';
-    return h('span', { className: cx('vl-chip', p.size === 'lg' && 'is-lg'), style: { '--pg': 'var(--' + l + ')' }, 'aria-label': 'Direction ' + l }, l);
+    return h('span', { className: cx('vl-chip', p.size === 'lg' && 'is-lg', p.selected && 'is-selected'), style: { '--pg': 'var(--' + l + ')' }, 'aria-label': 'Direction ' + l }, l);
   }
 
   var WEIGHT = { observed: [3, 'Observed', 'Watched in real use or a test session.'], reported: [2, 'Reported', 'Someone told us. Nobody has watched it happen.'], proposed: [1, 'Proposal', 'Our own idea. It is not evidence of behaviour.'], illustrative: [0, 'Illustration', 'Shows the product. Says nothing about people.'] };
@@ -74,9 +75,10 @@
   }
 
   function Button(p){
-    var v = p.variant || 'secondary';
-    return h('button', { type: p.type || 'button', className: cx('vl-btn', v !== 'secondary' && 'is-' + v, p.className), disabled: p.disabled, onClick: p.onClick, 'aria-label': p['aria-label'] },
-      p.icon ? h(Icon, { name: p.icon }) : null, p.children);
+    var v = p.variant || 'secondary', size = p.size || 'md', iconOnly = p.icon && !p.children;
+    return h('button', { type: p.type || 'button', className: cx('vl-btn', v !== 'secondary' && 'is-' + v, size !== 'md' && 'is-' + size, iconOnly && 'is-icon', p.loading && 'is-loading', p.className),
+        disabled: p.disabled || p.loading, 'aria-busy': p.loading ? 'true' : undefined, onClick: p.onClick, 'aria-label': p['aria-label'], title: iconOnly ? p['aria-label'] : undefined },
+      p.loading ? h('span', { className: 'vl-spin', 'aria-hidden': 'true' }) : (p.icon ? h(Icon, { name: p.icon }) : null), p.children);
   }
 
   function ReviewPill(p){
@@ -108,7 +110,7 @@
   function Card(p){
     var kind = p.kind || 'source';
     if (kind === 'print') kind = 'snapshot';
-    var cls = cx('vl-card', 'is-' + kind, p.adopted && 'is-adopted', p.disliked && 'is-disliked', p.lit && 'is-lit');
+    var cls = cx('vl-card', 'is-' + kind, p.adopted && 'is-adopted', p.disliked && 'is-disliked', p.lit && 'is-lit', p.selected && 'is-selected', p.state === 'loading' && 'is-loading', p.state === 'error' && 'is-error');
     var style = p.lineage ? { '--pg': 'var(--' + p.lineage + ')' } : {};
     if (p.width) style.width = p.width;
     var label = p.eyebrow || KIND_LABEL[kind];
@@ -179,9 +181,11 @@
         pr.stale ? h('div', { className: 'vl-prop-stale' }, 'The card changed after this was suggested.') : null,
         pr.open && pr.diff ? h('div', { className: 'vl-prop-diff' }, h('div', null, h('span', { className: 'vl-prop-f' }, pr.field || 'text'), h('del', null, pr.diff[0]), ' ', h('ins', null, pr.diff[1]))) : null);
     }
-    return h('article', { className: cx(cls, p.proposal && p.proposal.op === 'delete' && 'is-pending-del'), style: style, 'aria-label': (KIND_LABEL[kind] || kind) + ': ' + (p.title || '') + (p.locked ? ' (locked)' : '') },
+    var err = p.state === 'error' ? h('div', { className: 'vl-card-err', role: 'alert' }, h(Icon, { name: 'alert' }), h('span', null, p.error || 'Couldn\u2019t finish. Your card is unchanged.'), p.onRetry ? h('button', { type: 'button', onClick: p.onRetry }, 'Retry') : null) : null;
+    return h('article', { className: cls, style: style, tabIndex: p.tabIndex == null ? 0 : p.tabIndex, 'aria-selected': p.selected ? 'true' : undefined, 'aria-busy': p.state === 'loading' ? 'true' : undefined, onClick: p.onSelect,
+        'aria-label': (KIND_LABEL[kind] || kind) + ': ' + (p.title || '') + (p.locked ? ' (locked)' : '') + (p.state === 'loading' ? ' (reading)' : '') },
       media, p.locked ? h('span', { className: 'vl-lock-badge', title: 'Locked: only you can change this card' }, h(Icon, { name: 'lock' })) : null,
-      h('div', { className: 'vl-in' }, head, body, foot), prop);
+      h('div', { className: 'vl-in' }, head, body, foot), err, prop);
   }
 
   var TOOLS = [['select', 'Select / Pan · V'], ['lasso', 'Lasso select · S'], ['hand', 'Hand / Pan · H'], '|', ['upload', 'Upload file or media · U'], ['organize', 'Organize canvas · T'], ['search', 'Search cards · ⌘F'], '|', ['undo', 'Undo · ⌘Z'], ['redo', 'Redo · ⌘⇧Z']];
@@ -200,24 +204,29 @@
 
   function Composer(p){
     var st = React.useState(p.value || ''), val = st[0], setVal = st[1];
+    var ref = React.useRef(null);
     var has = !!val.trim();
     var route = p.route || { member: null, label: 'Canvas AI' };
-    return h('form', { className: 'vl-line', onSubmit: function(e){ e.preventDefault(); if (p.onSend) p.onSend(val); setVal(''); }, 'aria-label': 'Composer' },
+    React.useLayoutEffect(function(){ var t = ref.current; if (!t) return; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 160) + 'px'; }, [val]);
+    return h('form', { className: 'vl-line', onSubmit: function(e){ e.preventDefault(); if (!has) return; if (p.onSend) p.onSend(val); setVal(''); }, 'aria-label': 'Composer' },
       h('div', { className: 'vl-field' },
         h('button', { type: 'button', className: 'vl-sq vl-plus', 'aria-label': 'Add files, a note or a claim', title: 'Add' }, h(Icon, { name: 'plus' })),
-        h('textarea', { rows: 1, value: val, placeholder: p.placeholder || 'Write an idea, or / for commands', 'aria-label': 'Ask the crew', onChange: function(e){ setVal(e.target.value); } }),
-        (has || p.showRoute) ? h('button', { type: 'button', className: 'vl-route', 'aria-haspopup': 'menu', title: route.label + ' · click to pick a specialist' },
-          route.member ? h(CrewMark, { member: route.member, size: 'xs' }) : h('span', { className: 'vl-route-cp', 'aria-hidden': 'true' }), h('b', null, route.label), h(Icon, { name: 'chevron' })) : null,
-        h('button', { type: 'button', className: 'vl-sq vl-mic', 'aria-label': 'Dictate', title: 'Dictate' }, h(Icon, { name: 'mic' })),
+        h('textarea', { ref: ref, rows: 1, value: val, placeholder: p.placeholder || 'Write an idea, or / for commands', 'aria-label': 'Ask the crew',
+          onChange: function(e){ setVal(e.target.value); },
+          onKeyDown: function(e){ if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); e.currentTarget.form.requestSubmit(); } } }),
+        h('button', { type: 'button', className: cx('vl-route', !has && !p.showRoute && 'is-quiet'), 'aria-haspopup': 'menu', title: route.label + ' \u00b7 click to pick a specialist' },
+          route.member ? h(CrewMark, { member: route.member, size: 'xs' }) : h('span', { className: 'vl-route-cp', 'aria-hidden': 'true' }), h('b', null, route.label), h(Icon, { name: 'chevron' })),
+        h('button', { type: 'button', className: cx('vl-sq vl-mic', p.recording && 'is-rec'), 'aria-label': p.recording ? 'Stop dictation' : 'Dictate', 'aria-pressed': p.recording ? 'true' : 'false', title: 'Dictate' }, h(Icon, { name: 'mic' })),
         h('button', { type: 'submit', className: 'vl-sq vl-send', 'aria-label': 'Send', disabled: !has }, h(Icon, { name: 'send' }))),
       p.hint ? h('div', { className: 'vl-hint' }, p.hint) : null);
   }
 
   function Toast(p){
     var acts = p.actions || (p.undo ? [{ label: 'Undo' }] : []);
-    return h('div', { className: 'vl-toast', role: 'status' },
-      h('span', { className: 'vl-msg' }, p.member ? h(CrewMark, { member: p.member, size: 'sm' }) : null, p.children),
-      acts.length ? h('span', { className: 'vl-acts' }, acts.map(function(a){ return h(Button, { key: a.label, variant: a.variant || 'secondary', icon: a.icon, onClick: a.onClick }, a.label); })) : null);
+    var err = p.tone === 'error';
+    return h('div', { className: cx('vl-toast', err && 'is-error'), role: err ? 'alert' : 'status' },
+      h('span', { className: 'vl-msg' }, err ? h(Icon, { name: 'alert' }) : (p.member ? h(CrewMark, { member: p.member, size: 'sm' }) : null), p.children),
+      acts.length ? h('span', { className: 'vl-acts' }, acts.map(function(a){ return h(Button, { key: a.label, size: 'sm', variant: a.variant || 'secondary', icon: a.icon, onClick: a.onClick }, a.label); })) : null);
   }
 
   function DraftBar(p){
@@ -228,38 +237,44 @@
         h('span', { className: 'vl-pbar-title' }, h('b', null, c.name), ' · ', p.what || '1 direction'),
         n > 1 ? h('span', { className: 'vl-pbar-nav' }, h('span', null, (p.index || 1) + '/' + n)) : null),
       h('div', { className: 'vl-pbar-acts' },
-        h('button', { type: 'button', className: 'sec danger', title: 'Discard (⌘⌫)', onClick: p.onDiscard }, h(Icon, { name: 'x' }), 'Discard'),
-        h('button', { type: 'button', className: 'sec', title: 'Retry (R)', onClick: p.onRetry }, h(Icon, { name: 'retry' }), 'Retry'),
-        h('button', { type: 'button', className: 'primary', title: 'Keep (↵)', onClick: p.onKeep }, h(Icon, { name: 'check' }), n > 1 ? 'Keep all' : 'Keep')));
+        h('button', { type: 'button', className: 'sec danger', title: 'Discard (⌘⌫)', 'aria-keyshortcuts': 'Meta+Backspace', onClick: p.onDiscard }, h(Icon, { name: 'x' }), 'Discard'),
+        h('button', { type: 'button', className: 'sec', title: 'Retry (R)', 'aria-keyshortcuts': 'R', onClick: p.onRetry }, h(Icon, { name: 'retry' }), 'Retry', h('kbd', null, 'R')),
+        h('button', { type: 'button', className: 'primary', title: 'Keep (↵)', 'aria-keyshortcuts': 'Enter', onClick: p.onKeep }, h(Icon, { name: 'check' }), n > 1 ? 'Keep all' : 'Keep', h('kbd', null, '\u21b5'))));
   }
 
   var LINE = { scout: 'C', strategist: 'B', wright: 'A', critic: 'C' };
   var TINT = { scout: 'var(--crew-scout)', strategist: 'var(--crew-strategist)', wright: 'var(--A)', critic: 'var(--crew-critic)' };
   function IslAv(p){
-    var pct = p.pct == null ? 30 : p.pct, r = 12.5, C = 2 * Math.PI * r;
-    return h('span', { className: 'vl-isl-av', style: { '--tint': TINT[p.member] || 'var(--label-2)' } },
+    var pct = p.state === 'done' ? 100 : (p.pct == null ? 30 : p.pct), r = 12.5, C = 2 * Math.PI * r;
+    return h('span', { className: cx('vl-isl-av', p.state && 'is-' + p.state), style: { '--tint': TINT[p.member] || 'var(--label-2)' } },
       h('svg', { className: 'vl-isl-ring', viewBox: '0 0 28 28', 'aria-hidden': 'true' }, h('circle', { cx: 14, cy: 14, r: r, className: 'tr' }), h('circle', { cx: 14, cy: 14, r: r, className: 'pg', strokeDasharray: C, strokeDashoffset: C * (1 - pct / 100) })),
-      h(CrewMark, { member: p.member, size: 'isl' }));
+      h(CrewMark, { member: p.member, size: 'isl' }),
+      p.state === 'done' || p.state === 'failed' ? h('span', { className: 'vl-isl-end', 'aria-hidden': 'true' }, h(Icon, { name: p.state === 'done' ? 'check' : 'x' })) : null);
   }
+  var ISL_STATE = { queued: 'Queued', done: 'Done', failed: 'Failed' };
   function TaskIsland(p){
     var tasks = p.tasks || [];
+    var live = tasks.filter(function(x){ return !x.state || x.state === 'running' || x.state === 'queued'; });
     var mode = p.open ? 'open' : (tasks.length ? 'compact' : 'idle');
-    if (mode === 'idle') return h('div', { className: 'vl-island is-idle', role: 'region', 'aria-label': 'Background tasks: none running' });
+    if (mode === 'idle') return h('button', { type: 'button', className: 'vl-island is-idle', 'aria-label': 'Background tasks: none running', title: 'No background tasks' });
     if (mode === 'compact') {
-      var t = tasks[0];
-      return h('div', { className: 'vl-island is-compact', role: 'region', 'aria-label': 'Background tasks', 'aria-busy': 'true' },
-        h('button', { type: 'button', className: 'vl-isl-pill', 'aria-expanded': 'false', 'aria-label': tasks.length + ' background task' + (tasks.length > 1 ? 's' : '') + ' running. Show details' },
-          h('span', { className: 'vl-isl-stack' }, tasks.slice(0, 2).map(function(x, i){ return h(IslAv, { key: i, member: x.member, pct: x.pct }); })),
-          h('span', { className: 'vl-isl-lbl' }, h('b', null, t.phase), h('span', null, t.title)),
-          tasks.length > 1 ? h('span', { className: 'vl-isl-more' }, '+' + (tasks.length - 1)) : null,
-          t.pct != null ? h('span', { className: 'vl-isl-num' }, t.pct + '%') : null));
+      var t = live[0] || tasks[0], ended = !live.length;
+      return h('div', { className: cx('vl-island is-compact', ended && (t.state === 'failed' ? 'is-failed' : 'is-done')), role: 'region', 'aria-label': 'Background tasks', 'aria-busy': ended ? 'false' : 'true', 'aria-live': 'polite' },
+        h('button', { type: 'button', className: 'vl-isl-pill', 'aria-expanded': 'false', 'aria-label': (ended ? t.title + ': ' + (t.note || ISL_STATE[t.state]) : live.length + ' background task' + (live.length > 1 ? 's' : '') + ' running') + '. Show details' },
+          h('span', { className: 'vl-isl-stack' }, (ended ? [t] : live.slice(0, 2)).map(function(x, i){ return h(IslAv, { key: i, member: x.member, pct: x.pct, state: x.state }); })),
+          h('span', { className: 'vl-isl-lbl' }, h('b', null, ended ? (t.note || ISL_STATE[t.state]) : t.phase), h('span', null, t.title)),
+          !ended && live.length > 1 ? h('span', { className: 'vl-isl-more' }, '+' + (live.length - 1)) : null,
+          !ended && t.pct != null ? h('span', { className: 'vl-isl-num' }, t.pct + '%') : null));
     }
     return h('div', { className: 'vl-island is-open', role: 'region', 'aria-label': 'Background tasks' },
-      h('div', { className: 'vl-isl-hd' }, h('h3', null, 'Background tasks', h('small', null, tasks.length + ' running')), h('button', { type: 'button', className: 'vl-isl-x', 'aria-label': 'Collapse' }, h(Icon, { name: 'chevron' }))),
+      h('div', { className: 'vl-isl-hd' }, h('h3', null, 'Background tasks', h('small', null, ['running', 'queued', 'done', 'failed'].map(function(k){ var n = tasks.filter(function(x){ return (x.state || 'running') === k; }).length; return n ? n + ' ' + k : null; }).filter(Boolean).join(' \u00b7 '))), h('button', { type: 'button', className: 'vl-isl-x', 'aria-label': 'Collapse' }, h(Icon, { name: 'chevron' }))),
       tasks.map(function(x, i){
-        return h('div', { key: i, className: 'vl-isl-row' }, h(IslAv, { member: x.member, pct: x.pct }),
-          h('span', { className: 'vl-isl-tx' }, h('span', { className: 'vl-isl-t' }, x.title), h('span', { className: 'vl-isl-s' }, h('span', null, x.phase + (x.pct != null ? ' · ' + x.pct + '%' : '')), h('span', { className: 'el' }, x.elapsed || '0:02'))),
-          h('span', { className: 'vl-isl-bar', style: { '--tint': TINT[x.member] || 'var(--label-2)', '--p': (x.pct == null ? 34 : x.pct) + '%' } }, h('i')));
+        var stt = x.state || 'running';
+        var sub = stt === 'running' ? x.phase + (x.pct != null ? ' \u00b7 ' + x.pct + '%' : '') : (x.note || ISL_STATE[stt]);
+        return h('div', { key: i, className: cx('vl-isl-row', 'is-' + stt) }, h(IslAv, { member: x.member, pct: x.pct, state: stt }),
+          h('span', { className: 'vl-isl-tx' }, h('span', { className: 'vl-isl-t' }, x.title), h('span', { className: 'vl-isl-s' }, h('span', null, sub), h('span', { className: 'el' }, x.elapsed || '0:02'))),
+          h('span', { className: 'vl-isl-acts' }, stt === 'failed' && x.onRetry ? h(Button, { size: 'sm', variant: 'ghost', icon: 'retry', onClick: x.onRetry }, 'Retry') : null),
+          h('span', { className: cx('vl-isl-bar', stt === 'queued' && 'is-queued'), style: { '--tint': stt === 'failed' ? 'var(--danger)' : (TINT[x.member] || 'var(--label-2)'), '--p': (stt === 'done' ? 100 : (x.pct == null ? 34 : x.pct)) + '%' } }, h('i')));
       }));
   }
 
@@ -274,34 +289,52 @@
   }
 
   function Seg(p){
-    return h('div', { className: 'vl-seg', role: 'radiogroup', 'aria-label': p.label, style: { gridTemplateColumns: 'repeat(' + p.options.length + ',minmax(0,1fr))' } }, p.options.map(function(o){
-      return h('button', { key: o, type: 'button', role: 'radio', 'aria-checked': o === p.value, 'aria-pressed': String(o === p.value) }, o);
-    }));
+    var st = React.useState(p.value), val = st[0], setVal = st[1];
+    function pick(o){ setVal(o); if (p.onChange) p.onChange(o); }
+    return h('div', { className: 'vl-seg', role: 'radiogroup', 'aria-label': p.label, style: { gridTemplateColumns: 'repeat(' + p.options.length + ',minmax(0,1fr))' },
+        onKeyDown: function(e){ var i = p.options.indexOf(val), d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0; if (!d) return; e.preventDefault(); var n = p.options[(i + d + p.options.length) % p.options.length]; pick(n); var b = e.currentTarget.querySelectorAll('button')[p.options.indexOf(n)]; if (b) b.focus(); } },
+      p.options.map(function(o){
+        var on = o === val;
+        return h('button', { key: o, type: 'button', role: 'radio', 'aria-checked': on, 'aria-pressed': String(on), tabIndex: on ? 0 : -1, onClick: function(){ pick(o); } }, o);
+      }));
   }
   function CrewSettings(p){
-    var lanes = p.lanes || ['Gather', 'Explore', 'Prototype', 'Snapshot'], locked = p.locked || ['Snapshot'];
-    var speaks = p.speaks || 'When it matters', acts = p.acts || 'Only drafts';
+    var lanes = p.lanes || ['Gather', 'Explore', 'Prototype', 'Snapshot'];
+    var sp = React.useState(p.speaks || 'When it matters'), speaks = sp[0], setSpeaks = sp[1];
+    var ac = React.useState(p.acts || 'Only drafts'), acts = ac[0], setActs = ac[1];
+    var lk = React.useState(p.locked || ['Snapshot']), lockedNow = lk[0], setLocked = lk[1];
+    var emitted = React.useRef(false);
+    React.useEffect(function(){ if (!emitted.current) { emitted.current = true; return; } if (p.onChange) p.onChange({ speaks: speaks, acts: acts, locked: lockedNow }); }, [speaks, acts, lockedNow]);
     var speakNote = { 'Never': 'The crew only answers when you ask.', 'When it matters': 'One thought at a time; the next comes after you read it.', 'Often': 'The crew speaks up as it notices things.' }[speaks];
     var actNote = acts === 'Only drafts' ? 'Anything it makes arrives as a draft for you to keep or discard. Edits and deletions of your cards are always suggestions.' : 'It can add cards directly. Edits and deletions of your cards are always suggestions.';
     return h('div', { className: 'vl-crewpop', role: 'dialog', 'aria-label': 'Crew settings' },
       h('div', { className: 'vl-cp-head' }, h('b', null, 'Crew'), h('span', null, p.status || 'Using built-in rules · No model connected')),
-      h('div', { className: 'vl-axis' }, h('b', null, 'Speaks up'), h(Seg, { label: 'Speaks up', options: ['Never', 'When it matters', 'Often'], value: speaks }), h('p', null, speakNote)),
-      h('div', { className: 'vl-axis' }, h('b', null, 'Acts on the board'), h(Seg, { label: 'Acts on the board', options: ['Only drafts', 'Can create cards'], value: acts }), h('p', null, actNote)),
+      h('div', { className: 'vl-axis' }, h('b', null, 'Speaks up'), h(Seg, { label: 'Speaks up', options: ['Never', 'When it matters', 'Often'], value: speaks, onChange: setSpeaks }), h('p', null, speakNote)),
+      h('div', { className: 'vl-axis' }, h('b', null, 'Acts on the board'), h(Seg, { label: 'Acts on the board', options: ['Only drafts', 'Can create cards'], value: acts, onChange: setActs }), h('p', null, actNote)),
       h('div', { className: 'vl-sec' }, h('b', null, h(Icon, { name: 'lock' }), 'Locked lanes'),
-        h('div', { className: 'vl-locks' }, lanes.map(function(l){ var on = locked.indexOf(l) >= 0; return h('button', { key: l, type: 'button', className: 'vl-lock', 'aria-pressed': String(on) }, h(Icon, { name: 'lock' }), l); })),
+        h('div', { className: 'vl-locks' }, lanes.map(function(l){ var on = lockedNow.indexOf(l) >= 0; return h('button', { key: l, type: 'button', className: 'vl-lock', 'aria-pressed': String(on), onClick: function(){ setLocked(on ? lockedNow.filter(function(x){ return x !== l; }) : lockedNow.concat([l])); } }, h(Icon, { name: 'lock' }), l); })),
         h('span', null, 'Only you change kept cards in a locked lane. Lock single cards from their menu.')),
       h('div', { className: 'vl-cp-foot' }, h(Button, null, 'Customize…'), h(Button, { icon: 'notepad' }, 'Memory')));
   }
 
   function CardMenu(p){
     var items = p.items || [
-      { label: 'Ask Scout', icon: 'notepad' }, { label: 'Ask Copilot', icon: 'ask' }, { label: 'Open Details', icon: 'arrow', key: '↵' }, '-',
-      { label: p.locked ? 'Unlock' : 'Lock', icon: 'lock' }, { label: 'Duplicate', icon: 'copy', key: '⌘D' }, { label: 'Hide from canvas', icon: 'eyeOff' }, { label: 'Archive', icon: 'archive', key: '⇧H' }, { label: 'Delete', icon: 'trash', key: '⌫', danger: true }];
-    return h('div', { className: 'vl-cmenu', role: 'menu', 'aria-label': 'Card actions' },
+      { label: 'Ask Scout', icon: 'notepad' }, { label: 'Ask Copilot', icon: 'ask' }, { label: 'Open Details', icon: 'arrow', key: '\u21b5' }, '-',
+      { label: p.locked ? 'Unlock' : 'Lock', icon: 'lock' }, { label: 'Duplicate', icon: 'copy', key: '\u2318D' }, { label: 'Hide from canvas', icon: 'eyeOff' }, { label: 'Archive', icon: 'archive', key: '\u21e7H' }, { label: 'Delete', icon: 'trash', key: '\u232b', danger: true }];
+    function onKey(e){
+      var btns = Array.prototype.slice.call(e.currentTarget.querySelectorAll('[role=menuitem]')), i = btns.indexOf(document.activeElement), n = btns.length, t = null;
+      if (e.key === 'ArrowDown') t = btns[(i + 1) % n]; else if (e.key === 'ArrowUp') t = btns[(i - 1 + n) % n]; else if (e.key === 'Home') t = btns[0]; else if (e.key === 'End') t = btns[n - 1];
+      else if (e.key === 'Escape') { if (p.onClose) p.onClose(); return; } else return;
+      e.preventDefault(); t.focus();
+    }
+    var ref = React.useRef(null);
+    React.useEffect(function(){ if (p.autoFocus && ref.current) { var f = ref.current.querySelector('[role=menuitem]'); if (f) f.focus(); } }, []);
+    var first = items.findIndex(function(it){ return it !== '-'; });
+    return h('div', { ref: ref, className: 'vl-cmenu', role: 'menu', 'aria-label': 'Card actions', onKeyDown: onKey },
       h('div', { className: 'vl-cm-head' }, h('b', null, p.title || 'Untitled'), p.kind ? h('span', { className: 'vl-cm-kind' }, p.kind) : null),
       items.map(function(it, i){
         if (it === '-') return h('div', { key: i, className: 'vl-cm-sep', role: 'separator' });
-        return h('button', { key: i, type: 'button', role: 'menuitem', className: it.danger ? 'danger' : null }, h('span', { className: 'vl-cm-lbl' }, it.icon ? h(Icon, { name: it.icon }) : null, h('span', null, it.label)), it.key ? h('kbd', null, it.key) : null);
+        return h('button', { key: i, type: 'button', role: 'menuitem', tabIndex: i === first ? 0 : -1, className: it.danger ? 'danger' : null, onClick: it.onClick }, h('span', { className: 'vl-cm-lbl' }, it.icon ? h(Icon, { name: it.icon }) : null, h('span', null, it.label)), it.key ? h('kbd', null, it.key) : null);
       }));
   }
 

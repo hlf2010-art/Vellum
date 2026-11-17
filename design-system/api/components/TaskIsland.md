@@ -1,4 +1,4 @@
-<!-- Generated from components/index.d.ts. -->
+<!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # TaskIsland
 
 Live status for long-running crew work (renders, research, builds), pinned at the top centre of the board.
@@ -8,11 +8,7 @@ Live status for long-running crew work (renders, research, builds), pinned at th
 ## Use
 
 ```jsx
-<Vellum.TaskIsland />
-```
-
-```html
-<x-import component-from-global-scope="Vellum.TaskIsland"></x-import>
+<Vellum.Root><Vellum.TaskIsland /></Vellum.Root>
 ```
 
 ## Props (TaskIslandProps)
@@ -21,16 +17,6 @@ Live status for long-running crew work (renders, research, builds), pinned at th
 | --- | --- | --- |
 | `tasks` | `IslandTask[]` |  |
 | `open` | `boolean` |  |
-
-### IslandTask
-
-| prop | type | note |
-| --- | --- | --- |
-| `member` * | `'scout' \| 'strategist' \| 'wright' \| 'critic'` |  |
-| `title` * | `string` |  |
-| `phase` * | `string` | Present-tense verb: "Rendering", "Reading 4 sources" |
-| `pct` | `number \| null` |  |
-| `elapsed` | `string` |  |
 
 ## More
 

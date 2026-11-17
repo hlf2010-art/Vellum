@@ -33,6 +33,7 @@ The colours here are the same ones the app uses (`main@285e8f6`). Every text col
 ```
 
 - **Changing a token:** edit `tokens.json`, then run `python3 scripts/sync_tokens.py` to rewrite `tokens.css` (`--check` fails if they differ, for CI). Update the matching variable in `Vellum-Lumen.html`, and keep the usage note's contrast figures true.
+- **Changing a component's props or a token's usage:** edit `components/index.d.ts` or `tokens.json`, then run `python3 scripts/build_api.py` to regenerate `api/` (`--check` for CI).
 
 ---
 
@@ -85,7 +86,32 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 
 ### Type
 - One family: **Inter** (`--font-ui`, served as “Inter Var”, optical sizing on), with **Geist Mono** (“Lumen Mono”, `--font-mono`) for URLs, paths and timecodes only.
-- Body is `body` (14/20, −0.006em). Card titles go tighter and heavier the more decisive the card: `card-title` 600/17 → `idea-title` 620/19 → `direction-title` 650/21, all at −0.022em.
+- **One scale, 19 styles, 11 sizes:** 10 · 11 · 12 · 13 · 14 · 16 · 17 · 19 · 21 · 28 · 46. Nothing else. Each style is a token (`--text-body`, used as `font: var(--text-body)`) and a class (`.body`).
+- Body is `body` (14/20, −0.006em); long reading is `body-lg` (16/24). Card titles go tighter and heavier the more decisive the card: `card-title` 600/17 → `idea-title` 620/19 → `direction-title` 650/21, all at −0.022em.
+- **Floors:** 12px for anything that carries meaning (meta, evidence weight, tooltips); 11px (`caption`, `eyebrow`) for badges and counts in Latin only; 10px for the single chip glyph.
+
+| Style | Size / leading | Weight | Use |
+| --- | --- | --- | --- |
+| `display` | 46/1 | 700 | Snapshot edition number (“No |
+| `heading` | 28/34 | 650 | Page and dialog headings, empty-state titles |
+| `direction-title` | 21/25 | 650 | Title of a Direction card (a lettered A–D proposal) |
+| `idea-title` | 19/27 | 620 | The claim on an Idea / Core Thesis card, and Question cards |
+| `card-title` | 17/22 | 600 | Title of Source, Recording, Link, Notepad, Group and most other cards |
+| `note-text` | 16/24 | 470 | Handwritten-feel text on a sticky note |
+| `body-lg` | 16/24 | 400 | Long reading: Margin sheet body, notepad text, onboarding copy |
+| `body` | 14/20 | 400 | Card body copy and default UI text |
+| `toast` | 14/20 | 550 | Toast and inline notice messages |
+| `label` | 13/1 | 600 | Button labels, menu commands, review pill |
+| `tooltip` | 12/18 | 400 | Tooltips and helper copy |
+| `card-kind` | 12/16 | 550 | The kind line at the top of every card, in `label-3` |
+| `meta` | 12/16 | 500 | Card footers and timestamps, tabular numerals, in `label-3` |
+| `weight` | 12/1 | 560 | Evidence-weight pill text |
+| `caption` | 11/14 | 500 | The smallest readable text: media badges, counts in pills, kbd hints |
+| `eyebrow` | 11/1 | 600 | Uppercase panel captions (minimap) |
+| `chip` | 10/1 | 750 | The letter inside a lineage chip |
+| `mono` | 12/1.3 | 500 | URLs on link cards, elapsed time |
+| `mono-small` | 11/1.35 | 450 | File paths and media timecodes |
+
 - Odd weights (470, 550, 560, 620, 650) are intentional. Keep them exact: the variable font renders them.
 - **Chinese (zh):** the font stack falls back to PingFang SC, Hiragino Sans GB, Noto Sans SC and Microsoft YaHei, because Inter has no CJK glyphs. Under `:lang(zh)`, tracking is 0 (the negative tracking above is for Latin only), titles use 1.45 leading and body text 1.6, and no Chinese text is smaller than 12px. Keep `<html lang>` in step with the UI language so these rules apply.
 
@@ -94,8 +120,14 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 - Default card widths: 240 (sticky), 280 (frame), 320 (source, image, audio, link, question, action list, snapshot), 360 (idea, synthesis, direction, recording, proof), 380 (notepad), 540 (kanban). Groups size to their contents.
 - Fixed screen layout: project switcher top left · **Task Island** top centre · review pill, crew seats, crew settings, model pill and system settings top right · tool rail on the left edge, vertically centred · minimap bottom left · composer bottom centre (max 640px wide), with the draft bar floating just above it.
 
+### Sizing and layering
+- **Control heights:** `size-xs` 20 (evidence pill, inline chips) · `size-sm` 28 (dense bars: toasts, draft bar, proposal bars, segmented controls) · `size-md` 32 (default buttons and menu rows) · `size-lg` 36 (round chrome: tool rail, composer controls, crew seats, Task Island). On touch screens, give anything tappable a hit area of at least `size-touch` 44 (an invisible `::before` when the visible control is smaller). On desktop the floor is 24.
+- **Icons:** `icon-xs` 12 · `icon-sm` 14 (in buttons) · `icon-md` 16 (default) · `icon-lg` 20 (composer, empty states).
+- **Spacing:** 2 · 4 · 6 · 8 · 10 · 12 · 16 · 18 inside components, then 20 · 24 · 32 for sections and sheets.
+- **Layers:** `z-card` 1 · `z-wire` 5 · `z-chrome` 30 · `z-popover` 50 · `z-dialog` 60 · `z-toast` 70 · `z-tooltip` 80. Never write a raw z-index.
+
 ### Shape
-- Radii grow with the size of the object: `radius-chip` 5.5 → `radius-sm` 10 → `radius-md` 12 → `radius-media` 14 → `radius-control` 16 → `radius-card` 20 → `radius-field` 22 → `radius-sheet` 28. Pills use `radius-pill`. Where supported, sheets, menus and strips use `corner-shape: squircle`.
+- Radii grow with the size of the object: `radius-xs` 6 (kbd, tiny inset) · `radius-chip` 5.5 → `radius-sm` 10 → `radius-md` 12 → `radius-media` 14 → `radius-control` 16 → `radius-card` 20 → `radius-field` 22 → `radius-sheet` 28. Pills use `radius-pill`. Where supported, sheets, menus and strips use `corner-shape: squircle`.
 
 ### Elevation and glass
 - **Content is opaque, controls are glass.** Cards use `card` + `shadow-card`, and lift to `shadow-card-up` on hover or drag (scale 1.02 while dragging).
@@ -103,16 +135,19 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 - No borders on cards. Separation comes from hairline rings in the shadow (`.5px`) and from `hair` / `hair-2`.
 
 ### Motion
-- Durations: press 90ms, quick 150ms (hover and colour), base 240ms. Easing: `cubic-bezier(.22,.8,.24,1)`.
+- Durations: `duration-press` 90ms, `duration-quick` 150ms (hover and colour), `duration-base` 240ms, `duration-spring` 410ms, `duration-slow` 600ms. Easing: `easing-standard` `cubic-bezier(.22,.8,.24,1)`.
 - Springs, used sparingly: *snappy* (0.41s) for chips appearing, *bouncy* (0.75s) for buttons, toasts and menus rising, *smooth* (0.59s) for layout shifts.
 - Press feedback is a scale: buttons go to `.92–.95`, tool buttons to `.93`.
-- A slow rotating light arc (3.5s) traces the composer and the active tool while the crew works. Nothing else loops except the review dot's 2s heartbeat. Respect reduced motion: drop the arc and the springs.
+- A slow rotating light arc (3.5s) traces the composer and the active tool while the crew works. The review dot beats three times when new work arrives, then holds still. A loading card gets one soft light sweep per cycle; nothing else loops. Respect reduced motion: drop the arc and the springs.
 
 ### States
 - Hover: `hover` fill. Pressed: `press` fill + scale.
 - Selected tool: a raised `card` disc with the light arc.
-- Focus: a 2.5px solid outline, offset 3px.
-- Disabled: `label-4` glyph on a `hover` fill.
+- Focus: `ring-width` 2.5px solid `focus` outline, `ring-offset` 3px. Selected cards take the same ring.
+- Disabled: `label-3` text on a `hover` fill (`label-4` is for glyphs only).
+- Loading: keep the label, add a spinner (`Button loading`) or the card sweep (`Card state="loading"`), and set `aria-busy`.
+- Error: say it inline where it happened, in `danger-ink`, with what was kept and a **Retry** (`Card state="error"`, `Toast tone="error"`, a failed `TaskIsland` row). Never a modal for a crew failure.
+- State is never colour alone: crew states add a ring or a dot, evidence adds bars, errors add an icon.
 - Disliked direction: dimmed. Adopted direction: lineage ring + glow.
 
 ## Iconography
@@ -125,17 +160,17 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 
 | Component | Use it for |
 | --- | --- |
-| `Card` | Every object on the board, in 17 kinds, with lock and crew-proposal states. |
+| `Card` | Every object on the board, in 17 kinds, with selected, loading, error, lock and crew-proposal states. |
 | `LineageChip` | The A–D letter that ties a card or wire to a direction. |
 | `EvidenceWeight` | How much a source can carry. |
 | `CrewMark` | A crew member's avatar orb, idle or working. |
-| `Button` | Decisions: primary (`act`), secondary, ghost, danger. |
+| `Button` | Decisions: primary (`act`), secondary, ghost, danger; sizes sm/md/lg, loading and icon-only. |
 | `ReviewPill` | “N waiting”: crew work that needs your decision. |
 | `ToolRail` | The vertical canvas tool palette. |
 | `Composer` | One calm row to write an idea or a `/` command. |
 | `Toast` | A one-line notice, optionally with **Undo**. |
 | `DraftBar` | Crew draft waiting on you: Discard · Retry · Keep. |
-| `TaskIsland` | Live status for long-running crew work, top centre. |
+| `TaskIsland` | Live status for long-running crew work, top centre: running, queued, done and failed tasks. |
 | `CrewBar` | Crew seats, crew settings button and model pill. |
 | `CrewSettings` | How much the crew may say and do, and locked lanes. |
 | `CardMenu` | A card's right-click menu: ask, open, lock, duplicate, hide, archive, delete. |

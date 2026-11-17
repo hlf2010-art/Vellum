@@ -1,4 +1,4 @@
-<!-- Generated from components/index.d.ts. -->
+<!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # ReviewPill
 
 “N waiting”: a glass pill at the top right that appears when crew work needs your decision.
@@ -8,11 +8,7 @@
 ## Use
 
 ```jsx
-<Vellum.ReviewPill />
-```
-
-```html
-<x-import component-from-global-scope="Vellum.ReviewPill"></x-import>
+<Vellum.Root><Vellum.ReviewPill /></Vellum.Root>
 ```
 
 ## Props (ReviewPillProps)

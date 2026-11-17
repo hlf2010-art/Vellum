@@ -4,6 +4,7 @@ Hand-written from `Vellum-Lumen.html` on branch `claude/lumen-v2` (commit `92098
 
 - **Title:** the crew member's name in bold, then a count of what they made: *“**Strategist** · 1 direction”*, *“**Wright** · 3 proofs”*. When there are several drafts, a `1/3` pager sits at the right.
 - **Actions:** **Discard** (⌘⌫) and **Retry** (R) are quiet text buttons. **Keep** (↵) is the one solid `act` button, and becomes **Keep all** when there are several. Use these three words exactly. The bar replaced the older “keep it?” toast, and “Try again” is now “Retry”.
+- The shortcuts are shown on the buttons (`R`, `↵`) and declared with `aria-keyshortcuts`, so they are discoverable without a tooltip.
 - The crew member's orb shows its *waiting* state (warm, with that member's glow).
 
 **Consumer provides:** `member`, `what`, optional `count`/`index`, and the three handlers. Use it only for drafts the crew made. Edits to cards you already kept go through the card's proposal bar instead (see `Card`).

@@ -5635,11 +5635,11 @@ function apiHealthLabel(h=apiHealthNow()){
     unknown:{cls:"",txt:L("Not checked","未检测"),detail:`${model} · ${host}`,tip:L("Not checked yet","尚未检测")},
     checking:{cls:"busy",txt:L("Checking…","检测中…"),detail:`${model} · ${host}`,tip:L(`Sending a test request to ${host}`,`正在向 ${host} 发送测试请求`)},
     ok:{cls:"ok",txt:L("Connected","已连接"),detail:`${model} · ${host}`,tip:L(`${host} answered${h.ms!=null?" in "+h.ms+" ms":""}`,`${host} 已响应${h.ms!=null?"，"+h.ms+" ms":""}`)},
-    auth:{cls:"err",txt:L("Authentication failed","认证失败"),detail:L(`${host} rejected the API key`,`${host} 拒绝了 API 密钥`),tip:L(`${host} rejected the API key`,`${host} 拒绝了 API 密钥`)},
-    notfound:{cls:"err",txt:L("Model not found","找不到模型"),detail:L(`No “${model}” at ${host}`,`${host} 上没有「${model}」`),tip:L(`${host} doesn't know “${apiCfg.model}”, or the URL is wrong`,`${host} 不认识「${apiCfg.model}」，或地址有误`)},
-    ratelimit:{cls:"busy",txt:L("Rate limited","被限流"),detail:L(`${host} asked to slow down`,`${host} 要求降低请求频率`),tip:L(`${host} is reachable but asked us to slow down`,`${host} 可以连通，但要求降低请求频率`)},
-    unreachable:{cls:"err",txt:L("Unreachable","无法连接"),detail:h.detail==="timeout"?L(`${host} didn't respond`,`${host} 没有响应`):L(`Can't connect to ${host}`,`无法连接 ${host}`),tip:L(`Offline, wrong URL, or blocked by the browser`,`离线、地址有误或被浏览器拦截`)},
-    error:{cls:"err",txt:L("Error","出错"),detail:L(`${host} returned ${h.detail||"an error"}`,`${host} 返回 ${h.detail||"错误"}`),tip:L(`${host} returned ${h.detail||"an error"}`,`${host} 返回 ${h.detail||"错误"}`)}
+    auth:{cls:"err",txt:L("Authentication failed","认证失败"),detail:`${model} · ${host}`,tip:L(`${host} rejected the API key`,`${host} 拒绝了 API 密钥`)},
+    notfound:{cls:"err",txt:L("Model not found","找不到模型"),detail:`${model} · ${host}`,tip:L(`${host} doesn't know “${apiCfg.model}”, or the URL is wrong`,`${host} 不认识「${apiCfg.model}」，或地址有误`)},
+    ratelimit:{cls:"busy",txt:L("Rate limited","被限流"),detail:`${model} · ${host}`,tip:L(`${host} is reachable but asked us to slow down`,`${host} 可以连通，但要求降低请求频率`)},
+    unreachable:{cls:"err",txt:L("Unreachable","无法连接"),detail:`${model} · ${host}`,tip:L(`Offline, wrong URL, or blocked by the browser`,`离线、地址有误或被浏览器拦截`)},
+    error:{cls:"err",txt:L("Error","出错"),detail:`${model} · ${host}`,tip:L(`${host} returned ${h.detail||"an error"}`,`${host} 返回 ${h.detail||"错误"}`)}
   }[h.k]||{cls:"",txt:"",detail:"",tip:""};
 }
 /* What actually answers the crew right now — mirrors viaClaude's routing — plus anything wrong underneath. */
@@ -5665,20 +5665,14 @@ function connSummary(){
 function uiLang(){return store.get(".lang","en")==="zh"?"zh":"en"}
 function L(en,zh){return uiLang()==="zh"?zh:en}
 function aiSource(){
-  if(aiPref==="local"){
-    if(studioState.status==="ready")return {live:false,kind:"paused",cls:"paused",label:L("Rules only","仅规则"),title:L("Rules-only mode (local AI paused)","仅使用内置规则（本地模型已暂停）")};
-    return {live:false,kind:"local",cls:"",label:L("Rules only","仅规则"),title:L("Using built-in rules","正在使用内置规则")};
-  }
-  if(aiPref==="api"){
-    if(apiRoutable())return {live:true,kind:"api",cls:"claude",label:apiCfg.model.split("/").pop()||"Cloud API",title:`Cloud API (${apiCfg.model})`};
-    if(hasApi())return {live:false,kind:"local",cls:"",label:L("API error","API 出错"),title:L("Cloud API isn't working — using built-in rules","云端 API 不可用 — 正在使用内置规则")};
-    return {live:false,kind:"local",cls:"",label:L("API unset","API 未配置"),title:L("Cloud API selected — click to add API key","已选择云端 API — 请先配置密钥")};
-  }
-  if(studioState.status==="ready")return {live:true,kind:"studio",cls:"live",label:L("Local AI","本地模型"),title:L(`Local AI (${studioState.model||"Qwen3-VL"})`,`本地模型 (${studioState.model||"Qwen3-VL"})`)};
-  if(studioState.status==="loading")return {live:false,busy:true,kind:"loading",cls:"busy",label:L("Starting AI…","启动中…"),title:L("Local AI is warming up on 127.0.0.1:59631","本地模型正在预热 (127.0.0.1:59631)")};
-  if(apiRoutable())return {live:true,kind:"api",cls:"claude",label:apiCfg.model.split("/").pop()||"Cloud API",title:`Cloud API (${apiCfg.model})`};
-  if(sampleFn)return {live:true,kind:"claude",cls:"claude",label:"Claude",title:"Claude"};
-  return {live:false,kind:"local",cls:"",label:L("Offline","离线"),title:L("Offline · using built-in rules (click to wake Local AI or set Cloud API)","离线 · 使用内置规则（点击唤醒本地模型或配置云端 API）")};
+  /* Built on connSummary so the trigger, Copilot and the Connection header can never disagree. */
+  const c=connSummary(),tip=c.mode+(c.issue?" · "+c.issue:"");
+  if(c.engine==="local")return {live:true,kind:"studio",cls:"live",label:L("Local AI","本地模型"),title:tip};
+  if(c.engine==="api")return {live:true,kind:"api",cls:"claude",label:apiCfg.model.split("/").pop()||"Cloud API",title:tip};
+  if(c.engine==="claude")return {live:true,kind:"claude",cls:"claude",label:"Claude",title:tip};
+  if(aiPref==="local"){const p=studioState.status==="ready";return {live:false,kind:p?"paused":"local",cls:p?"paused":"",label:L("Rules only","仅规则"),title:tip}}
+  if(aiPref==="auto"&&studioState.status==="loading")return {live:false,busy:true,kind:"loading",cls:"busy",label:L("Starting AI…","启动中…"),title:tip};
+  return {live:false,kind:"local",cls:"",label:hasApi()?L("API error","API 出错"):aiPref==="api"?L("API unset","API 未配置"):L("Offline","离线"),title:tip};
 }
 function renderCrew(){
   const mode=aiSource();
@@ -5867,7 +5861,7 @@ function renderStudioPop(){
   const gb=b=>b?(b/1e9).toFixed(1)+" GB":"";
   const modelsHtml=models.length?`<div class="sp-models">${models.map(m=>{
     const meta=[m.tier,gb(m.bytes)].filter(Boolean).join(" · ");
-    const tag=m.active?(stReady?L("Active","运行中"):stLoad?L("Loading","加载中"):L("Selected","已选")):(m.cached?L("Use","切换"):L("Get","下载"));
+    const tag=m.active?(stReady?L("Active","运行中"):stLoad?"":L("Selected","已选")):(m.cached?L("Use","切换"):L("Get","下载"));
     const delBtn=m.cached&&!m.active?`<button type="button" class="sp-m-del" data-sp="del-model" data-id="${esc(m.id)}" title="${esc(L("Remove","移除"))} ${esc(m.label)} (${esc(gb(m.bytes))})" aria-label="${esc(L("Remove","移除"))} ${esc(m.label)}">${ic("trash")}</button>`:"";
     return `<div class="sp-m-wrap" data-active="${!!m.active}" data-live="${!!(m.active&&stReady)}"><button type="button" class="sp-m" data-sp="model" data-id="${esc(m.id)}" aria-pressed="${!!m.active}"><span class="sp-m-info"><b>${esc(m.label)}</b><span>${esc(meta)}</span></span></button>${delBtn}<button type="button" class="sp-m-tag" data-sp="model" data-id="${esc(m.id)}">${esc(tag)}</button></div>`;
   }).join("")}</div>`:"";
@@ -5889,12 +5883,12 @@ function renderStudioPop(){
   const imgModelsHtml=avImgs.length?`<div class="sp-models">${avImgs.map(m=>{
     const on=chosenImg?.id===m.id;
     const imgSub=m.edit?L("Image · Edit capable","生图 · 支持改图"):L("Image generation","仅生图");
-    return `<div class="sp-m-wrap" data-active="${on}" data-live="${on}"><button type="button" class="sp-m" data-sp="img-model" data-id="${esc(m.id)}" aria-pressed="${on}" title="${esc(m.notice||m.name||m.id)}"><span class="sp-m-info"><b>${esc(m.name||m.id)}</b><span>${imgSub}</span></span><span class="sp-m-tag">${on?L("Active","当前"):L("Use","切换")}</span></button></div>`;
+    return `<div class="sp-m-wrap" data-active="${on}" data-live="${on}"><button type="button" class="sp-m" data-sp="img-model" data-id="${esc(m.id)}" aria-pressed="${on}" title="${esc(m.notice||m.name||m.id)}"><span class="sp-m-info"><b>${esc(m.name||m.id)}</b><span>${imgSub}</span></span>${avImgs.length>1?`<span class="sp-m-tag">${on?L("Active","当前"):L("Use","切换")}</span>`:""}</button></div>`;
   }).join("")}</div>${chosenImg?.notice?`<div class="sp-prog" style="color:var(--label-3)">${esc(chosenImg.notice)}</div>`:""}`:"";
   const vidModelsHtml=allVids.length?`<div class="sp-models">${allVids.map(m=>{
     const cleanName=String(m.name||m.id).replace(/\s*\(T2V\)\s*/i,"").trim();
     const specTxt=m.available?L("864×480 · 24fps · ~5s · Text-to-Video","864×480 · 24fps · ~5秒 · 文生视频"):esc(m.reason||L("Not ready","未就绪"));
-    const tag=m.available?L("Default","默认"):L("Offline","未就绪");
+    const tag=!m.available?L("Offline","未就绪"):allVids.length>1?L("Default","默认"):"";
     return `<div class="sp-m-wrap" data-active="${!!m.available}"><div class="sp-m" aria-pressed="${!!m.available}" title="${esc(m.reason||m.name||m.id)}" style="cursor:default"><span class="sp-m-info"><b>${esc(cleanName)}</b><span>${specTxt}</span></span><span class="sp-m-tag">${tag}</span></div></div>`;
   }).join("")}</div>`:"";
   /* Media Studio: separate from routing */
@@ -5918,7 +5912,7 @@ function renderStudioPop(){
         <button type="button" data-sp="pref" data-val="api" aria-pressed="${aiPref==="api"}">${L("Cloud API","云端 API")}</button>
         <button type="button" data-sp="pref" data-val="local" aria-pressed="${aiPref==="local"}">${L("Rules only","仅规则")}</button>
       </div>
-      <div class="sp-mode-note">${esc(modeNote)}</div>
+      ${aiPref==="auto"?`<div class="sp-mode-note">${esc(modeNote)}</div>`:""}
     </div>
     <div class="sp-services${idle?" idle":""}">
       ${row({name:L("Local AI","本地模型"),state:stState,detail:stDetail,acts:stAct,extra:modelsHtml+progHtml})}

@@ -4267,21 +4267,21 @@ const c=document.getElementById("wave"),g=c.getContext("2d");
 </body>
 </html>`;
 
-function showcaseSpecDesk(){return {mode:"desk",letter:"B",title:"Diegetic Faction Dispatch HUD",kicker:"Milestone 3 · Adopted Direction B · Verification Spec",lede:"Every syndicate delta fires on the character's wrist pager and alley NPC rim-glow within 0.85s—eliminating pause-screen log polling without breaking stealth framing.",
+function showcaseSpecDesk(){return {mode:"desk",letter:"B",title:"Diegetic Faction Dispatch HUD",kicker:"Milestone 3 · Direction B · Playtest results",lede:"Faction changes now show on the wrist pager and on nearby NPCs, so players notice them in under a second without opening the pause log.",
   items:[
-    {title:"Wrist pager ECG + haptic cadence",tag:"Passed",body:"2-tap warm pulse signals ally gain; sharp 3-pulse crimson spike warns hostility escalation. 8/8 playtesters decoded meaning on first alley run."},
-    {title:"NPC collar & badge rim illumination",tag:"Passed",body:"Subtle shader rim shifts along jacket lapels and visor LEDs at 18m range, preserving atmospheric Kowloon darkness without floating nameplate bars."},
-    {title:"Gaze-cone 14° foveal anchor",tag:"Passed",body:"Median recognition fell from 2.90s (corner toast) to 0.85s (wrist pager) because all state deltas occur inside the active stealth camera corridor."},
-    {title:"Colorblind neon rain contrast",tag:"Failed",body:"Frame 0:04.2 showed crimson rim washing out against cyan puddle reflections. Fix queued: pair amber/red glow with distinct hollow-diamond glyph chevron."},
-    {title:"Chronicle background sync",tag:"Waiting",body:"Detailed faction history batches silently to the district journal once combat alertness returns to baseline."},
-  ],cta:"Lock rain-glyph pass",version:2}}
+    {title:"Pager pulses are easy to read",tag:"Passed",body:"Two soft taps mean an ally gained trust. Three sharp red pulses mean a gang turned hostile. All 8 testers read it right on their first run."},
+    {title:"NPC glow shows who is on which side",tag:"Passed",body:"A faint glow on collars and visors shows each NPC's side from 18 metres away. The streets stay dark, with no floating name tags."},
+    {title:"Signals sit where players look",tag:"Passed",body:"Players spotted changes in 0.85 seconds instead of 2.9, because the signal now sits where they are already looking."},
+    {title:"Colour-blind players lose it in rain",tag:"Failed",body:"In heavy rain, red glow gets lost in the cyan reflections, so colour-blind players can't tell rivals from allies. Next: add a diamond shape to the glow."},
+    {title:"Faction history saves after fights",tag:"Waiting",body:"The full faction history saves to the journal once the fight is over. Not tested yet."},
+  ],cta:"Retry the rain fix",version:2}}
 
-function showcaseSpecDeck(){return {mode:"deck",letter:"B",title:"Greenlight Deck · Diegetic Pager",kicker:"ASHEN CROWN · Product & Systems Pitch",lede:"Replacing ignored corner quest logs with a 0.85s embodied diegetic feedback loop across stealth districts.",
+function showcaseSpecDeck(){return {mode:"deck",letter:"B",title:"The wrist pager, for greenlight",kicker:"Ashen Crown · Pitch",lede:"Players ignore the corner quest log. A pager on the wrist gets noticed in under a second.",
   items:[
-    {tag:"01 · Gather",title:"9 / 12 testers missed corner toasts",body:"Rooftop eye-tracking heatmaps and player voice debriefs proved player attention locks inside a 14° cone around the silhouette and sightline cover."},
-    {tag:"02 · Diverge",title:"Tested 3 forks · Adopted Direction B",body:"Rejected louder corner alerts (Dir. A) and bulky wall holograms (Dir. C) in favor of the diegetic wrist pager + NPC rim posture shift."},
-    {tag:"03 · Make",title:"0.85s median reaction in live playtest",body:"Built an interactive HTML micro-simulator and Round-2 prototype; Critic surfaced neon-rain contrast risk directly from frame 0:04.2."},
-    {tag:"04 · Release",title:"Snapshot No. 1 & shader contract locked",body:"Standalone snapshot specification, Unreal/Godot EventBus schema, and 3-column sprint Kanban are ready for Milestone 3 production."},
+    {tag:"01 · What we saw",title:"9 of 12 testers missed the corner alerts",body:"Eye tracking showed players look at their character and the cover ahead, almost never at the screen corners."},
+    {tag:"02 · What we tried",title:"Three ideas, one winner",body:"Louder corner alerts and big wall holograms both lost. The wrist pager, with a glow on nearby NPCs, won."},
+    {tag:"03 · What we built",title:"Noticed in 0.85 seconds",body:"In the second playtest, players reacted in 0.85 seconds. One risk remains: red glow is hard to see in heavy rain."},
+    {tag:"04 · What is ready",title:"Ready for Milestone 3",body:"Snapshot No. 1, the engine hookup and the sprint board are done. The rain fix is next."},
   ],version:3}}
 
 let showcaseAssetsLoading=null;
@@ -7997,10 +7997,10 @@ async function build(dir,{mode,from}={}){
   const modeDesc=mode==="story"?"a guided page, one step at a time":mode==="desk"?"an interactive UI / desk listing modules people can search, click, and inspect":"a concise presentation slide deck";
   const prompt=isTm
     ?`Hierarchical Tree Map:\n${treeMapToMarkdown(treeMapOf(dir))}\n\nOutput type: ${MODES[mode]||"Interactive UI"} (${modeDesc}).\nConnected sources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any updated branches.\n`:""}
-Turn each main branch of the Tree Map into clear, concrete ${mode==="deck"?"slides":"UI modules / interactive items"} populated with its sub-topics. Reply with ONLY JSON:
+Turn each main branch of the Tree Map into clear, concrete ${mode==="deck"?"slides":"UI modules / interactive items"} populated with its sub-topics. Write like a person: short sentences, plain words, no em dashes, no buzzwords. Reply with ONLY JSON:
 {"title": short ${mode==="deck"?"deck":"UI"} title, "kicker": one short context subtitle, "lede": 1-2 sentences, "items": [3 to 7 objects {"title","body" (1-2 sentences synthesizing its sub-topics),"tag" (1-2 word category or count)${mode==="story"?',"choices" (optional array of 2-4 sub-topic options)':""}}], "cta": a short action button label}`
     :`The claim: "${idea?.text||""}"\nThe adopted direction ${dir.letter}, "${dir.title}": ${dir.text}\nIts test: ${dir.test}\nPage type: ${MODES[mode]} (${modeDesc}).\nSources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any changed sources.${proofResults(from)?.failedTitles?.length?` Fix what failed in v${from.ver} first: ${proofResults(from).failedTitles.join("; ")}.`:""}\n`:""}
-Write the real content for this prototype as the people in the test would see it (not a description of the prototype). Reply with ONLY JSON:
+Write the real content for this prototype as the people in the test would see it (not a description of the prototype). Write like a person, for the people in the test: short sentences, plain words, no em dashes, no buzzwords, no stacked jargon. Reply with ONLY JSON:
 {"title": short page title, "kicker": one short line of context, "lede": 1-2 sentences, "items": [4 to 6 objects {"title","body" (1-2 sentences),"tag" (one or two words, e.g. a status)${mode==="story"?',"choices" (optional array of 2-4 short options the person can mark)':""}}], "cta": a short button label for the main action}`;
   const fallbackFn=isTm?()=>treeMapToProofSpec(dir,mode):()=>specLocal(dir,mode);
   const {v,live}=await runAgent("wright",{read:[dir,...srcs.slice(0,3)],places,label:isTm?`building ${mode==="deck"?"deck":"UI"} v${ver}`:`building ${dir.letter} v${ver}`,work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt,images:imgNodes,json:true,maxTokens:2400},fallbackFn)});
@@ -8484,80 +8484,125 @@ const PG_HEX={
 };
 function effectiveTheme(){return document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light")}
 function pageHTML(spec,{thumb=false,theme=effectiveTheme()}={}){
+  /* Proof pages: what testers actually use. Calm, readable, result-first.
+     Space and light instead of rules; the lineage hue is a single accent (dot, focus, main action). */
   spec=spec||{};const [hex,wash,hexD,washD,fillD]=PG_HEX[spec.letter]||["#14171A","#F1F2EF","#E5E7EB","rgba(255,255,255,.08)","#374151"];const items=spec.items||[];
-  const data=JSON.stringify({items,mode:spec.mode,cta:spec.cta||"Continue"}).replace(/</g,"\\u003c");
-  const darkVars=`--pg:${hexD};--pg-fill:${fillD};--wash:${washD};--ink:#F4F5F7;--ink-2:rgba(244,245,247,.72);--q:rgba(244,245,247,.52);--rule:rgba(255,255,255,.10);--bg:#121316;--surf:#1C1D21;--surf-hover:rgba(255,255,255,.06);--deck-bg:#0E0F12;--slide-bg:#191A1F;--tag-bad-bg:rgba(255,99,105,.16);--tag-bad:#FF8085;--tag-ok-bg:rgba(69,212,154,.15);--tag-ok:#5EE0AA;--tag-mute-bg:rgba(255,255,255,.08);--tag-mute:rgba(244,245,247,.62);color-scheme:dark`;
+  const data=JSON.stringify({items,mode:spec.mode,cta:spec.cta||"Continue",title:spec.title||"",lede:spec.lede||"",kicker:spec.kicker||""}).replace(/</g,"\\u003c");
+  const darkVars=`--pg:${hexD};--pg-fill:${fillD};--wash:${washD};--ink:#F2F3F5;--ink-2:rgba(242,243,245,.74);--q:rgba(242,243,245,.5);--bg:#0F1013;--surf:#1A1B1F;--surf-2:#22242A;--surf-hover:rgba(255,255,255,.05);--shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -22px rgba(0,0,0,.8);--bad:#FF8A8F;--bad-bg:rgba(255,99,105,.14);--ok:#7BCB52;--ok-bg:rgba(108,194,58,.14);--ok-f:#6CC23A;--bad-f:#FF6369;--act:#F2F3F5;--on-act:#0F1013;--mute-bg:rgba(255,255,255,.07);--deck-bg:#0B0C0E;--slide:#17181C;color-scheme:dark`;
   const css=`${thumb?"":FONT_CSS}
-:root{--pg:${hex};--pg-fill:${hex};--wash:${wash};--ink:#16191C;--ink-2:#3B4046;--q:#646A70;--rule:#E4E5E1;--bg:#FAFAF8;--surf:#fff;--surf-hover:#F2F2EF;--deck-bg:#EDEDEA;--slide-bg:#fff;--tag-bad-bg:#FDECEC;--tag-bad:#B4232B;--tag-ok-bg:#E8F5EE;--tag-ok:#17663F;--tag-mute-bg:#EFEFEC;--tag-mute:#61676C;color-scheme:light}
+:root{--pg:${hex};--pg-fill:${hex};--wash:${wash};--ink:#15171A;--ink-2:#4A4F57;--q:#80858C;--bg:#F6F6F4;--surf:#FFFFFF;--surf-2:#EFEFEC;--surf-hover:rgba(20,22,26,.035);--shadow:0 1px 2px rgba(20,22,26,.05),0 14px 36px -20px rgba(20,22,26,.22);--bad:#B4232B;--bad-bg:#FBEAEA;--ok:#3C7811;--ok-bg:#EDF5E6;--ok-f:#4C9816;--bad-f:#E12F34;--act:#15171A;--on-act:#FFFFFF;--mute-bg:#EEEEEB;--deck-bg:#E9E9E6;--slide:#FFFFFF;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${darkVars}}}
 :root[data-theme="dark"]{${darkVars}}
-*{box-sizing:border-box}html,body{margin:0;height:100%}body{background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-.bar{display:flex;align-items:center;gap:12px;padding:16px 28px;border-bottom:1px solid var(--rule);font-size:13px}
-.bar .sq{width:22px;height:22px;border-radius:7px;background:var(--pg)}.bar b{font-weight:600}.bar span{color:var(--q);font:500 13px/1 inherit;font-family:inherit}.bar .sp{flex:1}
-h1,h2{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter Display",Inter,system-ui,sans-serif;font-weight:700;letter-spacing:-.028em;margin:0;text-wrap:balance}
-h1{font-size:clamp(34px,5.4vw,60px);line-height:1.02}h2{font-size:clamp(26px,3.4vw,38px);line-height:1.1}
-.k{font:600 15px/1.3 inherit;font-family:inherit;color:var(--pg)}
-.lede{font-size:18px;line-height:1.55;color:var(--ink-2);max-width:58ch;margin:14px 0 0}
-.tag{display:inline-block;font:600 12.5px/1 inherit;font-family:inherit;padding:5px 10px;border-radius:999px;background:var(--wash);color:var(--pg);white-space:nowrap}
-.tag.bad{background:var(--tag-bad-bg);color:var(--tag-bad)}.tag.ok{background:var(--tag-ok-bg);color:var(--tag-ok)}.tag.mute{background:var(--tag-mute-bg);color:var(--tag-mute)}
-.cta{font:600 15px/1 inherit;font-family:inherit;border:0;border-radius:999px;background:var(--pg-fill);color:#fff;padding:14px 20px;cursor:pointer}
-.cta:hover{filter:brightness(1.08)}.ghost{font:500 14px/1 inherit;font-family:inherit;border:1px solid var(--rule);border-radius:999px;background:var(--surf);color:var(--ink);padding:13px 18px;cursor:pointer}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{--f:"Inter",-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",system-ui,sans-serif;background:var(--bg);color:var(--ink);font:16px/1.55 var(--f);font-feature-settings:"cv11","ss01";-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2.5px solid var(--pg);outline-offset:3px;border-radius:10px}
+h1,h2{margin:0;font-weight:640;letter-spacing:-.025em;text-wrap:balance}
+.top{display:flex;align-items:center;gap:10px;max-width:1040px;margin:0 auto;padding:22px 32px 0;font:500 13px/1 var(--f);color:var(--q)}
+.top .dot{width:9px;height:9px;border-radius:50%;background:var(--pg)}
+.top b{font-weight:600;color:var(--ink-2)}.top .sp{flex:1}
+.cta{border:0;border-radius:999px;background:var(--act);color:var(--on-act);font-weight:600;font-size:15px;padding:13px 22px;transition:transform .12s,filter .15s}
+.cta:hover{filter:brightness(1.15)}.cta:active{transform:scale(.97)}.cta:disabled{opacity:.6;cursor:default}
+.ghost{border:0;border-radius:999px;background:transparent;color:var(--ink-2);font-weight:550;font-size:15px;padding:13px 16px}
+.ghost:hover{background:var(--surf-hover);color:var(--ink)}.ghost:disabled{opacity:.35;cursor:default;background:none}
 .msg{color:var(--q);font-size:14px}
-/* desk */
-.hero{padding:44px 28px 26px;max-width:1100px;margin:0 auto}
-.tally{display:flex;gap:18px;margin-top:22px;flex-wrap:wrap}.tally div{display:flex;align-items:baseline;gap:8px}.tally b{font:400 30px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","Inter Display",Inter,system-ui,sans-serif}
-.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:0;max-width:1100px;margin:0 auto;border-top:1px solid var(--rule)}
-.list{border-right:1px solid var(--rule);padding:16px 0}.list input{margin:0 28px 10px;width:calc(100% - 56px);font:inherit;padding:10px 14px;border:1px solid var(--rule);border-radius:12px;background:var(--surf);color:var(--ink);outline:none;transition:box-shadow .15s}.list input:focus{box-shadow:inset 0 0 0 1.5px var(--pg)}
-.list ul{list-style:none;margin:0;padding:0}.list li button{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;background:none;color:var(--ink);font:inherit;padding:13px 28px;cursor:pointer;border-left:2px solid transparent}
-.list li button:hover{background:var(--surf-hover)}.list li button[aria-current="true"]{background:var(--wash);border-left-color:var(--pg)}.list li .t{flex:1;font-weight:500}
-.detail{padding:30px 34px}.detail h2{margin:12px 0 10px}.detail p{color:var(--ink-2);font-size:17px;max-width:52ch}
-.foot{display:flex;align-items:center;gap:16px;padding:22px 28px;max-width:1100px;margin:0 auto;border-top:1px solid var(--rule)}
-/* story */
-.story{max-width:760px;margin:0 auto;padding:38px 28px}
-.prog{display:flex;gap:6px;margin-bottom:34px}.prog i{flex:1;height:3px;border-radius:2px;background:var(--rule);transition:background .3s}.prog i.on{background:var(--pg)}
-.step{min-height:320px}.step .n{font:400 15px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","Inter Display",Inter,system-ui,sans-serif;font-style:italic;color:var(--q);margin-bottom:12px}.step p{font-size:19px;line-height:1.55;color:var(--ink-2);max-width:56ch;margin:16px 0 0}
-.choices{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.choices button{font:inherit;font-size:15px;padding:11px 16px;border-radius:999px;border:1px solid var(--rule);background:var(--surf);color:var(--ink);cursor:pointer}
-.choices button[aria-pressed="true"]{background:var(--pg-fill);color:#fff;border-color:var(--pg-fill)}
-.nav{display:flex;gap:10px;margin-top:34px;align-items:center}.nav .sp{flex:1}
-.summary{margin-top:20px;display:grid;gap:8px}.summary div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--rule);padding:8px 0;font-size:15px}
-/* deck */
-.deck{height:calc(100% - 50px);display:grid;place-items:center;padding:24px;background:var(--deck-bg)}
-.slide{width:min(100%,calc((100vh - 120px)*16/9));aspect-ratio:16/9;background:var(--slide-bg);border-radius:6px;box-shadow:0 20px 60px -30px rgba(0,0,0,.45);padding:6% 7%;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
-.slide::before{content:"";position:absolute;left:0;top:0;bottom:0;width:10px;background:var(--pg)}
-.slide h2{font-size:clamp(24px,4.4vw,56px);margin-top:14px}.slide p{font-size:clamp(14px,1.9vw,22px);color:var(--ink-2);max-width:46ch;margin:18px 0 0}
-.slide .ct{position:absolute;right:4%;bottom:5%;font:12px ui-monospace,Menlo,monospace;color:var(--q)}
-@media (max-width:720px){.cols{grid-template-columns:1fr}.list{border-right:0;border-bottom:1px solid var(--rule)}.hero{padding:28px 20px 18px}.detail{padding:22px 20px}.bar{padding:14px 18px}}`;
-  const bar=`<header class="bar"><span class="sq"></span><b>${esc(spec.title||"Proof")}</b><span class="sp"></span><span>Proof ${esc(spec.letter||"")} v${spec.version||1}</span></header>`;
+.st{display:inline-flex;align-items:center;gap:6px;font:600 12px/1 var(--f);letter-spacing:.01em;padding:6px 10px 6px 8px;border-radius:999px;background:var(--mute-bg);color:var(--ink-2);white-space:nowrap}
+.st i{width:14px;height:14px;display:grid;place-items:center;border-radius:50%;font-style:normal;font-size:10px;line-height:1;background:currentColor}.st i::after{color:var(--surf)}
+.st.bad{background:var(--bad-bg);color:var(--bad)}.st.bad i::after{content:"✕"}
+.st.ok{background:var(--ok-bg);color:var(--ok)}.st.ok i::after{content:"✓"}
+.st.mute i{background:none;box-shadow:inset 0 0 0 1.5px currentColor}
+/* desk: a verification report */
+.hero{max-width:1040px;margin:0 auto;padding:30px 32px 0}
+.hero .k{font:500 14px/1.4 var(--f);color:var(--q)}
+.hero h1{font-size:clamp(30px,4.2vw,44px);line-height:1.08;margin-top:8px}
+.hero .lede{font-size:18px;line-height:1.55;color:var(--ink-2);max-width:60ch;margin:12px 0 0}
+.verdict{margin-top:26px;max-width:640px}
+.verdict .bar{display:flex;gap:4px}.verdict .bar i{flex:1;height:8px;border-radius:99px;background:var(--mute-bg)}
+.verdict .bar i.ok{background:var(--ok-f)}.verdict .bar i.bad{background:var(--bad-f)}
+.verdict p{margin:12px 0 0;font:500 16px/1.4 var(--f);color:var(--ink)}.verdict p span{color:var(--q);font-weight:450}
+.desk{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:28px;max-width:1040px;margin:30px auto 0;padding:0 32px}
+.list{display:flex;flex-direction:column;gap:22px}
+.list input{width:100%;font:inherit;font-size:15px;padding:11px 14px;border:0;border-radius:12px;background:var(--surf-2);color:var(--ink);outline:none;transition:box-shadow .15s,background .15s}
+.list input:focus{background:var(--surf);box-shadow:0 0 0 4px color-mix(in srgb,var(--pg) 16%,transparent)}
+#ul{display:grid;gap:22px}.grp h3{margin:0 0 6px 12px;font:600 12px/1 var(--f);letter-spacing:.02em;color:var(--q)}
+.grp ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.grp li button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;border-radius:12px;padding:11px 12px;font-size:15px;font-weight:500;transition:background .15s}
+.grp li button:hover{background:var(--surf-hover)}
+.grp li button[aria-current="true"]{background:var(--surf);box-shadow:var(--shadow)}
+.grp li .t{flex:1;min-width:0}
+.mk{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--surf)}
+.mk.bad{background:var(--bad-f)}.mk.bad::after{content:"✕"}.mk.ok{background:var(--ok-f)}.mk.ok::after{content:"✓"}.mk.mute{box-shadow:inset 0 0 0 1.5px var(--q)}.mk.none{background:var(--pg)}
+.grp.passed li button{color:var(--ink-2)}
+.detail{align-self:start;position:sticky;top:20px;background:var(--surf);border-radius:20px;box-shadow:var(--shadow);padding:28px 30px 30px;min-height:220px}
+.detail h2{font-size:clamp(24px,2.6vw,30px);line-height:1.15;margin:14px 0 0}
+.detail p{color:var(--ink-2);font-size:17px;line-height:1.6;margin:12px 0 0;max-width:56ch}
+.foot{display:flex;align-items:center;gap:16px;max-width:1040px;margin:0 auto;padding:30px 32px 40px}
+/* story: a guided tour */
+.story{max-width:680px;margin:0 auto;padding:30px 32px 40px}
+.prog{display:flex;gap:5px;margin-bottom:40px}.prog i{flex:1;height:4px;border-radius:2px;background:var(--surf-2);transition:background .3s}.prog i.on{background:var(--pg)}
+.step{min-height:300px;animation:in .35s cubic-bezier(.22,.8,.24,1)}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.step .n{font:500 14px/1 var(--f);color:var(--q);margin-bottom:14px}
+.step h1{font-size:clamp(28px,4vw,38px);line-height:1.12}
+.step p{font-size:19px;line-height:1.6;color:var(--ink-2);margin:14px 0 0}
+.choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.choices button{border:0;border-radius:999px;background:var(--surf-2);color:var(--ink);font-size:15px;font-weight:500;padding:11px 16px;transition:background .15s,color .15s}
+.choices button:hover{background:color-mix(in srgb,var(--pg) 10%,var(--surf-2))}
+.choices button[aria-pressed="true"]{background:var(--act);color:var(--on-act)}
+.summary{margin-top:24px;display:grid;gap:4px;background:var(--surf);border-radius:16px;box-shadow:var(--shadow);padding:8px}
+.summary div{display:flex;justify-content:space-between;gap:16px;padding:10px 12px;font-size:15px;border-radius:10px}.summary div:nth-child(odd){background:var(--bg)}
+.summary b{font-weight:600;text-align:right}
+.nav{display:flex;gap:8px;margin-top:40px;align-items:center}.nav .sp{flex:1}
+/* deck: slides */
+body.is-deck{background:var(--deck-bg)}.deck{min-height:calc(100vh - 44px);display:grid;place-items:center;padding:20px 28px 28px;background:var(--deck-bg)}
+.slide{width:min(100%,calc((100vh - 130px)*16/9));aspect-ratio:16/9;background:var(--slide);border-radius:14px;box-shadow:var(--shadow);padding:7% 8%;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;outline:none;animation:in .3s cubic-bezier(.22,.8,.24,1)}
+.slide .k{display:flex;align-items:center;gap:10px;font:500 clamp(11px,1.3vw,15px)/1 var(--f);color:var(--q)}.slide .k::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pg)}
+.slide h2{font-size:clamp(24px,4.4vw,58px);line-height:1.06;margin-top:clamp(10px,1.6vw,20px)}
+.slide p{font-size:clamp(14px,1.8vw,22px);line-height:1.5;color:var(--ink-2);max-width:44ch;margin:clamp(10px,1.6vw,20px) 0 0}
+.dots{position:absolute;left:8%;right:8%;bottom:6%;display:flex;gap:6px}.dots i{width:6px;height:6px;border-radius:50%;background:color-mix(in srgb,var(--q) 35%,transparent);transition:width .25s}.dots i.on{background:var(--pg);width:18px;border-radius:3px}
+.hint{position:absolute;right:6%;bottom:5%;font:500 12px/1 var(--f);color:var(--q)}
+@media (max-width:760px){.desk{grid-template-columns:1fr}.detail{position:static}.hero,.desk,.foot,.top{padding-left:20px;padding-right:20px}}
+@media (prefers-reduced-motion:reduce){.step,.slide{animation:none}}`;
+  const top=`<header class="top"><span class="dot"></span><b>${esc(spec.title||"Proof")}</b><span class="sp"></span><span>Proof ${esc(spec.letter||"")} · v${spec.version||1}</span></header>`;
   let body="";
-  if(spec.mode==="story")body=`${bar}<main class="story"><div class="prog" id="prog"></div><div class="step" id="step"></div><div class="nav"><button class="ghost" id="back">Back</button><span class="sp"></span><span class="msg" id="msg"></span><button class="cta" id="next">Next</button></div></main>`;
-  else if(spec.mode==="deck")body=`${bar}<main class="deck"><div class="slide" id="slide" tabindex="0"></div></main>`;
-  else{const counts={};items.forEach(i=>{const t=i.tag||"Entry";counts[t]=(counts[t]||0)+1});
-    body=`${bar}<section class="hero"><div class="k">${esc(spec.kicker||"")}</div><h1 style="margin-top:12px">${esc(spec.title||"")}</h1><p class="lede">${esc(spec.lede||"")}</p><div class="tally">${Object.entries(counts).map(([t,c])=>`<div><b>${c}</b><span class="tag ${tagClass(t)}">${esc(t)}</span></div>`).join("")}</div></section>
-    <section class="cols"><div class="list"><input id="q" placeholder="Search ${items.length} entries" aria-label="Search"><ul id="ul"></ul></div><article class="detail" id="detail"></article></section>
-    <footer class="foot"><button class="cta" id="cta">${esc(spec.cta||"Continue")}</button><span class="msg" id="msg"></span></footer>`}
+  if(spec.mode==="story")body=`${top}<main class="story"><div class="prog" id="prog"></div><div class="step" id="step"></div><div class="nav"><button class="ghost" id="back">Back</button><span class="sp"></span><span class="msg" id="msg"></span><button class="cta" id="next">Next</button></div></main>`;
+  else if(spec.mode==="deck")body=`${top}<main class="deck"><div class="slide" id="slide" tabindex="0" aria-roledescription="slide"></div></main>`;
+  else body=`${top}<section class="hero">${spec.kicker?`<div class="k">${esc(spec.kicker)}</div>`:""}<h1>${esc(spec.title||"")}</h1>${spec.lede?`<p class="lede">${esc(spec.lede)}</p>`:""}<div class="verdict" id="verdict"></div></section>
+    <section class="desk"><div class="list">${items.length>6?`<input id="q" placeholder="Find a check" aria-label="Find a check">`:""}<div id="ul"></div></div><article class="detail" id="detail" aria-live="polite"></article></section>
+    <footer class="foot"><button class="cta" id="cta">${esc(spec.cta||"Continue")}</button><span class="msg" id="msg"></span></footer>`;
   const js=`const D=${data};const $=id=>document.getElementById(id);const E=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const tc=t=>/fail|block|error/i.test(t)?"bad":/written|done|pass|observed|ok|saved/i.test(t)?"ok":/wait|skip|pending|proposal|illustration|unweighed/i.test(t)?"mute":"";
+const tc=t=>/fail|block|error|broken/i.test(t)?"bad":/written|done|pass|observed|ok|saved|fixed/i.test(t)?"ok":/wait|skip|pending|proposal|illustration|unweighed|queued/i.test(t)?"mute":"";
+const ST=t=>t?'<span class="st '+(tc(t)||"none")+'"><i></i>'+E(t)+'</span>':"";
 if(D.mode==="story"){let i=0;const marks={};const steps=D.items;function draw(){$("prog").innerHTML=steps.map((_,k)=>'<i class="'+(k<=i?"on":"")+'"></i>').join("");const s=steps[i];
  const last=i===steps.length-1;let h='<div class="n">Step '+(i+1)+' of '+steps.length+'</div><h1>'+E(s.title)+'</h1><p>'+E(s.body)+'</p>';
  if(s.choices)h+='<div class="choices">'+s.choices.map(c=>'<button aria-pressed="'+(!!(marks[i]||[]).includes(c))+'">'+E(c)+'</button>').join("")+'</div>';
- if(last&&Object.keys(marks).length)h+='<div class="summary">'+Object.entries(marks).map(([k,v])=>'<div><span>'+E(steps[k].title)+'</span><b>'+E(v.join(", ")||"nothing marked")+'</b></div>').join("")+'</div>';
- $("step").innerHTML=h;$("back").disabled=i===0;$("next").textContent=last?D.cta:"Next";
+ if(last&&Object.keys(marks).length)h+='<div class="summary">'+Object.entries(marks).map(([k,v])=>'<div><span>'+E(steps[k].title)+'</span><b>'+E(v.join(", ")||"Nothing marked")+'</b></div>').join("")+'</div>';
+ $("step").innerHTML=h;$("step").style.animation="none";void $("step").offsetWidth;$("step").style.animation="";$("back").disabled=i===0;$("next").textContent=last?D.cta:"Next";
  $("step").querySelectorAll(".choices button").forEach(b=>b.onclick=()=>{const m=marks[i]=marks[i]||[];const t=b.textContent;const k=m.indexOf(t);k<0?m.push(t):m.splice(k,1);draw()})}
- $("back").onclick=()=>{if(i>0){i--;draw()}};$("next").onclick=()=>{if(i<steps.length-1){i++;draw()}else{$("msg").textContent="Recorded. Thank you."}};draw()}
-else if(D.mode==="deck"){let i=0;const S=[{title:${JSON.stringify(spec.title||"")},body:${JSON.stringify(spec.lede||"")},tag:${JSON.stringify(spec.kicker||"")}},...D.items];
- function draw(){const s=S[i];$("slide").innerHTML='<div class="k">'+E(s.tag||"")+'</div><h2>'+E(s.title)+'</h2><p>'+E(s.body)+'</p><span class="ct">'+(i+1)+' / '+S.length+'</span>'}
+ $("back").onclick=()=>{if(i>0){i--;draw()}};$("next").onclick=()=>{if(i<steps.length-1){i++;draw()}else{$("msg").textContent="Recorded. Thank you."}};
+ addEventListener("keydown",e=>{if(e.target.tagName==="BUTTON"&&e.key===" ")return;if(e.key==="ArrowRight")$("next").click();if(e.key==="ArrowLeft")$("back").click()});draw()}
+else if(D.mode==="deck"){let i=0;const S=[{title:D.title,body:D.lede,tag:D.kicker},...D.items];
+ function draw(){const s=S[i];$("slide").innerHTML=(s.tag?'<div class="k">'+E(s.tag)+'</div>':"")+'<h2>'+E(s.title)+'</h2>'+(s.body?'<p>'+E(s.body)+'</p>':"")+'<div class="dots">'+S.map((_,k)=>'<i class="'+(k===i?"on":"")+'"></i>').join("")+'</div><span class="hint">'+(i+1)+' / '+S.length+'</span>';$("slide").setAttribute("aria-label","Slide "+(i+1)+" of "+S.length);$("slide").style.animation="none";void $("slide").offsetWidth;$("slide").style.animation=""}
  $("slide").onclick=e=>{i=(e.offsetX<$("slide").clientWidth/3)?Math.max(0,i-1):Math.min(S.length-1,i+1);draw()};
- addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key===" ")i=Math.min(S.length-1,i+1);if(e.key==="ArrowLeft")i=Math.max(0,i-1);draw()});draw()}
-else{let cur=0,q="";function list(){const f=D.items.map((it,k)=>[it,k]).filter(([it])=>!q||(it.title+" "+it.body+" "+(it.tag||"")).toLowerCase().includes(q));
- $("ul").innerHTML=f.map(([it,k])=>'<li><button data-k="'+k+'" aria-current="'+(k===cur)+'"><span class="t">'+E(it.title)+'</span>'+(it.tag?'<span class="tag '+tc(it.tag)+'">'+E(it.tag)+'</span>':"")+'</button></li>').join("")||'<li style="padding:14px 28px;color:var(--q)">Nothing matches.</li>';
- $("ul").querySelectorAll("button").forEach(b=>b.onclick=()=>{cur=+b.dataset.k;list();detail()})}
- function detail(){const it=D.items[cur];if(!it){$("detail").innerHTML="";return}$("detail").innerHTML=(it.tag?'<span class="tag '+tc(it.tag)+'">'+E(it.tag)+'</span>':"")+'<h2>'+E(it.title)+'</h2><p>'+E(it.body)+'</p>'}
- $("q").oninput=e=>{q=e.target.value.toLowerCase();list()};
+ addEventListener("keydown",e=>{const n=i;if(e.key==="ArrowRight"||e.key===" ")i=Math.min(S.length-1,i+1);if(e.key==="ArrowLeft")i=Math.max(0,i-1);if(i!==n)draw()});draw()}
+else{let cur=0,q="";const ORDER=[["bad","Needs a fix"],["mute","Waiting"],["","Other"],["ok","Passed"]];
+ function verdict(){const n=D.items.length,c=k=>D.items.filter(it=>tc(it.tag||"")===k).length,ok=c("ok"),bad=c("bad"),w=c("mute");const tested=ok+bad+w>0;
+  if(!tested){$("verdict").innerHTML="";return}
+  const bars=D.items.map(it=>tc(it.tag||"")).sort((a,b)=>({ok:0,bad:1,mute:2,"":3}[a]-{ok:0,bad:1,mute:2,"":3}[b])).map(k=>'<i class="'+k+'"></i>').join("");
+  const line=bad?ok+" of "+n+" pass. <span>"+bad+" need"+(bad>1?"":"s")+" a fix"+(w?", "+w+" waiting":"")+".</span>":w?ok+" of "+n+" pass. <span>"+w+" still waiting.</span>":"All "+n+" pass.";
+  $("verdict").innerHTML='<div class="bar" role="img" aria-label="'+E(line.replace(/<[^>]+>/g,""))+'">'+bars+'</div><p>'+line+'</p>'}
+ function list(){const f=D.items.map((it,k)=>[it,k]).filter(([it])=>!q||(it.title+" "+it.body+" "+(it.tag||"")).toLowerCase().includes(q));
+  const groups=ORDER.map(([k,label])=>[label,k,f.filter(([it])=>tc(it.tag||"")===k)]).filter(g=>g[2].length);
+  const single=groups.length===1;
+  $("ul").innerHTML=groups.map(([label,k,rows])=>'<div class="grp '+(k==="ok"?"passed":"")+'">'+(single?"":'<h3>'+label+'</h3>')+'<ul>'+rows.map(([it,i])=>'<li><button data-k="'+i+'" aria-current="'+(i===cur)+'"><span class="mk '+(k||"none")+'" aria-hidden="true"></span><span class="t">'+E(it.title)+'</span></button></li>').join("")+'</ul></div>').join("")||'<p class="msg" style="padding:0 12px">Nothing matches.</p>';
+  $("ul").querySelectorAll("button").forEach(b=>b.onclick=()=>{cur=+b.dataset.k;list();detail()})}
+ function detail(){const it=D.items[cur];if(!it){$("detail").innerHTML="";return}$("detail").innerHTML=ST(it.tag)+'<h2>'+E(it.title)+'</h2><p>'+E(it.body)+'</p>'}
+ if($("q"))$("q").oninput=e=>{q=e.target.value.toLowerCase();list()};
  $("cta").onclick=()=>{const bad=D.items.filter(i=>/fail/i.test(i.tag||""));if(bad.length){$("msg").textContent="Retrying "+bad.map(b=>b.title.toLowerCase()).join(", ")+"…";$("cta").disabled=true;
-  setTimeout(()=>{D.items.forEach(i=>{if(/fail|wait/i.test(i.tag||""))i.tag="Written"});$("msg").textContent="Done. Every change is written.";list();detail()},1400)}else $("msg").textContent="Noted."};
- const first=D.items.findIndex(i=>/fail/i.test(i.tag||""));cur=first>=0?first:0;list();detail()}`;
+  setTimeout(()=>{D.items.forEach(i=>{if(/fail|wait/i.test(i.tag||""))i.tag="Written"});$("msg").textContent="Done. Every change is written.";$("cta").disabled=false;verdict();list();detail()},1400)}else $("msg").textContent="Noted."};
+ const first=D.items.findIndex(i=>/fail/i.test(i.tag||""));cur=first>=0?first:0;verdict();list();detail()}`;
   const themeAttr=(theme==="dark"||theme==="light")?` data-theme="${theme}"`:"";
-  return `<!doctype html><html lang="en"${themeAttr}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(spec.title||"Proof")}</title><style>${css}</style></head><body>${body}<script>${js}<\/script></body></html>`;
+  return `<!doctype html><html lang="en"${themeAttr}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(spec.title||"Proof")}</title><style>${css}</style></head><body${spec.mode==="deck"?' class="is-deck"':""}>${body}<script>${js}<\/script></body></html>`;
 }
 function tagClass(t){return /fail|block|error/i.test(t)?"bad":/written|done|pass|observed|ok|saved/i.test(t)?"ok":/wait|skip|pending|proposal|illustration|unweighed/i.test(t)?"mute":""}
 

@@ -314,6 +314,7 @@ async function page(browser, base, { model = true } = {}) {
       await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
       check('lanes can be locked from the popover', await p.evaluate(() => lockedBays().includes(1) && document.querySelector('#crewPop [data-crew-lock="1"]').getAttribute('aria-pressed') === 'true'));
       await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
+      check('Crew popover: header uses the connection summary, the waiting thought comes first, lock icons only on locked lanes', await p.evaluate(() => { const pop = document.getElementById('crewPop'); const kids = [...pop.children]; const locks = [...pop.querySelectorAll('.crew-lock')]; return !!pop.querySelector('.cp-pop-head .sp-now .sp-now-mode') && kids[1]?.classList.contains('crew-wait') && locks.every(b => !!b.querySelector('.ico') === (b.getAttribute('aria-pressed') === 'true')) && !!pop.querySelector('.crew-axis-h [data-crew-custom]'); }));
       await p.click('#crewPop [data-crew-show]'); await p.waitForTimeout(500);
       check('Show opens the waiting thought and marks it read', await p.evaluate(id => openAdvNodeId === id && board.pins[id][0].seen === true && !document.querySelector('.crew-group').classList.contains('quiet-pacing'), pinCard));
       await p.evaluate(() => closeAdvPop());
@@ -378,6 +379,7 @@ async function page(browser, base, { model = true } = {}) {
       check('by default, agent cards arrive as drafts', r.created.length === 1 && r.created[0].status === 'sketch', JSON.stringify(r));
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
       await p.click('#crewPop [data-crew-custom]'); await p.waitForTimeout(400);
+      check('a custom setup reads as plain grouped sentences', await p.evaluate(() => { const s = autonomy; setAutonomy({ create: 'direct', link: 'direct', edit: 'direct', delete: 'suggest' }); const txt = autonomyPlain(); autonomy = s; return txt === 'Custom. Does directly: create, link and edit your cards. Asks first: delete your cards.'; }));
       check('Customize shows a segmented control per action', await p.evaluate(() => document.querySelectorAll('dialog[open] .sp-seg').length === 4));
       check('deleting cannot be set to Do it', await p.evaluate(() => [...document.querySelectorAll('dialog[open] [data-au="delete"]')].map(b => b.dataset.v).join() === 'suggest,never'));
       await p.click('dialog[open] [data-au="edit"][data-v="direct"]'); await p.waitForTimeout(200);

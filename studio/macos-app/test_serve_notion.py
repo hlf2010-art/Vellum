@@ -39,7 +39,12 @@ def row(i):
         "Links": {"type": "relation", "relation": [{"id": "x"}, {"id": "y"}]},
         "Score": {"type": "formula", "formula": {"type": "number", "number": 2.5}},
         "Notes": {"type": "rich_text", "rich_text": []},
+        "Share": {"type": "number", "number": 0.25},
+        "Budget": {"type": "number", "number": 1200.5},
     }}
+
+
+FORMATS = {"Share": "percent", "Budget": "dollar"}
 
 
 TOTAL = {"n": 230}
@@ -67,7 +72,11 @@ class Notion(BaseHTTPRequestHandler):
             return
         if self.path == f"/v1/databases/{DB_DASHED}":
             return self.reply(200, {"title": [{"plain_text": "Sprint board"}], "url": f"https://www.notion.so/{DB}",
-                                    "properties": {k: {"type": v["type"]} for k, v in row(0)["properties"].items()}})
+                                    "properties": {k: {"type": v["type"], **({"number": {"format": FORMATS[k]}} if k in FORMATS else {})} for k, v in row(0)["properties"].items()}})
+        if self.path.startswith("/v1/databases/bbbbbbbb"):
+            return self.reply(403, {"code": "restricted_resource", "message": "Insufficient permissions."})
+        if self.path.startswith("/v1/databases/cccccccc"):
+            self.send_response(302); self.send_header("Location", "http://127.0.0.1:9/steal"); self.end_headers(); return
         if self.path.startswith("/v1/databases/aaaaaaaa"):
             return self.reply(400, {"code": "validation_error", "message": "Provided ID is a page, not a database."})
         return self.reply(404, {"code": "object_not_found", "message": "Could not find database."})
@@ -112,13 +121,15 @@ def post(payload, origin=None, header=True):
 
 
 link = f"https://www.notion.so/acme/Sprint-board-{DB}?v=fedcba9876543210fedcba9876543210"
-check("a database id comes from the link path, not the ?v= view", sv.notion_db_id(link) == DB_DASHED, sv.notion_db_id(link))
+check("a database id comes from the link path, not the ?v= view (with or without https://)",
+      sv.notion_db_id(link) == DB_DASHED and sv.notion_db_id(link.split("://")[1]) == DB_DASHED, sv.notion_db_id(link.split("://")[1]))
 
 code, d = post({"ref": link, "token": "ntn_good"})
 check("reads a database: title column first, readable cells, empty columns dropped",
       code == 200 and d.get("ok") and d["title"] == "Sprint board" and d["columns"][0] == "Name" and "Notes" not in d["columns"]
       and dict(zip(d["columns"], d["rows"][3])) == {"Name": "Task 3", "Status": "Done", "Points": "3", "Due": "2026-11-04",
-                                                    "Tags": "ui, data", "Owner": "Ada", "Done": "No", "Links": "2", "Score": "2.5"},
+                                                    "Tags": "ui, data", "Owner": "Ada", "Done": "No", "Links": "2", "Score": "2.5",
+                                                    "Share": "25%", "Budget": "$1,200.50"},
       json.dumps(d)[:400])
 check("follows pages past 100 rows; sends the token and a pinned Notion-Version",
       len(d.get("rows", [])) == 230 and not d.get("more") and seen.get("auth") == "Bearer ntn_good" and seen.get("version") == "2022-06-28",
@@ -134,8 +145,17 @@ errs = {k: post(v)[1].get("error") for k, v in {
     "not_shared": {"ref": "ffffffffffffffffffffffffffffffff", "token": "ntn_good"},
     "is_page": {"ref": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "token": "ntn_good"},
     "no_id": {"ref": "https://www.notion.so/acme/Home", "token": "ntn_good"},
+    "unexpected_redirect": {"ref": "cccccccccccccccccccccccccccccccc", "token": "ntn_good"},
 }.items()}
-check("failures come back as reasons the page can explain", all(k == v for k, v in errs.items()), json.dumps(errs))
+errs["not_shared (403)"] = post({"ref": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "token": "ntn_good"})[1].get("error")
+check("failures come back as reasons the page can explain; a redirect is refused so the token never leaves Notion",
+      all(k.split(" ")[0] == v for k, v in errs.items()), json.dumps(errs))
+req = urllib.request.Request(base + "/notion/database", data=b"[1]", method="POST", headers={"Origin": base, "X-Studio-Client": "canvas"})
+try:
+    bad = urllib.request.urlopen(req, timeout=5).status
+except urllib.error.HTTPError as e:
+    bad = e.code
+check("a malformed body is a clean 400", bad == 400, bad)
 
 check("other sites can't post a token here (origin and header both required)",
       post({"ref": DB, "token": "ntn_good"}, origin="https://evil.example")[0] == 403 and post({"ref": DB, "token": "ntn_good"}, header=False)[0] == 403)

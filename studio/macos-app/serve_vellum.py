@@ -13,6 +13,7 @@ import socket
 import subprocess
 import sys
 import threading
+import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
@@ -114,6 +115,8 @@ class VellumHandler(SimpleHTTPRequestHandler):
                 if not 0 < size <= 16_000:
                     raise ValueError
                 body = json.loads(self.rfile.read(size))
+                if not isinstance(body, dict):
+                    raise ValueError
             except (ValueError, json.JSONDecodeError):
                 return self.send_json(400, {"ok": False, "error": "bad_request"})
             return self.send_json(200, notion_database(str(body.get("ref") or ""), str(body.get("token") or "")))
@@ -253,7 +256,7 @@ NOTION_MAX_ROWS = 500
 def notion_db_id(ref: str):
     """Database id from an id or a notion.so link (the id is in the path; ?v= is the view, not the database)."""
     ref = (ref or "").strip()
-    path = urlsplit(ref).path if "://" in ref else ref
+    path = urlsplit(ref).path if "://" in ref else re.split(r"[?#]", ref)[0]  # the ?v= view id is never the database
     hits = re.findall(r"[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}", path, re.I)
     if not hits:
         return None
@@ -267,7 +270,7 @@ def _notion_call(path, token, body=None):
                   headers={"Authorization": f"Bearer {token}", "Notion-Version": "2022-06-28",
                            "Content-Type": "application/json", "User-Agent": "Vellum/1.0 (+table import)"})
     try:
-        with urlopen(req, timeout=15) as resp:
+        with build_opener(_NoRedirects()).open(req, timeout=15) as resp:  # never forward the token elsewhere
             return json.loads(resp.read(DATA_MAX_BYTES))
     except HTTPError as err:
         try:
@@ -277,13 +280,18 @@ def _notion_call(path, token, body=None):
         code, msg = info.get("code", ""), str(info.get("message", ""))
         if err.code == 401:
             raise ValueError("bad_token")
-        if err.code == 404 or code == "object_not_found":
+        if err.code in (403, 404) or code in ("object_not_found", "restricted_resource"):
             raise ValueError("not_shared")
         if "is a page" in msg:
             raise ValueError("is_page")
         if err.code == 429:
             raise ValueError("rate_limited")
-        raise ValueError(f"HTTP {err.code}")
+        raise ValueError(msg[:120] or f"HTTP {err.code}")
+
+
+class _NoRedirects(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError("unexpected_redirect")
 
 
 def _rt(items):
@@ -307,7 +315,25 @@ def _nnum(n):
     return str(int(n)) if isinstance(n, float) and n.is_integer() else str(n)
 
 
-def notion_cell(p) -> str:
+CURRENCY = {"dollar": "$", "euro": "€", "pound": "£", "yen": "¥", "yuan": "¥", "won": "₩", "rupee": "₹", "franc": "CHF ",
+            "canadian_dollar": "CA$", "australian_dollar": "A$", "hong_kong_dollar": "HK$", "singapore_dollar": "S$"}
+
+
+def _nfmt(n, fmt):
+    """A number the way Notion shows it, so percent and currency columns are recognised as such."""
+    if n is None:
+        return ""
+    if fmt == "percent":
+        return _nnum(round(n * 100, 6)) + "%"
+    if fmt == "number_with_commas":
+        return f"{n:,}".rstrip("0").rstrip(".") if isinstance(n, float) else f"{n:,}"
+    sym = CURRENCY.get(fmt or "")
+    if sym:
+        return ("-" if n < 0 else "") + sym + f"{abs(n):,.2f}".removesuffix(".00")
+    return _nnum(n)
+
+
+def notion_cell(p, fmt=None) -> str:
     """One property value as the text a person would read in Notion."""
     if not isinstance(p, dict):
         return ""
@@ -316,7 +342,7 @@ def notion_cell(p) -> str:
     if t in ("title", "rich_text"):
         return _rt(v)
     if t == "number":
-        return _nnum(v)
+        return _nfmt(v, fmt)
     if t in ("select", "status"):
         return (v or {}).get("name", "")
     if t == "multi_select":
@@ -363,14 +389,20 @@ def notion_database(ref: str, token: str) -> dict:
     try:
         meta = _notion_call(f"databases/{db}", token.strip())
         props = meta.get("properties") or {}
-        names = sorted(props, key=lambda k: props[k].get("type") != "title")  # title column first, then Notion's order
+        # Title column first. Notion's API doesn't give the view's column order, so the rest keep the API's order.
+        names = sorted(props, key=lambda k: props[k].get("type") != "title")
+        fmts = [((props[n].get("number") or {}).get("format") if props[n].get("type") == "number" else None) for n in names]
         rows, cursor, more = [], None, False
+        started = time.monotonic()
         while len(rows) < NOTION_MAX_ROWS:
+            if time.monotonic() - started > 30:  # stay well inside the page's wait; show what arrived
+                more = True
+                break
             page = _notion_call(f"databases/{db}/query", token.strip(),
                                 {"page_size": 100, **({"start_cursor": cursor} if cursor else {})})
             for r in page.get("results") or []:
                 rp = r.get("properties") or {}
-                rows.append([notion_cell(rp.get(n)) for n in names])
+                rows.append([notion_cell(rp.get(n), f) for n, f in zip(names, fmts)])
             cursor = page.get("next_cursor")
             if not page.get("has_more") or not cursor:
                 break

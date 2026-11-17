@@ -5371,7 +5371,8 @@ function tableModel(ds){
   const statusOf=v=>{const t=String(v||"").replace(/\*\*/g,"").trim().toLowerCase();const i=STATUS.findIndex(([,re])=>re.test(t));return i<0?null:i};
   hdr.forEach((h,ci)=>{if(levels[ci]||cols[ci]||raw.length<2)return;const vs=raw.map(r=>(r[ci]||"").trim()).filter(Boolean);if(!vs.length)return;
     const ks=vs.map(statusOf);if(ks.some(k=>k==null))return;
-    if(!/status|state|stage|progress|状态|进度|阶段/i.test(hdrRaw[ci])&&new Set(ks).size<2)return;
+    // Open/Closed, New/Active, Live can describe a store or a role, so without a status-like header they need clear company.
+    if(!/status|state|stage|progress|状态|进度|阶段/i.test(hdrRaw[ci])&&(new Set(ks).size<3||vs.every(v=>/^(open|closed|new|active|live)$/i.test(v))))return;
     levels[ci]=raw.map(r=>{const k=statusOf(r[ci]);return k==null?null:STATUS[k][0]});levels[ci].status=true});
   const LVL={good:"var(--C)",mid:"var(--warn,#d97706)",bad:"var(--D)",now:"var(--B)",idle:"var(--label-3)"};
   // Column width from content (Notion-like): columns keep a comfortable width and the table scrolls instead of squeezing.
@@ -5490,7 +5491,7 @@ async function tableFromUrl(raw,{at}={}){
 /* A table from a Notion database. Notion's API doesn't answer web pages, so Vellum's local server reads it with the
    integration token saved in MCP Sources (the same one Copilot uses). A link with ?v= is a database view; any Notion
    link or id works with /table. Rows keep what a person reads in Notion: select names, dates, people, counts. */
-const isNotionUrl=u=>{try{const h=new URL(u).hostname;return /(^|\.)notion\.(so|com|site)$/.test(h)}catch{return false}};
+const isNotionUrl=u=>{try{const h=new URL(u).hostname;return /(^|\.)notion\.(so|com|site)$/.test(h)&&!/^file\./.test(h)&&!looksLikeDataUrl(u)}catch{return false}}; // file.notion.so exports are plain CSV
 const looksLikeNotionDb=u=>isNotionUrl(u)&&/[?&]v=[0-9a-f]{32}/i.test(u);
 function notionMessage(k){const fix={actLabel:L("Connect","连接"),onAct:()=>mcpDialog("notion")};
   return k==="no_token"?[L("Notion isn't connected yet.","Notion 还没有连接。"),fix]
@@ -5507,7 +5508,7 @@ async function tableFromNotion(raw,{at}={}){
   if(!token)return fail("no_token");
   if(!viaLocalServer())return fail("no_server");
   toast(L("Reading Notion…","正在读取 Notion…"));
-  let d=null;try{const r=await fetch("/notion/database",{method:"POST",headers:{"Content-Type":"application/json","X-Studio-Client":"canvas"},body:JSON.stringify({ref,token}),signal:timeoutSignal(45000)});d=/json/.test(r.headers.get("content-type")||"")?await r.json():null}catch{}
+  let d=null;try{const r=await fetch("/notion/database",{method:"POST",headers:{"Content-Type":"application/json","X-Studio-Client":"canvas"},body:JSON.stringify({ref,token}),signal:timeoutSignal(60000)});d=/json/.test(r.headers.get("content-type")||"")?await r.json():null}catch{}
   if(!d)return fail("no_server");
   if(!d.ok)return fail(d.error);
   if(!d.rows?.length){toast(L(`${d.title||"That database"} has no rows yet.`,`${d.title||"该数据库"} 还没有任何行。`));return null}

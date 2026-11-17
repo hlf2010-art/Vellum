@@ -43,7 +43,9 @@ const SONNET_PUSH = "It reads as strategy with an RPG skin right now: the ledger
 const SONNET_MERGE = "Yes, and I think it fixes the weak spot in the sketch. Folding the ledger into the lilong makes it the pressure on one household rather than a separate system.\n\n- **Map:** The lane's doors, stairwells, and shared kitchens replace the districts. That makes the spreadsheet-map risk much smaller, because each cell is a person.\n- **Trading house:** It becomes one household's enterprise, with debts owed to neighbors and landlords. Agents become lodgers, relatives, and apprentices who live under the same roof.\n- **Outside pressure:** Gang protection and consuls arrive at the lane entrance as events, not as map layers.\n- **Cost:** You lose the sense of a whole city. That may be fine, since the city can arrive through visitors and rumor.\n\nThe test could shrink too: do groups name the lane's residents and argue about them?\n\nShould the ledger be visible to the player at all times, or only surface when someone comes to collect?";
 
 /* ------------------------------------------------------------------ obvious-error checks (independent of the page's own) */
-const OTHER_CITY = /\b(Beijing|Peking|Tianjin|Hong Kong|Taipei|Tokyo|Guangzhou|Canton|Hangzhou|Suzhou|Chongqing|Wuhan|Singapore|Seoul|Osaka|Macau|Nanking|Nanjing(?!\s+(?:East\s+|West\s+)?Road))\b/;
+const OTHER_CITY = /\b(Beijing|Peking|Tianjin|Hong Kong|Taipei|Tokyo|Guangzhou|Canton|Hangzhou|Suzhou|Chongqing|Wuhan|Singapore|Seoul|Osaka|Macau|Nanking|Nanjing(?!\s+(?:East\s+|West\s+)?Road)|Wangfujing|Tiananmen|Forbidden City|Ximending|Shibuya|Shinjuku|Ginza|Mong Kok|Kowloon|Victoria Harbour)\b/;
+// things a 1937 scene cannot contain
+const MODERN = /\b(smart ?phones?|cell ?phones?|mobile phones?|your phone|charg(?:ing|er)|text messages?|internet|e-?mails?|laptops?|computers?|wi-?fi|social media|GPS|selfies?|drones?|television|TV|subway|metro)\b/i;
 const RULE_TITLES = /^(Walk it through|Lay it all out|Cut to one moment|Make the case)$/;
 function checkDirs(dirs) {
   const f = [];
@@ -87,6 +89,7 @@ function checkBuild(spec) {
   const all = [spec.title, spec.lede, ...items.flatMap(i => [i.title, i.body])].join(' ');
   if (!/1937|shell|bomb|artillery|explosion|blast/i.test(all)) f.push('not the scene that was asked for');
   if (/\b(prototype|playtest|participants?|the test|this page|testers?)\b/i.test(items.map(i => i.body).join(' '))) f.push('describes the prototype instead of being it');
+  const anach = [all, ...items.flatMap(i => i.choices || [])].join(' ').match(MODERN); if (anach) f.push(`anachronism in 1937 (${anach[1]})`);
   const city = all.match(OTHER_CITY); if (city) f.push(`another city (${city[1]})`);
   return f;
 }

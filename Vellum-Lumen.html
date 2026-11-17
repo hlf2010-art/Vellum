@@ -322,6 +322,9 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .cbtn:hover{background:var(--card-3)}
 .cbtn:active{transform:scale(.95)}
 .cbtn.solid{background:var(--act);color:var(--on-act);box-shadow:none}
+.clar{display:grid;gap:18px}.clar-q{display:grid;gap:8px}.clar-q>b{font:600 13px/1.35 var(--ui);color:var(--label)}
+.clar-opts{display:flex;flex-wrap:wrap;gap:6px}.clar-opt{height:auto;min-height:var(--size-md);padding:6px 12px;white-space:normal;text-align:left;line-height:1.3}
+.clar-opt[aria-pressed="true"]{background:var(--act);color:var(--on-act);box-shadow:none}
 .cbtn.pg{background:var(--pg,var(--act));color:#fff;box-shadow:0 0 18px -4px color-mix(in srgb,var(--pg,transparent) 70%,transparent)}
 .cbtn.solid:hover,.cbtn.pg:hover{filter:brightness(1.08)}
 .cbtn .ico{width:14px;height:14px;stroke-width:2}
@@ -8031,7 +8034,55 @@ async function typeIn(ids){
 const decodeEnt=s=>{const d=document.createElement("textarea");d.innerHTML=s;return d.value};
 
 /* ── moves ───────────────────────────────────────────────────────────── */
-async function fork(idea,count=3,brief=""){
+/* An open idea ("not sure what kind yet") is where a small model is weakest: it fills the gaps with generic
+   choices. Asking three one-click questions first moves those choices to the designer. */
+function forkIsOpen(idea,brief,srcs){
+  if(srcs.length)return false;
+  if(/\b(not sure|no idea|don'?t know|anything|whatever|surprise me|really different|any kind|open to)\b|不确定|没想好|随便|都行|不知道/i.test(brief))return true;
+  return !brief&&String(fullTextOf(idea)||idea.text||"").split(/\s+/).length<14;
+}
+const CLARIFY_FALLBACK={
+  game:[{q:"Who is the player?",options:["An outsider who just arrived","Someone with power to lose","An ordinary person caught up in events","A criminal or rule-breaker"]},{q:"When does it happen?",options:["The past","The present day","The near future","Across several eras"]},{q:"How does it play?",options:["Story and conversations","Tactics and fights","Running a place or a business","Exploring and investigating"]}],
+  other:[{q:"Who is it for?",options:["Just me","A small team","Customers or the public","A specific community"]},{q:"What form should it take?",options:["An app or tool","A story or piece of media","A service or event","A physical object or place"]},{q:"How big is the first version?",options:["A one-day test","A week-long pilot","A small launch","A long-term project"]}]
+};
+function clarifyProblems(v){
+  const qs=Array.isArray(v?.questions)?v.questions:null;
+  if(!qs)return ['reply with {"questions": [...]}'];
+  const out=[];if(qs.length!==3)out.push("ask exactly 3 questions");
+  qs.forEach((q,i)=>{const o=Array.isArray(q?.options)?q.options.map(x=>String(x||"").trim()).filter(Boolean):[];
+    if(!String(q?.q||"").trim())out.push(`question ${i+1} needs "q"`);
+    if(o.length<3||o.length>4)out.push(`question ${i+1} needs 4 options`);
+    if(o.some(x=>x.length>70))out.push(`question ${i+1}: keep options under 8 words`);
+    if(new Set(o.map(x=>x.toLowerCase())).size<o.length)out.push(`question ${i+1} repeats an option`)});
+  return out;
+}
+async function clarifyFork(idea,brief){
+  const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
+  const kind=projectKind(`${ideaText} ${brief}`),home=placesIn(ideaText);
+  const fallback=CLARIFY_FALLBACK[kind==="game"?"game":"other"];
+  const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}The idea is still open. Ask the designer three quick questions whose answers would most change what this becomes${kind==="game"?" (for example who the player is, when and where it happens, and how it plays)":""}. Each question has 4 short, concrete options under 8 words, as different from each other as possible. Use only real places and periods${home.length?`, and stay in ${home.join(" / ")}`:""}.\nReturn {"questions": [{"q": "...", "options": ["...", "...", "...", "..."]}, ... 3 items]}`;
+  const res=await runAgent("muse",{read:[idea],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:smallStrategistSystem(kind),prompt,json:true,maxTokens:900,small:{system:smallStrategistSystem(kind),prompt},check:clarifyProblems},()=>({questions:fallback}))});
+  if(!res)return null;
+  const got=(Array.isArray(res.v?.questions)?res.v.questions:[]).map(q=>({q:String(q?.q||"").trim(),options:(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4)})).filter(q=>q.q&&q.options.length>=2).slice(0,3);
+  return clarifyDialog(got.length>=2?got:fallback);
+}
+function clarifyDialog(items){
+  return new Promise(resolve=>{
+    let done=false;const finish=v=>{if(done)return;done=true;delete dlg.dataset.clarify;if(dlg.open)dlg.close();resolve(v)};
+    dlg.className="sheet";dlg.dataset.clarify="1";
+    dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>${L("Before Strategist branches this","在 Strategist 发散之前")}</b><small>${L("Pick what fits. Skip any question you are unsure about.","选出合适的；拿不准的可以不选。")}</small></div><button type="button" class="sh-x" data-clarify-x aria-label="${L("Close","关闭")}">${ic("x")}</button></header>
+    <div class="sh-main clar">${items.map((q,i)=>`<div class="clar-q" role="group" aria-label="${esc(q.q)}" data-clarify-q="${i}"><b>${esc(q.q)}</b><div class="clar-opts">${q.options.map((o,j)=>`<button type="button" class="cbtn clar-opt" data-clarify-opt="${j}" aria-pressed="false">${esc(o)}</button>`).join("")}</div></div>`).join("")}</div>
+    <footer class="sh-foot"><button type="button" class="cbtn" data-clarify-skip>${L("Skip, just branch","跳过，直接发散")}</button><span class="sp"></span><button type="button" class="cbtn solid" data-clarify-go>${L("Branch with these","按这些发散")}</button></footer>`;
+    qsa("[data-clarify-opt]",dlg).forEach(b=>b.onclick=()=>{const g=b.closest("[data-clarify-q]");const on=b.getAttribute("aria-pressed")!=="true";qsa("[data-clarify-opt]",g).forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed",String(on))});
+    qs("[data-clarify-go]",dlg).onclick=()=>finish(qsa("[data-clarify-q]",dlg).map((g,i)=>{const b=qs('[data-clarify-opt][aria-pressed="true"]',g);return b?{q:items[i].q,a:items[i].options[+b.dataset.clarifyOpt]}:null}).filter(Boolean));
+    qs("[data-clarify-skip]",dlg).onclick=()=>finish([]);
+    qs("[data-clarify-x]",dlg).onclick=()=>finish(null);
+    dlg.addEventListener("close",()=>finish(null),{once:true});
+    if(!dlg.open)dlg.showModal();
+    qs("[data-clarify-opt]",dlg)?.focus();
+  });
+}
+async function fork(idea,count=3,brief="",{ask=true}={}){
   if(!idea)return toast("Select a claim, idea or note to fork.");
   if(idea.type==="treemap"&&!brief)return spawnTreeDirections(idea);
   if(!["idea","note","notepad","treemap"].includes(idea.type))return toast("Strategist forks claims, ideas, notes, notepads and tree maps.");
@@ -8039,6 +8090,11 @@ async function fork(idea,count=3,brief=""){
   const free=LETTERS.filter(l=>!existing.some(d=>d.letter===l));
   if(!free.length)return toast("This claim has four directions already. Discard one to explore again.");
   if(count>free.length)toast(free.length===1?`Room for one more direction. Strategist will suggest ${free[0]}.`:`Room for ${free.length} more directions.`);
+  if(ask&&smallModelOn()&&!existing.length&&forkIsOpen(idea,brief,sourcesFor(idea))){
+    const picked=await clarifyFork(idea,brief);
+    if(picked===null)return;
+    if(picked.length){idea.clarified=picked;brief=`${brief?brief+"\n":""}The designer chose: ${picked.map(x=>`${x.q} ${x.a}`).join("; ")}. Keep every direction inside these choices.`}
+  }
   count=clamp(count,1,free.length);
   const places=planFork(idea,count).places.map(({x,y,w,h})=>({x,y,w,h}));
   const srcs=sourcesFor(idea);

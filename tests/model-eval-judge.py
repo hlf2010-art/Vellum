@@ -10,7 +10,7 @@ each run's mean score per task, and its share of the reference run's mean.
 
 The key is read from VELLUM_EVAL_KEY. A judge that shares a model with one of the runs may favour it.
 """
-import argparse, json, os, random, re, sys, time, urllib.request
+import argparse, json, os, random, re, sys, time, urllib.error, urllib.request
 from pathlib import Path
 
 CONTEXT = {
@@ -69,21 +69,29 @@ Score each criterion 0 (not met), 1 (partly met) or 2 (fully met). A strong expe
 {crit}
 
 Reply with only JSON: {{"scores": [5 integers], "worst": "the single biggest problem, in one short sentence"}}"""
-    body = {"model": model, "temperature": 0, "max_tokens": 300, "messages": [{"role": "user", "content": prompt}]}
-    req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=json.dumps(body).encode(),
-                                 headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
-    for attempt in range(3):
+    err, raw = None, ""
+    for attempt in range(6):
+        # some judge models reason before answering (Sonnet 5.5 on OpenRouter must): keep it short, leave room
+        body = {"model": model, "temperature": 0, "max_tokens": 1500 + 500 * attempt, "reasoning": {"effort": "low"}, "messages": [{"role": "user", "content": prompt}]}
+        req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=json.dumps(body).encode(),
+                                     headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
         try:
             with urllib.request.urlopen(req, timeout=120) as r:
-                txt = json.load(r)["choices"][0]["message"]["content"]
+                raw = r.read().decode()
+            txt = (json.loads(raw)["choices"][0]["message"].get("content") or "")
             j = json.loads(re.search(r"\{[\s\S]*\}", txt).group(0))
             s = [max(0, min(2, int(x))) for x in j["scores"]][:5]
             if len(s) == 5:
                 return sum(s), s, j.get("worst", "")
-        except Exception as e:  # retry transient errors
+            err = ValueError("expected 5 scores")
+        except urllib.error.HTTPError as e:  # 402/429: a busy or budget-limited account; wait as told
             err = e
-            time.sleep(2 + attempt * 3)
-    raise RuntimeError(f"judge failed: {err}")
+            wait = int(e.headers.get("Retry-After") or 20) if e.code in (402, 429) else 3
+            time.sleep(min(wait, 130))
+        except Exception as e:  # an empty or unreadable reply: ask again with more room
+            err = e
+            time.sleep(2)
+    raise RuntimeError(f"judge failed: {err}; last reply: {raw[:300]}")
 
 
 def main():

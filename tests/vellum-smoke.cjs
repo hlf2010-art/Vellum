@@ -28,7 +28,7 @@ function serve() {
           const flat = msgs.map(m => typeof m.content === 'string' ? m.content : (m.content || []).map(p => p.text || '').join(' ')).join('\n');
           const i = queue.findIndex(e => new RegExp(e.match, 's').test(flat));
           const hit = i >= 0 ? queue.splice(i, 1)[0] : null;
-          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200) });
+          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200), full: flat });
           if (hit && hit.delay) await new Promise(r => setTimeout(r, hit.delay));
           if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503); return rsp.end(); }
           rsp.writeHead(200, { 'Content-Type': 'text/event-stream' });
@@ -187,9 +187,13 @@ async function page(browser, base, { model = true } = {}) {
       // delete suggestion
       await p.evaluate(id => dispatchCanvasActions([{ action: 'erase', targets: [id] }], { by: 'critic' }), id); await p.waitForTimeout(400);
       check('an agent deletion of a kept card is only suggested', await p.evaluate(id => !!byId(id) && !!document.querySelector(`[data-id="${id}"] .prop-bar.is-del`), id));
-      // undoing the agent's batch withdraws its suggestion
+      // ⌘Z leaves the agent's batch alone; the Undo on its own toast withdraws it
       await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
-      check("Undo withdraws the agent's suggestion", await p.evaluate(id => !!byId(id) && openProps(id).length === 0, id));
+      check("⌘Z does not undo an agent's suggestion", await p.evaluate(id => openProps(id).some(p => p.op === 'delete'), id));
+      await p.keyboard.press('Control+Shift+z'); await p.waitForTimeout(300);
+      await p.evaluate(() => { const b = [...document.querySelectorAll('#toasts .toast')].find(t => /suggested change/.test(t.textContent))?.querySelector('button'); b && b.click(); }); await p.waitForTimeout(400);
+      check("the toast's Undo withdraws the agent's suggestion", await p.evaluate(id => !!byId(id) && !openProps(id).some(p => p.op === 'delete'), id));
+      await p.evaluate(id => openProps(id).forEach(p => rejectProposal(p.id)), id); await p.waitForTimeout(300);
       await p.evaluate(id => dispatchCanvasActions([{ action: 'erase', targets: [id] }], { by: 'critic' }), id); await p.waitForTimeout(400);
       await p.click(`[data-id="${id}"] [data-prop-act="accept"]`); await p.waitForTimeout(800);
       check('accepting a deletion deletes the card', await p.evaluate(id => !byId(id), id));
@@ -210,7 +214,113 @@ async function page(browser, base, { model = true } = {}) {
       check('no page errors in the proposal flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
-    // 4. Task Island: real crew work shows at the top, says what arrived, and can be stopped
+    // 5. per-author undo: ⌘Z undoes your own changes and leaves agents' work alone
+    {
+      const p = await page(browser, base, { model: false });
+      await p.newBoard();
+      await p.type('/note mine first'); await p.waitForTimeout(600);
+      const mine = await p.evaluate(() => board.nodes.find(n => n.type === 'note').id);
+      await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'Agent', text: 'agent card' }], { by: 'scout' })); await p.waitForTimeout(400);
+      const agentCard = await p.evaluate(() => board.nodes.find(n => n.text === 'agent card')?.id);
+      await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
+      check("⌘Z undoes your change, not the agent's later one", await p.evaluate(([m, a]) => !byId(m) && !!byId(a), [mine, agentCard]));
+      await p.keyboard.press('Control+Shift+z'); await p.waitForTimeout(400);
+      check('Redo brings your change back', await p.evaluate(m => !!byId(m), mine));
+      // conflict: you edit a card, then an agent changes it; your undo skips it and says so
+      await p.evaluate(m => { checkpoint(); const n = byId(m), d = digest(n), t = n.title, x = n.text; n.text = 'my edit'; recordNodeEdit(n, d, t, x); renderAll(); persist(); }, mine);
+      await p.evaluate(m => dispatchCanvasActions([{ action: 'edit', target: m, field: 'text', value: 'agent rewrite' }], { by: 'critic', userIntent: true }), mine); await p.waitForTimeout(400);
+      await p.evaluate(() => { document.querySelectorAll('#toasts > *').forEach(t => t.remove()); document.activeElement?.blur?.(); });
+      await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
+      check('your undo skips a card an agent changed since', await p.evaluate(m => byId(m).text === 'agent rewrite', mine));
+      check('and says what it skipped', /except/.test(await p.toast()), await p.toast());
+      // the Undo on a toast undoes exactly what it announced, even after other changes
+      await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'Batch', text: 'agent batch card' }], { by: 'muse' })); await p.waitForTimeout(300);
+      const batchToast = await p.evaluate(() => { const t = [...document.querySelectorAll('#toasts .toast')].pop(); t.dataset.mark = 'batch'; return !!t; });
+      await p.type('/note mine after the batch'); await p.waitForTimeout(600);
+      await p.evaluate(() => document.querySelector('#toasts .toast[data-mark="batch"] button')?.click()); await p.waitForTimeout(400);
+      check("a toast's Undo undoes exactly the change it announced", batchToast && await p.evaluate(() => !board.nodes.some(n => n.text === 'agent batch card') && board.nodes.some(n => n.text === 'mine after the batch')));
+      check('the undo button is off when only agents have changes to undo', await p.evaluate(() => { const before = undoStack.slice(); undoStack = undoStack.filter(t => t.author !== 'you'); syncHistoryBtns(); const off = document.getElementById('topUndoBtn').disabled; undoStack = before; syncHistoryBtns(); return off; }));
+      check('no page errors in history flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 6. unasked thoughts: one look per burst, an hourly budget, and a real Off
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      await p.evaluate(() => { advQuietMs = 300; advMaxWaitMs = 2000; setAdvisorLevel('quiet'); advSpent = []; advHeld = 0; });
+      const looks = () => requests.filter(r => /at most 2 pins/.test(r.prompt) || /pins/.test(r.prompt) && /keywords/.test(r.prompt)).length;
+      const advReqs = () => requests.filter(r => r.full && /Include 1 or at most 2 pins/.test(r.full));
+      let before = advReqs().length;
+      for (const t of ['note: Wukong sold about 30M copies', 'note: GTA VI launches in November', 'note: Ananta launches in January', 'note: Mainland rules bar organised crime', 'note: Sleeping Dogs was praised for melee']) { await p.evaluate(() => select([])); await p.type(t); await p.waitForTimeout(120); }
+      await p.waitForTimeout(2600); await p.idle();
+      const burst = advReqs().slice(before);
+      check('a burst of five new cards gets one look', burst.length === 1, `${burst.length} looks`);
+      check('the other cards in the burst are given as context', burst.length === 1 && /also just added/.test(burst[0].full));
+      await p.evaluate(() => { advSpent = Array.from({ length: 6 }, () => NOW()); });
+      before = advReqs().length;
+      for (const t of ['note: one more fact', 'note: and another fact']) { await p.evaluate(() => select([])); await p.type(t); await p.waitForTimeout(120); }
+      await p.waitForTimeout(1200); await p.idle();
+      check('no looks once the hourly budget is used', advReqs().length === before, `${advReqs().length - before} looks`);
+      check('cards held back are counted', await p.evaluate(() => advHeld >= 2));
+      before = advReqs().length;
+      await p.evaluate(() => scheduleAdvisor(board.nodes.find(n => n.type === 'note').id, { force: true })); await p.waitForTimeout(800); await p.idle();
+      check('a look you ask for ignores the budget', advReqs().length === before + 1, `${advReqs().length - before} looks`);
+      await p.evaluate(() => { setAdvisorLevel('off'); advSpent = []; });
+      before = advReqs().length;
+      await p.evaluate(() => select([])); await p.type('note: quiet please'); await p.waitForTimeout(1200); await p.idle();
+      check('Off means no unasked looks', advReqs().length === before);
+      await p.click('#crewModeBtn'); await p.waitForTimeout(400);
+      const seg = await p.evaluate(() => [...document.querySelectorAll('[data-sp="adv-level"]')].map(b => b.dataset.level + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(','));
+      check('settings offer Off, Quiet and Active', seg === 'off*,quiet,active', seg);
+      await p.click('[data-sp="adv-level"][data-level="active"]'); await p.waitForTimeout(300);
+      check('choosing Active takes effect', await p.evaluate(() => advisorLevel === 'active' && advisorMode === true && advLeft() === 20));
+      check('no page errors in the unasked-thoughts flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 7. agent permissions: each kind of action follows the setting
+    {
+      const p = await page(browser, base, { model: false });
+      await p.newBoard();
+      await p.type('/claim Kept claim'); await p.waitForTimeout(600);
+      await p.type('/note Kept note'); await p.waitForTimeout(600);
+      const [claim, note] = await p.evaluate(() => [board.nodes.find(n => n.type === 'idea').id, board.nodes.find(n => n.type === 'note').id]);
+      const run = (acts, extra = {}) => p.evaluate(([a, x]) => { const r = dispatchCanvasActions(a, { by: 'critic', ...x }); return { created: r.createdNodes.map(n => ({ id: n.id, status: n.status })), proposed: r.proposed.length, skipped: r.skipped.length }; }, [acts, extra]);
+      check('defaults: create directly, edit and delete ask', await p.evaluate(() => perm('create') === 'direct' && perm('link') === 'direct' && perm('edit') === 'suggest' && perm('delete') === 'suggest'));
+      await p.evaluate(() => setAutonomy({ create: 'suggest' }));
+      let r = await run([{ action: 'create', cardType: 'note', title: 'Asked', text: 'arrives as a draft' }]);
+      check('create set to Ask first arrives as a draft', r.created.length === 1 && r.created[0].status === 'sketch', JSON.stringify(r));
+      await p.evaluate(() => setAutonomy({ create: 'never' }));
+      r = await run([{ action: 'create', cardType: 'note', title: 'Blocked', text: 'should not exist' }]);
+      check('create set to Never creates nothing', r.created.length === 0 && r.skipped === 1 && await p.evaluate(() => !board.nodes.some(n => n.text === 'should not exist')));
+      await p.evaluate(() => setAutonomy({ edit: 'direct' }));
+      await run([{ action: 'edit', target: claim, field: 'text', value: 'Edited directly' }]);
+      check('edit set to Do it applies to a kept card', await p.evaluate(id => byId(id).text === 'Edited directly' && openProps(id).length === 0, claim));
+      await p.evaluate(() => setAutonomy({ edit: 'never', delete: 'never' }));
+      r = await run([{ action: 'edit', target: claim, field: 'text', value: 'nope' }, { action: 'erase', targets: [note] }]);
+      check('edit and delete set to Never change nothing', r.skipped === 2 && r.proposed === 0 && await p.evaluate(([c, n]) => byId(c).text === 'Edited directly' && !!byId(n) && openProps().length === 0, [claim, note]));
+      await p.evaluate(() => setAutonomy({ link: 'suggest' }));
+      r = await run([{ action: 'connect', from: note, to: claim }]);
+      check('link set to Ask first becomes a suggestion', r.proposed === 1 && await p.evaluate(([n, c]) => !board.edges.some(e => e.a === n && e.b === c) && openProps(c).some(p => p.op === 'link'), [note, claim]));
+      await p.evaluate(c => { const pr = openProps(c).find(p => p.op === 'link'); return acceptProposal(pr.id); }, claim); await p.waitForTimeout(300);
+      check('accepting a link suggestion links the cards', await p.evaluate(([n, c]) => board.edges.some(e => e.a === n && e.b === c), [note, claim]));
+      r = await run([{ action: 'erase', targets: [note] }], { userIntent: true });
+      await p.waitForTimeout(700);
+      check('your own words are not limited by agent permissions', await p.evaluate(n => { const x = byId(n); return !x || !!x.tombstone; }, note));
+      check('Copilot is told the current permissions', await p.evaluate(() => /linking cards: it becomes a suggestion/.test(autonomyPromptLine()) && /deleting cards the designer has kept: you may not do it/.test(autonomyPromptLine())));
+      // the dialog
+      await p.click('#crewModeBtn'); await p.waitForTimeout(400);
+      await p.click('[data-sp="autonomy"]'); await p.waitForTimeout(400);
+      check('the permissions dialog opens', await p.evaluate(() => document.querySelectorAll('dialog[open] [data-au]').length === 12));
+      await p.click('dialog[open] [data-au="delete"][data-v="suggest"]'); await p.waitForTimeout(200);
+      check('choosing in the dialog takes effect and is remembered', await p.evaluate(() => perm('delete') === 'suggest' && store.get('.autonomy', {}).delete === 'suggest'));
+      await p.click('dialog[open] [data-au-reset]'); await p.waitForTimeout(200);
+      check('Reset restores the defaults', await p.evaluate(() => JSON.stringify(autonomy) === JSON.stringify(AUTONOMY_DEFAULT)));
+      check('no page errors in the permissions flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 8. Task Island: real crew work shows at the top, says what arrived, and can be stopped
     {
       const p = await page(browser, base);
       await p.newBoard();

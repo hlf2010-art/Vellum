@@ -2747,6 +2747,15 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .line-hint:empty{display:none}
 .card .prov-rules{margin-left:6px;font:500 10.5px/1 var(--ui);letter-spacing:.02em;padding:3px 6px;border-radius:999px;color:var(--label-2);background:var(--hover);box-shadow:inset 0 0 0 .5px var(--hair-2)}
 .m-sec.m-prov{padding-block:6px}
+.sp-svc.sp-col{flex-wrap:wrap;row-gap:8px}
+.sp-svc.sp-col .sp-svc-main{flex:1 1 100%;min-width:0}
+.sp-svc.sp-col .sp-svc-sub{white-space:normal;overflow:visible;text-overflow:clip}
+.sp-lvl{display:flex;gap:4px}
+.au-lede{margin:0 0 12px;font:450 13px/1.5 var(--ui);color:var(--label-2);max-width:46ch}
+.au-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--hair-2);font:500 13.5px/1.3 var(--ui)}
+.au-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+@media (max-width:520px){.au-row{flex-direction:column;align-items:flex-start}}
+.sp-lvl .sp-mini{padding-inline:10px}
 
 .card .prop-bar{position:relative;z-index:6;opacity:1;filter:none;margin:8px 10px 10px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--focus,#5b8cff) 12%,var(--card-2,var(--card)));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--focus,#5b8cff) 35%,transparent);font:500 12.5px/1.35 var(--ui);color:var(--label)}
 .card .prop-bar.is-del{background:color-mix(in srgb,var(--danger,#e5484d) 12%,var(--card-2,var(--card)));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--danger,#e5484d) 35%,transparent)}
@@ -3234,8 +3243,9 @@ const selected=()=>sel.map(byId).filter(n=>n&&!isNodeHidden(n));
 const one=()=>{const s=selected();return s.length===1?s[0]:null};
 const snapOfBoard=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,log:board.log,proposals:board.proposals||[]});
 function syncHistoryBtns(){
-  if($("undoBtn"))$("undoBtn").disabled=!undoStack.length;
-  if($("topUndoBtn"))$("topUndoBtn").disabled=!undoStack.length;
+  const mine=undoStack.some(t=>t.author==="you");
+  if($("undoBtn"))$("undoBtn").disabled=!mine;
+  if($("topUndoBtn"))$("topUndoBtn").disabled=!mine;
   if($("topRedoBtn"))$("topRedoBtn").disabled=!redoStack.length;
 }
 function persist(){
@@ -3250,18 +3260,97 @@ function persist(){
     store.set(".list",list);store.set(".active",board.id);syncCopilotContext?.();
   },250);
 }
-function checkpoint(){undoStack.push(snapOfBoard());if(undoStack.length>40)undoStack.shift();redoStack=[];syncHistoryBtns()}
-function undo(){
-  const s=undoStack.pop();if(!s){syncHistoryBtns();toast("Nothing to undo");return}
-  recordChanges();changeActor={who:"you",cause:"undo"};setTimeout(()=>{recordChanges();changeActor=null},0);
-  redoStack.push(snapOfBoard());if(redoStack.length>40)redoStack.shift();
-  Object.assign(board,JSON.parse(s));sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;sfx("undo");syncHistoryBtns();renderAll();persist();toast("Undone");
+/* ── history: per-author, operation-based undo ─────────────────────────────
+   checkpoint() opens a transaction {id, author, before}. The next checkpoint (or undo/redo) closes it into an
+   entity-level patch: for each card, link, adoption, thread, pin and proposal it touched, the state before and after.
+   ⌘Z undoes your own most recent transaction and leaves agents' work alone; a toast's Undo undoes exactly the change
+   it announced. An entity someone else changed since is skipped, and you are told. Redo replays with the same check. */
+let txSeq=0;
+const txAuthor=()=>{const w=changeActor?.who;return w&&w!=="you"?w:"you"};
+const HIST_KEYS=["nodes","edges","proposals"],HIST_MAPS=["adopted","threads","pins"];
+/* history ignores render caches such as a card's measured height (_h) */
+const histSnap=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,proposals:board.proposals||[]},(k,v)=>k==="_h"?undefined:v);
+function histState(){return JSON.parse(histSnap())}
+/* compare entities ignoring render caches and metadata filled in after the fact (a card's basis list) */
+const histKey=v=>JSON.stringify(v??null,(k,x)=>k==="_h"||k==="basis"?undefined:x);
+function diffBoards(a,b){
+  const patch={};let n=0;
+  for(const k of HIST_KEYS){
+    const A=new Map((a[k]||[]).map((x,i)=>[x.id,[x,i]])),B=new Map((b[k]||[]).map((x,i)=>[x.id,[x,i]])),out={};
+    for(const [id,[x,i]] of A){const y=B.get(id)?.[0];if(!y)out[id]=[x,null,i];else if(histKey(x)!==histKey(y))out[id]=[x,y,i]}
+    for(const [id,[y,i]] of B)if(!A.has(id))out[id]=[null,y,i];
+    if(Object.keys(out).length){patch[k]=out;n++}
+  }
+  for(const k of HIST_MAPS){
+    const A=a[k]||{},B=b[k]||{},out={};
+    for(const id of new Set([...Object.keys(A),...Object.keys(B)])){const x=A[id]??null,y=B[id]??null;if(JSON.stringify(x)!==JSON.stringify(y))out[id]=[x,y]}
+    if(Object.keys(out).length){patch[k]=out;n++}
+  }
+  return n?patch:null;
+}
+function closeTx(){
+  const tx=undoStack[undoStack.length-1];if(!tx||!tx.before)return;
+  tx.patch=diffBoards(JSON.parse(tx.before),histState());tx.before=null;
+  if(!tx.patch)undoStack.pop();
+}
+function checkpoint(){
+  closeTx();const author=txAuthor();
+  undoStack.push({id:"tx"+(++txSeq),author,t:NOW(),before:histSnap(),patch:null});
+  if(undoStack.length>60)undoStack.shift();
+  if(author==="you")redoStack=[];
+  syncHistoryBtns();
+}
+const lastTxId=()=>undoStack[undoStack.length-1]?.id||null;
+function applyPatch(patch,dir){
+  /* dir "undo": set each entity back to before, if it still looks like after. "redo": the reverse. */
+  const conflicts=[],same=(x,y)=>histKey(x)===histKey(y);
+  for(const k of HIST_KEYS){
+    const P=patch?.[k];if(!P)continue;board[k]=Array.isArray(board[k])?board[k]:[];
+    for(const [id,[before,after,idx]] of Object.entries(P)){
+      const want=dir==="undo"?before:after,expect=dir==="undo"?after:before;
+      const at=board[k].findIndex(x=>x.id===id),cur=at>=0?board[k][at]:null;
+      const curCmp=cur&&k==="nodes"?(({_h,...r})=>r)(cur):cur;
+      if(!same(curCmp,expect)){conflicts.push({k,id,title:cur?(k==="nodes"?titleOf(cur):id):(expect&&k==="nodes"?titleOf(expect):id)});continue}
+      if(!want){if(at>=0)board[k].splice(at,1)}
+      else if(at>=0)board[k][at]=JSON.parse(JSON.stringify(want));
+      else board[k].splice(Math.min(idx??board[k].length,board[k].length),0,JSON.parse(JSON.stringify(want)));
+    }
+  }
+  for(const k of HIST_MAPS){
+    const P=patch?.[k];if(!P)continue;board[k]=board[k]||{};
+    for(const [id,[before,after]] of Object.entries(P)){
+      const want=dir==="undo"?before:after,expect=dir==="undo"?after:before;
+      if(!same(board[k][id],expect)){conflicts.push({k,id,title:k==="adopted"?L("an adoption","一次采纳"):titleOf(byId(id))||id});continue}
+      if(want==null)delete board[k][id];else board[k][id]=JSON.parse(JSON.stringify(want));
+    }
+  }
+  return conflicts;
+}
+function historyApplied(conflicts,word){
+  sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;syncHistoryBtns();renderAll();persist();renderReview?.();
+  if(!conflicts.length)return toast(word);
+  const names=[...new Set(conflicts.map(c=>c.title).filter(Boolean))].slice(0,2).map(t=>`“${clip(t,28)}”`).join(", ");
+  toast(L(`${word}, except ${conflicts.length} change${conflicts.length>1?"s":""} made since (${names})`,`${word}，但跳过了之后已被改动的 ${conflicts.length} 处（${names}）`));
+}
+function undo(target){
+  closeTx();
+  const i=target?undoStack.findIndex(t=>t.id===target):undoStack.map(t=>t.author).lastIndexOf("you");
+  if(i<0){syncHistoryBtns();toast(target?L("That change is no longer in history.","该改动已不在历史记录中。"):L("Nothing of yours to undo","没有可撤销的操作"));return}
+  const tx=undoStack.splice(i,1)[0];
+  recordChanges();changeActor={who:"you",cause:"undo"};
+  const conflicts=applyPatch(tx.patch,"undo");
+  redoStack.push(tx);if(redoStack.length>60)redoStack.shift();
+  sfx("undo");historyApplied(conflicts,L("Undone","已撤销"));
+  setTimeout(()=>{recordChanges();changeActor=null},0);
 }
 function redo(){
-  const s=redoStack.pop();if(!s){syncHistoryBtns();toast("Nothing to redo");return}
-  recordChanges();changeActor={who:"you",cause:"redo"};setTimeout(()=>{recordChanges();changeActor=null},0);
-  undoStack.push(snapOfBoard());if(undoStack.length>40)undoStack.shift();
-  Object.assign(board,JSON.parse(s));sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;sfx("redo");syncHistoryBtns();renderAll();persist();toast("Redone");
+  closeTx();
+  const tx=redoStack.pop();if(!tx){syncHistoryBtns();toast("Nothing to redo");return}
+  recordChanges();changeActor={who:"you",cause:"redo"};
+  const conflicts=applyPatch(tx.patch,"redo");
+  undoStack.push(tx);
+  sfx("redo");historyApplied(conflicts,L("Redone","已重做"));
+  setTimeout(()=>{recordChanges();changeActor=null},0);
 }
 function log(who,html,node){board.log.push({t:NOW(),who,html,node:node||null});if(board.log.length>300)board.log.shift();if(!$("ledger").hidden)renderLedger()}
 
@@ -3310,6 +3399,27 @@ function asActor(actor,fn){const prev=changeActor;changeActor=actor;recordChange
 /* ── proposals: what an agent wants to change on a card you have kept ─────────
    Creating is free (drafts, comments, links). Editing or deleting a kept card is an agent's proposal until you accept it.
    A proposal records what the card looked like when it was made, so accepting after the card changed asks once more. */
+/* What agents may do on their own, per kind of action: "direct" (do it), "suggest" (ask first), "never".
+   Creating something suggested arrives as a draft; linking, editing or deleting suggested arrives as a proposal on the card.
+   Drafts are the agents' own space, and changes translated from your own words are yours, so neither is gated. */
+const AUTONOMY_DEFAULT={create:"direct",link:"direct",edit:"suggest",delete:"suggest"};
+const AUTONOMY_ROWS=[["create",["Create cards and comments","新建卡片和评论"]],["link",["Link cards","连线"]],["edit",["Edit your kept cards","修改你已确认的卡片"]],["delete",["Delete your kept cards","删除你已确认的卡片"]]];
+const AUTONOMY_LEVELS=[["direct",["Do it","直接做"]],["suggest",["Ask first","先问"]],["never",["Never","不允许"]]];
+let autonomy={...AUTONOMY_DEFAULT,...(store.get(".autonomy",{})||{})};
+const perm=k=>["direct","suggest","never"].includes(autonomy[k])?autonomy[k]:AUTONOMY_DEFAULT[k];
+function setAutonomy(patch){autonomy={...autonomy,...patch};store.set(".autonomy",autonomy);renderStudioPop?.()}
+function autonomySummary(){const short={direct:L("do it","直接做"),suggest:L("ask","先问"),never:L("never","不允许")};return AUTONOMY_ROWS.map(([k,l])=>`${L({create:"Create",link:"Link",edit:"Edit",delete:"Delete"}[k],{create:"新建",link:"连线",edit:"修改",delete:"删除"}[k])}: ${short[perm(k)]}`).join(" · ")}
+function autonomyPromptLine(){
+  const say={direct:"you may do it directly",suggest:"it becomes a suggestion the designer accepts or declines (say you suggested it, never that you did it)",never:"you may not do it; tell the designer instead"};
+  return `Board permissions set by the designer: creating cards or comments: ${say[perm("create")]}${perm("create")==="suggest"?" (cards arrive as drafts)":""}; linking cards: ${say[perm("link")]}; editing cards the designer has kept: ${say[perm("edit")]}; deleting cards the designer has kept: ${say[perm("delete")]}. Your own drafts you may always edit.`;
+}
+function openAutonomyDialog(){
+  const row=([k,l])=>`<div class="au-row"><span>${L(l[0],l[1])}</span><div class="sp-lvl" role="group" aria-label="${esc(L(l[0],l[1]))}">${AUTONOMY_LEVELS.map(([v,vl])=>`<button type="button" class="sp-mini${perm(k)===v?" on":""}" data-au="${k}" data-v="${v}" aria-pressed="${perm(k)===v}">${L(vl[0],vl[1])}</button>`).join("")}</div></div>`;
+  const body=()=>`<p class="au-lede">${L("What the crew may do on the board without asking. Drafts are always theirs to change, and anything you ask for in your own words is done as asked.","成员无需询问即可在画板上做的事。草稿始终由它们自行修改；你用自己的话要求的操作会照做。")}</p>${AUTONOMY_ROWS.map(row).join("")}<div class="au-foot"><button type="button" class="cbtn" data-au-reset>${L("Reset to defaults","恢复默认")}</button><button type="button" class="cbtn solid" data-d="close">${L("Done","完成")}</button></div>`;
+  openDialog(L("Agent permissions","成员权限"),`<div id="auBody">${body()}</div>`,d=>{
+    d.onclick=e=>{const b=e.target.closest("[data-au]");if(b){setAutonomy({[b.dataset.au]:b.dataset.v});qs("#auBody",d).innerHTML=body();return}if(e.target.closest("[data-au-reset]")){autonomy={...AUTONOMY_DEFAULT};store.set(".autonomy",autonomy);renderStudioPop?.();qs("#auBody",d).innerHTML=body()}};
+  });
+}
 const PROP_FIELDS=["title","text","tag","tone"];
 const openProps=id=>(board.proposals||[]).filter(p=>p.status==="open"&&(!id||p.target===id));
 function propose(who,engine,op,n,change){
@@ -3329,6 +3439,12 @@ async function acceptProposal(id,{force=false}={}){
   if(!n||n.tombstone){pr.status="obsolete";renderAll();persist();return toast(L("That card no longer exists, so the suggestion was closed.","该卡片已不存在，建议已关闭。"))}
   if(!force&&digest(n)!==pr.base){pr.stale=true;expandedProps.add(id);renderNodes();return toast(L("The card changed after this was suggested. Review it, then accept again to apply anyway.","提出建议后卡片已被修改。请先查看，再次接受即可照样应用。"))}
   recordChanges();
+  if(pr.op==="link"){
+    const a=byId(pr.change.from);if(!a){pr.status="obsolete";renderAll();persist();return toast(L("The card to link from no longer exists.","要连线的卡片已不存在。"))}
+    checkpoint();edge(a.id,n.id,pr.change.kind||"derive",pr.change.depType||"live");pr.status="accepted";pr.resolvedAt=NOW();
+    noteChange({op:"accept-proposal",id:n.id,type:n.type,title:clip(titleOf(n),60),who:"you",engine:"human",from:pr.who});
+    renderAll();persist();renderReview();return toast(L("Linked.","已连线。"),{undo:true});
+  }
   if(pr.op==="delete"){
     pr.status="accepted";pr.resolvedAt=NOW();
     noteChange({op:"accept-proposal",id:n.id,type:n.type,title:clip(titleOf(n),60),who:"you",engine:"human",from:pr.who});
@@ -3367,10 +3483,11 @@ function proposalBarHTML(n){
   const ps=openProps(n.id);if(!ps.length)return"";
   return ps.map(pr=>{
     const a=AGENTS[pr.who],name=a?a.name:"Copilot",open=expandedProps.has(pr.id);
-    const what=pr.op==="delete"?L(`${name} suggests deleting this card`,`${name} 建议删除此卡片`):L(`${name} suggests an edit`,`${name} 建议修改`);
+    const from=pr.op==="link"?byId(pr.change.from):null;
+    const what=pr.op==="delete"?L(`${name} suggests deleting this card`,`${name} 建议删除此卡片`):pr.op==="link"?L(`${name} suggests linking “${clip(from?titleOf(from):"a card",32)}” into this card`,`${name} 建议把「${clip(from?titleOf(from):"一张卡片",32)}」连到此卡片`):L(`${name} suggests an edit`,`${name} 建议修改`);
     const diff=open&&pr.op!=="delete"?`<div class="prop-diff">${Object.keys(pr.before).map(f=>`<div><span class="prop-f">${esc(f)}</span>${wordDiffHTML(pr.before[f],f===pr.change.field?pr.change.value:pr.change[f])}</div>`).join("")}</div>`:"";
     const stale=pr.stale?`<div class="prop-stale">${L("The card changed after this was suggested.","提出建议后卡片已被修改。")}</div>`:"";
-    return `<div class="prop-bar${pr.op==="delete"?" is-del":""}" data-prop="${esc(pr.id)}"><div class="prop-top"><span class="mk">${a?a.mk:COPILOT_ICO}</span><span class="prop-what">${esc(what)}</span><span class="prop-acts">${pr.op!=="delete"?`<button type="button" class="prop-btn" data-prop-act="view">${open?L("Hide","收起"):L("Review","查看")}</button>`:""}<button type="button" class="prop-btn" data-prop-act="reject">${L("Decline","拒绝")}</button><button type="button" class="prop-btn ok" data-prop-act="accept">${pr.stale?L("Accept anyway","仍然接受"):L("Accept","接受")}</button></span></div>${stale}${diff}</div>`;
+    return `<div class="prop-bar${pr.op==="delete"?" is-del":""}" data-prop="${esc(pr.id)}"><div class="prop-top"><span class="mk">${a?a.mk:COPILOT_ICO}</span><span class="prop-what">${esc(what)}</span><span class="prop-acts">${pr.op==="edit"?`<button type="button" class="prop-btn" data-prop-act="view">${open?L("Hide","收起"):L("Review","查看")}</button>`:""}<button type="button" class="prop-btn" data-prop-act="reject">${L("Decline","拒绝")}</button><button type="button" class="prop-btn ok" data-prop-act="accept">${pr.stale?L("Accept anyway","仍然接受"):L("Accept","接受")}</button></span></div>${stale}${diff}</div>`;
   }).join("");
 }
 function provLineHTML(n){
@@ -5544,12 +5661,19 @@ function renderStudioPop(){
         </div>
         <button type="button" class="sp-mini" data-sp="api">${hasApi()?L("Edit","编辑"):L("Set","配置")}</button>
       </div>
+      <div class="sp-svc sp-col">
+        <div class="sp-svc-main">
+          <div class="sp-svc-top"><span>${L("Unasked thoughts","主动建议")}</span></div>
+          <div class="sp-svc-sub">${advisorLevel==="off"?L("The crew only speaks when you ask","只在你询问时发言"):L(`One look per burst of new cards · ${advUsed()} of ${ADV_BUDGET[advisorLevel]} used this hour${advHeld?` · ${advHeld} held back`:""}`,`每批新卡片看一次 · 本小时已用 ${advUsed()}/${ADV_BUDGET[advisorLevel]}${advHeld?` · ${advHeld} 张未看`:""}`)}</div>
+        </div>
+        <div class="sp-lvl" role="group" aria-label="${esc(L("How proactive the crew is","主动程度"))}">${[["off",L("Off","关闭")],["quiet",L("Quiet","安静")],["active",L("Active","活跃")]].map(([k,l])=>`<button type="button" class="sp-mini${advisorLevel===k?" on":""}" data-sp="adv-level" data-level="${k}" aria-pressed="${advisorLevel===k}">${l}</button>`).join("")}</div>
+      </div>
       <div class="sp-svc">
         <div class="sp-svc-main">
-          <div class="sp-svc-top"><span>${L("Advisor pins","智能顾问角标")}</span></div>
-          <div class="sp-svc-sub">${L("Quietly leave constructive pins on new cards","在新卡片上静默附着建设性建议")}</div>
+          <div class="sp-svc-top"><span>${L("Agent permissions","成员权限")}</span></div>
+          <div class="sp-svc-sub" title="${esc(autonomySummary())}">${esc(autonomySummary())}</div>
         </div>
-        <button type="button" class="sp-mini ${typeof advisorMode!=="undefined"&&advisorMode?"on":""}" data-sp="adv-mode" aria-pressed="${typeof advisorMode!=="undefined"&&advisorMode}">${typeof advisorMode!=="undefined"&&advisorMode?L("On","开启"):L("Off","关闭")}</button>
+        <button type="button" class="sp-mini" data-sp="autonomy">${L("Edit","编辑")}</button>
       </div>
       ${typeof advisorMode==="undefined"||advisorMode?`<div class="sp-svc">
         <div class="sp-svc-main">
@@ -5865,7 +5989,8 @@ function toast(text,opts={}){
   t.className="toast"+(hasAct?" timed":"");t.style.setProperty("--life",(hasAct?6000:3400)+"ms");
   const lbl=opts.actLabel||(opts.undo?"Undo":"");
   t.innerHTML=`<span>${opts.html?text:esc(text)}</span>${hasAct?`<button type="button">${esc(lbl)}</button>`:""}`;
-  if(hasAct)t.querySelector("button").onclick=()=>{if(opts.onAct)opts.onAct();else undo();t.remove()};
+  const undoTarget=opts.undo&&!opts.onAct?(opts.undoTx||lastTxId()):null;
+  if(hasAct)t.querySelector("button").onclick=()=>{if(opts.onAct)opts.onAct();else undo(undoTarget||undefined);t.remove()};
   $("toasts").appendChild(t);while($("toasts").children.length>3)$("toasts").firstChild.remove();
   setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),320)},hasAct?6000:3400);
 }
@@ -5888,7 +6013,22 @@ function renderAll(){if(board&&(!changeShadow||changeShadow.id!==board.id))chang
 }
 
 /* ── advisor co-work pins & humanized thinking whisper ─────────────────── */
-let advisorMode=store.get(".advisor",true);
+/* How proactive the crew is, unasked. Off: never. Quiet: one look per burst of new cards, at most ADV_BUDGET.quiet an hour.
+   Active: the same batching with a larger budget. Anything you ask for (a pin's Try again) is outside the budget. */
+const ADV_BUDGET={quiet:6,active:20};
+let advQuietMs=6000,advMaxWaitMs=20000;
+let advisorLevel=store.get(".advisorLevel",null)||(store.get(".advisor",true)?"quiet":"off");
+let advisorMode=advisorLevel!=="off";
+let advSpent=(store.get(".advSpent",[])||[]).filter(t=>NOW()-t<3600000);
+let advBurst=new Set(),advBurstT=0,advBurstStart=0,advBurstCtx=null,advHeld=0;
+const advUsed=()=>{advSpent=advSpent.filter(t=>NOW()-t<3600000);return advSpent.length};
+const advLeft=()=>Math.max(0,(ADV_BUDGET[advisorLevel]||0)-advUsed());
+function setAdvisorLevel(level){
+  advisorLevel=["off","quiet","active"].includes(level)?level:"quiet";advisorMode=advisorLevel!=="off";
+  store.set(".advisorLevel",advisorLevel);store.set(".advisor",advisorMode);
+  if(!advisorMode){for(const t of advTimers.values())clearTimeout(t);advTimers.clear();advBurst.clear();clearTimeout(advBurstT)}
+  renderCrew();renderStudioPop?.();
+}
 let advisorAuto=store.get(".advisorAuto",false);
 let openAdvNodeId=null;
 let openAdvIdx=0;
@@ -5897,8 +6037,8 @@ const advTimers=new Map();
 let advStreamState=null;
 
 function toggleAdvisorMode(force){
-  advisorMode=force===undefined?!advisorMode:!!force;
-  store.set(".advisor",advisorMode);
+  const on=force===undefined?!advisorMode:!!force;setAdvisorLevel(on?(advisorLevel==="off"?"quiet":advisorLevel):"off");
+  advisorMode=on;
   if(!advisorMode){
     for(const t of advTimers.values())clearTimeout(t);
     advTimers.clear();
@@ -6219,7 +6359,8 @@ async function askAdvisorForNode(n,onProgress,signal,{allowOffline=true}={}){
   const imgNodes=isVisualNode(n)?[n]:[];
   if(!advisorLiveReady(n))return local();
   const rel=[...inputsOf(n.id),...outputsOf(n.id)].filter((x,i,a)=>x&&!x.archived&&!x.hidden&&!x.tombstone&&x.id!==n.id&&a.findIndex(y=>y&&y.id===x.id)===i).slice(0,3);
-  const ctxText=rel.length?`\nConnected lineage context:\n${wallText(rel,{excludeIds:[n.id],compactDocs:true,shortCap:150,totalCap:750})}`:"";
+  const burst=advBurstCtx&&advBurstCtx.target===n.id?advBurstCtx.others.map(byId).filter(Boolean):[];advBurstCtx=null;
+  const ctxText=(rel.length?`\nConnected lineage context:\n${wallText(rel,{excludeIds:[n.id],compactDocs:true,shortCap:150,totalCap:750})}`:"")+(burst.length?`\nThe designer also just added these cards (context only; leave your note on THIS card, and mention one of them only if it clearly bears on it):\n${burst.map(b=>"- "+clip(titleOf(b),80)).join("\n")}`:"");
   const roles=advisorRolesFor(n);
   const forkRule=["idea","note","notepad"].includes(n.type)?`"fork","critique","list","gather","visuals","note"`
     :(isVisualNode(n)?(rel.length?`"note","critique","list","gather","visuals"`:`"note","critique","list","visuals"`):(rel.length?`"critique","note","list","gather","visuals"`:`"critique","note","list","visuals"`));
@@ -6283,8 +6424,21 @@ function scheduleAdvisor(nodeId,{force=false,delay=1400}={}){
   if(!force&&!advisorLiveReady(n))return;
   const raw=(fullTextOf(n)+" "+(n.title||"")).trim();
   if(!force&&raw.length<10&&!n.media&&!n.url)return;
-  if(advTimers.has(nodeId))clearTimeout(advTimers.get(nodeId));
-  advTimers.set(nodeId,setTimeout(()=>{advTimers.delete(nodeId);runAdvisorOnNode(nodeId,{force})},force?40:delay));
+  if(force){if(advTimers.has(nodeId))clearTimeout(advTimers.get(nodeId));advTimers.set(nodeId,setTimeout(()=>{advTimers.delete(nodeId);runAdvisorOnNode(nodeId,{force})},40));return}
+  if(!advBurst.size)advBurstStart=NOW();
+  advBurst.add(nodeId);clearTimeout(advBurstT);
+  const wait=Math.max(0,Math.min(Math.max(delay,advQuietMs),advBurstStart+advMaxWaitMs-NOW()));
+  advBurstT=setTimeout(fireAdvisorBurst,wait);
+}
+function fireAdvisorBurst(){
+  const ids=[...advBurst].filter(id=>{const n=byId(id);return n&&!n.archived&&n.status!=="sketch"&&n.type!=="group"});advBurst.clear();
+  if(!ids.length||!advisorMode)return;
+  if(!advLeft()){advHeld+=ids.length;renderStudioPop?.();return}
+  /* one look per burst: the card with the most to say about, preferring cards without a pin yet */
+  const score=id=>{const n=byId(id),txt=(fullTextOf(n)+" "+(n.title||"")).trim();return Math.min(txt.length,600)+(n.media||n.url?200:0)-((board.pins?.[id]||[]).length?1000:0)+(n.updated||n.created||0)/1e13};
+  ids.sort((a,b)=>score(b)-score(a));
+  advBurstCtx={target:ids[0],others:ids.slice(1,6)};
+  runAdvisorOnNode(ids[0],{});
 }
 async function runAdvisorOnNode(nodeId,{force=false}={}){
   const n=byId(nodeId);
@@ -6299,6 +6453,7 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
   const advCtrl=new AbortController();advAborts.set(nodeId,advCtrl);
   try{
     let curKws=(localRes.keywords||[]).slice(0,2),curLines=[],liveKws=false,liveLines=0;
+    if(!force&&advisorLiveReady(n)){advSpent.push(NOW());store.set(".advSpent",advSpent);renderStudioPop?.()}
     const dataP=askAdvisorForNode(n,({keywords,thoughts})=>{
       if(!advThinking.has(nodeId)||advCtrl.signal.aborted)return;
       if(keywords.length){liveKws=true;curKws=keywords.slice(0,5)}
@@ -7790,12 +7945,28 @@ async function erase(ids,opts={}){
 }
 const modelExpected=()=>aiPref!=="local"&&(studioState.status==="ready"||hasApi()||!!sampleFn);
 const isStandIn=n=>!!(n?.gen?.preview||n?.src?.placeholder);
+/* Try again's history helpers: the transactions the move itself opened are the ones that touch the nodes it made. */
+const txTouches=(tx,ids)=>!!tx.patch&&(Object.keys(tx.patch.nodes||{}).some(id=>ids.has(id))||Object.values(tx.patch.edges||{}).some(([a,b])=>[a,b].some(e=>e&&(ids.has(e.a)||ids.has(e.b)))));
+function dropRunTx(from,ids){for(let i=undoStack.length-1;i>=from;i--)if(txTouches(undoStack[i],ids))undoStack.splice(i,1)}
+function mergeRunTx(from,ids,lifted,liftedEdges){
+  const patch={nodes:{},edges:{}};let at=-1;
+  for(let i=from;i<undoStack.length;i++){const tx=undoStack[i];if(!txTouches(tx,ids))continue;if(at<0)at=i;
+    for(const [k,P] of Object.entries(tx.patch)){patch[k]=patch[k]||{};for(const [id,v] of Object.entries(P)){if(patch[k][id])patch[k][id]=[patch[k][id][0],v[1],patch[k][id][2]];else patch[k][id]=v}}}
+  for(const {i,n} of lifted)patch.nodes[n.id]=[n,null,i];
+  liftedEdges.forEach((e,i)=>{patch.edges[e.id]=[e,null,i]});
+  for(let i=undoStack.length-1;i>=from;i--)if(txTouches(undoStack[i],ids))undoStack.splice(i,1);
+  const tx={id:"tx"+(++txSeq),author:"you",t:NOW(),before:null,patch};
+  undoStack.splice(at<0?undoStack.length:Math.min(at,undoStack.length),0,tx);
+  redoStack=[];return tx.id;
+}
 async function redraw(pid){
   const ns=board.nodes.filter(n=>n.pid===pid);if(!ns.length)return;
   const t=ns[0],agent=t.by,t0=NOW();
   if(agent&&crewState[agent]?.busy)return toast(L(`${AGENTS[agent]?.name||"The agent"} is still working. Try again when it's done.`,`${AGENTS[agent]?.name||"该成员"}仍在工作，完成后再重试。`));
   /* The old drafts stay the truth until a real replacement exists. They are lifted out only so the move sees a clean slate
-     (letters, versions, placement); history never sees the lift, and nothing outside this run's own nodes is touched. */
+     (letters, versions, placement). History records the whole Try again as one transaction of yours: old drafts out, new in.
+     Nothing outside this run's own nodes is touched, so anything you or other agents do meanwhile keeps its own history. */
+  closeTx();
   const ins=inputsOf(t.id),oldIds=new Set(ns.map(n=>n.id)),known=new Set(board.nodes.map(n=>n.id)),undoAt=undoStack.length;
   const lifted=board.nodes.map((n,i)=>oldIds.has(n.id)?{i,n:JSON.parse(JSON.stringify(n))}:null).filter(Boolean);
   const liftedEdges=board.edges.filter(e=>oldIds.has(e.a)||oldIds.has(e.b)).map(e=>({...e}));
@@ -7805,25 +7976,23 @@ async function redraw(pid){
   let failed=false;
   try{await redrawMove(t,ns,ins)}catch(e){console.warn("Try again failed:",e);failed=true}
   const putBack=o=>{if(o.nodes.some(n=>oldIds.has(n.id)))return o;for(const {i,n} of lifted)o.nodes.splice(Math.min(i,o.nodes.length),0,JSON.parse(JSON.stringify(n)));const have=new Set(o.nodes.map(n=>n.id));o.edges=[...(o.edges||[]),...liftedEdges.filter(e=>have.has(e.a)&&have.has(e.b)&&!(o.edges||[]).some(x=>x.id===e.id))];return o};
-  for(let i=undoAt;i<undoStack.length;i++){try{undoStack[i]=JSON.stringify(putBack(JSON.parse(undoStack[i])))}catch{}}
   const made=board.nodes.filter(n=>!known.has(n.id)&&n.status==="sketch"&&n.type===t.type&&n.by===t.by);
   const lr=agent?crewState[agent]?.lastRun:null;
   const fellBack=modelExpected()&&!!lr&&lr.t>=t0&&lr.live===false;
   const standIns=made.length>0&&made.every(isStandIn)&&!ns.every(isStandIn);
   if(failed||!made.length||fellBack||standIns){
     const madeIds=new Set(made.map(n=>n.id));
+    closeTx();dropRunTx(undoAt,madeIds);
     board.nodes=board.nodes.filter(n=>!madeIds.has(n.id));board.edges=board.edges.filter(e=>!madeIds.has(e.a)&&!madeIds.has(e.b));
     putBack(board);
-    const top=undoStack[undoStack.length-1],ids=o=>o.nodes.map(n=>n.id).sort().join();
-    if(undoStack.length>undoAt&&top){try{if(ids(JSON.parse(top))===ids(board))undoStack.pop()}catch{}}
     syncHistoryBtns();renderAll();persist();
     toast(failed||!made.length?L("Couldn't make a new version. The previous one is kept.","没能生成新版本，已保留原来的版本。"):L("The model didn't answer, so nothing was replaced. The previous version is kept.","模型没有响应，未做替换，已保留原来的版本。"));
     return;
   }
-  syncHistoryBtns();
   const order=[...made].sort((a,b)=>a.y-b.y||a.x-b.x);if(order.length===slots.length)order.forEach((n,i)=>{n.x=slots[i].x;n.y=slots[i].y});
+  closeTx();const runTx=mergeRunTx(undoAt,new Set(made.map(n=>n.id)),lifted,liftedEdges);syncHistoryBtns();
   log("you",`Tried again: replaced ${ns.length>1?ns.length+" suggestions":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,null);
-  renderAll();persist();toast(L("New version. Undo brings back the previous one.","已生成新版本，撤销可恢复上一版。"),{undo:true});
+  renderAll();persist();toast(L("New version. Undo brings back the previous one.","已生成新版本，撤销可恢复上一版。"),{undo:true,undoTx:runTx});
 }
 async function redrawMove(t,ns,ins){
   const srcNode=ins[0];
@@ -8379,7 +8548,7 @@ function renderReviewPop(){
       const ag=AGENTS[first.by]||{mk:"✦",name:"Crew"};
       const sub=`${ag.name}${ns.length>1?` · ${ns.length} cards`:""}`;
       return `<div class="rp-item"><button type="button" class="rp-go" data-rp-go="${esc(pid)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(titleOf(first))}</strong><span>${esc(sub)}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn keep" data-rp-keep="${esc(pid)}" title="${L("Keep draft","保留草稿")}" aria-label="${L("Keep draft","保留草稿")}">${ic("check")}</button><button type="button" class="rp-btn drop" data-rp-drop="${esc(pid)}" title="${L("Discard draft","丢弃草稿")}" aria-label="${L("Discard draft","丢弃草稿")}">${ic("close")}</button></div></div>`;
-    }).join("")}</div>`+(props.length?`<div class="rp-sub">${L("Suggested changes to your cards","对你卡片的修改建议")}</div><div class="rp-list">${props.map(pr=>{const n=byId(pr.target),ag=AGENTS[pr.who]||{mk:COPILOT_ICO,name:"Copilot"};return `<div class="rp-item"><button type="button" class="rp-go" data-rp-prop-go="${esc(pr.id)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(n?titleOf(n):L("Missing card","卡片已不存在"))}</strong><span>${esc(ag.name)} · ${pr.op==="delete"?L("delete","删除"):L("edit","修改")}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn" data-rp-prop-reject="${esc(pr.id)}" title="${esc(L("Decline","拒绝"))}" aria-label="${esc(L("Decline","拒绝"))}">${ic("x")}</button><button type="button" class="rp-btn keep" data-rp-prop-accept="${esc(pr.id)}" title="${esc(L("Accept","接受"))}" aria-label="${esc(L("Accept","接受"))}">${ic("check")}</button></div></div>`}).join("")}</div>`:"");
+    }).join("")}</div>`+(props.length?`<div class="rp-sub">${L("Suggested changes to your cards","对你卡片的修改建议")}</div><div class="rp-list">${props.map(pr=>{const n=byId(pr.target),ag=AGENTS[pr.who]||{mk:COPILOT_ICO,name:"Copilot"};return `<div class="rp-item"><button type="button" class="rp-go" data-rp-prop-go="${esc(pr.id)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(n?titleOf(n):L("Missing card","卡片已不存在"))}</strong><span>${esc(ag.name)} · ${pr.op==="delete"?L("delete","删除"):pr.op==="link"?L("link","连线"):L("edit","修改")}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn" data-rp-prop-reject="${esc(pr.id)}" title="${esc(L("Decline","拒绝"))}" aria-label="${esc(L("Decline","拒绝"))}">${ic("x")}</button><button type="button" class="rp-btn keep" data-rp-prop-accept="${esc(pr.id)}" title="${esc(L("Accept","接受"))}" aria-label="${esc(L("Accept","接受"))}">${ic("check")}</button></div></div>`}).join("")}</div>`:"");
 }
 function toggleReviewPop(force){
   const next=force===undefined?!reviewPopOpen:!!force;
@@ -11326,7 +11495,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       const digestBlock=isCasual?"":boardDigestForCopilot({query:subSteps.length?"":text,ctx});
       const sys=isCasual
         ?`You are Lumen Copilot, a concise design workspace assistant for board "${board.title||"Untitled"}". The user sent a brief conversational message ("${text.trim()}"). Reply in 1 short, natural sentence (under 18 words). Do NOT roleplay as a human teammate, do NOT mention playtests, synthesis docs, or background work, do NOT output multiple paragraphs, and do NOT add a sign-off.`
-        :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\nCONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- Edits and deletions of cards the designer has kept (not drafts) are not applied: they become suggestions the designer accepts or declines on the card. Say what you suggested ("I've suggested an edit to …"), never that you changed it. Cards you create land directly.\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
+        :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\nCONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
 
       const maxTok=isCasual?64:1500;
       if(aiPref==="auto"&&studioState.status==="ready"){
@@ -11507,6 +11676,8 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
   const list=Array.isArray(rawActions)?rawActions:(rawActions?[rawActions]:[]);
   if(!list.length)return {applied:[],failed:[],createdNodes:[],modifiedNodes:[]};
   const applied=[],failed=[],createdNodes=[],modifiedNodes=[],proposed=[];
+  const skipped=[];
+  const ruleFor=k=>opts.userIntent?"direct":perm(k);
   const gate=n=>!opts.userIntent&&n&&n.status==="ink"&&!createdNodes.includes(n);
   checkpoint();
   for(const act of list){
@@ -11515,12 +11686,13 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
     const who=act.by&&AGENTS[act.by]?act.by:(opts.by&&AGENTS[opts.by]?opts.by:(opts.agent&&AGENTS[opts.agent]?opts.agent:"critic"));
     try{
       if(["create","add","add_card","node","comment"].includes(type)){
+        if(ruleFor("create")==="never"){skipped.push({action:"create",title:act.title||act.text||""});continue}
         const cardType=type==="comment"?"note":String(act.cardType||act.type||"note").toLowerCase();
         const isComment=type==="comment"||act.isComment||act.tag==="Comment"||act.title==="Comment";
         const title=cleanCopilotField(act.title||(isComment?"Comment":(cardType==="note"?"Note":"Card")));
         const text=cleanCopilotField(act.text||act.body||act.content||act.markdown||"");
         const tag=cleanCopilotField(act.tag||(isComment?"Comment":""));
-        const status=act.status==="sketch"?"sketch":"ink";
+        const status=act.status==="sketch"||ruleFor("create")==="suggest"?"sketch":"ink";
         const fromRef=act.from||act.beside||act.attachTo||act.parent;
         const fromNode=fromRef?byId(resolveNodeId(fromRef)):(ctxNodes()[0]||null);
         const cardW=W[cardType]||W.note;
@@ -11574,7 +11746,8 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
         const targetId=resolveNodeId(act.target||act.id||act.nodeId)||ctxNodes()[0]?.id;
         const n=targetId?byId(targetId):null;
         if(!n){failed.push({action:"edit",target:act.target,error:"Target node not found"});continue}
-        if(gate(n)){
+        if(gate(n)&&perm("edit")==="never"){skipped.push({action:"edit",id:n.id,title:titleOf(n)});continue}
+        if(gate(n)&&perm("edit")==="suggest"){
           const change={};
           if(act.field){if(act.value!==undefined){change.field=String(act.field).toLowerCase();change.value=act.value}}
           else{if(act.title!==undefined)change.title=cleanCopilotField(act.title);if(act.text!==undefined||act.body!==undefined||act.content!==undefined)change.text=cleanCopilotField(act.text??act.body??act.content);if(act.tag!==undefined)change.tag=cleanCopilotField(act.tag);if(act.tone!==undefined)change.tone=act.tone}
@@ -11602,17 +11775,21 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
       }else if(["erase","delete","remove"].includes(type)){
         const raw=act.targets||act.ids||(act.target?[act.target]:(act.id?[act.id]:[]));
         let list=(Array.isArray(raw)?raw:[raw]).map(resolveNodeId).filter(Boolean);
-        const kept=list.filter(id=>gate(byId(id)));
+        const blocked=perm("delete")==="never"?list.filter(id=>gate(byId(id))):[];
+        blocked.forEach(id=>skipped.push({action:"delete",id,title:titleOf(byId(id))}));list=list.filter(id=>!blocked.includes(id));
+        const kept=perm("delete")==="suggest"?list.filter(id=>gate(byId(id))):[];
         for(const id of kept){const pr=propose(who,opts.engine||"model","delete",byId(id),{});proposed.push({action:"propose-delete",id,title:titleOf(byId(id)),proposal:pr.id})}
         list=list.filter(id=>!kept.includes(id));
-        if(!list.length&&kept.length)continue;
+        if(!list.length&&(kept.length||blocked.length))continue;
         if(list.length){
           erase(list,{permanent:true,force:true});
           applied.push({action:"erase",ids:list});
           log(who,`AI removed ${list.length} card(s)`,null);
         }else if(ctxNodes().length&&!act.target&&!act.id){
           let ids=ctxNodes().map(x=>x.id);
-          const keptSel=ids.filter(id=>gate(byId(id)));
+          const blockedSel=perm("delete")==="never"?ids.filter(id=>gate(byId(id))):[];
+          blockedSel.forEach(id=>skipped.push({action:"delete",id,title:titleOf(byId(id))}));ids=ids.filter(id=>!blockedSel.includes(id));
+          const keptSel=perm("delete")==="suggest"?ids.filter(id=>gate(byId(id))):[];
           for(const id of keptSel){const pr=propose(who,opts.engine||"model","delete",byId(id),{});proposed.push({action:"propose-delete",id,title:titleOf(byId(id)),proposal:pr.id})}
           ids=ids.filter(id=>!keptSel.includes(id));if(!ids.length)continue;
           erase(ids,{permanent:true,force:true});
@@ -11624,6 +11801,10 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
       }else if(["edge","connect","link"].includes(type)){
         const a=resolveNodeId(act.from||act.source||act.a)||ctxNodes()[0]?.id;
         const b=resolveNodeId(act.to||act.target||act.b)||ctxNodes()[1]?.id;
+        if(a&&b&&a!==b&&ruleFor("link")==="never"){skipped.push({action:"link",from:a,to:b});continue}
+        if(a&&b&&a!==b&&ruleFor("link")==="suggest"&&!createdNodes.some(x=>x.id===a||x.id===b)){
+          const pr=propose(who,opts.engine||"model","link",byId(b),{from:a,kind:act.kind||"derive",depType:act.depType||"live"});proposed.push({action:"propose-link",id:b,title:titleOf(byId(b)),proposal:pr.id});continue;
+        }
         if(a&&b&&a!==b){
           const e=edge(a,b,act.kind||"derive",act.depType||"live");
           applied.push({action:"connect",from:a,to:b,id:e?.id});
@@ -11653,9 +11834,10 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
       failed.push({action:act.action||"unknown",error:err?.message||String(err)});
     }
   }
+  if(skipped.length)toast(L(`${skipped.length} action${skipped.length>1?"s":""} not allowed by your agent permissions`,`${skipped.length} 项操作被你的成员权限阻止`));
   if(!applied.length&&proposed.length){
     renderAll();persist();renderReview?.();
-    const k=proposed.length;toast(L(`${k} suggested change${k>1?"s":""} waiting for you`,`${k} 项修改建议等待你确认`));
+    const k=proposed.length;toast(L(`${k} suggested change${k>1?"s":""} waiting for you`,`${k} 项修改建议等待你确认`),{undo:true});
     follow(proposed.map(x=>byId(x.id)).filter(Boolean));
   }
   if(applied.length){
@@ -11672,7 +11854,7 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
     toast(L(`AI applied ${count} canvas action${count>1?"s":""}${k?` · ${k} suggested change${k>1?"s":""} waiting for you`:""}`,`AI 已执行 ${count} 个画板改动${k?`，${k} 项修改建议等待你确认`:""}`),{undo:true});
     renderReview?.();
   }
-  return {applied,failed,createdNodes,modifiedNodes,proposed};
+  return {applied,failed,createdNodes,modifiedNodes,proposed,skipped};
 }
 
 function renderCopilotActionsSummary(m){
@@ -12279,7 +12461,13 @@ function restoreNodes(ids){
 }
 function scrubNodeFromUndoRedo(goneSet,tombMap,scrubStrings=[]){
   const matchesScrub=html=>scrubStrings.some(s=>s&&String(html||"").includes(s));
-  const scrubStack=stack=>stack.map(raw=>{
+  const scrubPatch=pt=>{if(!pt)return pt;
+    for(const k of ["nodes","proposals"])if(pt[k])for(const id of Object.keys(pt[k])){if(goneSet.has(id)||(k==="proposals"&&pt[k][id].some(v=>v&&goneSet.has(v.target))))delete pt[k][id]}
+    if(pt.edges)for(const id of Object.keys(pt.edges)){if(pt.edges[id].some(e=>e&&(goneSet.has(e.a)||goneSet.has(e.b))))delete pt.edges[id]}
+    for(const k of ["adopted","threads","pins"])if(pt[k])for(const id of Object.keys(pt[k])){if(goneSet.has(id)||(k==="adopted"&&pt[k][id].some(v=>goneSet.has(v))))delete pt[k][id]}
+    return pt};
+  const scrubStack=stack=>stack.map(tx=>{if(tx&&typeof tx==="object"){if(tx.before)tx.before=scrubStr(tx.before);else tx.patch=scrubPatch(tx.patch);return tx}return scrubStr(tx)});
+  const scrubStr=raw=>(()=>{
     try{
       const snap=JSON.parse(raw);
       if(Array.isArray(snap.nodes)){
@@ -12309,7 +12497,7 @@ function scrubNodeFromUndoRedo(goneSet,tombMap,scrubStrings=[]){
       if(Array.isArray(snap.log))snap.log=snap.log.filter(l=>!goneSet.has(l.node)&&!matchesScrub(l.html));
       return JSON.stringify(snap);
     }catch{return raw}
-  });
+  })();
   undoStack=scrubStack(undoStack);
   redoStack=scrubStack(redoStack);
   syncHistoryBtns();
@@ -13104,6 +13292,8 @@ $("studioPop")?.addEventListener("click",async e=>{
   if(act==="img-model"){setImageModel(b.dataset.id);return}
   if(act==="api"){toggleStudioPopover(false);openApiDialog();return}
   if(act==="adv-mode"){toggleAdvisorMode();return}
+  if(act==="adv-level"){setAdvisorLevel(b.dataset.level);return}
+  if(act==="autonomy"){toggleStudioPopover(false);openAutonomyDialog();return}
   if(act==="adv-auto"){toggleAdvisorAuto();return}
   if(act==="memory"){toggleStudioPopover(false);memoryDialog();return}
   if(act==="copilot"){toggleStudioPopover(false);openCopilot(true)}

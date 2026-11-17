@@ -20,3 +20,17 @@ with a stand-in script, so nothing real is launched:
 ```bash
 python3 studio/macos-app/test_serve_launch.py
 ```
+
+## Legibility in both themes
+
+Light and dark are designed separately; a colour that works in one is not assumed to work in the other.
+Group 9 of the smoke test opens the Connection and Crew popovers in **both** themes, in the states that change
+colour (normal, error, AI off), and fails if any text is below WCAG 4.5:1 (3:1 for large text), with
+translucent backgrounds composited and dimming included.
+
+When adding or restyling UI:
+
+- Measure contrast in light *and* dark; don't invert one palette to get the other.
+- Dim by changing colour (drop status colour, step down a grey), not by fading text with `opacity`.
+- Selected states carry more than a fill: in light, a darker track makes the white pill stand out; in dark, the
+  pill itself is lighter. Text weight and colour change too (`--seg-on`, `--seg-track`, `--seg-sm-on`).

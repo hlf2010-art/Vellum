@@ -62,11 +62,31 @@ function serve() {
 }
 
 const results = []; let failures = 0;
+// WCAG contrast of every text node inside `scope`, backgrounds composited up the ancestor chain (opacity included).
+const LEGIBILITY = scope => {
+  const cv = document.createElement('canvas').getContext('2d');
+  const parse = c => { cv.fillStyle = '#000'; cv.fillStyle = c; const s = cv.fillStyle; if (s.startsWith('#')) { const n = parseInt(s.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255, 1]; } const m = s.match(/-?[\d.]+(e-?\d+)?/g).map(Number); if (/^color\(/.test(s)) return [m[0] * 255, m[1] * 255, m[2] * 255, s.includes('/') ? m[3] : 1]; return [m[0], m[1], m[2], m[3] ?? 1]; };
+  const over = (a, b) => [0, 1, 2].map(i => a[i] * a[3] + b[i] * (1 - a[3])).concat(1);
+  const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  const bgOf = el => { const chain = []; for (let e = el; e && e.nodeType === 1; e = e.parentElement) chain.push(e); let c = parse(getComputedStyle(document.body).backgroundColor); for (const e of chain.reverse()) { const b = parse(getComputedStyle(e).backgroundColor); if (b[3] > 0) c = over(b, c); } return c; };
+  const opa = el => { let o = 1; for (let e = el; e && e.nodeType === 1; e = e.parentElement) o *= parseFloat(getComputedStyle(e).opacity); return o; };
+  const out = [];
+  document.querySelectorAll(scope + ' *').forEach(el => {
+    if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+    const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
+    const cs = getComputedStyle(el), bg = bgOf(el), fg = parse(cs.color), px = parseFloat(cs.fontSize);
+    const need = px >= 24 || (parseInt(cs.fontWeight) >= 700 && px >= 18.66) ? 3 : 4.5;
+    const v = ratio(over([fg[0], fg[1], fg[2], fg[3] * opa(el)], bg), bg);
+    if (v < need) out.push(`${v.toFixed(2)} "${el.textContent.trim().slice(0, 30)}"`);
+  });
+  return out;
+};
 function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  — ' + detail}`); if (!ok) failures++; }
 const dirs = tag => ({ directions: ['A', 'B', 'C'].map(l => ({ title: `${tag} ${l}`, plan: `Plan ${l}.`, test: `Test ${l}.`, mode: 'story' })) });
 
-async function page(browser, base, { model = true } = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
+async function page(browser, base, { model = true, theme = 'dark' } = {}) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: theme });
   const p = await ctx.newPage();
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2500);
@@ -440,6 +460,23 @@ async function page(browser, base, { model = true } = {}) {
       await p.context().close();
     }
   } finally {
+    // 9. legibility: light and dark are designed separately, so both are measured, in the states that change colour
+    for (const theme of ['light', 'dark']) {
+      const p = await page(browser, base, { theme });
+      const bad = [];
+      for (const [pref, status] of [['auto', 200], ['auto', 401], ['local', 200]]) {
+        probe.status = status;
+        await p.evaluate(pr => { setAiPref(pr); apiHealth = { k: 'unknown', sig: '', at: 0 }; toggleStudioPopover(false); }, pref);
+        await p.click('#crewModeBtn'); await p.waitForTimeout(900);
+        bad.push(...(await p.evaluate(LEGIBILITY, '#studioPop')).map(x => `${pref}/${status}: ${x}`));
+      }
+      probe.status = 200;
+      await p.evaluate(() => { toggleStudioPopover(false); setAiPref('auto'); toggleCrewPop(true); }); await p.waitForTimeout(400);
+      bad.push(...(await p.evaluate(LEGIBILITY, '#crewPop')).map(x => `crew: ${x}`));
+      check(`every text in the Connection and Crew popovers reaches 4.5:1 in ${theme} mode`, bad.length === 0, bad.join(' | '));
+      await p.context().close();
+    }
+
     await browser.close(); srv.close();
   }
   console.log(results.join('\n'));

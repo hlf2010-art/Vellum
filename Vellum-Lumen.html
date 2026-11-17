@@ -20,7 +20,7 @@
   --canvas:#ECEDF0; --canvas-lift:#F8F8FA; --card:#FFFFFF; --card-2:#F5F6F8; --card-3:#ECEDF1;
   --label:#0B0C0E; --label-2:rgba(11,12,14,.70); --label-3:rgba(11,12,14,.58); --label-4:rgba(11,12,14,.14);
   --hair:rgba(11,12,14,.075); --hair-2:rgba(11,12,14,.13); --thread:rgba(11,12,14,.2); --hover:rgba(11,12,14,.045); --press:rgba(11,12,14,.08);
-  --seg-on:#FFFFFF; --seg-on-shadow:0 1px 2px rgba(11,12,14,.06),0 0 0 .5px rgba(11,12,14,.04);
+  --seg-on:#FFFFFF; --seg-on-shadow:0 1px 2px rgba(11,12,14,.07),0 0 0 .5px rgba(11,12,14,.05); --seg-track:#E9EAEE; --seg-sm-on:#E6E7EB;
   --dot:rgba(11,12,14,.1); --chip-ink:#FFFFFF; --ink-mix:92%; --ink-to:#000; --sketch-mix:42%; --sketch-bg:78%; --focus:#3F444E;
   --chrome:rgba(252,252,253,.8); --chrome-hair:rgba(12,13,15,.08); --chrome-ink:#0C0D0F;
   --act:#0C0D0F; --on-act:#FFFFFF; --danger:#E12F34; --ok:#247A50; --warn:#886600;
@@ -42,7 +42,7 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --canvas:#050608; --canvas-lift:#0A0B0E; --card:#1B1C20; --card-2:#22242A; --card-3:#2A2C33;
   --label:#F4F5F7; --label-2:rgba(244,245,247,.68); --label-3:rgba(244,245,247,.52); --label-4:rgba(244,245,247,.11);
-  --seg-on:#2A2C33; --seg-on-shadow:0 1px 2px rgba(0,0,0,.18),0 0 0 .5px rgba(255,255,255,.12);
+  --seg-on:#34363E; --seg-on-shadow:0 1px 2px rgba(0,0,0,.22),0 0 0 .5px rgba(255,255,255,.10); --seg-track:#22242A; --seg-sm-on:#34363E;
   --hair:rgba(255,255,255,.07); --hair-2:rgba(255,255,255,.12); --thread:rgba(255,255,255,.16); --hover:rgba(255,255,255,.055); --press:rgba(255,255,255,.09);
   --dot:rgba(244,245,247,.085); --chip-ink:#0A0B0D; --ink-mix:86%; --ink-to:#fff; --sketch-mix:70%; --sketch-bg:52%; --focus:#C8CCD4;
   --chrome:rgba(26,27,31,.78); --chrome-hair:rgba(255,255,255,.08); --chrome-ink:#F3F4F6;
@@ -57,7 +57,7 @@
 :root[data-theme="dark"]{
   --canvas:#050608; --canvas-lift:#0A0B0E; --card:#1B1C20; --card-2:#22242A; --card-3:#2A2C33;
   --label:#F4F5F7; --label-2:rgba(244,245,247,.68); --label-3:rgba(244,245,247,.52); --label-4:rgba(244,245,247,.11);
-  --seg-on:#2A2C33; --seg-on-shadow:0 1px 2px rgba(0,0,0,.18),0 0 0 .5px rgba(255,255,255,.12);
+  --seg-on:#34363E; --seg-on-shadow:0 1px 2px rgba(0,0,0,.22),0 0 0 .5px rgba(255,255,255,.10); --seg-track:#22242A; --seg-sm-on:#34363E;
   --hair:rgba(255,255,255,.07); --hair-2:rgba(255,255,255,.12); --thread:rgba(255,255,255,.16); --hover:rgba(255,255,255,.055); --press:rgba(255,255,255,.09);
   --dot:rgba(244,245,247,.085); --chip-ink:#0A0B0D; --ink-mix:86%; --ink-to:#fff; --sketch-mix:70%; --sketch-bg:52%; --focus:#C8CCD4;
   --chrome:rgba(26,27,31,.78); --chrome-hair:rgba(255,255,255,.08); --chrome-ink:#F3F4F6;
@@ -437,7 +437,7 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .m-html-top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 24px 0}
 .m-html-top+.m-hero{margin-top:12px}
 .m-html-top .m-meta{font:500 12px/1 var(--ui);color:var(--label-3)}
-.m-html-sw{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair)}
+.m-html-sw{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:var(--seg-track);box-shadow:inset 0 0 0 .5px var(--hair)}
 .m-html-sw button{padding:5px 12px;border-radius:999px;font:600 12px/1 var(--ui);color:var(--label-3);transition:background .15s,color .15s,box-shadow .15s}
 .m-html-sw button:hover{color:var(--label)}
 .m-html-sw button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:var(--seg-on-shadow)}
@@ -707,10 +707,10 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-refresh.spin .ico{animation:spSpin .8s linear infinite}
 @keyframes spSpin{to{transform:rotate(360deg)}}
 .sp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
-.sp-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:3px;border-radius:11px;background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair);width:100%}
+.sp-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:3px;border-radius:11px;background:var(--seg-track);box-shadow:inset 0 0 0 .5px var(--hair);width:100%}
 .sp-seg button{height:26px;padding:0 8px;border-radius:8px;font:560 11.5px/1 var(--ui);color:var(--label-2);white-space:nowrap;transition:background var(--d-quick),color var(--d-quick),box-shadow var(--d-quick)}
 .sp-seg button:hover{color:var(--label)}
-.sp-seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--label);box-shadow:var(--seg-on-shadow)}
+.sp-seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--label);font-weight:620;box-shadow:var(--seg-on-shadow)}
 .sp-services{display:grid;grid-template-columns:minmax(0,1fr);gap:0;min-width:0}
 .sp-svc{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:.5px solid var(--hair);min-width:0}
 .sp-svc.col{flex-direction:column;align-items:stretch;gap:8px}
@@ -736,11 +736,12 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
    .sp-seg.sm sits inline for a secondary setting, at the weight of the row buttons (22px), sized to its words. */
 .sp-seg.sm{display:inline-grid;grid-auto-flow:column;grid-auto-columns:max-content;grid-template-columns:none;width:auto;flex:none;gap:0;padding:2px;border-radius:999px;background:transparent;box-shadow:inset 0 0 0 .5px var(--hair-2)}
 .sp-seg.sm button{height:20px;padding:0 9px;border-radius:999px;font:550 11px/1 var(--ui);color:var(--label-3)}
-.sp-seg.sm button[aria-pressed="true"]{background:var(--hover);color:var(--label);box-shadow:none}
+.sp-seg.sm button[aria-pressed="true"]{background:var(--seg-sm-on);color:var(--label);font-weight:620;box-shadow:none}
 @media (pointer:coarse){.sp-seg.sm button{height:30px;padding:0 12px;font-size:12.5px}}
-.sp-services.idle .sp-first{opacity:.5}
+.sp-services.idle .sp-first{color:var(--label-3)}
 .sp-ai+.sp-services{margin-top:-4px}
-.sp-services.idle .sp-svc-main,.sp-services.idle .sp-models,.sp-services.idle .sp-prog{opacity:.5}
+.sp-services.idle .sp-svc-top>span:first-child,.sp-services.idle .sp-m-info b{color:var(--label-2)}
+.sp-services.idle .sp-m-tag{color:var(--label-3)}
 .sp-services.idle .sp-state{color:var(--label-3)}
 .sp-services.idle .sp-state i{background:var(--label-4)}
 .sp-group{display:grid;gap:4px}
@@ -1204,7 +1205,7 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .cp-ctx{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:58%;height:26px;padding:0 9px;border-radius:999px;background:var(--hover);font:550 12px/1 var(--ui);color:var(--label-2)}
 .cp-ctx .ico{width:12px;height:12px;flex:none;color:var(--C)}
 .cp-ctx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cp-modes{display:flex;padding:2px;border-radius:999px;background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair)}
+.cp-modes{display:flex;padding:2px;border-radius:999px;background:var(--seg-track);box-shadow:inset 0 0 0 .5px var(--hair)}
 .cp-modes button{height:24px;padding:0 9px;border-radius:999px;font:550 11.5px/1 var(--ui);color:var(--label-3);transition:background var(--d-quick),color var(--d-quick)}
 .cp-modes button:hover{color:var(--label)}
 .cp-modes button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:var(--seg-on-shadow)}
@@ -2009,7 +2010,7 @@ dialog.sheet:focus{outline:none}
 .brow:hover .chev{color:var(--label-3);transform:translateX(2px)}
 .sh-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .sh-row h3{margin:0;font:500 14px/1 var(--ui);color:var(--label)}
-.sh-seg{display:flex;padding:3px;border-radius:12px;background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair)}
+.sh-seg{display:flex;padding:3px;border-radius:12px;background:var(--seg-track);box-shadow:inset 0 0 0 .5px var(--hair)}
 .sh-seg button{display:flex;align-items:center;gap:7px;height:30px;padding:0 11px 0 8px;border-radius:9px;font:550 12.5px/1 var(--ui);color:var(--label-2);transition:background var(--d-quick),color var(--d-quick),box-shadow var(--d-quick)}
 .sh-seg button:hover{color:var(--label)}
 .sh-seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--label);box-shadow:var(--seg-on-shadow)}

@@ -133,6 +133,8 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 - **Content is opaque, controls are glass.** Cards use `card` + `shadow-card`, and lift to `shadow-card-up` on hover or drag (scale 1.02 while dragging).
 - Floating chrome is `chrome` + `shadow-chrome` + `backdrop-filter: blur(22–30px) saturate(1.3–1.4)`. Surfaces you read or type into (composer, draft bar, Task Island) are near-opaque (90–95%) with a light blur and an inner top highlight, so text stays crisp. When reduced transparency is on, all chrome falls back to solid `card`.
 - No borders on cards. Separation comes from hairline rings in the shadow (`.5px`) and from `hair` / `hair-2`.
+- **Space, not rules.** Inside sheets, popovers and lists, separate groups with spacing and a small heading, never divider lines between rows or sections. A hairline appears in only one place: at a scroll edge, while content is actually scrolling beneath the head or the composer. Rows get a `hover` fill instead of a rule. Metadata on one line is joined with middle dots (`Synthesis · v1 · by Scout · Nov 17, 11:22 AM`), never with vertical bars.
+- **Controls appear when they can act.** A Send button with nothing to send is hidden, not drawn as an empty outline. Buttons are fill only; outlines are for focus.
 
 ### Motion
 - Durations: `duration-press` 90ms, `duration-quick` 150ms (hover and colour), `duration-base` 240ms, `duration-spring` 410ms, `duration-slow` 600ms. Easing: `easing-standard` `cubic-bezier(.22,.8,.24,1)`.

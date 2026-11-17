@@ -153,6 +153,63 @@ async function page(browser, base, { model = true } = {}) {
       check('no page errors in the agent flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+
+    // 4. proposals: agents create freely, but editing or deleting a kept card waits for you
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      await p.type('/claim Players buy place, not scale'); await p.waitForTimeout(800);
+      const id = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+      const text = () => p.evaluate(id => byId(id)?.text, id);
+      const bar = () => p.evaluate(id => !!document.querySelector(`[data-id="${id}"] .prop-bar`), id);
+      await p.evaluate(id => dispatchCanvasActions([{ action: 'edit', target: id, field: 'text', value: 'Players buy place and feel, not scale' }], { by: 'critic' }), id); await p.waitForTimeout(500);
+      check('an agent edit of a kept card is not applied', (await text()) === 'Players buy place, not scale', await text());
+      check('the card shows the suggestion', await bar());
+      check('the review button counts the suggestion', /1 edit/.test(await p.evaluate(() => document.getElementById('reviewTxt').textContent)), await p.evaluate(() => document.getElementById('reviewTxt').textContent));
+      await p.evaluate(id => focusNodes([byId(id)], 1, 0), id); await p.waitForTimeout(300);
+      await p.click(`[data-id="${id}"] [data-prop-act="view"]`); await p.waitForTimeout(300);
+      check('Review shows a word diff', await p.evaluate(id => !!document.querySelector(`[data-id="${id}"] .prop-diff ins`), id));
+      await p.click(`[data-id="${id}"] [data-prop-act="accept"]`); await p.waitForTimeout(500);
+      check('Accept applies the edit', (await text()) === 'Players buy place and feel, not scale', await text());
+      await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
+      check('Undo reverts an accepted edit', (await text()) === 'Players buy place, not scale', await text());
+      await p.keyboard.press('Control+Shift+z'); await p.waitForTimeout(300);
+      await p.evaluate(id => dispatchCanvasActions([{ action: 'edit', target: id, field: 'text', value: 'Declined text' }], { by: 'muse' }), id); await p.waitForTimeout(400);
+      await p.click(`[data-id="${id}"] [data-prop-act="reject"]`); await p.waitForTimeout(400);
+      check('Decline leaves the card as it was', (await text()) === 'Players buy place and feel, not scale' && !(await bar()), await text());
+      // stale: the card changes after the suggestion
+      await p.evaluate(id => dispatchCanvasActions([{ action: 'edit', target: id, title: 'Suggested title' }], { by: 'critic' }), id); await p.waitForTimeout(400);
+      await p.evaluate(id => { const n = byId(id), d = digest(n), t = n.title, x = n.text; n.text = 'I edited this myself'; recordNodeEdit(n, d, t, x); renderAll(); persist(); }, id); await p.waitForTimeout(300);
+      await p.click(`[data-id="${id}"] [data-prop-act="accept"]`); await p.waitForTimeout(400);
+      check('accepting a suggestion on a changed card asks first', await p.evaluate(id => byId(id).title !== 'Suggested title' && !!document.querySelector(`[data-id="${id}"] .prop-stale`), id));
+      await p.click(`[data-id="${id}"] [data-prop-act="accept"]`); await p.waitForTimeout(400);
+      check('Accept anyway applies it', await p.evaluate(id => byId(id).title === 'Suggested title' && byId(id).text === 'I edited this myself', id));
+      // delete suggestion
+      await p.evaluate(id => dispatchCanvasActions([{ action: 'erase', targets: [id] }], { by: 'critic' }), id); await p.waitForTimeout(400);
+      check('an agent deletion of a kept card is only suggested', await p.evaluate(id => !!byId(id) && !!document.querySelector(`[data-id="${id}"] .prop-bar.is-del`), id));
+      // undoing the agent's batch withdraws its suggestion
+      await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
+      check("Undo withdraws the agent's suggestion", await p.evaluate(id => !!byId(id) && openProps(id).length === 0, id));
+      await p.evaluate(id => dispatchCanvasActions([{ action: 'erase', targets: [id] }], { by: 'critic' }), id); await p.waitForTimeout(400);
+      await p.click(`[data-id="${id}"] [data-prop-act="accept"]`); await p.waitForTimeout(800);
+      check('accepting a deletion deletes the card', await p.evaluate(id => !byId(id), id));
+      // what stays direct
+      const made = await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'Agent note', text: 'Created directly' }], { by: 'scout' }).createdNodes.map(n => n.id));
+      check('agents still create cards directly', made.length === 1 && await p.evaluate(id => !!byId(id), made[0]));
+      await p.evaluate(id => dispatchCanvasActions([{ action: 'edit', target: id, field: 'text', value: 'Changed because you asked' }], { by: 'critic', userIntent: true }), made[0]); await p.waitForTimeout(300);
+      check('a change you asked for in your own words applies directly', await p.evaluate(id => byId(id).text === 'Changed because you asked', made[0]));
+      const log = await p.evaluate(() => (board.changes || []).map(c => c.op));
+      check('change log records suggestions and your decisions', ['propose-edit', 'accept-proposal', 'reject-proposal', 'propose-delete'].every(o => log.includes(o)), log.join(' '));
+      // end to end: Copilot proposes an edit through its actions block
+      await p.type('/claim Real Shanghai, grounded'); await p.waitForTimeout(800);
+      queue = [{ id: 'sub', match: 'Sub-agent protocol', text: '- fine' }, { id: 'cp', match: 'Lumen Copilot', text: 'I\'ve suggested a sharper wording.\n```actions\n[{"action":"edit","target":"Real Shanghai, grounded","field":"text","value":"The real Shanghai, felt not mapped"}]\n```' }];
+      await p.keyboard.press('Control+.'); await p.waitForTimeout(600);
+      await p.fill('#cpInput', 'Tighten the wording of the claim "Real Shanghai, grounded"'); await p.keyboard.press('Enter');
+      for (let i = 0; i < 40 && !(await p.evaluate(() => openProps().length)); i++) await p.waitForTimeout(250);
+      check('Copilot edits of kept cards arrive as suggestions', await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'idea' && /Real Shanghai/.test(n.text)); return !!n && n.text === 'Real Shanghai, grounded' && openProps(n.id).length === 1; }), JSON.stringify(requests.slice(-2)));
+      check('no page errors in the proposal flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
   } finally {
     await browser.close(); srv.close();
   }

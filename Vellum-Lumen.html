@@ -7880,7 +7880,13 @@ function memoryDialog(opts={}){
 const smallModelOn=()=>aiPref==="auto"&&studioState.status==="ready";
 function projectKind(text){return /\b(game|rpg|jrpg|mmo|roguelike|platformer|visual novel|players?|quests?|level design)s?\b|游戏|玩家|关卡/i.test(String(text||""))?"game":""}
 const PLACES=["Shanghai","Beijing","Peking","Tianjin","Hong Kong","Taipei","Tokyo","Guangzhou","Canton","Hangzhou","Suzhou","Chongqing","Wuhan","Singapore","Seoul","Osaka","Macau","Nanjing","Nanking","London","Paris","New York","Berlin","Lagos","Mumbai","Cairo"];
-function placesIn(text){const t=String(text||"");return PLACES.filter(p=>new RegExp("\\b"+p+"\\b"+(/^Nanjing$/.test(p)?"(?!\\s+(?:East\\s+|West\\s+)?Road)":""),"i").test(t))}
+const LANDMARK_CITY={Wangfujing:"Beijing",Tiananmen:"Beijing","Forbidden City":"Beijing",Ximending:"Taipei",Shibuya:"Tokyo",Shinjuku:"Tokyo",Ginza:"Tokyo","Mong Kok":"Hong Kong",Kowloon:"Hong Kong","Victoria Harbour":"Hong Kong"};
+function placesIn(text){
+  const t=String(text||"");
+  const cities=PLACES.filter(p=>new RegExp("\\b"+p+"\\b"+(/^Nanjing$/.test(p)?"(?!\\s+(?:East\\s+|West\\s+)?Road)":""),"i").test(t));
+  for(const [lm,city] of Object.entries(LANDMARK_CITY))if(new RegExp("\\b"+lm+"\\b","i").test(t)&&!cities.includes(city))cities.push(city);
+  return cities;
+}
 const SMALL_EX={
   game:'{"title": "Night Market Ledger", "plan": "You run a stall in 1980s Taipei\'s Shilin night market, haggling with regulars each night while a gangster\'s debt grows.", "risk": "Regulars feel like people with their own reasons, not price tags.", "test": "Ten players play three nights; if fewer than six can name a regular who lied to them, the haggling is not reading as character.", "mode": "story"}',
   other:'{"title": "Shed on Every Street", "plan": "Each street gets one shared tool shed run by a volunteer, with a paper sign-out sheet on the door.", "risk": "Neighbours trust each other with things that cost money.", "test": "Run two sheds for three weeks; if fewer than half the tools come back on time, the trust is not there yet.", "mode": "desk"}'
@@ -7902,6 +7908,21 @@ Example of the level of detail (a different idea; do not reuse it): ${SMALL_EX[g
 Return {"directions": [ ... ]}.`;
   return {system:smallStrategistSystem(kind),prompt};
 }
+const MODERN_THINGS=/\b(smart ?phones?|cell ?phones?|mobile phones?|your phone|charg(?:ing|er)|text messages?|internet|e-?mails?|laptops?|computers?|wi-?fi|social media|GPS|selfies?|drones?|television|TV|subway|metro)\b/i;
+function buildProblems(v,ctxText,isTm){
+  if(!v||typeof v!=="object")return ["reply with the JSON object"];
+  const out=[],items=Array.isArray(v.items)?v.items:[];
+  if(!String(v.title||"").trim())out.push('needs a "title"');
+  if(!isTm&&(items.length<4||items.length>6))out.push("write 4 to 6 items");
+  items.forEach((it,i)=>{if(!String(it?.title||"").trim()||!String(it?.body||"").trim())out.push(`item ${i+1} needs a title and a body`)});
+  const all=[v.title,v.kicker,v.lede,...items.flatMap(i=>[i?.title,i?.body,...(Array.isArray(i?.choices)?i.choices:[])])].join(" ");
+  const years=(String(ctxText).match(/\b(1[5-9]\d\d)\b/g)||[]).map(Number);
+  if(years.length&&Math.max(...years)<1980){const m=all.match(MODERN_THINGS);if(m)out.push(`"${m[0]}" does not exist in ${Math.max(...years)}; replace it with something of the time`)}
+  const home=placesIn(ctxText);
+  if(home.length){const other=placesIn(all).filter(p=>!home.some(h=>h.toLowerCase()===p.toLowerCase()));if(other.length)out.push(`it is set in ${other[0]}, but the direction is in ${home[0]}`)}
+  if(/\b(prototype|playtest|participants?|testers?)\b/i.test(items.map(i=>i?.body||"").join(" ")))out.push("write what the person reads and does, not a description of the prototype");
+  return out;
+}
 function forkProblems(v,count,ideaText){
   const list=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:null);
   if(!list)return ['reply with {"directions": [...]}'];
@@ -7917,6 +7938,7 @@ function forkProblems(v,count,ideaText){
     if(home.length){const other=placesIn(all).filter(p=>!home.some(h=>h.toLowerCase()===p.toLowerCase()));if(other.length)out.push(`${k} is set in ${other[0]}, but the idea is in ${home[0]}`)}
     if(/\b(fewer|less) than (one|1|zero|0)\b/i.test(d.test||""))out.push(`${k}: the test uses an impossible number ("fewer than one")`);
     if(/Night Market Ledger|Shilin|Shed on Every Street/i.test(all))out.push(`${k} copies the example; write a new one`);
+    if(/\b(remember|recall|memori[sz]e|forgets?)\b/i.test(d.test||""))out.push(`${k}: the test checks what people remember; test what they feel or do instead`);
   });
   return out;
 }
@@ -8152,7 +8174,7 @@ Turn each main branch of the Tree Map into clear, concrete ${mode==="deck"?"slid
 Write the real content for this prototype as the people in the test would see it (not a description of the prototype). Reply with ONLY JSON:
 {"title": short page title, "kicker": one short line of context, "lede": 1-2 sentences, "items": [4 to 6 objects {"title","body" (1-2 sentences),"tag" (one or two words, e.g. a status)${mode==="story"?',"choices" (optional array of 2-4 short options the person can mark)':""}}], "cta": a short button label for the main action}`;
   const fallbackFn=isTm?()=>treeMapToProofSpec(dir,mode):()=>specLocal(dir,mode);
-  const {v,live}=await runAgent("wright",{read:[dir,...srcs.slice(0,3)],places,label:isTm?`building ${mode==="deck"?"deck":"UI"} v${ver}`:`building ${dir.letter} v${ver}`,work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt,images:imgNodes,json:true,maxTokens:2400},fallbackFn)});
+  const {v,live}=await runAgent("wright",{read:[dir,...srcs.slice(0,3)],places,label:isTm?`building ${mode==="deck"?"deck":"UI"} v${ver}`:`building ${dir.letter} v${ver}`,work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt,images:imgNodes,json:true,maxTokens:2400,...(smallModelOn()?{small:{system:`${ROLE.wright}\n${STYLE}`,prompt},check:v=>buildProblems(v,isTm?treeMapToMarkdown(treeMapOf(dir)):`${idea?.text||""} ${dir.title} ${dir.text} ${dir.test||""} ${brief}`,isTm)}:{})},fallbackFn)});
   const spec={...fallbackFn(),...(v&&typeof v==="object"?v:{})};spec.mode=mode;spec.letter=isTm?"":dir.letter;spec.version=ver;
   spec.items=(spec.items||[]).filter(i=>i&&i.title).slice(0,8);
   checkpoint();

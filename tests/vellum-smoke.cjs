@@ -446,43 +446,74 @@ async function page(browser, base, { model = true } = {}) {
       check('no page errors around the island', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
-    // 9. Local AI: JSON is asked for in words (no grammar mode), and running out of time is not Stop
+    // 9. Local AI: JSON asked for in words, small-model prompt and repair, questions first for an open idea,
+    //    and running out of time is not Stop
     {
       const p = await page(browser, base, { model: false });
-      const gens = []; let local = { text: '', delay: 0 };
+      const gens = [];
+      let local = () => ({ text: '', delay: 0 }); // decides each Local AI reply from the request
+      const kindOf = b => { const u = JSON.stringify(b.messages || []); return /three quick questions/.test(u) ? 'ask' : /Fix only these problems/.test(u) ? 'fix' : 'fork'; };
       const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
       await p.route('http://127.0.0.1:59631/**', async route => {
         const req = route.request(), url = req.url();
         if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
         if (/\/studio\/health/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ status: 'ready', model: 'smoke-local', modelId: 'smoke', vision: true, models: [] }) });
         if (/\/studio\/generate/.test(url)) {
-          gens.push(JSON.parse(req.postData() || '{}'));
-          const { text, delay } = local;
+          const body = JSON.parse(req.postData() || '{}'); body.kind = kindOf(body); gens.push(body);
+          const { text, delay } = local(body);
           if (delay) await new Promise(r => setTimeout(r, delay));
-          const sse = text.match(/[\s\S]{1,40}/g).map(c => 'data: ' + JSON.stringify({ choices: [{ delta: { content: c } }] }) + '\n\n').join('') + 'data: [DONE]\n\n';
+          const sse = String(text || ' ').match(/[\s\S]{1,40}/g).map(c => 'data: ' + JSON.stringify({ choices: [{ delta: { content: c } }] }) + '\n\n').join('') + 'data: [DONE]\n\n';
           return route.fulfill({ status: 200, contentType: 'text/event-stream', headers: cors, body: sse }).catch(() => {});
         }
         return route.fulfill({ status: 404, headers: cors, body: '' });
       });
       await p.evaluate(async () => { await checkStudioHealth({ wake: false, quiet: true }); window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
       check('Local AI reads as ready', await p.evaluate(() => studioState.status === 'ready' && connSummary().engine === 'local'));
-      const forkOn = async label => {
+      const Q = { questions: [{ q: 'Who do you play?', options: ['A translator in 1930s Shanghai', 'A dock worker', 'A rich heir', 'A street vendor'] }, { q: 'When is it?', options: ['1937', 'The 1990s', 'Today', '2049'] }, { q: 'How does it play?', options: ['Conversations', 'Tactics', 'Running a business', 'Investigation'] }] };
+      // answer: true picks the first option of each question, false skips, undefined expects no questions
+      const forkOn = async (label, answer) => {
         await p.newBoard(); await p.type(label); await p.waitForTimeout(800);
         const id = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
-        await p.evaluate(id => select([id]), id); await p.type('/fork 3'); await p.idle();
-        return p.evaluate(() => ({ titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','), engines: board.nodes.filter(n => n.type === 'direction').map(n => n.prov?.engine).join(','), task: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, toasts: __toasts.splice(0) }));
+        await p.evaluate(id => select([id]), id); await p.type('/fork 3');
+        await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify]') || board.nodes.some(n => n.type === 'direction'), null, { timeout: 20000 }).catch(() => {});
+        const asked = await p.evaluate(() => document.querySelector('dialog[open][data-clarify]') ? [...document.querySelectorAll('[data-clarify-q] > b')].map(b => b.textContent) : null);
+        if (asked) await p.evaluate(a => { const d = document.querySelector('dialog[open][data-clarify]'); if (a) { d.querySelectorAll('[data-clarify-q]').forEach(g => g.querySelector('[data-clarify-opt]').click()); d.querySelector('[data-clarify-go]').click(); } else d.querySelector('[data-clarify-skip]').click(); }, !!answer);
+        await p.idle();
+        return p.evaluate(asked => ({ asked, titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','), engines: board.nodes.filter(n => n.type === 'direction').map(n => n.prov?.engine).join(','), task: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, toasts: __toasts.splice(0), clarified: board.nodes.find(n => n.type === 'idea')?.clarified || null }), asked);
       };
-      // a small model answering in prose around fenced JSON still gives directions
-      local = { text: 'Here are three:\n```json\n' + JSON.stringify(dirs('Loc')) + '\n```', delay: 0 };
-      let r = await forkOn('Local idea');
-      const g = gens.at(-1) || {};
+      const lastFork = () => gens.filter(g => g.kind === 'fork').at(-1) || {};
+      const userText = g => JSON.stringify((g.messages || []).filter(m => m.role === 'user').map(m => m.content));
+      // an open idea: Strategist asks three questions first; the answers go into the fork; a small model
+      // answering in prose around fenced JSON still gives directions
+      local = b => ({ text: b.kind === 'ask' ? JSON.stringify(Q) : 'Here are three:\n```json\n' + JSON.stringify(dirs('Loc')) + '\n```' });
+      let r = await forkOn('Local idea', true);
+      check('on Local AI, an open idea gets three one-click questions first', JSON.stringify(r.asked) === JSON.stringify(Q.questions.map(q => q.q)), JSON.stringify(r));
+      check("the designer's choices go into the fork and stay on the idea", /The designer chose: Who do you play\? A translator in 1930s Shanghai; When is it\? 1937; How does it play\? Conversations/.test(userText(lastFork())) && r.clarified?.length === 3, userText(lastFork()).slice(0, 400));
+      const g = lastFork();
       check('Local AI is asked for plain text, never grammar-constrained JSON', g.response_format?.type === 'text' && g.json === true, JSON.stringify({ rf: g.response_format, json: g.json }));
       check('the JSON instruction is in the system message instead', /JSON object only/.test((g.messages || [])[0]?.content || '') && g.messages[0].role === 'system');
       check('directions arrive from Local AI answering in prose around JSON', r.titles === 'Loc A,Loc B,Loc C' && r.engines === 'model,model,model' && r.task === 'done', JSON.stringify(r));
+      // unreadable questions: Strategist uses its own; Skip branches without choices
+      local = b => ({ text: b.kind === 'ask' ? 'not json at all' : JSON.stringify(dirs('Own')) });
+      r = await forkOn('Shanghai game', false);
+      check("when the model's questions can't be read, Strategist asks its own", r.asked?.[0] === 'Who is the player?' && r.asked.length === 3, JSON.stringify(r));
+      check('Skip branches without choices', !r.clarified && !/designer chose/i.test(userText(lastFork())) && r.titles === 'Own A,Own B,Own C', JSON.stringify(r));
+      // a full idea: no questions; the small-model prompt; one targeted repair of an obvious error
+      const bad = { directions: [{ title: 'Settlement Beat', plan: 'You patrol the Settlement in 1935.', test: 'Five players play two shifts; if fewer than three feel watched, it fails.', mode: 'story' }, { title: 'Northern Ledger', plan: 'You smuggle tea in Beijing.', test: 'Six players run three nights; if fewer than one lies, it fails.', mode: 'desk' }, { title: 'Wharf Rats', plan: 'You unload ships on the Huangpu.', test: 'Four players play one night; if fewer than two talk to a foreman, it fails.', mode: 'story' }] };
+      local = b => ({ text: JSON.stringify(b.kind === 'fix' ? dirs('Fixed') : bad) });
+      r = await forkOn('An RPG set in Shanghai about rival police forces in the 1930s and the translators caught between them.');
+      const sf = gens.filter(x => x.kind === 'fork').at(-1), fx = gens.filter(x => x.kind === 'fix').at(-1);
+      check('a full idea is branched without questions', !r.asked, JSON.stringify(r.asked));
+      check('Local AI gets the small-model Strategist prompt', /Think like a game designer/.test(sf?.messages?.[0]?.content || '') && /stay in Shanghai/.test(userText(sf)) && /"risk"/.test(userText(sf)));
+      check('obvious errors get one targeted repair', !!fx && /direction 2 is set in Beijing, but the idea is in Shanghai/.test(userText(fx)) && /impossible number/.test(userText(fx)) && r.titles === 'Fixed A,Fixed B,Fixed C', JSON.stringify({ r, fix: fx && userText(fx).slice(-300) }));
+      check('one closing question, no promised work', await p.evaluate(() => tidySmallReply("Yes.\n\n- **A:** b\n\nWhat first?\n\n— or —\n\nDo you want X?") === "Yes.\n\n- **A:** b\n\nWhat first?" && tidySmallReply("Yes.\n\n(If this is what you want, I'll start drafting the structure.)\n\nWhich one? Or that one?") === "Yes.\n\nWhich one?"));
+      check('a famous street names its city (Wangfujing is in Beijing; Nanjing Road is in Shanghai)', await p.evaluate(() => placesIn('You patrol Wangfujing Street').join() === 'Beijing' && placesIn('a shop on Nanjing Road in Shanghai').join() === 'Shanghai'));
+      check('a test that checks memory is sent back', await p.evaluate(() => forkProblems({ directions: [{ title: 'A', plan: 'p', test: 'If fewer than two remember the route, it fails.' }] }, 1, 'Shanghai').some(x => /remember/.test(x))));
+      check("Wright's prototype on Local AI is checked for things its era can't hold", await p.evaluate(() => { const ok = [1, 2, 3, 4].map(i => ({ title: 't' + i, body: 'A neighbour waits by the telephone.' })); return buildProblems({ title: 'T', items: [...ok.slice(0, 3), { title: 'x', body: 'Your phone needs charging.' }] }, 'A lilong in 1937 Shanghai').some(x => /does not exist in 1937/.test(x)) && buildProblems({ title: 'T', items: ok }, 'A lilong in 1937 Shanghai').length === 0; }));
       // the time limit runs out: built-in rules answer, and the designer is told why
-      local = { text: JSON.stringify(dirs('Slow')), delay: 3000 };
+      local = () => ({ text: JSON.stringify(dirs('Slow')), delay: 3000 });
       await p.evaluate(() => { AI_TIMEOUT_MS = 1500; });
-      r = await forkOn('Slow idea');
+      r = await forkOn('Slow idea', false);
       check('a Local AI timeout falls back to built-in rules instead of failing', r.titles === 'Walk it through,Lay it all out,Cut to one moment' && r.engines === 'rules,rules,rules' && r.task === 'done', JSON.stringify(r));
       check('and says which engine ran out of time and which answered', r.toasts.some(t => /^Local AI took longer than 2 s, so built-in rules answered instead\.$/.test(t)), JSON.stringify(r.toasts));
       check('no page errors in the Local AI flows', p.errors.length === 0, p.errors.join(' | '));
@@ -493,6 +524,14 @@ async function page(browser, base, { model = true } = {}) {
       const p = await page(browser, base);
       await p.newBoard();
       const last = () => p.evaluate(() => { const m = board.copilot.at(-1); return { text: m.text, cutOff: !!m.cutOff, streaming: !!m.streaming }; });
+      {
+        const ids = await p.evaluate(() => { const idea = node('idea', { text: 'An RPG set in Shanghai', by: 'you', status: 'ink' }, { x: 900, y: 300 }); const mk = (l, t, x) => { const n = node('direction', { idea: idea.id, letter: l, title: t, text: x, test: 'Test ' + l, mode: 'story', by: 'muse', status: 'sketch' }, { x: 1300, y: 100 }); edge(idea.id, n.id, 'derive', 'live'); return n.id; }; const a = mk('A', 'Lane House Chronicle', 'One lilong across 1925, 1937 and 1949.'); const b = mk('B', 'Concession Ledger Sim', 'Run a trading house.'); byId(a).vote = 'up'; renderAll(); return { a, b }; });
+        queue = [{ id: 'rel', match: 'related-check', text: 'Fine.' }];
+        await p.evaluate(b => sendCopilotMessage('related-check: how do these compare?', [b]), ids.b);
+        const sys = requests.filter(x => x.matched === 'rel').at(-1)?.full || '';
+        check("Copilot sees the selected card's sibling drafts in full", /Cards connected to the selection/.test(sys) && /Lane House Chronicle.*One lilong across 1925, 1937 and 1949/s.test(sys) && /draft, not kept yet; the designer liked it/.test(sys), sys.slice(sys.indexOf('Cards connected'), sys.indexOf('Cards connected') + 400));
+        await p.newBoard();
+      }
       await p.evaluate(() => { AI_TIMEOUT_MS = 1500; });
       queue = [{ id: 'cut', match: 'cutoff-question', text: 'Open in the interrogation room at night, with the rain on the window and the clerk', stall: 4000 }];
       await p.evaluate(() => sendCopilotMessage('cutoff-question: where should the game open?'));

@@ -319,28 +319,29 @@ async function page(browser, base, { model = true } = {}) {
       // the connection popover is only about the connection
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);
       const conn = await p.evaluate(() => document.getElementById('studioPop').innerText);
-      check('the connection popover is only about the connection', /Connection/.test(conn) && /Using Cloud API/.test(conn) && !/Unasked thoughts|Agent permissions|Auto follow-up|Start Studio AI/.test(conn), conn.slice(0, 160));
+      check('the connection popover is only about the connection', /Connection/.test(conn) && /Using Cloud API/.test(conn) && !/Unasked thoughts|Agent permissions|Auto follow-up/.test(conn), conn.slice(0, 160));
       // honest connection status: a real test request, not "On"; the header answers what is in use
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="ok"]'), null, { timeout: 4000 }).catch(() => {});
-      const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, head: document.querySelector('#studioPop .sp-now')?.className, acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.querySelector('#crewSetBtn .conn-dot').className, note: document.querySelector('#studioPop .sp-mode-note')?.textContent, order: [...document.querySelectorAll('#studioPop .sp-svc-top > span:first-child')].map(s => s.textContent) }));
-      check('opening Connection tests the Cloud API for real; the engine in use says so', ok.h === 'In use' && /ok/.test(ok.head) && probes.length >= 1 && probes.at(-1).auth === 'Bearer smoke' && requests.every(r => !/^ping$/.test(r.full)), JSON.stringify(ok));
-      check('one action per engine (Start · Edit), Auto is explained, media is grouped apart', ok.acts.join() === 'Start,Edit' && /Local AI.*Cloud API/.test(ok.note || '') && ok.order.join() === 'Local AI,Cloud API,Media Studio', JSON.stringify(ok));
+      const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, head: document.querySelector('#studioPop .sp-now')?.className, headTxt: document.querySelector('#studioPop .sp-now')?.textContent, acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.querySelector('#crewSetBtn .conn-dot').className, note: document.querySelector('#studioPop .sp-mode-note')?.textContent, order: [...document.querySelectorAll('#studioPop .sp-svc-top > span:first-child')].map(s => s.textContent) }));
+      check('opening Connection tests the Cloud API for real and the header names the engine in use', ok.h === 'Connected' && /Using Cloud API/.test(ok.headTxt) && /ok/.test(ok.head) && probes.length >= 1 && probes.at(-1).auth === 'Bearer smoke' && requests.every(r => !/^ping$/.test(r.full)), JSON.stringify(ok));
+      check('actions match real state (no Start while Studio AI is closed), Auto is explained, media is grouped apart', ok.acts.join() === 'Edit' && /Local AI.*Cloud API/.test(ok.note || '') && ok.order.join() === 'Local AI,Cloud API,Media Studio', JSON.stringify(ok));
       probe.status = 401;
       await p.click('#studioPop [data-sp="refresh"]');
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="auth"]'), null, { timeout: 4000 }).catch(() => {});
       const bad = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, head: document.querySelector('#studioPop .sp-now').textContent, headCls: document.querySelector('#studioPop .sp-now').className, fix: document.querySelector('#studioPop [data-sp="api"]').outerHTML, dot: document.querySelector('#crewSetBtn .conn-dot').className }));
-      check('a rejected key: header says rules are in use and why, Fix key is the next step, dot is red', bad.h === 'Key rejected' && /built-in rules.*key rejected/.test(bad.head) && /err/.test(bad.headCls) && /primary/.test(bad.fix) && /Fix key/.test(bad.fix) && /error/.test(bad.dot), JSON.stringify(bad));
+      check('a rejected key: header says rules are in use first, then why, Fix key is the next step, dot is red', bad.h === 'Authentication failed' && /^Using built-in rules\s*Cloud API authentication failed$/.test(bad.head) && /err/.test(bad.headCls) && /primary/.test(bad.fix) && /Fix key/.test(bad.fix) && /error/.test(bad.dot), JSON.stringify(bad));
       probe.status = 200;
       queue.push({ id: 'heal', match: 'heal-me', text: 'fine' });
       await p.evaluate(() => apiChat({ prompt: 'heal-me' }));
       await p.waitForTimeout(200);
       check('a real successful call clears the error', await p.evaluate(() => apiHealthNow().k === 'ok' && /ok/.test(document.querySelector('#crewSetBtn .conn-dot').className)));
+      check('while Local AI is starting, the header names the engine actually answering (Cloud API)', await p.evaluate(() => { const s = studioState; studioState = { ...s, status: 'loading' }; const c = connSummary(), h = connHealth(); studioState = s; return c.engine === 'api' && c.mode.startsWith('Using Cloud API') && /Local AI starting/.test(c.issue) && h.k === 'ok'; }));
       await p.evaluate(() => { apiCfg = { ...apiCfg, baseUrl: 'http://127.0.0.1:9/v1' }; });
       await p.click('#studioPop [data-sp="refresh"]');
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="unreachable"]'), null, { timeout: 6000 }).catch(() => {});
-      check('an unreachable host reads "Can\'t reach"', await p.evaluate(() => document.querySelector('#studioPop [data-api-health]')?.textContent === "Can't reach"));
+      check('an unreachable host reads "Unreachable" with Edit as the next step', await p.evaluate(() => document.querySelector('#studioPop [data-api-health]')?.textContent === 'Unreachable' && /primary/.test(document.querySelector('#studioPop [data-sp="api"]').className)));
       await p.click('#studioPop [data-sp="pref"][data-val="local"]'); await p.waitForTimeout(200);
-      check('Rules only: the header says plainly AI is off, and the unused engines step back', await p.evaluate(() => { const h = document.querySelector('#studioPop .sp-now'); return /warn/.test(h.className) && /AI is off/.test(h.textContent) && document.querySelector('#studioPop .sp-services').classList.contains('idle') && /rules/.test(document.querySelector('#crewSetBtn .conn-dot').className); }));
+      check('Rules only: the header says plainly AI is off, and the unused engines step back', await p.evaluate(() => { const h = document.querySelector('#studioPop .sp-now'); return /warn/.test(h.className) && /^Using built-in rules\s*AI turned off$/.test(h.textContent) && document.querySelector('#studioPop .sp-services').classList.contains('idle') && /rules/.test(document.querySelector('#crewSetBtn .conn-dot').className); }));
       await p.click('#studioPop [data-sp="pref"][data-val="auto"]'); await p.waitForTimeout(200);
       check('no page errors in the crew-level flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();

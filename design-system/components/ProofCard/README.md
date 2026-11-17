@@ -2,7 +2,7 @@ An experiment that tests a direction. Results come first and the thumbnail secon
 
 This replaces `Card kind="proof"`. The app uses it as of 2026-11-17.
 
-- **Reading order:** format badge on a small thumbnail · lineage chip, "Proof" and a version switcher (‹ v2 ›) · title · the **test** it must pass (carried from the direction) · **results**, one block per test item (green passed, red failed, grey waiting) with the failed items spelled out · provenance on one line (the lineage icon, then "B · 4 sources") · actions at the bottom.
+- **Reading order:** format badge on a small thumbnail · lineage chip, "Proof" and a version switcher (‹ v2 ›) · title · the **test** it must pass (carried from the direction) · **results**, one block per test item (green passed, red failed, grey waiting) and a count line. The failed items themselves are in the tooltip and the sheet, not on the card · provenance on one line (the lineage icon, then "B · 4 sources") · actions at the bottom.
 - **One next step**, chosen by state:
   - **Fix N failed** when an item fails.
   - **Rebuild with N changes** when a source changed.

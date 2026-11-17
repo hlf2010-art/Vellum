@@ -21,18 +21,18 @@
   --focus: #3f444e; /* Selection marquee and focus treatments on the board. */
   --danger: #e12f34; /* Destructive and Stop actions: Delete, Stop, the “suggests deleting” tint, struck words in a diff. Used as a 12–14% tint (with `danger-ink` for the words on it) and as a solid fill on hover. Light `#e12f34` is 4.5:1 on `card`, and white on it (the solid hover fill) is also 4.5:1. Deepened on 2026-11-17 from `#e5484d` (3.9:1). Lumen matches since `main@285e8f6`. Dark `#ff6369` is unchanged. */
   --danger-ink: #b02529; /* Red text that sits on a red tint or on translucent chrome: Stop, Delete in menus, struck words in a proposal diff, the “suggests deleting” line. Light `#b02529`: at least 4.7:1 on a 14% `danger` tint over `card`, `card-2` or `canvas`, and 6.7:1 on `card`. Dark `#ff797e`: 5.5:1 on a 14% tint over `card`. Use `danger` for fills and marks, `danger-ink` for words. */
-  --ok: #247a50; /* Success and healthy states: the connected-model dot in crew settings, and the 22% tint behind accepted words in a proposal diff. Used on `card`, `canvas` and `chrome`. Light `#247a50`: 5.3:1 on `card`, 4.9:1 on `card-2`, 4.5:1 on `canvas`. Dark `#30a46c`: 5.4:1 on `card`, 6.4:1 on `canvas`. Lumen used to have only a fallback (`#30a46c`); the token is defined in both themes since `main@285e8f6`. Light was deepened on 2026-11-17 for contrast. */
+  --ok: #3c7811; /* Success as text: connected, accepted, done. Leaf green (hue 95°), kept clearly apart from lineage `C` (hue 155°) so success never reads as “direction C” (ΔE 30). Light `#3c7811` is 5.4:1 on `card`, 5.0:1 on `card-2` and 4.6:1 on `canvas`; dark `#6cc23a` is 7.6:1 on `card`. Changed on 2026-11-17 from `#247a50` / `#30a46c`, which were ΔE 3.6 from `C`. Use `ok-fill` for shapes. */
   --warn: #886600; /* Caution states: the crew-on-built-in-rules dot in crew settings, and the “card changed since this was suggested” line on a proposal. Used on `card`, `canvas` and `chrome`. Light `#886600` is ochre (hue 45°), kept clearly apart from lineage `A` amber (hue 34°) so caution never reads as “direction A”. It is 5.3:1 on `card`, 4.9:1 on `card-2` and 4.5:1 on `canvas`. Dark `#d97706`: 5.3:1 on `card`, 6.4:1 on `canvas`. Lumen used to have only a fallback (`#d97706`); the token is defined in both themes since `main@285e8f6`. Light was changed on 2026-11-17 for contrast and to separate it from `A`. */
-  --ok-mark: #2a9a62; /* `ok` as a filled mark: the on-state of a Switch, connected dots, done rings and badges. Light `#2a9a62` is 3.6:1 on `card` and 3.0:1 on `canvas`, so it reads as a shape without looking heavy. `ok` itself is the text-safe ink; never use `ok` for a fill or `ok-mark` for text. Dark matches `ok`. */
-  --warn-mark: #ab8209; /* `warn` as a filled mark: caution dots, stale wires. Light `#ab8209` is 3.5:1 on `card` and 3.0:1 on `canvas`. `warn` itself is the text-safe ink. Dark matches `warn`. */
+  --ok-fill: #4c9816; /* `ok` as a pure shape: the on-state of a Switch, connected dots, done rings and badges. Light `#4c9816` is 3.6:1 on `card` and 3.1:1 on `canvas`, light enough not to look heavy. Never put text on it. Dark matches `ok`. */
+  --warn-fill: #ab8209; /* `warn` as a filled mark: caution dots, stale wires. Light `#ab8209` is 3.5:1 on `card` and 3.0:1 on `canvas`. `warn` itself is the text-safe ink. Dark matches `warn`. */
   --A: #9f5a00; /* Lineage A — the first direction in a fork. Wires, chips, adopted rings, Reported evidence, Wright's progress, the first kanban column. Light is `#9f5a00`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.6:1 on `canvas`, so it's usable as text. Deepened on 2026-11-17 from `#db7c00` (3.0:1). Lumen matches since `main@285e8f6`. */
   --B: #2066db; /* Lineage B — the second direction. Also Proposal evidence, search hits and the Search mode. Light is `#2066db`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.5:1 on `canvas`, so it's usable as small text on all three. Deepened on 2026-11-17 from `#2b6fe0`, which failed on `card-2` (4.4:1) and `canvas` (4.0:1). Lumen matches since `main@285e8f6`. */
   --C: #0b7b50; /* Lineage C — the third direction. Also Observed evidence, the Locked kanban column and live status dots. Light is `#0b7b50`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.5:1 on `canvas`, so it's usable as text. Deepened on 2026-11-17 from `#0e9662` (3.8:1). Lumen matches since `main@285e8f6`. */
   --D: #ca2760; /* Lineage D — the fourth direction. Wires, chip, adopted ring, error dot. Light is `#ca2760`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.5:1 on `canvas`, so it's usable as text, matching A, B and C. Deepened on 2026-11-17 from `#d93b72` (4.4:1). Lumen matches since `main@285e8f6`. */
-  --A-mark: #c97200; /* Lineage A as a filled mark: evidence blocks, bars, dots, large fills. Lumen amber, nudged to pass 3:1 on canvas; at least 3:1 on card, card-2 and canvas. `A` itself is the text-safe ink (4.5:1); never use `A` for a fill or `A-mark` for text. Dark matches `A`. */
-  --B-mark: #2b6fe0; /* Lineage B as a filled mark: evidence blocks, bars, dots, large fills. Lumen’s original blue; at least 3:1 on card, card-2 and canvas. `B` itself is the text-safe ink (4.5:1); never use `B` for a fill or `B-mark` for text. Dark matches `B`. */
-  --C-mark: #0e9662; /* Lineage C as a filled mark: evidence blocks, bars, dots, large fills. Lumen’s original green; at least 3:1 on card, card-2 and canvas. `C` itself is the text-safe ink (4.5:1); never use `C` for a fill or `C-mark` for text. Dark matches `C`. */
-  --D-mark: #d93b72; /* Lineage D as a filled mark: evidence blocks, bars, dots, large fills. Lumen’s original rose; at least 3:1 on card, card-2 and canvas. `D` itself is the text-safe ink (4.5:1); never use `D` for a fill or `D-mark` for text. Dark matches `D`. */
+  --A-fill: #c97200; /* Lineage A as a filled mark: evidence blocks, bars, dots, large fills. Lumen amber, nudged to pass 3:1 on canvas; at least 3:1 on card, card-2 and canvas. `A` itself is the text-safe ink (4.5:1); never use `A` for a fill or `A-fill` for text. Dark matches `A`. */
+  --B-fill: #2b6fe0; /* Lineage B as a filled mark: evidence blocks, bars, dots, large fills. Lumen’s original blue; at least 3:1 on card, card-2 and canvas. `B` itself is the text-safe ink (4.5:1); never use `B` for a fill or `B-fill` for text. Dark matches `B`. */
+  --C-fill: #0e9662; /* Lineage C as a filled mark: evidence blocks, bars, dots, large fills. Lumen’s original green; at least 3:1 on card, card-2 and canvas. `C` itself is the text-safe ink (4.5:1); never use `C` for a fill or `C-fill` for text. Dark matches `C`. */
+  --D-fill: #d93b72; /* Lineage D as a filled mark: evidence blocks, bars, dots, large fills. Lumen’s original rose; at least 3:1 on card, card-2 and canvas. `D` itself is the text-safe ink (4.5:1); never use `D` for a fill or `D-fill` for text. Dark matches `D`. */
   --chip-ink: #ffffff; /* Letter on a lineage chip (A–D) — white in light, near-black in dark. White passes on every light chip at 5.3:1. */
   --light: #ffffff; /* 'Light is alive': the glow colour of working crew, live drafts and the review pulse dot. */
   --bloom: rgba(255,190,110,.5); /* Warm glow around something the crew is working on or waiting on you for. Only as a soft shadow, never a fill. */
@@ -69,18 +69,18 @@
   --focus: #c8ccd4;
   --danger: #ff6369;
   --danger-ink: #ff797e;
-  --ok: #30a46c;
+  --ok: #6cc23a;
   --warn: #d97706;
-  --ok-mark: #30a46c;
-  --warn-mark: #d97706;
+  --ok-fill: #6cc23a;
+  --warn-fill: #d97706;
   --A: #ffb547;
   --B: #5aa2ff;
   --C: #45d49a;
   --D: #ff6b95;
-  --A-mark: #ffb547;
-  --B-mark: #5aa2ff;
-  --C-mark: #45d49a;
-  --D-mark: #ff6b95;
+  --A-fill: #ffb547;
+  --B-fill: #5aa2ff;
+  --C-fill: #45d49a;
+  --D-fill: #ff6b95;
   --chip-ink: #0a0b0d;
   --light: #f4f5f7;
   --bloom: rgba(255,236,206,.55);

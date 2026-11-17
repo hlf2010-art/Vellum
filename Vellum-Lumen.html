@@ -2997,7 +2997,7 @@ const BAYS=[
   {n:"01",name:"Gather",zh:"收集素材",sub:"Evidence, recordings & notes",zhSub:"实测记录、文档、截图与笔记",icon:'<path d="M4 7.5 6 4h12l2 3.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 8h16M10 12h4"/>',empty:["No evidence yet","Drag recordings, screenshots, notes or text files here, then rate how strong each source is."],zhEmpty:["还没有素材","将文档、录屏、截图或便签拖到这里，并标注每份素材的证据可信度。"]},
   {n:"02",name:"Explore",zh:"探索方向",sub:"Claims & test directions",zhSub:"核心论点与待验证方案",icon:'<path d="M12 20V11M12 11 6 4M12 11l6-7"/><circle cx="12" cy="20" r="1.5"/>',empty:["No claim yet","Write what you believe in the bar below. Strategist can branch it into directions worth testing."],zhEmpty:["还没有核心论点","在下方输入框写下你的核心假设，Strategist 会帮你拆出多个待验证方向。"]},
   {n:"03",name:"Prototype",zh:"制作原型",sub:"Interactive builds & proofs",zhSub:"根据选定方向生成的交互原型",icon:'<rect x="3.5" y="5" width="17" height="13" rx="3"/><path d="M8 21h8M3.5 9h17"/>',empty:["No prototypes yet","Adopt a direction and Wright will build a working prototype from the sources it rests on."],zhEmpty:["还没有原型","采纳一个方向后，Wright 会基于上游素材直接生成可交互原型。"]},
-  {n:"04",name:"Snapshot",zh:"定稿分享",sub:"Frozen editions to share",zhSub:"锁定版本的离线快照与分享包",icon:'<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',empty:["No snapshots yet","A snapshot is a frozen standalone HTML edition of a prototype. Open any prototype and choose Print."],zhEmpty:["还没有定稿快照","定稿快照是锁定某版原型的独立 HTML，打开任意原型点击 Print 即可生成。"]},
+  {n:"04",name:"Snapshot",zh:"定稿分享",sub:"Frozen editions to share",zhSub:"锁定版本的离线快照与分享包",icon:'<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',empty:["No snapshots yet","A snapshot is a frozen standalone HTML edition of a prototype. Open any prototype and choose Snapshot."],zhEmpty:["还没有定稿快照","定稿快照是锁定某版原型的独立 HTML，打开任意原型点击 Snapshot 即可生成。"]},
 ];
 const bayName=b=>uiLang()==="zh"?b.zh:b.name;
 const baySub=b=>uiLang()==="zh"?b.zhSub:b.sub;
@@ -3830,7 +3830,7 @@ function titleOf(n){
   switch(n.type){
     case"direction":return n.letter+" · "+n.title;
     case"proof":return"Proof "+(lin(n)||"")+" v"+n.ver;
-    case"print":return"Print "+n.ed;
+    case"print":return"Snapshot No. "+n.ed;
     case"frame":return"Frame "+tc(n.t);
     case"audio":return n.title||"Audio";
     case"link":return n.title||linkHost(n.url)||clip(n.url,50)||"Link";
@@ -4215,7 +4215,7 @@ function showcaseSpecDeck(){return {mode:"deck",letter:"B",title:"Greenlight Dec
     {tag:"01 · Gather",title:"9 / 12 testers missed corner toasts",body:"Rooftop eye-tracking heatmaps and player voice debriefs proved player attention locks inside a 14° cone around the silhouette and sightline cover."},
     {tag:"02 · Diverge",title:"Tested 3 forks · Adopted Direction B",body:"Rejected louder corner alerts (Dir. A) and bulky wall holograms (Dir. C) in favor of the diegetic wrist pager + NPC rim posture shift."},
     {tag:"03 · Make",title:"0.85s median reaction in live playtest",body:"Built an interactive HTML micro-simulator and Round-2 prototype; Critic surfaced neon-rain contrast risk directly from frame 0:04.2."},
-    {tag:"04 · Release",title:"Print No. 1 & shader contract locked",body:"Standalone Print specification, Unreal/Godot EventBus schema, and 3-column sprint Kanban are ready for Milestone 3 production."},
+    {tag:"04 · Release",title:"Snapshot No. 1 & shader contract locked",body:"Standalone snapshot specification, Unreal/Godot EventBus schema, and 3-column sprint Kanban are ready for Milestone 3 production."},
   ],version:3}}
 
 let showcaseAssetsLoading=null;
@@ -4359,7 +4359,7 @@ function sampleShowcase(){
   at(node("group",{title:"01 · Gather · Telemetry, Concept & Brief",gw:936,gh:1340},{x:32,y:16}),260);
   at(node("group",{title:"02 · Diverge · Synthesis, Thesis & Forks",gw:936,gh:1340},{x:1032,y:16}),200);
   at(node("group",{title:"03 · Make · Interactive HUD & Proof",gw:936,gh:1340},{x:2032,y:16}),120);
-  at(node("group",{title:"04 · Release · Print, Spec & Sprint",gw:936,gh:1340},{x:3032,y:16}),45);
+  at(node("group",{title:"04 · Release · Snapshot, Spec & Sprint",gw:936,gh:1340},{x:3032,y:16}),45);
 
   // 01 · GATHER
   const padBrief=at(node("notepad",{title:"Project Brief · Ashen Crown HUD",weight:"observed",text:"Design Pillar: Zero pause-screen menu fatigue during Kowloon street infiltration.\n\nTarget Outcome: Player reads syndicate trust shifts and ambush risk in under 1.2s without breaking stealth camera lock.\n\nHard Non-Goals:\n- No full-screen radial wheel slowdowns\n- No top-right toast spam during rooftops\n- Colorblind legibility required in neon rain"},{x:60,y:100}),255);
@@ -4406,7 +4406,7 @@ function sampleShowcase(){
     {t:"Calibrate 2-tap ally vs 3-pulse hostile controller rumble",done:true},
     {t:"Add hollow diamond chevron fallback for colorblind rain contrast",done:true},
     {t:"Verify LOD fallback when GPU rain particle density spikes",done:false},
-    {t:"Sign off Print No. 1 with Lead Combat Designer",done:false}
+    {t:"Sign off Snapshot No. 1 with Lead Combat Designer",done:false}
   ]},{x:2490,y:345}),62);
   edge(critQ.id,actList.id,"derive");
   const padResult=at(node("notepad",{title:"Round-2 Playtest Validation (n=8)",weight:"observed",text:"Methodology: 8 testers (incl. 2 protanopia players) ran 3 dynamic Kowloon ambush scenarios.\n\nMeasured Outcomes:\n- Recognition speed dropped from 2.90s -> 0.85s (target < 1.2s).\n- 7 of 8 caught Syndicate shift prior to gunfire.\n- Diamond chevron glyph solved rain washout raised at frame 0:04.2.\n- Zero requests to open the pause log during combat."},{x:2490,y:730}),48);
@@ -4417,7 +4417,7 @@ function sampleShowcase(){
   edge(proofB.id,print1.id);
   const srcSpec=at(node("source",{kind:"Engine Spec",weight:"observed",title:"Unreal / Godot Shader & EventBus API",text:"Binds EventBus.on('faction.delta') directly to wrist pager emissive curve, rim glyph shader uniform, and dual-actuator haptics.",full:"# Diegetic HUD Contract\n- Topic: `faction.delta { id, delta, tier }`\n- Shader: `uRimIntensity`, `uGlyphShape (0=ring, 1=diamond)`\n- Haptic latency budget: <= 16ms frame lock.",path:"specs/faction-hud-shader-api.md"},{x:3052,y:445}),28);
   edge(proofB.id,srcSpec.id,"derive");
-  const noteShip=at(node("note",{text:"Ship Gate Cleared: 0.85s glance metric passed Round-2 test. Print No.1 & shader API locked for Milestone 3 vertical slice."},{x:3052,y:735}),20);
+  const noteShip=at(node("note",{text:"Ship Gate Cleared: 0.85s glance metric passed Round-2 test. Snapshot No. 1 & shader API locked for Milestone 3 vertical slice."},{x:3052,y:735}),20);
   edge(print1.id,noteShip.id,"derive");
 
   const kb=at(node("kanban",{by:"wright",dir:dirB.id,title:"Milestone 3 · Vertical Slice Execution",
@@ -4466,7 +4466,7 @@ function sampleShowcase(){
     {t:T-92*min,who:"wright",html:"Generated <b>Proof B v2</b> verification spec",node:proofB.id},
     {t:T-70*min,who:"critic",html:"Raised neon-rain colorblind contrast question on Proof B",node:critQ.id},
     {t:T-48*min,who:"you",html:"Recorded <b>Round-2 Validation (0.85s)</b> & fixed colorblind chevron",node:padResult.id},
-    {t:T-35*min,who:"you",html:"Pulled frozen <b>Print No. 1</b> & locked Unreal shader contract",node:print1.id},
+    {t:T-35*min,who:"you",html:"Pulled frozen <b>Snapshot No. 1</b> & locked Unreal shader contract",node:print1.id},
     {t:T-6*min,who:"muse",html:"Proposed <b>C · Spatial Hologram Wall Graph</b> for optional review",node:dirC.id},
   ].sort((x,y)=>x.t-y.t);
 
@@ -4474,7 +4474,7 @@ function sampleShowcase(){
   b.copilot=[
     {id:"cp-u1",role:"user",text:"Compare Direction A vs Direction B against our Gather evidence, and show our evidence strength.",ctxIds:[claim.id,dirB.id],t:T-52*min},
     {id:"cp-a1",role:"ai",agent:null,t:T-51*min,
-      text:"**Adopt Direction B (Diegetic Wrist Pager + Rim Glow).** Eye-tracking shows 75% of players miss corner toasts during rooftop chases because attention locks inside a 14° cone around the silhouette.\n\n- **Glance Speed:** Direction B dropped faction recognition from **2.90s → 0.85s** in Round-2 testing.\n- **Rain Contrast Fix:** Critic flagged red-on-cyan washout at `0:04.2`; pairing rim glow with a hollow diamond chevron resolves colorblind risk.\n\n> **Verdict:** Freeze Proof B into Print No. 1 and ship the EventBus shader contract.",
+      text:"**Adopt Direction B (Diegetic Wrist Pager + Rim Glow).** Eye-tracking shows 75% of players miss corner toasts during rooftop chases because attention locks inside a 14° cone around the silhouette.\n\n- **Glance Speed:** Direction B dropped faction recognition from **2.90s → 0.85s** in Round-2 testing.\n- **Rain Contrast Fix:** Critic flagged red-on-cyan washout at `0:04.2`; pairing rim glow with a hollow diamond chevron resolves colorblind risk.\n\n> **Verdict:** Freeze Proof B into Snapshot No. 1 and ship the EventBus shader contract.",
       visuals:[
         {kind:"compare",title:"Direction A vs Direction B",left:"A · Corner Toast",right:"B · Wrist Pager",tone:"B",rows:[
           {dim:"Glance Read",a:"2.90s (75% missed)",b:"0.85s (8/8 caught)",winner:"right",note:"Wrist pager sits inside the 14° active gaze corridor."},
@@ -4488,7 +4488,7 @@ function sampleShowcase(){
         ]}
       ],
       proposals:[
-        {kind:"list",title:"Rain Accessibility & LOD Checklist",items:["Add hollow diamond chevron fallback","Verify GPU rain particle LOD contrast","Sign off Print No. 1 with Lead Combat Designer"],placed:true,vote:"up"},
+        {kind:"list",title:"Rain Accessibility & LOD Checklist",items:["Add hollow diamond chevron fallback","Verify GPU rain particle LOD contrast","Sign off Snapshot No. 1 with Lead Combat Designer"],placed:true,vote:"up"},
         {kind:"image",title:"Concept Variant · Rain Chevron Rim",prompt:"Close-up stealth NPC silhouette in cyan neon rain with sharp glowing amber diamond collar chevron, cinematic moody lighting"}
       ],
       chips:["Show the core gameplay feedback loop","Audit Round-2 ship readiness"]
@@ -6218,13 +6218,13 @@ function renderMargin(){queueMicrotask(placeBars);
   }
   placeMargin();
 }
-function kindLabel(n){const fl=fileFormatOf(n)?.label;return n.status==="sketch"?"Sketch":({note:"Sticky",notepad:"Notepad",idea:n.kind||"Idea",source:fl||n.kind||"Source",image:n.gen?"Generated image":n.src?"Web image":`${fl||"Uploaded"} image`,recording:n.gen?"Generated video":`${fl||"Video"} video`,audio:`${fl||"Audio"} audio`,link:"Link",group:"Group",frame:"Frame",question:"Question",direction:"Direction "+n.letter,proof:"Proof",print:"Print",list:"Action list",kanban:"Kanban",treemap:"Tree Map",synthesis:"Synthesis"})[n.type]||n.type}
+function kindLabel(n){const fl=fileFormatOf(n)?.label;return n.status==="sketch"?"Sketch":({note:"Sticky",notepad:"Notepad",idea:n.kind||"Idea",source:fl||n.kind||"Source",image:n.gen?"Generated image":n.src?"Web image":`${fl||"Uploaded"} image`,recording:n.gen?"Generated video":`${fl||"Video"} video`,audio:`${fl||"Audio"} audio`,link:"Link",group:"Group",frame:"Frame",question:"Question",direction:"Direction "+n.letter,proof:"Proof",print:"Snapshot",list:"Action list",kanban:"Kanban",treemap:"Tree Map",synthesis:"Synthesis"})[n.type]||n.type}
 function msgHTML(m,idx){const a=AGENTS[m.who],del=(typeof idx==="number"&&!m.typing)?`<button type="button" class="msg-del" data-m="del-msg" data-idx="${idx}" title="Delete note" aria-label="Delete note">${ic("trash")}</button>`:"";return `<div class="msg ${a?"agent":""}"><span class="mk ${a?"":"you"}">${a?a.mk:AV.you}</span><div><div class="who">${a?a.name:"You"}<span>${clock(m.t)}</span>${del}</div><div class="tx${m.typing?" typing":""}">${m.img?`<img src="${m.img}" alt="">`:""}${mdLite(m.text||"")}</div></div></div>`}
 function marginActs(n){
   const b=(a,label,cls="",icn="")=>`<button type="button" class="cbtn ${cls}" data-m="${a}">${icn?ic(icn):""}${label}</button>`;
   switch(n.type){
     case"direction":return board.adopted[n.idea]===n.id?b("try","Try")+b("build","Build Proof","pg"):b("try","Try")+b("adopt","Adopt","pg","stamp");
-    case"proof":return b("try","Open")+b("rebuild","Build v"+(n.ver+1))+b("critique","Critique")+b("print","Print","solid","print");
+    case"proof":return b("try","Open")+b("rebuild","Build v"+(n.ver+1))+b("critique","Critique")+b("print","Snapshot","solid","print");
     case"print":return b("try","View")+b("download","Download","solid","down");
     case"recording":return b("open",n.gen?"Open Video":"Open Recording","solid","play")+b("shot-split","Split Shots","","frame")+b("to-gif","Make GIF","","gif")+b("to-video","Make Video","","video");
     case"audio":return b("gather","Ask Scout");
@@ -8369,15 +8369,15 @@ function adopt(d){
   toast(`Adopted ${d.title}`,{undo:true});
 }
 function pullPrint(p){
-  if(!p||p.type!=="proof")return toast(L("Select a proof to print.","请先选中一个原型再打印。"));if(p.status==="sketch")return toast("Keep the proof before printing it.");
+  if(!p||p.type!=="proof")return toast(L("Select a proof to snapshot.","请先选中一个原型再生成快照。"));if(p.status==="sketch")return toast("Keep the proof before taking a snapshot.");
   const prev=board.nodes.find(n=>n.type==="print"&&n.proof===p.id);
-  if(prev){select([prev.id]);focusNodes([p,prev],.85);return toast("This proof is already printed as No. "+prev.ed)}
+  if(prev){select([prev.id]);focusNodes([p,prev],.85);return toast("This proof already has Snapshot No. "+prev.ed)}
   checkpoint();const ed=1+board.nodes.filter(n=>n.type==="print").length;
   const spot=freeSpot(3*BAY+80,Math.max(0,p.y),W.print,300);
   const pr=node("print",{_src:p.id,proof:p.id,dir:p.dir,ed,spec:structuredClone(p.spec),fixed:structuredClone(p.fixed||[])},spot);const e=edge(p.id,pr.id,"derive","frozen");captureDepSnapshot(pr,[p]);freshEdges.add(e.id);setTimeout(()=>freshEdges.clear(),1200);
-  log("you",`Pulled <b>Print No. ${ed}</b> from ${esc(titleOf(p))}`,pr.id);select([pr.id],{menus:false});renderAll();persist();
+  log("you",`Pulled <b>Snapshot No. ${ed}</b> from ${esc(titleOf(p))}`,pr.id);select([pr.id],{menus:false});renderAll();persist();
   {const el=nodeEl(pr.id);if(el&&!calm()){el.style.setProperty("--fx",((p.x+W.proof/2)-(pr.x+W.print/2))+"px");el.style.setProperty("--fy",((p.y+(p._h||390)/2)-(pr.y+150))+"px");el.classList.add("born","inking");setTimeout(()=>el.classList.remove("born","inking"),1000)}}
-  focusNodes([p,pr],.8,800);toast(`Print ${ed} is ready. It won’t change, even if the proof does.`);
+  focusNodes([p,pr],.8,800);toast(`Snapshot No. ${ed} is ready. It won’t change, even if the proof does.`);
 }
 
 /* ── proof pages: the real thing you test with people ─────────────────── */
@@ -8572,7 +8572,7 @@ function stripActs(n){
     case"frame":return [A("look","View","","Space","eye"),A("reverse-prompt",n.plPack?"Prompt Pack":"Reverse Prompt","","","sparkles"),A("to-gif","To GIF","","","gif"),A("to-video","To Video","","","video"),A("askframe","Ask About Frame","","","frame"),open];
     case"question":return [A("answer","Ask Critic","","","question"),open];
     case"direction":return board.adopted[n.idea]===n.id?[A("look","Preview","","Space","eye"),A("build",outputsOf(n.id).some(o=>o.type==="proof")?"Rebuild Proof":"Build Proof","pg","","grid"),open]:[A("look","Preview","","Space","eye"),A("adopt","Adopt","pg","","stamp"),open];
-    case"proof":return [A("look","Preview","","Space","eye"),A("print","Print","","","print"),open];
+    case"proof":return [A("look","Preview","","Space","eye"),A("print","Snapshot","","","print"),open];
     case"print":return [A("look","View","","Space","eye"),A("download","Download","","","down"),open];
     case"list":return [A("kanban","Turn into Kanban","","","kanban"),A("treemap","Tree Map","","","treemap"),A("copilot","Ask Copilot","","","ask"),open];
     case"kanban":return [A("list","Action List","","","list"),A("treemap","Tree Map","","","treemap"),A("copilot","Ask Copilot","","","ask"),open];
@@ -9950,7 +9950,8 @@ const CMDS=[
   {c:"/critique",a:"critic",d:"Check the selection against its sources",run:true},
   {c:"/ask",a:"critic",d:"Ask a question anchored to the selection"},
   {c:"/adopt",a:null,d:"Adopt the selected direction",run:true},
-  {c:"/print",a:null,d:"Print the selected proof",run:true},
+  {c:"/snapshot",a:null,d:"Freeze the selected proof as a numbered snapshot",run:true},
+  {c:"/print",a:null,d:"Old name for /snapshot",run:true,hidden:true},
   {c:"/claim",a:null,d:"Add a claim to Diverge"},
   {c:"/note",a:null,d:"Add a note where you’re looking"},
   {c:"/notepad",a:null,d:"Add a structured notepad document"},
@@ -10198,7 +10199,7 @@ function route(text){
       case"/critique":return mk("critique","critic","check the sources");
       case"/ask":return mk("ask","critic",has("proof")||has("frame")?"ask on "+titleOf(has("proof")||has("frame")):"ask",{arg});
       case"/adopt":return mk("adopt",null,"adopt");
-      case"/print":return mk("print",null,"print");
+      case"/print":case"/snapshot":return mk("print",null,"snapshot");
       case"/claim":return mk("claim",null,"add a claim",{arg});
       case"/note":return mk("note",null,"add a note",{arg});
       case"/notepad":return (!arg&&has("treemap"))?mk("tm-brief",null,"Notepad Brief"):mk("notepad",null,"add a notepad",{arg});
@@ -10492,7 +10493,7 @@ function updateMenu(){
   const v=lineIn.value;const m=v.match(/^([/@])(\w*)$/);
   if(!m){closeMenu();return}
   const q=m[2].toLowerCase();
-  menuItems=m[1]==="/"?CMDS.filter(c=>c.c.slice(1).startsWith(q)).map(c=>({ins:c.c+" ",html:`<span class="mk" ${c.a?"":'style="opacity:.25"'}>${c.a?AGENTS[c.a].mk:"·"}</span><span class="cmd">${c.c}${c.hint?` <span style="color:var(--faint)">${c.hint}</span>`:""}</span><span class="d">${c.d}</span><span class="who">${c.a?AGENTS[c.a].name:"You"}</span>`}))
+  menuItems=m[1]==="/"?CMDS.filter(c=>!c.hidden&&c.c.slice(1).startsWith(q)).map(c=>({ins:c.c+" ",html:`<span class="mk" ${c.a?"":'style="opacity:.25"'}>${c.a?AGENTS[c.a].mk:"·"}</span><span class="cmd">${c.c}${c.hint?` <span style="color:var(--faint)">${c.hint}</span>`:""}</span><span class="d">${c.d}</span><span class="who">${c.a?AGENTS[c.a].name:"You"}</span>`}))
     :Object.values(AGENTS).filter(a=>a.key.startsWith(q)||a.name.toLowerCase().startsWith(q)).map(a=>{const handle=a.name.toLowerCase();return {ins:"@"+handle+" ",html:`<span class="mk">${a.mk}</span><span class="cmd">@${handle}</span><span class="d">${esc(a.craft)}</span><span class="who">${crewState[a.key].busy?"busy":"free"}</span>`}});
   if(!menuItems.length){closeMenu();return}
   menuIdx=clamp(menuIdx,0,menuItems.length-1);
@@ -12474,10 +12475,10 @@ function openStage(n){
   }
   const spec=n.type==="direction"?{...specLocal(n),letter:n.letter,version:0}:n.spec;
   const sk=n.status==="sketch";
-  const sub=n.type==="direction"?`Direction ${n.letter} · Preview`:n.type==="print"?`Print ${n.ed}`:`Proof ${L||""} · v${n.ver}${sk?" · Suggestion":""}`;
+  const sub=n.type==="direction"?`Direction ${n.letter} · Preview`:n.type==="print"?`Snapshot No. ${n.ed}`:`Proof ${L||""} · v${n.ver}${sk?" · Suggestion":""}`;
   let acts="";
   if(n.type==="direction")acts=sk?`<button type="button" class="s-btn solid" data-s="ink">Keep</button>`:board.adopted[n.idea]===n.id?`<button type="button" class="s-btn pg" data-s="build">Build Proof</button>`:`<button type="button" class="s-btn pg" data-s="adopt">${ic("stamp")}Adopt</button>`;
-  if(n.type==="proof")acts=sk?`<button type="button" class="s-btn" data-s="erase">Discard</button><button type="button" class="s-btn solid" data-s="ink">Keep</button>`:`<button type="button" class="s-btn round" data-s="download" title="Download HTML" aria-label="Download HTML">${ic("down")}</button><button type="button" class="s-btn solid" data-s="print">${ic("print")}Print</button>`;
+  if(n.type==="proof")acts=sk?`<button type="button" class="s-btn" data-s="erase">Discard</button><button type="button" class="s-btn solid" data-s="ink">Keep</button>`:`<button type="button" class="s-btn round" data-s="download" title="Download HTML" aria-label="Download HTML">${ic("down")}</button><button type="button" class="s-btn solid" data-s="print">${ic("print")}Snapshot</button>`;
   if(n.type==="print")acts=`<button type="button" class="s-btn solid" data-s="download">${ic("down")}Download</button>`;
   st.className="stage"+(L?" pg-"+L:"");
   st.innerHTML=`<div class="s-bar"><button type="button" class="glass circle" data-s="close" aria-label="Close" title="Close (Esc)" style="width:48px;height:48px">${ic("x")}</button>

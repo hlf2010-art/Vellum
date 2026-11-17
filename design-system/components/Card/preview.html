@@ -1,0 +1,53 @@
+<!-- @dsCard group="Board" height=2420 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||"light"</script><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="../bundle.js"></script><style>
+body{margin:0;background:var(--canvas)}
+#root{padding:24px}
+.sec{margin:0 0 28px}
+.sec>h5{margin:0 0 12px;font:600 10.5px/1 var(--font-ui);letter-spacing:.04em;text-transform:uppercase;color:var(--label-3)}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+</style></head>
+<body>
+<div id="root"></div>
+<script>
+var V = window.Vellum, h = React.createElement;
+var IMG = { rec: '../../assets/Samples/recording.jpg', key: '../../assets/Samples/image.jpg', frame: '../../assets/Samples/frame.jpg', proof: '../../assets/Samples/proof-thumb.png' };
+function sec(title, kids){ return h('section', { className: 'sec' }, h('h5', null, title), h('div', { className: 'row' }, kids)); }
+ReactDOM.createRoot(document.getElementById('root')).render(h(V.Root, null,
+  sec('Gather · evidence', [
+    h(V.Card, { key: 1, kind: 'source', eyebrow: 'MD · Playtest Telemetry', title: '12-Player Eye-Tracking Audit', weight: 'observed', meta: '4:19 AM' }, '9 of 12 testers missed top-right faction notifications during rooftop traversal.'),
+    h(V.Card, { key: 2, kind: 'recording', image: IMG.rec, badge: 'WEBM', timecode: '0:08', title: 'Playtest Clip · Neon Alley Ambush', weight: 'observed', meta: '1 frame lifted · 4:39 AM' }, 'Observed gameplay capture showing a rooftop-to-alley ambush where the corner alert goes unnoticed.'),
+    h(V.Card, { key: 3, kind: 'image', image: IMG.key, badge: 'JPEG', eyebrow: 'Generated image · Qwen Image 2.1', title: 'Keyframe · Kowloon Rain Sector', weight: 'illustrative', meta: '4:43 AM' }, 'Atmospheric target frame testing wet street bounce and a warm wrist-pager cue.'),
+    h(V.Card, { key: 4, kind: 'frame', image: IMG.frame, badge: 'FRAME', timecode: '@ 0:04.2', eyebrow: 'Frame · Playtest Clip · Neon Alley Ambush', title: 'Lifted Frame · Sightline Break', weight: 'observed', meta: '5:26 AM' }),
+    h(V.Card, { key: 5, kind: 'audio', eyebrow: 'WAV audio', title: 'Player P07 Voice Debrief', duration: '0:03', progress: 0, weight: 'reported', meta: '4:51 AM' }),
+    h(V.Card, { key: 6, kind: 'link', image: IMG.key, title: 'GDC · Embodied Dead Space HUD Talk', url: 'gdcvault.com/diegetic-interface-benchmark', weight: 'reported', meta: '5:01 AM' }, 'Reference notes on diegetic spine gauges and keeping combat state inside the world plane.'),
+    h(V.Card, { key: 7, kind: 'notepad', title: 'Project Brief · Ashen Crown HUD', weight: 'observed', footLeft: '· 50 words', meta: '4:26 AM', text: 'Design Pillar: Zero pause-screen menu fatigue during street infiltration.\n\nHard Non-Goals:\n- No full-screen radial wheel slowdowns\n- Colorblind legibility required in neon rain' })
+  ]),
+  sec('Explore · thinking', [
+    h(V.Card, { key: 1, kind: 'idea', title: 'Players read faction shifts in under 1.2s when deltas come from the world, not the screen corners.', rating: { observed: 4, reported: 1, unrated: 2 }, meta: '2 notes · 5:44 AM' }),
+    h(V.Card, { key: 2, kind: 'synthesis', by: 'scout', title: 'Evidence Audit · Corner vs World', rating: { observed: 4, reported: 2, unrated: 0 }, meta: '5:41 AM', points: [{ label: 'Observed', text: '9/12 players miss corner toasts while tracking rooftop cover (2.9s lag).' }, { label: 'Reported', text: 'Player P07 blamed delayed hostility on peripheral clutter.' }, { label: 'Tension', text: 'Alerts in alley geometry risk rain washout unless paired with shape + haptics.' }] }),
+    h(V.Card, { key: 3, kind: 'direction', lineage: 'B', adopted: true, title: 'Diegetic Wrist Pager & Rim Glow', test: 'Run with 3 players; pass if 2 notice the shift within 1.2s.', meta: 'Strategist' }, 'Route faction deltas through a wrist pager and a rim glow on nearby NPCs.'),
+    h(V.Card, { key: 4, kind: 'question', by: 'critic', lineage: 'B', eyebrow: 'Question on Proof B v2', title: 'At frame 0:04.2 in heavy rain, can colorblind players tell Rival Crimson from Ally Teal?', meta: '2 notes · 7:31 AM' }),
+    h(V.Card, { key: 5, kind: 'note', title: 'Constraint: the glyph must stay legible in heavy rain without dimming gameplay.', meta: '5:51 AM' })
+  ]),
+  sec('Prototype · building', [
+    h(V.Card, { key: 1, kind: 'proof', lineage: 'B', version: 'v2', image: IMG.proof, title: 'Diegetic Faction Dispatch HUD', sources: ['Project Brief · Ashen Crown HUD', '12-Player Eye-Tracking Audit', 'Lifted Frame · Sightline Break', 'Player P07 Voice Debrief'], footLeft: 'Explore Desk', meta: 'Built from 4 sources · 1 note · 7:09 AM' }),
+    h(V.Card, { key: 2, kind: 'list', by: 'wright', title: 'Validation & Accessibility Checks', meta: '7:39 AM', items: [{ text: 'Measure wrist pager glance time (< 1.2s target → hit 0.85s)', done: true }, { text: 'Calibrate 2-tap ally vs 3-pulse hostile rumble', done: true }, { text: 'Add hollow diamond chevron fallback', done: true }, { text: 'Verify LOD fallback when rain density spikes' }, { text: 'Sign off Snapshot No. 1 with Lead Combat Designer' }] }),
+    h(V.Card, { key: 3, kind: 'kanban', by: 'wright', title: 'Milestone 3 · Vertical Slice Execution', meta: '8:16 AM', columns: [{ title: 'Spec & Rig', items: ['Final Localization String Pass'] }, { title: 'In Playtest', items: ['Add Diamond Colorblind Rim Chevron', 'Rain Particle LOD Contrast Audit'] }, { title: 'Locked', items: ['Wire wrist-pager shader uniform', 'Tune 2-tap / 3-pulse haptic asset'] }] })
+  ]),
+  sec('Crew suggestions and locks', [
+    h(V.Card, { key: 1, kind: 'source', eyebrow: 'MD · Playtest Telemetry', title: '12-Player Eye-Tracking Audit', weight: 'observed', meta: '4:46 AM', proposal: { member: 'scout', op: 'edit', open: true, field: 'text', diff: ['during rooftop traversal.', 'during rooftop traversal; gaze stayed within 14° of the character.'] } }, '9 of 12 testers missed top-right faction notifications during rooftop traversal.'),
+    h(V.Card, { key: 2, kind: 'direction', lineage: 'A', title: 'Corner Toast + Audio Chime', meta: 'Guided Tour', proposal: { member: 'critic', op: 'delete' } }, 'Keep top-right notifications and boost alert chime volume during combat.'),
+    h(V.Card, { key: 3, kind: 'idea', locked: true, title: 'Players read faction shifts in under 1.2s when deltas come from the world.', rating: { observed: 4, reported: 1, unrated: 2 }, meta: '2 notes · 5:44 AM' })
+  ]),
+  sec('Snapshot · decided', [
+    h(V.Card, { key: 1, kind: 'snapshot', lineage: 'B', edition: 1, of: 'of proof v2', title: 'Diegetic Faction Dispatch HUD', footLeft: 'Standalone HTML', meta: '8:06 AM' }, 'Every faction delta fires on the wrist pager and NPC rim-glow within 0.85s.'),
+    h(V.Card, { key: 2, kind: 'group', title: '01 · Gather · Telemetry, Concept & Brief' },
+      h(V.Card, { kind: 'note', title: 'Cards dropped inside a group move with it.', meta: '5:51 AM' }),
+      h(V.Card, { kind: 'source', eyebrow: 'CSV · Session log', title: 'Rooftop traversal timings', weight: 'observed', meta: '4:02 AM' }))
+  ])
+));
+</script>
+</body>
+</html>

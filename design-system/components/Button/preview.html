@@ -1,0 +1,15 @@
+<!-- @dsCard group="Actions" height=80 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||"light"</script><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="../bundle.js"></script><style>body{margin:0;background:var(--canvas)}#root{padding:20px}.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var V = window.Vellum, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(h(V.Root, null, h('div', {className:'row'}, 
+  h(V.Button,{variant:'primary',icon:'check'},'Apply'),h(V.Button,null,'Keep'),h(V.Button,{variant:'ghost',icon:'retry'},'Retry'),
+  h(V.Button,{variant:'ghost',icon:'x'},'Discard'),h(V.Button,{variant:'danger'},'Stop'),h(V.Button,{disabled:true},'Apply')
+)));
+</script>
+</body>
+</html>

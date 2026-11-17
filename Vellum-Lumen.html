@@ -11162,6 +11162,28 @@ function paintCopilotHeader(){
   const src=aiSource();
   sub.textContent=src.label+(studioState.model&&src.kind==="studio"?" · "+studioState.model.split("/").pop():"");
 }
+/* The cards connected to what the designer selected: its claim, sibling directions, the direction a proof
+   builds, its latest proof. Drafts count: they are what the designer is usually asking about. Without this
+   Copilot saw only kept cards and said it was "working from the title of A". */
+function relatedForCopilot(ctx,excludeIds){
+  const out=[],seen=new Set(excludeIds);
+  const add=(n,why)=>{if(!n||n.archived||n.hidden||seen.has(n.id))return;seen.add(n.id);out.push({n,why})};
+  for(const c of (ctx||[]).slice(0,3)){
+    if(c.type==="direction"){
+      add(byId(c.idea),L("its claim","它的主张"));
+      board.nodes.filter(n=>n.type==="direction"&&n.idea===c.idea).forEach(n=>add(n,L("another direction from the same claim","同一主张的另一个方向")));
+      board.nodes.filter(n=>n.type==="proof"&&n.dir===c.id).slice(-1).forEach(n=>add(n,L("its latest proof","它最新的原型")));
+    }else if(["idea","note","notepad","treemap"].includes(c.type)){
+      board.nodes.filter(n=>n.type==="direction"&&n.idea===c.id).forEach(n=>add(n,L("a direction forked from it","由它发散的方向")));
+    }else if(c.type==="proof")add(byId(c.dir),L("the direction it builds","它所依据的方向"));
+  }
+  return out.slice(0,6);
+}
+function relatedLine({n,why}){
+  const st=[n.status==="sketch"?L("draft, not kept yet","草稿，尚未保留"):"",board.adopted?.[n.idea]===n.id?L("adopted","已采纳"):"",n.vote==="up"?L("the designer liked it","设计师喜欢"):n.vote==="down"?L("the designer disliked it","设计师不喜欢"):""].filter(Boolean).join("; ");
+  const body=clip(String(fullTextOf(n)||"").replace(/\s+/g," "),420);
+  return `- ${kindLabel(n)} (${why}${st?"; "+st:""}): ${prettyTitle(n,76)}${body&&body!==titleOf(n)?". "+body:""}${n.test?"\n  Test: "+clip(n.test,260):""}`;
+}
 function boardDigestForCopilot({query="",ctx=[]}={}){
   const excludeIds=new Set((ctx||[]).map(n=>n.id));
   const counts={};for(const n of board.nodes)if(!n.archived)counts[n.type]=(counts[n.type]||0)+1;
@@ -11175,13 +11197,15 @@ function boardDigestForCopilot({query="",ctx=[]}={}){
   const docs=inked.filter(n=>isFullDoc(n)&&!excludeIds.has(n.id));
   const docIds=new Set(inked.filter(isFullDoc).map(n=>n.id));
   const fullDocIds=selectRelevantDocIds(docs,query,{ctx,maxFull:2,totalCap:4200});
-  const recent=inked.filter(n=>!docIds.has(n.id)&&!excludeIds.has(n.id)).slice(-6);
+  const related=relatedForCopilot(ctx,excludeIds),relIds=new Set(related.map(r=>r.n.id));
+  const recent=inked.filter(n=>!docIds.has(n.id)&&!excludeIds.has(n.id)&&!relIds.has(n.id)).slice(-6);
   const likes=[...new Set([...liked,...propLiked])],dislikes=[...new Set([...disliked,...propDisliked])];
   const prefLine=(likes.length||dislikes.length)?`\nFeedback — Approved: ${likes.join(", ")||"none"}. Disliked: ${dislikes.join(", ")||"none"}.`:"";
   const docsBlock=docs.length?`\nMarkdown & brief docs (${fullDocIds.size}/${docs.length} matched loaded in full; rest indexed):\n${wallText(docs,{compactDocs:true,fullDocIds,docCap:2200,totalCap:4200})}`:"";
   const mcpBlock=mcpContextDigest({query,excludeIds});
   const recentBlock=recent.length?`\nOther recent cards (excluding selected & full docs):\n${wallText(recent,{shortCap:190,totalCap:1400})}`:"";
-  return `Board "${board.title||"Untitled"}" (${board.nodes.length} cards: ${summary||"empty"}). Adopted: ${adopted.join(", ")||"none"}.${prefLine}${docsBlock}${mcpBlock}${recentBlock}`;
+  const relatedBlock=related.length?`\nCards connected to the selection (full text; a draft is a suggestion the designer has not kept yet):\n${related.map(relatedLine).join("\n")}`:"";
+  return `Board "${board.title||"Untitled"}" (${board.nodes.length} cards: ${summary||"empty"}). Adopted: ${adopted.join(", ")||"none"}.${prefLine}${relatedBlock}${docsBlock}${mcpBlock}${recentBlock}`;
 }
 const CP_SCHEMA_RE=/^(?:for (?:direction|image|search)|short title|body|string|\.\.\.|concrete 5-minute user check|detailed visual scene description|concise web search keywords|concise rule or project decision to save|action \d+)$/i;
 const UI_TONES={A:"var(--A)",B:"var(--B)",C:"var(--C)",D:"var(--D)",amber:"var(--A)",green:"var(--B)",blue:"var(--C)",coral:"var(--D)",red:"var(--D)"};

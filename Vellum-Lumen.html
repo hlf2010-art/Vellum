@@ -736,16 +736,17 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-seg.sm button[aria-pressed="true"]{background:var(--hover);color:var(--label);box-shadow:none}
 @media (pointer:coarse){.sp-seg.sm button{height:30px;padding:0 12px;font-size:12.5px}}
 .sp-services.idle .sp-first{opacity:.5}
-.sp-htxt small.sp-now{display:grid;grid-template-columns:6px minmax(0,1fr);column-gap:7px;row-gap:3px;align-items:center;margin-top:4px;white-space:normal;color:var(--label-2)}
+.sp-htxt small.sp-now{display:grid;row-gap:3px;margin-top:4px;white-space:normal;color:var(--label-2)}
+.sp-now-line{display:flex;align-items:center;gap:7px;min-width:0}
+.sp-now-line>span,.sp-now-mode{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-now i{flex:none;width:6px;height:6px;border-radius:50%;background:var(--label-4)}
 .sp-now.ok i{background:var(--C)}
-.sp-now.busy i{background:var(--B)}
-.sp-now-mode{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sp-now-issue{grid-column:2;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:450;color:var(--label-3)}
-.sp-now-issue.warn{color:color-mix(in srgb,var(--warn) 88%,var(--label))}
+.sp-now-issue{font-weight:450;color:var(--label-3)}
 .sp-now-issue.err{color:color-mix(in srgb,var(--D) 88%,var(--label))}
-.sp-now.warn i{background:var(--warn)}
-.sp-now.err i{background:var(--D)}
+.sp-now-issue.err i{background:var(--D)}
+.sp-now-issue.warn{color:color-mix(in srgb,var(--warn,#d97706) 88%,var(--label))}
+.sp-now-issue.warn i{background:var(--warn,#d97706)}
+.sp-now-issue.busy i{background:var(--B)}
 .sp-ai+.sp-services{margin-top:-4px}
 .sp-services.idle .sp-svc-main,.sp-services.idle .sp-models,.sp-services.idle .sp-prog{opacity:.5}
 .sp-services.idle .sp-state{color:var(--label-3)}
@@ -3535,6 +3536,13 @@ function crewQuietReason(){
   if(!advLeft())return {k:"ceiling",tip:L("Resting until the hour is up","本小时已达上限，稍后继续")};
   return null;
 }
+/* Status line for popover headers. One color signal, on the line that describes current health:
+   no issue -> the dot marks "what's in use"; an issue -> plain context line, the dot moves to the issue. */
+function connHeadHTML(sum,issue=sum.issue?{t:sum.issue,tone:sum.tone}:null){
+  const title=esc(sum.mode+(issue?" · "+issue.t:""));
+  if(!issue)return `<small class="sp-now ${sum.engine==="rules"?"off":"ok"}" title="${title}"><span class="sp-now-line"><i></i><span class="sp-now-mode">${esc(sum.mode)}</span></span></small>`;
+  return `<small class="sp-now issue-${issue.tone}" title="${title}"><span class="sp-now-mode">${esc(sum.mode)}</span><span class="sp-now-line sp-now-issue ${issue.tone}"><i></i><span>${esc(issue.t)}</span></span></small>`;
+}
 function connHealth(){
   const c=connSummary();
   const k=aiPref==="local"?"rules":c.tone==="err"?"error":c.engine!=="rules"?"ok":"none";
@@ -3551,7 +3559,7 @@ function renderCrewPop(){
   const sum=connSummary(),quiet=crewQuietReason();
   const hIssue=sum.issue?{t:sum.issue,tone:sum.tone}:quiet?.k==="ceiling"?{t:quiet.tip,tone:"busy"}:null;
   const unreadTxt=unread>1?L(`${unread} thoughts waiting`,`${unread} 条建议等你查看`):L("A thought is waiting","有一条建议等你查看");
-  pop.innerHTML=`<div class="cp-pop-head sp-htxt"><b>${L("Crew","成员")}</b><small class="sp-now ${sum.dot}"><i></i><span class="sp-now-mode">${esc(sum.mode)}</span>${hIssue?`<span class="sp-now-issue ${hIssue.tone}">${esc(hIssue.t)}</span>`:""}</small></div>
+  pop.innerHTML=`<div class="cp-pop-head sp-htxt"><b>${L("Crew","成员")}</b>${connHeadHTML(sum,hIssue)}</div>
     ${firstUnread?`<div class="crew-wait"><span><b>${esc(unreadTxt)}</b>${held?`<small>${esc(L(`${held} card${held>1?"s":""} held back until you read`,`${held} 张卡片暂缓，读完后出现`))}</small>`:""}</span><button type="button" class="cbtn" data-crew-show="${esc(firstUnread)}">${L("Show","查看")}</button></div>`:""}
     <div class="crew-axis"><b id="crew-speak-l">${L("Speaks up","主动发言")}</b>${seg("speak",SPEAK_LEVELS,SPEAK_LABEL,crewSpeak)}<p>${L(SPEAK_DESC[crewSpeak][0],SPEAK_DESC[crewSpeak][1])}</p></div>
     <div class="crew-axis"><div class="crew-axis-h"><b id="crew-act-l">${L("Acts on the board","在画板上动手")}</b><button type="button" class="crew-link" data-crew-custom>${L("Customize","自定义")}</button></div>${seg("act",ACT_LEVELS,ACT_LABEL,autonomyCustom?"":crewAct)}<p>${autonomyCustom?esc(autonomyPlain()):L(ACT_DESC[crewAct][0],ACT_DESC[crewAct][1])}</p></div>
@@ -5676,7 +5684,7 @@ function connSummary(){
   const name={local:L("Local AI","本地模型"),api:L("Cloud API","云端 API"),claude:"Claude",rules:L("built-in rules","内置规则")}[engine];
   const model=engine==="local"?(studioState.model||"").split("/").pop():engine==="api"?(apiCfg.model||"").split("/").pop():"";
   let issue="",tone="";
-  if(aiPref==="local"){issue=L("AI turned off","AI 已关闭");tone="warn"}
+  if(aiPref==="local"){issue=L("AI models are off","AI 模型已关闭");tone="off"}
   else if(hasApi()&&API_BAD.has(h.k)&&engine!=="local"&&!apiRoutable()){issue=L(`Cloud API ${apiHealthLabel(h).txt.toLowerCase()}`,`云端 API ${apiHealthLabel(h).txt}`);tone="err"}
   else if(engine==="api"&&h.k==="unreachable"){issue=L("Retrying Cloud API","正在重试云端 API");tone="busy"}
   else if(engine==="api"&&h.k==="error"){issue=L("Cloud API returned an error","云端 API 返回错误");tone="warn"}
@@ -5931,7 +5939,7 @@ function renderStudioPop(){
   const imAct=(imgSvc.connected&&!svcStopped)?btn("stop-svc",L("Stop","停止"),{tip:L("Stop Windows ComfyUI (image & video) and free VRAM","停止 Windows ComfyUI（同时停止出图和出视频）并释放显存")}):"";
   const idle=aiPref==="local";
   pop.innerHTML=`<div class="sp-head">
-      <div class="sp-htxt"><b>${esc(headTitle)}</b><small class="sp-now ${sum.dot}" title="${esc(sum.mode+(sum.issue?" · "+sum.issue:""))}"><i></i><span class="sp-now-mode">${esc(sum.mode)}</span>${sum.issue?`<span class="sp-now-issue ${sum.tone}">${esc(sum.issue)}</span>`:""}</small></div>
+      <div class="sp-htxt"><b>${esc(headTitle)}</b>${connHeadHTML(sum,sum.issue&&aiPref!=="local"?{t:sum.issue,tone:sum.tone}:null)}</div>
       <button type="button" class="sp-refresh ${studioChecking?"spin":""}" data-sp="refresh" title="${L("Test all connections","测试全部连接")}" aria-label="${L("Test all connections","测试全部连接")}">${ic("redo")}</button>
     </div>
     <div class="sp-ai">

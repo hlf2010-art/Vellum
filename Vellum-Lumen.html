@@ -1234,15 +1234,36 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .cp-bubble pre{margin:7px 0 9px;padding:9px 11px;border-radius:10px;background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair-2);overflow-x:auto;font:500 12px/1.45 var(--mono);color:var(--label)}
 .cp-bubble code{font:500 12px/1.3 var(--mono);padding:1px 5px;border-radius:5px;background:var(--card-3);color:var(--label)}
 .cp-bubble pre code{padding:0;background:transparent;border-radius:0}
-/* Table: one shared style (Markdown tables in replies, comparison tables). Sentence-case headers in
-   label-2 rather than small uppercase label-3, which sat at 4.6:1. */
-.tbl{width:100%;border-collapse:collapse;font:450 12px/1.45 var(--ui);color:var(--label);background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 0 0 .5px var(--hair-2)}
-.tbl th,.tbl td{padding:7px 10px;text-align:left;vertical-align:top;border-bottom:.5px solid var(--hair-2)}
-.tbl tr:last-child td{border-bottom:0}
-.tbl th{font:600 11px/1.3 var(--ui);color:var(--label-2);background:var(--card-2)}
-.tbl td.key{font-weight:600;color:var(--label-2);width:32%}
-.tbl td.win{font-weight:600;background:color-mix(in srgb,var(--B) 10%,transparent)}
-.cp-bubble .tbl{margin:7px 0 9px}
+/* Table. What a reader needs: the answer fast. Open "ledger" layout (no box, hairline rows), numbers right-aligned
+   in tabular figures with a faint magnitude bar, comparison verdict first, hover tracks the row, the first column
+   stays put when a wide table scrolls. */
+.tbl-wrap{max-width:100%;overflow-x:auto;scrollbar-width:thin}
+.cp-bubble .tbl-wrap{margin:8px 0 10px}
+.tbl{--tbl-bg:var(--card);width:100%;border-collapse:separate;border-spacing:0;font:450 12.5px/1.45 var(--ui);color:var(--label)}
+.tbl caption{caption-side:top;text-align:left;padding:0 10px 8px;font:600 13px/1.3 var(--ui);letter-spacing:-.01em;color:var(--label)}
+.tbl th,.tbl td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:.5px solid var(--hair-2);background:var(--tbl-bg)}
+.tbl th{padding-top:4px;font:600 11.5px/1.3 var(--ui);color:var(--label-2);border-bottom-color:var(--hair-2);white-space:nowrap}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl th:first-child,.tbl td:first-child{position:sticky;left:0;z-index:1}
+.tbl td:first-child{font-weight:560}
+.tbl tbody tr:hover td{background:color-mix(in srgb,var(--label) 4%,var(--tbl-bg))}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+.tbl td.lvl{white-space:nowrap}
+.tbl-lvl{display:inline-block;width:7px;height:7px;margin:0 7px 1px 0;border-radius:50%;background:var(--c)}
+.tbl td.num{position:relative;white-space:nowrap}
+/* magnitude: a full-width faint track with a neutral fill, so it reads as "how much of the column's max", not a link */
+.tbl-bar{position:absolute;left:10px;right:10px;bottom:4px;height:3px;border-radius:3px;background:color-mix(in srgb,var(--label) 7%,transparent)}
+.tbl-bar::after{content:"";position:absolute;right:0;top:0;bottom:0;width:calc(100% * var(--v,0));border-radius:3px;background:color-mix(in srgb,var(--label) 30%,transparent)}
+.tbl td.num{padding-bottom:12px}
+.tbl-n{position:relative}
+.tbl.cmp td.key{color:var(--label-2);font-weight:560;width:32%}
+.tbl.cmp th.lead{color:var(--label)}
+.tbl.cmp td.win{font-weight:600;color:var(--label)}
+.tbl.cmp td.lose{color:var(--label-2)}
+.tbl-win{width:12px;height:12px;margin:0 5px -1px 0;fill:none;stroke:var(--C);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tbl.cmp tr.on td{background:color-mix(in srgb,var(--B) 8%,var(--tbl-bg))}
+.cp-ui .tbl{--tbl-bg:var(--card-2)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .cp-md-more{margin-top:6px;border-radius:10px;background:var(--card-2);box-shadow:0 0 0 .5px var(--hair-2);padding:6px 10px}
 .cp-md-pop-btn{margin-top:4px;height:26px;padding:0 10px;border-radius:999px;font:560 11.5px/1 var(--ui);color:var(--C);background:color-mix(in srgb,var(--C) 12%,var(--card-2));box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--C) 30%,var(--hair));display:inline-flex;align-items:center;gap:5px;width:fit-content;transition:background var(--d-quick),color var(--d-quick)}
 .cp-md-pop-btn:hover{background:color-mix(in srgb,var(--C) 20%,var(--card-2));color:var(--label)}
@@ -1362,7 +1383,6 @@ html[data-theme="dark"] .cp-ui{box-shadow:0 0 0 .5px var(--hair-2),0 6px 18px rg
 .cp-ui-cell-t{font-size:11px;font-weight:700;color:var(--label);display:flex;align-items:center;gap:5px}
 .cp-ui-cell-b{font-size:10.5px;line-height:1.35;color:var(--label-2)}
 .tbl tr[data-cp-ui-sel]{cursor:pointer}
-.tbl tr[data-cp-ui-sel]:hover td{background:var(--hover)}
 .cp-ui-building{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--card-2);box-shadow:0 0 0 .5px var(--hair-2);font-size:11px;color:var(--label-2);margin-top:4px;width:fit-content}
 .cp-props{display:grid;gap:7px;width:100%;max-width:96%}
 .cp-prop{display:grid;gap:6px;padding:10px 12px;border-radius:16px;background:var(--card);box-shadow:0 0 0 .5px var(--hair-2),0 6px 16px -10px rgba(0,0,0,.22);transition:opacity var(--d-quick),box-shadow var(--d-quick)}
@@ -5271,11 +5291,28 @@ function mdBlocksHtml(src){
     }
     if(tr.includes("|")&&i+1<lines.length&&/^\s*\|?[\s:-]+\|[\s|:-]*$/.test(lines[i+1])){
       flushPara(para);para=[];
-      const rowCells=r=>r.trim().replace(/^\|/,"").replace(/\|$/,"").split("|").map(c=>mdInline(c.trim()));
-      const hdr=rowCells(tr);i+=2;
-      const rows=[];
-      while(i<lines.length&&lines[i].includes("|")&&lines[i].trim()){rows.push(rowCells(lines[i]));i++}
-      out.push(`<table class="tbl"><thead><tr>${hdr.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${hdr.map((_,ci)=>`<td>${r[ci]||""}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
+      const rawCells=r=>r.trim().replace(/^\|/,"").replace(/\|$/,"").split("|").map(c=>c.trim());
+      const hdr=rawCells(tr).map(mdInline);i+=2;
+      const raw=[];
+      while(i<lines.length&&lines[i].includes("|")&&lines[i].trim()){raw.push(rawCells(lines[i]));i++}
+      // A column is numeric when every filled cell is a number with the same unit; then it can show magnitude.
+      const NUM=/^([-+]?)([$€£¥]?)\s?(\d[\d,]*(?:\.\d+)?)\s?(%|[kKMB]|x|×)?$/;
+      const cols=hdr.map((_,ci)=>{const ms=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"")).filter(Boolean).map(t=>t.match(NUM));
+        if(raw.length<2||!ms.length||ms.some(m=>!m)||new Set(ms.map(m=>m[2]+(m[4]||""))).size>1)return null;
+        const vals=raw.map(r=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?Math.abs(parseFloat(m[3].replace(/,/g,""))):null});
+        const max=Math.max(...vals.filter(v=>v!=null));return max>0?vals.map(v=>v==null?null:v/max):null});
+      const SCALES=[["low","medium","high"],["low","moderate","high"],["none","low","medium","high","critical"],["minor","moderate","major","critical"],["低","中","高"]];
+      const BAD_HIGH=/risk|cost|effort|complex|difficult|severity|debt|price|danger|风险|成本|难度|代价|严重|复杂/i,GOOD_HIGH=/impact|value|benefit|confidence|quality|reach|upside|收益|价值|影响|质量|信心/i;
+      const levels=hdr.map((h,ci)=>{const ht=String(raw.length?rawCells(tr)[ci]||"":"");const dir=BAD_HIGH.test(ht)?-1:GOOD_HIGH.test(ht)?1:0;if(!dir||raw.length<2)return null;
+        const vs=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"").trim().toLowerCase().replace(/^med$/,"medium"));
+        const sc=SCALES.find(sc=>vs.filter(Boolean).length&&vs.every(v=>!v||sc.includes(v)));if(!sc)return null;
+        return vs.map(v=>{if(!v)return null;const q=sc.indexOf(v)/(sc.length-1),good=dir>0?q:1-q;return good>.66?"good":good<.34?"bad":"mid"})});
+      const LVL={good:"var(--C)",mid:"var(--warn,#d97706)",bad:"var(--D)"};
+      const cell=(r,ci)=>{const t=mdInline(r[ci]||""),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)];
+        if(lv)return `<td class="lvl"><i class="tbl-lvl" style="--c:${LVL[lv]}" aria-hidden="true"></i>${t}</td>`;
+        if(!c||c[raw.indexOf(r)]==null)return `<td${c?' class="num"':""}>${t}</td>`;
+        return `<td class="num" style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${t}</span></td>`};
+      out.push(`<div class="tbl-wrap"><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th${cols[ci]?' class="num"':""}>${c}</th>`).join("")}</tr></thead><tbody>${raw.map(r=>`<tr>${hdr.map((_,ci)=>cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div>`);
       continue;
     }
     if(/^[-*•]\s+/.test(tr)){
@@ -11293,7 +11330,12 @@ function renderCopilotVisual(v,msgId,vIdx){
     }
   }else if(k==="compare"){
     const rows=v.rows||[];
-    body=`<table class="tbl"><thead><tr><th>Factor</th><th>${esc(v.left)}</th><th>${esc(v.right)}</th></tr></thead><tbody>${rows.map((r,i)=>`<tr data-cp-ui-sel="${i}" data-cp-msg="${msgId}" data-cp-ui="${vIdx}" class="${sel===i?"on":""}"><td class="key">${esc(r.dim)}</td><td class="${r.winner==="left"?"win":""}">${esc(r.a)}</td><td class="${r.winner==="right"?"win":""}">${esc(r.b)}</td></tr>`).join("")}</tbody></table>`;
+    const wins={left:rows.filter(r=>r.winner==="left").length,right:rows.filter(r=>r.winner==="right").length},decided=wins.left+wins.right;
+    const lead=wins.left===wins.right?"":wins.left>wins.right?"left":"right";
+    const verdict=!decided?"":lead?L(`${esc(lead==="left"?v.left:v.right)} wins ${wins[lead]} of ${rows.length}`,`${esc(lead==="left"?v.left:v.right)} 在 ${rows.length} 项中胜出 ${wins[lead]} 项`):L(`Even: ${wins.left} each`,`持平：各胜 ${wins.left} 项`);
+    const mark=`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`;
+    const side=(r,s,t)=>`<td class="${r.winner===s?"win":r.winner&&r.winner!==s?"lose":""}">${r.winner===s?mark:""}${esc(t)}${r.winner===s?`<span class="sr-only"> ${L("(better)","（更优）")}</span>`:""}</td>`;
+    body=`<div class="tbl-wrap"><table class="tbl cmp">${verdict?`<caption>${verdict}</caption>`:""}<thead><tr><th>${L("Factor","因素")}</th><th${lead==="left"?' class="lead"':""}>${esc(v.left)}</th><th${lead==="right"?' class="lead"':""}>${esc(v.right)}</th></tr></thead><tbody>${rows.map((r,i)=>`<tr data-cp-ui-sel="${i}" data-cp-msg="${msgId}" data-cp-ui="${vIdx}" class="${sel===i?"on":""}"><td class="key">${esc(r.dim)}</td>${side(r,"left",r.a)}${side(r,"right",r.b)}</tr>`).join("")}</tbody></table></div>`;
     const cur=rows[sel];
     detail=cur?.note?`<div class="cp-ui-detail"><b>${esc(cur.dim)}:</b> ${esc(cur.note)}</div>`:(v.summary?`<div class="cp-ui-detail">${esc(v.summary)}</div>`:"");
   }

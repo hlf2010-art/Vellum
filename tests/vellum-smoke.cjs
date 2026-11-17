@@ -477,6 +477,15 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         d.innerHTML = `<div class="cp-bubble">${mdBlocksHtml('| Option | Cost |\n|---|---|\n| Rebuild | High |').join('')}</div><table class="tbl"><thead><tr><th>Factor</th><th>A</th></tr></thead><tbody><tr><td class="key">Risk</td><td class="win">Low</td></tr></tbody></table>`; document.body.append(d); });
       bad.push(...(await p.evaluate(LEGIBILITY, '#tblProbe')).map(x => `table: ${x}`));
       await p.evaluate(() => document.getElementById('tblProbe').remove());
+      if (theme === 'light') {
+        const tb = await p.evaluate(() => {
+          const md = mdBlocksHtml('| Option | Cost | Risk |\n|---|---|---|\n| A | $120k | High |\n| B | $30k | Low |').join('');
+          const cmp = renderCopilotVisual({ kind: 'compare', left: 'Rebuild', right: 'Patch', rows: [{ dim: 'Cost', a: '1', b: '2', winner: 'right' }, { dim: 'Time', a: '1', b: '2', winner: 'right' }, { dim: 'Debt', a: '1', b: '2', winner: 'left' }] }, 'm', 0);
+          const d = document.createElement('div'); d.innerHTML = md + cmp;
+          return { numCols: d.querySelectorAll('thead th.num').length, ratios: [...d.querySelectorAll('td.num')].map(x => x.style.getPropertyValue('--v')), verdict: d.querySelector('caption')?.textContent, wins: d.querySelectorAll('td.win .tbl-win').length, risk: [...d.querySelectorAll('td.lvl .tbl-lvl')].map(x => x.style.getPropertyValue('--c')).join(), plain: mdBlocksHtml('| Option | Speed |\n|---|---|\n| A | High |\n| B | Low |').join('').includes('tbl-lvl') };
+        });
+        check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
+      }
       check(`every text in the Connection and Crew popovers and in tables reaches 4.5:1 in ${theme} mode`, bad.length === 0, bad.join(' | '));
       const sw = await p.evaluate(() => {
         const cs = getComputedStyle(document.documentElement), hex = v => { const n = parseInt(cs.getPropertyValue(v).trim().slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };

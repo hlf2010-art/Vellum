@@ -1234,10 +1234,15 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .cp-bubble pre{margin:7px 0 9px;padding:9px 11px;border-radius:10px;background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair-2);overflow-x:auto;font:500 12px/1.45 var(--mono);color:var(--label)}
 .cp-bubble code{font:500 12px/1.3 var(--mono);padding:1px 5px;border-radius:5px;background:var(--card-3);color:var(--label)}
 .cp-bubble pre code{padding:0;background:transparent;border-radius:0}
-.cp-bubble table.cp-md-tbl{width:100%;border-collapse:collapse;margin:7px 0 9px;font-size:12px;background:var(--card-2);border-radius:10px;overflow:hidden;box-shadow:0 0 0 .5px var(--hair-2)}
-.cp-bubble table.cp-md-tbl th,.cp-bubble table.cp-md-tbl td{padding:6px 8px;text-align:left;border-bottom:.5px solid var(--hair-2);vertical-align:top}
-.cp-bubble table.cp-md-tbl tr:last-child td{border-bottom:0}
-.cp-bubble table.cp-md-tbl th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--label-3);background:var(--card-3)}
+/* Table: one shared style (Markdown tables in replies, comparison tables). Sentence-case headers in
+   label-2 rather than small uppercase label-3, which sat at 4.6:1. */
+.tbl{width:100%;border-collapse:collapse;font:450 12px/1.45 var(--ui);color:var(--label);background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 0 0 .5px var(--hair-2)}
+.tbl th,.tbl td{padding:7px 10px;text-align:left;vertical-align:top;border-bottom:.5px solid var(--hair-2)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl th{font:600 11px/1.3 var(--ui);color:var(--label-2);background:var(--card-2)}
+.tbl td.key{font-weight:600;color:var(--label-2);width:32%}
+.tbl td.win{font-weight:600;background:color-mix(in srgb,var(--B) 10%,transparent)}
+.cp-bubble .tbl{margin:7px 0 9px}
 .cp-md-more{margin-top:6px;border-radius:10px;background:var(--card-2);box-shadow:0 0 0 .5px var(--hair-2);padding:6px 10px}
 .cp-md-pop-btn{margin-top:4px;height:26px;padding:0 10px;border-radius:999px;font:560 11.5px/1 var(--ui);color:var(--C);background:color-mix(in srgb,var(--C) 12%,var(--card-2));box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--C) 30%,var(--hair));display:inline-flex;align-items:center;gap:5px;width:fit-content;transition:background var(--d-quick),color var(--d-quick)}
 .cp-md-pop-btn:hover{background:color-mix(in srgb,var(--C) 20%,var(--card-2));color:var(--label)}
@@ -1356,14 +1361,8 @@ html[data-theme="dark"] .cp-ui{box-shadow:0 0 0 .5px var(--hair-2),0 6px 18px rg
 .cp-ui-cell.on{box-shadow:0 0 0 1px var(--cell-c,var(--C));background:color-mix(in srgb,var(--cell-c,var(--C)) 10%,var(--card))}
 .cp-ui-cell-t{font-size:11px;font-weight:700;color:var(--label);display:flex;align-items:center;gap:5px}
 .cp-ui-cell-b{font-size:10.5px;line-height:1.35;color:var(--label-2)}
-.cp-ui-cmp{width:100%;border-collapse:collapse;font-size:11px;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 0 0 .5px var(--hair-2)}
-.cp-ui-cmp th,.cp-ui-cmp td{padding:6px 8px;text-align:left;border-bottom:.5px solid var(--hair-2);vertical-align:top}
-.cp-ui-cmp tr:last-child td{border-bottom:0}
-.cp-ui-cmp th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--label-3);background:var(--card-3)}
-.cp-ui-cmp td.dim{font-weight:600;color:var(--label-2);width:32%}
-.cp-ui-cmp td.win{color:var(--label);font-weight:600;background:color-mix(in srgb,var(--B) 10%,transparent)}
-.cp-ui-cmp tr[data-cp-ui-sel]{cursor:pointer}
-.cp-ui-cmp tr[data-cp-ui-sel]:hover td{background:var(--hover)}
+.tbl tr[data-cp-ui-sel]{cursor:pointer}
+.tbl tr[data-cp-ui-sel]:hover td{background:var(--hover)}
 .cp-ui-building{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--card-2);box-shadow:0 0 0 .5px var(--hair-2);font-size:11px;color:var(--label-2);margin-top:4px;width:fit-content}
 .cp-props{display:grid;gap:7px;width:100%;max-width:96%}
 .cp-prop{display:grid;gap:6px;padding:10px 12px;border-radius:16px;background:var(--card);box-shadow:0 0 0 .5px var(--hair-2),0 6px 16px -10px rgba(0,0,0,.22);transition:opacity var(--d-quick),box-shadow var(--d-quick)}
@@ -5276,7 +5275,7 @@ function mdBlocksHtml(src){
       const hdr=rowCells(tr);i+=2;
       const rows=[];
       while(i<lines.length&&lines[i].includes("|")&&lines[i].trim()){rows.push(rowCells(lines[i]));i++}
-      out.push(`<table class="cp-md-tbl"><thead><tr>${hdr.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${hdr.map((_,ci)=>`<td>${r[ci]||""}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
+      out.push(`<table class="tbl"><thead><tr>${hdr.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${hdr.map((_,ci)=>`<td>${r[ci]||""}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
       continue;
     }
     if(/^[-*•]\s+/.test(tr)){
@@ -11294,7 +11293,7 @@ function renderCopilotVisual(v,msgId,vIdx){
     }
   }else if(k==="compare"){
     const rows=v.rows||[];
-    body=`<table class="cp-ui-cmp"><thead><tr><th>Factor</th><th>${esc(v.left)}</th><th>${esc(v.right)}</th></tr></thead><tbody>${rows.map((r,i)=>`<tr data-cp-ui-sel="${i}" data-cp-msg="${msgId}" data-cp-ui="${vIdx}" class="${sel===i?"on":""}"><td class="dim">${esc(r.dim)}</td><td class="${r.winner==="left"?"win":""}">${esc(r.a)}</td><td class="${r.winner==="right"?"win":""}">${esc(r.b)}</td></tr>`).join("")}</tbody></table>`;
+    body=`<table class="tbl"><thead><tr><th>Factor</th><th>${esc(v.left)}</th><th>${esc(v.right)}</th></tr></thead><tbody>${rows.map((r,i)=>`<tr data-cp-ui-sel="${i}" data-cp-msg="${msgId}" data-cp-ui="${vIdx}" class="${sel===i?"on":""}"><td class="key">${esc(r.dim)}</td><td class="${r.winner==="left"?"win":""}">${esc(r.a)}</td><td class="${r.winner==="right"?"win":""}">${esc(r.b)}</td></tr>`).join("")}</tbody></table>`;
     const cur=rows[sel];
     detail=cur?.note?`<div class="cp-ui-detail"><b>${esc(cur.dim)}:</b> ${esc(cur.note)}</div>`:(v.summary?`<div class="cp-ui-detail">${esc(v.summary)}</div>`:"");
   }

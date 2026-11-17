@@ -473,7 +473,11 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       probe.status = 200;
       await p.evaluate(() => { toggleStudioPopover(false); setAiPref('auto'); toggleCrewPop(true); }); await p.waitForTimeout(400);
       bad.push(...(await p.evaluate(LEGIBILITY, '#crewPop')).map(x => `crew: ${x}`));
-      check(`every text in the Connection and Crew popovers reaches 4.5:1 in ${theme} mode`, bad.length === 0, bad.join(' | '));
+      await p.evaluate(() => { const d = document.createElement('div'); d.id = 'tblProbe'; d.style.cssText = 'position:fixed;left:20px;top:20px;width:360px;padding:14px;z-index:99999;background:var(--card)';
+        d.innerHTML = `<div class="cp-bubble">${mdBlocksHtml('| Option | Cost |\n|---|---|\n| Rebuild | High |').join('')}</div><table class="tbl"><thead><tr><th>Factor</th><th>A</th></tr></thead><tbody><tr><td class="key">Risk</td><td class="win">Low</td></tr></tbody></table>`; document.body.append(d); });
+      bad.push(...(await p.evaluate(LEGIBILITY, '#tblProbe')).map(x => `table: ${x}`));
+      await p.evaluate(() => document.getElementById('tblProbe').remove());
+      check(`every text in the Connection and Crew popovers and in tables reaches 4.5:1 in ${theme} mode`, bad.length === 0, bad.join(' | '));
       const sw = await p.evaluate(() => {
         const cs = getComputedStyle(document.documentElement), hex = v => { const n = parseInt(cs.getPropertyValue(v).trim().slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
         const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };

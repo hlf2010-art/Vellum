@@ -241,6 +241,8 @@ button.weight:active{transform:scale(.96)}
 .weight.observed{color:color-mix(in srgb,var(--C) var(--ink-mix),var(--ink-to));background:color-mix(in srgb,var(--C) 8%,transparent);box-shadow:none}
 .weight.reported{color:color-mix(in srgb,var(--A) var(--ink-mix),var(--ink-to));background:color-mix(in srgb,var(--A) 8%,transparent);box-shadow:none}
 .weight.proposed{color:color-mix(in srgb,var(--B) var(--ink-mix),var(--ink-to));background:color-mix(in srgb,var(--B) 8%,transparent);box-shadow:none}
+.weight.unrated{color:var(--label-2);background:var(--hover)}
+.weight.unrated:hover{color:var(--label);background:color-mix(in srgb,var(--hover) 80%,var(--label) 8%)}
 .weight.illustrative{color:var(--label-2);background:color-mix(in srgb,var(--hover) 72%,transparent);box-shadow:none}
 button.weight.observed:hover{background:color-mix(in srgb,var(--C) 18%,transparent)}
 button.weight.reported:hover{background:color-mix(in srgb,var(--A) 18%,transparent)}
@@ -4816,7 +4818,7 @@ function renderBays(){
 /* ── cards ───────────────────────────────────────────────────────────── */
 function mediaSrc(key){return MEDIA[key]||userMedia.get(key)||""}
 function weightGlyphHTML(w){const o=WEIGHTS[w];if(!o)return "";if(o.n>0)return `<span class="w-bars" aria-hidden="true">${[1,2,3].map(i=>`<i class="${i<=o.n?"on":""}"></i>`).join("")}</span>`;return `<svg class="w-ico" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2.25" width="9" height="7.5" rx="1.75"/><circle cx="4.25" cy="4.9" r=".7" fill="currentColor" stroke="none"/><path d="M2.2 8.75 4.8 6.4l1.9 1.6 1.3-1.2 1.8 1.95"/></svg>`}
-function weightHTML(w,staticBadge=false){if(!w||!WEIGHTS[w])return "";const lbl=weightLabel(w),desc=weightDesc(w),hint=staticBadge?desc:`${desc} — ${L("Click to change","点击切换证据等级")}`;return staticBadge?`<span class="weight ${w}" title="${esc(hint)}">${weightGlyphHTML(w)}${esc(lbl)}</span>`:`<button type="button" class="weight ${w}" data-a="cycle-weight" title="${esc(hint)}" aria-label="${esc(`${lbl}: ${desc}`)}">${weightGlyphHTML(w)}${esc(lbl)}</button>`}
+function weightHTML(w,staticBadge=false){if(!w||!WEIGHTS[w])return staticBadge?"":`<button type="button" class="weight unrated" data-a="cycle-weight" title="${esc(L("Unrated — click to say how much this source can carry","未标注 — 点击标注这条来源的证据等级"))}" aria-label="${esc(L("Evidence: unrated. Click to rate","证据：未标注。点击标注"))}">${esc(L("Unrated","未标注"))}</button>`;const lbl=weightLabel(w),desc=weightDesc(w),hint=staticBadge?desc:`${desc} — ${L("Click to change","点击切换证据等级")}`;return staticBadge?`<span class="weight ${w}" title="${esc(hint)}">${weightGlyphHTML(w)}${esc(lbl)}</span>`:`<button type="button" class="weight ${w}" data-a="cycle-weight" title="${esc(hint)}" aria-label="${esc(`${lbl}: ${desc}`)}">${weightGlyphHTML(w)}${esc(lbl)}</button>`}
 function cardAuthorAgent(n){
   if(!n)return null;
   if(n.by&&n.by!=="you"&&AGENTS[n.by])return AGENTS[n.by];
@@ -6852,10 +6854,11 @@ function renderMargin(){queueMicrotask(placeBars);
   if(n.plPack||plBusyNodes.has(n.id)||n.plError)m.classList.add("has-pl");
   if(plBusyNodes.has(n.id))m.classList.add("is-pl-busy");
   const plHTML=plBody?`<div class="m-sec">${plBody}</div>`:"";
+  const evidenceHTML=["source","image","recording","audio","link","notepad","frame"].includes(n.type)?`<div class="m-sec half m-evidence"><h5><span>${L("Evidence","证据等级")}</span><span>${esc(n.weight?weightLabel(n.weight):L("Unrated","未标注"))}</span></h5><div class="seg" role="group" aria-label="${esc(L("How much this source can carry","这条来源能支撑多少"))}">${WEIGHT_ORDER.map(k=>`<button type="button" data-m="weight" data-w="${k}" aria-pressed="${n.weight===k}" title="${esc(weightDesc(k))}">${weightGlyphHTML(k)}${esc(weightLabel(k))}</button>`).join("")}</div><p>${esc(n.weight?weightDesc(n.weight):L("How much can this source carry? Pick one; the crew weighs it by this.","这条来源能支撑多少？选一个，助手会据此权衡。"))}</p></div>`:"";
   const moreMenuHTML=`<div class="m-more-wrap"><button type="button" class="m-iconbtn" data-m="more-toggle" title="More actions" aria-label="More actions"><svg class="ico" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.75" fill="currentColor" stroke="none"/></svg></button><div class="m-more-pop" id="mMorePop" hidden>${moreActs?`<div class="m-more-sec">${moreActs}</div><div class="m-more-div"></div>`:""}<div class="m-more-sec"><button type="button" class="cbtn" data-m="hide-card">${ic("eyeOff")}Hide from canvas</button><button type="button" class="cbtn" data-m="archive">${ic("archive")}Archive</button><button type="button" class="cbtn danger" data-m="delete-card">${ic("trash")}Delete</button></div></div></div>`;
   const notesHTML=thread.length?`<div class="m-sec"><h5><span>Notes</span><span class="m-hmeta"><span>${thread.length}</span>${thread.length>1?`<button type="button" class="m-clear" data-m="clear-msgs" title="Clear all notes">Clear all</button>`:""}</span></h5><div class="thread" id="mThread">${thread.map((msg,idx)=>msgHTML(msg,idx)).join("")}</div></div>`:"";
   m.innerHTML=`<div class="grabber" data-m="close"></div><div class="m-head"><div class="m-head-bar"><div class="m-head-main">${focusTitle(n)}${sublineHTML}</div><div class="m-head-tools">${voteBtns}${dlBtn}${moreMenuHTML}<button type="button" class="m-iconbtn" data-m="close" title="Close (Esc)" aria-label="Close">${ic("x")}</button></div></div></div>
-   <div class="m-body">${htmlMain}${padHTML}${listHTML}${synHTML}${fullHTML}${attachHTML}${plHTML}${srcs}${notesHTML}</div>
+   <div class="m-body">${htmlMain}${padHTML}${listHTML}${synHTML}${evidenceHTML}${fullHTML}${attachHTML}${plHTML}${srcs}${notesHTML}</div>
    <div class="m-foot">${n.type==="proof"?`<div class="m-acts-row">${acts}</div>`:""}<div class="m-chips">${["critic","scout","muse","wright"].map(k=>`<button type="button" data-m="mention" data-k="${k}">@${AGENTS[k].name.toLowerCase()}</button>`).join("")}</div><div class="m-write"><label for="mInput" class="sr">Add a note</label><textarea id="mInput" rows="1" placeholder="Add a note, or ask @${AGENTS[defaultAgentFor(n)].name.toLowerCase()}">${esc(draft)}</textarea><button type="button" class="send" id="mSendBtn" data-m="post" aria-label="Post"${draft.trim()?"":" disabled"}><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div></div>`;
   const ta=qs("#mInput",m),sb=qs("#mSendBtn",m);
   if(ta&&sb){
@@ -13856,12 +13859,12 @@ function act(a,n,el){
 function cycleWeight(n){
   if(!n||n.status==="sketch")return;
   const idx=WEIGHT_ORDER.indexOf(n.weight);
-  const next=WEIGHT_ORDER[(idx+1)%WEIGHT_ORDER.length];
+  const next=idx===WEIGHT_ORDER.length-1?null:WEIGHT_ORDER[idx+1];
   checkpoint();
   n.weight=next;
   n.updated=NOW();
   sfx("tick");
-  log("you",`Marked <b>${esc(titleOf(n))}</b> as ${WEIGHTS[next].label.toLowerCase()}`,n.id);
+  log("you",`Marked <b>${esc(titleOf(n))}</b> as ${next?WEIGHTS[next].label.toLowerCase():"unrated"}`,n.id);
   renderAll();
   persist();
   toast(`${weightLabel(next)} · ${weightDesc(next)}`);

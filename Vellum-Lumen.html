@@ -3524,15 +3524,21 @@ function applyPatch(patch,dir){
   const conflicts=[],same=(x,y)=>histKey(x)===histKey(y);
   for(const k of HIST_KEYS){
     const P=patch?.[k];if(!P)continue;board[k]=Array.isArray(board[k])?board[k]:[];
+    /* Order matters for the restored list: replace in place, then remove, then insert by ascending target index.
+       (Object key order can't be trusted here: an all-digit id is always listed first.) */
+    const inserts=[];
     for(const [id,[before,after,idx]] of Object.entries(P)){
       const want=dir==="undo"?before:after,expect=dir==="undo"?after:before;
       const at=board[k].findIndex(x=>x.id===id),cur=at>=0?board[k][at]:null;
       const curCmp=cur&&k==="nodes"?(({_h,...r})=>r)(cur):cur;
       if(!same(curCmp,expect)){conflicts.push({k,id,title:cur?(k==="nodes"?titleOf(cur):id):(expect&&k==="nodes"?titleOf(expect):id)});continue}
-      if(!want){if(at>=0)board[k].splice(at,1)}
-      else if(at>=0)board[k][at]=JSON.parse(JSON.stringify(want));
-      else board[k].splice(Math.min(idx??board[k].length,board[k].length),0,JSON.parse(JSON.stringify(want)));
+      if(want&&at>=0)board[k][at]=JSON.parse(JSON.stringify(want));
+      else if(want)inserts.push([idx,want]);
     }
+    for(const [id,[before,after]] of Object.entries(P)){const want=dir==="undo"?before:after,expect=dir==="undo"?after:before;
+      if(want)continue;const at=board[k].findIndex(x=>x.id===id);if(at<0)continue;
+      const cur=k==="nodes"?(({_h,...r})=>r)(board[k][at]):board[k][at];if(same(cur,expect))board[k].splice(at,1)}
+    inserts.sort((a,b)=>(a[0]??Infinity)-(b[0]??Infinity)).forEach(([idx,want])=>board[k].splice(Math.min(idx??board[k].length,board[k].length),0,JSON.parse(JSON.stringify(want))));
   }
   for(const k of HIST_MAPS){
     const P=patch?.[k];if(!P)continue;board[k]=board[k]||{};

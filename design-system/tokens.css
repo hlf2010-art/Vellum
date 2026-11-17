@@ -27,6 +27,10 @@
   --B: #2066db; /* Lineage B — the second direction. Also Proposal evidence, search hits and the Search mode. Light is `#2066db`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.5:1 on `canvas`, so it's usable as small text on all three. Deepened on 2026-11-17 from `#2b6fe0`, which failed on `card-2` (4.4:1) and `canvas` (4.0:1). Lumen matches since `main@285e8f6`. */
   --C: #0b7b50; /* Lineage C — the third direction. Also Observed evidence, the Locked kanban column and live status dots. Light is `#0b7b50`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.5:1 on `canvas`, so it's usable as text. Deepened on 2026-11-17 from `#0e9662` (3.8:1). Lumen matches since `main@285e8f6`. */
   --D: #ca2760; /* Lineage D — the fourth direction. Wires, chip, adopted ring, error dot. Light is `#ca2760`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.5:1 on `canvas`, so it's usable as text, matching A, B and C. Deepened on 2026-11-17 from `#d93b72` (4.4:1). Lumen matches since `main@285e8f6`. */
+  --A-mark: #c97200; /* Lineage A as a filled mark: evidence blocks, bars, dots, large fills. Lumen amber, nudged to pass 3:1 on canvas; at least 3:1 on card, card-2 and canvas. `A` itself is the text-safe ink (4.5:1); never use `A` for a fill or `A-mark` for text. Dark matches `A`. */
+  --B-mark: #2b6fe0; /* Lineage B as a filled mark: evidence blocks, bars, dots, large fills. Lumen’s original blue; at least 3:1 on card, card-2 and canvas. `B` itself is the text-safe ink (4.5:1); never use `B` for a fill or `B-mark` for text. Dark matches `B`. */
+  --C-mark: #0e9662; /* Lineage C as a filled mark: evidence blocks, bars, dots, large fills. Lumen’s original green; at least 3:1 on card, card-2 and canvas. `C` itself is the text-safe ink (4.5:1); never use `C` for a fill or `C-mark` for text. Dark matches `C`. */
+  --D-mark: #d93b72; /* Lineage D as a filled mark: evidence blocks, bars, dots, large fills. Lumen’s original rose; at least 3:1 on card, card-2 and canvas. `D` itself is the text-safe ink (4.5:1); never use `D` for a fill or `D-mark` for text. Dark matches `D`. */
   --chip-ink: #ffffff; /* Letter on a lineage chip (A–D) — white in light, near-black in dark. White passes on every light chip at 5.3:1. */
   --light: #ffffff; /* 'Light is alive': the glow colour of working crew, live drafts and the review pulse dot. */
   --bloom: rgba(255,190,110,.5); /* Warm glow around something the crew is working on or waiting on you for. Only as a soft shadow, never a fill. */
@@ -69,6 +73,10 @@
   --B: #5aa2ff;
   --C: #45d49a;
   --D: #ff6b95;
+  --A-mark: #ffb547;
+  --B-mark: #5aa2ff;
+  --C-mark: #45d49a;
+  --D-mark: #ff6b95;
   --chip-ink: #0a0b0d;
   --light: #f4f5f7;
   --bloom: rgba(255,236,206,.55);

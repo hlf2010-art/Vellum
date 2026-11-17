@@ -81,12 +81,12 @@
 .vl-syn b{font-weight:600;color:var(--label)}
 .vl-rated{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .vl-scale{flex:1;display:flex;height:6px;border-radius:var(--radius-pill);overflow:hidden;gap:2.5px;background:var(--hover)}
-.vl-scale i{display:block;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--C) 92%,#000)}
-.vl-scale i.r{background:color-mix(in srgb,var(--A) 92%,#000)}
-.vl-scale i.n{background:var(--hair-2)}
-[data-theme="dark"] .vl-scale i{background:color-mix(in srgb,var(--C) 86%,#fff)}
-[data-theme="dark"] .vl-scale i.r{background:color-mix(in srgb,var(--A) 86%,#fff)}
-[data-theme="dark"] .vl-scale i.n{background:var(--hair-2)}
+/* Evidence blocks are marks, not text: they use the *-mark tokens (3:1+), one block per source up to 16. */
+.vl-scale.is-count{background:none;overflow:visible;gap:3px}
+.vl-scale.is-count i{flex:1;max-width:44px}
+.vl-scale i{display:block;border-radius:var(--radius-pill);background:var(--C-mark)}
+.vl-scale i.r{background:var(--A-mark)}
+.vl-scale i.n{background:var(--press)}
 
 /* proof */
 .vl-fixed{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}

@@ -25,7 +25,7 @@
   --dot:rgba(11,12,14,.1); --chip-ink:#FFFFFF; --ink-mix:92%; --ink-to:#000; --sketch-mix:42%; --sketch-bg:78%; --focus:#3F444E;
   --chrome:rgba(252,252,253,.8); --chrome-hair:rgba(12,13,15,.08); --chrome-ink:#0C0D0F;
   --act:#0C0D0F; --on-act:#FFFFFF; --danger:#E12F34; --danger-ink:#B02529; --ok:#247A50; --warn:#886600;
-  --A:#9F5A00; --B:#2066DB; --C:#0B7B50; --D:#CA2760;
+  --A:#9F5A00; --B:#2066DB; --C:#0B7B50; --D:#CA2760; --A-mark:#C97200; --B-mark:#2B6FE0; --C-mark:#0E9662; --D-mark:#D93B72;
   --light:#FFFFFF; --bloom:rgba(255,190,110,.5); --bloom-2:rgba(120,170,255,.35);
   --orb-off:#D9DADE; --orb-off-ink:rgba(12,13,15,.55);
   --card-shadow:0 0 0 .5px rgba(11,12,14,.07),0 1px 1px rgba(11,12,14,.03),0 2px 4px -1px rgba(11,12,14,.04),0 12px 28px -16px rgba(11,12,14,.16);
@@ -47,7 +47,7 @@
   --dot:rgba(244,245,247,.085); --chip-ink:#0A0B0D; --ink-mix:86%; --ink-to:#fff; --sketch-mix:70%; --sketch-bg:52%; --focus:#C8CCD4;
   --chrome:rgba(26,27,31,.78); --chrome-hair:rgba(255,255,255,.08); --chrome-ink:#F3F4F6;
   --act:#F3F4F6; --on-act:#0A0B0D; --danger:#FF6369; --danger-ink:#FF797E; --ok:#30A46C; --print-a:50%; --print-b:56%; --print-c:42%; --print-dim:.92; --print-chip:50%; --warn:#D97706;
-  --A:#FFB547; --B:#5AA2FF; --C:#45D49A; --D:#FF6B95;
+  --A:#FFB547; --B:#5AA2FF; --C:#45D49A; --D:#FF6B95; --A-mark:var(--A); --B-mark:var(--B); --C-mark:var(--C); --D-mark:var(--D);
   --bloom:rgba(255,236,206,.55); --bloom-2:rgba(140,190,255,.35);
   --orb-off:#2A2B30; --orb-off-ink:rgba(243,244,246,.6);
   --card-shadow:0 0 0 .5px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.035),0 14px 34px -16px rgba(0,0,0,.8);
@@ -61,7 +61,7 @@
   --dot:rgba(244,245,247,.085); --chip-ink:#0A0B0D; --ink-mix:86%; --ink-to:#fff; --sketch-mix:70%; --sketch-bg:52%; --focus:#C8CCD4;
   --chrome:rgba(26,27,31,.78); --chrome-hair:rgba(255,255,255,.08); --chrome-ink:#F3F4F6;
   --act:#F3F4F6; --on-act:#0A0B0D; --danger:#FF6369; --danger-ink:#FF797E; --ok:#30A46C; --print-a:50%; --print-b:56%; --print-c:42%; --print-dim:.92; --print-chip:50%; --warn:#D97706;
-  --A:#FFB547; --B:#5AA2FF; --C:#45D49A; --D:#FF6B95;
+  --A:#FFB547; --B:#5AA2FF; --C:#45D49A; --D:#FF6B95; --A-mark:var(--A); --B-mark:var(--B); --C-mark:var(--C); --D-mark:var(--D);
   --bloom:rgba(255,236,206,.55); --bloom-2:rgba(140,190,255,.35);
   --orb-off:#2A2B30; --orb-off-ink:rgba(243,244,246,.6);
   --card-shadow:0 0 0 .5px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.035),0 14px 34px -16px rgba(0,0,0,.8);
@@ -458,11 +458,13 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .m-attach .m-attach-name{flex:1;min-width:0;font:500 13px/1.35 var(--mono);color:var(--label-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .scale-cap{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;font:500 12px/1.2 var(--ui);color:var(--label-3)}
 .scale{display:flex;height:6px;border-radius:var(--radius-pill);overflow:hidden;margin-top:6px;gap:2.5px;background:var(--hover)}
-.scale i{display:block;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--C) var(--ink-mix),var(--ink-to))}
-.scale i.r{background:color-mix(in srgb,var(--A) var(--ink-mix),var(--ink-to))}
-.scale i.p{background:color-mix(in srgb,var(--B) var(--ink-mix),var(--ink-to))}
+.scale.is-count{background:none;overflow:visible;gap:3px}
+.scale.is-count i{flex:1;max-width:44px}
+.scale i{display:block;border-radius:var(--radius-pill);background:var(--C-mark)}
+.scale i.r{background:var(--A-mark)}
+.scale i.p{background:var(--B-mark)}
 .scale i.l{background:var(--label-4);opacity:.72}
-.scale i.n{background:var(--hair-2);opacity:.65}
+.scale i.n{background:var(--press)}
 
 /* ── lumen: what an agent proposed — translucent, lit, not yet real ──── */
 .card.sketch{background:color-mix(in srgb,var(--card) 58%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);
@@ -5358,9 +5360,11 @@ function byAgentLabel(n){return n.by&&AGENTS[n.by]?"Drawn by "+AGENTS[n.by].name
 function tally(ns){const t={observed:0,reported:0,proposed:0,illustrative:0,none:0};for(const s of ns){if(s.weight&&t[s.weight]!==undefined)t[s.weight]++;else t.none++}return t}
 function weighedCount(t){return t?(t.observed||0)+(t.reported||0)+(t.proposed||0)+(t.illustrative||0):0}
 function scaleSummary(t){if(!t)return"";const parts=[["observed",L("observed","实测")],["reported",L("reported","转述")],["proposed",L("proposal","设想")],["illustrative",L("illustration","示意")]].filter(([k])=>t[k]).map(([k,l])=>`${t[k]} ${l}`);if(t.none)parts.push(`${t.none} ${L("unrated","未标证据")}`);return parts.join(" · ")}
-function scaleHTML(t){if(!weighedCount(t)&&!(t?.none))return"";const seg=(k,c)=>t[k]?`<i class="${c}" style="flex:${t[k]}" title="${t[k]} ${weightLabel(k)||L("unrated","未标证据")}"></i>`:"";
-  return `<div class="scale" title="${esc(L("Evidence mix: ","证据构成：")+scaleSummary(t))}" aria-label="${esc(L("Evidence mix: ","证据构成：")+scaleSummary(t))}">${seg("observed","")}${seg("reported","r")}${seg("proposed","p")}${seg("illustrative","l")}${seg("none","n")}</div>`}
-function scaleLabeledHTML(t){if(!weighedCount(t))return"";return `<div class="scale-cap"><span>${L("Evidence mix","证据构成")}</span><span>${esc(scaleSummary(t))}</span></div>${scaleHTML(t)}`}
+function scaleHTML(t){if(!weighedCount(t)&&!(t?.none))return"";
+  const total=weighedCount(t)+(t.none||0),each=total<=16;
+  const seg=(k,c)=>{const n=t[k]||0;if(!n)return"";const tip=`${n} ${weightLabel(k)||L("unrated","未标证据")}`;return each?Array.from({length:n},()=>`<i class="${c}" title="${esc(tip)}"></i>`).join(""):`<i class="${c}" style="flex:${n}" title="${esc(tip)}"></i>`};
+  return `<div class="scale${each?" is-count":""}" role="img" aria-label="${esc(L("Evidence: ","证据：")+scaleSummary(t))}">${seg("observed","")}${seg("reported","r")}${seg("proposed","p")}${seg("illustrative","l")}${seg("none","n")}</div>`}
+function scaleLabeledHTML(t){if(!weighedCount(t))return"";const tip=L("Every source this card rests on, including those behind linked directions and questions. One block per source.","这张卡片依据的所有来源，包括关联方向和问题背后的来源。每格代表一个来源。");return `<div class="scale-cap" title="${esc(tip)}"><span>${L("Evidence behind it","背后的证据")}</span><span>${esc(scaleSummary(t))}</span></div>${scaleHTML(t)}`}
 function scaleBar(label,t){const bar=scaleHTML(t),sum=scaleSummary(t);return bar?`<span style="display:flex;align-items:center;gap:8px;width:100%" title="${esc(sum)}"><span style="white-space:nowrap">${label}</span><span style="flex:1">${bar.replace('class="scale"','class="scale" style="margin:0"')}</span></span>`:`<span>${label}</span>`}
 function evidenceScale(n){const s=sourcesFor(n);if(!s.length)return L("No sources yet","暂无关联来源");const t=tally(s);return weighedCount(t)?scaleBar(L(`${weighedCount(t)}/${s.length} rated`,`${weighedCount(t)}/${s.length} 已标证据`),t):L(`${s.length} ${s.length===1?"source":"sources"}`,`${s.length} 份来源`)}
 function driftOf(p){

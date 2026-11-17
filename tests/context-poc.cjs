@@ -42,19 +42,20 @@ function serve() {
           const parsed = JSON.parse(body || '{}');
           if (parsed.max_tokens === 1 && !parsed.stream) { rsp.writeHead(200, { 'Content-Type': 'application/json' }); return rsp.end(JSON.stringify({ choices: [{ message: { content: '.' } }] })); }
           const flat = (parsed.messages || []).map(m => typeof m.content === 'string' ? m.content : (m.content || []).map(p => p.text || '').join(' ')).join('\n');
-          let txt = null, matched = null;
+          let txt = null, matched = null, finish = '';
           if (relay) {
             txt = await relayCall({ ...parsed, model: LIVE, stream: false });
             matched = 'live';
           } else {
             const i = queue.findIndex(e => new RegExp(e.match, 's').test(flat));
             const hit = i >= 0 ? queue.splice(i, 1)[0] : null;
-            if (hit && !hit.status) { txt = typeof hit.text === 'string' ? hit.text : JSON.stringify(hit.text); matched = hit.id; }
+            if (hit && !hit.status) { txt = typeof hit.text === 'string' ? hit.text : JSON.stringify(hit.text); matched = hit.id; finish = hit.finish || ''; }
           }
-          requests.push({ matched, full: flat, reply: txt });
+          requests.push({ matched, full: flat, reply: txt, max: parsed.max_tokens });
           if (txt == null) { rsp.writeHead(503); return rsp.end(); }
           rsp.writeHead(200, { 'Content-Type': 'text/event-stream' });
           for (let k = 0; k < txt.length; k += 40) rsp.write('data: ' + JSON.stringify({ choices: [{ delta: { content: txt.slice(k, k + 40) } }] }) + '\n\n');
+          if (finish) rsp.write('data: ' + JSON.stringify({ choices: [{ delta: {}, finish_reason: finish }] }) + '\n\n');
           rsp.end('data: [DONE]\n\n');
         });
         return;
@@ -295,12 +296,13 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
         const repeat = /video tutorial|gamif|badge|sample project|sample-first|skip(ping)?\s+(the\s+)?profile/i.test(rawDirs);
         const titles = await p.evaluate(() => board.nodes.filter(n => n.type === 'direction' && n.status === 'sketch').map(n => n.title));
         if (memory) { live.forkRuns++; if (repeat) live.forkRepeat++; if (parseJSON(reply)?.directions) live.forkAnswered++; } else if (repeat) live.ctrlRepeat++;
-        console.log(`  live fork (${memory ? 'with' : 'without'} decision memory) ${i + 1}: ${repeat ? 'REPEATED a declined idea' : 'no repeat'} → kept ${JSON.stringify(titles)}; held back ${await p.evaluate(() => (board.changes || []).filter(c => c.op === 'hold-repeat').length) - h0}`);
+        console.log(`  live fork (${memory ? 'with' : 'without'} decision memory) ${i + 1}: ${repeat ? 'REPEATED a declined idea (' + rawDirs.slice(0, 160) + ')' : 'no repeat'} → kept ${JSON.stringify(titles)}; held back ${await p.evaluate(() => (board.changes || []).filter(c => c.op === 'hold-repeat').length) - h0}`);
         await dropSketches(p);
         await p.evaluate(s => { board.declined = JSON.parse(s); }, saved);
       }
       const R = live.ran, rate = (k, n = R) => `${k}/${n}`;
-      check('L', `[${LIVE}] the model itself answered (not the built-in fallback): advisor`, live.answered === R, rate(live.answered));
+      const lenRetries = await p.evaluate(() => apiLengthRetries);
+      check('L', `[${LIVE}] the model itself answered (not the built-in fallback): advisor`, live.answered === R, rate(live.answered) + ` · replies retried after running out of tokens: ${lenRetries}`, 'PASS');
       check('L', `[${LIVE}] the model itself answered (not the built-in fallback): Strategist`, live.forkAnswered === live.forkRuns, rate(live.forkAnswered, live.forkRuns));
       check('L', `[${LIVE}] the advisor produced a thought`, live.pins === R, rate(live.pins));
       check('L', `[${LIVE}] cited the far related card F1 (shared words)`, live.far1 >= 1, rate(live.far1), live.far1 >= Math.ceil(R / 2) ? 'PASS' : 'PART');
@@ -316,6 +318,111 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
       relay = false;
     }
     await ctx.close();
+
+    /* ── P0: visible fallbacks, held-back repeats you can see, the remaining rejection signals (fresh board) ── */
+    {
+      const { p: q, ctx: c2 } = await openPage(browser, base);
+      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.waitForTimeout(800);
+      await q.evaluate(() => setCrew({ speak: 'never', act: 'drafts' }));
+      const I = await buildFixture(q);
+      const ADV = 'Include 1 or at most 2 pins';
+      const thought = note => ({ keywords: ['k'], thoughts: ['a', 'b', 'c'], basis: [], pins: [{ agent: 'critic', note, liftAct: 'note', liftLabel: 'Pin it' }] });
+      const look = async () => { await q.evaluate(t => { board.pins = {}; return runAdvisorOnNode(t, { force: true }); }, I.T); await q.idle(); return q.evaluate(t => (board.pins[t] || [])[0] || null, I.T); };
+      const openPop = async () => { await q.evaluate(t => { closeAdvPop(); toggleAdvPop(t); }, I.T); await q.waitForTimeout(250); };
+
+      // 1. a reply cut off by the token limit is retried once with more room; rule-made thoughts say so
+      queue = [{ id: 'cut', match: ADV, text: '', finish: 'length' }, { id: 'adv-ok', match: ADV, text: thought('The goal card measures activation, not speed: which one do three steps serve?') }];
+      let pin = await look();
+      const tries = requests.filter(r => r.matched === 'cut' || r.matched === 'adv-ok');
+      check('P0', 'a reply cut off by the token limit (finish_reason "length") is retried once, with more room', tries.length === 2 && tries[1].max > tries[0].max, JSON.stringify(tries.map(r => [r.matched, r.max])));
+      check('P0', "…and the thought that arrives is the model's", pin && pin.engine === 'model' && /activation/.test(pin.note), JSON.stringify(pin));
+      await openPop();
+      check('P0', 'a model thought carries no engine tag', await q.evaluate(() => !document.querySelector('#advPop .adv-eng')));
+      queue = [];
+      pin = await look();
+      await openPop();
+      const shot = async (sel, name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await q.evaluate(() => document.querySelectorAll('#toasts > *').forEach(t => t.remove())); await q.waitForTimeout(150); await q.locator(sel).screenshot({ path: path.join(SHOTS, name) }); };
+      await shot('#advPop', 'rules-tag.png');
+      check('P0', 'with no model, the thought is marked as made by built-in rules', pin && pin.engine === 'rules' && /built-in rules/.test(await q.evaluate(() => document.querySelector('#advPop .adv-eng')?.innerText || '')), JSON.stringify(pin && pin.engine));
+      await q.evaluate(() => closeAdvPop());
+
+      // 2. what is held back is kept, shown in the Crew popover, and can be shown anyway or dismissed
+      const dv = await q.evaluate(t => { checkpoint(); const d = node('note', { text: 'Add a mandatory video tutorial before the first project.', by: 'muse', status: 'sketch' }, { x: 1500, y: 900 }); edge(t, d.id, 'derive'); renderAll(); return d.id; }, I.T);
+      await q.evaluate(id => erase([id], { reason: 'People skip videos; it adds time before value.' }), dv); await q.waitForTimeout(450);
+      queue = [{ id: 'echo', match: ADV, text: thought('What about a **mandatory video tutorial** before the first project?') }];
+      pin = await look();
+      let held = await q.evaluate(() => (board.held || []).map(h => ({ kind: h.kind, text: h.text, has: !!h.payload })));
+      check('P0', 'a held-back thought is kept, with what it said', !pin && held.length === 1 && held[0].kind === 'pin' && /mandatory video tutorial/.test(held[0].text) && held[0].has, JSON.stringify(held));
+      await q.evaluate(() => toggleCrewPop(true)); await q.waitForTimeout(200);
+      check('P0', 'the Crew popover shows one quiet line: "Held back 1 idea you turned down"', /Held back 1 idea you turned down/.test(await q.evaluate(() => document.getElementById('crewPop').innerText)));
+      await shot('#crewPop', 'crew-held.png');
+      await q.click('#crewPop [data-crew-held]'); await q.waitForTimeout(300);
+      await shot('dialog[open]', 'held-dialog.png');
+      const dtext = await q.evaluate(() => document.querySelector('dialog[open]')?.innerText || '');
+      check('P0', 'the list says what it repeats, when you turned it down, and why', /Repeats/.test(dtext) && /skip videos/.test(dtext), dtext.slice(0, 300));
+      await q.click('dialog[open] [data-hb-show]'); await q.waitForTimeout(400);
+      check('P0', '"Show anyway" puts the thought back on its card', await q.evaluate(t => (board.pins[t] || []).some(p => p.shownAnyway && /video/.test(p.note)) && !(board.held || []).length, I.T));
+      await q.evaluate(() => { try { dlg.close(); } catch { } closeAdvPop(); });
+      queue = [{ id: 'fk-echo', match: '"directions"', text: { directions: [{ title: 'Video tutorial first', plan: 'Add a mandatory video tutorial before the first project.', test: 'Time five users.', mode: 'story' }, { title: 'Template gallery start', plan: 'Start on a gallery of templates.', test: 'Five users pick one.', mode: 'desk' }] } }];
+      await q.evaluate(t => fork(byId(t), 2), I.T); await q.idle();
+      held = await q.evaluate(() => (board.held || []).map(h => h.kind));
+      check('P0', 'a held-back direction is kept too', JSON.stringify(held) === '["direction"]', JSON.stringify(held));
+      await q.evaluate(() => heldDialog()); await q.waitForTimeout(250);
+      await q.click('dialog[open] [data-hb-show]'); await q.waitForTimeout(400);
+      check('P0', '"Show anyway" adds the direction as a draft beside the others', await q.evaluate(() => board.nodes.some(n => n.type === 'direction' && n.status === 'sketch' && n.title === 'Video tutorial first' && n.shownAnyway)));
+      await q.evaluate(() => { try { dlg.close(); } catch { } });
+      await dropSketches(q);
+      queue = [{ id: 'fk-echo2', match: '"directions"', text: { directions: [{ title: 'Video tutorial first', plan: 'Add a mandatory video tutorial before the first project.', test: 'Time five users.', mode: 'story' }] } }];
+      await q.evaluate(t => fork(byId(t), 1), I.T); await q.idle();
+      check('P0', 'a fork that only repeats declined ideas holds them all back and adds nothing', await q.evaluate(() => (board.held || []).length === 1 && !board.nodes.some(n => n.type === 'direction' && n.status === 'sketch')) && /only came up with directions you already turned down/.test(await q.toast()), await q.toast());
+      await q.evaluate(() => heldDialog()); await q.waitForTimeout(250);
+      await q.click('dialog[open] [data-hb-drop]'); await q.waitForTimeout(250);
+      check('P0', '"Dismiss" removes it from the list, and the Crew popover line goes with it', await q.evaluate(() => { toggleCrewPop(false); toggleCrewPop(true); return !(board.held || []).length && !/Held back/.test(document.getElementById('crewPop').innerText); }));
+      await q.evaluate(() => { try { dlg.close(); } catch { } toggleCrewPop(false); });
+
+      // 3a. asking for a fresh angle on a thought
+      await q.evaluate(t => { board.pins = { [t]: [{ id: 'pin-r', agent: 'critic', note: 'Maybe measure time-to-first-project before cutting anything.', t: NOW(), seen: true, engine: 'model', basis: [] }] }; renderNodes(); }, I.T);
+      await openPop();
+      queue = [{ id: 'fresh', match: ADV, text: thought('Which of the three steps would a returning user still see?') }];
+      await q.click('#advPop [data-adv-reroll]'); await q.waitForTimeout(600); await q.idle();
+      const freshReq = requests.filter(r => r.matched === 'fresh').at(-1)?.full || '';
+      check('P0', 'asking for a fresh angle records the replaced thought', await q.evaluate(() => (board.declined || []).some(d => d.kind === 'rerolled' && /time-to-first-project/.test(d.text))));
+      check('P0', '…and the next look is told what it is replacing', /fresh angle[\s\S]*time-to-first-project|time-to-first-project[\s\S]*fresh angle/.test(freshReq), freshReq.slice(-500));
+
+      // 3b. Try again on drafts
+      queue = [{ id: 'fk-a', match: '"directions"', text: { directions: [{ title: 'Alpha path', plan: 'Merge the profile and workspace screens.', test: 'Five users.', mode: 'story' }, { title: 'Beta path', plan: 'Defer the team invite until after the first project.', test: 'Five users.', mode: 'story' }] } }];
+      await q.evaluate(t => fork(byId(t), 2), I.T); await q.idle();
+      const pid = await q.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.status === 'sketch')?.pid);
+      queue = [{ id: 'fk-b', match: '"directions"', text: { directions: [{ title: 'Gamma path', plan: 'Prefill the workspace from the sign-up answers.', test: 'Five users.', mode: 'story' }, { title: 'Delta path', plan: 'Open straight into a blank project.', test: 'Five users.', mode: 'story' }] } }];
+      await q.evaluate(pid => redraw(pid), pid); await q.idle();
+      const redoReq = requests.filter(r => r.matched === 'fk-b').at(-1)?.full || '';
+      check('P0', 'Try again tells Strategist which drafts it is replacing', /turned down[\s\S]*Alpha path[\s\S]*another version/.test(redoReq) && /Beta path/.test(redoReq), redoReq.slice(-600));
+      check('P0', '…and the new drafts replace the old', await q.evaluate(() => board.nodes.filter(n => n.type === 'direction' && n.status === 'sketch').map(n => n.title).sort().join() === 'Delta path,Gamma path'));
+      check('P0', 'a redo is a soft signal: it never holds a repeat back', await q.evaluate(() => !echoOfDeclined('Alpha path — Merge the profile and workspace screens.')));
+      const pid2 = await q.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.status === 'sketch')?.pid);
+      const r0 = await q.evaluate(() => (board.declined || []).filter(d => d.kind === 'retried').length);
+      queue = [];
+      await q.evaluate(pid => redraw(pid), pid2); await q.idle();
+      check('P0', 'a Try again that fails keeps the drafts and takes its record back', await q.evaluate(r0 => (board.declined || []).filter(d => d.kind === 'retried').length === r0 && board.nodes.filter(n => n.type === 'direction' && n.status === 'sketch').length === 2, r0));
+      await dropSketches(q);
+
+      // 3c. text you remove from an agent's card; accepting an agent's own edit is not you removing it
+      const ag = await q.evaluate(() => { checkpoint(); const n = node('note', { text: 'Run a five-person test this week. Also add a mandatory onboarding video for every new user.', by: 'scout' }, { x: 300, y: 1400 }); renderAll(); return n.id; });
+      await q.evaluate(id => { const n = byId(id); checkpoint(); const pd = digest(n), pt = n.title, px = n.text; n.text = 'Run a five-person test this week.'; recordNodeEdit(n, pd, pt, px); renderAll(); persist(); }, ag);
+      check('P0', "removing a sentence from an agent's card records what you removed", await q.evaluate(id => (board.declined || []).some(d => d.kind === 'edited-out' && d.ref === id && /mandatory onboarding video/.test(d.text) && !/five-person/.test(d.text)), ag));
+      check('P0', '…and it is a strong signal: a repeat would be held back', await q.evaluate(() => !!echoOfDeclined('Add a mandatory onboarding video for every new user.')));
+      const ag2 = await q.evaluate(() => { checkpoint(); const n = node('note', { text: 'Interview six users. Then cut the invite step entirely from the flow.', by: 'scout' }, { x: 300, y: 1700 }); renderAll(); propose('critic', 'model', 'edit', n, { text: 'Interview six users.' }); renderAll(); return n.id; });
+      await q.evaluate(id => acceptProposal(openProps(id)[0].id), ag2); await q.waitForTimeout(200);
+      check('P0', "accepting an agent's suggested edit is not recorded as you removing text", await q.evaluate(id => !(board.declined || []).some(d => d.kind === 'edited-out' && d.ref === id), ag2));
+
+      // 3d. deleting a kept card an agent made: soft, and undone with the delete
+      await q.evaluate(id => erase([id]), ag2); await q.waitForTimeout(450);
+      check('P0', "deleting an agent's kept card is recorded as a soft signal", await q.evaluate(id => (board.declined || []).some(d => d.kind === 'deleted' && d.ref === id) && !echoOfDeclined('Interview six users.'), ag2));
+      await q.evaluate(() => undo()); await q.waitForTimeout(300);
+      check('P0', '…and Undo brings the card back and withdraws the record', await q.evaluate(id => !!byId(id) && !(board.declined || []).some(d => d.kind === 'deleted' && d.ref === id), ag2));
+      check('P0', 'no page errors', q.errors.length === 0, q.errors.join(' | '));
+      await c2.close();
+    }
   } finally {
     await browser.close(); srv.close();
   }

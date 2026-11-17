@@ -2912,6 +2912,9 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .crew-pop .crew-wait>span{display:grid;gap:2px;min-width:0}
 .crew-pop .crew-wait b{font:600 13px/1.3 var(--ui);color:var(--label)}
 .crew-pop .crew-wait small{font:450 12px/1.3 var(--ui);color:var(--label-2)}
+.crew-held{background:var(--hover)}
+.hb-row{display:grid;gap:4px;padding:12px 0}.hb-row+.hb-row{margin-top:4px}.hb-row p{margin:0}.hb-meta{font:500 12px/1.4 var(--ui);color:var(--label-3)}.hb-text{font:450 14px/1.5 var(--ui);color:var(--label)}.hb-why{font:450 12px/1.5 var(--ui);color:var(--label-2)}.hb-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+.adv-head b:has(+.adv-eng){margin-right:0}.adv-eng{margin-right:auto;font:500 11px/1 var(--ui);letter-spacing:.02em;padding:3px 6px;border-radius:var(--radius-pill);color:var(--label-2);background:var(--hover)}
 .crew-pop .crew-sec{display:grid;gap:8px;padding-top:16px;border-top:0;font:450 12px/1.45 var(--ui);color:var(--label-3)}
 .crew-pop .crew-sec b{display:inline-flex;align-items:center;gap:6px;font:600 12px/1.2 var(--ui);color:var(--label-2)}
 .crew-pop .crew-locks{display:flex;flex-wrap:wrap;gap:6px}
@@ -3643,6 +3646,7 @@ function renderCrewPop(){
   const unreadTxt=unread>1?L(`${unread} thoughts waiting`,`${unread} 条建议等你查看`):L("A thought is waiting","有一条建议等你查看");
   pop.innerHTML=`<div class="cp-pop-head sp-htxt"><b>${L("Crew","成员")}</b><small class="sp-now ${sum.dot}"><i></i><span class="sp-now-mode">${esc(sum.mode)}</span>${hIssue?`<span class="sp-now-issue ${hIssue.tone}">${esc(hIssue.t)}</span>`:""}</small></div>
     ${firstUnread?`<div class="crew-wait"><span><b>${esc(unreadTxt)}</b>${held?`<small>${esc(L(`${held} card${held>1?"s":""} held back until you read`,`${held} 张卡片暂缓，读完后出现`))}</small>`:""}</span><button type="button" class="cbtn" data-crew-show="${esc(firstUnread)}">${L("Show","查看")}</button></div>`:""}
+    ${(board.held||[]).length?(()=>{const hs=board.held,last=hs[hs.length-1];return `<div class="crew-wait crew-held"><span><b>${esc(L(`Held back ${hs.length} idea${hs.length>1?"s":""} you turned down`,`略过了 ${hs.length} 个你否决过的想法`))}</b><small>${esc(clip(last.text,70))}</small></span><button type="button" class="cbtn" data-crew-held>${L("Show","查看")}</button></div>`})():""}
     <div class="crew-axis"><b id="crew-speak-l">${L("Speaks up","主动发言")}</b>${seg("speak",SPEAK_LEVELS,SPEAK_LABEL,crewSpeak)}<p>${L(SPEAK_DESC[crewSpeak][0],SPEAK_DESC[crewSpeak][1])}</p></div>
     <div class="crew-axis"><div class="crew-axis-h"><b id="crew-act-l">${L("Acts on the board","在画板上动手")}</b><button type="button" class="crew-link" data-crew-custom>${L("Customize","自定义")}</button></div>${seg("act",ACT_LEVELS,ACT_LABEL,autonomyCustom?"":crewAct)}<p>${autonomyCustom?esc(autonomyPlain()):L(ACT_DESC[crewAct][0],ACT_DESC[crewAct][1])}</p></div>
     <div class="crew-sec"><b>${L("Locked lanes","锁定的泳道")}</b><div class="crew-locks">${BAYS.map((b,i)=>{const on=lockedBays().includes(i);return `<button type="button" class="crew-lock" data-crew-lock="${i}" aria-pressed="${on}">${on?ic("lock"):""}${esc(bayName(b))}</button>`}).join("")}</div><span>${L("Kept cards in a locked lane are yours alone. Lock single cards from their menu.","锁定泳道里已确认的卡片只有你能改。单张卡片可在其菜单里锁定。")}</span></div>
@@ -3730,7 +3734,7 @@ async function acceptProposal(id,{force=false}={}){
   const prevD=digest(n),prevT=n.title,prevTx=n.text;
   for(const f of PROP_FIELDS)if(pr.change[f]!==undefined)n[f]=pr.change[f];
   if(pr.change.field)n[pr.change.field]=pr.change.value;
-  n.updated=NOW();recordNodeEdit(n,prevD,prevT,prevTx);
+  n.updated=NOW();propAccepting=true;try{recordNodeEdit(n,prevD,prevT,prevTx)}finally{propAccepting=false}
   pr.status="accepted";pr.resolvedAt=NOW();expandedProps.delete(id);
   noteChange({op:"accept-proposal",id:n.id,type:n.type,title:clip(titleOf(n),60),who:"you",engine:"human",from:pr.who});
   changeActor={who:pr.who,engine:pr.engine,cause:"accepted proposal"};recordChanges();changeActor=null;
@@ -3924,10 +3928,18 @@ function ensureRevision(n){
   if(!n.rev||n.rev<1)n.rev=1;
   if(!n.digest)n.digest=digest(n);
 }
+let propAccepting=false;
+const ctxSentences=t=>String(t||"").split(/(?<=[.!?。！？])\s+|\n+/).map(x=>x.trim()).filter(x=>x.length>3);
+const ctxNorm=t=>t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
 function recordNodeEdit(n,prevDigest,prevTitle,prevText){
   if(!n||n.tombstone||n.status==="sketch")return;
   const nd=digest(n);
   if(nd===prevDigest)return;
+  {const author=n.prov?.author||n.by;
+   if(author&&author!=="you"&&!propAccepting&&txAuthor()==="you"&&typeof n.text==="string"){
+     const now=new Set(ctxSentences(n.text).map(ctxNorm)),gone=ctxSentences(prevText).filter(x=>!now.has(ctxNorm(x))).join(" ");
+     if(gone.length>=24)declineRecord("edited-out",{title:titleOf(n),text:gone,by:author,target:n.id,ref:n.id});
+   }}
   const prevRev=n.rev||1;
   n.versions=Array.isArray(n.versions)?n.versions:[];
   n.versions.push({rev:prevRev,t:n.updated||n.created||NOW(),digest:prevDigest,title:clip(prevTitle||"",160),text:clipDoc(prevText||"",4000)});
@@ -4277,9 +4289,10 @@ function declineRecord(kind,{title="",text="",by="",target=null,reason="",ref=nu
   return d;
 }
 function setDeclineReason(id,reason){const d=(board.declined||[]).find(x=>x.id===id||x.ref===id);if(!d)return null;d.reason=clip(String(reason||""),300);persist();return d}
-const declText=d=>[d.title,d.text].filter(Boolean).join(" — ");
+/* a draft's title is often the start of its text: say it once */
+const declText=d=>{const t=String(d.title||"").replace(/…$/,"").trim();return d.text&&t&&String(d.text).startsWith(t)?d.text:[d.title,d.text].filter(Boolean).join(" — ")};
 function declinedFor(target,{query="",limit=3,kinds=null}={}){
-  const all=(board.declined||[]).filter(d=>!kinds||kinds.includes(d.kind));if(!all.length)return [];
+  const all=(board.declined||[]).filter(d=>(!kinds||kinds.includes(d.kind))&&!(d.kind==="retried"&&byId(d.ref)));if(!all.length)return [];
   const pool=visibleNodes().filter(n=>n.status==="ink");
   const idx=ctxIndex(pool),self=ctxTerms((target?ctxTextOf(target):"")+" "+query);
   return all.map(d=>{const s=ctxSim(self,ctxTerms(declText(d)+" "+d.reason),idx),same=!!target&&(d.target===target.id||d.ref===target.id);return {d,score:(same?1:0)+s.score,ok:same||ctxRelated(s)}})
@@ -4295,16 +4308,50 @@ function declAnsweredBy(d){
 }
 /* does this text repeat something declined? */
 function echoOfDeclined(text,{kinds=null}={}){
-  const all=(board.declined||[]).filter(d=>!kinds||kinds.includes(d.kind));if(!all.length||!String(text||"").trim())return null;
+  const all=(board.declined||[]).filter(d=>kinds?kinds.includes(d.kind):!DECL_SOFT.has(d.kind));if(!all.length||!String(text||"").trim())return null;
   const idx=ctxIndex(visibleNodes().filter(n=>n.status==="ink")),t=ctxTerms(text);
   let best=null;
   for(const d of all){const s=ctxSim(t,ctxTerms(declText(d)),idx);if(s.score>=.42&&s.shared.length>=2&&(!best||s.score>best.score))best={d,score:s.score}}
   if(!best)return null;
   return {...best,answeredBy:declAnsweredBy(best.d)};
 }
+/* Strong signals hold a repeat back; soft ones (asking for another version or a fresh angle, deleting an agent's card
+   you had kept) are only told to the agents, since they say "not this one" more than "never this". */
+const DECL_SOFT=new Set(["retried","rerolled","deleted"]);
+function holdBack(kind,{target=null,who="",text="",payload=null,declined}){
+  board.held=Array.isArray(board.held)?board.held:[];
+  const h={id:"hb-"+uid(),kind,target,who,text:clip(String(text||"").replace(/\*\*/g,""),300),payload,declined:declined?.id||null,at:NOW()};
+  board.held.push(h);if(board.held.length>30)board.held.shift();
+  noteChange({op:"hold-repeat",id:target,type:kind,title:clip(declined?declText(declined):text,60),who,engine:"rules",declined:declined?.id||null});
+  renderCrewPop?.();
+  return h;
+}
+function dropHeld(id){board.held=(board.held||[]).filter(h=>h.id!==id);persist();renderCrewPop?.()}
+function showHeld(id){
+  const h=(board.held||[]).find(x=>x.id===id);if(!h)return;
+  const t=byId(h.target);if(!t||isNodeHidden(t)){dropHeld(id);return toast(L("The card it was about is gone.","相关卡片已不存在。"))}
+  if(h.kind==="pin"){
+    board.pins=board.pins||{};board.pins[t.id]=[...(board.pins[t.id]||[]),{...h.payload,id:"pin-"+uid(),t:NOW(),seen:false,shownAnyway:true}];
+    dropHeld(id);dlg.close();renderNodes();focusNodes([t],Math.max(cam.s,.85),0);select([t.id],{menus:false});if(openAdvNodeId!==t.id)toggleAdvPop(t.id);return;
+  }
+  if(h.kind==="direction"){
+    const free=LETTERS.filter(l=>!board.nodes.some(d=>d.type==="direction"&&d.idea===t.id&&d.letter===l));
+    if(!free.length)return toast(L("This claim already has four directions.","这个论点已经有四个方向了。"));
+    const d=h.payload||{},place=planFork(t,1).places[0];
+    checkpoint();const n=node("direction",{_src:t.id,idea:t.id,letter:free[0],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title||"",48),text:d.plan||d.text||"",test:d.test||"",by:h.who||"muse",status:"sketch",pid:"p-"+uid(),shownAnyway:true},place);
+    edge(t.id,n.id,"derive","live");captureDepSnapshot(n,[t]);
+    board.held=(board.held||[]).filter(x=>x.id!==id);dlg.close();renderAll();persist();renderCrewPop?.();follow([t,n]);
+  }
+}
+function heldDialog(){
+  const rows=()=>{const hs=[...(board.held||[])].reverse();if(!hs.length)return `<p class="au-lede">${L("Nothing is held back.","没有被略过的内容。")}</p>`;
+    return `<p class="au-lede">${L("Each of these repeated something you had turned down, so the crew kept it to itself.","这些内容重复了你已否决的想法，所以成员没有展示。")}</p>`+hs.map(h=>{const d=(board.declined||[]).find(x=>x.id===h.declined),a=AGENTS[h.who];
+      return `<div class="hb-row"><p class="hb-meta">${esc([a?a.name:"",h.kind==="pin"?L("thought","建议"):L("direction","方向"),relDate(h.at)].filter(Boolean).join(" · "))}</p><p class="hb-text">${esc(h.text)}</p>${d?`<p class="hb-why">${esc(L(`Repeats “${clip(declText(d),90)}”, turned down ${relDate(d.at)}`,`重复了「${clip(declText(d),90)}」，${relDate(d.at)}否决`))}${d.reason?esc(L(`: ${d.reason}`,`：${d.reason}`)):""}</p>`:""}<div class="hb-acts"><button type="button" class="cbtn" data-hb-drop="${esc(h.id)}">${L("Dismiss","移除")}</button><button type="button" class="cbtn" data-hb-show="${esc(h.id)}">${L("Show anyway","仍然显示")}</button></div></div>`}).join("")};
+  openDialog(L("Held back","已略过"),`<div id="hbBody">${rows()}</div>`,d=>{d.onclick=e=>{const sh=e.target.closest("[data-hb-show]");if(sh){showHeld(sh.dataset.hbShow);const b=qs("#hbBody",d);if(b)b.innerHTML=rows();return}const dr=e.target.closest("[data-hb-drop]");if(dr){dropHeld(dr.dataset.hbDrop);const b=qs("#hbBody",d);if(b)b.innerHTML=rows();return}if(e.target.closest('[data-d="close"]'))dlg.close()}});
+}
 function declinedPromptBlock(items){
   if(!items.length)return "";
-  const kind={draft:"a draft",pin:"a thought",edit:"a suggested edit",delete:"a suggested deletion",link:"a suggested link","passed-over":"a direction not adopted"};
+  const kind={draft:"a draft",pin:"a thought",edit:"a suggested edit",delete:"a suggested deletion",link:"a suggested link","passed-over":"a direction not adopted",retried:"a draft they asked you to redo",rerolled:"a thought they asked you to replace with a fresh angle","edited-out":"text they removed from an agent's card",deleted:"an agent's card they deleted"};
   return `\nIdeas the designer already turned down (do not offer them again unless a newer card answers the reason; if you revisit one, say which card changes things):\n${items.map(d=>`- “${clip(declText(d),140)}” (${kind[d.kind]||d.kind}, ${relDate(d.at)})${d.reason?` — reason: ${clip(d.reason,160)}`:" — no reason given"}`).join("\n")}`;
 }
 function revisionsOf(n){return [...(n?.versions||[]),...(n?[{rev:n.rev||1,t:n.updated||n.created,title:n.title||"",text:n.text||"",current:true}]:[])]}
@@ -6687,7 +6734,8 @@ function renderAdvPop(){
   const relWord={conflicts:L("Conflicts","相矛盾"),supports:L("Supports","支持"),extends:L("Builds on","延伸")};
   const basisList=(p.basis||[]).filter(b=>byId(b.id)&&!isNodeHidden(byId(b.id)));
   const basisHTML=basisList.length?`<div class="adv-basis"><b>${L("Based on","依据")}</b>${basisList.map(b=>`<p>${relWord[b.relation]?`<span class="adv-rel ${esc(b.relation)}">${esc(relWord[b.relation])}</span> · `:""}<a href="#" data-adv-basis="${esc(b.id)}" title="${esc(b.why||"")}">${esc(ctxLabel(byId(b.id)))}</a></p>`).join("")}</div>`:"";
-  pop.innerHTML=`<span class="adv-pop-tail" aria-hidden="true"></span><div class="adv-head"><span class="mk">${a.mk}</span><b>${esc(a.name)}</b>${tools}</div>${tabsHTML}<div class="adv-scroll">${body?`<p class="adv-note">${renderAdvNote(body,kws)}</p>`:""}${basisHTML}${repsHTML}</div><div class="adv-dock"><div class="adv-reply"><input type="text" class="adv-reply-in" data-adv-in data-pin-id="${esc(p.id)}" placeholder="${esc(L(`Reply to ${a.name}…`,`回复 ${a.name}…`))}" value="${esc(keepDraft)}" autocomplete="off" spellcheck="false"><button type="button" class="adv-send" data-adv-send="${esc(p.id)}"${keepDraft.trim()?"":" disabled"} aria-label="${esc(L("Send reply","发送回复"))}" title="${esc(L("Send (Enter)","发送 (Enter)"))}">${UP_SVG}</button></div><div class="adv-acts"><button type="button" class="adv-ign" data-adv-del="${esc(p.id)}">${L("Ignore","忽略")}</button>${lift}</div></div>`;
+  const engTag=p.engine==="rules"?`<span class="adv-eng" title="${esc(L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
+  pop.innerHTML=`<span class="adv-pop-tail" aria-hidden="true"></span><div class="adv-head"><span class="mk">${a.mk}</span><b>${esc(a.name)}</b>${engTag}${tools}</div>${tabsHTML}<div class="adv-scroll">${body?`<p class="adv-note">${renderAdvNote(body,kws)}</p>`:""}${basisHTML}${repsHTML}</div><div class="adv-dock"><div class="adv-reply"><input type="text" class="adv-reply-in" data-adv-in data-pin-id="${esc(p.id)}" placeholder="${esc(L(`Reply to ${a.name}…`,`回复 ${a.name}…`))}" value="${esc(keepDraft)}" autocomplete="off" spellcheck="false"><button type="button" class="adv-send" data-adv-send="${esc(p.id)}"${keepDraft.trim()?"":" disabled"} aria-label="${esc(L("Send reply","发送回复"))}" title="${esc(L("Send (Enter)","发送 (Enter)"))}">${UP_SVG}</button></div><div class="adv-acts"><button type="button" class="adv-ign" data-adv-del="${esc(p.id)}">${L("Ignore","忽略")}</button>${lift}</div></div>`;
   placeAdvPop();
   const scrollEl=qs(".adv-scroll",pop);if(scrollEl&&reps.length)scrollEl.scrollTop=scrollEl.scrollHeight;
   if(wasFocused){const ni=qs("[data-adv-in]",pop);if(ni){ni.focus();ni.setSelectionRange(ni.value.length,ni.value.length)}}
@@ -6987,7 +7035,7 @@ Include 1 or at most 2 pins.`;
     if(ks!==lastK||ts!==lastT){lastK=ks;lastT=ts;onProgress({keywords:kws,thoughts:th})}
   }:undefined;
   try{
-    const {v}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:1600,signal,memoryMode:cand.cx.picks.length?"compact":"none",onText:handleText},local);
+    const {v,live}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:1600,signal,memoryMode:cand.cx.picks.length?"compact":"none",onText:handleText},local);
     if(!v||!Array.isArray(v.pins)||!v.pins.length)return local();
     const {basis,dropped}=ctxResolveBasis(v.basis,cand.rows);
     const keyed=new Map(cand.rows.map(r=>[r.key,r]));
@@ -7004,7 +7052,7 @@ Include 1 or at most 2 pins.`;
         liftAct:["fork","critique","list","gather","visuals","note"].includes(p.liftAct)?p.liftAct:"note",
         liftLabel:String(p.liftLabel||"Try as draft card"),
         liftQuery:p.liftQuery?String(p.liftQuery):"",
-        ...(Array.isArray(v.basis)?{basis}:{}),...(dropped.length?{basisDropped:dropped}:{}),
+        ...(Array.isArray(v.basis)?{basis}:{}),...(dropped.length?{basisDropped:dropped}:{}),engine:live?"model":"rules",
         t:NOW()
       }))
     };
@@ -7089,7 +7137,7 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
     await pushLine(finalLine,500,true);
     board.pins=board.pins||{};
     {const fallback=contextFor(n,{limit:2}).picks.map(p=>({id:p.n.id,rev:p.n.rev||1,relation:"related",why:ctxWhyText(p.why),signals:p.why.map(w=>w.k)}));
-     const kept=[];for(const p of (res?.pins||localRes.pins)){if(!Array.isArray(p.basis))p.basis=fallback;const e=echoOfDeclined(p.note||[p.take,p.edge].filter(Boolean).join(" "));if(e&&!e.answeredBy){noteChange({op:"hold-repeat",id:nodeId,type:"pin",title:clip(declText(e.d),60),who:p.agent||lead,engine:"rules",declined:e.d.id});continue}if(e)p.revisits={id:e.d.id,by:e.answeredBy.id};kept.push(p)}
+     const kept=[];for(const p of (res?.pins||localRes.pins)){if(!Array.isArray(p.basis))p.basis=fallback;if(!p.engine)p.engine="rules";const e=echoOfDeclined(p.note||[p.take,p.edge].filter(Boolean).join(" "));if(e&&!e.answeredBy){holdBack("pin",{target:nodeId,who:p.agent||lead,text:p.note,payload:{...p},declined:e.d});continue}if(e)p.revisits={id:e.d.id,by:e.answeredBy.id};kept.push(p)}
      if(kept.length)board.pins[nodeId]=kept;}
     hideAdvStream(true);
     const updatedEl=nodeEl(nodeId);if(updatedEl)updatedEl._sig="";
@@ -7276,7 +7324,7 @@ async function buildChatMessages({system,prompt,messages,images}){
 async function readChatStream(res,ctrl,{json,onText}){
   const reader=res.body?.getReader();
   if(!reader)throw new Error("No response stream");
-  const dec=new TextDecoder();let buf="",full="",loopStopped=false;
+  const dec=new TextDecoder();let buf="",full="",loopStopped=false,finish="";
   const pushDelta=d=>{
     if(!d)return;
     full+=d;
@@ -7293,7 +7341,7 @@ async function readChatStream(res,ctrl,{json,onText}){
   const consumeLine=ln=>{
     const line=ln.trim();if(!line.startsWith("data:"))return;
     const payload=line.slice(5).trim();if(!payload||payload==="[DONE]")return;
-    try{const j=JSON.parse(payload);pushDelta(j.choices?.[0]?.delta?.content??j.choices?.[0]?.message?.content??"")}catch{}
+    try{const j=JSON.parse(payload);if(j.choices?.[0]?.finish_reason)finish=j.choices[0].finish_reason;pushDelta(j.choices?.[0]?.delta?.content??j.choices?.[0]?.message?.content??"")}catch{}
   };
   try{
     while(!loopStopped){
@@ -7305,8 +7353,11 @@ async function readChatStream(res,ctrl,{json,onText}){
   }catch(e){if(!loopStopped)throw e}
   if(!loopStopped&&buf.trim())consumeLine(buf);
   const clean=trimRepetitionLoop(full).text.trim();
-  if(!clean)throw new Error("Empty model response");
-  return json?parseAIJson(clean):clean;
+  /* "length" with nothing usable: the budget ran out, often on a reasoning model's hidden thinking */
+  const cut=m=>Object.assign(new Error(m),{finish});
+  if(!clean)throw cut("Empty model response");
+  if(!json)return clean;
+  try{return parseAIJson(clean)}catch(e){throw cut(e.message)}
 }
 async function studioChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=95000,onText,signal}){
   const msgs=await buildChatMessages({system,prompt,messages,images});
@@ -7430,7 +7481,17 @@ async function viaClaude(remote,local,opts={}){
   }
   return {v:await local(),live:false,engine:"local"};
 }
-async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=95000,onText,signal}){
+/* One retry when the model ran out of room before it said anything usable, with 2.5× the budget (at most 4600). */
+let apiLengthRetries=0;
+async function apiChat(args){
+  try{return await apiChatOnce(args)}
+  catch(e){
+    const was=Math.min(4600,args.maxTokens||2200),more=Math.min(4600,Math.round(was*2.5));
+    if(e?.finish==="length"&&more>was&&!args.signal?.aborted){apiLengthRetries++;return await apiChatOnce({...args,maxTokens:more})}
+    throw e;
+  }
+}
+async function apiChatOnce({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=95000,onText,signal}){
   const msgs=await buildChatMessages({system,prompt,messages,images});
   const ctrl=new AbortController();
   const onAbort=()=>ctrl.abort();
@@ -8120,12 +8181,12 @@ async function fork(idea,count=3,brief=""){
   const places=planFork(idea,count).places.map(({x,y,w,h})=>({x,y,w,h}));
   const srcs=sourcesFor(idea);
   const imgNodes=[idea,...srcs].filter(n=>n&&(n.type==="image"||n.type==="frame"));
-  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${declinedPromptBlock(declinedFor(idea,{limit:4,kinds:["draft","passed-over"]}))}\n${brief?`\nThe designer added: "${brief}"\n`:""}
+  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${declinedPromptBlock(declinedFor(idea,{limit:4,kinds:["draft","passed-over","retried"]}))}\n${brief?`\nThe designer added: "${brief}"\n`:""}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
   const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({system:`${ROLE.muse}\n${STYLE}`,prompt,images:imgNodes,json:true},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const held=[];
-  const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count).filter(d=>{const e=echoOfDeclined(`${d.title||""} — ${d.plan||d.text||""}`,{kinds:["draft","passed-over"]});if(e&&!e.answeredBy){held.push(e.d);noteChange({op:"hold-repeat",id:idea.id,type:"direction",title:clip(d.title||"",60),who:"muse",engine:live?"model":"rules",declined:e.d.id});return false}if(e)d._revisits={id:e.d.id,by:e.answeredBy.id};return true});
+  const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count).filter(d=>{const e=echoOfDeclined(`${d.title||""} — ${d.plan||d.text||""}`,{kinds:["draft","passed-over"]});if(e&&!e.answeredBy){held.push(e.d);holdBack("direction",{target:idea.id,who:"muse",text:`${d.title||""} — ${d.plan||d.text||""}`,payload:{title:d.title,plan:d.plan||d.text||"",test:d.test||"",mode:d.mode},declined:e.d});return false}if(e)d._revisits={id:e.d.id,by:e.answeredBy.id};return true});
   if(!list.length){persist();return toast(L(`Strategist only came up with directions you already turned down (${held.map(d=>`“${clip(d.title,28)}”`).join(", ")}). Add what changed, then fork again.`,`Strategist 只想到了你已否决的方向（${held.map(d=>`「${clip(d.title,28)}」`).join("、")}）。补充新的信息后再试。`))}
   checkpoint();const pid="p-"+uid();
   const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",by:"muse",status:"sketch",pid,...(d._revisits?{revisits:d._revisits}:{})},places[i]);const e=edge(idea.id,n.id,"derive","live");captureDepSnapshot(n,[idea]);freshEdges.add(e.id);return n});
@@ -8549,6 +8610,7 @@ async function erase(ids,opts={}){
     }
     if(!opts.permanent){
       checkpoint();
+      for(const n of ns){const author=n.prov?.author||n.by;if(author&&author!=="you"&&txAuthor()==="you")declineRecord("deleted",{title:titleOf(n),text:fullTextOf(n),by:author,target:inputsOf(n.id)[0]?.id||null,ref:n.id})}
       ns.forEach(n=>{const el=nodeEl(n.id);if(el)el.classList.add("erasing")});await wait(calm()?0:280);
       const gone=new Set(ns.map(n=>n.id));
       board.nodes=board.nodes.filter(n=>!gone.has(n.id));
@@ -8596,6 +8658,7 @@ async function redraw(pid){
   board.nodes=board.nodes.filter(n=>!oldIds.has(n.id));board.edges=board.edges.filter(e=>!oldIds.has(e.a)&&!oldIds.has(e.b));
   sel=sel.filter(id=>!oldIds.has(id));renderAll();
   let failed=false;
+  const redo=ns.map(n=>declineRecord("retried",{title:n.type==="direction"?n.title:titleOf(n),text:[fullTextOf(n),n.test].filter(Boolean).join(" Test: "),by:n.by,target:n.idea||n._src||ins[0]?.id||null,reason:L("Asked for another version","要求换一个版本"),ref:n.id}).id);
   try{await redrawMove(t,ns,ins)}catch(e){console.warn("Try again failed:",e);failed=true}
   const putBack=o=>{if(o.nodes.some(n=>oldIds.has(n.id)))return o;for(const {i,n} of lifted)o.nodes.splice(Math.min(i,o.nodes.length),0,JSON.parse(JSON.stringify(n)));const have=new Set(o.nodes.map(n=>n.id));o.edges=[...(o.edges||[]),...liftedEdges.filter(e=>have.has(e.a)&&have.has(e.b)&&!(o.edges||[]).some(x=>x.id===e.id))];return o};
   const made=board.nodes.filter(n=>!known.has(n.id)&&n.status==="sketch"&&n.type===t.type&&n.by===t.by);
@@ -8604,7 +8667,7 @@ async function redraw(pid){
   const standIns=made.length>0&&made.every(isStandIn)&&!ns.every(isStandIn);
   if(failed||!made.length||fellBack||standIns){
     const madeIds=new Set(made.map(n=>n.id));
-    closeTx();dropRunTx(undoAt,madeIds);
+    closeTx();dropRunTx(undoAt,madeIds);board.declined=(board.declined||[]).filter(d=>!redo.includes(d.id));
     board.nodes=board.nodes.filter(n=>!madeIds.has(n.id));board.edges=board.edges.filter(e=>!madeIds.has(e.a)&&!madeIds.has(e.b));
     putBack(board);
     syncHistoryBtns();renderAll();persist();
@@ -9200,6 +9263,7 @@ $("crewPop")?.addEventListener("click",e=>{
   const sh=e.target.closest("[data-crew-show]");if(sh){const n=byId(sh.dataset.crewShow);toggleCrewPop(false);if(n){focusNodes([n],Math.max(cam.s,.85),0);select([n.id],{menus:false});if(openAdvNodeId!==n.id)toggleAdvPop(n.id)}return}
   if(e.target.closest("[data-crew-custom]")){toggleCrewPop(false);openAutonomyDialog();return}
   if(e.target.closest("[data-crew-memory]")){toggleCrewPop(false);memoryDialog();return}
+  if(e.target.closest("[data-crew-held]")){toggleCrewPop(false);heldDialog();return}
 });
 document.addEventListener("pointerdown",e=>{const b=e.target.closest?.("[data-bay-lock]");if(b){e.stopPropagation();e.preventDefault()}},true);
 document.addEventListener("click",e=>{const b=e.target.closest?.("[data-bay-lock]");if(b){e.stopPropagation();toggleBayLock(+b.dataset.bayLock)}},true);
@@ -13921,7 +13985,7 @@ addEventListener("pointerdown",e=>{const pop=$("lcPop");if(pop&&!pop.hidden&&!e.
 $("advPop")?.addEventListener("click",e=>{
   const tab=e.target.closest("[data-adv-tab]");if(tab){openAdvIdx=+tab.dataset.advTab||0;renderAdvPop();return}
   if(e.target.closest("[data-adv-close]")){closeAdvPop();return}
-  if(e.target.closest("[data-adv-reroll]")){const id=openAdvNodeId;closeAdvPop();if(id)scheduleAdvisor(id,{force:true});return}
+  if(e.target.closest("[data-adv-reroll]")){const id=openAdvNodeId;if(id)for(const p of board.pins?.[id]||[])if(!(board.declined||[]).some(d=>d.ref===p.id))declineRecord("rerolled",{title:clip(String(p.note||"").replace(/\*\*/g,""),120),text:String(p.note||"").replace(/\*\*/g,""),by:p.agent,target:id,reason:L("Asked for a fresh angle","要求换个角度"),ref:p.id});closeAdvPop();if(id)scheduleAdvisor(id,{force:true});return}
   const del=e.target.closest("[data-adv-del]");if(del){if(openAdvNodeId)dismissAdvPin(openAdvNodeId,del.dataset.advDel);return}
   const bas=e.target.closest("[data-adv-basis]");if(bas){e.preventDefault();const t=byId(bas.dataset.advBasis);if(t){closeAdvPop();select([t.id]);focusNodes([t],1)}return}
   const lift=e.target.closest("[data-adv-lift]");if(lift&&openAdvNodeId){execAdvisorLift(openAdvNodeId,lift.dataset.advLift);return}

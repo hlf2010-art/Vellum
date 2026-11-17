@@ -164,10 +164,10 @@ Haiku 5.5 is a capable cloud model. Qwen3-VL-8B is the closest available stand-i
 
 ## 7. Roadmap, in priority order
 
-**P0: trust and reliability**
-1. Make fallbacks visible. Mark thoughts made by the built-in rules. On an empty reply with `finish_reason: length`, retry once with more budget.
-2. Make held-back repeats auditable. Add a quiet line in Review, "Held back 1 idea you turned down", with a way to show it.
-3. Capture the remaining rejection signals: Try again, asking for a fresh thought, editing away AI text.
+**P0: trust and reliability (done 2026-11-18, see section 8)**
+1. ~~Make fallbacks visible and retry truncated replies.~~
+2. ~~Make held-back repeats auditable.~~ They're in the Crew popover rather than Review, because the Review button only shows when drafts or suggestions are waiting.
+3. ~~Capture the remaining rejection signals.~~
 
 **P1: intelligence**
 4. Semantic retrieval with embeddings (Studio AI locally, or the cloud API) to generate candidates, keeping the term layer as the explainable fallback. Target: F3 cited in at least 4 of 5 runs.
@@ -179,3 +179,40 @@ Haiku 5.5 is a capable cloud model. Qwen3-VL-8B is the closest available stand-i
 8. Label related pairs on real boards (the seeded studies and user boards), measure precision and recall, and tune the thresholds, Chinese included.
 9. Cache the index between saves so boards with 1,000+ cards stay fast.
 10. Replace the topic-overlap escape hatch with a cheap model judgement: does this new card answer the stated reason?
+
+## 8. P0 follow-up (2026-11-18)
+
+**What changed**
+
+- **Truncated replies are retried.** When a Cloud API reply ends with `finish_reason: "length"` and nothing usable came back (empty, or JSON cut short), the request is sent once more with 2.5 times the budget, at most 4,600 tokens (`apiChat`, `readChatStream`). This applies to every Cloud API call, not just the advisor.
+- **Rule-made thoughts say so.** A thought made by the built-in rules shows a small "built-in rules" tag next to the agent's name. Its tooltip says no model answered. Model thoughts carry no tag, following the rule that a label appears only when it carries information.
+- **Held-back repeats can be seen.** What the guard holds back is kept in `board.held`, up to 30 items. When anything is held, the Crew popover shows one quiet line: "Held back N ideas you turned down · Show". The list says:
+  - what was held back
+  - what it repeats, and when and why that was turned down
+
+  Each item has **Dismiss** and **Show anyway**. Showing a thought puts it back on its card; showing a direction adds it as a draft. Nothing is counted on a badge and nothing interrupts.
+- **More rejection signals.** They fall into two kinds:
+
+  | Signal | Strength | Effect |
+  |---|---|---|
+  | Discard a draft, ignore a thought, decline a suggestion, adopt another direction | strong (as before) | told to agents; repeats held back |
+  | Remove text from an agent's card (new) | strong | told to agents; repeats held back |
+  | Try again on drafts (new) | soft | told to agents only |
+  | Ask for a fresh angle on a thought (new) | soft | told to agents only |
+  | Delete a kept card an agent made (new) | soft | told to agents only |
+
+  Soft signals mean "not this one" rather than "never this", so they never hold anything back. Two cases leave no record: accepting an agent's own suggested edit doesn't count as you removing text, and a Try again that fails takes its record back. Undoing a delete also withdraws the record.
+
+**Tests**
+
+The new suite has 63 passing checks and 2 known limitations: the 39 above plus 24 P0 checks, run on a fresh board. The smoke test passes 136/136, and the colour lint and app sync checks pass.
+
+The live models were re-run with 5 runs each:
+- Claude Haiku 5.5 reproduced the decision-memory result: it repeated a discarded direction 0 of 5 times with memory and 5 of 5 without.
+- For Qwen3-VL-8B, the keyword check flagged 1 of 5 runs with memory, the same as without. The guard didn't treat that run as a repeat. Repeated runs now log the model's raw directions so a disagreement like this can be checked.
+
+**Still open**
+
+- Held items are only listed. The thoughts the crew already showed have no history of their own.
+- Soft signals have no effect beyond the prompt, so whether a repeat after Try again still happens is up to the model.
+- The "edited out" rule works on sentences. Editing within a sentence is not recorded.

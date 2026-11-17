@@ -723,8 +723,14 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-state.busy i{background:var(--B)}
 .sp-state.err{color:var(--D)}
 .sp-state.err i{background:var(--D)}
-.sp-route{display:grid;gap:8px}
-.sp-mode-note{font:450 11px/1.4 var(--ui);color:var(--label-3)}
+.sp-ai{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.sp-ai-txt{display:grid;gap:3px;min-width:0}
+.sp-ai-txt b{font:600 12.5px/1.2 var(--ui);color:var(--label)}
+.sp-ai-txt small{font:450 11px/1.3 var(--ui);color:var(--label-3)}
+.sp-ai .sys-sw:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:2px}
+.sp-first{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 2px;border-top:.5px solid var(--hair);font:500 12px/1.2 var(--ui);color:var(--label-2)}
+.sp-seg.sp-seg2{grid-template-columns:repeat(2,minmax(0,1fr));width:auto;min-width:0;flex:0 1 196px}
+.sp-services.idle .sp-first{opacity:.5}
 .sp-htxt small.sp-now{display:grid;grid-template-columns:6px minmax(0,1fr);column-gap:7px;row-gap:3px;align-items:center;margin-top:4px;white-space:normal;color:var(--label-2)}
 .sp-now i{flex:none;width:6px;height:6px;border-radius:50%;background:var(--label-4)}
 .sp-now.ok i{background:var(--C)}
@@ -735,7 +741,7 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-now-issue.err{color:color-mix(in srgb,var(--D) 88%,var(--label))}
 .sp-now.warn i{background:var(--warn,#d97706)}
 .sp-now.err i{background:var(--D)}
-.sp-route+.sp-services{margin-top:-4px}
+.sp-ai+.sp-services{margin-top:-4px}
 .sp-services.idle .sp-svc-main,.sp-services.idle .sp-models,.sp-services.idle .sp-prog{opacity:.5}
 .sp-services.idle .sp-state{color:var(--label-3)}
 .sp-services.idle .sp-state i{background:var(--label-4)}
@@ -5706,6 +5712,7 @@ function renderCrew(){
 function setAiPref(pref){
   aiPref=pref==="local"||pref==="api"?pref:"auto";
   store.set(".aiPref",aiPref);
+  if(aiPref!=="local")store.set(".aiPrefOn",aiPref);
   renderCrew();
   renderCopilot?.();
 }
@@ -5851,9 +5858,9 @@ function renderStudioPop(){
   const sum=connSummary();
   const apiH=apiHealthNow(),apiLab=apiHealthLabel(apiH);
   const manual=typeof connManualCheck!=="undefined"&&connManualCheck;
-  const modeNote=aiPref==="local"?L("Never uses a model.","从不使用模型。")
-    :aiPref==="api"?L("Always uses your Cloud API.","始终使用你的云端 API。")
-    :L("Local AI if running, else Cloud API, else built-in rules.","优先本地模型，其次云端 API，最后内置规则。");
+  /* "Use first" only exists when there is a choice: both engines set up (or Cloud API already preferred). */
+  const firstPref=aiPref==="local"?store.get(".aiPrefOn","auto"):aiPref;
+  const showFirst=(hasApi()&&(studioState.reachable||studioLauncher===true))||firstPref==="api";
   const st=(cls,txt,tip="",attr="")=>`<span class="sp-state ${cls}"${tip?` title="${esc(tip)}"`:""}${attr}><i></i>${esc(txt)}</span>`;
   const btn=(sp,txt,{kind="",tip=""}={})=>`<button type="button" class="sp-mini${kind?" "+kind:""}" data-sp="${sp}"${tip?` title="${esc(tip)}"`:""}>${esc(txt)}</button>`;
   const row=({name,state,detail,detailTip,acts,extra="",attr=""})=>`<div class="sp-svc${extra?" col":""}"${attr}>
@@ -5922,17 +5929,14 @@ function renderStudioPop(){
       <div class="sp-htxt"><b>${esc(headTitle)}</b><small class="sp-now ${sum.dot}" title="${esc(sum.mode+(sum.issue?" · "+sum.issue:""))}"><i></i><span class="sp-now-mode">${esc(sum.mode)}</span>${sum.issue?`<span class="sp-now-issue ${sum.tone}">${esc(sum.issue)}</span>`:""}</small></div>
       <button type="button" class="sp-refresh ${studioChecking?"spin":""}" data-sp="refresh" title="${L("Test all connections","测试全部连接")}" aria-label="${L("Test all connections","测试全部连接")}">${ic("redo")}</button>
     </div>
-    <div class="sp-route">
-      <div class="sp-seg" role="group" aria-label="${L("AI routing mode","AI 路由模式")}">
-        <button type="button" data-sp="pref" data-val="auto" aria-pressed="${aiPref==="auto"}">${L("Auto","自动")}</button>
-        <button type="button" data-sp="pref" data-val="api" aria-pressed="${aiPref==="api"}">${L("Cloud API","云端 API")}</button>
-        <button type="button" data-sp="pref" data-val="local" aria-pressed="${aiPref==="local"}">${L("Rules only","仅规则")}</button>
-      </div>
-      ${aiPref==="auto"?`<div class="sp-mode-note">${esc(modeNote)}</div>`:""}
+    <div class="sp-ai">
+      <span class="sp-ai-txt"><b id="sp-ai-l">${L("AI models","AI 模型")}</b><small>${idle?L("Off · the crew uses built-in rules","已关闭 · 助手使用内置规则"):L("The crew uses a model when one is available","有可用模型时，助手会使用它")}</small></span>
+      <button type="button" class="sys-sw" role="switch" aria-checked="${!idle}" aria-labelledby="sp-ai-l" data-sp="ai"></button>
     </div>
     <div class="sp-services${idle?" idle":""}">
       ${row({name:L("Local AI","本地模型"),state:stState,detail:stDetail,acts:stAct,extra:modelsHtml+progHtml})}
       ${row({name:L("Cloud API","云端 API"),state:apiState,detail:apiDetail,acts:apiAct})}
+      ${showFirst?`<div class="sp-first"><span id="sp-first-l">${L("Use first","优先使用")}</span><div class="sp-seg sp-seg2" role="group" aria-labelledby="sp-first-l"><button type="button" data-sp="first" data-val="auto" aria-pressed="${firstPref!=="api"}">${L("Local AI","本地模型")}</button><button type="button" data-sp="first" data-val="api" aria-pressed="${firstPref==="api"}">${L("Cloud API","云端 API")}</button></div></div>`:""}
     </div>
     <div class="sp-group">
       <div class="sp-subhdr">${L("Images & video","图像与视频")}</div>
@@ -13596,6 +13600,8 @@ $("studioPop")?.addEventListener("click",async e=>{
   const act=b.dataset.sp;
   if(act==="refresh"||act==="wake"){connManualCheck=act==="refresh";try{await refreshStudioFromPop({wake:act==="wake"})}finally{connManualCheck=false;renderStudioPop()}return}
   if(act==="pref"){setAiPref(b.dataset.val);return}
+  if(act==="ai"){setAiPref(aiPref==="local"?store.get(".aiPrefOn","auto"):"local");renderStudioPop();return}
+  if(act==="first"){if(aiPref==="local")store.set(".aiPrefOn",b.dataset.val==="api"?"api":"auto");else setAiPref(b.dataset.val);renderStudioPop();return}
   if(act==="model"){await switchStudioModel(b.dataset.id);return}
   if(act==="del-model"){await deleteStudioModel(b.dataset.id);return}
   if(act==="check-img"){imgChecking=true;renderStudioPop();await refreshImageService({quiet:true});imgChecking=false;renderStudioPop();return}

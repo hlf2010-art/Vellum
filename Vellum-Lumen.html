@@ -1239,22 +1239,38 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
    stays put when a wide table scrolls. */
 .tbl-wrap{max-width:100%;overflow-x:auto;scrollbar-width:thin}
 .cp-bubble .tbl-wrap{margin:8px 0 10px}
-.tbl{--tbl-bg:var(--card);width:100%;border-collapse:separate;border-spacing:0;font:450 12.5px/1.45 var(--ui);color:var(--label)}
+.tbl{--tbl-bg:var(--card);width:100%;border-collapse:separate;border-spacing:0;font:450 12.5px/1.5 var(--ui);color:var(--label);overflow-wrap:normal;word-break:normal}
 .tbl caption{caption-side:top;text-align:left;padding:0 10px 8px;font:600 13px/1.3 var(--ui);letter-spacing:-.01em;color:var(--label)}
-.tbl th,.tbl td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:.5px solid var(--hair-2);background:var(--tbl-bg)}
-.tbl th{padding-top:4px;font:600 11.5px/1.3 var(--ui);color:var(--label-2);border-bottom-color:var(--hair-2);white-space:nowrap}
+.tbl th,.tbl td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:.5px solid var(--hair-2);background:var(--tbl-bg)}
+.tbl th:first-child,.tbl td:first-child{padding-left:10px}.tbl th:last-child,.tbl td:last-child{padding-right:10px}
+/* room to breathe: text columns never squeeze below ~9 characters, long text wraps at ~32; a wide table scrolls instead */
+.tbl th.w-first{min-width:120px}.tbl th.w-text{min-width:96px}.tbl th.w-long{min-width:180px}.tbl th.w-tag{min-width:88px}
+.tbl td:not(.num):not(.lvl){max-width:300px}
+.tbl th+th,.tbl td+td{border-left:.5px solid var(--hair)}
+.tbl th{padding-top:6px;font:600 11.5px/1.3 var(--ui);color:var(--label-2);border-bottom-color:var(--hair-2);white-space:nowrap}
 .tbl tbody tr:last-child td{border-bottom:0}
 .tbl th:first-child,.tbl td:first-child{position:sticky;left:0;z-index:1}
 .tbl td:first-child{font-weight:560}
 .tbl tbody tr:hover td{background:color-mix(in srgb,var(--label) 4%,var(--tbl-bg))}
 .tbl .num{text-align:right;font-variant-numeric:tabular-nums}
 .tbl td.lvl{white-space:nowrap}
-.tbl-lvl{display:inline-block;width:7px;height:7px;margin:0 7px 1px 0;border-radius:50%;background:var(--c)}
+.tbl-tag{display:inline-block;padding:1px 8px;border-radius:5px;font-weight:550;background:color-mix(in srgb,var(--c) 15%,var(--tbl-bg));color:color-mix(in srgb,var(--c) 62%,var(--label))}
+/* more to the right: fade the edge until scrolled to the end */
+.tbl-sort{display:inline-flex;align-items:center;gap:4px;font:inherit;color:inherit;border-radius:5px;margin:-2px -4px;padding:2px 4px;white-space:nowrap}
+.tbl-sort:hover{background:var(--hover);color:var(--label)}
+.tbl-sort:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.tbl-arr{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity var(--d-quick),transform var(--d-quick)}
+.tbl-sort:hover .tbl-arr{opacity:.45}
+th[aria-sort="ascending"] .tbl-arr,th[aria-sort="descending"] .tbl-arr{opacity:1}
+th[aria-sort="ascending"] .tbl-arr{transform:rotate(180deg)}
+th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
+.tbl-wrap.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
 .tbl td.num{position:relative;white-space:nowrap}
 /* magnitude: a full-width faint track with a neutral fill, so it reads as "how much of the column's max", not a link */
-.tbl-bar{position:absolute;left:10px;right:10px;bottom:4px;height:3px;border-radius:3px;background:color-mix(in srgb,var(--label) 7%,transparent)}
+.tbl-bar{position:absolute;left:14px;right:14px;top:calc(10px + 1.5em + 3px);height:3px;border-radius:3px;background:color-mix(in srgb,var(--label) 7%,transparent)}
 .tbl-bar::after{content:"";position:absolute;right:0;top:0;bottom:0;width:calc(100% * var(--v,0));border-radius:3px;background:color-mix(in srgb,var(--label) 30%,transparent)}
-.tbl td.num{padding-bottom:12px}
+.tbl td.num{padding-bottom:16px}
+.tbl td.num:last-child .tbl-bar{right:10px}
 .tbl-n{position:relative}
 .tbl.cmp td.key{color:var(--label-2);font-weight:560;width:32%}
 .tbl.cmp th.lead{color:var(--label)}
@@ -5308,11 +5324,16 @@ function mdBlocksHtml(src){
         const sc=SCALES.find(sc=>vs.filter(Boolean).length&&vs.every(v=>!v||sc.includes(v)));if(!sc)return null;
         return vs.map(v=>{if(!v)return null;const q=sc.indexOf(v)/(sc.length-1),good=dir>0?q:1-q;return good>.66?"good":good<.34?"bad":"mid"})});
       const LVL={good:"var(--C)",mid:"var(--warn,#d97706)",bad:"var(--D)"};
-      const cell=(r,ci)=>{const t=mdInline(r[ci]||""),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)];
-        if(lv)return `<td class="lvl"><i class="tbl-lvl" style="--c:${LVL[lv]}" aria-hidden="true"></i>${t}</td>`;
-        if(!c||c[raw.indexOf(r)]==null)return `<td${c?' class="num"':""}>${t}</td>`;
-        return `<td class="num" style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${t}</span></td>`};
-      out.push(`<div class="tbl-wrap"><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th${cols[ci]?' class="num"':""}>${c}</th>`).join("")}</tr></thead><tbody>${raw.map(r=>`<tr>${hdr.map((_,ci)=>cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div>`);
+      // Column width from content (Notion-like): columns keep a comfortable width and the table scrolls instead of squeezing.
+      const avgLen=ci=>{const ts=raw.map(r=>(r[ci]||"").replace(/[*_`]/g,"")).filter(Boolean);return ts.length?ts.reduce((a,t)=>a+t.length,0)/ts.length:0};
+      const colW=hdr.map((_,ci)=>cols[ci]?"":levels[ci]?"w-tag":ci===0?"w-first":avgLen(ci)>28?"w-long":"w-text");
+      const sortKey=(r,ci)=>{const v=(r[ci]||"").replace(/\*\*/g,"").trim();const m=cols[ci]&&v.match(NUM);if(m)return (m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,""));
+        const sc=levels[ci]&&SCALES.find(sc=>sc.includes(v.toLowerCase().replace(/^med$/,"medium")));return sc?sc.indexOf(v.toLowerCase().replace(/^med$/,"medium")):null};
+      const cell=(r,ci)=>{const t=mdInline(r[ci]||""),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)],k=sortKey(r,ci),dv=k==null?"":` data-v="${k}"`;
+        if(lv)return `<td class="lvl"${dv}><span class="tbl-tag" style="--c:${LVL[lv]}">${t}</span></td>`;
+        if(!c||c[raw.indexOf(r)]==null)return `<td${c?' class="num"':""}${dv}>${t}</td>`;
+        return `<td class="num"${dv} style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${t}</span></td>`};
+      out.push(`<div class="tbl-wrap"><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="none"`:""}>${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${raw.map((r,ri)=>`<tr data-i="${ri}">${hdr.map((_,ci)=>cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div>`);
       continue;
     }
     if(/^[-*•]\s+/.test(tr)){
@@ -6004,6 +6025,17 @@ function toggleStudioPopover(force){
   if(studioPopOpen&&studioLauncher===null)probeStudioLauncher().then(v=>{studioLauncher=v;renderStudioPop()});
   if(studioPopOpen&&hasApi()){const h=apiHealthNow();if(h.k==="unknown"||(h.k!=="checking"&&Date.now()-h.at>120000))testApi({quiet:true})}
 }
+/* Tables that are wider than their space fade at the right edge until scrolled to the end. */
+(()=>{const fit=w=>w.classList.toggle("more",w.scrollWidth-w.clientWidth-w.scrollLeft>2);let q=0;
+  new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;document.querySelectorAll(".tbl-wrap:not([data-fit])").forEach(w=>{w.dataset.fit="1";fit(w)})})}).observe(document.body,{childList:true,subtree:true});
+  document.addEventListener("scroll",e=>{if(e.target.classList?.contains("tbl-wrap"))fit(e.target)},true);addEventListener("resize",()=>document.querySelectorAll(".tbl-wrap").forEach(fit));})();
+document.addEventListener("click",e=>{const b=e.target.closest(".tbl-sort");if(!b)return;
+  const th=b.closest("th"),tbl=th.closest("table"),ci=[...th.parentElement.children].indexOf(th),body=tbl.tBodies[0];
+  const next={none:"ascending",ascending:"descending",descending:"none"}[th.getAttribute("aria-sort")||"none"];
+  tbl.querySelectorAll("th[aria-sort]").forEach(x=>x.setAttribute("aria-sort","none"));th.setAttribute("aria-sort",next);
+  const key=tr=>{const td=tr.children[ci];return td?.dataset.v!=null&&td.dataset.v!==""?+td.dataset.v:(td?.textContent||"").trim().toLowerCase()};
+  const rows=[...body.rows].sort((a,b)=>{if(next==="none")return +a.dataset.i - +b.dataset.i;const x=key(a),y=key(b);const c=typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y));return next==="ascending"?c:-c});
+  rows.forEach(r=>body.appendChild(r));});
 let connManualCheck=false;
 /* Studio AI launcher: the local page server (Vellum app / serve_vellum.py) can open the bundled
    service. A page opened any other way can't start programs, so it keeps the instruction. */

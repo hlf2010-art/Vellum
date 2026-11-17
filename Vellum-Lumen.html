@@ -697,7 +697,7 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-head{display:flex;align-items:center;gap:10px;min-width:0}
 .sp-htxt{flex:1;min-width:0}
 .sp-htxt b{display:block;font:650 14px/1.2 var(--ui);letter-spacing:-.018em}
-.sp-htxt small{display:block;margin-top:2px;font:500 11.5px/1.25 var(--ui);color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.sp-htxt small{display:block;margin-top:2px;font:500 11.5px/1.25 var(--ui);color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-refresh{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:transparent;color:var(--label-3);flex:none;transition:background var(--d-quick),color var(--d-quick),transform var(--d-press)}
 .sp-refresh:hover{background:var(--hover);color:var(--label)}
 .sp-refresh:active{transform:scale(.92)}
@@ -714,17 +714,37 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-svc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
 .sp-svc-main{flex:1;min-width:0}
 .sp-svc-top{display:flex;align-items:center;gap:7px;font:600 12.5px/1.2 var(--ui);color:var(--label);min-width:0}
-.sp-svc-sub{margin-top:2px;font:450 11px/1.3 var(--ui);color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.sp-svc-sub{margin-top:2px;font:450 11px/1.3 var(--ui);color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sp-state{display:inline-flex;align-items:center;gap:5px;font:500 11px/1 var(--ui);color:var(--label-3);white-space:nowrap}
 .sp-state i{width:5px;height:5px;border-radius:50%;background:var(--label-4)}
 .sp-state.ok{color:var(--C)}
-.sp-state.ok i{background:var(--C);box-shadow:0 0 6px var(--C)}
+.sp-state.ok i{background:var(--C)}
 .sp-state.busy{color:var(--B)}
 .sp-state.busy i{background:var(--B)}
 .sp-state.err{color:var(--D)}
 .sp-state.err i{background:var(--D)}
-.sp-mode-note{padding:2px 2px 0;font:450 11px/1.4 var(--ui);color:var(--label-3)}
-.sp-mode-note.warn{color:color-mix(in srgb,var(--warn,#d97706) 85%,var(--label))}
+.sp-route{display:grid;gap:6px}
+.sp-mode-note{font:450 11px/1.4 var(--ui);color:var(--label-3)}
+.sp-htxt small.sp-now{display:flex;align-items:center;gap:6px;margin-top:4px;font-variant-numeric:normal;color:var(--label-2)}
+.sp-now i{flex:none;width:6px;height:6px;border-radius:50%;background:var(--label-4)}
+.sp-now.ok i{background:var(--C)}
+.sp-now.busy i{background:var(--B)}
+.sp-htxt small.sp-now.warn{color:color-mix(in srgb,var(--warn,#d97706) 88%,var(--label))}
+.sp-now.warn i{background:var(--warn,#d97706)}
+.sp-htxt small.sp-now.err{color:color-mix(in srgb,var(--D) 88%,var(--label))}
+.sp-now.err i{background:var(--D)}
+.sp-services.idle .sp-svc{opacity:.5}
+.sp-services.idle .sp-state{color:var(--label-3)}
+.sp-services.idle .sp-state i{background:var(--label-4)}
+.sp-group{display:grid;gap:2px}
+.sp-group .sp-subhdr{padding:0;margin:4px 0 2px;color:var(--label-3)}
+.sp-svc>.sp-svc-row{flex:1}
+.sp-group .sp-svc{border-top:0;padding-top:4px}
+.sp-services.idle .sp-hdr-acts .sp-mini.primary{color:var(--label);background:transparent;box-shadow:inset 0 0 0 1px var(--hair-2)}
+.sp-mini.primary{color:var(--on-act);background:var(--act);box-shadow:none}
+.sp-svc .sp-hdr-acts .sp-mini.primary{color:var(--on-act);background:var(--act);box-shadow:none}
+.sp-svc .sp-hdr-acts .sp-mini.primary:hover{background:var(--act);filter:brightness(1.08)}
+@media (pointer:coarse){.sp-mini{height:36px;padding:0 14px;font-size:13px}.sp-seg button{height:36px;font-size:13px}.sp-refresh{width:40px;height:40px}}
 .sp-acts{display:flex;gap:6px;flex:none}
 .sp-models{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;min-width:0}
 .sp-subhdr{margin-top:4px;padding:0 6px;font:600 10px/1.2 var(--ui);letter-spacing:.05em;text-transform:uppercase;color:var(--label-4)}
@@ -5782,28 +5802,58 @@ function renderStudioPop(){
   const mediaUp=imgSvc.connected&&(avImgs.length||avVids.length);
   const svcStopped=imgSvc.serviceStatus==="stopped";
   const headTitle=L("Connection","连接");
-  const headSub=mode.kind==="studio"?L(`Using Local AI · ${modelShort||"Qwen3-VL"}${studioState.latency!=null?" · "+studioState.latency+"ms":""}`,`正在使用本地 AI · ${modelShort||"Qwen3-VL"}`)
-    :mode.kind==="loading"?L("Starting Local AI…","正在启动本地 AI…")
-    :mode.kind==="api"&&apiBad()?L(`Cloud API not working · ${apiHealthLabel().txt}`,`云端 API 不可用 · ${apiHealthLabel().txt}`)
-    :mode.kind==="api"?L(`Using Cloud API · ${(apiCfg.model||"").split("/").pop()}`,`正在使用云端 API · ${(apiCfg.model||"").split("/").pop()}`)
-    :mode.kind==="claude"?L("Using Claude","正在使用 Claude")
-    :aiPref==="local"?L("Built-in rules only, by your choice","按你的选择只用内置规则")
-    :L("No model connected · built-in rules only","未连接模型 · 只用内置规则");
-  const stStateHtml=stReady?`<span class="sp-state ok"><i></i>${L("Ready","就绪")}</span>`
-    :stLoad?`<span class="sp-state busy"><i></i>${esc(studioState.progress&&studioState.progress.startsWith("Downloading")?L("Downloading","下载中"):L("Warming","预热中"))}</span>`
-    :`<span class="sp-state"><i></i>${stStopped?L("Stopped","已停止"):hasApi()&&aiPref!=="local"?L("Not running · not needed","未运行 · 当前不需要"):L("Not running","未运行")}</span>`;
-  const stActHtml=(stReady||stLoad)
-    ?`<button type="button" class="sp-mini danger" data-sp="stop-local" title="${esc(L("Stop local model and free memory","停止本地模型并释放内存"))}">${L("Stop","停止")}</button>`
-    :`<button type="button" class="sp-mini" data-sp="wake" title="${esc(L("Start the local model","启动本地模型"))}">${L("Start","启动")}</button>`;
-  const imStateHtml=svcStopped?`<span class="sp-state"><i></i>${L("Stopped","已停止")}</span>`
-    :mediaUp?`<span class="sp-state ok"><i></i>${L("Ready","就绪")}</span>`
-    :`<span class="sp-state"><i></i>${imgSvc.connected?L("Warming","等待中"):L("Offline","离线")}</span>`;
-  const imActHtml=(imgSvc.connected&&!svcStopped)
-    ?`<button type="button" class="sp-mini danger" data-sp="stop-svc" title="${esc(L("Stop Windows ComfyUI (image & video) and free VRAM","停止 Windows ComfyUI（同时停止出图和出视频）并释放显存"))}">${L("Stop","停止")}</button>`
-    :`<button type="button" class="sp-mini" data-sp="check-img" title="${esc(L("Test the connection to Media Studio","测试与媒体工作室的连接"))}">${imgChecking?L("Testing…","测试中…"):L("Test","测试")}</button>`;
-  const imSub=svcStopped?L("Stopped · start manually on Windows","已停止 · 需在 Windows 手动启动")
-    :(mediaUp?[avImgs.length?`${avImgs[0].name||avImgs[0].id}${avImgs.length>1?` +${avImgs.length-1}`:""}`:"",avVids.length?"MiniMax H3":""].filter(Boolean).join(" · ")
-    :imgSvc.connected?L("Waiting for model","等待模型就绪"):L("Not running","Windows 端未连接"));
+  /* One answer up top: what the crew uses right now, and whether that works. */
+  const apiH=apiHealthNow(),apiLab=apiHealthLabel(apiH),apiFailing=hasApi()&&API_BAD.has(apiH.k);
+  const apiModelShort=(apiCfg.model||"").split("/").pop();
+  const head=mode.kind==="studio"?{k:"ok",t:L(`Using Local AI · ${modelShort||"Qwen3-VL"}`,`正在使用本地 AI · ${modelShort||"Qwen3-VL"}`)}
+    :mode.kind==="loading"?{k:"busy",t:L("Starting Local AI…","正在启动本地 AI…")}
+    :mode.kind==="api"&&apiFailing?{k:"err",t:L(`Using built-in rules · Cloud API: ${apiLab.txt.toLowerCase()}`,`正在使用内置规则 · 云端 API：${apiLab.txt}`)}
+    :mode.kind==="api"?{k:apiH.k==="ok"?"ok":apiH.k==="ratelimit"?"busy":"",t:L(`Using Cloud API · ${apiModelShort}`,`正在使用云端 API · ${apiModelShort}`)}
+    :mode.kind==="claude"?{k:"ok",t:L("Using Claude","正在使用 Claude")}
+    :aiPref==="local"?{k:"warn",t:L("AI is off · the crew uses basic built-in rules","AI 已关闭 · 助手只用基础的内置规则")}
+    :aiPref==="api"?{k:"warn",t:L("Using built-in rules · Cloud API isn't set up","正在使用内置规则 · 云端 API 尚未设置")}
+    :{k:"warn",t:L("No model connected · using built-in rules","未连接模型 · 正在使用内置规则")};
+  const modeNote=aiPref==="local"?L("Never uses a model.","从不使用模型。")
+    :aiPref==="api"?L("Always uses your Cloud API.","始终使用你的云端 API。")
+    :L("Local AI if running, else Cloud API, else built-in rules.","优先本地模型，其次云端 API，最后内置规则。");
+  const inUse=mode.kind==="studio"?"local":(mode.kind==="api"&&!apiFailing)?"api":"";
+  const nothingLive=!mode.live&&mode.kind!=="loading";
+  const st=(cls,txt,tip="",attr="")=>`<span class="sp-state ${cls}"${tip?` title="${esc(tip)}"`:""}${attr}><i></i>${esc(txt)}</span>`;
+  const btn=(sp,txt,{kind="",tip=""}={})=>`<button type="button" class="sp-mini${kind?" "+kind:""}" data-sp="${sp}"${tip?` title="${esc(tip)}"`:""}>${esc(txt)}</button>`;
+  const row=({name,state,detail,detailTip,acts,extra="",attr=""})=>`<div class="sp-svc${extra?" col":""}"${attr}>
+        <div class="sp-svc-row">
+          <div class="sp-svc-main">
+            <div class="sp-svc-top"><span>${name}</span>${state}</div>
+            <div class="sp-svc-sub" title="${esc(detailTip||detail)}">${esc(detail)}</div>
+          </div>
+          <div class="sp-hdr-acts">${acts}</div>
+        </div>${extra}
+      </div>`;
+  /* Local AI */
+  const stState=inUse==="local"?st("ok",L("In use","使用中"))
+    :stReady?st("ok",L("Ready","就绪"))
+    :stLoad?st("busy",studioState.progress&&studioState.progress.startsWith("Downloading")?L("Downloading","下载中"):L("Starting","启动中"))
+    :st("",stStopped?L("Stopped","已停止"):L("Not running","未运行"));
+  const stDetail=(stReady||stLoad)&&modelShort?modelShort:L("Runs on this computer","在这台电脑上运行");
+  const stAct=(stReady||stLoad)?btn("stop-local",L("Stop","停止"),{tip:L("Stop the local model and free memory","停止本地模型并释放内存")})
+    :btn("wake",L("Start","启动"),{tip:L("Start the local model (needs Start Studio AI.command running)","启动本地模型（需要先运行 Start Studio AI.command）")});
+  const models=Array.isArray(studioState.models)?studioState.models:[];
+  const gb=b=>b?(b/1e9).toFixed(1)+" GB":"";
+  const modelsHtml=models.length?`<div class="sp-models">${models.map(m=>{
+    const meta=[m.tier,gb(m.bytes)].filter(Boolean).join(" · ");
+    const tag=m.active?(stReady?L("Active","运行中"):stLoad?L("Loading","加载中"):L("Selected","已选")):(m.cached?L("Use","切换"):L("Get","下载"));
+    const delBtn=m.cached&&!m.active?`<button type="button" class="sp-m-del" data-sp="del-model" data-id="${esc(m.id)}" title="${esc(L("Remove","移除"))} ${esc(m.label)} (${esc(gb(m.bytes))})" aria-label="${esc(L("Remove","移除"))} ${esc(m.label)}">${ic("trash")}</button>`:"";
+    return `<div class="sp-m-wrap" data-active="${!!m.active}" data-live="${!!(m.active&&stReady)}"><button type="button" class="sp-m" data-sp="model" data-id="${esc(m.id)}" aria-pressed="${!!m.active}"><span class="sp-m-info"><b>${esc(m.label)}</b><span>${esc(meta)}</span></span></button>${delBtn}<button type="button" class="sp-m-tag" data-sp="model" data-id="${esc(m.id)}">${esc(tag)}</button></div>`;
+  }).join("")}</div>`:"";
+  const progHtml=studioState.error?`<div class="sp-prog err">${esc(studioState.error)}</div>`:studioState.progress?`<div class="sp-prog">${esc(studioState.progress)}</div>`:"";
+  /* Cloud API */
+  const apiState=!hasApi()?st("",apiCfg.key.trim()?L("Off","已关闭"):L("Not set up","未设置"))
+    :inUse==="api"&&apiH.k==="ok"?st("ok",L("In use","使用中"),apiLab.tip,` data-api-health="${apiH.k}"`)
+    :st(apiLab.cls,apiLab.txt,apiLab.tip,` data-api-health="${apiH.k}"`);
+  const apiDetail=hasApi()?`${apiModelShort} · ${apiHostOf(apiCfg.baseUrl)}`:L("Your own OpenAI-compatible key","使用你自己的 OpenAI 兼容密钥");
+  const apiAct=!hasApi()?btn("api",apiCfg.key.trim()?L("Turn on","开启"):L("Set up","设置"),{kind:nothingLive?"primary":""})
+    :apiFailing?btn("api",apiH.k==="auth"?L("Fix key","修正密钥"):L("Fix","修正"),{kind:"primary"})
+    :btn("api",L("Edit","编辑"),{tip:L("Change URL, model or key","修改地址、模型或密钥")});
   const chosenImg=pickImageModel();
   const imgModelsHtml=avImgs.length?`<div class="sp-subhdr">${L("Image","图像")}</div><div class="sp-models">${avImgs.map(m=>{
     const on=chosenImg?.id===m.id;
@@ -5816,68 +5866,35 @@ function renderStudioPop(){
     const tag=m.available?L("Default","默认"):L("Offline","未就绪");
     return `<div class="sp-m-wrap" data-active="${!!m.available}"><div class="sp-m" aria-pressed="${!!m.available}" title="${esc(m.reason||m.name||m.id)}" style="cursor:default"><span class="sp-m-info"><b>${esc(cleanName)}</b><span>${specTxt}</span></span><span class="sp-m-tag">${tag}</span></div></div>`;
   }).join("")}</div>`:"";
-  const apiModelShort=hasApi()?(apiCfg.model||"").split("/").pop():"";
-  const apiH=apiHealthNow(),apiLab=apiHealthLabel(apiH);
-  const apiSub=hasApi()?[apiHostOf(apiCfg.baseUrl),apiModelShort].filter(Boolean).join(" · ")
-    :apiCfg.key.trim()?L("Turned off","已关闭"):L("Not set up","未设置");
-  const modeNote=aiPref==="local"?{warn:true,t:L("AI is off. The crew uses simple built-in rules, so results will be basic.","AI 已关闭。助手只用简单的内置规则，结果会比较基础。")}
-    :aiPref==="api"?(hasApi()?{t:L("Always uses the Cloud API.","始终使用云端 API。")}:{warn:true,t:L("Cloud API isn't set up, so built-in rules are used for now.","云端 API 尚未设置，暂时使用内置规则。")})
-    :{t:L("Local AI when it's running, then Cloud API, then built-in rules.","本地模型运行时优先使用，其次云端 API，最后内置规则。")};
-  const models=Array.isArray(studioState.models)?studioState.models:[];
-  const gb=b=>b?(b/1e9).toFixed(1)+" GB":"";
-  const modelsHtml=models.length?`<div class="sp-models">${models.map(m=>{
-    const meta=[m.tier,gb(m.bytes)].filter(Boolean).join(" · ");
-    const tag=m.active?(stReady?L("Active","运行中"):stLoad?L("Loading","加载中"):L("Selected","已选")):(m.cached?L("Use","切换"):L("Get","下载"));
-    const delBtn=m.cached&&!m.active?`<button type="button" class="sp-m-del" data-sp="del-model" data-id="${esc(m.id)}" title="${esc(L("Remove","移除"))} ${esc(m.label)} (${esc(gb(m.bytes))})" aria-label="${esc(L("Remove","移除"))} ${esc(m.label)}">${ic("trash")}</button>`:"";
-    return `<div class="sp-m-wrap" data-active="${!!m.active}" data-live="${!!(m.active&&stReady)}"><button type="button" class="sp-m" data-sp="model" data-id="${esc(m.id)}" aria-pressed="${!!m.active}"><span class="sp-m-info"><b>${esc(m.label)}</b><span>${esc(meta)}</span></span></button>${delBtn}<button type="button" class="sp-m-tag" data-sp="model" data-id="${esc(m.id)}">${esc(tag)}</button></div>`;
-  }).join("")}</div>`:"";
-  const progHtml=studioState.error?`<div class="sp-prog err">${esc(studioState.error)}</div>`:studioState.progress?`<div class="sp-prog">${esc(studioState.progress)}</div>`:"";
-  const showHint=!models.length&&!stReady&&!stLoad&&!stStopped&&!studioState.error&&aiPref==="auto"&&!hasApi();
-  const oldLauncherHint=stReady&&!models.length?`<div class="sp-hint">${L("Relaunch","重新启动")} <code>Start Studio AI.command</code> ${L("to switch models.","以切换本地模型。")}</div>`:"";
+  /* Media Studio: separate from routing */
+  const imState=svcStopped?st("",L("Stopped","已停止")):mediaUp?st("ok",L("Ready","就绪")):imgSvc.connected?st("busy",L("Starting","启动中")):st("",L("Not running","未运行"));
+  const imDetail=mediaUp?[avImgs.length?`${avImgs[0].name||avImgs[0].id}${avImgs.length>1?` +${avImgs.length-1}`:""}`:"",avVids.length?"MiniMax H3":""].filter(Boolean).join(" · ")
+    :L("Start it on your Windows PC","请在 Windows 电脑上启动");
+  const imAct=(imgSvc.connected&&!svcStopped)?btn("stop-svc",L("Stop","停止"),{tip:L("Stop Windows ComfyUI (image & video) and free VRAM","停止 Windows ComfyUI（同时停止出图和出视频）并释放显存")}):"";
+  const idle=aiPref==="local";
   pop.innerHTML=`<div class="sp-head">
-      <div class="sp-htxt"><b>${esc(headTitle)}</b><small title="${esc(headSub)}">${esc(headSub)}</small></div>
-      <button type="button" class="sp-refresh ${studioChecking?"spin":""}" data-sp="refresh" title="${L("Refresh engines","刷新服务状态")}" aria-label="${L("Refresh engines","刷新服务状态")}">${ic("redo")}</button>
+      <div class="sp-htxt"><b>${esc(headTitle)}</b><small class="sp-now ${head.k}" title="${esc(head.t)}"><i></i>${esc(head.t)}</small></div>
+      <button type="button" class="sp-refresh ${studioChecking?"spin":""}" data-sp="refresh" title="${L("Test all connections","测试全部连接")}" aria-label="${L("Test all connections","测试全部连接")}">${ic("redo")}</button>
     </div>
-    <div class="sp-row">
+    <div class="sp-route">
       <div class="sp-seg" role="group" aria-label="${L("AI routing mode","AI 路由模式")}">
         <button type="button" data-sp="pref" data-val="auto" aria-pressed="${aiPref==="auto"}">${L("Auto","自动")}</button>
         <button type="button" data-sp="pref" data-val="api" aria-pressed="${aiPref==="api"}">${L("Cloud API","云端 API")}</button>
         <button type="button" data-sp="pref" data-val="local" aria-pressed="${aiPref==="local"}">${L("Rules only","仅规则")}</button>
       </div>
+      <div class="sp-mode-note">${esc(modeNote)}</div>
     </div>
-    <div class="sp-mode-note${modeNote.warn?" warn":""}" role="status">${esc(modeNote.t)}</div>
-    <div class="sp-services">
-      ${models.length||!stReady?`<div class="sp-svc col">
-        <div class="sp-svc-row">
-          <div class="sp-svc-top"><span>${L("Local AI","本地模型")}</span>${stStateHtml}</div>
-          <div class="sp-hdr-acts">${stActHtml}</div>
-        </div>
-        ${modelsHtml}${progHtml}
-      </div>`:""}
-      ${(avImgs.length||allVids.length)?`<div class="sp-svc col">
-        <div class="sp-svc-row">
-          <div class="sp-svc-top"><span>${L("Media Studio","媒体工作室")}</span>${imStateHtml}</div>
-          <div class="sp-hdr-acts">${imActHtml}</div>
-        </div>
-        ${imgModelsHtml}${vidModelsHtml}
-      </div>`:`<div class="sp-svc col">
-        <div class="sp-svc-row">
-          <div class="sp-svc-main">
-            <div class="sp-svc-top"><span>${L("Media Studio","媒体工作室")}</span>${imStateHtml}</div>
-            <div class="sp-svc-sub" title="${esc(imSub)}">${esc(imSub)}</div>
-          </div>
-          <div class="sp-hdr-acts">${imActHtml}</div>
-        </div>
-      </div>`}
-      <div class="sp-svc">
-        <div class="sp-svc-main">
-          <div class="sp-svc-top"><span>${L("Cloud API","云端 API")}</span>${hasApi()?`<span class="sp-state ${apiLab.cls}" data-api-health="${apiH.k}" title="${esc(apiLab.tip)}"><i></i>${esc(apiLab.txt)}</span>`:""}</div>
-          <div class="sp-svc-sub" title="${esc(hasApi()?apiLab.tip:apiSub)}">${esc(apiSub)}</div>
-        </div>
-        <div class="sp-acts sp-hdr-acts">${hasApi()?`<button type="button" class="sp-mini" data-sp="test-api" ${apiH.k==="checking"?"disabled":""} title="${esc(L("Send a tiny test request","发送一个很小的测试请求"))}">${L("Test","测试")}</button>`:""}<button type="button" class="sp-mini" data-sp="api">${L("Set up","设置")}</button></div>
+    <div class="sp-services${idle?" idle":""}">
+      ${models.length||!stReady?row({name:L("Local AI","本地模型"),state:stState,detail:stDetail,acts:stAct,extra:modelsHtml+progHtml}):""}
+      ${row({name:L("Cloud API","云端 API"),state:apiState,detail:apiDetail,acts:apiAct})}
+    </div>
+    <div class="sp-group">
+      <div class="sp-subhdr">${L("Images & video","图像与视频")}</div>
+      <div class="sp-services">
+        ${row({name:L("Media Studio","媒体工作室"),state:imState,detail:imDetail,acts:imAct,extra:imgModelsHtml+vidModelsHtml})}
       </div>
     </div>
-    ${showHint?`<div class="sp-hint">${L("Run","运行")} <code>Start Studio AI.command</code> ${L("for local vision & voice.","以启用本地视觉与语音。")}</div>`:oldLauncherHint}
+    ${stReady&&!models.length?`<div class="sp-hint">${L("Relaunch","重新启动")} <code>Start Studio AI.command</code> ${L("to switch models.","以切换本地模型。")}</div>`:""}
 `;
 }
 function toggleStudioPopover(force){
@@ -5895,7 +5912,7 @@ async function refreshStudioFromPop({wake=true}={}){
   if(studioChecking)return;
   studioChecking=true;imgChecking=true;
   if(studioPopOpen)renderStudioPop();
-  await Promise.allSettled([checkStudioHealth({wake,quiet:true}),refreshImageService({quiet:true})]);
+  await Promise.allSettled([checkStudioHealth({wake,quiet:true}),refreshImageService({quiet:true}),wake&&hasApi()?testApi():null]);
   studioChecking=false;imgChecking=false;
   renderCrew();
 }

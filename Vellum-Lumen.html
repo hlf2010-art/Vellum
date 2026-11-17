@@ -1262,6 +1262,8 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .tbl-block{position:relative}
 .card .tbl-block{margin-top:12px;user-select:text;-webkit-user-select:text}
 .card .tbl-block .tbl-tools{margin-bottom:4px}
+.card .tbl-wrap{max-height:440px;overflow:auto;overscroll-behavior:contain}
+.card .tbl thead th{position:sticky;top:0;z-index:2}.card .tbl thead th:first-child{z-index:3}
 .cp-bubble .tbl-block{margin:8px 0 10px}.cp-bubble .tbl-block .tbl-wrap{margin:0}
 .tbl-tools{display:flex;align-items:center;gap:6px;min-height:26px;margin:0 0 6px}
 .tbl-tool{width:24px;height:24px;display:grid;place-items:center;border-radius:6px;color:var(--label-3)}
@@ -1302,6 +1304,7 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .tbl-line svg:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:4px}
 .tbl-grid{stroke:var(--hair-2);stroke-width:1;shape-rendering:crispEdges}
 .tbl-tick{font:450 11px var(--ui);fill:var(--label-3);font-variant-numeric:tabular-nums}
+.tbl-tick.x{font-variant-numeric:normal}
 .tbl-area{fill:var(--viz-1);fill-opacity:.1}
 .tbl-ln{fill:none;stroke:var(--viz-1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .tbl-end,.tbl-hdot{fill:var(--viz-1);stroke:var(--tbl-bg,var(--card));stroke-width:2}
@@ -4815,9 +4818,10 @@ function cardBody(n){
     return `<div class="in">${npHead}
     <h4 data-edit="title">${esc(n.title||"")}</h4><div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>${sk?sketchActs(n):foot(fL(weightHTML(n.weight),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
   case"table":{/* L is shadowed by lin(n) in cardBody, so translate locally */const tr=(en,zh)=>uiLang()==="zh"?zh:en;const ds=n.data||{columns:[],rows:[]},src=ds.source||{};
-    const from=src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.label||"";
+    const from=[src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.kind==="paste"?tr("Pasted","粘贴"):src.label||"",
+      src.total>(ds.rows||[]).length?tr(`first ${(ds.rows||[]).length} of ${src.total.toLocaleString()} rows`,`前 ${(ds.rows||[]).length} 行，共 ${src.total.toLocaleString()} 行`):""].filter(Boolean).join(" · ");
     return `<div class="in">${head(`${byline(n)}${ic("grid")}<span>${tr("Table","表格")}</span>`)}
-    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds)}${sk?sketchActs(n):foot(fL(from?`<span>${esc(from)}</span>`:""),fR(threadCount(n)))}</div>`;}
+    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol})}${sk?sketchActs(n):foot(fL(from?`<span>${esc(from)}</span>`:""),fR(threadCount(n)))}</div>`;}
   case"idea":return `<div class="in">${head(esc(n.kind||"Idea"))}
     <h4 data-edit="text">${esc(n.text)}</h4>${foot(evidenceScale(n),fR(threadCount(n)))}</div>`;
   case"source":{
@@ -5338,7 +5342,7 @@ function cleanCopilotMd(raw){
 function tableModel(ds){
   const hdrRaw=(ds.columns||[]).map(c=>String(c?.name??"")),hdr=hdrRaw.map(mdInline),raw=(ds.rows||[]).map(r=>hdrRaw.map((_,ci)=>String(r?.[ci]??"")));
   // A column is numeric when every filled cell is a number with the same unit; then it can show magnitude.
-  const NUM=/^([-+]?)([$€£¥]?)\s?(\d[\d,]*(?:\.\d+)?)\s?(%|[kKMB]|x|×)?$/;
+  const NUM=/^([-+]?)([$€£¥]?)\s?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s?(%|[kKMB]|x|×)?$/; // thousands only in groups of three, so "49,90" is not 4990
   const cols=hdr.map((_,ci)=>{const ms=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"")).filter(Boolean).map(t=>t.match(NUM));
     if(raw.length<2||!ms.length||ms.some(m=>!m)||new Set(ms.map(m=>m[2]+(m[4]||""))).size>1)return null;
     const vals=raw.map(r=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?Math.abs(parseFloat(m[3].replace(/,/g,""))):null});
@@ -5369,6 +5373,8 @@ function tableModel(ds){
   const time=hdr.map((_,ci)=>{const vs=raw.map(r=>r[ci]||"").filter(Boolean);if(raw.length<2||vs.length<2)return null;
     const ks=raw.map(r=>r[ci]?timeKey(r[ci],hdrRaw[ci],ci===0):null);return ks.every((k,i)=>k!=null||!raw[i][ci])?ks:null});
   time.forEach((t,ci)=>{if(t)cols[ci]=null});
+  // Identifiers are numbers but not quantities: no magnitude, no "best".
+  hdrRaw.forEach((h,ci)=>{if(/^\s*(id|#|no\.?|num(ber)?|code|zip|post(al)?\s?code|phone|sku|ref|编号|序号|代码|邮编|电话)\s*$/i.test(h)){cols[ci]=null;best[ci]=null}});
   // Share: a percentage column whose parts add up to about a whole.
   const share=hdr.map((_,ci)=>{if(!cols[ci])return false;const ms=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"").match(NUM)).filter(Boolean);
     if(!ms.length||ms.some(m=>m[4]!=="%"||m[1]==="-"))return false;const sum=ms.reduce((a,m)=>a+parseFloat(m[3].replace(/,/g,"")),0);return sum>=95&&sum<=105});
@@ -5378,13 +5384,59 @@ function tableModel(ds){
   const num=(r,ci)=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?(m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,"")):null};
   return {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey,time,share,num};
 }
+/* Ingest: CSV/TSV/JSON -> dataset. The same mapping will serve MCP results (JSON or text). */
+const TBL_MAX_ROWS=500;
+function parseDelimited(text,delim){
+  text=String(text||"").replace(/^\uFEFF/,"");
+  if(!delim){const head=text.split(/\r?\n/).filter(l=>l.trim()).slice(0,6),score=d=>{const c=head.map(l=>l.split(d).length-1);return c[0]>0&&c.every(x=>x===c[0])?c[0]+10:c[0]};
+    delim=["\t",",",";"].sort((a,b)=>score(b)-score(a))[0]}
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c;continue}
+    if(c==='"'&&cell==="")q=true;else if(c===delim){row.push(cell);cell=""}else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;row.push(cell);rows.push(row);row=[];cell=""}else cell+=c}
+  if(cell!==""||row.length){row.push(cell);rows.push(row)}
+  return rows.map(r=>r.map(x=>x.trim())).filter(r=>r.some(Boolean));
+}
+function datasetFromRows(rows,{header=true}={}){
+  if(!rows.length)return null;const width=Math.max(...rows.map(r=>r.length));
+  const head=header?rows[0]:[],body=header?rows.slice(1):rows;if(!body.length)return null;
+  const columns=Array.from({length:width},(_,i)=>({name:(head[i]||"").trim()||L(`Column ${i+1}`,`第 ${i+1} 列`)}));
+  return {columns,rows:body.slice(0,TBL_MAX_ROWS).map(r=>columns.map((_,i)=>r[i]??"")),total:body.length};
+}
+function datasetFromJSON(v){
+  const isRec=x=>x&&typeof x==="object"&&!Array.isArray(x);
+  const findArr=(x,depth=0)=>{if(Array.isArray(x))return x;if(!isRec(x)||depth>2)return null;
+    const arrs=Object.values(x).map(y=>findArr(y,depth+1)).filter(a=>a&&a.length);if(arrs.length)return arrs.sort((a,b)=>b.length-a.length)[0];
+    const vals=Object.values(x);return depth===0&&vals.length>1&&vals.every(isRec)?Object.entries(x).map(([k,o])=>({id:k,...o})):null};
+  const arr=findArr(v);if(!arr||!arr.length)return null;
+  const cellOf=x=>x==null?"":Array.isArray(x)?(x.every(y=>y==null||typeof y!=="object")?x.join(", "):L(`${x.length} items`,`${x.length} 项`)):isRec(x)?JSON.stringify(x):String(x);
+  if(arr.every(Array.isArray)){const hdr=arr[0].every(x=>typeof x==="string");return datasetFromRows(arr.map(r=>r.map(cellOf)),{header:hdr})}
+  if(!arr.every(isRec))return {columns:[{name:L("Value","值")}],rows:arr.slice(0,TBL_MAX_ROWS).map(x=>[cellOf(x)]),total:arr.length};
+  const flat=o=>{const out={};for(const [k,x] of Object.entries(o)){if(isRec(x))for(const [k2,y] of Object.entries(x))out[`${k}.${k2}`]=y;else out[k]=x}return out};
+  const recs=arr.map(flat),keys=[];recs.slice(0,200).forEach(r=>Object.keys(r).forEach(k=>{if(!keys.includes(k))keys.push(k)}));
+  return {columns:keys.map(name=>({name})),rows:recs.slice(0,TBL_MAX_ROWS).map(r=>keys.map(k=>cellOf(r[k]))),total:recs.length};
+}
+function datasetFromText(text,name=""){
+  const t=String(text||"").trim();if(!t)return null;
+  if(/\.json$/i.test(name)||/^[\[{]/.test(t)){try{return datasetFromJSON(JSON.parse(t))}catch{if(/\.json$/i.test(name))return null}}
+  return datasetFromRows(parseDelimited(t,/\.tsv$/i.test(name)?"\t":null));
+}
+/* Pasted text that is clearly a table: tab-separated (Sheets, Excel, Notion) or strictly regular CSV. */
+function looksTabular(t){const ls=String(t||"").trim().split(/\r?\n/).filter(l=>l.trim());if(ls.length<2)return false;
+  const same=d=>{const c=ls.map(l=>l.split(d).length-1);return c[0]>=1&&c.filter(x=>x===c[0]).length>=Math.ceil(ls.length*.9)};
+  return same("\t")||(ls.length>=3&&ls.map(l=>l.split(",").length-1).every((x,_,a)=>x>=2&&x===a[0]))}
+function makeTableCard(ds,{title,source,at,by}={}){
+  if(!ds)return null;const data={v:1,columns:ds.columns,rows:ds.rows,source:{...source,at:NOW(),...(ds.total>ds.rows.length?{total:ds.total}:{})}},gw=tblCardWidth(data);
+  const spot=at?freeSpot(at.x-gw/2,at.y-100,gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
+  return node("table",{title:clip(title||L("Table","表格"),60),data,gw,...(by?{by}:{})},spot);
+}
 /* Board width a table card needs, from the same column widths the renderer uses (clamped; wider tables scroll). */
 function tblCardWidth(ds){
   const {raw,cols,colW}=tableModel(ds),base={"w-first":144,"w-text":96,"w-long":180,"w-tag":88};
   const w=colW.reduce((sum,c,ci)=>sum+(cols[ci]?Math.max(72,Math.max(...raw.map(r=>(r[ci]||"").length),String(ds.columns[ci]?.name||"").length)*8+28):base[c]||96),0);
   return Math.max(360,Math.min(760,Math.round(w+40)));
 }
-function tblBlockHTML(ds,{add=false}={}){
+function tblBlockHTML(ds,{add=false,view="table",col=null}={}){
   const {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey}=tableModel(ds);
   const cell=(r,ci)=>{const t=mdInline(r[ci]||""),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)],k=sortKey(r,ci),dv=k==null?"":` data-v="${k}"`;
     if(lv)return `<td class="lvl"${dv}><span class="tbl-tag" style="--c:${LVL[lv]}">${t}</span></td>`;
@@ -5392,8 +5444,9 @@ function tblBlockHTML(ds,{add=false}={}){
     const isBest=best[ci]?.[raw.indexOf(r)];
     return `<td class="num${isBest?" best":""}"${dv} style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${isBest?`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`:""}${t}${isBest?`<span class="sr-only"> ${L("(best)","（最优）")}</span>`:""}</span></td>`};
   const hasNum=cols.some(Boolean);
-  const tools=`<div class="tbl-tools"><div class="tbl-sel" hidden><span class="tbl-selcount"></span><button type="button" class="sp-mini" data-tbl-ask>${L("Ask","追问")}</button><button type="button" class="tbl-tool" data-tbl-clear aria-label="${L("Clear selection","取消选择")}" title="${L("Clear selection","取消选择")}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><span class="tbl-gap"></span>${add?`<button type="button" class="tbl-tool" data-tbl-add title="${L("Add to board","添加到画板")}" aria-label="${L("Add to board","添加到画板")}">${ic("plus")}</button>`:""}${hasNum?`<div class="sp-seg sm" role="group" aria-label="${L("View","视图")}"><button type="button" data-tbl-view="table" aria-pressed="true">${L("Table","表格")}</button><button type="button" data-tbl-view="chart" aria-pressed="false">${L("Chart","图表")}</button></div>`:""}<button type="button" class="tbl-tool" data-tbl-copy title="${L("Copy as a table for Sheets, Excel or Notion","复制为表格，可粘贴到 Sheets、Excel 或 Notion")}" aria-label="${L("Copy table","复制表格")}">${ic("copy")}</button></div>`;
-  return `<div class="tbl-block">${tools}<div class="tbl-chart" hidden></div><div class="tbl-wrap"><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="none"`:""}>${ci===0?`<button type="button" class="tbl-check" role="checkbox" aria-checked="false" data-tbl-all aria-label="${L("Select all rows","全选")}"></button>`:""}${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${raw.map((r,ri)=>`<tr data-i="${ri}" aria-selected="false">${hdr.map((_,ci)=>ci===0?cell(r,ci).replace(/^<td([^>]*)>/,`<td$1><button type="button" class="tbl-check" role="checkbox" aria-checked="false" aria-label="${L("Select row","选择此行")}"></button>`):cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div></div>`;
+  const tools=`<div class="tbl-tools"><div class="tbl-sel" hidden><span class="tbl-selcount"></span><button type="button" class="sp-mini" data-tbl-ask>${L("Ask","追问")}</button><button type="button" class="tbl-tool" data-tbl-clear aria-label="${L("Clear selection","取消选择")}" title="${L("Clear selection","取消选择")}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><span class="tbl-gap"></span>${add?`<button type="button" class="tbl-tool" data-tbl-add title="${L("Add to board","添加到画板")}" aria-label="${L("Add to board","添加到画板")}">${ic("plus")}</button>`:""}${hasNum?`<div class="sp-seg sm" role="group" aria-label="${L("View","视图")}"><button type="button" data-tbl-view="table" aria-pressed="${!(hasNum&&view==="chart")}">${L("Table","表格")}</button><button type="button" data-tbl-view="chart" aria-pressed="${hasNum&&view==="chart"}">${L("Chart","图表")}</button></div>`:""}<button type="button" class="tbl-tool" data-tbl-copy title="${L("Copy as a table for Sheets, Excel or Notion","复制为表格，可粘贴到 Sheets、Excel 或 Notion")}" aria-label="${L("Copy table","复制表格")}">${ic("copy")}</button></div>`;
+  const asChart=hasNum&&view==="chart";
+  return `<div class="tbl-block"${asChart?` data-view="chart"${col!=null?` data-col="${col}"`:""}`:""}>${tools}<div class="tbl-chart"${asChart?"":" hidden"}></div><div class="tbl-wrap"${asChart?" hidden":""}><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="none"`:""}>${ci===0?`<button type="button" class="tbl-check" role="checkbox" aria-checked="false" data-tbl-all aria-label="${L("Select all rows","全选")}"></button>`:""}${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${raw.map((r,ri)=>`<tr data-i="${ri}" aria-selected="false">${hdr.map((_,ci)=>ci===0?cell(r,ci).replace(/^<td([^>]*)>/,`<td$1><button type="button" class="tbl-check" role="checkbox" aria-checked="false" aria-label="${L("Select row","选择此行")}"></button>`):cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div></div>`;
 }
 function mdBlocksHtml(src){
   const lines=cleanCopilotMd(src).split("\n"),out=[];
@@ -5496,7 +5549,7 @@ function nodeLineageSig(n){
 }
 
 function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang()])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??""]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -6126,7 +6179,7 @@ function toggleStudioPopover(force){
 }
 /* Tables that are wider than their space fade at the right edge until scrolled to the end. */
 (()=>{const fit=w=>w.classList.toggle("more",w.scrollWidth-w.clientWidth-w.scrollLeft>2);let q=0;
-  new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;document.querySelectorAll(".tbl-wrap:not([data-fit])").forEach(w=>{w.dataset.fit="1";fit(w)})})}).observe(document.body,{childList:true,subtree:true});
+  new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;document.querySelectorAll(".tbl-wrap:not([data-fit])").forEach(w=>{w.dataset.fit="1";fit(w)});document.querySelectorAll('.tbl-block[data-view="chart"]:not([data-init])').forEach(b=>{b.dataset.init="1";tblChart(b,b.dataset.col!=null?+b.dataset.col:null)})})}).observe(document.body,{childList:true,subtree:true});
   document.addEventListener("scroll",e=>{if(e.target.classList?.contains("tbl-wrap"))fit(e.target)},true);addEventListener("resize",()=>document.querySelectorAll(".tbl-wrap").forEach(fit));})();
 /* Table interactions: view as chart, copy, ask about a row, crosshair. */
 const tblText=el=>{const c=el.cloneNode(true);c.querySelectorAll(".sr-only,button.tbl-check,svg").forEach(x=>x.remove());return c.textContent.replace(/\s+/g," ").trim()};
@@ -6147,8 +6200,9 @@ function tblChart(block,ci){
   const picker=numCols.length>1?`<div class="sp-seg sm" role="group" aria-label="${L("Column","列")}">${numCols.map(i=>`<button type="button" data-tbl-col="${i}" aria-pressed="${i===ci}">${esc(m.hdrRaw[i])}</button>`).join("")}</div>`:`<span>${esc(name)}</span>`;
   const pts=m.raw.map((r,i)=>({label:r[labelCol],txt:r[ci],v:m.num(r,ci),best:!!m.best[ci]?.[i],t:tc>=0?m.time[tc][i]:i})).filter(p=>p.v!=null);
   if(tc>=0&&pts.length>=2){ch.innerHTML=`<div class="tbl-ch-head">${picker}</div>${tblLineSVG(pts.sort((a,b)=>a.t-b.t),name,m.hdrRaw[tc],ch.clientWidth||block.clientWidth||360)}`;tblLineHover(ch);return}
-  const isShare=m.share[ci],rows=isShare?[...pts].sort((a,b)=>b.v-a.v):pts,max=Math.max(...rows.map(p=>Math.abs(p.v)),0)||1,anyBest=rows.some(p=>p.best);
-  ch.innerHTML=`<div class="tbl-ch-head">${picker}${isShare?`<span class="tbl-ch-note">${L("Share of the whole, largest first","占整体的比例，从大到小")}</span>`:""}</div>
+  const BAR_CAP=24,isShare=m.share[ci],all=isShare?[...pts].sort((a,b)=>b.v-a.v):pts,rows=all.slice(0,BAR_CAP),max=Math.max(...rows.map(p=>Math.abs(p.v)),0)||1,anyBest=rows.some(p=>p.best);
+  const note=all.length>BAR_CAP?L(`First ${BAR_CAP} of ${all.length} · sort or select rows to choose`,`前 ${BAR_CAP} 项，共 ${all.length} 项 · 可排序或选择行`):isShare?L("Share of the whole, largest first","占整体的比例，从大到小"):"";
+  ch.innerHTML=`<div class="tbl-ch-head">${picker}${note?`<span class="tbl-ch-note">${note}</span>`:""}</div>
     <div class="tbl-ch-rows" role="list" aria-label="${esc(L(`${name} by ${m.hdrRaw[labelCol]}`,`各${m.hdrRaw[labelCol]}的${name}`))}">${rows.map(p=>`<div class="tbl-ch-row${p.best?" best":""}${anyBest&&!p.best?" mute":""}" role="listitem" aria-label="${esc(p.label+": "+p.txt+(p.best?L(" (best)","（最优）"):""))}"><span class="tbl-ch-lbl" title="${esc(p.label)}">${esc(p.label)}</span><span class="tbl-ch-bararea"><i class="tbl-ch-bar" style="--w:0" data-w="${(Math.abs(p.v)/max).toFixed(4)}"></i><span class="tbl-ch-val">${p.best?`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`:""}${esc(p.txt)}</span></span></div>`).join("")}</div>`;
   requestAnimationFrame(()=>ch.querySelectorAll("i[data-w]").forEach(i=>i.style.setProperty("--w",i.dataset.w)));
 }
@@ -6165,7 +6219,7 @@ function tblLineSVG(pts,name,xName,width){
   return `<div class="tbl-line" data-pts='${esc(JSON.stringify(pts.map((p,i)=>({x:+x(i).toFixed(1),y:+y(p.v).toFixed(1),l:p.label,t:p.txt}))))}'>
   <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(summary)}" tabindex="0">
     ${ticks.map(t=>`<line class="tbl-grid" x1="${padL}" x2="${padL+iw}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/><text class="tbl-tick" x="${padL-8}" y="${(y(t)+3.5).toFixed(1)}" text-anchor="end">${fmtTick(t)}</text>`).join("")}
-    ${xl.map(i=>`<text class="tbl-tick" x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?"start":i===pts.length-1?"end":"middle"}">${esc(pts[i].label)}</text>`).join("")}
+    ${xl.map(i=>`<text class="tbl-tick x" x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?"start":i===pts.length-1?"end":"middle"}">${esc(pts[i].label)}</text>`).join("")}
     <path class="tbl-area" d="${area}"/><path class="tbl-ln" d="${line}"/>
     <circle class="tbl-end" cx="${x(pts.length-1).toFixed(1)}" cy="${y(last.v).toFixed(1)}" r="4"/>
     <text class="tbl-endval" x="${(x(pts.length-1)+10).toFixed(1)}" y="${(y(last.v)+4).toFixed(1)}">${esc(last.txt)}</text>
@@ -6188,7 +6242,8 @@ document.addEventListener("click",async e=>{
   const v=e.target.closest("[data-tbl-view]");
   if(v){const block=v.closest(".tbl-block"),chart=v.dataset.tblView==="chart";
     block.querySelectorAll("[data-tbl-view]").forEach(b=>b.setAttribute("aria-pressed",String(b===v)));
-    block.querySelector(".tbl-wrap").hidden=chart;block.querySelector(".tbl-chart").hidden=!chart;if(chart)tblChart(block,+block.querySelector(".tbl-chart").dataset.col||null);return}
+    block.querySelector(".tbl-wrap").hidden=chart;block.querySelector(".tbl-chart").hidden=!chart;if(chart)tblChart(block,+block.querySelector(".tbl-chart").dataset.col||null);
+    const cn=byId(block.closest(".card")?.dataset.id);if(cn){if(chart)cn.tblView="chart";else delete cn.tblView;cn.updated=NOW();block.dataset.init="1";if(chart)block.dataset.view="chart";else delete block.dataset.view;persist()}return}
   const add=e.target.closest("[data-tbl-add]");
   if(add){const block=add.closest(".tbl-block"),tbl=block.querySelector("table");
     const columns=[...tbl.tHead.rows[0].cells].map(th=>({name:tblText(th)})),rows=[...tbl.tBodies[0].rows].sort((a,b)=>+a.dataset.i - +b.dataset.i).map(r=>[...r.cells].map(tblText));
@@ -6201,7 +6256,7 @@ document.addEventListener("click",async e=>{
     const made=node("table",{title:clip(title,60),data,gw},spot);
     if(f)edge(f.id,made.id,"src");sel=[made.id];
     renderAll();persist();follow([made]);toast(L("Table added to the board","表格已添加到画板"));return}
-  const col=e.target.closest("[data-tbl-col]");if(col){tblChart(col.closest(".tbl-block"),+col.dataset.tblCol);return}
+  const col=e.target.closest("[data-tbl-col]");if(col){const block=col.closest(".tbl-block");tblChart(block,+col.dataset.tblCol);const cn=byId(block.closest(".card")?.dataset.id);if(cn){cn.tblCol=+col.dataset.tblCol;persist()}return}
   const cp=e.target.closest("[data-tbl-copy]");
   if(cp){const tbl=cp.closest(".tbl-block").querySelector("table"),sel=[...tbl.tBodies[0].rows].filter(r=>r.classList.contains("sel"));
     const tsv=[tbl.tHead.rows[0],...(sel.length?sel:[...tbl.tBodies[0].rows])].map(r=>[...r.cells].map(tblText).join("\t")).join("\n");
@@ -12908,7 +12963,9 @@ async function addFiles(files,at,onto,{autoAdvisor=true,quiet=false,selectNodes=
     const key="u:"+uid();let n;
     const fmt=fileFormatOf({path:f.name,mime:f.type});
     const cleanTitle=humanFileTitle(f.name)||f.name.replace(/\.[^.]+$/,"")||f.name;
-    if(f.type.startsWith("image/")||/\.(png|jpe?g|webp|gif|bmp|avif|svg)$/i.test(f.name)){await putBlob(key,f);userMedia.set(key,URL.createObjectURL(f));n=node("image",{title:cleanTitle,text:"",media:key,weight:null,path:f.name,fmt:fmt?.label||"Image",mime:f.type,size:f.size},freeSpot(x,y,W.image,380))}
+    const tabDs=/\.(csv|tsv|json)$/i.test(f.name)&&!/\.vellum\.json$/i.test(f.name)&&f.size<20e6?datasetFromText(await f.text().catch(()=>""),f.name):null;
+    if(tabDs){n=makeTableCard(tabDs,{title:cleanTitle,source:{kind:"file",label:f.name},at:{x:x+150,y:y+100}})}
+    else if(f.type.startsWith("image/")||/\.(png|jpe?g|webp|gif|bmp|avif|svg)$/i.test(f.name)){await putBlob(key,f);userMedia.set(key,URL.createObjectURL(f));n=node("image",{title:cleanTitle,text:"",media:key,weight:null,path:f.name,fmt:fmt?.label||"Image",mime:f.type,size:f.size},freeSpot(x,y,W.image,380))}
     else if(f.type.startsWith("video/")||/\.(mp4|webm|mov|m4v|mkv)$/i.test(f.name)){await putBlob(key,f);const url=URL.createObjectURL(f);userMedia.set(key,url);const {poster,dur}=await posterOf(url);const pk="u:"+uid();if(poster){userMedia.set(pk,poster);await putBlob(pk,poster)}
       n=node("recording",{title:cleanTitle,text:"",media:key,poster:poster?pk:"",dur,weight:null,path:f.name,fmt:fmt?.label||"Video",mime:f.type,size:f.size},freeSpot(x,y,W.recording,340))}
     else if(f.type.startsWith("audio/")||/\.(mp3|wav|m4a|ogg|aac|flac|opus)$/i.test(f.name)){await putBlob(key,f);userMedia.set(key,URL.createObjectURL(f));n=node("audio",{title:cleanTitle,text:"",media:key,weight:null,path:f.name,fmt:fmt?.label||"Audio",mime:f.type,size:f.size},freeSpot(x,y,W.audio,190))}
@@ -14866,6 +14923,9 @@ wall.addEventListener("wheel",e=>{
   if(tw&&!e.ctrlKey&&!e.metaKey&&Math.abs(e.deltaX)>Math.abs(e.deltaY)&&tw.scrollWidth>tw.clientWidth+1){
     const atL=tw.scrollLeft<=0&&e.deltaX<0,atR=tw.scrollLeft+tw.clientWidth>=tw.scrollWidth-1&&e.deltaX>0;if(!atL&&!atR)return;
   }
+  if(tw&&!e.ctrlKey&&!e.metaKey&&Math.abs(e.deltaY)>=Math.abs(e.deltaX)&&tw.scrollHeight>tw.clientHeight+1){
+    const atT=tw.scrollTop<=0&&e.deltaY<0,atB=tw.scrollTop+tw.clientHeight>=tw.scrollHeight-1&&e.deltaY>0;if(!atT&&!atB)return;
+  }
   const padBody=e.target.closest(".notepad-body");
   if(padBody&&!e.ctrlKey&&!e.metaKey&&padBody.scrollHeight>padBody.clientHeight+1){
     const atTop=padBody.scrollTop<=0&&e.deltaY<0,atBot=padBody.scrollTop+padBody.clientHeight>=padBody.scrollHeight-1&&e.deltaY>0;
@@ -14958,6 +15018,7 @@ addEventListener("paste",e=>{
     e.preventDefault();
     const s=t.trim(),lines=s.split(/\r?\n/).length;
     if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s);
+    else if(looksTabular(s)){const ds=datasetFromText(s);if(ds){checkpoint();const v=viewRect(),n=makeTableCard(ds,{title:L("Pasted table","粘贴的表格"),source:{kind:"paste"},at:toWorld(v.w/2,v.h/2)});sel=[n.id];renderAll();persist();follow([n]);toast(L("Pasted as a table","已粘贴为表格"),{undo:true})}else createNotepadNode(s)}
     else if(s.length>280||lines>=4)createNotepadNode(s);
     else pinCard("note",s);
   }

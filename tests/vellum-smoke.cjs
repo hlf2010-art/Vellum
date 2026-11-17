@@ -517,6 +517,19 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
           const m = tableModel({ columns: [{ name: 'Year' }, { name: 'Users' }], rows: [['2021', '10'], ['2022', '30']] });
           return { time: run('| Month | Signups |\n|---|---|\n| Jan | 1 |\n| Feb | 2 |'), share: run('| Channel | Share |\n|---|---|\n| A | 20% |\n| B | 80% |'), bars: run('| Option | Cost |\n|---|---|\n| A | $3 |\n| B | $1 |'), yearIsTime: !!m.time[0] && !m.cols[0] }; });
         check('charts follow the data: months make a line, shares rank largest first, others keep table order; a year column is time, not a quantity', forms.time.line && !forms.share.line && forms.share.labels === 'B>A' && forms.bars.labels === 'A>B' && forms.yearIsTime, JSON.stringify(forms));
+        const ing = await p.evaluate(async () => {
+          const csv = parseDelimited('\uFEFFName,Note\n"Acme, Inc.","Said ""hi""\nthen left"\nGlobex,ok');
+          const eu = datasetFromText('Produkt;Preis\nStuhl;49,90\nTisch;199,00', 'eu.csv'), euM = tableModel(eu);
+          const nested = datasetFromJSON({ data: { items: [{ id: 1, user: { city: 'Oslo' }, tags: ['a', 'b'] }, { id: 2, user: { city: 'Rome' }, tags: [] }] } }), nM = tableModel(nested);
+          const big = datasetFromText('n,v\n' + Array.from({ length: 700 }, (_, i) => `${i},${i}`).join('\n'));
+          const made = await addFiles([new File(['month,users\nJan,10\nFeb,14'], 'growth.csv'), new File(['{"a": [1,'], 'broken.json')], { x: 0, y: 0 });
+          const dt = new DataTransfer(); dt.setData('text/plain', 'Region\tQ1\nNorth\t120\nSouth\t90'); document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
+          const pasted = board.nodes.at(-1);
+          return { csv: csv.map(r => r.join('|')).join(' ; '), euNumeric: !!euM.cols[1], nestedCols: nested.columns.map(c => c.name).join('|'), nestedFirst: nested.rows[0].join('|'), idIsQuantity: !!nM.cols[0], bigRows: big.rows.length, bigTotal: big.total,
+            files: made.map(n => n.type).join(','), fileSrc: made[0].data?.source?.label, pasted: pasted.type + ':' + pasted.data?.columns.map(c => c.name).join('|'), prose: looksTabular('We met, talked, and agreed.\nThen lunch, hiring, and done.') };
+        });
+        check('import: CSV quotes, escapes and line breaks; "49,90" is not 4990; nested JSON flattens; ids are not quantities; big files keep 500 of N; tabular files become tables, broken ones stay files; pasted TSV becomes a table, prose does not',
+          ing.csv === 'Name|Note ; Acme, Inc.|Said "hi"\nthen left ; Globex|ok' && !ing.euNumeric && ing.nestedCols === 'id|user.city|tags' && ing.nestedFirst === '1|Oslo|a, b' && !ing.idIsQuantity && ing.bigRows === 500 && ing.bigTotal === 700 && ing.files === 'table,source' && ing.fileSrc === 'growth.csv' && ing.pasted === 'table:Region|Q1' && ing.prose === false, JSON.stringify(ing));
         check('table rows: click selects one, Cmd adds, Shift selects a range, and the selection bar appears', sel.one === 'A' && sel.two === 'A,C' && sel.range === 'A,B,C' && sel.single === 'B' && sel.bar === false, JSON.stringify(sel));
         check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
       }

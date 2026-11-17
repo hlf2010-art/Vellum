@@ -155,6 +155,7 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 - Hover: `hover` fill. Pressed: `press` fill + scale.
 - Selected tool: a raised `card` disc with the light arc.
 - Focus: `ring-width` 2.5px solid `focus` outline, `ring-offset` 3px. Selected cards take the same ring.
+- Focus on a text field (composer, inputs, the note box): no ring. The field turns `card` and a soft warm glow surrounds it (`shadow-field-focus`), the same light that means "alive".
 - Disabled: `label-3` text on a `hover` fill (`label-4` is for glyphs only).
 - Loading: keep the label, add a spinner (`Button loading`) or the card sweep (`Card state="loading"`), and set `aria-busy`.
 - Error: say it inline where it happened, in `danger-ink`, with what was kept and a **Retry** (`Card state="error"`, `Toast tone="error"`, a failed `TaskIsland` row). Never a modal for a crew failure.

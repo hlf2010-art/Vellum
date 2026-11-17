@@ -622,10 +622,10 @@
         h('h4', null, p.title),
         p.test ? h('p', { className: 'vl-pc-test', title: p.test }, h('b', null, 'Test '), p.test) : null,
         building ? h('div', { className: 'vl-pc-res' }, h('div', { className: 'vl-pc-cap' }, h('span', null, 'Wright is building v' + nextVer + (p.buildNote ? ': ' + p.buildNote : '')))) :
-        r ? h('div', { className: 'vl-pc-res' },
+        r ? h('div', { className: 'vl-pc-res', title: fails.length ? 'Failed: ' + fails.join('; ') : undefined },
             h('div', { className: 'vl-pc-blocks', role: 'img', 'aria-label': summary }, blocks),
             h('div', { className: 'vl-pc-cap' }, h('span', null, summary), r.failed === 0 && r.waiting === 0 ? h('span', { className: 'vl-pc-pass' }, h(Icon, { name: 'check' }), 'Passes its test') : null),
-            fails.length ? h('ul', { className: 'vl-pc-fails' }, fails.slice(0, 2).map(function(f, i){ return h('li', { key: i }, h(Icon, { name: 'x' }), h('span', null, f)); })) : null)
+            null)
           : h('div', { className: 'vl-pc-res is-empty' }, h('div', { className: 'vl-pc-cap' }, h('span', null, 'Not tested yet. Critic can check it against the test above.'))),
         old && v.changed ? h('p', { className: 'vl-pc-note' }, 'v' + versions[latest].ver + ' changed: ' + v.changed) : null,
         drift ? h('p', { className: 'vl-pc-drift' }, h(Icon, { name: 'alert' }), drift + ' source' + (drift > 1 ? 's' : '') + ' changed since v' + v.ver) : null,

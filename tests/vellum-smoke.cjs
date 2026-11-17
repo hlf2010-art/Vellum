@@ -214,7 +214,6 @@ async function page(browser, base, { model = true } = {}) {
       check('no page errors in the proposal flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
-
     // 5. per-author undo: ⌘Z undoes your own changes and leaves agents' work alone
     {
       const p = await page(browser, base, { model: false });
@@ -319,6 +318,32 @@ async function page(browser, base, { model = true } = {}) {
       await p.click('dialog[open] [data-au-reset]'); await p.waitForTimeout(200);
       check('Reset restores the defaults', await p.evaluate(() => JSON.stringify(autonomy) === JSON.stringify(AUTONOMY_DEFAULT) && document.querySelector('dialog[open] #au-edit').value === 'suggest'));
       check('no page errors in the permissions flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 8. Task Island: real crew work shows at the top, says what arrived, and can be stopped
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const island = () => p.evaluate(() => { const el = document.getElementById('island'), t = ISL.tasks.filter(t => t.kind === 'directions').at(-1); return { mode: el.dataset.mode, text: el.innerText.replace(/\s+/g, ' '), state: t && t.state, made: t ? t.nodeIds.length : 0 }; });
+      check('the island idles when nothing runs', (await island()).mode === 'idle');
+      await p.type('Island idea'); await p.waitForTimeout(800);
+      const id = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+      queue = [{ id: 'isl1', match: '"directions"', text: dirs('Isl'), delay: 1800 }];
+      await p.evaluate(id => select([id]), id); await p.type('/fork 3'); await p.waitForTimeout(1000);
+      const run = await island();
+      check('a running crew move shows on the island', run.mode === 'compact' && /Strategist/.test(run.text) && run.state === 'running', JSON.stringify(run));
+      await p.idle();
+      const end = await island();
+      check('when it finishes the island says what arrived', end.mode === 'flash' && /3 directions drafted/.test(end.text) && end.made === 3, JSON.stringify(end));
+      await p.click('#island [data-isl-show]'); await p.waitForTimeout(400);
+      check('Show selects what the task made', await p.evaluate(() => sel.length === 3 && sel.every(id => byId(id).type === 'direction')));
+      queue = [{ id: 'isl2', match: '"directions"', text: dirs('Late'), delay: 4000 }];
+      await p.evaluate(id => select([id]), id); await p.type('/fork 3'); await p.waitForTimeout(1000);
+      await p.click('#island [data-isl="toggle"]'); await p.waitForTimeout(400);
+      await p.click('#island [data-isl-stop]'); await p.idle(); await p.waitForTimeout(3000);
+      const st = await p.evaluate(() => ({ state: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, busy: crewBusy(), late: board.nodes.some(n => /Late/.test(n.title || '')) }));
+      check('Stop on the island cancels the move', st.state === 'cancelled' && !st.busy && !st.late, JSON.stringify(st));
+      check('no page errors around the island', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
   } finally {

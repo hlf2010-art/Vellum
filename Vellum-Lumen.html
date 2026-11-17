@@ -2465,6 +2465,118 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .imp-confirm-acts{display:flex;justify-content:flex-end;gap:8px}
 .arch-sec-lbl{font:600 11.5px/1 var(--ui);letter-spacing:.02em;text-transform:uppercase;color:var(--label-3);margin:12px 0 6px}
 .arch-sec-lbl:first-child{margin-top:2px}
+/* ── Task Island: long-running agent work, top centre ─────────────────── */
+.island{--isl-spring:cubic-bezier(.32,.72,0,1);--isl-muse:#7C4DDB;--isl-ok:var(--C);--isl-warn:var(--A);
+  position:absolute;z-index:46;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
+  width:var(--iw,46px);height:var(--ih,12px);border-radius:var(--ir,99px);overflow:hidden;color:var(--label);
+  background:var(--chrome);-webkit-backdrop-filter:blur(28px) saturate(1.5);backdrop-filter:blur(28px) saturate(1.5);
+  box-shadow:inset 0 1px 0 var(--glass-hi),inset 0 0 0 .5px var(--chrome-hair),var(--chrome-shadow);
+  transition:width .56s var(--isl-spring),height .56s var(--isl-spring),border-radius .56s var(--isl-spring),opacity .3s,box-shadow .4s,background .4s}
+:root[data-theme="dark"] .island{--isl-muse:#C4A5FF}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .island{--isl-muse:#C4A5FF}}
+.island[data-mode="open"]{z-index:66}
+.island[data-mode="idle"]{opacity:.62;box-shadow:inset 0 0 0 .5px var(--chrome-hair),0 4px 14px -8px rgba(0,0,0,.35)}
+.island[data-mode="idle"]::after{content:"";position:absolute;inset:-10px -14px;border-radius:99px}
+.island[data-mode="idle"]:hover,.island[data-mode="peek"]{opacity:1}
+.island[data-tone="ok"]{box-shadow:inset 0 1px 0 var(--glass-hi),inset 0 0 0 .5px color-mix(in srgb,var(--isl-ok) 38%,transparent),0 0 26px -10px var(--isl-ok),var(--chrome-shadow)}
+.island[data-tone="fail"]{box-shadow:inset 0 1px 0 var(--glass-hi),inset 0 0 0 .5px color-mix(in srgb,var(--danger) 45%,transparent),0 0 26px -10px var(--danger),var(--chrome-shadow)}
+.island[data-tone="warn"]{box-shadow:inset 0 1px 0 var(--glass-hi),inset 0 0 0 .5px color-mix(in srgb,var(--isl-warn) 45%,transparent),0 0 26px -10px var(--isl-warn),var(--chrome-shadow)}
+.isl-face{position:absolute;top:0;left:50%;transform:translateX(-50%);width:max-content;transition:opacity .22s ease,filter .26s ease,transform .32s var(--isl-spring)}
+.isl-face.in{opacity:0;filter:blur(6px);transform:translateX(-50%) scale(.94)}
+.isl-face.out{opacity:0;filter:blur(6px);transform:translateX(-50%) scale(.96);pointer-events:none}
+.isl-face[data-f="open"]{width:var(--isl-pw)}
+.isl-face button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.isl-face button:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+/* compact pill: one line, an orb with a progress ring, a few words, a number */
+.isl-pill{display:flex;align-items:center;gap:9px;height:36px;padding:0 13px 0 5px;max-width:min(420px,calc(100vw - 32px));border-radius:18px}
+.isl-pill:hover{background:var(--hover)}
+.isl-lbl{display:flex;align-items:baseline;gap:6px;min-width:0;font:500 13px/1 var(--ui);color:var(--label-2);white-space:nowrap}
+.isl-lbl b{font-weight:600;color:var(--label)}
+.isl-lbl span{overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.isl-num{font:550 11.5px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--label-3);min-width:3.2ch;text-align:right;white-space:nowrap}
+.isl-more{font:600 11px/1 var(--ui);font-variant-numeric:tabular-nums;color:var(--label-2);padding:4px 7px;border-radius:99px;background:var(--hover);box-shadow:inset 0 0 0 .5px var(--hair)}
+.isl-stack{display:flex;align-items:center}
+.isl-stack .isl-av+.isl-av{margin-left:-12px}
+.isl-stack .isl-av+.isl-av .mk{box-shadow:0 0 0 2px var(--chrome)}
+/* the orb: an agent avatar inside a ring that fills with real progress */
+.isl-av{--tint:var(--label-2);position:relative;width:28px;height:28px;flex:none;display:grid;place-items:center}
+.isl-av[data-a="scout"]{--tint:var(--B)}.isl-av[data-a="wright"]{--tint:var(--A)}.isl-av[data-a="critic"]{--tint:var(--C)}.isl-av[data-a="muse"]{--tint:var(--isl-muse)}.isl-av[data-a="copilot"]{--tint:var(--label)}
+.isl-av .mk{width:22px;height:22px;font-size:10px}
+.isl-av .mk.cp svg{width:62%;height:62%}
+.isl-ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.isl-ring circle{fill:none;stroke-width:2.2;stroke-linecap:round}
+.isl-ring .tr{stroke:color-mix(in srgb,var(--tint) 18%,transparent)}
+.isl-ring .pg{stroke:var(--tint);transition:stroke-dasharray .5s var(--isl-spring);filter:drop-shadow(0 0 2px color-mix(in srgb,var(--tint) 55%,transparent))}
+.isl-av.ind .isl-ring{animation:islSpin 1.15s linear infinite}
+.isl-av.queued .isl-ring .pg{stroke:var(--label-3);filter:none}
+.isl-av.queued .isl-ring{animation:islSpin 3.2s linear infinite}
+@keyframes islSpin{to{transform:rotate(270deg)}}
+/* end-state glyphs */
+.isl-g{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:50%}
+.isl-g svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.isl-g.ok{color:var(--isl-ok);background:color-mix(in srgb,var(--isl-ok) 15%,transparent)}
+.isl-g.fail{color:var(--danger);background:color-mix(in srgb,var(--danger) 15%,transparent)}
+.isl-g.warn{color:var(--isl-warn);background:color-mix(in srgb,var(--isl-warn) 16%,transparent)}
+.isl-g.stop{color:var(--label-2);background:var(--hover)}
+.isl-g.stop i{width:8px;height:8px;border-radius:2px;background:currentColor}
+.isl-g.ok path{stroke-dasharray:20;stroke-dashoffset:20;animation:islDraw .5s .12s var(--isl-spring) forwards}
+.isl-g.fail{animation:islNudge .42s .1s ease-in-out}
+@keyframes islDraw{to{stroke-dashoffset:0}}
+@keyframes islNudge{25%{transform:translateX(-2px)}50%{transform:translateX(2px)}75%{transform:translateX(-1px)}}
+/* flash: a finished job speaks briefly, then the island settles */
+.isl-flash{display:flex;align-items:center;gap:10px;height:48px;padding:0 7px 0 10px;max-width:min(440px,calc(100vw - 32px))}
+.isl-flash .isl-tx{display:grid;gap:3px;min-width:0;padding-right:4px}
+.isl-flash .isl-tx b{font:600 13.5px/1.1 var(--ui);white-space:nowrap}
+.isl-flash .isl-tx small{font:500 11.5px/1.15 var(--ui);color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.isl-flash .isl-tx small.err{color:color-mix(in srgb,var(--danger) 82%,var(--label))}
+.isl-btn{font:600 12.5px/1 var(--ui)!important;padding:9px 12px!important;border-radius:12px;background:var(--hover)!important;color:var(--label)!important;white-space:nowrap;box-shadow:inset 0 0 0 .5px var(--hair)}
+.isl-btn:hover{background:var(--press)!important}
+.isl-peek{display:flex;align-items:center;gap:8px;height:30px;padding:0 13px;font:500 12px/1 var(--ui);color:var(--label-3);white-space:nowrap}
+.isl-peek b{color:var(--label-2);font-weight:600}
+.isl-peek i{width:6px;height:6px;border-radius:50%;background:var(--label-4);flex:none}
+.isl-peek i.ok{background:var(--isl-ok)}.isl-peek i.fail{background:var(--danger)}.isl-peek i.warn{background:var(--isl-warn)}
+/* open: every job, its own words, its own controls */
+.isl-panel{padding:6px 6px 6px}
+.isl-hd{display:flex;align-items:center;gap:8px;height:36px;padding:0 4px 0 12px}
+.isl-hd h3{margin:0;font:600 13px/1 var(--ui);flex:1;min-width:0}
+.isl-hd h3 small{margin-left:6px;font:500 12px/1 var(--ui);color:var(--label-3)}
+.isl-x{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--label-3)}
+.isl-x:hover{background:var(--hover);color:var(--label)}
+.isl-x svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.isl-list{display:grid;gap:2px;max-height:min(420px,calc(100vh - 160px));overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.isl-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;column-gap:10px;row-gap:7px;align-items:center;padding:8px 8px 8px 8px;border-radius:15px;animation:islRow .42s var(--isl-spring) both}
+.isl-row:hover{background:var(--hover)}
+@keyframes islRow{from{opacity:0;transform:translateY(-4px)}}
+.isl-row .isl-tx{display:grid;gap:3px;min-width:0}
+.isl-row .isl-t{font:600 13px/1.2 var(--ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.isl-row .isl-s{display:flex;gap:6px;font:500 11.5px/1.2 var(--ui);color:var(--label-3);white-space:nowrap;min-width:0}
+.isl-row .isl-s .ph{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.isl-row .isl-s .el{font-family:var(--mono);font-variant-numeric:tabular-nums;flex:none}
+.isl-row .isl-s .ph.err{color:color-mix(in srgb,var(--danger) 82%,var(--label))}
+.isl-row .isl-s .ph.warn{color:color-mix(in srgb,var(--isl-warn) 80%,var(--label))}
+.isl-row.ended .isl-t{color:var(--label-2)}
+.isl-acts{display:flex;align-items:center;gap:4px}
+.isl-acts .isl-btn{padding:7px 10px!important;border-radius:10px}
+.isl-ib{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--label-3)}
+.isl-ib:hover{background:var(--press);color:var(--label)}
+.isl-ib i{width:8px;height:8px;border-radius:2px;background:currentColor}
+.isl-ib svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.isl-bar{grid-column:2/4;height:3px;border-radius:2px;background:var(--label-4);overflow:hidden;--tint:var(--label-2)}
+.isl-bar i{display:block;height:100%;width:var(--p,0%);border-radius:inherit;background:var(--tint);transition:width .5s var(--isl-spring)}
+.isl-bar.ind i{width:34%;animation:islInd 1.5s ease-in-out infinite}
+.isl-bar.queued i{width:100%;background:repeating-linear-gradient(90deg,var(--label-4) 0 6px,transparent 6px 12px);animation:islQ 1.2s linear infinite}
+@keyframes islInd{from{transform:translateX(-105%)}to{transform:translateX(300%)}}
+@keyframes islQ{to{background-position:12px 0}}
+.isl-empty{padding:6px 12px 12px;font:450 12.5px/1.45 var(--ui);color:var(--label-3)}
+.isl-ft{display:flex;justify-content:flex-end;padding:4px 4px 2px}
+.isl-ft button{font:550 12px/1 var(--ui);color:var(--label-3);padding:8px 10px;border-radius:10px}
+.isl-ft button:hover{background:var(--hover);color:var(--label)}
+.isl-sec{padding:8px 12px 4px;font:600 10.5px/1 var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--label-3)}
+/* toasts make room under an open island */
+.island[data-mode="open"]~.toasts,.island[data-mode="flash"]~.toasts{top:calc(var(--isl-h,36px) + 26px + env(safe-area-inset-top,0px))}
+@media (max-width:760px){.island{top:calc(64px + env(safe-area-inset-top,0px))}.island[data-mode="open"]~.toasts,.island[data-mode="flash"]~.toasts{top:calc(var(--isl-h,36px) + 76px + env(safe-area-inset-top,0px))}}
+@media (prefers-reduced-transparency:reduce){.island{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--card)}}
+@media (prefers-reduced-motion:reduce){.island,.isl-face{transition-duration:.01ms!important}.isl-av.ind .isl-ring,.isl-av.queued .isl-ring{animation:none}.isl-bar.ind i{animation:none;width:100%;opacity:.45}}
 </style>
 <div id="app">
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
@@ -2496,6 +2608,8 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
       <button type="button" class="arch-btn sys-btn" id="settingsBtn" aria-haspopup="dialog" aria-label="System Settings" title="System Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
+  <div id="island" class="island" data-mode="idle" role="region" aria-label="Background tasks"></div>
+  <div id="islLive" class="sr" aria-live="polite"></div>
 
   <div class="top-tools" id="topTools" role="toolbar" aria-label="Canvas tools" aria-orientation="vertical">
     <button type="button" data-ttool="select" aria-pressed="true" aria-label="Select / Pan (V)" data-tip="Select / Pan · V"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l12.5 7.2-5.6 1.9-1.9 5.6z"/></svg></button>
@@ -2786,6 +2900,309 @@ const AGENTS={
   wright:{key:"wright",name:"Wright",mk:AV.wright,craft:"Builds proofs: working pages, decks and action lists from an adopted direction."},
   critic:{key:"critic",name:"Critic",mk:AV.critic,craft:"Checks work against its sources and asks the question nobody wants to."},
 };
+/* ── Task Island: one place to watch long-running agent work ───────────────
+   Every entry is a real job: a crew run (runAgent), an H3 video job on the image service, a PromptLens
+   reverse or shot split, or a Copilot research turn with sub-agents. A ring fills only when the job
+   reports progress (service percent, frames encoded, steps done); otherwise it spins, and the job's own
+   words say what it is doing. Jobs that finish before anyone could read them are never shown. */
+const ISL={tasks:[],open:false,hover:false,flash:null,flashQ:[],face:null,timer:0,flashT:0,closeT:0,raf:0,rows:new Map()};
+const ISL_GRACE=450,ISL_KEEP=10;
+const ISL_CP='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.6 19.2 17.6H4.8Z"/><path d="M2.8 13.6 8.8 11.4"/><path d="M16 11.4 21.2 9.4"/></svg>';
+const ISL_KIND={
+  image:{n:["Image","图像"],v:["Rendering","生成图像"],done:n=>n>1?L(`${n} images ready`,`${n} 张图像已完成`):L("Image ready","图像已完成")},
+  gif:{n:["GIF","GIF"],v:["Animating","生成 GIF"],done:()=>L("GIF ready","GIF 已完成")},
+  video:{n:["Video","视频"],v:["Generating video","生成视频"],done:()=>L("Video ready","视频已出片")},
+  search:{n:["Search","搜索"],v:["Searching","搜索"],done:n=>n?L(`${n} results found`,`找到 ${n} 条结果`):L("Search finished","搜索完成")},
+  research:{n:["Research","调研"],v:["Researching","调研"],done:()=>L("Research ready","调研完成")},
+  reverse:{n:["Prompt reverse","提示词反推"],v:["Reversing prompt","反推提示词"],done:()=>L("Prompt pack ready","提示词包已完成")},
+  shots:{n:["Shot split","镜头拆分"],v:["Splitting shots","拆分镜头"],done:n=>L(`${n} key shot${n===1?"":"s"} lifted`,`已提取 ${n} 个镜头`)},
+  directions:{n:["Directions","方向发散"],v:["Forking","发散方向"],done:n=>n?L(`${n} direction${n>1?"s":""} drafted`,`已起草 ${n} 个方向`):L("Directions drafted","方向已起草")},
+  build:{n:["Build","构建"],v:["Building","构建"],done:n=>n?L(`${n} card${n>1?"s":""} drafted`,`已起草 ${n} 张卡片`):L("Done","已完成")},
+  review:{n:["Review","审阅"],v:["Reviewing","审阅"],done:()=>L("Review done","审阅完成")},
+  agent:{n:["Task","任务"],v:["Working","处理中"],done:n=>n?L(`${n} card${n>1?"s":""} drafted`,`已起草 ${n} 张卡片`):L("Done","已完成")},
+};
+const ISL_AGENT_KIND={scout:"research",muse:"directions",wright:"build",critic:"review"};
+const islLive=t=>t.state==="running"||t.state==="queued";
+const islShown=t=>t.revealed||t.state==="queued"||NOW()-t.started>=ISL_GRACE;
+const islCap=s=>s?String(s)[0].toUpperCase()+String(s).slice(1):"";
+function islClock(ms){const s=Math.max(0,Math.floor(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+
+function taskOpen({kind="agent",agent=null,title="",phase="",cancel=null,show=null,key=null,nodeIds=[],ownsNodes=false,started=0,generic=false}={}){
+  if(key){const ex=ISL.tasks.find(t=>t.key===key&&islLive(t));if(ex)return ex}
+  const t={id:uid(),key,kind:ISL_KIND[kind]?kind:"agent",agent,title:String(title||"").trim(),phase:String(phase||""),pct:null,
+    state:"running",started:started||NOW(),ended:0,cancel,show,nodeIds:[...nodeIds],note:"",error:"",tone:"",revealed:false,stopping:false,ownsNodes:ownsNodes||nodeIds.length>0,generic};
+  t.update=p=>taskUpdate(t,p);
+  t.done=p=>taskEnd(t,"done",p);
+  t.fail=(msg,p)=>taskEnd(t,"failed",{...p,error:String(msg||L("Something went wrong","出现错误"))});
+  t.cancelled=p=>taskEnd(t,"cancelled",p);
+  ISL.tasks.push(t);
+  islSchedule();islTick();
+  return t;
+}
+function taskUpdate(t,p={}){
+  if(!t||!islLive(t))return;
+  if(p.phase!=null){t.phase=String(p.phase);if(!("pct" in p))t.pct=null}
+  if("pct" in p)t.pct=p.pct==null||!isFinite(p.pct)?null:clamp(+p.pct,0,100);
+  if("of" in p||p.phase!=null)t.of=p.of||"";
+  if(p.title)t.title=String(p.title);
+  if(p.queued!=null)t.state=p.queued?"queued":"running";
+  islSchedule();
+}
+function taskEnd(t,state,p={}){
+  if(!t)return;
+  // a caller may correct the outcome right after runAgent returns (done → failed); allow that briefly
+  if(!islLive(t)&&!(t.ended&&NOW()-t.ended<400&&t.state==="done"))return;
+  const wasShown=islShown(t);
+  t.state=state;t.ended=t.ended||NOW();t.pct=state==="done"?100:t.pct;
+  if(p.nodeIds)t.nodeIds=[...new Set([...t.nodeIds,...p.nodeIds])];
+  if(p.note!=null)t.note=String(p.note);
+  if(p.error!=null)t.error=String(p.error);
+  if(p.label)t.endLabel=String(p.label);
+  t.tone=state==="failed"?"fail":state==="cancelled"?"stop":(p.tone||"ok");
+  if(t._wasShown==null)t._wasShown=wasShown;
+  clearTimeout(t._ann);t._ann=setTimeout(()=>islAnnounce(t),140);
+  islSchedule();
+}
+/* cards made by an agent while (or right after) its job ran belong to that job, so Show can find them */
+function taskAdopt(n){
+  if(ISL.noAdopt||!n||!n.by||!AGENTS[n.by])return;
+  for(let i=ISL.tasks.length-1;i>=0;i--){const t=ISL.tasks[i];
+    if(t.agent!==n.by||t.ownsNodes)continue;
+    if(islLive(t)||NOW()-t.ended<8000){if(!t.nodeIds.includes(n.id))t.nodeIds.push(n.id);islSchedule();return}
+  }
+}
+function islNodes(t){return t.nodeIds.map(id=>byId(id)).filter(n=>n&&!n.archived)}
+function islAnnounce(t){
+  if(!ISL.tasks.includes(t))return;
+  // finished before anyone could read it: the canvas already shows the result, so stay quiet
+  if(t.state==="done"&&!t._wasShown&&!t.note){ISL.tasks=ISL.tasks.filter(x=>x!==t);islSchedule();return}
+  t.revealed=true;
+  islSay(islEndText(t)+(t.error?". "+t.error:t.note?". "+t.note:""));
+  if(ISL.open){islSchedule();return}
+  const now=NOW(),f=ISL.flash;
+  if(f&&now-f.at<1000){f.ids.push(t.id);f.until=Math.max(f.until,now+islFlashLife([t]))}  // ended together: say it once
+  else if(f&&now<f.until){ISL.flashQ.push(t.id);f.until=Math.min(f.until,Math.max(now+1600,f.at+2200))}  // let the current one finish its sentence
+  else islFlashStart([t.id]);
+  islSchedule();islTick();
+}
+function islFlashLife(ts){return ts.some(x=>x.state==="failed")?6500:ts.some(x=>x.tone==="warn")?5000:ts.every(x=>x.state==="cancelled")?2600:3800}
+function islFlashStart(ids){
+  const ts=ids.map(id=>ISL.tasks.find(x=>x.id===id)).filter(Boolean);
+  ISL.flash=ts.length?{ids:ts.map(x=>x.id),at:NOW(),until:NOW()+islFlashLife(ts)}:null;
+}
+function islEndText(t){
+  const n=islNodes(t).length;
+  if(t.endLabel)return t.endLabel;
+  if(t.state==="failed")return L(`${ISL_KIND[t.kind].n[0]} failed`,`${ISL_KIND[t.kind].n[1]}失败`);
+  if(t.state==="cancelled")return L("Stopped","已停止");
+  return ISL_KIND[t.kind].done(n);
+}
+function islSay(s){const el=$("islLive");if(el){el.textContent="";setTimeout(()=>{el.textContent=s},30)}}
+function islStop(t){
+  if(!t||!islLive(t)||!t.cancel)return;
+  t.stopping=true;t.phase=L("Stopping…","正在停止…");t.pct=null;islSchedule();
+  try{t.cancel()}catch(e){console.warn(e)}
+}
+function islShow(t){
+  if(!t)return;
+  const ns=islNodes(t);
+  if(t.show)t.show(ns);
+  else if(ns.length){select(ns.map(n=>n.id),{menus:false});focusNodes(ns,Math.max(cam.s,.75))}
+  islSetOpen(false);ISL.flash=null;ISL.flashQ=[];islSchedule();
+}
+function islDismiss(t){ISL.tasks=ISL.tasks.filter(x=>x!==t);if(ISL.flash)ISL.flash.ids=ISL.flash.ids.filter(id=>id!==t.id);islSchedule()}
+function islSetOpen(v){
+  if(ISL.open===!!v)return;ISL.open=!!v;clearTimeout(ISL.closeT);
+  if(v){ISL.flash=null;ISL.flashQ=[];ISL.tasks.forEach(t=>{if(!islLive(t))t.revealed=true})}
+  islSchedule();
+}
+function islTrim(){
+  const ended=ISL.tasks.filter(t=>!islLive(t)).sort((a,b)=>b.ended-a.ended);
+  const drop=new Set(ended.slice(ISL_KEEP));
+  if(drop.size)ISL.tasks=ISL.tasks.filter(t=>!drop.has(t))
+}
+
+/* ── rendering: one shell whose size springs between faces ── */
+function islSchedule(){if(ISL.raf)return;ISL.raf=requestAnimationFrame(()=>{ISL.raf=0;islRender()})}
+function islTick(){
+  if(ISL.timer)return;
+  ISL.timer=setInterval(()=>{
+    const busy=ISL.tasks.some(islLive)||!!ISL.flash;
+    islRender();
+    if(!busy&&!ISL.open){clearInterval(ISL.timer);ISL.timer=0}
+  },500);
+}
+function islAv(t){
+  const a=t.agent==="copilot"?"copilot":t.agent||"";
+  const mk=a==="copilot"?`<span class="mk cp">${ISL_CP}</span>`:AV[a]?`<span class="mk">${AV[a]}</span>`:`<span class="mk">${AV.you}</span>`;
+  const st=t.state==="queued"?"queued":t.pct==null?"ind":"";
+  const dash=t.state==="queued"?"14 100":t.pct==null?"26 100":`${Math.max(2,t.pct).toFixed(1)} 100`;
+  return `<span class="isl-av ${st}" data-a="${a}"><svg class="isl-ring" viewBox="0 0 28 28" aria-hidden="true"><circle class="tr" cx="14" cy="14" r="12.6"/><circle class="pg" cx="14" cy="14" r="12.6" pathLength="100" style="stroke-dasharray:${dash}"/></svg>${mk}</span>`;
+}
+function islGlyph(t){
+  const tone=t.state==="failed"?"fail":t.state==="cancelled"?"stop":t.tone==="warn"?"warn":"ok";
+  if(tone==="stop")return `<span class="isl-g stop" aria-hidden="true"><i></i></span>`;
+  if(tone==="ok")return `<span class="isl-g ok" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5.5 12.5 4.2 4.2 8.8-9.4"/></svg></span>`;
+  return `<span class="isl-g ${tone}" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6.5v6.8M12 17.4v.1"/></svg></span>`;
+}
+function islVerb(t){return islCap(L(ISL_KIND[t.kind].v[0],ISL_KIND[t.kind].v[1]))}
+function islTitle(t){return t.generic?`${islWho(t)} · ${t.title}`:t.title||islCap(t.phase)||islVerb(t)}
+function islWho(t){return AGENTS[t.agent]?.name||(t.agent==="copilot"?"Copilot":"Vellum")}
+function islPhase(t){
+  if(t.state==="queued")return t.phase||L("Queued","排队中");
+  const ph=islCap(t.phase);
+  return ph&&ph!==t.title?ph:islWho(t);
+}
+function islCompactText(t){return clip(t.generic?islCap(t.phase)||t.title:t.title||islCap(t.phase),40)}
+function islPrimary(live){
+  // the job that best represents the moment: one with real progress, else the newest
+  return live.filter(t=>t.state==="running"&&t.pct!=null).sort((a,b)=>b.started-a.started)[0]||live.slice().sort((a,b)=>b.started-a.started)[0];
+}
+function islFaceHTML(mode,live){
+  if(mode==="idle")return `<button type="button" class="isl-hit" data-isl="toggle" aria-label="${esc(L("Background tasks: none running","后台任务：无"))}" aria-expanded="false" style="display:block;width:46px;height:12px"></button>`;
+  if(mode==="peek"){
+    const last=ISL.tasks.filter(t=>!islLive(t)&&t.revealed).sort((a,b)=>b.ended-a.ended)[0];
+    const tone=last?(last.state==="failed"?"fail":last.state==="cancelled"?"":last.tone==="warn"?"warn":"ok"):"";
+    return `<button type="button" class="isl-peek" data-isl="toggle" aria-expanded="false">${last?`<i class="${tone}"></i><b>${esc(islEndText(last))}</b><span>· ${esc(ago(last.ended))}</span>`:`<i></i>${esc(L("No background tasks","暂无后台任务"))}`}</button>`;
+  }
+  if(mode==="compact"){
+    const p=islPrimary(live),others=live.length-1;
+    const avs=live.length>1?`<span class="isl-stack">${[p,...live.filter(x=>x!==p)].slice(0,3).map(islAv).join("")}</span>`:islAv(p);
+    const right=p.state==="queued"?L("Queued","排队"):p.of||(p.pct!=null?Math.round(p.pct)+"%":islClock(NOW()-p.started));
+    return `<button type="button" class="isl-pill" data-isl="toggle" aria-expanded="false" aria-label="${esc(L(`${live.length} background task${live.length>1?"s":""} running. Show details`,`${live.length} 个后台任务进行中，展开详情`))}">${avs}<span class="isl-lbl"><b>${esc(p.generic?islWho(p):islVerb(p))}</b><span>${esc(islCompactText(p))}</span></span>${others>0?`<span class="isl-more">+${others}</span>`:""}<span class="isl-num">${esc(right)}</span></button>`;
+  }
+  if(mode==="flash"){
+    const ts=ISL.flash.ids.map(id=>ISL.tasks.find(x=>x.id===id)).filter(Boolean);
+    if(!ts.length)return "";
+    if(ts.length===1){const t=ts[0],ns=islNodes(t),canShow=t.state!=="cancelled"&&(ns.length||t.show);
+      const sub=t.error?`<small class="err">${esc(clip(t.error,80))}</small>`:t.note?`<small>${esc(clip(t.note,80))}</small>`:`<small>${esc(clip(islTitle(t),60))}</small>`;
+      return `<div class="isl-flash" role="group">${islGlyph(t)}<span class="isl-tx"><b>${esc(islEndText(t))}</b>${sub}</span>${t.state==="failed"?`<button type="button" class="isl-btn" data-isl="toggle">${esc(L("Details","详情"))}</button>`:canShow?`<button type="button" class="isl-btn" data-isl-show="${t.id}">${esc(L("Show","查看"))}</button>`:""}</div>`}
+    const failed=ts.filter(t=>t.state==="failed").length,lead=ts.find(t=>t.state==="failed")||ts[0];
+    return `<div class="isl-flash" role="group">${islGlyph(lead)}<span class="isl-tx"><b>${esc(L(`${ts.length} tasks finished`,`${ts.length} 个任务已结束`))}</b><small${failed?' class="err"':""}>${esc(failed?L(`${failed} failed`,`${failed} 个失败`):ts.map(islTitle).map(s=>clip(s,24)).join(" · "))}</small></span><button type="button" class="isl-btn" data-isl="toggle">${esc(L("Review","查看"))}</button></div>`;
+  }
+  // open: a skeleton; islSyncOpen keeps its rows keyed so nothing flickers while jobs move
+  return `<div class="isl-panel" role="dialog" aria-label="${esc(L("Background tasks","后台任务"))}"><div class="isl-hd"><h3>${esc(L("Background tasks","后台任务"))}<small data-isl-head></small></h3><button type="button" class="isl-x" data-isl="toggle" aria-label="${esc(L("Collapse","收起"))}" aria-expanded="true"><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button></div><div class="isl-list" data-isl-list></div><div class="isl-ft" hidden><button type="button" data-isl="clear">${esc(L("Clear finished","清除已结束"))}</button></div></div>`;
+}
+function islSyncOpen(face,live){
+  const ended=ISL.tasks.filter(t=>!islLive(t)&&t.revealed).sort((a,b)=>b.ended-a.ended);
+  const liveSorted=live.slice().sort((a,b)=>a.started-b.started);
+  const head=live.length?L(`${live.length} running`,`${live.length} 个进行中`):ended.length?L("All finished","全部结束"):"";
+  const hd=face.querySelector("[data-isl-head]");if(hd&&hd.textContent!==head)hd.textContent=head;
+  const ft=face.querySelector(".isl-ft");if(ft)ft.hidden=!ended.length;
+  const list=face.querySelector("[data-isl-list]");if(!list)return;
+  const keys=!live.length&&!ended.length?["empty"]:[...liveSorted.map(t=>t.id),...(ended.length&&live.length?["sec"]:[]),...ended.map(t=>t.id)];
+  const have=new Map([...list.children].map(el=>[el.dataset.k,el]));
+  keys.forEach((k,i)=>{
+    let el=have.get(k);
+    if(!el){el=document.createElement("div");el.dataset.k=k;
+      if(k==="empty"){el.className="isl-empty";el.textContent=L("Nothing running. Image and video generation, research and other crew work show up here while they run.","暂无任务。图像与视频生成、调研等后台工作会在这里显示进度。")}
+      else if(k==="sec"){el.className="isl-sec";el.textContent=L("Finished","已结束")}
+      else el.className="isl-row";
+    }
+    have.delete(k);
+    if(list.children[i]!==el)list.insertBefore(el,list.children[i]||null);
+    const t=ISL.tasks.find(x=>x.id===k);if(t)islPatchRow(el,t);
+  });
+  have.forEach(el=>el.remove());
+}
+function islRowSig(t){return [t.state,t.stopping,!!t.cancel,islNodes(t).length,!!t.show,t.tone].join("|")}
+function islPatchRow(el,t){
+  const live=islLive(t),sig=islRowSig(t);
+  if(el.dataset.sig!==sig){
+    el.dataset.sig=sig;
+    const ns=islNodes(t),canShow=t.state!=="cancelled"&&!live&&(ns.length||t.show);
+    const acts=(live&&t.cancel&&!t.stopping?`<button type="button" class="isl-ib" data-isl-stop="${t.id}" aria-label="${esc(L("Stop","停止"))}: ${esc(islTitle(t))}" title="${esc(L("Stop","停止"))}"><i></i></button>`:"")
+      +(canShow?`<button type="button" class="isl-btn" data-isl-show="${t.id}">${esc(L("Show","查看"))}</button>`:"")
+      +(!live?`<button type="button" class="isl-ib" data-isl-dismiss="${t.id}" aria-label="${esc(L("Dismiss","移除"))}" title="${esc(L("Dismiss","移除"))}"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></svg></button>`:"");
+    el.innerHTML=`<span class="isl-lead"></span><span class="isl-tx"><span class="isl-t"></span><span class="isl-s"><span class="ph"></span><span class="el"></span></span></span><span class="isl-acts">${acts}</span>${live?`<span class="isl-bar"><i></i></span>`:""}`;
+    el.classList.toggle("ended",!live);
+  }
+  const lead=el.querySelector(".isl-lead"),leadHTML=live?islAv(t):islGlyph(t),leadKey=live?`${t.agent}|${t.state}|${t.pct==null}`:"g"+t.state+t.tone;
+  if(lead.dataset.k!==leadKey){lead.dataset.k=leadKey;lead.outerHTML=`<span class="isl-lead" data-k="${esc(leadKey)}" style="display:contents">${leadHTML}</span>`}
+  else if(live&&t.pct!=null){const pg=lead.querySelector(".pg");if(pg)pg.style.strokeDasharray=`${Math.max(2,t.pct).toFixed(1)} 100`}
+  const set=(sel,txt,cls)=>{const e=el.querySelector(sel);if(!e)return;if(e.textContent!==txt)e.textContent=txt;if(cls!=null)e.className=cls};
+  set(".isl-t",islTitle(t));
+  const ph=live?islPhase(t)+(t.state!=="running"?"":t.of?` · ${t.of}`:t.pct!=null?` · ${Math.round(t.pct)}%`:""):t.error?t.error:t.note?islEndText(t)+" · "+t.note:islEndText(t);
+  set(".ph",ph,"ph"+(t.error?" err":t.tone==="warn"&&!live?" warn":""));
+  set(".el",live?islClock(NOW()-t.started):islClock(t.ended-t.started));
+  el.title=t.error||"";
+  const bar=el.querySelector(".isl-bar");
+  if(bar){const a=t.agent==="copilot"?"copilot":t.agent||"";bar.className="isl-bar"+(t.state==="queued"?" queued":t.pct==null?" ind":"");
+    bar.style.setProperty("--tint",{scout:"var(--B)",wright:"var(--A)",critic:"var(--C)",muse:"var(--isl-muse)"}[a]||"var(--label-2)");
+    bar.style.setProperty("--p",(t.pct||0)+"%")}
+}
+function islRender(){
+  const shell=$("island");if(!shell)return;
+  islTrim();
+  const now=NOW();
+  if(ISL.flash&&now>=ISL.flash.until&&!shell.matches(":hover")){const q=ISL.flashQ.splice(0);ISL.flash=null;if(q.length&&!ISL.open)islFlashStart(q)}
+  const live=ISL.tasks.filter(t=>islLive(t)&&islShown(t));
+  live.forEach(t=>{if(!t.revealed){t.revealed=true;islSay(L(`${islWho(t)} started: ${islTitle(t)}`,`${islWho(t)} 开始：${islTitle(t)}`))}});
+  let mode=ISL.open?"open":ISL.flash?"flash":live.length?"compact":ISL.hover?"peek":"idle";
+  if(mode==="flash"&&!ISL.flash.ids.some(id=>ISL.tasks.find(x=>x.id===id))){ISL.flash=null;mode=live.length?"compact":"idle"}
+  // an open panel with nothing left running folds itself away once you look elsewhere
+  if(mode==="open"&&!live.length&&!ISL.closeT&&!shell.matches(":hover")&&!shell.contains(document.activeElement)){
+    ISL.closeT=setTimeout(()=>{ISL.closeT=0;if(ISL.open&&!ISL.tasks.some(islLive)&&!$("island").matches(":hover")){ISL.open=false;islSchedule()}},5200);
+  }
+  if(mode!=="open"&&ISL.closeT){clearTimeout(ISL.closeT);ISL.closeT=0}
+  const tone=mode==="flash"?(()=>{const ts=ISL.flash.ids.map(id=>ISL.tasks.find(x=>x.id===id)).filter(Boolean);return ts.some(t=>t.state==="failed")?"fail":ts.some(t=>t.tone==="warn")?"warn":ts.every(t=>t.state==="cancelled")?"":"ok"})():"";
+  shell.dataset.mode=mode;if(tone)shell.dataset.tone=tone;else delete shell.dataset.tone;
+  shell.style.setProperty("--isl-pw",Math.min(400,innerWidth-32)+"px");
+  // compose the face; same mode → patch in place (keeps focus and hover), new mode → crossfade
+  const sig=mode==="compact"?"compact:"+live.map(t=>t.id+t.state+(t.pct==null)).join(","):mode==="flash"?"flash:"+ISL.flash.ids.join(","):mode;
+  let face=ISL.face;
+  const html=islFaceHTML(mode,live);
+  if(!face||face.dataset.f!==mode){
+    if(face){const old=face;old.classList.add("out");setTimeout(()=>old.remove(),280)}
+    face=document.createElement("div");face.className="isl-face in";face.dataset.f=mode;face.dataset.sig=sig;face.innerHTML=html;shell.appendChild(face);ISL.face=face;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>face.classList.remove("in")));
+  }else if(face.dataset.sig!==sig){
+    const hadFocus=face.contains(document.activeElement)?document.activeElement.getAttribute("data-isl")||document.activeElement.getAttribute("data-isl-stop")&&"stop":null;
+    const scroll=face.querySelector("[data-isl-list]")?.scrollTop||0;
+    face.dataset.sig=sig;face.innerHTML=html;
+    const ls=face.querySelector("[data-isl-list]");if(ls)ls.scrollTop=scroll;
+    if(hadFocus==="toggle")face.querySelector('[data-isl="toggle"]')?.focus({preventScroll:true});
+  }else if(mode==="compact"){
+    // light patch: numbers and words only
+    const p=islPrimary(live),num=face.querySelector(".isl-num"),lbl=face.querySelector(".isl-lbl span");
+    const right=p.state==="queued"?L("Queued","排队"):p.of||(p.pct!=null?Math.round(p.pct)+"%":islClock(NOW()-p.started));
+    if(num&&num.textContent!==right)num.textContent=right;
+    const tt=islCompactText(p);if(lbl&&lbl.textContent!==tt)lbl.textContent=tt;
+    face.querySelectorAll(".isl-av").forEach((av,i)=>{const t=[p,...live.filter(x=>x!==p)][i];const pg=av.querySelector(".pg");if(t&&pg&&t.pct!=null)pg.style.strokeDasharray=`${Math.max(2,t.pct).toFixed(1)} 100`});
+  }else if(mode==="flash"||mode==="peek"){if(face.innerHTML!==html)face.innerHTML=html}
+  if(mode==="open")islSyncOpen(face,live);
+  // spring the shell to the face's natural size
+  const w=Math.ceil(face.offsetWidth),h=Math.ceil(face.offsetHeight);
+  const r=mode==="open"?22:mode==="flash"?24:Math.round(h/2);
+  if(shell.style.getPropertyValue("--iw")!==w+"px")shell.style.setProperty("--iw",w+"px");
+  if(shell.style.getPropertyValue("--ih")!==h+"px"){shell.style.setProperty("--ih",h+"px");document.documentElement.style.setProperty("--isl-h",h+"px")}
+  shell.style.setProperty("--ir",r+"px");
+  shell.setAttribute("aria-busy",live.length?"true":"false");
+  if(ISL.flash||live.length)islTick();
+}
+function initIsland(){
+  const shell=$("island");if(!shell)return;
+  shell.addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    const find=id=>ISL.tasks.find(t=>t.id===id);
+    if(b.dataset.isl==="toggle"){islSetOpen(!ISL.open);if(ISL.open)requestAnimationFrame(()=>ISL.face?.querySelector(".isl-x")?.focus({preventScroll:true}));return}
+    if(b.dataset.isl==="clear"){ISL.tasks=ISL.tasks.filter(islLive);islSchedule();return}
+    if(b.dataset.islStop){islStop(find(b.dataset.islStop));return}
+    if(b.dataset.islShow){islShow(find(b.dataset.islShow));return}
+    if(b.dataset.islDismiss){islDismiss(find(b.dataset.islDismiss));return}
+  });
+  shell.addEventListener("pointerenter",()=>{ISL.hover=true;clearTimeout(ISL.closeT);ISL.closeT=0;islSchedule()});
+  shell.addEventListener("pointerleave",()=>{ISL.hover=false;islSchedule()});
+  shell.addEventListener("keydown",e=>{if(e.key==="Escape"&&ISL.open){e.stopPropagation();islSetOpen(false);requestAnimationFrame(()=>ISL.face?.querySelector('[data-isl="toggle"]')?.focus({preventScroll:true}))}});
+  document.addEventListener("pointerdown",e=>{if(ISL.open&&!shell.contains(e.target))islSetOpen(false)},true);
+  addEventListener("resize",()=>islSchedule());
+  islRender();
+}
+function stopAgent(k){
+  if(!crewState[k]?.busy)return;
+  if(lineQueue.length)lineQueuePaused=true;
+  crewState[k].cancel=true;setAgent(k,{status:"stopping…"});renderLineQueue?.();
+}
 const WEIGHTS={
   observed:{label:"Observed",zh:"实测",n:3,desc:"Watched in real use or a test session.",zhDesc:"在真实使用或测试中亲眼观察到的事实"},
   reported:{label:"Reported",zh:"转述",n:2,desc:"Someone told us. Nobody has watched it happen.",zhDesc:"由用户或他人转述，尚未亲眼验证"},
@@ -2944,7 +3361,7 @@ function log(who,html,node){board.log.push({t:NOW(),who,html,node:node||null});i
 
 function node(type,props,pos){
   const n={id:uid(),type,x:Math.round(pos?.x??0),y:Math.round(pos?.y??0),created:NOW(),by:"you",status:"ink",rev:1,...props};
-  if(!n.prov)n.prov=provFor(n);board.nodes.push(n);return n;
+  if(!n.prov)n.prov=provFor(n);board.nodes.push(n);taskAdopt(n);return n;
 }
 /* ── provenance and the change log ──────────────────────────────────────
    Stage 1 of the change pipeline: record, don't change behaviour.
@@ -6712,12 +7129,13 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
   plStreamText.delete(n.id);
   activePlNodeId=n.id;
   const ctrl=new AbortController();
+  const task=taskOpen({kind:"reverse",agent:"scout",title:titleOf(n)||L("Image","图像"),phase:L("Reading the image","读取图像"),nodeIds:[n.id],
+    cancel:()=>ctrl.abort(),show:()=>{const m=byId(n.id);if(m)revealPromptPack(m)}});
   const prevScout=crewState.scout.busy;
   if(!prevScout)setAgent("scout",{busy:true,status:"reversing prompt",cancel:false});
   renderNodes();
   if(reveal&&stageOpen!==n.id&&focusId!==n.id)openFocus(n.id);
   else{if(focusId===n.id)renderMargin();if(stageOpen===n.id)roomImage(n)}
-  toast("Analyzing visual structure with PromptLens…");
   const cancelPoll=setInterval(()=>{if(crewState.scout.cancel)ctrl.abort()},200);
   let partialPack=null;
   try{
@@ -6727,6 +7145,7 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
     if(localMode){
       try{
         if(!prevScout)setAgent("scout",{status:"reverse · visual pass"});
+        task.update({phase:L("Visual pass","视觉解析")});
         const locPack=await reverseCompactFallback(dataUrl,ctrl.signal,ratioHint);
         res={pack:locPack,observation:null,obsSummary:"",quality:"ready"};
       }catch(locErr){primaryErr=locErr}
@@ -6742,6 +7161,7 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
           onProgress:p=>{
             if(p?.pack?.positive&&!isCorruptPlPack(p.pack))partialPack=p.pack;
             if(!prevScout&&p?.phase)setAgent("scout",{status:"reverse · "+p.phase});
+            if(p?.phase)task.update({phase:p.phase});
           }
         });
       }catch(err){primaryErr=err}
@@ -6751,6 +7171,7 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
       if((!res||!res.pack?.positive||isCorruptPlPack(res.pack))&&!crewState.scout.cancel&&hasApi()){
         try{
           if(!prevScout)setAgent("scout",{status:"reverse · compact pass"});
+          task.update({phase:L("Compact pass","精简解析")});
           const fbPack=await reverseCompactFallback(dataUrl,ctrl.signal,ratioHint);
           res={pack:fbPack,observation:null,obsSummary:"",quality:"ready"};
         }catch(fbErr){
@@ -6774,7 +7195,7 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
     setTimeout(()=>{if(plUnveilNodes.delete(n.id)){const el=qs(`[data-pl-panel="${n.id}"]`);el?.classList.remove("is-unveil")}},900);
     if(reveal)revealPromptPack(n);
     else{if(focusId===n.id)renderMargin();if(stageOpen===n.id)roomImage(n)}
-    toast("Prompt pack ready");
+    task.done(res.quality==="partial"?{tone:"warn",note:L("Partial pack — the full pass did not finish","部分结果：完整解析未完成")}:{});
     return res;
   }catch(err){
     const msg=err?.name==="AbortError"||crewState.scout.cancel?(localMode?"Stopped or timed out waiting for Local AI. Try Retry or check Studio AI in Settings.":"Reverse prompt stopped."):(err?.message||"Could not reverse prompt");
@@ -6784,7 +7205,7 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
     log("scout",`Reverse prompt did not complete for <b>${esc(titleOf(n))}</b>: ${esc(msg)}`,n.id);
     if(reveal)revealPromptPack(n);
     else{if(focusId===n.id)renderMargin();if(stageOpen===n.id)roomImage(n)}
-    toast(msg);
+    if(task.stopping)task.cancelled();else task.fail(msg);
     return null;
   }finally{
     clearInterval(cancelPoll);
@@ -6803,7 +7224,8 @@ async function splitRecordingShots(n){
   plBusyNodes.add(n.id);
   const prevScout=crewState.scout.busy;
   if(!prevScout)setAgent("scout",{busy:true,status:"splitting video shots",cancel:false});
-  renderNodes();toast("Detecting scene cuts & extracting key shots…");
+  const task=taskOpen({kind:"shots",agent:"scout",title:titleOf(n)||L("Video","视频"),phase:L("Detecting scene cuts","检测镜头切换"),ownsNodes:true});
+  renderNodes();
   try{
     const pl=await loadPromptLens();
     const res=await pl.extractKeyframes(src,{maxEdge:960,quality:.85});
@@ -6816,7 +7238,7 @@ async function splitRecordingShots(n){
       if(existing.some(f=>Math.abs((f.t||0)-t)<0.18))continue;
       items.push({url:res.frames[i],t,shotIndex:meta.shotIndex||1});
     }
-    if(!items.length){toast("Key shots from this video are already lifted");return []}
+    if(!items.length){task.done({label:L("Nothing new to lift","没有新镜头"),note:L("Key shots from this video are already on the board","该视频的关键镜头已在画布上")});return []}
     checkpoint();const made=[];
     for(let i=0;i<items.length;i++){
       const it=items[i],col=i%2,row=Math.floor(i/2);
@@ -6828,10 +7250,10 @@ async function splitRecordingShots(n){
     log("scout",`Split <b>${made.length}</b> key shot${made.length===1?"":"s"} from ${esc(titleOf(n))}`,made[0].id);
     renderAll();restack(made);persist();
     if(stageOpen===n.id)roomRecording(n);else follow(made);
-    toast(`Lifted ${made.length} key shot${made.length===1?"":"s"}`);
+    task.done({nodeIds:made.map(m=>m.id)});
     return made;
   }catch(err){
-    toast(err?.code==="TOO_LONG"?"Video too long to auto-split in browser":(err?.message||"Could not split video shots"));
+    task.fail(err?.code==="TOO_LONG"?L("Video too long to auto-split in the browser","视频过长，无法在浏览器中自动拆分"):(err?.message||L("Could not split video shots","无法拆分镜头")));
     return [];
   }finally{
     plBusyNodes.delete(n.id);
@@ -7024,12 +7446,15 @@ function drawOutlineOld(pl){
 const STALL=()=>new Promise(()=>{});
 function seatWorld(k){const s=qs(`[data-agent="${k}"]`);if(!s||!s.offsetParent)return null;const r=s.getBoundingClientRect(),w=wall.getBoundingClientRect();return toWorld(r.left+r.width/2-w.left,r.top+r.height/2-w.top)}
 function goHome(k){const c=cursors[k];if(!c)return;const h=seatWorld(k);if(h&&!calm()){moveCursor(k,h.x,h.y);clearTimeout(c._hide);c._hide=setTimeout(()=>{if(!crewState[k].busy)c.classList.remove("on")},620)}else c.classList.remove("on")}
-async function runAgent(k,{read=[],places=[],label,work}){
+async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   preemptBackgroundAdvisors?.();
   crewState[k].cancel=false;setAgent(k,{busy:true,status:label});recordChanges();
-  const c=cursorEl(k);const say=s=>{setAgent(k,{status:s});c.querySelector(".lbl").textContent=s[0].toUpperCase()+s.slice(1)};say(label);
+  // every crew run is a task on the island; prog carries only progress the work really reports
+  const task=taskOpen({kind:tk.kind||ISL_AGENT_KIND[k]||"agent",agent:k,title:tk.title||islCap(label),generic:!tk.title,phase:label,cancel:()=>stopAgent(k)});
+  const c=cursorEl(k);const say=(s,prog)=>{setAgent(k,{status:s});c.querySelector(".lbl").textContent=s[0].toUpperCase()+s.slice(1);
+    task.update(prog?{...prog,phase:prog.pct!=null?s.replace(/\s*·\s*\d+%$/,""):s}:{phase:s})};say(label);
   const stopped=()=>crewState[k].cancel;
-  const t0=performance.now();let res,err,fin=false;const p=work({say,stopped}).then(r=>res=r,e=>err=e).finally(()=>fin=true);
+  const t0=performance.now();let res,err,fin=false;const p=work({say,stopped,task}).then(r=>res=r,e=>err=e).finally(()=>fin=true);
   if(places.length)frameRects([...places,...read.slice(0,1).map(n=>({x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)}))]);
   const home=seatWorld(k);if(home&&!calm()){c.classList.add("launch");moveCursor(k,home.x,home.y);void c.offsetWidth;c.classList.remove("launch");c.classList.add("on");await wait(40)}
   const start=read[0]||places[0];if(start){moveCursor(k,(start.x||0)-60,(start.y||0)-80);await wait(30);c.classList.add("on")}
@@ -7042,13 +7467,14 @@ async function runAgent(k,{read=[],places=[],label,work}){
   await Promise.race([p,new Promise(res=>{const iv=setInterval(()=>{if(stopped()){clearInterval(iv);res()}},120);p.then(()=>clearInterval(iv))})]);clearInterval(tick);
   if(stopped()){read.forEach(n=>{const e=nodeEl(n.id);if(e){delete e.dataset.extra;e.classList.remove("reading")}});outlines.forEach(o=>o.remove());goHome(k);
     for(const t of Object.values(board.threads))for(let i=t.length-1;i>=0;i--)if(t[i].who===k&&t[i].typing)t.splice(i,1);
-    crewState[k].cancel=false;setAgent(k,{busy:false,status:""});renderAll();toast(`${AGENTS[k].name} stopped`);return STALL()}
+    crewState[k].cancel=false;setAgent(k,{busy:false,status:""});renderAll();task.cancelled();return STALL()}
   const min=calm()?0:500,el=performance.now()-t0;if(el<min)await wait(min-el);
   read.forEach(n=>{const e=nodeEl(n.id);if(e){delete e.dataset.extra;e.classList.remove("reading")}});
   outlines.forEach(o=>{o.style.transition="opacity .3s";o.style.opacity=0;setTimeout(()=>o.remove(),320)});
   goHome(k);setAgent(k,{busy:false,status:""});
   crewState[k].lastRun={t:NOW(),live:err?false:(res&&typeof res==="object"&&"live" in res?!!res.live:null)};
-  if(err)throw err;return res;
+  if(err){task.fail(err?.message);throw err}
+  task.done();return res;
 }
 function freeSpot(x,y,w,h,ignore=[]){
   for(let i=0;i<80;i++){
@@ -8095,16 +8521,8 @@ $("edges").addEventListener("click",e=>{const b=e.target.closest("[data-ex]");if
   if(b.dataset.pid){reviewPid=b.dataset.pid;renderBars();focusNodes(board.nodes.filter(n=>n.pid===b.dataset.pid),Math.max(cam.s,.7));return}
   const v=wall.getBoundingClientRect();flyTo({s:cam.s,x:v.width/2-(+b.dataset.ex)*cam.s,y:v.height/2-(+b.dataset.ey)*cam.s},600)});
 
-/* ── narration: what each agent is doing, and a way to stop it ───────── */
-function renderNarr(){
-  // one stable chip per working agent; only its words change, so Stop never moves under your pointer
-  const host=$("narr");const busy=new Set(Object.values(AGENTS).filter(a=>crewState[a.key].busy).map(a=>a.key));
-  qsa(".n",host).forEach(el=>{if(!busy.has(el.dataset.k))el.remove()});
-  for(const k of busy){const a=AGENTS[k],s=crewState[k].status||"working";let el=qs(`.n[data-k="${k}"]`,host);
-    if(!el){el=document.createElement("div");el.className="n";el.dataset.k=k;el.innerHTML=`<span class="mk">${a.mk}</span><span><b>${a.name}</b> <em class="st" style="font-style:normal"></em></span><button type="button" class="stop" data-stop="${k}" aria-label="Stop ${a.name}" title="Stop"><i></i></button>`;host.appendChild(el)}
-    const st=qs(".st",el);if(st.textContent!==s)st.textContent=s}
-}
-$("narr").addEventListener("click",e=>{const b=e.target.closest("[data-stop]");if(!b)return;const k=b.dataset.stop;if(lineQueue.length)lineQueuePaused=true;crewState[k].cancel=true;setAgent(k,{status:"stopping…"});renderLineQueue?.()});
+/* ── narration: what each agent is doing now lives on the Task Island (status, progress, Stop) ── */
+function renderNarr(){const host=$("narr");if(host.firstChild)host.replaceChildren()}
 
 /* ── review: step through everything waiting for you ─────────────────── */
 let reviewPid=null,reviewPopOpen=false;
@@ -8531,24 +8949,24 @@ async function generateImages(prompt,{from=null}={}){
   prompt=String(prompt||"").trim();if(!prompt)return toast("Describe the image, for example: /image a headband fitting on a sculpted head");
   const count=clamp(genOpts.count,1,4),ratio=genOpts.ratio,places=planImages(count,ratio,from);
   const seeds=Array.from({length:count},()=>Math.floor(Math.random()*1e9));
-  let fellBack=false,imgErr="";
-  const res=await runAgent("wright",{read:from?[from]:[],places,label:`rendering ${count} image${count>1?"s":""}`,work:async({say,stopped})=>{
+  let fellBack=false,imgErr="",tk=null;
+  const res=await runAgent("wright",{read:from?[from]:[],places,label:`rendering ${count} image${count>1?"s":""}`,task:{kind:"image",title:prompt},work:async({say,stopped,task})=>{
+    tk=task;
     try{
       const out=await SERVICES.image(prompt,{ratio,count,seeds,from,onProgress:p=>{
         if(stopped())return "stop";
-        if(p.phase==="busy")say(`waiting for queue (${p.index+1}/${p.total})`);
-        else if(p.pct!=null)say(`rendering ${p.index+1}/${p.total} · ${Math.round(p.pct)}%`);
-        else say(`rendering ${p.index+1}/${p.total}`);
+        const overall=p.pct!=null?(p.index+clamp(p.pct,0,100)/100)/p.total*100:p.index>0?p.index/p.total*100:null;
+        if(p.phase==="busy")say(`waiting for queue (${p.index+1}/${p.total})`,{queued:true,pct:null});
+        else if(p.pct!=null)say(`rendering ${p.index+1}/${p.total} · ${Math.round(p.pct)}%`,{queued:false,pct:overall});
+        else say(`rendering ${p.index+1}/${p.total}`,{queued:false,pct:overall});
       }});
       if(Array.isArray(out)&&out.length)return out;
     }catch(e){fellBack=true;imgErr=e?.message||"";console.warn("Image generation error:",e)}
     await wait(350);return seeds.map(s=>({url:previewImage(prompt,s,ratio),seed:s,model:"Preview",live:false}))
   }});
   const liveCount=res.filter(r=>r.live).length;
-  if(!liveCount){
-    if(fellBack)toast(imgErr?`Image service note: ${clip(imgErr,68)} — showing previews.`:"The image service failed on this prompt, so previews were drawn.");
-    else if(!store.get(".genNote",false)){store.set(".genNote",true);setTimeout(()=>toast("Image service offline at 127.0.0.1:59639 — showing previews."),650)}
-  }
+  // the island says so on the task itself, so no separate toast
+  if(!liveCount)tk?.done({tone:"warn",note:fellBack?(imgErr?L(`Image service: ${clip(imgErr,56)} — previews drawn`,`图像服务：${clip(imgErr,40)}，已绘制预览`):L("Image service failed — previews drawn","图像服务出错，已绘制预览")):L("Image service offline (127.0.0.1:59639) — previews drawn","图像服务离线 (127.0.0.1:59639)，已绘制预览")});
   checkpoint();const pid="p-"+uid();
   const made=[];
   for(let i=0;i<Math.min(count,res.length);i++){
@@ -8818,13 +9236,15 @@ async function generateGif(prompt,{from=null,sources=[]}={}){
   const [gw,gh]=ratioSize(ratio,360);
   const places=planImages(1,ratio,from||srcs[0]||null,W.image);
   let errMsg="";
-  const res=await runAgent("wright",{read:srcs,places,label:"generating animated GIF",work:async({say,stopped})=>{
+  let tk=null;
+  const res=await runAgent("wright",{read:srcs,places,label:"generating animated GIF",task:{kind:"gif",title:prompt||(srcs[0]?titleOf(srcs[0]):"")},work:async({say,stopped,task})=>{
+    tk=task;
     try{
       if(srcs.length===1&&srcs[0].type==="recording"&&srcs[0].media){
         say("sampling video frames");
-        const cap=await captureVideoFramesForGif(srcs[0],{width:gw,count:16,stopped,onProgress:(i,n)=>say(`sampling frame ${i}/${n}`)});
+        const cap=await captureVideoFramesForGif(srcs[0],{width:gw,count:16,stopped,onProgress:(i,n)=>say(`sampling frame ${i}/${n}`,{pct:i*100/n})});
         say("encoding GIF");
-        const blob=await encodeGIF(cap.frames,cap.width,cap.height,{delayMs:cap.delayMs,stopped,onProgress:(i,n)=>say(`encoding GIF · ${Math.round(i*100/n)}%`)});
+        const blob=await encodeGIF(cap.frames,cap.width,cap.height,{delayMs:cap.delayMs,stopped,onProgress:(i,n)=>say(`encoding GIF · ${Math.round(i*100/n)}%`,{pct:i*100/n})});
         return {blob,dur:cap.dur,model:"Video -> GIF",live:true};
       }
       const scene=await prepareMotionScene(prompt,srcs,{ratio,durSec,wantKeyframe:false,onProgress:s=>say(s)});
@@ -8835,14 +9255,14 @@ async function generateGif(prompt,{from=null,sources=[]}={}){
         if(stopped())return null;
         drawMotionScene(g,gw,gh,i/count,scene);
         frames.push(g.getImageData(0,0,gw,gh).data);
-        say(`rendering frames ${i+1}/${count}`);
+        say(`rendering frames ${i+1}/${count}`,{pct:(i+1)*100/count});
         if(i%4===3)await wait(0);
       }
-      const blob=await encodeGIF(frames,gw,gh,{delayMs:Math.round(1000/fps),stopped,onProgress:(i,n)=>say(`encoding GIF · ${Math.round(i*100/n)}%`)});
+      const blob=await encodeGIF(frames,gw,gh,{delayMs:Math.round(1000/fps),stopped,onProgress:(i,n)=>say(`encoding GIF · ${Math.round(i*100/n)}%`,{pct:i*100/n})});
       return {blob,dur:durSec,model:scene.model,live:true};
     }catch(e){errMsg=e?.message||"GIF failed";return null}
   }});
-  if(!res?.blob)return toast(errMsg||"Could not generate GIF.");
+  if(!res?.blob){tk?.fail(errMsg||L("Could not generate GIF","无法生成 GIF"));return}
   checkpoint();const pid="p-"+uid(),key="u:"+uid(),saved=await saveMediaAsset(key,res.blob);
   const dataUrl=saved.stored?"":await blobToDataURL(res.blob);
   const title=clip(prompt||(srcs[0]?titleOf(srcs[0]):"Animated GIF"),56);
@@ -8857,15 +9277,26 @@ const _activeVideoPolls=new Set();
 async function pollVideoJob(nodeId,jobId){
   if(!nodeId||!jobId||_activeVideoPolls.has(jobId))return;
   _activeVideoPolls.add(jobId);
+  // the job lives on the image service; the island mirrors exactly what the service reports
+  const n0=byId(nodeId);
+  const task=taskOpen({kind:"video",agent:"wright",key:"h3:"+jobId,title:n0?.gen?.prompt||n0?.title||"Video",nodeIds:[nodeId],started:n0?.created||NOW(),
+    phase:n0?.gen?.status==="generating"?L("Generating","生成中"):L("Submitted to the video service","已提交至视频服务")});
+  if(n0?.gen?.status==="queued")task.update({queued:true});
+  let misses=0;
   try{
     while(true){
       const n=byId(nodeId);
-      if(!n||n.archived||!n.gen||n.gen.jobId!==jobId)break;
+      if(!n||n.archived||!n.gen||n.gen.jobId!==jobId){task.cancelled({label:L("Stopped watching","已停止跟踪"),note:L("Card removed; the service may still finish the job","卡片已移除，服务端可能仍会完成")});break}
       try{
         const r=await fetch(`${IMG_URL}/media/jobs/${encodeURIComponent(jobId)}`,{signal:timeoutSignal(5000)});
+        if(!r.ok&&++misses>=3)task.update({phase:L(`Video service answered HTTP ${r.status} — retrying`,`视频服务返回 HTTP ${r.status}，重试中`),pct:null});
         if(r.ok){
-          const j=await r.json();
+          const j=await r.json();misses=0;
           n.gen.status=j.status||n.gen.status;
+          if(j.status==="queued")task.update({queued:true,phase:j.phase&&j.phase!=="Queued"?j.phase:L("Queued on the video service","视频服务排队中")});
+          else if(j.status==="generating"){const known=j.steps>0&&j.step!=null;
+            task.update({queued:false,phase:(j.phase||L("Generating","生成中"))+(known?` · ${L("step","步")} ${j.step}/${j.steps}`:""),pct:known||j.progress>0?j.progress:null})}
+          else if(j.status==="completed")task.update({queued:false,phase:L("Downloading the MP4","正在下载 MP4"),pct:null});
           if(j.status==="completed"&&j.asset_url){
             const mr=await fetch(`${IMG_URL}${j.asset_url}`,{signal:timeoutSignal(60000)});
             if(!mr.ok)throw new Error("MP4 fetch HTTP "+mr.status);
@@ -8883,18 +9314,18 @@ async function pollVideoJob(nodeId,jobId){
             if(!psaved.stored&&poster&&pk)userMedia.set(pk,poster);
             log("wright",`Video ready <b>${esc(clip(n.title||"Video",44))}</b>`,n.id);
             renderAll();persist();
-            toast(`视频已出片：${clip(n.title||"Generated Video",32)}`);
+            task.done();
             break;
           }
           if(j.status==="failed"||j.status==="cancelled"){
             n.gen.error=j.error||j.status;
             renderAll();persist();
-            toast(`视频生成${j.status==="cancelled"?"已取消":"失败"}：${j.error||""}`);
+            if(j.status==="cancelled")task.cancelled({label:L("Video cancelled","视频已取消"),note:j.error||""});else task.fail(j.error||L("The video service reported a failure","视频服务报告失败"));
             break;
           }
           renderAll();persist();
         }
-      }catch{}
+      }catch{if(++misses>=3)task.update({phase:L("Can't reach the video service — retrying","无法连接视频服务，重试中"),pct:null})}
       await wait(1600);
     }
   }finally{
@@ -8933,11 +9364,13 @@ async function generateVideo(prompt,{from=null,sources=[]}={}){
       if(job?.job_id){
         checkpoint();const pid="p-"+uid();
         const title=clip(prompt,56);
+        ISL.noAdopt=true;
         const made=node("recording",{
           _src:srcs[0]?.id||null,title,text:"",media:"",poster:"",dur:job.spec?.duration_sec||5,path:slugName(title,"mp4"),weight:"illustrative",
           gen:{jobId:job.job_id,kind:"video",status:job.status||"queued",prompt,ratio:"16:9",seed,model:job.model||"MiniMax H3",mime:"video/mp4",dur:job.spec?.duration_sec||5,spec:job.spec,preview:false},
           by:"wright",status:"sketch",pid
         },places[0]);
+        ISL.noAdopt=false;
         for(const s of srcs){const e=edge(s.id,made.id,"src");if(e)freshEdges.add(e.id)}
         setTimeout(()=>freshEdges.clear(),1200);
         log("wright",`Queued H3 video <b>${esc(clip(title,46))}</b>`,made.id);
@@ -8953,14 +9386,16 @@ async function generateVideo(prompt,{from=null,sources=[]}={}){
   const [vw,vh]=ratioSize(ratio,720);
   const places=planImages(1,ratio,from||srcs[0]||null,W.recording);
   let errMsg="";
-  const res=await runAgent("wright",{read:srcs,places,label:"generating video",work:async({say,stopped})=>{
+  let tk=null;
+  const res=await runAgent("wright",{read:srcs,places,label:"generating video",task:{kind:"video",title:prompt},work:async({say,stopped,task})=>{
+    tk=task;
     try{
       const scene=await prepareMotionScene(prompt,srcs,{ratio,durSec,wantKeyframe:false,onProgress:s=>say(s)});
-      const v=await encodeVideoStream((g,w,h,tn)=>drawMotionScene(g,w,h,tn,scene),vw,vh,{fps:24,durSec,stopped,onProgress:(i,n)=>say(`rendering video · ${Math.round(i*100/n)}%`)});
+      const v=await encodeVideoStream((g,w,h,tn)=>drawMotionScene(g,w,h,tn,scene),vw,vh,{fps:24,durSec,stopped,onProgress:(i,n)=>say(`rendering video · ${Math.round(i*100/n)}%`,{pct:i*100/n})});
       return {...v,model:scene.model};
     }catch(e){errMsg=e?.message||"Video failed";return null}
   }});
-  if(!res?.blob)return toast(errMsg||"Could not generate video.");
+  if(!res?.blob){tk?.fail(errMsg||L("Could not generate video","无法生成视频"));return}
   checkpoint();const pid="p-"+uid(),key="u:"+uid(),saved=await saveMediaAsset(key,res.blob);
   const pk="u:"+uid(),psaved=await saveMediaAsset(pk,res.posterDataUrl);
   const title=clip(prompt||(srcs[0]?titleOf(srcs[0]):"Generated Video"),56);
@@ -8978,15 +9413,15 @@ async function searchWeb(query,{nextPage=false,from=null}={}){
   query=String(query||"").trim();if(!query)return toast("Say what to look for, for example: /search headband fitting reference");
   const count=4,places=from?Array.from({length:count},(_,i)=>{const col=i%2,row=Math.floor(i/2);return freeSpot(from.x+nodeW(from)+56+col*(W.image+22),from.y+row*280,W.image,260)}):planSearch(count),qk=query.toLowerCase();
   const page=nextPage?(searchPages.get(qk)||1):0;searchPages.set(qk,page+1);
-  let offline=false;
-  const res=await runAgent("scout",{read:[],places,label:"searching Wikimedia & Openverse",work:async()=>{
+  let offline=false,tk=null;
+  const res=await runAgent("scout",{read:[],places,label:"searching Wikimedia & Openverse",task:{kind:"search",title:query},work:async({task})=>{tk=task;
     try{const out=await SERVICES.search(query,{count,page});if(Array.isArray(out)&&out.length)return out}
     catch(e){console.warn("Search failed:",e)}
     offline=true;await wait(350);
     return Array.from({length:count},(_,i)=>({title:`${query[0].toUpperCase()+query.slice(1)} · result ${i+1}`,thumb:placeholderThumb(query,i+page*4),url:"",source:"Search unavailable",license:"Unknown",author:"",live:false}))
   }});
   if(!res.length){toast(`Nothing found for “${clip(query,40)}”`);return}
-  if(offline)toast("Web search could not reach Wikimedia or Openverse — showing placeholders.");
+  if(offline)tk?.done({tone:"warn",note:L("Couldn't reach Wikimedia or Openverse — placeholders shown","无法连接图库，已显示占位图")});
   checkpoint();const pid="p-"+uid(),made=[];
   for(let i=0;i<Math.min(count,res.length);i++){
     const it=res[i],key="u:"+uid(),saved=await saveMediaAsset(key,it.thumb);
@@ -9002,7 +9437,7 @@ async function searchWeb(query,{nextPage=false,from=null}={}){
 async function searchLinks(query,kind){
   query=String(query||"").trim();if(!query)return;
   const count=4,places=planSearch(count),qk=kind+":"+query.toLowerCase(),page=searchPages.get(qk)||0;searchPages.set(qk,page+1);
-  const res=await runAgent("scout",{read:[],places,label:kind==="video"?"searching Commons & Internet Archive":"searching Wikipedia & Hacker News",work:async()=>{try{return await SERVICES.searchLinks(query,{kind,count,page})}catch(e){console.warn("Search failed:",e);return []}}});
+  const res=await runAgent("scout",{read:[],places,label:kind==="video"?"searching Commons & Internet Archive":"searching Wikipedia & Hacker News",task:{kind:"search",title:query},work:async()=>{try{return await SERVICES.searchLinks(query,{kind,count,page})}catch(e){console.warn("Search failed:",e);return []}}});
   if(!res.length){toast(L(`No ${SEARCH_KINDS[kind][0].toLowerCase()} found for “${clip(query,40)}”. The search sources may be unreachable.`,`没有找到相关${SEARCH_KINDS[kind][1]}，搜索源可能无法访问。`));return}
   checkpoint();const pid="p-"+uid(),made=res.map((it,i)=>node("link",{title:clip(it.title,90),url:it.url,host:linkHost(it.url),text:it.text||"",thumb:it.thumb||"",nopreview:!it.thumb,weight:"reported",src:{query,kind,source:it.source},by:"scout",status:"sketch",pid},places[i]));
   log("scout",`Found ${made.length} ${SEARCH_KINDS[kind][0].toLowerCase()} for <b>${esc(clip(query,50))}</b>`,made[0].id);
@@ -11037,6 +11472,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
     if(el)el.innerHTML=mdCopilot(shown,{streaming:true})+(pb.hasPendingUi?'<div class="cp-ui-building"><span>Structuring visual breakdown…</span></div>':'')+'<span class="cp-caret"></span>';
     const sc=$("cpMsgs");if(sc)sc.scrollTop=sc.scrollHeight;
   };
+  let cpTask=null;
   try{
     if(skipDelegate){
       const loc=copilotLocalReply(text,ctx);
@@ -11047,7 +11483,9 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         const traceT0=performance.now();
         aiMsg.trace={open:false,totalMs:0,docsActivated:[],steps:subSteps};
         paintCopilotTrace(aiMsg);
-        for(const step of subSteps){
+        cpTask=taskOpen({kind:"research",agent:"copilot",title:clip(text,90),phase:L("Planning","规划中"),cancel:()=>stopCopilot(),show:()=>openCopilot(true)});
+        for(const [si,step] of subSteps.entries()){
+          cpTask.update({phase:`${traceActorInfo(step.to).name}${step.handoff?L(" (review)","（复核）"):""} · ${clip(step.task||"",56)}`,pct:si/(subSteps.length+1)*100,of:`${si+1}/${subSteps.length+1}`});
           const prior=step.handoffFromId?subSteps.find(s=>s.id===step.handoffFromId):null;
           const scoped=scopeSubAgentContext(step.to,text,ctx,prior);
           scoped.docNames.forEach(d=>{if(!aiMsg.trace.docsActivated.includes(d))aiMsg.trace.docsActivated.push(d)});
@@ -11055,6 +11493,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         }
         aiMsg.trace.totalMs=Math.max(10,Math.round(performance.now()-traceT0));
         paintCopilotTrace(aiMsg);
+        cpTask.update({phase:L("Writing the synthesis","撰写综合结论"),pct:subSteps.length/(subSteps.length+1)*100,of:`${subSteps.length+1}/${subSteps.length+1}`});
       }
       const imgNodes=isCasual?[]:ctx.filter(n=>n.type==="image"||n.type==="frame");
       const selectedText=ctx.length?wallText(ctx,{docCap:2200,shortCap:280,totalCap:4200}):"(none selected)";
@@ -11095,6 +11534,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
     }
   }catch(e){
     if(e?.name==="AbortError"){
+      cpTask?.cancelled();
       if(aiMsg.trace)aiMsg.trace.steps.forEach(s=>{if(s.status==="running")s.status="skipped"});
       aiMsg.text=parseCopilotBlocks(aiMsg.text).text||"Stopped.";
     }else{
@@ -11102,6 +11542,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
     }
   }finally{
     delete aiMsg.streaming;copilotStreaming=false;copilotAbort=null;
+    cpTask?.done();
     renderCopilot();persist();
     if(!cpQueuePaused&&cpQueue.length){const next=cpQueue.shift();renderCopilotQueue();setTimeout(()=>sendCopilotMessage(next.text,next.ctxIds),60)}
   }
@@ -14028,7 +14469,7 @@ function boot(){
   document.fonts?.ready?.then(()=>{renderNodes();drawWires();placeBars();placeMargin()});
   if(board.cam&&store.get(".seen",false)){cam={...board.cam};paintCam()}else{openingShot(true);store.set(".seen",true)}
   addEventListener("resize",()=>{paintCam();renderBars();placeStrip();autoGrow();syncLineClearance()});
-  restoreMedia();hydrateBoardFromIdb();resumePendingVideoJobs();initClaude();refreshImageService();setupVoice();renderStages();syncStaticLang();paintMap();initCopilot?.();
+  restoreMedia();hydrateBoardFromIdb();initIsland();resumePendingVideoJobs();initClaude();refreshImageService();setupVoice();renderStages();syncStaticLang();paintMap();initCopilot?.();
   setInterval(()=>{if(!gesture&&!stageOpen)qsa(".card time").length&&renderNodes()},60000);
 }
 boot();

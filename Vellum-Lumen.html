@@ -2817,8 +2817,9 @@ const selected=()=>sel.map(byId).filter(n=>n&&!isNodeHidden(n));
 const one=()=>{const s=selected();return s.length===1?s[0]:null};
 const snapOfBoard=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,log:board.log,proposals:board.proposals||[]});
 function syncHistoryBtns(){
-  if($("undoBtn"))$("undoBtn").disabled=!undoStack.length;
-  if($("topUndoBtn"))$("topUndoBtn").disabled=!undoStack.length;
+  const mine=undoStack.some(t=>t.author==="you");
+  if($("undoBtn"))$("undoBtn").disabled=!mine;
+  if($("topUndoBtn"))$("topUndoBtn").disabled=!mine;
   if($("topRedoBtn"))$("topRedoBtn").disabled=!redoStack.length;
 }
 function persist(){
@@ -2833,18 +2834,97 @@ function persist(){
     store.set(".list",list);store.set(".active",board.id);syncCopilotContext?.();
   },250);
 }
-function checkpoint(){undoStack.push(snapOfBoard());if(undoStack.length>40)undoStack.shift();redoStack=[];syncHistoryBtns()}
-function undo(){
-  const s=undoStack.pop();if(!s){syncHistoryBtns();toast("Nothing to undo");return}
-  recordChanges();changeActor={who:"you",cause:"undo"};setTimeout(()=>{recordChanges();changeActor=null},0);
-  redoStack.push(snapOfBoard());if(redoStack.length>40)redoStack.shift();
-  Object.assign(board,JSON.parse(s));sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;sfx("undo");syncHistoryBtns();renderAll();persist();toast("Undone");
+/* ── history: per-author, operation-based undo ─────────────────────────────
+   checkpoint() opens a transaction {id, author, before}. The next checkpoint (or undo/redo) closes it into an
+   entity-level patch: for each card, link, adoption, thread, pin and proposal it touched, the state before and after.
+   ⌘Z undoes your own most recent transaction and leaves agents' work alone; a toast's Undo undoes exactly the change
+   it announced. An entity someone else changed since is skipped, and you are told. Redo replays with the same check. */
+let txSeq=0;
+const txAuthor=()=>{const w=changeActor?.who;return w&&w!=="you"?w:"you"};
+const HIST_KEYS=["nodes","edges","proposals"],HIST_MAPS=["adopted","threads","pins"];
+/* history ignores render caches such as a card's measured height (_h) */
+const histSnap=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,proposals:board.proposals||[]},(k,v)=>k==="_h"?undefined:v);
+function histState(){return JSON.parse(histSnap())}
+/* compare entities ignoring render caches and metadata filled in after the fact (a card's basis list) */
+const histKey=v=>JSON.stringify(v??null,(k,x)=>k==="_h"||k==="basis"?undefined:x);
+function diffBoards(a,b){
+  const patch={};let n=0;
+  for(const k of HIST_KEYS){
+    const A=new Map((a[k]||[]).map((x,i)=>[x.id,[x,i]])),B=new Map((b[k]||[]).map((x,i)=>[x.id,[x,i]])),out={};
+    for(const [id,[x,i]] of A){const y=B.get(id)?.[0];if(!y)out[id]=[x,null,i];else if(histKey(x)!==histKey(y))out[id]=[x,y,i]}
+    for(const [id,[y,i]] of B)if(!A.has(id))out[id]=[null,y,i];
+    if(Object.keys(out).length){patch[k]=out;n++}
+  }
+  for(const k of HIST_MAPS){
+    const A=a[k]||{},B=b[k]||{},out={};
+    for(const id of new Set([...Object.keys(A),...Object.keys(B)])){const x=A[id]??null,y=B[id]??null;if(JSON.stringify(x)!==JSON.stringify(y))out[id]=[x,y]}
+    if(Object.keys(out).length){patch[k]=out;n++}
+  }
+  return n?patch:null;
+}
+function closeTx(){
+  const tx=undoStack[undoStack.length-1];if(!tx||!tx.before)return;
+  tx.patch=diffBoards(JSON.parse(tx.before),histState());tx.before=null;
+  if(!tx.patch)undoStack.pop();
+}
+function checkpoint(){
+  closeTx();const author=txAuthor();
+  undoStack.push({id:"tx"+(++txSeq),author,t:NOW(),before:histSnap(),patch:null});
+  if(undoStack.length>60)undoStack.shift();
+  if(author==="you")redoStack=[];
+  syncHistoryBtns();
+}
+const lastTxId=()=>undoStack[undoStack.length-1]?.id||null;
+function applyPatch(patch,dir){
+  /* dir "undo": set each entity back to before, if it still looks like after. "redo": the reverse. */
+  const conflicts=[],same=(x,y)=>histKey(x)===histKey(y);
+  for(const k of HIST_KEYS){
+    const P=patch?.[k];if(!P)continue;board[k]=Array.isArray(board[k])?board[k]:[];
+    for(const [id,[before,after,idx]] of Object.entries(P)){
+      const want=dir==="undo"?before:after,expect=dir==="undo"?after:before;
+      const at=board[k].findIndex(x=>x.id===id),cur=at>=0?board[k][at]:null;
+      const curCmp=cur&&k==="nodes"?(({_h,...r})=>r)(cur):cur;
+      if(!same(curCmp,expect)){conflicts.push({k,id,title:cur?(k==="nodes"?titleOf(cur):id):(expect&&k==="nodes"?titleOf(expect):id)});continue}
+      if(!want){if(at>=0)board[k].splice(at,1)}
+      else if(at>=0)board[k][at]=JSON.parse(JSON.stringify(want));
+      else board[k].splice(Math.min(idx??board[k].length,board[k].length),0,JSON.parse(JSON.stringify(want)));
+    }
+  }
+  for(const k of HIST_MAPS){
+    const P=patch?.[k];if(!P)continue;board[k]=board[k]||{};
+    for(const [id,[before,after]] of Object.entries(P)){
+      const want=dir==="undo"?before:after,expect=dir==="undo"?after:before;
+      if(!same(board[k][id],expect)){conflicts.push({k,id,title:k==="adopted"?L("an adoption","一次采纳"):titleOf(byId(id))||id});continue}
+      if(want==null)delete board[k][id];else board[k][id]=JSON.parse(JSON.stringify(want));
+    }
+  }
+  return conflicts;
+}
+function historyApplied(conflicts,word){
+  sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;syncHistoryBtns();renderAll();persist();renderReview?.();
+  if(!conflicts.length)return toast(word);
+  const names=[...new Set(conflicts.map(c=>c.title).filter(Boolean))].slice(0,2).map(t=>`“${clip(t,28)}”`).join(", ");
+  toast(L(`${word}, except ${conflicts.length} change${conflicts.length>1?"s":""} made since (${names})`,`${word}，但跳过了之后已被改动的 ${conflicts.length} 处（${names}）`));
+}
+function undo(target){
+  closeTx();
+  const i=target?undoStack.findIndex(t=>t.id===target):undoStack.map(t=>t.author).lastIndexOf("you");
+  if(i<0){syncHistoryBtns();toast(target?L("That change is no longer in history.","该改动已不在历史记录中。"):L("Nothing of yours to undo","没有可撤销的操作"));return}
+  const tx=undoStack.splice(i,1)[0];
+  recordChanges();changeActor={who:"you",cause:"undo"};
+  const conflicts=applyPatch(tx.patch,"undo");
+  redoStack.push(tx);if(redoStack.length>60)redoStack.shift();
+  sfx("undo");historyApplied(conflicts,L("Undone","已撤销"));
+  setTimeout(()=>{recordChanges();changeActor=null},0);
 }
 function redo(){
-  const s=redoStack.pop();if(!s){syncHistoryBtns();toast("Nothing to redo");return}
-  recordChanges();changeActor={who:"you",cause:"redo"};setTimeout(()=>{recordChanges();changeActor=null},0);
-  undoStack.push(snapOfBoard());if(undoStack.length>40)undoStack.shift();
-  Object.assign(board,JSON.parse(s));sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;sfx("redo");syncHistoryBtns();renderAll();persist();toast("Redone");
+  closeTx();
+  const tx=redoStack.pop();if(!tx){syncHistoryBtns();toast("Nothing to redo");return}
+  recordChanges();changeActor={who:"you",cause:"redo"};
+  const conflicts=applyPatch(tx.patch,"redo");
+  undoStack.push(tx);
+  sfx("redo");historyApplied(conflicts,L("Redone","已重做"));
+  setTimeout(()=>{recordChanges();changeActor=null},0);
 }
 function log(who,html,node){board.log.push({t:NOW(),who,html,node:node||null});if(board.log.length>300)board.log.shift();if(!$("ledger").hidden)renderLedger()}
 
@@ -5448,7 +5528,8 @@ function toast(text,opts={}){
   t.className="toast"+(hasAct?" timed":"");t.style.setProperty("--life",(hasAct?6000:3400)+"ms");
   const lbl=opts.actLabel||(opts.undo?"Undo":"");
   t.innerHTML=`<span>${opts.html?text:esc(text)}</span>${hasAct?`<button type="button">${esc(lbl)}</button>`:""}`;
-  if(hasAct)t.querySelector("button").onclick=()=>{if(opts.onAct)opts.onAct();else undo();t.remove()};
+  const undoTarget=opts.undo&&!opts.onAct?(opts.undoTx||lastTxId()):null;
+  if(hasAct)t.querySelector("button").onclick=()=>{if(opts.onAct)opts.onAct();else undo(undoTarget||undefined);t.remove()};
   $("toasts").appendChild(t);while($("toasts").children.length>3)$("toasts").firstChild.remove();
   setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),320)},hasAct?6000:3400);
 }
@@ -7364,12 +7445,28 @@ async function erase(ids,opts={}){
 }
 const modelExpected=()=>aiPref!=="local"&&(studioState.status==="ready"||hasApi()||!!sampleFn);
 const isStandIn=n=>!!(n?.gen?.preview||n?.src?.placeholder);
+/* Try again's history helpers: the transactions the move itself opened are the ones that touch the nodes it made. */
+const txTouches=(tx,ids)=>!!tx.patch&&(Object.keys(tx.patch.nodes||{}).some(id=>ids.has(id))||Object.values(tx.patch.edges||{}).some(([a,b])=>[a,b].some(e=>e&&(ids.has(e.a)||ids.has(e.b)))));
+function dropRunTx(from,ids){for(let i=undoStack.length-1;i>=from;i--)if(txTouches(undoStack[i],ids))undoStack.splice(i,1)}
+function mergeRunTx(from,ids,lifted,liftedEdges){
+  const patch={nodes:{},edges:{}};let at=-1;
+  for(let i=from;i<undoStack.length;i++){const tx=undoStack[i];if(!txTouches(tx,ids))continue;if(at<0)at=i;
+    for(const [k,P] of Object.entries(tx.patch)){patch[k]=patch[k]||{};for(const [id,v] of Object.entries(P)){if(patch[k][id])patch[k][id]=[patch[k][id][0],v[1],patch[k][id][2]];else patch[k][id]=v}}}
+  for(const {i,n} of lifted)patch.nodes[n.id]=[n,null,i];
+  liftedEdges.forEach((e,i)=>{patch.edges[e.id]=[e,null,i]});
+  for(let i=undoStack.length-1;i>=from;i--)if(txTouches(undoStack[i],ids))undoStack.splice(i,1);
+  const tx={id:"tx"+(++txSeq),author:"you",t:NOW(),before:null,patch};
+  undoStack.splice(at<0?undoStack.length:Math.min(at,undoStack.length),0,tx);
+  redoStack=[];return tx.id;
+}
 async function redraw(pid){
   const ns=board.nodes.filter(n=>n.pid===pid);if(!ns.length)return;
   const t=ns[0],agent=t.by,t0=NOW();
   if(agent&&crewState[agent]?.busy)return toast(L(`${AGENTS[agent]?.name||"The agent"} is still working. Try again when it's done.`,`${AGENTS[agent]?.name||"该成员"}仍在工作，完成后再重试。`));
   /* The old drafts stay the truth until a real replacement exists. They are lifted out only so the move sees a clean slate
-     (letters, versions, placement); history never sees the lift, and nothing outside this run's own nodes is touched. */
+     (letters, versions, placement). History records the whole Try again as one transaction of yours: old drafts out, new in.
+     Nothing outside this run's own nodes is touched, so anything you or other agents do meanwhile keeps its own history. */
+  closeTx();
   const ins=inputsOf(t.id),oldIds=new Set(ns.map(n=>n.id)),known=new Set(board.nodes.map(n=>n.id)),undoAt=undoStack.length;
   const lifted=board.nodes.map((n,i)=>oldIds.has(n.id)?{i,n:JSON.parse(JSON.stringify(n))}:null).filter(Boolean);
   const liftedEdges=board.edges.filter(e=>oldIds.has(e.a)||oldIds.has(e.b)).map(e=>({...e}));
@@ -7379,25 +7476,23 @@ async function redraw(pid){
   let failed=false;
   try{await redrawMove(t,ns,ins)}catch(e){console.warn("Try again failed:",e);failed=true}
   const putBack=o=>{if(o.nodes.some(n=>oldIds.has(n.id)))return o;for(const {i,n} of lifted)o.nodes.splice(Math.min(i,o.nodes.length),0,JSON.parse(JSON.stringify(n)));const have=new Set(o.nodes.map(n=>n.id));o.edges=[...(o.edges||[]),...liftedEdges.filter(e=>have.has(e.a)&&have.has(e.b)&&!(o.edges||[]).some(x=>x.id===e.id))];return o};
-  for(let i=undoAt;i<undoStack.length;i++){try{undoStack[i]=JSON.stringify(putBack(JSON.parse(undoStack[i])))}catch{}}
   const made=board.nodes.filter(n=>!known.has(n.id)&&n.status==="sketch"&&n.type===t.type&&n.by===t.by);
   const lr=agent?crewState[agent]?.lastRun:null;
   const fellBack=modelExpected()&&!!lr&&lr.t>=t0&&lr.live===false;
   const standIns=made.length>0&&made.every(isStandIn)&&!ns.every(isStandIn);
   if(failed||!made.length||fellBack||standIns){
     const madeIds=new Set(made.map(n=>n.id));
+    closeTx();dropRunTx(undoAt,madeIds);
     board.nodes=board.nodes.filter(n=>!madeIds.has(n.id));board.edges=board.edges.filter(e=>!madeIds.has(e.a)&&!madeIds.has(e.b));
     putBack(board);
-    const top=undoStack[undoStack.length-1],ids=o=>o.nodes.map(n=>n.id).sort().join();
-    if(undoStack.length>undoAt&&top){try{if(ids(JSON.parse(top))===ids(board))undoStack.pop()}catch{}}
     syncHistoryBtns();renderAll();persist();
     toast(failed||!made.length?L("Couldn't make a new version. The previous one is kept.","没能生成新版本，已保留原来的版本。"):L("The model didn't answer, so nothing was replaced. The previous version is kept.","模型没有响应，未做替换，已保留原来的版本。"));
     return;
   }
-  syncHistoryBtns();
   const order=[...made].sort((a,b)=>a.y-b.y||a.x-b.x);if(order.length===slots.length)order.forEach((n,i)=>{n.x=slots[i].x;n.y=slots[i].y});
+  closeTx();const runTx=mergeRunTx(undoAt,new Set(made.map(n=>n.id)),lifted,liftedEdges);syncHistoryBtns();
   log("you",`Tried again: replaced ${ns.length>1?ns.length+" suggestions":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,null);
-  renderAll();persist();toast(L("New version. Undo brings back the previous one.","已生成新版本，撤销可恢复上一版。"),{undo:true});
+  renderAll();persist();toast(L("New version. Undo brings back the previous one.","已生成新版本，撤销可恢复上一版。"),{undo:true,undoTx:runTx});
 }
 async function redrawMove(t,ns,ins){
   const srcNode=ins[0];
@@ -11214,7 +11309,7 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
   }
   if(!applied.length&&proposed.length){
     renderAll();persist();renderReview?.();
-    const k=proposed.length;toast(L(`${k} suggested change${k>1?"s":""} waiting for you`,`${k} 项修改建议等待你确认`));
+    const k=proposed.length;toast(L(`${k} suggested change${k>1?"s":""} waiting for you`,`${k} 项修改建议等待你确认`),{undo:true});
     follow(proposed.map(x=>byId(x.id)).filter(Boolean));
   }
   if(applied.length){
@@ -11838,7 +11933,13 @@ function restoreNodes(ids){
 }
 function scrubNodeFromUndoRedo(goneSet,tombMap,scrubStrings=[]){
   const matchesScrub=html=>scrubStrings.some(s=>s&&String(html||"").includes(s));
-  const scrubStack=stack=>stack.map(raw=>{
+  const scrubPatch=pt=>{if(!pt)return pt;
+    for(const k of ["nodes","proposals"])if(pt[k])for(const id of Object.keys(pt[k])){if(goneSet.has(id)||(k==="proposals"&&pt[k][id].some(v=>v&&goneSet.has(v.target))))delete pt[k][id]}
+    if(pt.edges)for(const id of Object.keys(pt.edges)){if(pt.edges[id].some(e=>e&&(goneSet.has(e.a)||goneSet.has(e.b))))delete pt.edges[id]}
+    for(const k of ["adopted","threads","pins"])if(pt[k])for(const id of Object.keys(pt[k])){if(goneSet.has(id)||(k==="adopted"&&pt[k][id].some(v=>goneSet.has(v))))delete pt[k][id]}
+    return pt};
+  const scrubStack=stack=>stack.map(tx=>{if(tx&&typeof tx==="object"){if(tx.before)tx.before=scrubStr(tx.before);else tx.patch=scrubPatch(tx.patch);return tx}return scrubStr(tx)});
+  const scrubStr=raw=>(()=>{
     try{
       const snap=JSON.parse(raw);
       if(Array.isArray(snap.nodes)){
@@ -11868,7 +11969,7 @@ function scrubNodeFromUndoRedo(goneSet,tombMap,scrubStrings=[]){
       if(Array.isArray(snap.log))snap.log=snap.log.filter(l=>!goneSet.has(l.node)&&!matchesScrub(l.html));
       return JSON.stringify(snap);
     }catch{return raw}
-  });
+  })();
   undoStack=scrubStack(undoStack);
   redoStack=scrubStack(redoStack);
   syncHistoryBtns();

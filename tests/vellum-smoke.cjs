@@ -187,9 +187,13 @@ async function page(browser, base, { model = true } = {}) {
       // delete suggestion
       await p.evaluate(id => dispatchCanvasActions([{ action: 'erase', targets: [id] }], { by: 'critic' }), id); await p.waitForTimeout(400);
       check('an agent deletion of a kept card is only suggested', await p.evaluate(id => !!byId(id) && !!document.querySelector(`[data-id="${id}"] .prop-bar.is-del`), id));
-      // undoing the agent's batch withdraws its suggestion
+      // ⌘Z leaves the agent's batch alone; the Undo on its own toast withdraws it
       await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
-      check("Undo withdraws the agent's suggestion", await p.evaluate(id => !!byId(id) && openProps(id).length === 0, id));
+      check("⌘Z does not undo an agent's suggestion", await p.evaluate(id => openProps(id).some(p => p.op === 'delete'), id));
+      await p.keyboard.press('Control+Shift+z'); await p.waitForTimeout(300);
+      await p.evaluate(() => { const b = [...document.querySelectorAll('#toasts .toast')].find(t => /suggested change/.test(t.textContent))?.querySelector('button'); b && b.click(); }); await p.waitForTimeout(400);
+      check("the toast's Undo withdraws the agent's suggestion", await p.evaluate(id => !!byId(id) && !openProps(id).some(p => p.op === 'delete'), id));
+      await p.evaluate(id => openProps(id).forEach(p => rejectProposal(p.id)), id); await p.waitForTimeout(300);
       await p.evaluate(id => dispatchCanvasActions([{ action: 'erase', targets: [id] }], { by: 'critic' }), id); await p.waitForTimeout(400);
       await p.click(`[data-id="${id}"] [data-prop-act="accept"]`); await p.waitForTimeout(800);
       check('accepting a deletion deletes the card', await p.evaluate(id => !byId(id), id));
@@ -208,6 +212,36 @@ async function page(browser, base, { model = true } = {}) {
       for (let i = 0; i < 40 && !(await p.evaluate(() => openProps().length)); i++) await p.waitForTimeout(250);
       check('Copilot edits of kept cards arrive as suggestions', await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'idea' && /Real Shanghai/.test(n.text)); return !!n && n.text === 'Real Shanghai, grounded' && openProps(n.id).length === 1; }), JSON.stringify(requests.slice(-2)));
       check('no page errors in the proposal flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5. per-author undo: ⌘Z undoes your own changes and leaves agents' work alone
+    {
+      const p = await page(browser, base, { model: false });
+      await p.newBoard();
+      await p.type('/note mine first'); await p.waitForTimeout(600);
+      const mine = await p.evaluate(() => board.nodes.find(n => n.type === 'note').id);
+      await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'Agent', text: 'agent card' }], { by: 'scout' })); await p.waitForTimeout(400);
+      const agentCard = await p.evaluate(() => board.nodes.find(n => n.text === 'agent card')?.id);
+      await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
+      check("⌘Z undoes your change, not the agent's later one", await p.evaluate(([m, a]) => !byId(m) && !!byId(a), [mine, agentCard]));
+      await p.keyboard.press('Control+Shift+z'); await p.waitForTimeout(400);
+      check('Redo brings your change back', await p.evaluate(m => !!byId(m), mine));
+      // conflict: you edit a card, then an agent changes it; your undo skips it and says so
+      await p.evaluate(m => { checkpoint(); const n = byId(m), d = digest(n), t = n.title, x = n.text; n.text = 'my edit'; recordNodeEdit(n, d, t, x); renderAll(); persist(); }, mine);
+      await p.evaluate(m => dispatchCanvasActions([{ action: 'edit', target: m, field: 'text', value: 'agent rewrite' }], { by: 'critic', userIntent: true }), mine); await p.waitForTimeout(400);
+      await p.evaluate(() => { document.querySelectorAll('#toasts > *').forEach(t => t.remove()); document.activeElement?.blur?.(); });
+      await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
+      check('your undo skips a card an agent changed since', await p.evaluate(m => byId(m).text === 'agent rewrite', mine));
+      check('and says what it skipped', /except/.test(await p.toast()), await p.toast());
+      // the Undo on a toast undoes exactly what it announced, even after other changes
+      await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'Batch', text: 'agent batch card' }], { by: 'muse' })); await p.waitForTimeout(300);
+      const batchToast = await p.evaluate(() => { const t = [...document.querySelectorAll('#toasts .toast')].pop(); t.dataset.mark = 'batch'; return !!t; });
+      await p.type('/note mine after the batch'); await p.waitForTimeout(600);
+      await p.evaluate(() => document.querySelector('#toasts .toast[data-mark="batch"] button')?.click()); await p.waitForTimeout(400);
+      check("a toast's Undo undoes exactly the change it announced", batchToast && await p.evaluate(() => !board.nodes.some(n => n.text === 'agent batch card') && board.nodes.some(n => n.text === 'mine after the batch')));
+      check('the undo button is off when only agents have changes to undo', await p.evaluate(() => { const before = undoStack.slice(); undoStack = undoStack.filter(t => t.author !== 'you'); syncHistoryBtns(); const off = document.getElementById('topUndoBtn').disabled; undoStack = before; syncHistoryBtns(); return off; }));
+      check('no page errors in history flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
   } finally {

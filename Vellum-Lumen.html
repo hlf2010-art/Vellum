@@ -1012,7 +1012,10 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 .margin.grow{transition:transform var(--t-smooth) var(--smooth),opacity .2s}
 #tether{display:none}
 .grabber{display:none;width:36px;height:5px;border-radius:3px;background:var(--label-4);margin:8px auto 0}
-.m-head{flex:none;padding:16px 22px 13px;border-bottom:.5px solid transparent;transition:border-color var(--d-quick);background:radial-gradient(95% 220% at 14% -40%,color-mix(in srgb,var(--pg,var(--bloom)) 10%,transparent),transparent 72%)}
+.m-head{flex:none;padding:16px 22px 13px;border-bottom:.5px solid transparent;transition:border-color var(--d-quick);background:none}
+/* The lineage glow belongs to the whole sheet and fades out on its own, so the head has no visible edge. */
+.margin{isolation:isolate}
+.margin::after{content:"";position:absolute;z-index:-1;inset:0 0 auto 0;height:180px;border-radius:inherit;pointer-events:none;background:radial-gradient(70% 160px at 14% -50px,color-mix(in srgb,var(--pg,var(--bloom)) 10%,transparent),transparent 100%)}
 .m-head-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
 .m-head-main{flex:1;min-width:0;display:grid;gap:6px}
 .m-head-tools{flex:none;display:flex;align-items:center;gap:6px;padding-top:1px}
@@ -1076,7 +1079,7 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 .facts dd{margin:0;min-width:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .facts-file{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .srcs{display:grid}
-.srcs button{display:flex;align-items:center;gap:9px;padding:8px 8px;margin:0 -8px;border-radius:var(--radius-sm);text-align:left;font:550 14px/1.35 var(--ui);color:var(--label);transition:background var(--d-quick)}
+.srcs button{display:flex;align-items:baseline;gap:9px;padding:8px 8px;margin:0 -8px;border-radius:var(--radius-sm);text-align:left;font:550 14px/1.35 var(--ui);color:var(--label);transition:background var(--d-quick)}
 .srcs button:last-child{border-bottom:0}
 .srcs button:hover{color:var(--label);background:var(--hover)}
 .srcs button:hover .sp{text-decoration:underline;text-decoration-color:var(--label-4);text-underline-offset:3px}
@@ -2486,7 +2489,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .src-row:last-child{border-bottom:0}
 .src-row .src-main{flex:1;min-width:0;display:flex;align-items:center;gap:8px;text-align:left;font:550 14px/1.35 var(--ui);color:var(--label);padding:0}
 .src-row .src-main[disabled]{opacity:.72;cursor:default}
-.src-row .src-main .sp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-row .src-main .sp{flex:1;min-width:0;overflow-wrap:anywhere;text-wrap:pretty}
 .src-row .src-kind,.src-row .src-pill{flex:none;font:600 11px/1 var(--ui);padding:3px 6px;border-radius:var(--radius-xs);background:var(--hover);color:var(--label-3)}
 .src-row .src-pill.warn{background:color-mix(in srgb,var(--A) 15%,transparent);color:var(--A)}
 .src-row .src-pill.danger{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
@@ -3683,6 +3686,24 @@ function proposalBarHTML(n){
     const stale=pr.stale?`<div class="prop-stale">${L("The card changed after this was suggested.","提出建议后卡片已被修改。")}</div>`:"";
     return `<div class="prop-bar${pr.op==="delete"?" is-del":""}" data-prop="${esc(pr.id)}"><div class="prop-top"><span class="mk">${a?a.mk:COPILOT_ICO}</span><span class="prop-what">${esc(what)}</span><span class="prop-acts">${pr.op==="edit"?`<button type="button" class="prop-btn" data-prop-act="view">${open?L("Hide","收起"):L("Review","查看")}</button>`:""}<button type="button" class="prop-btn" data-prop-act="reject">${L("Decline","拒绝")}</button><button type="button" class="prop-btn ok" data-prop-act="accept">${pr.stale?L("Accept anyway","仍然接受"):L("Accept","接受")}</button></span></div>${stale}${diff}</div>`;
   }).join("");
+}
+/* Subline provenance: only crew work is marked ("Synthesis by Scout"); your own cards carry no byline.
+   The engine (model, built-in rules, local service) and the source count go in the tooltip. */
+function provAuthor(n){const p=n?.prov,author=p?p.author:n.by;return author&&author!=="you"?(AGENTS[author]?.name||author):null}
+function provBy(n){const w=provAuthor(n);return w?esc(L(` by ${w}`,` · ${w} 生成`)):""}
+function provTitle(n){
+  const w=provAuthor(n);if(!w)return"";const p=n.prov,eng=p&&p.engine&&p.engine!=="human"?ENGINE_LABEL[p.engine]:null,from=(p?.basis||[]).length;
+  let t=L(`Made by ${w}`,`由 ${w} 生成`);if(eng)t+=L(` using ${eng[0]}`,`，使用${eng[1]}`);if(from)t+=L(` from ${from} card${from===1?"":"s"}`,`，基于 ${from} 张卡片`);
+  return ` title="${esc(t)}"`;
+}
+function relDate(t){
+  const s=(Date.now()-t)/1000,d=new Date(t),today=new Date();today.setHours(0,0,0,0);
+  if(s<60)return L("just now","刚刚");
+  if(s<3600){const m=Math.floor(s/60);return L(`${m} min ago`,`${m} 分钟前`)}
+  if(d>=today){const h=Math.floor(s/3600);return L(`${h} h ago`,`${h} 小时前`)}
+  if(d>=today-864e5)return L("Yesterday","昨天");
+  const zh=uiLang()==="zh",same=d.getFullYear()===today.getFullYear();
+  try{return d.toLocaleDateString(zh?"zh-CN":"en-US",{month:zh?"numeric":"short",day:"numeric",year:same?undefined:"numeric"})}catch(e){return fmtDateTime(t)}
 }
 function provSubHTML(n){
   const p=n?.prov,author=p?p.author:n.by,a=author==="you"?null:AGENTS[author];
@@ -6091,32 +6112,34 @@ function renderMargin(){queueMicrotask(placeBars);
     const defT=n.type==="note"?(uiLang()==="zh"?"便签":"Sticky"):(uiLang()==="zh"?"记事本":"Notepad");
     subParts.push(`<span class="m-tag-editable" contenteditable="true" data-f="tag" data-ph="${esc(defT)}" title="${esc(uiLang()==="zh"?"点击编辑标签":"Click to edit tag")}" spellcheck="false">${esc(n.tag||"")}</span>`);
   }else if(fmtLbl){
-    subParts.push(`<span>${esc(fmtLbl)}</span>`);
+    subParts.push(`<span${provTitle(n)}>${esc(fmtLbl)}${provBy(n)}</span>`);
   }
   if(n.size)subParts.push(`<span>${esc(fmtFileSize(n.size))}</span>`);
   if(n.gen?.ratio)subParts.push(`<span>${esc(n.gen.ratio==="1:1"?"Square":n.gen.ratio)}</span>`);
   if(n.gen?.model)subParts.push(`<span>${esc(n.gen.model)}</span>`);
-  subParts.push(`<span>v${n.rev}</span>`);
-  subParts.push(`<span class="m-by">${provSubHTML(n)}</span>`);
-  if(n.updated||n.created)subParts.push(`<span>${esc(fmtDateTime(n.updated||n.created))}</span>`);
+  if((n.type==="note"||n.type==="notepad")&&provBy(n))subParts.push(`<span${provTitle(n)}>${provBy(n).trim()}</span>`);
+  if(n.rev>1)subParts.push(`<span title="${esc(L(`Revised ${n.rev-1} time${n.rev>2?"s":""}`,`修改过 ${n.rev-1} 次`))}">v${n.rev}</span>`);
+  if(n.updated||n.created){const t=n.updated||n.created;subParts.push(`<time datetime="${esc(new Date(t).toISOString())}" title="${esc(fmtDateTime(t))}">${esc(relDate(t))}</time>`)}
   if(n.type==="link"&&n.url)subParts.push(`<a href="${esc(safeHref(n.url))}" target="_blank" rel="noopener noreferrer">${esc(n.host||linkHost(n.url)||"Link")}</a>`);
   else if(n.src?.url)subParts.push(`<a href="${esc(n.src.url)}" target="_blank" rel="noopener">${esc(n.src.source||"Source")}</a>`);
   const sublineHTML=`<div class="m-subline">${subParts.join('<span class="m-sub-sep" aria-hidden="true">·</span>')}</div>`;
   let srcs="";
   const linSum=nodeLineageSummary(n);
+  /* Source rows show the whole title: the sheet has room, and a clipped question is a different question. */
+  const srcFullTitle=d=>{const x=d.node;if(!x)return d.title;return x.title?prettyTitle(x,400):(String(x.text||"").replace(/\s+/g," ").trim()||d.title)};
   const renderSrcRow=(d,showWeight=true)=>{
     let pill="";
-    if(d.status==="unavailable")pill=`<span class="src-pill danger">Unavailable</span>`;
-    else if(d.status==="unavailable_acked")pill=`<span class="src-pill muted">Removed · Reviewed</span>`;
-    else if(d.status==="stale")pill=`<span class="src-pill warn">Stale v${d.ackEntry?.rev||1}→v${d.node?.rev||1}</span>`;
-    else if(d.status==="frozen_changed")pill=`<span class="src-pill muted">Frozen v${d.fixedEntry?.rev||1}→v${d.node?.rev||1}</span>`;
-    else if(d.status==="archived")pill=`<span class="src-pill muted">Archived</span>`;
-    else if(d.status==="hidden")pill=`<span class="src-pill muted">Hidden</span>`;
-    else if(d.depType==="live")pill=`<span class="src-pill">Live</span>`;
-    else if(d.depType==="frozen")pill=`<span class="src-pill">Frozen</span>`;
+    /* Only exceptions get a pill. "Live" (the default link: you are told when the source changes) is not shown. */
+    if(d.status==="unavailable")pill=`<span class="src-pill danger">${L("Unavailable","已不可用")}</span>`;
+    else if(d.status==="unavailable_acked")pill=`<span class="src-pill muted">${L("Removed · Reviewed","已移除 · 已确认")}</span>`;
+    else if(d.status==="stale")pill=`<span class="src-pill warn" title="${esc(L("This source changed since it was used here","这张来源卡在被引用后有改动"))}">${L("Changed","有更新")} v${d.ackEntry?.rev||1}→v${d.node?.rev||1}</span>`;
+    else if(d.status==="frozen_changed")pill=`<span class="src-pill muted">${L("Frozen","已冻结")} v${d.fixedEntry?.rev||1}→v${d.node?.rev||1}</span>`;
+    else if(d.status==="archived")pill=`<span class="src-pill muted">${L("Archived","已归档")}</span>`;
+    else if(d.status==="hidden")pill=`<span class="src-pill muted">${L("Hidden","已隐藏")}</span>`;
+    else if(d.depType==="frozen")pill=`<span class="src-pill" title="${esc(L("Pinned to the version it had when linked","固定为引用时的版本"))}">${L("Frozen","已冻结")}</span>`;
     else if(showWeight&&d.node)pill=weightHTML(d.fixedEntry?.weight??d.node.weight,true);
     const main=d.node
-      ?`<button type="button" class="src-btn" data-m="goto" data-id="${d.sourceId}">${d.depType==="frozen"?ic("lock"):`<span class="src-kind">${esc(refKindShort(d.node))}</span>`}<span class="sp">${esc(d.title)}</span>${pill}</button>`
+      ?`<button type="button" class="src-btn" data-m="goto" data-id="${d.sourceId}">${d.depType==="frozen"?ic("lock"):`<span class="src-kind">${esc(refKindShort(d.node))}</span>`}<span class="sp">${esc(srcFullTitle(d))}</span>${pill}</button>`
       :`<div class="src-btn" style="opacity:.78;cursor:default"><span class="src-kind">✕</span><span class="sp">${esc(d.title)}</span>${pill}</div>`;
     let actBtn="";
     if(d.status==="hidden")actBtn=`<button type="button" class="src-act" data-m="restore-src" data-id="${d.sourceId}">Show</button>`;

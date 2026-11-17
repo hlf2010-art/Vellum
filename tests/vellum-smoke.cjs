@@ -244,14 +244,14 @@ async function page(browser, base, { model = true } = {}) {
       await p.context().close();
     }
 
-    // 6. one crew level: pacing by what you have read, a hidden ceiling, and a real "only when asked"
+    // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover
     {
       const p = await page(browser, base);
       await p.newBoard();
       await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; });
       const advReqs = () => requests.filter(r => r.full && /Include 1 or at most 2 pins/.test(r.full));
       const add = async list => { for (const t of list) { await p.evaluate(() => select([])); await p.type('note: ' + t); await p.waitForTimeout(120); } await p.waitForTimeout(1400); await p.idle(); };
-      check('Suggest is the default level', await p.evaluate(() => crewLevel === 'suggest' && perm('create') === 'suggest' && perm('edit') === 'suggest' && perm('delete') === 'suggest' && advisorMode && !advisorAuto));
+      check('defaults: speaks up when it matters, acts only with drafts', await p.evaluate(() => crewSpeak === 'matters' && crewAct === 'drafts' && perm('create') === 'suggest' && perm('edit') === 'suggest' && perm('delete') === 'suggest' && advisorMode && !advisorAuto));
       let before = advReqs().length;
       await add(['Wukong sold about 30M copies', 'GTA VI launches in November', 'Ananta launches in January', 'Mainland rules bar organised crime', 'Sleeping Dogs was praised for melee']);
       const burst = advReqs().slice(before);
@@ -278,17 +278,32 @@ async function page(browser, base, { model = true } = {}) {
       await p.evaluate(() => { setCrewLevel('asked'); advSpent = []; board.pins = {}; advQuietMs = 300; });
       before = advReqs().length;
       await add(['quiet please']);
-      check('"Only when asked" means no unasked looks', advReqs().length === before && await p.evaluate(() => !advisorMode && perm('link') === 'suggest'));
-      await p.evaluate(() => setCrewLevel('collab'));
-      check('Collaborate creates directly, drafts follow-ups, allows two unread', await p.evaluate(() => perm('create') === 'direct' && advisorAuto && CREW_UNREAD.collab === 2 && perm('delete') === 'suggest'));
-      // the crew pill and popover
-      await p.evaluate(() => setCrewLevel('suggest'));
-      check('the crew pill shows the level', /Suggest/.test(await p.evaluate(() => document.getElementById('crewSetBtn').textContent)));
+      check('Speaks up: Never means no unasked looks', advReqs().length === before && await p.evaluate(() => !advisorMode && crewSpeak === 'never'));
+      await p.evaluate(() => setCrew({ speak: 'often', act: 'drafts' }));
+      check('the two axes are independent: talkative but drafts only', await p.evaluate(() => advisorMode && advisorAuto && SPEAK_UNREAD.often === 2 && perm('create') === 'suggest'));
+      await p.evaluate(() => setCrew({ speak: 'never', act: 'create' }));
+      check('the two axes are independent: silent but can create', await p.evaluate(() => !advisorMode && perm('create') === 'direct' && perm('delete') === 'suggest'));
+      // the crew entry and popover
+      await p.evaluate(() => { setCrew({ speak: 'matters', act: 'drafts' }); board.pins = {}; advHeld = 0; renderCrew(); });
+      check('the crew settings button belongs to the crew group', await p.evaluate(() => !!document.querySelector('.crew-group .crew-seats') && !!document.querySelector('.crew-group #crewSetBtn')));
+      check('it shows connection health as a dot', await p.evaluate(() => document.querySelector('#crewSetBtn .conn-dot')?.classList.contains('ok')));
+      check('its label names both settings', /When it matters/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))) && /Only drafts/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))));
+      const pinCard = await p.evaluate(() => { const id = board.nodes.find(n => n.type === 'note').id; board.pins = { [id]: [{ id: 'pin-show', agent: 'critic', note: 'Read me', t: NOW(), seen: false }] }; renderAll(); renderCrew(); return id; });
+      check('the avatars show the crew is waiting for you', await p.evaluate(() => { const g = document.querySelector('.crew-group'); return g.classList.contains('quiet-pacing') && /read the last thought/.test(g.title); }));
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
-      const seg = await p.evaluate(() => [...document.querySelectorAll('#crewPop [data-crew-level]')].map(b => b.dataset.crewLevel + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(','));
-      check('the crew popover offers three levels as a segmented control', seg === 'asked,suggest*,collab' && await p.evaluate(() => !!document.querySelector('#crewPop .sp-seg')), seg);
-      await p.click('#crewPop [data-crew-level="collab"]'); await p.waitForTimeout(300);
-      check('choosing a level takes effect and shows on the pill', await p.evaluate(() => crewLevel === 'collab' && store.get('.crewLevel') === 'collab' && /Collaborate/.test(document.getElementById('crewSetBtn').textContent)));
+      const segs = await p.evaluate(() => ['speak', 'act'].map(a => [...document.querySelectorAll(`#crewPop [data-crew-${a}]`)].map(b => b.dataset['crew' + a[0].toUpperCase() + a.slice(1)] + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(',')).join(' | '));
+      check('the popover has two segmented axes', segs === 'never,matters*,often | drafts*,create' && await p.evaluate(() => document.querySelectorAll('#crewPop .sp-seg').length === 2), segs);
+      check('no Copilot shortcut in the popover', await p.evaluate(() => !document.querySelector('#crewPop [data-crew-copilot]')));
+      await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
+      check('lanes can be locked from the popover', await p.evaluate(() => lockedBays().includes(1) && document.querySelector('#crewPop [data-crew-lock="1"]').getAttribute('aria-pressed') === 'true'));
+      await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
+      await p.click('#crewPop [data-crew-show]'); await p.waitForTimeout(500);
+      check('Show opens the waiting thought and marks it read', await p.evaluate(id => openAdvNodeId === id && board.pins[id][0].seen === true && !document.querySelector('.crew-group').classList.contains('quiet-pacing'), pinCard));
+      await p.evaluate(() => closeAdvPop());
+      await p.click('#crewSetBtn'); await p.waitForTimeout(300);
+      await p.click('#crewPop [data-crew-speak="often"]'); await p.waitForTimeout(200);
+      await p.click('#crewPop [data-crew-act="create"]'); await p.waitForTimeout(200);
+      check('choosing on each axis takes effect and is remembered', await p.evaluate(() => crewSpeak === 'often' && crewAct === 'create' && store.get('.crewSpeak') === 'often' && store.get('.crewAct') === 'create' && perm('create') === 'direct' && /Often/.test(document.getElementById('crewSetBtn').getAttribute('aria-label'))));
       await p.keyboard.press('Escape'); await p.waitForTimeout(200);
       // the connection popover is only about the connection
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);
@@ -306,20 +321,20 @@ async function page(browser, base, { model = true } = {}) {
       const [claim, note] = await p.evaluate(() => [board.nodes.find(n => n.type === 'idea').id, board.nodes.find(n => n.type === 'note').id]);
       const run = (acts, extra = {}) => p.evaluate(([a, x]) => { const r = dispatchCanvasActions(a, { by: 'critic', ...x }); return { created: r.createdNodes.map(n => ({ id: n.id, status: n.status })), proposed: r.proposed.length, skipped: r.skipped.length, locked: r.skipped.filter(s => s.locked).length }; }, [acts, extra]);
       let r = await run([{ action: 'create', cardType: 'note', title: 'Asked', text: 'arrives as a draft' }]);
-      check('at Suggest, agent cards arrive as drafts', r.created.length === 1 && r.created[0].status === 'sketch', JSON.stringify(r));
+      check('by default, agent cards arrive as drafts', r.created.length === 1 && r.created[0].status === 'sketch', JSON.stringify(r));
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
       await p.click('#crewPop [data-crew-custom]'); await p.waitForTimeout(400);
       check('Customize shows a segmented control per action', await p.evaluate(() => document.querySelectorAll('dialog[open] .sp-seg').length === 4));
       check('deleting cannot be set to Do it', await p.evaluate(() => [...document.querySelectorAll('dialog[open] [data-au="delete"]')].map(b => b.dataset.v).join() === 'suggest,never'));
       await p.click('dialog[open] [data-au="edit"][data-v="direct"]'); await p.waitForTimeout(200);
-      check('a custom choice takes effect and the pill says Custom', await p.evaluate(() => perm('edit') === 'direct' && autonomyCustom && /Custom/.test(document.getElementById('crewSetBtn').textContent)));
+      check('a custom choice takes effect and the crew label says Custom', await p.evaluate(() => perm('edit') === 'direct' && autonomyCustom && /Custom/.test(document.getElementById('crewSetBtn').getAttribute('aria-label'))));
       await run([{ action: 'edit', target: claim, field: 'text', value: 'Edited directly' }]);
       check('edit set to Do it applies to a kept card', await p.evaluate(id => byId(id).text === 'Edited directly', claim));
       await p.click('dialog[open] [data-au="edit"][data-v="never"]'); await p.click('dialog[open] [data-au="delete"][data-v="never"]'); await p.waitForTimeout(200);
       r = await run([{ action: 'edit', target: claim, field: 'text', value: 'nope' }, { action: 'erase', targets: [note] }]);
       check('edit and delete set to Never change nothing', r.skipped === 2 && r.proposed === 0 && await p.evaluate(([c, n]) => byId(c).text === 'Edited directly' && !!byId(n), [claim, note]));
       await p.click('dialog[open] [data-au-reset]'); await p.waitForTimeout(200);
-      check('Reset returns to the level preset', await p.evaluate(() => !autonomyCustom && JSON.stringify(autonomy) === JSON.stringify(CREW_PRESET[crewLevel])));
+      check('Reset returns to the preset', await p.evaluate(() => !autonomyCustom && JSON.stringify(autonomy) === JSON.stringify(presetFor(crewAct))));
       await p.click('dialog[open] [data-d="close"]').catch(() => {}); await p.evaluate(() => document.querySelector('dialog[open]')?.close()); await p.waitForTimeout(200);
       // locks
       await p.evaluate(id => { select([id]); openCardMenu(byId(id), 200, 200); }, claim); await p.waitForTimeout(200);

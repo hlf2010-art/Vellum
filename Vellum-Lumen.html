@@ -2761,20 +2761,37 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .m-sec.m-prov{padding-block:6px}
 
 /* crew level pill, crew popover, locks */
-.crew-set{display:inline-flex;align-items:center;gap:4px;height:36px;padding:0 10px 0 12px;border-radius:999px;font:560 12.5px/1 var(--ui);color:var(--label-2);background:var(--chrome);box-shadow:var(--chrome-shadow);white-space:nowrap}
+.crew-group{display:inline-flex;align-items:center;gap:6px;padding:0 3px 0 0;border-radius:999px}
+.crew-set{position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;color:var(--label-2);background:var(--chrome);box-shadow:var(--chrome-shadow)}
 .crew-set:hover{color:var(--label)}
-.crew-set .cm-chev{width:12px;height:12px;opacity:.7}
+.crew-set .ico{width:17px;height:17px}
 .crew-set:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:2px}
-.review-pop.crew-pop{width:min(360px,calc(100vw - 28px));padding:14px 14px 12px;display:grid;gap:10px}
+.crew-set .conn-dot{position:absolute;right:2px;top:2px;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 2px var(--canvas,#0b0c0e);background:var(--label-4,#666)}
+.crew-set .conn-dot.ok{background:var(--ok,#30a46c)}
+.crew-set .conn-dot.rules{background:var(--warn,#d97706)}
+/* why the crew is quiet: the avatars say so */
+.crew-group.quiet-pacing .seat .ring{outline:1.5px dashed color-mix(in srgb,var(--label-3) 70%,transparent);outline-offset:1px}
+.crew-group.quiet-pacing .seat,.crew-group.quiet-never .seat,.crew-group.quiet-nomodel .seat,.crew-group.quiet-ceiling .seat{opacity:.72}
+.crew-group.quiet-never .seat .mk,.crew-group.quiet-nomodel .seat .mk{filter:saturate(.35)}
+.review-pop.crew-pop{width:min(372px,calc(100vw - 28px));padding:14px 14px 12px;display:grid;gap:12px}
 .crew-pop .cp-pop-head{display:grid;gap:2px}
 .crew-pop .cp-pop-head b{font:650 14px/1.2 var(--ui);color:var(--label)}
 .crew-pop .cp-pop-head span{font:450 12px/1.3 var(--ui);color:var(--label-3)}
+.crew-pop .crew-axis{display:grid;gap:6px}
+.crew-pop .crew-axis>b{font:600 12px/1.2 var(--ui);color:var(--label-2)}
+.crew-pop .crew-axis p{margin:0;font:450 12.5px/1.45 var(--ui);color:var(--label-2)}
 .crew-pop .crew-seg button{height:30px;font-size:12px}
-.crew-pop .crew-desc{margin:0;font:450 12.5px/1.5 var(--ui);color:var(--label-2)}
-.crew-pop .crew-status{margin:0;font:500 12px/1.4 var(--ui);color:var(--label)}
-.crew-pop .crew-sec{display:grid;gap:3px;padding-top:10px;border-top:1px solid var(--hair-2);font:450 12px/1.45 var(--ui);color:var(--label-3)}
+.crew-pop .crew-wait{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--focus,#5b8cff) 12%,var(--card-2,var(--card)));font:500 12.5px/1.35 var(--ui);color:var(--label)}
+.crew-pop .crew-wait .cbtn{height:28px;font-size:12px}
+.crew-pop .crew-sec{display:grid;gap:6px;padding-top:10px;border-top:1px solid var(--hair-2);font:450 12px/1.45 var(--ui);color:var(--label-3)}
 .crew-pop .crew-sec b{display:inline-flex;align-items:center;gap:6px;font:600 12px/1.2 var(--ui);color:var(--label-2)}
 .crew-pop .crew-sec .ico{width:13px;height:13px}
+.crew-pop .crew-locks{display:flex;flex-wrap:wrap;gap:6px}
+.crew-pop .crew-lock{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;font:550 12px/1 var(--ui);color:var(--label-2);background:transparent;box-shadow:inset 0 0 0 1px var(--hair-2)}
+.crew-pop .crew-lock .ico{width:12px;height:12px;opacity:.45}
+.crew-pop .crew-lock[aria-pressed="true"]{color:var(--label);background:var(--card-3,var(--hover));box-shadow:inset 0 0 0 1px var(--label-3)}
+.crew-pop .crew-lock[aria-pressed="true"] .ico{opacity:1}
+.crew-pop .crew-lock:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
 .crew-pop .crew-foot{display:flex;gap:6px;flex-wrap:wrap;padding-top:2px}
 .crew-pop .crew-foot .cbtn{height:30px;font-size:12px}
 .au-row .au-seg{width:auto;min-width:228px}
@@ -3447,53 +3464,70 @@ function asActor(actor,fn){const prev=changeActor;changeActor=actor;recordChange
 /* What agents may do on their own, per kind of action: "direct" (do it), "suggest" (ask first), "never".
    Creating something suggested arrives as a draft; linking, editing or deleting suggested arrives as a proposal on the card.
    Drafts are the agents' own space, and changes translated from your own words are yours, so neither is gated. */
-/* One dial for how much the crew does on its own. Each level is a preset of the permissions below plus pacing.
-   Deleting always asks: it is the one action that cannot be taken back by looking at a draft. */
-const CREW_LEVELS=["asked","suggest","collab"];
-const CREW_PRESET={asked:{create:"suggest",link:"suggest",edit:"suggest",delete:"suggest"},suggest:{create:"suggest",link:"direct",edit:"suggest",delete:"suggest"},collab:{create:"direct",link:"direct",edit:"suggest",delete:"suggest"}};
-const CREW_UNREAD={asked:0,suggest:1,collab:2},CREW_QUIET={asked:6000,suggest:6000,collab:3000};
-let crewLevel=store.get(".crewLevel",null)||(store.get(".advisorLevel",null)==="off"?"asked":"suggest");
-if(!CREW_LEVELS.includes(crewLevel))crewLevel="suggest";
-const AUTONOMY_DEFAULT={...CREW_PRESET.suggest};
+/* Two axes for the crew, each a plain choice:
+   Speaks up (never | matters | often): how often it offers unasked thoughts.
+   Acts on the board (drafts | create): whether what it makes arrives as drafts or lands directly.
+   Edits and deletions of your kept cards are suggestions on every setting; deleting can never be set to Do it. */
+const SPEAK_LEVELS=["never","matters","often"],ACT_LEVELS=["drafts","create"];
+const SPEAK_UNREAD={never:0,matters:1,often:2},SPEAK_QUIET={never:6000,matters:6000,often:3000};
+const presetFor=act=>({create:act==="create"?"direct":"suggest",link:"direct",edit:"suggest",delete:"suggest"});
+const oldLevel=store.get(".crewLevel",null)||(store.get(".advisorLevel",null)==="off"?"asked":null);
+let crewSpeak=store.get(".crewSpeak",null)||({asked:"never",suggest:"matters",collab:"often"}[oldLevel]||"matters");
+let crewAct=store.get(".crewAct",null)||(oldLevel==="collab"?"create":"drafts");
+if(!SPEAK_LEVELS.includes(crewSpeak))crewSpeak="matters";if(!ACT_LEVELS.includes(crewAct))crewAct="drafts";
+const AUTONOMY_DEFAULT=presetFor("drafts");
 const AUTONOMY_ROWS=[["create",["Create cards and comments","新建卡片和评论"]],["link",["Link cards","连线"]],["edit",["Edit your kept cards","修改你已确认的卡片"]],["delete",["Delete your kept cards","删除你已确认的卡片"]]];
 const AUTONOMY_LEVELS=[["direct",["Do it","直接做"]],["suggest",["Ask first","先问"]],["never",["Never","不允许"]]];
-const CREW_LABEL={asked:["Only when asked","只在我要求时"],suggest:["Suggest","建议"],collab:["Collaborate","协作"]};
-const CREW_SHORT={asked:["When asked","按需"],suggest:["Suggest","建议"],collab:["Collaborate","协作"]};
+const SPEAK_LABEL={never:["Never","从不"],matters:["When it matters","有价值时"],often:["Often","经常"]};
+const ACT_LABEL={drafts:["Only drafts","只出草稿"],create:["Can create cards","可直接建卡片"]};
+const SPEAK_DESC={never:["The crew speaks only when you ask.","成员只在你要求时发言。"],matters:["One thought at a time; the next comes after you read it.","一次一条建议，读过才有下一条。"],often:["Up to two thoughts at a time, plus a drafted follow-up when it has one.","一次最多两条建议，并会起草后续卡片。"]};
+const ACT_DESC={drafts:["Anything it makes arrives as a draft for you to keep or discard.","它做的东西都以草稿出现，由你保留或丢弃。"],create:["Cards it creates land directly on the board.","它新建的卡片直接落到画板上。"]};
 let crewPopOpen=false;
+function crewQuietReason(){
+  if(crewSpeak==="never")return {k:"never",tip:L("Speaks only when you ask","只在你要求时发言")};
+  const live=aiPref!=="local"&&(studioState.status==="ready"||hasApi()||!!sampleFn);
+  if(!live)return {k:"nomodel",tip:aiPref==="local"?L("Built-in rules only: no unasked thoughts","只用内置规则：没有主动建议"):L("No model connected: no unasked thoughts","未连接模型：没有主动建议")};
+  if((SPEAK_UNREAD[crewSpeak]||0)>0&&unreadPins()>=SPEAK_UNREAD[crewSpeak])return {k:"pacing",tip:L("Waiting for you to read the last thought","等你读完上一条建议")};
+  if(!advLeft())return {k:"ceiling",tip:L("Resting until the hour is up","本小时已达上限，稍后继续")};
+  return null;
+}
+function connHealth(){const k=aiPref==="local"?"rules":(studioState.status==="ready"||hasApi()||sampleFn)?"ok":"none";return {k,tip:{ok:L("A model is connected","已连接模型"),rules:L("Built-in rules only","只用内置规则"),none:L("No model connected","未连接模型")}[k]}}
 function renderCrewPop(){
   const pop=$("crewPop");if(!pop)return;
   pop.hidden=!crewPopOpen;renderCrew?.();if(!crewPopOpen)return;
   const btn=$("crewSetBtn");
   if(btn){const r=btn.getBoundingClientRect();pop.style.top=Math.round(r.bottom+8)+"px";pop.style.right=Math.max(14,Math.round(innerWidth-r.right))+"px"}
   const unread=unreadPins(),held=advHeld;
-  const status=crewLevel==="asked"?"":[unread?L(`${unread} thought${unread>1?"s":""} waiting for you`,`${unread} 条建议等你查看`):"",held?L(`${held} card${held>1?"s":""} held back until you read it`,`${held} 张卡片待你读完后再看`):""].filter(Boolean).join(" · ");
-  pop.innerHTML=`<div class="cp-pop-head"><b>${L("Crew","成员")}</b><span>${L("How much the crew does on its own","成员自己做多少")}</span></div>
-    <div class="sp-seg crew-seg" role="group" aria-label="${esc(L("How much the crew does on its own","成员自己做多少"))}">${CREW_LEVELS.map(k=>`<button type="button" data-crew-level="${k}" aria-pressed="${!autonomyCustom&&crewLevel===k}">${L(CREW_LABEL[k][0],CREW_LABEL[k][1])}</button>`).join("")}</div>
-    <p class="crew-desc">${autonomyCustom?L(`Custom: ${autonomySummary()}. Pick a level to go back to a preset.`,`自定义：${autonomySummary()}。选择一个档位即可恢复预设。`):L(CREW_DESC[crewLevel][0],CREW_DESC[crewLevel][1])}</p>
-    ${status?`<p class="crew-status">${esc(status)}</p>`:""}
-    <div class="crew-sec"><b>${ic("lock")}${L("Locks","锁定")}</b><span>${L(`Locked cards and lanes are yours alone. ${lockedBays().length?lockedBays().map(i=>bayName(BAYS[i])).join(", ")+(lockedBays().length>1?" are":" is")+" locked.":"No lanes are locked."} Lock a card from its right-click menu, or a lane from the lock beside its title.`,`锁定的卡片和泳道只有你能改。${lockedBays().length?lockedBays().map(i=>bayName(BAYS[i])).join("、")+" 已锁定。":"目前没有锁定的泳道。"}右键卡片可锁定卡片，泳道标题旁的锁可锁定泳道。`)}</span></div>
-    <div class="crew-foot"><button type="button" class="cbtn" data-crew-custom>${L("Customize…","自定义…")}</button><button type="button" class="cbtn" data-crew-memory>${ic("book")}${L("Memory","记忆")}</button><button type="button" class="cbtn" data-crew-copilot>${ic("sparkles")}Copilot</button></div>`;
+  const seg=(axis,levels,labels,cur)=>`<div class="sp-seg crew-seg" style="grid-template-columns:repeat(${levels.length},minmax(0,1fr))" role="group" aria-labelledby="crew-${axis}-l">${levels.map(k=>`<button type="button" data-crew-${axis}="${k}" aria-pressed="${cur===k}">${L(labels[k][0],labels[k][1])}</button>`).join("")}</div>`;
+  const firstUnread=Object.entries(board.pins||{}).find(([id,ps])=>byId(id)&&(ps||[]).some(x=>!x.seen))?.[0];
+  pop.innerHTML=`<div class="cp-pop-head"><b>${L("Crew","成员")}</b><span>${esc(connHealth().tip)}</span></div>
+    <div class="crew-axis"><b id="crew-speak-l">${L("Speaks up","主动发言")}</b>${seg("speak",SPEAK_LEVELS,SPEAK_LABEL,crewSpeak)}<p>${L(SPEAK_DESC[crewSpeak][0],SPEAK_DESC[crewSpeak][1])}</p></div>
+    ${firstUnread?`<div class="crew-wait"><span>${esc(unread>1?L(`${unread} thoughts waiting for you`,`${unread} 条建议等你查看`):L("A thought is waiting for you","有一条建议等你查看"))}${held?esc(L(` · ${held} card${held>1?"s":""} held back`,` · ${held} 张卡片暂缓`)):""}</span><button type="button" class="cbtn" data-crew-show="${esc(firstUnread)}">${L("Show","查看")}</button></div>`:""}
+    <div class="crew-axis"><b id="crew-act-l">${L("Acts on the board","在画板上动手")}</b>${seg("act",ACT_LEVELS,ACT_LABEL,autonomyCustom?"":crewAct)}<p>${autonomyCustom?esc(L(`Custom: ${autonomySummary()}.`,`自定义：${autonomySummary()}。`)):L(ACT_DESC[crewAct][0],ACT_DESC[crewAct][1])} ${autonomyCustom?"":L("Edits and deletions of your cards are always suggestions.","修改和删除你的卡片始终以建议出现。")}</p></div>
+    <div class="crew-sec"><b>${ic("lock")}${L("Locked lanes","锁定的泳道")}</b><div class="crew-locks">${BAYS.map((b,i)=>`<button type="button" class="crew-lock" data-crew-lock="${i}" aria-pressed="${lockedBays().includes(i)}">${ic("lock")}${esc(bayName(b))}</button>`).join("")}</div><span>${L("Only you change kept cards in a locked lane. Lock single cards from their menu.","锁定泳道里已确认的卡片只有你能改。单张卡片可在其菜单里锁定。")}</span></div>
+    <div class="crew-foot"><button type="button" class="cbtn" data-crew-custom>${L("Customize…","自定义…")}</button><button type="button" class="cbtn" data-crew-memory>${ic("book")}${L("Memory","记忆")}</button></div>`;
 }
 function toggleCrewPop(force){
   const next=force===undefined?!crewPopOpen:!!force;if(next===crewPopOpen)return;crewPopOpen=next;
   if(crewPopOpen){if(studioPopOpen)toggleStudioPopover(false);if(reviewPopOpen)toggleReviewPop(false);if(agentPopKey)toggleAgentPop(null)}
   renderCrewPop();
 }
-const CREW_DESC={asked:["The crew speaks and acts only when you ask. Anything it makes arrives as a draft.","成员只在你要求时发言和行动，产出都以草稿出现。"],
-  suggest:["One unasked thought at a time; the next comes after you've read it. New cards arrive as drafts, edits and deletions as suggestions.","一次只留一条主动建议，读过才有下一条。新卡片以草稿出现，修改和删除以建议出现。"],
-  collab:["Up to two unasked thoughts at a time, and it drafts a follow-up when it has one. Cards it creates land directly; edits and deletions are still suggestions.","一次最多两条主动建议，并会起草后续卡片。它新建的卡片直接落到画板上，修改和删除仍以建议出现。"]};
+
 let autonomyCustom=!!store.get(".autonomyCustom",false);
-let autonomy=autonomyCustom?{...CREW_PRESET[crewLevel],...(store.get(".autonomy",{})||{})}:{...CREW_PRESET[crewLevel]};
-const perm=k=>{const v=["direct","suggest","never"].includes(autonomy[k])?autonomy[k]:CREW_PRESET[crewLevel][k];return k==="delete"&&v==="direct"?"suggest":v};
-function setAutonomy(patch){autonomy={...autonomy,...patch};if(autonomy.delete==="direct")autonomy.delete="suggest";autonomyCustom=JSON.stringify(autonomy)!==JSON.stringify(CREW_PRESET[crewLevel]);store.set(".autonomy",autonomy);store.set(".autonomyCustom",autonomyCustom);renderCrewPop?.()}
-function setCrewLevel(level){
-  crewLevel=CREW_LEVELS.includes(level)?level:"suggest";store.set(".crewLevel",crewLevel);
-  autonomy={...CREW_PRESET[crewLevel]};autonomyCustom=false;store.set(".autonomy",autonomy);store.set(".autonomyCustom",false);
-  advisorMode=crewLevel!=="asked";advisorAuto=crewLevel==="collab";advQuietMs=CREW_QUIET[crewLevel];
+let autonomy=autonomyCustom?{...presetFor(crewAct),...(store.get(".autonomy",{})||{})}:presetFor(crewAct);
+const perm=k=>{const v=["direct","suggest","never"].includes(autonomy[k])?autonomy[k]:presetFor(crewAct)[k];return k==="delete"&&v==="direct"?"suggest":v};
+function setAutonomy(patch){autonomy={...autonomy,...patch};if(autonomy.delete==="direct")autonomy.delete="suggest";autonomyCustom=JSON.stringify(autonomy)!==JSON.stringify(presetFor(crewAct));store.set(".autonomy",autonomy);store.set(".autonomyCustom",autonomyCustom);renderCrewPop?.();renderCrew?.()}
+function setCrew({speak=crewSpeak,act=crewAct}={}){
+  crewSpeak=SPEAK_LEVELS.includes(speak)?speak:"matters";crewAct=ACT_LEVELS.includes(act)?act:"drafts";
+  store.set(".crewSpeak",crewSpeak);store.set(".crewAct",crewAct);
+  autonomy=presetFor(crewAct);autonomyCustom=false;store.set(".autonomy",autonomy);store.set(".autonomyCustom",false);
+  advisorMode=crewSpeak!=="never";advisorAuto=crewSpeak==="often";advQuietMs=SPEAK_QUIET[crewSpeak];
   store.set(".advisor",advisorMode);store.set(".advisorAuto",advisorAuto);
   if(!advisorMode){for(const t of advTimers.values())clearTimeout(t);advTimers.clear();advBurst.clear();clearTimeout(advBurstT)}
   renderCrew();renderCrewPop?.();
 }
+/* the earlier single dial, kept so older callers still land somewhere sensible */
+function setCrewLevel(level){setCrew({asked:{speak:"never",act:"drafts"},suggest:{speak:"matters",act:"drafts"},collab:{speak:"often",act:"create"}}[level]||{})}
 function autonomySummary(){const short={direct:L("do it","直接做"),suggest:L("ask","先问"),never:L("never","不允许")};return AUTONOMY_ROWS.map(([k,l])=>`${L({create:"Create",link:"Link",edit:"Edit",delete:"Delete"}[k],{create:"新建",link:"连线",edit:"修改",delete:"删除"}[k])}: ${short[perm(k)]}`).join(" · ")}
 function autonomyPromptLine(){
   const say={direct:"you may do it directly",suggest:"it becomes a suggestion the designer accepts or declines (say you suggested it, never that you did it)",never:"you may not do it; tell the designer instead"};
@@ -3501,10 +3535,10 @@ function autonomyPromptLine(){
 }
 function openAutonomyDialog(){
   const row=([k,l])=>{const opts=AUTONOMY_LEVELS.filter(([v])=>!(k==="delete"&&v==="direct"));return `<div class="au-row"><span id="au-l-${k}">${L(l[0],l[1])}</span><div class="sp-seg au-seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))" role="group" aria-labelledby="au-l-${k}">${opts.map(([v,vl])=>`<button type="button" data-au="${k}" data-v="${v}" aria-pressed="${perm(k)===v}">${L(vl[0],vl[1])}</button>`).join("")}</div></div>`};
-  const body=()=>`<p class="au-lede">${L("Fine-tune what the crew may do without asking. Deleting always asks first. Drafts are always theirs to change, locked cards are yours alone, and anything you ask for in your own words is done as asked.","细调成员无需询问即可做的事。删除始终先问。草稿由它们自行修改，锁定的卡片只有你能改，你用自己的话要求的操作会照做。")}</p>${AUTONOMY_ROWS.map(row).join("")}<div class="au-foot"><button type="button" class="cbtn" data-au-reset>${L(`Reset to “${CREW_LABEL[crewLevel][0]}”`,`恢复为「${CREW_LABEL[crewLevel][1]}」`)}</button><button type="button" class="cbtn solid" data-d="close">${L("Done","完成")}</button></div>`;
+  const body=()=>`<p class="au-lede">${L("Fine-tune what the crew may do without asking. Deleting always asks first. Drafts are always theirs to change, locked cards are yours alone, and anything you ask for in your own words is done as asked.","细调成员无需询问即可做的事。删除始终先问。草稿由它们自行修改，锁定的卡片只有你能改，你用自己的话要求的操作会照做。")}</p>${AUTONOMY_ROWS.map(row).join("")}<div class="au-foot"><button type="button" class="cbtn" data-au-reset>${L(`Reset to “${ACT_LABEL[crewAct][0]}”`,`恢复为「${ACT_LABEL[crewAct][1]}」`)}</button><button type="button" class="cbtn solid" data-d="close">${L("Done","完成")}</button></div>`;
   openDialog(L("Customize the crew","自定义成员权限"),`<div id="auBody">${body()}</div>`,d=>{
     d.onclick=e=>{const b=e.target.closest("button[data-au]");if(b){setAutonomy({[b.dataset.au]:b.dataset.v});qs("#auBody",d).innerHTML=body();return}
-      if(e.target.closest("[data-au-reset]")){setCrewLevel(crewLevel);qs("#auBody",d).innerHTML=body()}};
+      if(e.target.closest("[data-au-reset]")){setCrew({});qs("#auBody",d).innerHTML=body()}};
   });
 }
 const PROP_FIELDS=["title","text","tag","tone"];
@@ -5527,8 +5561,10 @@ function renderCrew(){
   const modeLbl=mode.label;
   const seatsHtml=Object.values(AGENTS).map(a=>{const s=crewState[a.key];const waiting=board.nodes.some(n=>n.status==="sketch"&&n.by===a.key);
     return `<button type="button" class="seat ${s.busy?"busy":""} ${waiting&&!s.busy?"waiting":""}" data-agent="${a.key}" aria-label="${a.name}: ${esc(s.status||(waiting?"waiting for you":"free"))}"><span class="mk">${a.mk}</span><span class="ring"></span></button>`}).join("");
-  $("crew").innerHTML=`<div class="crew-seats" role="group" aria-label="AI Crew">${seatsHtml}</div>`
-    +`<button type="button" id="crewSetBtn" class="crew-set" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(L("How much the crew does on its own","成员自己做多少"))}">${esc(autonomyCustom?L("Custom","自定义"):L(CREW_SHORT[crewLevel][0],CREW_SHORT[crewLevel][1]))}${ic("chev","ico cm-chev")}</button>`
+  const quiet=typeof crewQuietReason==="function"?crewQuietReason():null,health=typeof connHealth==="function"?connHealth():{k:"none",tip:""};
+  const setTip=`${L("Crew settings","成员设置")} · ${L("Speaks up","主动发言")}: ${L(SPEAK_LABEL[crewSpeak][0],SPEAK_LABEL[crewSpeak][1])} · ${L("Acts","动手")}: ${autonomyCustom?L("Custom","自定义"):L(ACT_LABEL[crewAct][0],ACT_LABEL[crewAct][1])}${quiet?" · "+quiet.tip:""}`;
+  $("crew").innerHTML=`<div class="crew-group${quiet?" quiet-"+quiet.k:""}" ${quiet?`title="${esc(quiet.tip)}"`:""}><div class="crew-seats" role="group" aria-label="AI Crew">${seatsHtml}</div>`
+    +`<button type="button" id="crewSetBtn" class="crew-set" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(setTip)}" aria-label="${esc(setTip)}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg><i class="conn-dot ${health.k}" title="${esc(health.tip)}"></i></button></div>`
     +`<button type="button" id="crewModeBtn" class="crew-mode ${mode.cls||""}" aria-haspopup="dialog" aria-expanded="${studioPopOpen}" title="${esc(mode.title)}" aria-label="${esc(modeLbl)}: ${esc(mode.title)}"><b></b><span>${esc(modeLbl)}</span>${ic("chev","ico cm-chev")}</button>`;
   paintCopilotHeader?.();
   renderLineCrew?.();
@@ -6080,9 +6116,9 @@ function renderAll(){if(board&&(!changeShadow||changeShadow.id!==board.id))chang
 /* How proactive the crew is, unasked. Off: never. Quiet: one look per burst of new cards, at most ADV_BUDGET.quiet an hour.
    Active: the same batching with a larger budget. Anything you ask for (a pin's Try again) is outside the budget. */
 const ADV_HARD_CAP=30;
-let advQuietMs=CREW_QUIET[crewLevel]||6000,advMaxWaitMs=20000,advFadeMs=600000;
+let advQuietMs=SPEAK_QUIET[crewSpeak]||6000,advMaxWaitMs=20000,advFadeMs=600000;
 let advisorLevel=null;
-let advisorMode=crewLevel!=="asked";
+let advisorMode=crewSpeak!=="never";
 let advSpent=(store.get(".advSpent",[])||[]).filter(t=>NOW()-t<3600000);
 let advBurst=new Set(),advBurstT=0,advBurstStart=0,advBurstCtx=null,advHeld=0;
 const advUsed=()=>{advSpent=advSpent.filter(t=>NOW()-t<3600000);return advSpent.length};
@@ -6091,8 +6127,8 @@ const advLeft=()=>Math.max(0,ADV_HARD_CAP-advUsed());
 function fadeIgnoredPins(){let changed=false;for(const ps of Object.values(board?.pins||{}))for(const p of ps||[])if(!p.seen&&NOW()-(p.t||0)>advFadeMs){p.seen=true;p.faded=true;changed=true}if(changed){renderNodes();persist()}return changed}
 const unreadPins=()=>{fadeIgnoredPins();let k=0;for(const ps of Object.values(board?.pins||{}))for(const p of ps||[])if(!p.seen)k++;return k};
 function setAdvisorLevel(level){setCrewLevel({off:"asked",quiet:"suggest",active:"collab"}[level]||level)}
-setInterval(()=>{if(board&&advHeld)renderCrewPop?.();if(board)fadeIgnoredPins()},30000);
-let advisorAuto=crewLevel==="collab";
+setInterval(()=>{if(board&&advHeld)renderCrewPop?.();if(board&&fadeIgnoredPins())renderCrew?.()},30000);
+let advisorAuto=crewSpeak==="often";
 let openAdvNodeId=null;
 let openAdvIdx=0;
 const advThinking=new Map();
@@ -6125,7 +6161,7 @@ function toggleAdvPop(nodeId){
   if(openAdvNodeId===nodeId){closeAdvPop();return}
   openAdvNodeId=nodeId;openAdvIdx=0;
   const pins=board.pins?.[nodeId];
-  if(Array.isArray(pins)&&pins.some(p=>!p.seen)){pins.forEach(p=>{p.seen=true});persist()}
+  if(Array.isArray(pins)&&pins.some(p=>!p.seen)){pins.forEach(p=>{p.seen=true});persist();renderCrew?.();renderCrewPop?.()}
   renderNodes();renderAdvPop();
 }
 function boldAdvKeywords(seg,kws){
@@ -6496,7 +6532,7 @@ function scheduleAdvisor(nodeId,{force=false,delay=1400}={}){
 function fireAdvisorBurst(){
   const ids=[...advBurst].filter(id=>{const n=byId(id);return n&&!n.archived&&n.status!=="sketch"&&n.type!=="group"});advBurst.clear();
   if(!ids.length||!advisorMode)return;
-  if(unreadPins()>=(CREW_UNREAD[crewLevel]||0)||!advLeft()){advHeld+=ids.length;renderCrewPop?.();return}
+  if(unreadPins()>=(SPEAK_UNREAD[crewSpeak]||0)||!advLeft()){advHeld+=ids.length;renderCrewPop?.();renderCrew?.();return}
   /* one look per burst: the card with the most to say about, preferring cards without a pin yet */
   const score=id=>{const n=byId(id),txt=(fullTextOf(n)+" "+(n.title||"")).trim();return Math.min(txt.length,600)+(n.media||n.url?200:0)-((board.pins?.[id]||[]).length?1000:0)+(n.updated||n.created||0)/1e13};
   ids.sort((a,b)=>score(b)-score(a));
@@ -6516,7 +6552,7 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
   const advCtrl=new AbortController();advAborts.set(nodeId,advCtrl);
   try{
     let curKws=(localRes.keywords||[]).slice(0,2),curLines=[],liveKws=false,liveLines=0;
-    if(!force&&advisorLiveReady(n)){advSpent.push(NOW());store.set(".advSpent",advSpent);advHeld=0}
+    if(!force&&advisorLiveReady(n)){advSpent.push(NOW());store.set(".advSpent",advSpent);advHeld=0;renderCrew?.()}
     const dataP=askAdvisorForNode(n,({keywords,thoughts})=>{
       if(!advThinking.has(nodeId)||advCtrl.signal.aborted)return;
       if(keywords.length){liveKws=true;curKws=keywords.slice(0,5)}
@@ -8634,10 +8670,12 @@ $("reviewBtn").addEventListener("click",()=>{
   toggleReviewPop();
 });
 $("crewPop")?.addEventListener("click",e=>{
-  const lv=e.target.closest("[data-crew-level]");if(lv){setCrewLevel(lv.dataset.crewLevel);return}
+  const sp=e.target.closest("[data-crew-speak]");if(sp){setCrew({speak:sp.dataset.crewSpeak});return}
+  const ac=e.target.closest("[data-crew-act]");if(ac){setCrew({act:ac.dataset.crewAct});return}
+  const lk=e.target.closest("[data-crew-lock]");if(lk){toggleBayLock(+lk.dataset.crewLock);renderCrewPop();return}
+  const sh=e.target.closest("[data-crew-show]");if(sh){const n=byId(sh.dataset.crewShow);toggleCrewPop(false);if(n){focusNodes([n],Math.max(cam.s,.85),0);select([n.id],{menus:false});if(openAdvNodeId!==n.id)toggleAdvPop(n.id)}return}
   if(e.target.closest("[data-crew-custom]")){toggleCrewPop(false);openAutonomyDialog();return}
   if(e.target.closest("[data-crew-memory]")){toggleCrewPop(false);memoryDialog();return}
-  if(e.target.closest("[data-crew-copilot]")){toggleCrewPop(false);openCopilot(true);return}
 });
 document.addEventListener("pointerdown",e=>{const b=e.target.closest?.("[data-bay-lock]");if(b){e.stopPropagation();e.preventDefault()}},true);
 document.addEventListener("click",e=>{const b=e.target.closest?.("[data-bay-lock]");if(b){e.stopPropagation();toggleBayLock(+b.dataset.bayLock)}},true);

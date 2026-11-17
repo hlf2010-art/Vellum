@@ -1256,6 +1256,39 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .tbl td.lvl{white-space:nowrap}
 .tbl-tag{display:inline-block;padding:1px 8px;border-radius:5px;font-weight:550;background:color-mix(in srgb,var(--c) 15%,var(--tbl-bg));color:color-mix(in srgb,var(--c) 62%,var(--label))}
 /* more to the right: fade the edge until scrolled to the end */
+.tbl-block{position:relative}
+.cp-bubble .tbl-block{margin:8px 0 10px}.cp-bubble .tbl-block .tbl-wrap{margin:0}
+.tbl-tools{display:flex;align-items:center;gap:6px;min-height:26px;margin:0 0 6px}
+.tbl-tool{width:24px;height:24px;display:grid;place-items:center;border-radius:6px;color:var(--label-3)}
+.tbl-tool:hover{background:var(--hover);color:var(--label)}.tbl-tool .ico{width:13px;height:13px}
+.tbl-tool:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.tbl-block .tbl th:first-child,.tbl-block .tbl td:first-child{padding-left:34px}
+.tbl-check{position:absolute;left:11px;top:12px;width:15px;height:15px;border-radius:4px;box-shadow:inset 0 0 0 1.5px var(--sw-off-line);background:var(--tbl-bg);opacity:0;transition:opacity var(--d-quick),background var(--d-quick)}
+.tbl th .tbl-check{top:7px}
+.tbl tr:hover .tbl-check,.tbl.has-sel .tbl-check,.tbl-check:focus-visible{opacity:1}
+@media (hover:none){.tbl-check{opacity:1}}
+.tbl-check[aria-checked="true"],.tbl-check[aria-checked="mixed"]{background:var(--act);box-shadow:none}
+.tbl-check[aria-checked="true"]::after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid var(--on-act);border-width:0 1.8px 1.8px 0;transform:rotate(45deg)}
+.tbl-check[aria-checked="mixed"]::after{content:"";position:absolute;left:3.5px;right:3.5px;top:6.75px;height:1.5px;background:var(--on-act);border-radius:1px}
+.tbl-check:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.tbl-block tbody tr{cursor:default}
+.tbl-block .tbl tbody tr.sel td{background:color-mix(in srgb,var(--B) 10%,var(--tbl-bg))}
+.tbl-block .tbl tbody tr.sel:hover td{background:color-mix(in srgb,var(--B) 14%,var(--tbl-bg))}
+.tbl-sel{display:flex;align-items:center;gap:8px;font:550 12px/1 var(--ui);color:var(--label-2)}
+.tbl-gap{flex:1}
+.tbl td.hc,.tbl th.hc{background:color-mix(in srgb,var(--label) 3%,var(--tbl-bg))}
+.tbl tbody tr:hover td.hc{background:color-mix(in srgb,var(--label) 7%,var(--tbl-bg))}
+.tbl td.best{font-weight:620}
+.tbl-chart{display:grid;gap:12px;padding:2px 2px 4px}
+.tbl-ch-head{display:flex;align-items:center;font:600 11.5px/1.3 var(--ui);color:var(--label-2)}
+.tbl-ch-rows{display:grid;grid-template-columns:minmax(0,36%) minmax(0,1fr) auto;align-items:center;column-gap:12px;row-gap:10px;font:450 12.5px/1.35 var(--ui);color:var(--label)}
+.tbl-ch-row{display:contents}
+.tbl-ch-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbl-ch-track{height:10px;border-radius:5px;background:color-mix(in srgb,var(--label) 6%,transparent);overflow:hidden}
+.tbl-ch-track i{display:block;height:100%;border-radius:5px;background:color-mix(in srgb,var(--label) 50%,transparent);transition:width .5s var(--ease)}
+.tbl-ch-row.best .tbl-ch-track i{background:var(--C)}
+.tbl-ch-val{min-width:4ch;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl-ch-row.best .tbl-ch-val{font-weight:620}
 .tbl-sort{display:inline-flex;align-items:center;gap:4px;font:inherit;color:inherit;border-radius:5px;margin:-2px -4px;padding:2px 4px;white-space:nowrap}
 .tbl-sort:hover{background:var(--hover);color:var(--label)}
 .tbl-sort:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
@@ -5326,14 +5359,21 @@ function mdBlocksHtml(src){
       const LVL={good:"var(--C)",mid:"var(--warn,#d97706)",bad:"var(--D)"};
       // Column width from content (Notion-like): columns keep a comfortable width and the table scrolls instead of squeezing.
       const avgLen=ci=>{const ts=raw.map(r=>(r[ci]||"").replace(/[*_`]/g,"")).filter(Boolean);return ts.length?ts.reduce((a,t)=>a+t.length,0)/ts.length:0};
+      const LOWER_BETTER=/cost|price|time|week|day|hour|month|effort|risk|debt|latency|size|weight|bug|成本|价格|时间|周|天|小时|月|工作量|延迟|风险/i,HIGHER_BETTER=/impact|value|revenue|score|user|reach|rating|speed|throughput|growth|margin|收益|价值|收入|评分|用户|增长|利润/i;
+      const best=hdr.map((_,ci)=>{if(!cols[ci])return null;const ht=rawCells(tr)[ci]||"";const dir=LOWER_BETTER.test(ht)?-1:HIGHER_BETTER.test(ht)?1:0;if(!dir)return null;
+        const ks=raw.map(r=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?(m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,"")):null});const ok=ks.filter(k=>k!=null);if(new Set(ok).size<2)return null;
+        const target=dir<0?Math.min(...ok):Math.max(...ok);return ks.map(k=>k===target)});
       const colW=hdr.map((_,ci)=>cols[ci]?"":levels[ci]?"w-tag":ci===0?"w-first":avgLen(ci)>28?"w-long":"w-text");
       const sortKey=(r,ci)=>{const v=(r[ci]||"").replace(/\*\*/g,"").trim();const m=cols[ci]&&v.match(NUM);if(m)return (m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,""));
         const sc=levels[ci]&&SCALES.find(sc=>sc.includes(v.toLowerCase().replace(/^med$/,"medium")));return sc?sc.indexOf(v.toLowerCase().replace(/^med$/,"medium")):null};
       const cell=(r,ci)=>{const t=mdInline(r[ci]||""),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)],k=sortKey(r,ci),dv=k==null?"":` data-v="${k}"`;
         if(lv)return `<td class="lvl"${dv}><span class="tbl-tag" style="--c:${LVL[lv]}">${t}</span></td>`;
         if(!c||c[raw.indexOf(r)]==null)return `<td${c?' class="num"':""}${dv}>${t}</td>`;
-        return `<td class="num"${dv} style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${t}</span></td>`};
-      out.push(`<div class="tbl-wrap"><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="none"`:""}>${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${raw.map((r,ri)=>`<tr data-i="${ri}">${hdr.map((_,ci)=>cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div>`);
+        const isBest=best[ci]?.[raw.indexOf(r)];
+        return `<td class="num${isBest?" best":""}"${dv} style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${isBest?`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`:""}${t}${isBest?`<span class="sr-only"> ${L("(best)","（最优）")}</span>`:""}</span></td>`};
+      const hasNum=cols.some(Boolean);
+      const tools=`<div class="tbl-tools"><div class="tbl-sel" hidden><span class="tbl-selcount"></span><button type="button" class="sp-mini" data-tbl-ask>${L("Ask","追问")}</button><button type="button" class="tbl-tool" data-tbl-clear aria-label="${L("Clear selection","取消选择")}" title="${L("Clear selection","取消选择")}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><span class="tbl-gap"></span>${hasNum?`<div class="sp-seg sm" role="group" aria-label="${L("View","视图")}"><button type="button" data-tbl-view="table" aria-pressed="true">${L("Table","表格")}</button><button type="button" data-tbl-view="chart" aria-pressed="false">${L("Chart","图表")}</button></div>`:""}<button type="button" class="tbl-tool" data-tbl-copy title="${L("Copy as a table for Sheets, Excel or Notion","复制为表格，可粘贴到 Sheets、Excel 或 Notion")}" aria-label="${L("Copy table","复制表格")}">${ic("copy")}</button></div>`;
+      out.push(`<div class="tbl-block">${tools}<div class="tbl-chart" hidden></div><div class="tbl-wrap"><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="none"`:""}>${ci===0?`<button type="button" class="tbl-check" role="checkbox" aria-checked="false" data-tbl-all aria-label="${L("Select all rows","全选")}"></button>`:""}${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${raw.map((r,ri)=>`<tr data-i="${ri}" aria-selected="false">${hdr.map((_,ci)=>ci===0?cell(r,ci).replace(/^<td([^>]*)>/,`<td$1><button type="button" class="tbl-check" role="checkbox" aria-checked="false" aria-label="${L("Select row","选择此行")}"></button>`):cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div></div>`);
       continue;
     }
     if(/^[-*•]\s+/.test(tr)){
@@ -6029,13 +6069,66 @@ function toggleStudioPopover(force){
 (()=>{const fit=w=>w.classList.toggle("more",w.scrollWidth-w.clientWidth-w.scrollLeft>2);let q=0;
   new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;document.querySelectorAll(".tbl-wrap:not([data-fit])").forEach(w=>{w.dataset.fit="1";fit(w)})})}).observe(document.body,{childList:true,subtree:true});
   document.addEventListener("scroll",e=>{if(e.target.classList?.contains("tbl-wrap"))fit(e.target)},true);addEventListener("resize",()=>document.querySelectorAll(".tbl-wrap").forEach(fit));})();
+/* Table interactions: view as chart, copy, ask about a row, crosshair. */
+const tblText=el=>{const c=el.cloneNode(true);c.querySelectorAll(".sr-only,button.tbl-check,svg").forEach(x=>x.remove());return c.textContent.replace(/\s+/g," ").trim()};
+function tblChart(block,ci){
+  const tbl=block.querySelector("table"),ths=[...tbl.tHead.rows[0].cells],numCols=ths.map((th,i)=>th.classList.contains("num")?i:-1).filter(i=>i>=0);
+  if(ci==null||!numCols.includes(ci))ci=numCols[0];
+  const picked=[...tbl.tBodies[0].rows].filter(tr=>tr.classList.contains("sel"));
+  const rows=(picked.length?picked:[...tbl.tBodies[0].rows]).map(tr=>({label:tblText(tr.cells[0]),v:Math.abs(+tr.cells[ci]?.dataset.v||0),txt:tblText(tr.cells[ci]),best:tr.cells[ci]?.classList.contains("best")}));
+  const max=Math.max(...rows.map(r=>r.v),0)||1;
+  const head=numCols.length>1?`<div class="sp-seg sm" role="group" aria-label="${L("Column","列")}">${numCols.map(i=>`<button type="button" data-tbl-col="${i}" aria-pressed="${i===ci}">${esc(tblText(ths[i]))}</button>`).join("")}</div>`:`<span>${esc(tblText(ths[ci]))}</span>`;
+  const ch=block.querySelector(".tbl-chart");ch.dataset.col=ci;
+  ch.innerHTML=`<div class="tbl-ch-head">${head}</div><div class="tbl-ch-rows" role="list">${rows.map(r=>`<div class="tbl-ch-row${r.best?" best":""}" role="listitem"><span class="tbl-ch-lbl" title="${esc(r.label)}">${esc(r.label)}</span><span class="tbl-ch-track"><i style="width:0" data-w="${(r.v/max*100).toFixed(1)}"></i></span><span class="tbl-ch-val">${r.best?`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`:""}${esc(r.txt)}</span></div>`).join("")}</div>`;
+  requestAnimationFrame(()=>ch.querySelectorAll("i[data-w]").forEach(i=>i.style.width=i.dataset.w+"%"));
+}
+document.addEventListener("click",async e=>{
+  const v=e.target.closest("[data-tbl-view]");
+  if(v){const block=v.closest(".tbl-block"),chart=v.dataset.tblView==="chart";
+    block.querySelectorAll("[data-tbl-view]").forEach(b=>b.setAttribute("aria-pressed",String(b===v)));
+    block.querySelector(".tbl-wrap").hidden=chart;block.querySelector(".tbl-chart").hidden=!chart;if(chart)tblChart(block,+block.querySelector(".tbl-chart").dataset.col||null);return}
+  const col=e.target.closest("[data-tbl-col]");if(col){tblChart(col.closest(".tbl-block"),+col.dataset.tblCol);return}
+  const cp=e.target.closest("[data-tbl-copy]");
+  if(cp){const tbl=cp.closest(".tbl-block").querySelector("table"),sel=[...tbl.tBodies[0].rows].filter(r=>r.classList.contains("sel"));
+    const tsv=[tbl.tHead.rows[0],...(sel.length?sel:[...tbl.tBodies[0].rows])].map(r=>[...r.cells].map(tblText).join("\t")).join("\n");
+    try{await navigator.clipboard.writeText(tsv);toast(L("Table copied · paste into Sheets, Excel or Notion","表格已复制 · 可粘贴到 Sheets、Excel 或 Notion"))}catch{toast(L("Couldn't copy the table","无法复制表格"))}return}
+  const ask=e.target.closest("[data-tbl-ask]");
+  if(ask){const tbl=ask.closest(".tbl-block").querySelector("table");const names=[...tbl.tBodies[0].rows].filter(r=>r.classList.contains("sel")).map(r=>tblText(r.cells[0]));if(!names.length)return;
+    if(!$("cpInput"))openCopilot(true);const inp=$("cpInput");if(!inp)return;
+    const list=names.map(n=>L(`“${n}”`,`「${n}」`)),joined=list.length>1?list.slice(0,-1).join(L(", ","、"))+L(" and ","和")+list.at(-1):list[0];
+    inp.value=names.length>1?L(`Compare ${joined}.`,`比较${joined}。`):L(`Tell me more about ${joined}.`,`展开讲讲${joined}。`);inp.dispatchEvent(new Event("input",{bubbles:true}));inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);return}
+});
+/* Row selection (Finder/Notion model): click selects one; Cmd/Ctrl toggles; Shift selects a range; checkboxes toggle; Esc clears. */
+function tblSync(tbl){const rows=[...tbl.tBodies[0].rows],n=rows.filter(r=>r.classList.contains("sel")).length,block=tbl.closest(".tbl-block");
+  rows.forEach(r=>{const on=r.classList.contains("sel");r.setAttribute("aria-selected",String(on));r.querySelector(".tbl-check")?.setAttribute("aria-checked",String(on))});
+  tbl.querySelector("[data-tbl-all]")?.setAttribute("aria-checked",n===0?"false":n===rows.length?"true":"mixed");
+  tbl.classList.toggle("has-sel",n>0);const bar=block?.querySelector(".tbl-sel");
+  if(bar){bar.hidden=!n;bar.querySelector(".tbl-selcount").textContent=L(`${n} selected`,`已选 ${n} 行`);bar.querySelector("[data-tbl-ask]").textContent=n>1?L("Compare","比较"):L("Ask","追问")}
+  const ch=block?.querySelector(".tbl-chart");if(ch&&!ch.hidden)tblChart(block,+ch.dataset.col);}
+document.addEventListener("click",e=>{
+  const all=e.target.closest("[data-tbl-all]");
+  if(all){const tbl=all.closest("table"),rows=[...tbl.tBodies[0].rows],on=!rows.every(r=>r.classList.contains("sel"));rows.forEach(r=>r.classList.toggle("sel",on));tblSync(tbl);return}
+  if(e.target.closest("[data-tbl-clear]")){const tbl=e.target.closest(".tbl-block").querySelector("table");[...tbl.tBodies[0].rows].forEach(r=>r.classList.remove("sel"));tblSync(tbl);return}
+  const tr=e.target.closest(".tbl-block tbody tr");if(!tr)return;
+  if(e.target.closest("a,button:not(.tbl-check),input,textarea"))return;
+  const tbl=tr.closest("table"),rows=[...tbl.tBodies[0].rows],viaCheck=!!e.target.closest(".tbl-check");
+  if(e.shiftKey&&tbl._anchor&&rows.includes(tbl._anchor)){const [a,b]=[rows.indexOf(tbl._anchor),rows.indexOf(tr)].sort((x,y)=>x-y);if(!(e.metaKey||e.ctrlKey))rows.forEach(r=>r.classList.remove("sel"));rows.slice(a,b+1).forEach(r=>r.classList.add("sel"));getSelection()?.removeAllRanges()}
+  else if(viaCheck||e.metaKey||e.ctrlKey){tr.classList.toggle("sel");tbl._anchor=tr}
+  else{const only=tr.classList.contains("sel")&&rows.filter(r=>r.classList.contains("sel")).length===1;rows.forEach(r=>r.classList.remove("sel"));if(!only)tr.classList.add("sel");tbl._anchor=tr}
+  tblSync(tbl);
+});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;const tbl=document.activeElement?.closest?.(".tbl-block")?.querySelector("table");if(tbl&&tbl.classList.contains("has-sel")){[...tbl.tBodies[0].rows].forEach(r=>r.classList.remove("sel"));tblSync(tbl);e.stopPropagation()}},true);
+document.addEventListener("mouseover",e=>{const td=e.target.closest(".tbl td,.tbl th");const tbl=td?.closest("table");
+  document.querySelectorAll(".tbl .hc").forEach(x=>{if(!tbl||!tbl.contains(x)||x.cellIndex!==td.cellIndex)x.classList.remove("hc")});
+  if(td&&tbl.rows.length>2)[...tbl.rows].forEach(r=>r.cells[td.cellIndex]?.classList.add("hc"));});
 document.addEventListener("click",e=>{const b=e.target.closest(".tbl-sort");if(!b)return;
   const th=b.closest("th"),tbl=th.closest("table"),ci=[...th.parentElement.children].indexOf(th),body=tbl.tBodies[0];
   const next={none:"ascending",ascending:"descending",descending:"none"}[th.getAttribute("aria-sort")||"none"];
   tbl.querySelectorAll("th[aria-sort]").forEach(x=>x.setAttribute("aria-sort","none"));th.setAttribute("aria-sort",next);
   const key=tr=>{const td=tr.children[ci];return td?.dataset.v!=null&&td.dataset.v!==""?+td.dataset.v:(td?.textContent||"").trim().toLowerCase()};
   const rows=[...body.rows].sort((a,b)=>{if(next==="none")return +a.dataset.i - +b.dataset.i;const x=key(a),y=key(b);const c=typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y));return next==="ascending"?c:-c});
-  rows.forEach(r=>body.appendChild(r));});
+  rows.forEach(r=>body.appendChild(r));
+  const block=tbl.closest(".tbl-block"),ch=block?.querySelector(".tbl-chart");if(ch&&!ch.hidden)tblChart(block,+ch.dataset.col);});
 let connManualCheck=false;
 /* Studio AI launcher: the local page server (Vellum app / serve_vellum.py) can open the bundled
    service. A page opened any other way can't start programs, so it keeps the instruction. */

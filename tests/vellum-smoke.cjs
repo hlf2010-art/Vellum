@@ -484,6 +484,14 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
           const d = document.createElement('div'); d.innerHTML = md + cmp;
           return { numCols: d.querySelectorAll('thead th.num').length, ratios: [...d.querySelectorAll('td.num')].map(x => x.style.getPropertyValue('--v')), verdict: d.querySelector('caption')?.textContent, wins: d.querySelectorAll('td.win .tbl-win').length, risk: [...d.querySelectorAll('td.lvl .tbl-tag')].map(x => x.style.getPropertyValue('--c')).join(), plain: mdBlocksHtml('| Option | Speed |\n|---|---|\n| A | High |\n| B | Low |').join('').includes('tbl-tag') };
         });
+        const sel = await p.evaluate(() => {
+          const d = document.createElement('div'); d.innerHTML = mdBlocksHtml('| Option | Cost |\n|---|---|\n| A | $1 |\n| B | $2 |\n| C | $3 |').join(''); document.body.append(d);
+          const td = i => d.querySelectorAll('tbody tr')[i].cells[1], click = (el, o = {}) => el.dispatchEvent(new MouseEvent('click', { bubbles: true, ...o }));
+          const names = () => [...d.querySelectorAll('tbody tr.sel')].map(r => tblText(r.cells[0])).join();
+          click(td(0)); const one = names(); click(td(2), { metaKey: true }); const two = names(); click(td(0)); click(td(2), { shiftKey: true }); const range = names();
+          click(td(1)); const single = names(); const bar = d.querySelector('.tbl-sel').hidden; d.remove(); return { one, two, range, single, bar };
+        });
+        check('table rows: click selects one, Cmd adds, Shift selects a range, and the selection bar appears', sel.one === 'A' && sel.two === 'A,C' && sel.range === 'A,B,C' && sel.single === 'B' && sel.bar === false, JSON.stringify(sel));
         check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
       }
       check(`every text in the Connection and Crew popovers and in tables reaches 4.5:1 in ${theme} mode`, bad.length === 0, bad.join(' | '));

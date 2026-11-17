@@ -509,6 +509,45 @@ async function page(browser, base, { model = true } = {}) {
       check('no page errors in the Copilot timeout flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+    // 11. A model that can't answer is said out loud, and the designer's own words drive adopt and build
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      await p.evaluate(() => { window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
+      await p.type('Words idea'); await p.waitForTimeout(800);
+      const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+      // an empty account: rules answer, and the toast, the island and the header all say why
+      queue = [{ id: 'broke', match: '"directions"', status: 402 }];
+      await p.evaluate(id => select([id]), idea); await p.type('/fork 3'); await p.idle();
+      const broke = await p.evaluate(() => ({ titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','), toasts: __toasts.splice(0), note: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.note, health: apiHealthNow().k, routable: apiRoutable(), issue: connSummary().issue, label: apiHealthLabel().txt }));
+      check('an out-of-credits Cloud API falls back to built-in rules', broke.titles === 'Walk it through,Lay it all out,Cut to one moment', JSON.stringify(broke));
+      check('and says so in a toast', broke.toasts.includes('Cloud API is out of credits (HTTP 402), so built-in rules answered instead.'), JSON.stringify(broke.toasts));
+      check('the island says built-in rules answered', broke.note === 'Built-in rules answered', JSON.stringify(broke.note));
+      check('the header stops claiming the Cloud API is in use', broke.health === 'credits' && !broke.routable && broke.issue === 'Cloud API out of credits' && broke.label === 'Out of credits', JSON.stringify(broke));
+      check('a passing re-check brings the Cloud API back', await p.evaluate(async () => { await testApi({ quiet: true }); return apiRoutable() && apiHealthNow().k === 'ok'; }));
+      // drafts from a working model, kept
+      await p.evaluate(id => { board.nodes = board.nodes.filter(n => n.type !== 'direction'); board.edges = board.edges.filter(e => e.a !== id); renderAll(); select([id]); }, idea);
+      queue = [{ id: 'w', match: '"directions"', text: dirs('W') }];
+      await p.type('/fork 3'); await p.idle();
+      await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').forEach(n => { n.status = 'ink'; })); await p.evaluate(() => { renderAll(); persist(); });
+      const dirA = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'A').id);
+      await p.evaluate(id => select([id]), dirA);
+      await p.type('Should we adopt this?'); await p.idle();
+      check('a question about adopting does not adopt', await p.evaluate(id => !board.adopted[byId(id).idea], dirA));
+      await p.evaluate(() => { const c = document.querySelector('[data-cp=close]'); c && c.click(); });
+      await p.evaluate(id => select([id]), dirA);
+      await p.type('Adopt this direction'); await p.waitForTimeout(800);
+      check('typing "Adopt this direction" adopts it', await p.evaluate(id => board.adopted[byId(id).idea] === id, dirA));
+      // the build request reaches Wright in the designer's words
+      const spec = { title: 'Interrogation at Louza', kicker: 'k', lede: 'l', items: [1, 2, 3, 4].map(i => ({ title: 'Beat ' + i, body: 'b', tag: 't' })), cta: 'Begin' };
+      queue = [{ id: 'build', match: 'The designer asked for: "Build a prototype of the opening interrogation scene"', text: spec }];
+      await p.evaluate(id => select([id]), dirA);
+      await p.type('Build a prototype of the opening interrogation scene'); await p.idle();
+      const proof = await p.evaluate(() => board.nodes.find(n => n.type === 'proof')?.spec?.title);
+      check("Wright builds what the designer asked for, in the designer's words", proof === 'Interrogation at Louza', JSON.stringify({ proof, last: requests.at(-1)?.matched }));
+      check('no page errors in these flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
   } finally {
     await browser.close(); srv.close();
   }

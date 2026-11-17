@@ -5719,7 +5719,7 @@ const hasApi=()=>!!(apiCfg.enabled&&apiCfg.key.trim()&&apiCfg.baseUrl.trim()&&ap
    k: unknown | checking | ok | auth | notfound | ratelimit | unreachable | error */
 const apiCfgSig=(c=apiCfg)=>[c.baseUrl,c.model,c.key].join("\u0001");
 let apiHealth={k:"unknown",sig:"",at:0,ms:null,detail:""};
-const API_BAD=new Set(["auth","notfound","unreachable","error"]);
+const API_BAD=new Set(["auth","notfound","credits","unreachable","error"]);
 const apiHostOf=u=>{try{return new URL(u).host}catch{return String(u||"").replace(/^https?:\/\//,"").split("/")[0]||"server"}};
 function apiHealthNow(){return apiHealth.sig===apiCfgSig()?apiHealth:{k:"unknown",sig:"",at:0,ms:null,detail:""}}
 const apiBad=()=>hasApi()&&API_BAD.has(apiHealthNow().k);
@@ -5729,13 +5729,14 @@ const apiBad=()=>hasApi()&&API_BAD.has(apiHealthNow().k);
 function apiRoutable(){
   if(!hasApi())return false;
   const h=apiHealthNow();
-  if(h.k==="auth"||h.k==="notfound")return false;
+  if(h.k==="auth"||h.k==="notfound"||h.k==="credits")return false;
   if(h.k==="unreachable"&&Date.now()-h.at<60000)return false;
   return true;
 }
 function classifyApiStatus(status){
   if(status>=200&&status<300)return "ok";
   if(status===401||status===403)return "auth";
+  if(status===402)return "credits";
   if(status===404)return "notfound";
   if(status===429)return "ratelimit";
   return "error";
@@ -5783,6 +5784,7 @@ function apiHealthLabel(h=apiHealthNow()){
     notfound:{cls:"err",txt:L("Model not found","找不到模型"),detail:`${model} · ${host}`,tip:L(`${host} doesn't know “${apiCfg.model}”, or the URL is wrong`,`${host} 不认识「${apiCfg.model}」，或地址有误`)},
     ratelimit:{cls:"busy",txt:L("Rate limited","被限流"),detail:`${model} · ${host}`,tip:L(`${host} is reachable but asked us to slow down`,`${host} 可以连通，但要求降低请求频率`)},
     unreachable:{cls:"err",txt:L("Unreachable","无法连接"),detail:`${model} · ${host}`,tip:L(`Offline, wrong URL, or blocked by the browser`,`离线、地址有误或被浏览器拦截`)},
+    credits:{cls:"err",txt:L("Out of credits","额度用尽"),detail:`${model} · ${host}`,tip:L(`${host} says the account has no credits left. Top up, then test again`,`${host} 表示账户额度已用尽，充值后再检测`)},
     error:{cls:"err",txt:L("Error","出错"),detail:`${model} · ${host}`,tip:L(`${host} returned ${h.detail||"an error"}`,`${host} 返回 ${h.detail||"错误"}`)}
   }[h.k]||{cls:"",txt:"",detail:"",tip:""};
 }
@@ -6801,7 +6803,7 @@ Include 1 or at most 2 pins.`;
     if(ks!==lastK||ts!==lastT){lastK=ks;lastT=ts;onProgress({keywords:kws,thoughts:th})}
   }:undefined;
   try{
-    const {v}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:750,signal,memoryMode:rel.length?"compact":"none",onText:handleText},local);
+    const {v}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:750,signal,memoryMode:rel.length?"compact":"none",onText:handleText,quiet:true},local);
     if(!v||!Array.isArray(v.pins)||!v.pins.length)return local();
     const kws=Array.isArray(v.keywords)&&v.keywords.length?v.keywords.slice(0,5).map(String):local().keywords;
     return {
@@ -7120,7 +7122,22 @@ async function readChatStream(res,ctrl,{json,onText}){
 function aiTimeoutError(who,ms,partial=""){
   const s=Math.round(ms/1000);
   const e=new Error(L(`${who} took longer than ${s} s`,`${who}超过 ${s} 秒仍未完成`));
-  e.name="TimeoutError";e.partial=partial;return e;
+  e.name="TimeoutError";e.partial=partial;e.reason=e.message;return e;
+}
+/* A model call that failed for a reason the designer should hear about (no credits, refused key, ...). */
+function aiFailError(reason){const e=new Error(reason);e.reason=reason;return e}
+function apiStatusError(status,k){
+  const m={credits:L(`Cloud API is out of credits (HTTP ${status})`,`云端 API 额度用尽（HTTP ${status}）`),
+    auth:L(`Cloud API rejected the key (HTTP ${status})`,`云端 API 拒绝了密钥（HTTP ${status}）`),
+    notfound:L(`Cloud API doesn't know this model (HTTP ${status})`,`云端 API 找不到该模型（HTTP ${status}）`),
+    ratelimit:L(`Cloud API is rate limited (HTTP ${status})`,`云端 API 被限流（HTTP ${status}）`)}[k];
+  return aiFailError(m||L(`Cloud API returned HTTP ${status}`,`云端 API 返回 HTTP ${status}`));
+}
+/* What to tell the designer when an engine could not answer. */
+function failReason(who,e){
+  if(e?.reason)return e.reason;
+  if(/Invalid JSON|Empty model response/.test(e?.message||""))return L(`${who} gave an answer Vellum couldn't read`,`${who}的回答无法解析`);
+  return L(`${who} failed (${clip(e?.message||"error",60)})`,`${who}出错（${clip(e?.message||"error",60)}）`);
 }
 const JSON_ONLY="Reply with one JSON object only: no prose before or after it, no code fences.";
 let AI_TIMEOUT_MS=95000; // one model call's time limit (Local AI and Cloud API); the smoke test shortens it
@@ -7144,11 +7161,12 @@ async function studioChat({system,prompt,messages,images=[],json=false,maxTokens
     });
     if(!res.ok){
       if(res.status===503){studioState.status="loading";renderCrew()}
-      throw new Error("Studio HTTP "+res.status);
+      throw aiFailError(res.status===503?L(`Local AI is not ready (HTTP 503)`,`本地模型尚未就绪（HTTP 503）`):L(`Local AI returned HTTP ${res.status}`,`本地模型返回 HTTP ${res.status}`));
     }
     return await readChatStream(res,ctrl,{json,onText:track});
   }catch(e){
     if(timedOut&&!signal?.aborted)throw aiTimeoutError(L("Local AI","本地模型"),timeoutMs,partial);
+    if(e instanceof TypeError&&!signal?.aborted)throw aiFailError(L("Local AI is not running","本地模型未运行"));
     throw e;
   }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
@@ -7240,25 +7258,27 @@ function wallText(ns,{docCap=4500,shortCap=700,totalCap=14000,excludeIds=null,co
   }).join("\n");
 }
 async function viaClaude(remote,local,opts={}){
-  /* A Stop (AbortError) ends the move. A timeout (TimeoutError) falls through to the next engine, and the
-     designer is told which engine ran out of time and which one answered instead. */
-  let late=null;
-  const sayLate=used=>{if(late)toast(L(`${late.message}, so ${used} answered instead.`,`${late.message}，已改用${used}。`))};
+  /* A Stop (AbortError) ends the move. Any other failure (time limit, no credits, refused key, an answer
+     that can't be read) falls through to the next engine, and the designer is told what went wrong and
+     which engine answered instead. `why` goes back to the caller; `quiet` keeps background work silent. */
+  let why="";
+  const note=(who,e)=>{if(!why)why=failReason(who,e)};
+  const said=used=>{if(why&&!opts.quiet)toast(L(`${why}, so ${used} answered instead.`,`${why}，已改用${used}。`))};
   if(aiPref==="auto"&&studioState.status==="ready"&&opts.studio){
     try{const v=await opts.studio();if(v!=null)return {v,live:true,engine:"studio"}}
-    catch(e){if(e?.name==="AbortError")throw e;if(e?.name==="TimeoutError")late=e}
+    catch(e){if(e?.name==="AbortError")throw e;note(L("Local AI","本地模型"),e)}
   }
   if(aiPref!=="local"&&apiRoutable()&&opts.studio){
-    try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null){sayLate(L("Cloud API","云端 API"));return {v,live:true,engine:"api"}}}
-    catch(e){if(e?.name==="AbortError")throw e;if(e?.name==="TimeoutError")late=late||e}
+    try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null){said(L("Cloud API","云端 API"));return {v,live:true,engine:"api",why}}}
+    catch(e){if(e?.name==="AbortError")throw e;note(L("Cloud API","云端 API"),e)}
   }
   if(aiPref!=="local"&&sampleFn&&!(opts.apiArgs?.images?.length)){
-    try{const v=await Promise.race([remote(),wait(100000).then(()=>{throw {code:"timeout"}})]);if(v==null)throw {code:"empty"};sayLate("Claude");return {v,live:true,engine:"claude"}}
+    try{const v=await Promise.race([remote(),wait(100000).then(()=>{throw {code:"timeout"}})]);if(v==null)throw {code:"empty"};said("Claude");return {v,live:true,engine:"claude",why}}
     catch(e){if(e&&e.code==="not_granted"){sampleFn=null;renderCrew();toast("Claude access was declined. Falling back to local rules.")}
       else if(e&&e.code==="rate_limited")toast("Claude is busy. Drawn on device.");}
   }
-  sayLate(L("built-in rules","内置规则"));
-  return {v:await local(),live:false,engine:"local"};
+  said(L("built-in rules","内置规则"));
+  return {v:await local(),live:false,engine:"local",why};
 }
 async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal}){
   const msgs=await buildChatMessages({system,prompt,messages,images});
@@ -7281,8 +7301,8 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
     if(!res.ok){
       // Only definite setup problems change the connection status; a passing 5xx/429 is the call's own error.
       const k=classifyApiStatus(res.status);
-      if(k==="auth"||k==="notfound")setApiHealth(k,{cfg:sentCfg,detail:"HTTP "+res.status});
-      throw new Error("API HTTP "+res.status);
+      if(k==="auth"||k==="notfound"||k==="credits")setApiHealth(k,{cfg:sentCfg,detail:"HTTP "+res.status});
+      throw apiStatusError(res.status,k);
     }
     setApiHealth("ok",{cfg:sentCfg,ms:Math.round(performance.now()-t0)});
     return await readChatStream(res,ctrl,{json,onText:track});
@@ -7290,6 +7310,7 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
     if(e instanceof TypeError&&!signal?.aborted)setApiHealth("unreachable",{cfg:sentCfg,detail:"network"});
     else if(e?.name==="AbortError"&&timedOut&&!signal?.aborted&&!gotHeaders)setApiHealth("unreachable",{cfg:sentCfg,detail:"timeout"});
     if(timedOut&&!signal?.aborted)throw aiTimeoutError(L("Cloud API","云端 API"),timeoutMs,partial);
+    if(e instanceof TypeError&&!signal?.aborted)throw aiFailError(L("Cloud API is unreachable","云端 API 无法连接"));
     throw e;
   }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
@@ -7849,12 +7870,12 @@ function memoryDialog(opts={}){
   if(!bMem.trim()&&!sMem.trim())setTimeout(()=>bIn.focus(),30);
   else d.focus();
 }
-async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full"},local){
+async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false},local){
   const fullSys=withMemorySystem(system,memoryMode);
   return viaClaude(
     ()=>json?sampleFn.json(`${fullSys}\n\n${prompt}`,{modelTier}):sampleFn(`${fullSys}\n\n${prompt}`,{modelTier,cache:false,onText}).then(r=>r.text),
     local,
-    {studio:()=>studioChat({system:fullSys,prompt,images,json,maxTokens,onText,signal}),apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal}}
+    {studio:()=>studioChat({system:fullSys,prompt,images,json,maxTokens,onText,signal}),apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal},quiet}
   );
 }
 
@@ -7917,7 +7938,7 @@ async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   goHome(k);setAgent(k,{busy:false,status:""});
   crewState[k].lastRun={t:NOW(),live:err?false:(res&&typeof res==="object"&&"live" in res?!!res.live:null)};
   if(err){task.fail(err?.message);throw err}
-  task.done();return res;
+  task.done(res&&res.live===false&&res.why?{tone:"warn",note:L("Built-in rules answered","内置规则作答")}:{});return res;
 }
 function freeSpot(x,y,w,h,ignore=[]){
   for(let i=0;i<80;i++){
@@ -7983,7 +8004,7 @@ function forkLocal(idea,count){
   return L.filter(l=>!used.has(l.title)).concat(L).slice(0,count);
 }
 
-async function build(dir,{mode,from}={}){
+async function build(dir,{mode,from,brief=""}={}){
   if(!dir)return toast("Select an adopted direction or Tree Map to build.");
   if(dir.type==="proof"){from=dir;dir=byId(dir.dir)}
   if(!dir||!["direction","treemap"].includes(dir.type))return toast("Wright builds from a direction or Tree Map. Select one.");
@@ -7997,10 +8018,10 @@ async function build(dir,{mode,from}={}){
   const imgNodes=srcs.filter(n=>n.type==="image"||n.type==="frame");
   const modeDesc=mode==="story"?"a guided page, one step at a time":mode==="desk"?"an interactive UI / desk listing modules people can search, click, and inspect":"a concise presentation slide deck";
   const prompt=isTm
-    ?`Hierarchical Tree Map:\n${treeMapToMarkdown(treeMapOf(dir))}\n\nOutput type: ${MODES[mode]||"Interactive UI"} (${modeDesc}).\nConnected sources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any updated branches.\n`:""}
+    ?`Hierarchical Tree Map:\n${treeMapToMarkdown(treeMapOf(dir))}\n\nOutput type: ${MODES[mode]||"Interactive UI"} (${modeDesc}).\nConnected sources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any updated branches.\n`:""}${brief?`\nThe designer asked for: "${brief}". Build that.\n`:""}
 Turn each main branch of the Tree Map into clear, concrete ${mode==="deck"?"slides":"UI modules / interactive items"} populated with its sub-topics. Reply with ONLY JSON:
 {"title": short ${mode==="deck"?"deck":"UI"} title, "kicker": one short context subtitle, "lede": 1-2 sentences, "items": [3 to 7 objects {"title","body" (1-2 sentences synthesizing its sub-topics),"tag" (1-2 word category or count)${mode==="story"?',"choices" (optional array of 2-4 sub-topic options)':""}}], "cta": a short action button label}`
-    :`The claim: "${idea?.text||""}"\nThe adopted direction ${dir.letter}, "${dir.title}": ${dir.text}\nIts test: ${dir.test}\nPage type: ${MODES[mode]} (${modeDesc}).\nSources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any changed sources.${proofResults(from)?.failedTitles?.length?` Fix what failed in v${from.ver} first: ${proofResults(from).failedTitles.join("; ")}.`:""}\n`:""}
+    :`The claim: "${idea?.text||""}"\nThe adopted direction ${dir.letter}, "${dir.title}": ${dir.text}\nIts test: ${dir.test}\nPage type: ${MODES[mode]} (${modeDesc}).\nSources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any changed sources.${proofResults(from)?.failedTitles?.length?` Fix what failed in v${from.ver} first: ${proofResults(from).failedTitles.join("; ")}.`:""}\n`:""}${brief?`\nThe designer asked for: "${brief}". Build exactly that, within this direction.\n`:""}
 Write the real content for this prototype as the people in the test would see it (not a description of the prototype). Reply with ONLY JSON:
 {"title": short page title, "kicker": one short line of context, "lede": 1-2 sentences, "items": [4 to 6 objects {"title","body" (1-2 sentences),"tag" (one or two words, e.g. a status)${mode==="story"?',"choices" (optional array of 2-4 short options the person can mark)':""}}], "cta": a short button label for the main action}`;
   const fallbackFn=isTm?()=>treeMapToProofSpec(dir,mode):()=>specLocal(dir,mode);
@@ -10286,7 +10307,7 @@ function route(text){
   if(m){const c=CMDS.find(x=>x.c==="/"+m[1].toLowerCase());if(!c)return mk("none",null,"Unknown move");const arg=m[2].trim();
     switch(c.c){
       case"/fork":{const n=parseInt(arg)||3;return mk("fork","muse",`fork into ${clamp(n,1,4)}`,{n:clamp(n,1,4),arg:arg.replace(/^\d+\s*/,"")})}
-      case"/build":return mk("build","wright",has("proof")?"build next version":"build a proof");
+      case"/build":return mk("build","wright",has("proof")?"build next version":"build a proof",{arg});
       case"/deck":return mk("deck","wright","build a deck");
       case"/list":return mk("list","wright","action list");
       case"/kanban":return mk("kanban","wright","Kanban board");
@@ -10339,8 +10360,11 @@ function route(text){
   const metaPlanRe=/\b(what(?:'s| is| are)?\s+(?:your|our|the)\s+next\s+steps?|what\s+next|how\s+should\s+(?:i|we)\s+proceed|what\s+should\s+(?:i|we)\s+do\s+next|what\s+do\s+you\s+recommend)\b/i;
   if(!ctx.length&&metaPlanRe.test(t))return mk("copilot",null,"ask Copilot",{arg:t});
   if(q&&(has("frame")||has("proof")))return mk("ask","critic","ask on "+titleOf(has("proof")||has("frame")),{arg:t});
+  /* "Adopt this direction" is what the placeholder suggests, so the words have to work, not only /adopt.
+     A question ("should we adopt this?") still goes to the crew. */
+  if(!q&&has("direction")&&(/^(?:(?:ok(?:ay)?|yes|yeah|great|alright|right)[,.!\s]+)?(?:(?:please|let'?s|i(?:'ll| will)?|we(?:'ll| will)?)\s+)?(?:adopt\b|(?:go with|pick|choose)\s+(?:this|that|it)\b)/i.test(t)||/^(?:好的?[，,\s]*)?那?就?(?:采纳|选定|选(?:这个|这条|它))|^(?:好的?[，,\s]*)?那?就用(?:这个|这条)(?:方向)?[。.!！]?$/.test(t)))return mk("adopt",null,`adopt ${clip(titleOf(has("direction")),28)}`);
   if(/\b(fork|branch|directions?|alternatives|options|what if|other ways)\b/i.test(t)&&f&&["idea","note","notepad"].includes(f.type))return mk("fork","muse",`fork into ${parseInt((t.match(/\b([2-4])\b/)||[])[1])||3}`,{n:parseInt((t.match(/\b([2-4])\b/)||[])[1])||3,arg:t});
-  if(/\b(build|prototype|proof|mock ?up|make (it|the page))\b/i.test(t)&&(has("direction")||has("proof")||has("treemap")))return mk("build","wright","build a proof");
+  if(/\b(build|prototype|proof|mock ?up|make (it|the page))\b/i.test(t)&&(has("direction")||has("proof")||has("treemap")))return mk("build","wright","build a proof",{arg:t});
   if(/\b(deck|slides?)\b/i.test(t)&&(has("direction")||has("treemap")))return mk("deck","wright","build a deck");
   if(/\b(brief|outline)\b/i.test(t)&&has("treemap"))return mk("tm-brief","wright","Notepad Brief");
   if(/\bkanban\b/i.test(t)&&ctx.length)return mk("kanban","wright","Kanban board");
@@ -10482,7 +10506,7 @@ async function execLineRequest(text){
   const body=(r.arg??text).trim();
   switch(r.kind){
     case"fork":return fork(has("idea")||has("note")||has("notepad")||has("treemap")||f,r.n||3,r.arg||"");
-    case"build":return build(has("proof")||has("direction")||has("treemap"));
+    case"build":return build(has("proof")||has("direction")||has("treemap"),{brief:r.arg||""});
     case"deck":return build(has("direction")||has("proof")||has("treemap"),{mode:"deck"});
     case"tm-brief":return spawnTreeNotepad(has("treemap")||f,{expand:/ai|expand/i.test(body)});
     case"list":return makeList(ctx.length?ctx:[]);
@@ -12002,7 +12026,8 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       aiMsg.text=parseCopilotBlocks(aiMsg.text).text.trimEnd()+"\n\n"+L(`**Cut off:** ${e.message}. Ask again to continue.`,`**回答不完整：**${e.message}。再问一次可继续。`);
       aiMsg.cutOff=true;
     }else{
-      if(e?.name==="TimeoutError")toast(L(`${e.message}, so built-in rules answered instead.`,`${e.message}，已改用内置规则。`));
+      const r=failReason(aiPref==="auto"&&studioState.status==="ready"?L("Local AI","本地模型"):L("Cloud API","云端 API"),e);
+      toast(L(`${r}, so built-in rules answered instead.`,`${r}，已改用内置规则。`));
       const loc=copilotLocalReply(text,ctx);aiMsg.text=loc.text;aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;
     }
   }finally{

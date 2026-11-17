@@ -32,7 +32,7 @@ The colours here are the same ones the app uses (`main@285e8f6`). Every text col
 <script src="design-system/components/bundle.js"></script>
 ```
 
-- **Changing a token:** edit `tokens.json`, update the matching variable in `tokens.css` and in `Vellum-Lumen.html`, and keep the usage note's contrast figures true.
+- **Changing a token:** edit `tokens.json`, then run `python3 scripts/sync_tokens.py` to rewrite `tokens.css` (`--check` fails if they differ, for CI). Update the matching variable in `Vellum-Lumen.html`, and keep the usage note's contrast figures true.
 
 ---
 
@@ -79,7 +79,7 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 - **Evidence reuses lineage hues:** Observed = `C`, Reported = `A`, Proposal = `B`, Illustration = neutral. Each pill always shows its word *and* a mark (bars or a picture icon), so evidence never relies on colour alone.
 - **The Snapshot is the one card painted in lineage colour:** a radial gradient of its hue, with white text. It is reserved for decided, numbered editions.
 - **Crew inks:** `crew-scout`, `crew-strategist`, `crew-wright`, `crew-critic` are for crew avatars and their tooltip icons only. An idle crew member is unlit (`orb-off`). A working one glows warm (`light` + `bloom`): **light means alive**.
-- **Action:** the single decisive button uses `act`/`on-act`. This is a near-black pill in light and near-white in dark, never a brand blue. `danger` is a 14% tint with coloured text, and turns solid only on hover.
+- **Action:** the single decisive button uses `act`/`on-act`. This is a near-black pill in light and near-white in dark, never a brand blue. `danger` is a 14% tint and turns solid on hover; words on a red tint or on translucent chrome use `danger-ink` (Stop, Delete, struck words in a diff).
 - **Sticky notes** are the one warm paper object: `note-butter` with `note-ink`.
 - **Status:** `ok` (connected, accepted) and `warn` (built-in rules, stale proposal) are mark colours for dots and tints. `danger` marks destructive proposals and actions.
 
@@ -87,6 +87,7 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 - One family: **Inter** (`--font-ui`, served as “Inter Var”, optical sizing on), with **Geist Mono** (“Lumen Mono”, `--font-mono`) for URLs, paths and timecodes only.
 - Body is `body` (14/20, −0.006em). Card titles go tighter and heavier the more decisive the card: `card-title` 600/17 → `idea-title` 620/19 → `direction-title` 650/21, all at −0.022em.
 - Odd weights (470, 550, 560, 620, 650) are intentional. Keep them exact: the variable font renders them.
+- **Chinese (zh):** the font stack falls back to PingFang SC, Hiragino Sans GB, Noto Sans SC and Microsoft YaHei, because Inter has no CJK glyphs. Under `:lang(zh)`, tracking is 0 (the negative tracking above is for Latin only), titles use 1.45 leading and body text 1.6, and no Chinese text is smaller than 12px. Keep `<html lang>` in step with the UI language so these rules apply.
 
 ### Space and layout
 - Floating chrome keeps a `space-16` gutter from the window edge. Cards pad `space-16` top and `space-18` sides. Media sits inset `space-6` inside a card with `radius-media`.

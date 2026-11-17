@@ -20,7 +20,7 @@ Hand-written from `Vellum-Lumen.html` on branch `claude/lumen-v2` (`.card.<kind>
 
 | `kind` | Width | Use for | Key props |
 | --- | --- | --- | --- |
-| `idea` | 360 | The claim being tested (“Core Thesis”) | `rating {observed, reported, unrated}` draws the evidence-mix bar |
+| `idea` | 360 | The claim being tested (“Core Thesis”) | `rating {observed, reported, unrated}` draws evidence blocks, one per source |
 | `synthesis` | 360 | Scout's summary across sources | `by="scout"`, `points [{label, text}]`, `rating` |
 | `direction` | 360 | A lettered A–D proposal | `lineage`, `test`, `adopted` / `disliked` |
 | `question` | 320 | A challenge raised against a card, usually by Critic | `by="critic"`, `lineage`, `eyebrow` (“Question on Proof B v2”) |

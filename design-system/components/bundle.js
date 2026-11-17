@@ -163,8 +163,8 @@
     if (p.rating) {
       var r = p.rating, total = (r.observed || 0) + (r.reported || 0) + (r.unrated || 0);
       footLeft = h('span', { className: 'vl-rated' }, h('span', null, ((r.observed || 0) + (r.reported || 0)) + '/' + total + ' rated'),
-        h('span', { className: 'vl-scale', role: 'img', 'aria-label': 'Evidence mix: ' + (r.observed || 0) + ' observed · ' + (r.reported || 0) + ' reported · ' + (r.unrated || 0) + ' unrated' },
-          r.observed ? h('i', { style: { flex: r.observed } }) : null, r.reported ? h('i', { className: 'r', style: { flex: r.reported } }) : null, r.unrated ? h('i', { className: 'n', style: { flex: r.unrated } }) : null));
+        h('span', { className: cx('vl-scale', total <= 16 && 'is-count'), role: 'img', 'aria-label': 'Evidence: ' + (r.observed || 0) + ' observed · ' + (r.reported || 0) + ' reported · ' + (r.unrated || 0) + ' unrated' },
+          [['', r.observed], ['r', r.reported], ['n', r.unrated]].reduce(function(out, g){ var n = g[1] || 0; if (!n) return out; if (total <= 16) { for (var k = 0; k < n; k++) out.push(h('i', { key: g[0] + k, className: g[0] || null })); } else out.push(h('i', { key: g[0], className: g[0] || null, style: { flex: n } })); return out; }, [])));
     }
     if (kind === 'list' && p.items && !footLeft) footLeft = p.items.filter(function(it){ return it.done; }).length + '/' + p.items.length + ' done';
     if (kind === 'kanban' && p.columns && !footLeft) footLeft = p.columns[p.columns.length - 1].items.length + '/' + p.columns.reduce(function(n, c){ return n + c.items.length; }, 0) + ' done';

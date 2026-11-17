@@ -251,6 +251,47 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .card.recording .media{background:var(--card-2)}
 .card .media img,.card .media video{display:block;width:100%;height:auto;border-radius:inherit;pointer-events:none}
 .card.image .in,.card.recording .in,.card.frame .in,.card.proof .in,.card.html .in,.card.link .in,.card.source:has(>.thumb) .in{padding-top:12px}
+/* Proof: an experiment. Results first, a small thumbnail, one next step. */
+.card.proof .thumb{height:120px}
+.card.proof .thumb.is-old iframe{filter:grayscale(.6);opacity:.7}
+.card.proof .card-k .chip{margin-right:1px}
+.pc-ver1{font:500 12px/1 var(--ui);color:var(--label-3);font-variant-numeric:tabular-nums}
+.pc-ver{display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:var(--radius-pill);background:var(--hover);font:600 12px/1 var(--ui);color:var(--label);font-variant-numeric:tabular-nums}
+.pc-ver small{font-weight:500;color:var(--label-3)}
+.pc-ver button{position:relative;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;color:var(--label-2)}
+.pc-ver button::before{content:"";position:absolute;inset:-2px}
+.pc-ver button:hover:not(:disabled){background:var(--card);color:var(--label)}
+.pc-ver button:disabled{opacity:.35;cursor:default}
+.pc-ver button:first-child .ico{transform:rotate(90deg)}
+.pc-ver button:last-child .ico{transform:rotate(-90deg)}
+.pc-ver .ico{width:12px;height:12px;stroke-width:2.2}
+.pc-test{margin:6px 0 0;font:450 13px/1.4 var(--ui);color:var(--label-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-test b{font-weight:600;color:var(--label)}
+.pc-res{margin-top:12px;padding:10px 12px;border-radius:var(--radius-md);background:var(--card-2)}
+.pc-res.is-old{opacity:.7}
+.pc-blocks{display:flex;gap:3px;margin-bottom:8px}
+.pc-blocks i{flex:1;max-width:44px;height:6px;border-radius:var(--radius-pill)}
+.pc-blocks i.is-ok{background:var(--ok-fill)}
+.pc-blocks i.is-bad{background:var(--danger)}
+.pc-blocks i.is-wait{background:var(--press)}
+.pc-cap{display:flex;justify-content:space-between;gap:8px;font:500 12px/1.35 var(--ui);color:var(--label-2);font-variant-numeric:tabular-nums}
+.pc-pass{display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--ok)}
+.pc-pass .ico{width:12px;height:12px;stroke-width:2.6}
+.pc-fails{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.pc-fails li{display:flex;align-items:flex-start;gap:6px;font:500 13px/1.35 var(--ui);color:var(--danger-ink)}
+.pc-fails .ico{flex:none;width:14px;height:14px;margin-top:1px;stroke-width:2.4}
+.pc-drift{display:flex;align-items:center;gap:6px;margin:10px 0 0;font:500 12px/1.35 var(--ui);color:color-mix(in srgb,var(--warn) 80%,var(--label))}
+.pc-drift .ico{width:14px;height:14px;flex:none;color:var(--warn-fill)}
+.pc-acts{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:14px}
+.card.proof .foot{padding-top:12px;margin-top:0}
+.pc-acts .cbtn[data-a="pc-change"]{background:transparent;color:var(--label-2)}.pc-acts .cbtn[data-a="pc-change"]:hover{background:var(--hover);color:var(--label)}
+/* Lineage icon: a tiny wire in the lineage hue; it reads as "built from", so the word is not needed. */
+.pc-from{display:inline-flex;align-items:center;gap:5px}
+.pc-from .ico{width:16px;height:16px;stroke-width:1.8;color:var(--label-3)}
+.pg-A .pc-from .ico{color:var(--A-fill)}.pg-B .pc-from .ico{color:var(--B-fill)}.pg-C .pc-from .ico{color:var(--C-fill)}.pg-D .pc-from .ico{color:var(--D-fill)}
+.pc-from .ico circle{fill:currentColor;stroke:none}
+.pc-acts .cbtn{height:var(--size-sm)}
+:lang(zh) .pc-test{white-space:normal}
 .card.frame .card-k-src,.card.image .card-k-src,.card.recording .card-k-src{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card .media .tc{position:absolute;left:8px;bottom:8px;font:500 11px/1 var(--mono);color:#fff;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:5px 7px;border-radius:var(--radius-xs)}
 .card .media .play{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;display:grid;place-items:center;color:#111;background:rgba(255,255,255,.92);box-shadow:0 10px 30px rgba(0,0,0,.4);cursor:pointer;transition:transform var(--t-bouncy) var(--bouncy)}
@@ -2934,7 +2975,7 @@ const FONT_CSS=window.VELLUM_FONT_CSS||"";
 
 const ICONS={
   more:'<circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/>',
-  x:'<path d="M7 7l10 10M17 7 7 17"/>',check:'<path d="m5.5 12.5 4 4 9-9.5"/>',chev:'<path d="m7 9.5 5 5 5-5"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  x:'<path d="M7 7l10 10M17 7 7 17"/>',check:'<path d="m5.5 12.5 4 4 9-9.5"/>',chev:'<path d="m7 9.5 5 5 5-5"/>',lineage:'<circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7.2 6c6.3 0 3.3 12 9.6 12"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   play:'<path d="M8 5.7v12.6a1 1 0 0 0 1.53.85l10.07-6.3a1 1 0 0 0 0-1.7L9.53 4.85A1 1 0 0 0 8 5.7z" fill="currentColor" stroke="none"/>',
   pause:'<rect x="6.5" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" stroke="none"/>',
   eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
@@ -4755,6 +4796,11 @@ function fileFormatOf(n){
   return null;
 }
 function fmtBadgeHTML(fmt){return fmt?`<span class="fmt-chip" data-fmt="${esc(fmt.tone||fmt.id)}" title="${esc(fmt.fullName||fmt.label)}">${ic(fmt.icon)}<b>${esc(fmt.label)}</b></span>`:""}
+/* Proof versions: proofs built from the same direction in the same format are versions of one card.
+   Older kept versions are hidden from the canvas (reversible) and reached through the card's switcher. */
+const proofView=new Map();
+function proofVersions(n){if(!n||n.type!=="proof"||n.status==="sketch")return[n];return board.nodes.filter(x=>x.type==="proof"&&!x.tombstone&&x.status!=="sketch"&&x.dir===n.dir&&(x.spec?.mode||"")===(n.spec?.mode||"")).sort((a,b)=>a.ver-b.ver)}
+function proofResults(n){const items=(n?.spec?.items||[]).filter(it=>/^(passed|failed|waiting)$/i.test(String(it.tag||"").trim()));if(!items.length)return null;const t=k=>items.filter(it=>String(it.tag).trim().toLowerCase()===k);return {passed:t("passed").length,failed:t("failed").length,waiting:t("waiting").length,failedTitles:t("failed").map(it=>it.title)}}
 function cardBody(n){
   const sk=n.status==="sketch",L=lin(n),tm=timeTag(n);
   const head=k=>sk?sketchHead(n):`<div class="card-k">${k}<span class="sp"></span>${cardVotesHTML(n)}</div>`;
@@ -4826,13 +4872,35 @@ function cardBody(n){
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
     <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test?`<div class="test"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span></div>`:""}
     ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",mode?`<span>${mode}</span>`:""),fR(hasProof?`<span>${uiLang()==="zh"?"已生成原型":"Proof built"}</span>`:"",threadCount(n)))}</div>`}
-  case"proof":{const dr=driftOf(n),fx=n.fixed||[],shown=fx.slice(0,3),extra=fx.length-shown.length,mode=esc(modeLabel(n.spec?.mode));
-    return `<div class="thumb"><iframe title="" tabindex="-1" loading="lazy" data-srcdoc="1"></iframe><div class="open"><button type="button" data-a="try">${ic("eye")}${uiLang()==="zh"?"打开原型预览":"Open Preview"}</button></div></div><div class="in">
-    ${head(`<span class="chip">${L||"·"}</span>${uiLang()==="zh"?"原型":"Proof"} · v${n.ver}`)}
-    <h4>${esc(n.spec?.title||(uiLang()==="zh"?"交互原型":"Proof"))}</h4>
-    <div class="fixed" title="${uiLang()==="zh"?"生成此原型时所依据的固定上游来源":"The sources this proof was built from, fixed at build time"}">${shown.map(f=>{const cls=dr.unavailable.includes(f.id)?"unavailable":dr.moved.includes(f.id)?"moved":"";const prefix=dr.unavailable.includes(f.id)?"✕ ":dr.moved.includes(f.id)?"↻ ":"";return `<span class="${cls}">${prefix}${esc(f.title)}</span>`}).join("")||`<span>${uiLang()==="zh"?"暂无关联来源":"No sources"}</span>`}${extra>0?`<span class="more">+${extra} ${uiLang()==="zh"?"个":"more"}</span>`:""}</div>
-    ${dr.unavailable.length?`<div class="drift">${ic("warn")}<span>${dr.unavailable.length===1?(uiLang()==="zh"?"有 1 个固定来源已被永久删除，已保留当前快照。":"A fixed source was permanently deleted; snapshot kept."):(uiLang()==="zh"?`有 ${dr.unavailable.length} 个固定来源已被永久删除，已保留快照。`:dr.unavailable.length+" fixed sources permanently deleted; snapshot kept.")}</span></div>`:dr.changed.length?`<div class="drift">${ic("warn")}<span>${dr.changed.length===1?(uiLang()==="zh"?"有 1 个上游来源已修改，当前原型尚未同步。":"A source changed since this proof was built."):(uiLang()==="zh"?`有 ${dr.changed.length} 个上游来源已修改，当前原型尚未同步。`:dr.changed.length+" sources changed since this proof was built.")}</span></div>`:""}
-    ${sk?sketchActs(n):foot(mode?`<span>${mode}</span>`:`<span>${uiLang()==="zh"?`基于 ${fx.length} 份素材构建`:`Built from ${fx.length} sources`}</span>`,fR(mode?`<span>${uiLang()==="zh"?`基于 ${fx.length} 份素材构建`:`Built from ${fx.length} sources`}</span>`:"",threadCount(n)))}</div>`}
+  case"proof":{
+    /* A proof is an experiment that tests its direction: results first, thumbnail second, one next step. */
+    const zh=uiLang()==="zh",L_=(e,z)=>zh?z:e,fx=n.fixed||[],dr=driftOf(n),dir=byId(n.dir);
+    const vers=proofVersions(n),vi=proofView.has(n.id)?Math.max(0,vers.findIndex(x=>x.id===proofView.get(n.id))):vers.length-1;
+    const vn=vers[vi]||n,old=vn.id!==n.id,latest=vers[vers.length-1]||n;
+    const res=proofResults(vn),fails=res?res.failedTitles:[];
+    const fmtName={story:L_("Guided tour","分步导览"),desk:L_("Page","页面"),deck:L_("Slide deck","演示文稿")}[n.spec?.mode]||L_("Page","页面");
+    const drift=!old&&!sk?dr.changed.length:0,lost=!old?dr.unavailable.length:0,nextV=latest.ver+1;
+    const verSw=vers.length>1?`<span class="pc-ver" role="group" aria-label="${L_("Version","版本")}"><button type="button" data-a="pc-prev" aria-label="${L_("Previous version","上一版")}"${vi===0?" disabled":""}>${ic("chev")}</button><span>v${vn.ver}</span><button type="button" data-a="pc-next" aria-label="${L_("Next version","下一版")}"${vi===vers.length-1?" disabled":""}>${ic("chev")}</button></span>`:`<span class="pc-ver1">v${vn.ver}</span>`;
+    const btn=(a,label,icn,solid)=>`<button type="button" class="cbtn${solid?" solid":""}" data-a="${a}">${icn?ic(icn):""}${label}</button>`;
+    let primary;
+    if(old)primary=btn("pc-latest",L_(`Back to v${latest.ver}`,`回到 v${latest.ver}`));
+    else if(res&&res.failed)primary=btn("pc-fix",L_(`Fix ${res.failed} failed`,`修复 ${res.failed} 项失败`),"",1);
+    else if(drift)primary=btn("pc-fix",L_(`Rebuild with ${drift} change${drift>1?"s":""}`,`用 ${drift} 处更新重建`),"",1);
+    else if(!res)primary=btn("critique",L_("Ask Critic to test","请 Critic 检查"),"",1);
+    else if(res.waiting)primary=btn("critique",L_(`Test ${res.waiting} waiting`,`检查 ${res.waiting} 项待测`),"",1);
+    else primary=btn("print",L_("Snapshot","生成快照"),"print",1);
+    const blocks=res?[["passed","ok"],["failed","bad"],["waiting","wait"]].map(([k,c])=>Array.from({length:res[k]},()=>`<i class="is-${c}"></i>`).join("")).join(""):"";
+    const summary=res?[["passed",L_("passed","通过")],["failed",L_("failed","失败")],["waiting",L_("waiting","待测")]].filter(([k])=>res[k]).map(([k,l])=>`${res[k]} ${l}`).join(" · "):"";
+    const resHTML=res?`<div class="pc-res${old?" is-old":""}"><div class="pc-blocks" role="img" aria-label="${esc(summary)}">${blocks}</div><div class="pc-cap"><span>${esc(summary)}</span>${!res.failed&&!res.waiting?`<span class="pc-pass">${ic("check")}${L_("Passes its test","通过测试")}</span>`:""}</div>${fails.length?`<ul class="pc-fails">${fails.slice(0,2).map(f=>`<li>${ic("x")}<span>${esc(f)}</span></li>`).join("")}</ul>`:""}</div>`
+      :`<div class="pc-res is-empty"><div class="pc-cap"><span>${L_("Not tested yet. Critic can check it against the test above.","还没测试。Critic 可以按上面的测试来检查它。")}</span></div></div>`;
+    const note=lost?`<p class="pc-drift">${ic("warn")}${L_(`${lost} source${lost>1?"s were":" was"} deleted; this version is kept as it was.`,`有 ${lost} 个来源已删除，本版保持原样。`)}</p>`:drift?`<p class="pc-drift">${ic("warn")}${L_(`${drift} source${drift>1?"s":""} changed since v${vn.ver}`,`v${vn.ver} 之后有 ${drift} 个来源有更新`)}</p>`:"";
+    return `<div class="thumb${old?" is-old":""}"><iframe title="" tabindex="-1" loading="lazy" data-srcdoc="1"></iframe><span class="badge">${esc(fmtName)}</span><div class="open"><button type="button" data-a="try">${ic("eye")}${L_("Open","打开")}</button></div></div><div class="in">
+    ${sk?sketchHead(n):`<div class="card-k"><span class="chip">${L||"·"}</span>${L_("Proof","原型")}<span class="sp"></span>${verSw}</div>`}
+    <h4>${esc(vn.spec?.title||L_("Proof","原型"))}</h4>
+    ${dir?.test?`<p class="pc-test" title="${esc(dir.test)}"><b>${L_("Test","测试")}</b> ${esc(dir.test)}</p>`:""}
+    ${resHTML}${note}
+    ${sk?sketchActs(n):`${foot(`<span class="pc-from" title="${esc(L_(`Built from Direction ${L||""}${fx.length?` and ${fx.length} sources`:""}`,`基于方向 ${L||""}${fx.length?` 和 ${fx.length} 份来源`:""}`))}">${ic("lineage")}${L||""}${fx.length?` · ${L_(`${fx.length} sources`,`${fx.length} 份来源`)}`:""}</span>`,fR(threadCount(n)))}
+    <div class="pc-acts">${old?"":btn("pc-change",L_("Change","修改"))}${btn("try",L_("Open","打开"))}${primary}</div>`}</div>`}
   case"print":return `<div class="in">${head(`<span class="chip">${L||"·"}</span>${uiLang()==="zh"?"定稿快照":"Snapshot"}`)}
     <div class="edition" style="margin-top:14px">No. ${n.ed}<sup>${uiLang()==="zh"?`来自原型 v${n.spec?.version||1}`:`of proof v${n.spec?.version||1}`}</sup></div><h4 style="margin-top:8px">${esc(n.spec?.title||"")}</h4><p>${esc(clip(n.spec?.lede,140))}</p>
     ${foot(`<span>${uiLang()==="zh"?"独立离线 HTML":"Standalone HTML"}</span>`,fR(threadCount(n)))}</div>`;
@@ -7906,7 +7974,7 @@ async function build(dir,{mode,from}={}){
     ?`Hierarchical Tree Map:\n${treeMapToMarkdown(treeMapOf(dir))}\n\nOutput type: ${MODES[mode]||"Interactive UI"} (${modeDesc}).\nConnected sources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any updated branches.\n`:""}
 Turn each main branch of the Tree Map into clear, concrete ${mode==="deck"?"slides":"UI modules / interactive items"} populated with its sub-topics. Reply with ONLY JSON:
 {"title": short ${mode==="deck"?"deck":"UI"} title, "kicker": one short context subtitle, "lede": 1-2 sentences, "items": [3 to 7 objects {"title","body" (1-2 sentences synthesizing its sub-topics),"tag" (1-2 word category or count)${mode==="story"?',"choices" (optional array of 2-4 sub-topic options)':""}}], "cta": a short action button label}`
-    :`The claim: "${idea?.text||""}"\nThe adopted direction ${dir.letter}, "${dir.title}": ${dir.text}\nIts test: ${dir.test}\nPage type: ${MODES[mode]} (${modeDesc}).\nSources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any changed sources.\n`:""}
+    :`The claim: "${idea?.text||""}"\nThe adopted direction ${dir.letter}, "${dir.title}": ${dir.text}\nIts test: ${dir.test}\nPage type: ${MODES[mode]} (${modeDesc}).\nSources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any changed sources.${proofResults(from)?.failedTitles?.length?` Fix what failed in v${from.ver} first: ${proofResults(from).failedTitles.join("; ")}.`:""}\n`:""}
 Write the real content for this prototype as the people in the test would see it (not a description of the prototype). Reply with ONLY JSON:
 {"title": short page title, "kicker": one short line of context, "lede": 1-2 sentences, "items": [4 to 6 objects {"title","body" (1-2 sentences),"tag" (one or two words, e.g. a status)${mode==="story"?',"choices" (optional array of 2-4 short options the person can mark)':""}}], "cta": a short button label for the main action}`;
   const fallbackFn=isTm?()=>treeMapToProofSpec(dir,mode):()=>specLocal(dir,mode);
@@ -8254,6 +8322,8 @@ function ink(ids){
   const ns=ids.map(byId).filter(n=>n&&n.status==="sketch");if(!ns.length)return;
   checkpoint();
   ns.forEach(n=>{n.status="ink";delete n.pid;n.inked=NOW();ensureRevision(n);if(n.type==="proof")n.fixed=(n.fixed||[]).map(f=>{const s=byId(f.id);return s?{...f,d:digest(s),rev:s.rev||1}:f});captureDepSnapshot(n,inputsOf(n.id))});
+  // A kept proof becomes the face of its card: older versions tuck behind its version switcher.
+  const tucked=[];ns.filter(n=>n.type==="proof").forEach(n=>proofVersions(n).forEach(o=>{if(o.id!==n.id&&o.ver<n.ver&&!o.hidden){o.hidden=true;o.hiddenAt=NOW();o.tucked=true;tucked.push(o.id)}}));
   log("you",`Kept ${ns.map(n=>`<b>${esc(titleOf(n))}</b>`).join(", ")}`,ns[0].id);
   sfx("keep");renderAll();persist();
   ns.forEach((n,i)=>{const el=nodeEl(n.id);if(el){el.classList.remove("inking");el.style.animationDelay=calm()?"":(i*70)+"ms";void el.offsetWidth;el.classList.add("inking");setTimeout(()=>{el.classList.remove("inking");el.style.animationDelay=""},950+i*70)}});
@@ -8572,7 +8642,7 @@ function stripActs(n){
     case"frame":return [A("look","View","","Space","eye"),A("reverse-prompt",n.plPack?"Prompt Pack":"Reverse Prompt","","","sparkles"),A("to-gif","To GIF","","","gif"),A("to-video","To Video","","","video"),A("askframe","Ask About Frame","","","frame"),open];
     case"question":return [A("answer","Ask Critic","","","question"),open];
     case"direction":return board.adopted[n.idea]===n.id?[A("look","Preview","","Space","eye"),A("build",outputsOf(n.id).some(o=>o.type==="proof")?"Rebuild Proof":"Build Proof","pg","","grid"),open]:[A("look","Preview","","Space","eye"),A("adopt","Adopt","pg","","stamp"),open];
-    case"proof":return [A("look","Preview","","Space","eye"),A("print","Snapshot","","","print"),open];
+    case"proof":return [A("look","Open","","Space","eye"),A("print","Snapshot","","","print"),open];
     case"print":return [A("look","View","","Space","eye"),A("download","Download","","","down"),open];
     case"list":return [A("kanban","Turn into Kanban","","","kanban"),A("treemap","Tree Map","","","treemap"),A("copilot","Ask Copilot","","","ask"),open];
     case"kanban":return [A("list","Action List","","","list"),A("treemap","Tree Map","","","treemap"),A("copilot","Ask Copilot","","","ask"),open];
@@ -12964,7 +13034,7 @@ function upstreamDeleteDialog(ids,impact){
     <div class="imp-opts">
       <div class="imp-opt primary"><div><b>Hide from canvas</b><small>Hides visually only. Keeps edges, lineage, and downstream snapshots intact. Show anytime.</small></div><button type="button" class="cbtn solid" data-imp="hide">Hide</button></div>
       <div class="imp-opt"><div><b>Archive source</b><small>Excludes from new AI runs. Downstream cards stay inspectable and show “Source archived”.</small></div><button type="button" class="cbtn" data-imp="archive">Archive</button></div>
-      <div class="imp-opt"><div><b>Permanently delete</b><small>Scrubs content &amp; local media (cannot undo). Downstream cards remain and mark “Unavailable · Review required”.</small></div><button type="button" class="cbtn" style="color:#E0245E;border-color:color-mix(in srgb,#E0245E 40%,var(--hair))" data-imp="perm-step1">Delete…</button></div>
+      <div class="imp-opt"><div><b>Permanently delete</b><small>Scrubs content &amp; local media (cannot undo). Downstream cards remain and mark “Unavailable · Review required”.</small></div><button type="button" class="cbtn" style="color:#E0245E;border-color:color-mix(in srgb,#E0245E 40%,var(--hair))" data-imp="perm-step1">Delete</button></div>
     </div>
     <div class="imp-confirm" id="impPermConfirm" hidden><b>Confirm permanent deletion — scrubbed data cannot be recovered via Undo.</b><div class="imp-confirm-acts"><button type="button" class="cbtn" data-imp="perm-cancel">Cancel</button><button type="button" class="cbtn" style="background:#E0245E;border-color:#E0245E;color:#fff" data-imp="perm-confirm">Confirm Permanent Delete</button></div></div>
   </div>`;
@@ -13014,7 +13084,10 @@ function act(a,n,el){
   switch(a){
     case"ink":return ink(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);
     case"erase":return erase(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);
-    case"try":return openStage(n);
+    case"try":return openStage(proofView.has(n.id)?byId(proofView.get(n.id))||n:n);
+    case"pc-prev":case"pc-next":case"pc-latest":{const vs=proofVersions(n);let i=vs.findIndex(x=>x.id===(proofView.get(n.id)||n.id));if(i<0)i=vs.length-1;i=a==="pc-latest"?vs.length-1:Math.max(0,Math.min(vs.length-1,i+(a==="pc-prev"?-1:1)));if(vs[i].id===n.id)proofView.delete(n.id);else proofView.set(n.id,vs[i].id);const el=document.querySelector(`.card[data-id="${n.id}"]`);if(el)el._sig="";return renderNodes()}
+    case"pc-fix":return build(n);
+    case"pc-change":{select([n.id]);const li=$("lineInput");if(li){li.focus()}return}
     case"open":return openStage(n);
     case"open-url":return window.open(safeHref(n.url),"_blank","noopener,noreferrer");
     case"download-attach":return downloadAttachment(n);

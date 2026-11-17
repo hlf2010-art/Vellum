@@ -22,6 +22,9 @@
   --canvas:#ECEDF0; --canvas-lift:#F8F8FA; --card:#FFFFFF; --card-2:#F5F6F8; --card-3:#ECEDF1;
   --label:#0B0C0E; --label-2:rgba(11,12,14,.70); --label-3:rgba(11,12,14,.58); --label-4:rgba(11,12,14,.14);
   --hair:rgba(11,12,14,.075); --hair-2:rgba(11,12,14,.13); --thread:rgba(11,12,14,.2); --hover:rgba(11,12,14,.045); --press:rgba(11,12,14,.08);
+  --seg-on:#FFFFFF; --seg-on-shadow:0 1px 2px rgba(11,12,14,.07),0 0 0 .5px rgba(11,12,14,.05); --seg-track:#E9EAEE; --seg-sm-on:#E6E7EB;
+  --sw-off-track:#F1F2F4; --sw-off-line:#8A8D93; --sw-off-knob:#7D8087;
+  --viz-1:#3D86F0; --viz-good:#22A96B; --viz-muted:#C6C9CE; /* marks, not text: lighter than the text accents; muted bars are context (values are labelled) */
   --dot:rgba(11,12,14,.1); --chip-ink:#FFFFFF; --ink-mix:92%; --ink-to:#000; --sketch-mix:42%; --sketch-bg:78%; --focus:#3F444E;
   --chrome:rgba(252,252,253,.8); --chrome-hair:rgba(12,13,15,.08); --chrome-ink:#0C0D0F;
   --act:#0C0D0F; --on-act:#FFFFFF; --danger:#E12F34; --danger-ink:#B02529; --ok:#3c7811; --warn:#886600; --ok-fill:#4c9816; --warn-fill:#AB8209;
@@ -43,6 +46,9 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --canvas:#050608; --canvas-lift:#0A0B0E; --card:#1B1C20; --card-2:#22242A; --card-3:#2A2C33;
   --label:#F4F5F7; --label-2:rgba(244,245,247,.68); --label-3:rgba(244,245,247,.52); --label-4:rgba(244,245,247,.11);
+  --seg-on:#34363E; --seg-on-shadow:0 1px 2px rgba(0,0,0,.22),0 0 0 .5px rgba(255,255,255,.10); --seg-track:#22242A; --seg-sm-on:#34363E;
+  --sw-off-track:#26282D; --sw-off-line:#74777E; --sw-off-knob:#8B8E95;
+  --viz-1:#3987E5; --viz-good:#0CA30C; --viz-muted:#74777E;
   --hair:rgba(255,255,255,.07); --hair-2:rgba(255,255,255,.12); --thread:rgba(255,255,255,.16); --hover:rgba(255,255,255,.055); --press:rgba(255,255,255,.09);
   --dot:rgba(244,245,247,.085); --chip-ink:#0A0B0D; --ink-mix:86%; --ink-to:#fff; --sketch-mix:70%; --sketch-bg:52%; --focus:#C8CCD4;
   --chrome:rgba(26,27,31,.78); --chrome-hair:rgba(255,255,255,.08); --chrome-ink:#F3F4F6;
@@ -57,6 +63,9 @@
 :root[data-theme="dark"]{
   --canvas:#050608; --canvas-lift:#0A0B0E; --card:#1B1C20; --card-2:#22242A; --card-3:#2A2C33;
   --label:#F4F5F7; --label-2:rgba(244,245,247,.68); --label-3:rgba(244,245,247,.52); --label-4:rgba(244,245,247,.11);
+  --seg-on:#34363E; --seg-on-shadow:0 1px 2px rgba(0,0,0,.22),0 0 0 .5px rgba(255,255,255,.10); --seg-track:#22242A; --seg-sm-on:#34363E;
+  --sw-off-track:#26282D; --sw-off-line:#74777E; --sw-off-knob:#8B8E95;
+  --viz-1:#3987E5; --viz-good:#0CA30C; --viz-muted:#74777E;
   --hair:rgba(255,255,255,.07); --hair-2:rgba(255,255,255,.12); --thread:rgba(255,255,255,.16); --hover:rgba(255,255,255,.055); --press:rgba(255,255,255,.09);
   --dot:rgba(244,245,247,.085); --chip-ink:#0A0B0D; --ink-mix:86%; --ink-to:#fff; --sketch-mix:70%; --sketch-bg:52%; --focus:#C8CCD4;
   --chrome:rgba(26,27,31,.78); --chrome-hair:rgba(255,255,255,.08); --chrome-ink:#F3F4F6;
@@ -486,10 +495,10 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .m-html-top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 24px 0}
 .m-html-top+.m-hero{margin-top:12px}
 .m-html-top .m-meta{font:500 12px/1 var(--ui);color:var(--label-3)}
-.m-html-sw{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:var(--radius-pill);background:var(--card-2);box-shadow:none}
+.m-html-sw{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:var(--radius-pill);background:var(--seg-track);box-shadow:none}
 .m-html-sw button{padding:5px 12px;border-radius:var(--radius-pill);font:600 12px/1 var(--ui);color:var(--label-3);transition:background .15s,color .15s,box-shadow .15s}
 .m-html-sw button:hover{color:var(--label)}
-.m-html-sw button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:0 1px 3px rgba(0,0,0,.18),0 0 0 .5px var(--hair-2)}
+.m-html-sw button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:var(--seg-on-shadow)}
 .m-code-ed{display:block;width:100%;min-height:250px;max-height:380px;resize:vertical;padding:12px 14px;border-radius:var(--radius-md);border:0;outline:0;background:var(--card-2);box-shadow:none;font:13px/1.55 var(--mono);color:var(--label);tab-size:2;white-space:pre;overflow:auto;box-sizing:border-box}
 .m-code-ed:focus{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--pg,var(--focus)) 65%,transparent)}
 .m-notepad-ed{display:block;width:100%;min-height:220px;max-height:420px;resize:vertical;padding:12px 14px;border-radius:var(--radius-md);border:0;outline:0;background:var(--card-2);box-shadow:none;font:14px/1.6 var(--ui);color:var(--label);white-space:pre-wrap;overflow-wrap:anywhere;overflow-y:auto;box-sizing:border-box}
@@ -758,10 +767,10 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-refresh.spin .ico{animation:spSpin .8s linear infinite}
 @keyframes spSpin{to{transform:rotate(360deg)}}
 .sp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
-.sp-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:3px;border-radius:var(--radius-sm);background:var(--card-2);box-shadow:none;width:100%}
+.sp-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:3px;border-radius:var(--radius-sm);background:var(--seg-track);box-shadow:inset 0 0 0 .5px var(--hair);width:100%}
 .sp-seg button{height:var(--size-sm);padding:0 8px;border-radius:var(--radius-xs);font:560 12px/1 var(--ui);color:var(--label-2);white-space:nowrap;transition:background var(--d-quick),color var(--d-quick),box-shadow var(--d-quick)}
 .sp-seg button:hover{color:var(--label)}
-.sp-seg button[aria-pressed="true"]{background:var(--card-3);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.18),0 0 0 .5px var(--hair-2)}
+.sp-seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--label);font-weight:620;box-shadow:var(--seg-on-shadow)}
 .sp-services{display:grid;grid-template-columns:minmax(0,1fr);gap:0;min-width:0}
 .sp-svc{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:0;min-width:0}
 .sp-svc.col{flex-direction:column;align-items:stretch;gap:8px}
@@ -777,20 +786,21 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-state.busy i{background:var(--B-fill)}
 .sp-state.err{color:var(--D)}
 .sp-state.err i{background:var(--danger)}
-.sp-route{display:grid;gap:8px}
-.sp-mode-note{font:450 11px/1.4 var(--ui);color:var(--label-3)}
-.sp-htxt small.sp-now{display:grid;grid-template-columns:6px minmax(0,1fr);column-gap:7px;row-gap:3px;align-items:center;margin-top:4px;white-space:normal;color:var(--label-2)}
-.sp-now i{flex:none;width:6px;height:6px;border-radius:50%;background:var(--label-4)}
-.sp-now.ok i{background:var(--ok-fill)}
-.sp-now.busy i{background:var(--B-fill)}
-.sp-now-mode{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sp-now-issue{grid-column:2;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:450;color:var(--label-3)}
-.sp-now-issue.warn{color:color-mix(in srgb,var(--warn) 88%,var(--label))}
-.sp-now-issue.err{color:color-mix(in srgb,var(--D) 88%,var(--label))}
-.sp-now.warn i{background:var(--warn-fill)}
-.sp-now.err i{background:var(--danger)}
-.sp-route+.sp-services{margin-top:-4px}
-.sp-services.idle .sp-svc-main,.sp-services.idle .sp-models,.sp-services.idle .sp-prog{opacity:.5}
+.sp-ai{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.sp-ai-txt{display:grid;gap:3px;min-width:0}
+.sp-ai-txt b{font:600 12.5px/1.2 var(--ui);color:var(--label)}
+.sp-ai-txt small{font:450 11px/1.3 var(--ui);color:var(--label-3)}
+.sp-first{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 2px;border-top:.5px solid var(--hair);font:500 12px/1.2 var(--ui);color:var(--label-2)}
+/* Segmented control sizes: default .sp-seg fills its row for a section's main choice;
+   .sp-seg.sm sits inline for a secondary setting, at the weight of the row buttons (22px), sized to its words. */
+.sp-seg.sm{display:inline-grid;grid-auto-flow:column;grid-auto-columns:max-content;grid-template-columns:none;width:auto;flex:none;gap:0;padding:2px;border-radius:var(--radius-pill);background:transparent;box-shadow:inset 0 0 0 .5px var(--hair-2)}
+.sp-seg.sm button{height:20px;padding:0 9px;border-radius:var(--radius-pill);font:550 11px/1 var(--ui);color:var(--label-3)}
+.sp-seg.sm button[aria-pressed="true"]{background:var(--seg-sm-on);color:var(--label);font-weight:620;box-shadow:none}
+@media (pointer:coarse){.sp-seg.sm button{height:30px;padding:0 12px;font-size:12.5px}}
+.sp-services.idle .sp-first{color:var(--label-3)}
+.sp-ai+.sp-services{margin-top:-4px}
+.sp-services.idle .sp-svc-top>span:first-child,.sp-services.idle .sp-m-info b{color:var(--label-2)}
+.sp-services.idle .sp-m-tag{color:var(--label-3)}
 .sp-services.idle .sp-state{color:var(--label-3)}
 .sp-services.idle .sp-state i{background:var(--label-4)}
 .sp-group{display:grid;gap:4px}
@@ -1161,7 +1171,7 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 .m-sec.half .seg button{height:28px;padding:0 9px;font-size:12px;border-radius:var(--radius-sm);justify-content:flex-start}
 .m-sec.half .seg+p{margin:7px 2px 0;font:12px/1.4 var(--ui);color:var(--label-3)}
 .seg button:hover{color:var(--label);background:color-mix(in srgb,var(--card) 52%,transparent)}
-.seg button[aria-pressed="true"]{background:var(--card);color:var(--label);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.18),0 0 0 .5px var(--hair-2)}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--label);font-weight:600;box-shadow:var(--seg-on-shadow)}
 .seg .w-bars{display:inline-flex;align-items:flex-end;gap:1.5px;height:10px;width:11px;justify-content:center;flex:none}
 .seg .w-bars i{width:2.5px;border-radius:1.25px;background:color-mix(in srgb,currentColor 24%,transparent)}
 .seg .w-bars i:nth-child(1){height:4px}
@@ -1287,10 +1297,10 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .cp-ctx{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:58%;height:26px;padding:0 9px;border-radius:var(--radius-pill);background:var(--hover);font:550 12px/1 var(--ui);color:var(--label-2)}
 .cp-ctx .ico{width:12px;height:12px;flex:none;color:var(--C)}
 .cp-ctx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cp-modes{display:flex;padding:2px;border-radius:var(--radius-pill);background:var(--card-2);box-shadow:none}
+.cp-modes{display:flex;padding:2px;border-radius:var(--radius-pill);background:var(--seg-track);box-shadow:none}
 .cp-modes button{height:24px;padding:0 9px;border-radius:var(--radius-pill);font:550 12px/1 var(--ui);color:var(--label-3);transition:background var(--d-quick),color var(--d-quick)}
 .cp-modes button:hover{color:var(--label)}
-.cp-modes button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.cp-modes button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:var(--seg-on-shadow)}
 .cp-msgs{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px;display:flex;flex-direction:column;gap:12px}
 .cp-empty{margin:auto 0;padding:14px 4px;display:grid;gap:10px}
 .cp-empty h3{margin:0;font:650 17px/1.25 var(--ui);letter-spacing:-.025em;color:var(--label)}
@@ -1314,10 +1324,124 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .cp-bubble pre{margin:7px 0 9px;padding:9px 11px;border-radius:var(--radius-sm);background:var(--card-2);box-shadow:none;overflow-x:auto;font:500 12px/1.45 var(--mono);color:var(--label)}
 .cp-bubble code{font:500 12px/1.3 var(--mono);padding:1px 5px;border-radius:5px;background:var(--card-3);color:var(--label)}
 .cp-bubble pre code{padding:0;background:transparent;border-radius:0}
-.cp-bubble table.cp-md-tbl{width:100%;border-collapse:collapse;margin:7px 0 9px;font-size:12px;background:var(--card-2);border-radius:var(--radius-sm);overflow:hidden;box-shadow:0 0 0 .5px var(--hair-2)}
-.cp-bubble table.cp-md-tbl th,.cp-bubble table.cp-md-tbl td{padding:6px 8px;text-align:left;border-bottom:.5px solid var(--hair-2);vertical-align:top}
-.cp-bubble table.cp-md-tbl tr:last-child td{border-bottom:0}
-.cp-bubble table.cp-md-tbl th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--label-3);background:var(--card-3)}
+/* Table. What a reader needs: the answer fast. Open "ledger" layout (no box, hairline rows), numbers right-aligned
+   in tabular figures with a faint magnitude bar, comparison verdict first, hover tracks the row, the first column
+   stays put when a wide table scrolls. */
+.tbl-wrap{max-width:100%;overflow-x:auto;scrollbar-width:thin}
+.cp-bubble .tbl-wrap{margin:8px 0 10px}
+.tbl{--tbl-bg:var(--card);width:max-content;min-width:100%;border-collapse:separate; /* natural width; fills when narrower; never squeezed (it scrolls instead) */border-spacing:0;font:450 12.5px/1.5 var(--ui);color:var(--label);overflow-wrap:normal;word-break:normal}
+.tbl caption{caption-side:top;text-align:left;padding:0 10px 8px;font:600 13px/1.3 var(--ui);letter-spacing:-.01em;color:var(--label)}
+.tbl th,.tbl td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:.5px solid var(--hair-2);background:var(--tbl-bg)}
+.tbl th:first-child,.tbl td:first-child{padding-left:10px}.tbl th:last-child,.tbl td:last-child{padding-right:10px}
+/* room to breathe: text columns never squeeze below ~9 characters, long text wraps at ~32; a wide table scrolls instead */
+.tbl th.w-first{min-width:120px}.tbl th.w-text{min-width:96px}.tbl th.w-long{min-width:180px}.tbl th.w-tag{min-width:88px}
+.tbl td:not(.num):not(.lvl){max-width:300px}
+.tbl th+th,.tbl td+td{border-left:.5px solid var(--hair)}
+.tbl th{padding-top:6px;font:600 11.5px/1.3 var(--ui);color:var(--label-2);border-bottom-color:var(--hair-2);white-space:nowrap}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl th:first-child,.tbl td:first-child{position:sticky;left:0;z-index:1}
+.tbl td:first-child{font-weight:560}
+.tbl tbody tr:hover td{background:color-mix(in srgb,var(--label) 4%,var(--tbl-bg))}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+.tbl td.lvl{white-space:nowrap}
+.tbl-tag{display:inline-block;padding:1px 8px;border-radius:5px;font-weight:550;background:color-mix(in srgb,var(--c) 15%,var(--tbl-bg));color:color-mix(in srgb,var(--c) 62%,var(--label))}
+/* more to the right: fade the edge until scrolled to the end */
+.tbl-block{position:relative}
+.card .tbl-block{margin-top:12px;user-select:text;-webkit-user-select:text}
+.card .tbl-block .tbl-tools{margin-bottom:4px}
+.card .tbl-wrap{max-height:440px;overflow:auto;overscroll-behavior:contain}
+.card .tbl thead th{position:sticky;top:0;z-index:2}.card .tbl thead th:first-child{z-index:3}
+.cp-bubble .tbl-block{margin:8px 0 10px}.cp-bubble .tbl-block .tbl-wrap{margin:0}
+.tbl-tools{display:flex;align-items:center;gap:6px;min-height:26px;margin:0 0 6px}
+.tbl-selcount{white-space:nowrap}
+.tbl-tool{width:24px;height:24px;display:grid;place-items:center;border-radius:6px;color:var(--label-3)}
+.tbl-tool:hover{background:var(--hover);color:var(--label)}.tbl-tool .ico{width:13px;height:13px}
+.tbl-tool:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.tbl-block .tbl th:first-child,.tbl-block .tbl td:first-child{padding-left:34px}
+.tbl td.editing,.tbl th.editing{position:relative}
+.tbl-edit{position:absolute;inset:2px;z-index:4;width:calc(100% - 4px);padding:0 10px;border:0;border-radius:6px;font:inherit;color:var(--label);background:var(--card);box-shadow:0 0 0 2px var(--focus,#5b8cff),0 4px 12px rgba(0,0,0,.12);outline:none}
+.tbl td:first-child .tbl-edit{padding-left:32px}
+.tbl-addrow{margin:6px 0 0;padding:6px 10px;border-radius:7px;font:500 12px/1 var(--ui);color:var(--label-3)}
+.tbl-addrow:hover{background:var(--hover);color:var(--label)}.tbl-addrow:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.tbl-check{position:absolute;left:11px;top:12px;width:15px;height:15px;border-radius:4px;box-shadow:inset 0 0 0 1.5px var(--sw-off-line);background:var(--tbl-bg);opacity:0;transition:opacity var(--d-quick),background var(--d-quick)}
+.tbl th .tbl-check{top:7px}
+.tbl tr:hover .tbl-check,.tbl.has-sel .tbl-check,.tbl-check:focus-visible{opacity:1}
+@media (hover:none){.tbl-check{opacity:1}}
+.tbl-check[aria-checked="true"],.tbl-check[aria-checked="mixed"]{background:var(--act);box-shadow:none}
+.tbl-check[aria-checked="true"]::after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid var(--on-act);border-width:0 1.8px 1.8px 0;transform:rotate(45deg)}
+.tbl-check[aria-checked="mixed"]::after{content:"";position:absolute;left:3.5px;right:3.5px;top:6.75px;height:1.5px;background:var(--on-act);border-radius:1px}
+.tbl-check:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.tbl-block tbody tr{cursor:default}
+.tbl-block .tbl tbody tr.sel td{background:color-mix(in srgb,var(--B) 10%,var(--tbl-bg))}
+.tbl-block .tbl tbody tr.sel:hover td{background:color-mix(in srgb,var(--B) 14%,var(--tbl-bg))}
+/* Below the table, so selecting never moves the table: the selection bar replaces "+ Add row" while rows are selected */
+.tbl-foot{display:flex;align-items:center;min-height:0}
+.tbl-foot:has(.tbl-sel:not([hidden])) .tbl-addrow{display:none}
+.tbl-src{display:inline-flex;align-items:center;gap:4px}
+.tbl-refresh{width:22px;height:22px;margin:-4px 0;display:grid;place-items:center;border-radius:6px;color:var(--label-3)}
+.tbl-refresh:hover{background:var(--hover);color:var(--label)}.tbl-refresh:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.tbl-refresh .ico{width:13px;height:13px}.tbl-refresh.busy .ico{animation:tblSpin .9s linear infinite}
+@keyframes tblSpin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.tbl-refresh.busy .ico{animation:none;opacity:.5}}
+.tbl-conflict{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px;padding:10px 12px;border-radius:10px;font:500 12.5px/1.4 var(--ui);color:var(--label);background:color-mix(in srgb,var(--B) 8%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--B) 22%,transparent)}
+.tbl-conflict>span:first-child{flex:1 1 220px}.tbl-conflict-acts{display:flex;gap:6px;flex-wrap:wrap}
+.tbl-conflict .sp-mini.quiet{background:transparent;box-shadow:none;color:var(--label-2)}.tbl-conflict .sp-mini.quiet:hover{color:var(--label)}
+.tbl-sel{display:flex;align-items:center;gap:8px;margin-top:6px;font:550 12px/1 var(--ui);color:var(--label-2)}
+.tbl-gap{flex:1}
+.tbl td.hc,.tbl th.hc{background:color-mix(in srgb,var(--label) 3%,var(--tbl-bg))}
+.tbl tbody tr:hover td.hc{background:color-mix(in srgb,var(--label) 7%,var(--tbl-bg))}
+.tbl td.best{font-weight:620}
+.tbl-chart{display:grid;gap:12px;padding:2px 2px 4px}
+.tbl-ch-head{display:flex;align-items:center;font:600 11.5px/1.3 var(--ui);color:var(--label-2)}
+.tbl-ch-head{gap:10px;justify-content:space-between}
+.tbl-ch-note{font:450 11.5px/1.3 var(--ui);color:var(--label-3)}
+.tbl-ch-rows{display:grid;grid-template-columns:minmax(0,34%) minmax(0,1fr);align-items:center;column-gap:12px;row-gap:12px;font:450 12.5px/1.35 var(--ui);color:var(--label)}
+.tbl-ch-row{display:contents}
+.tbl-ch-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbl-ch-bararea{display:flex;align-items:center;gap:8px;min-width:0}
+.tbl-ch-bar{display:block;flex:none;height:12px;width:calc((100% - 64px) * var(--w,0));min-width:2px;border-radius:0 4px 4px 0;background:var(--viz-1);transition:width .5s var(--ease),filter var(--d-quick)}
+.tbl-ch-row.mute .tbl-ch-bar{background:var(--viz-muted)}.tbl-ch-row.best .tbl-ch-bar{background:var(--viz-good)}
+.tbl-ch-row:hover .tbl-ch-bar{filter:brightness(1.12)}
+.tbl-ch-val{flex:none;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl-ch-row.best .tbl-ch-val{font-weight:620}
+.tbl-line{position:relative}
+.tbl-line svg{display:block;overflow:visible;border-radius:6px}
+.tbl-line svg:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:4px}
+.tbl-grid{stroke:var(--hair-2);stroke-width:1;shape-rendering:crispEdges}
+.tbl-tick{font:450 11px var(--ui);fill:var(--label-3);font-variant-numeric:tabular-nums}
+.tbl-tick.x{font-variant-numeric:normal}
+.tbl-area{fill:var(--viz-1);fill-opacity:.1}
+.tbl-ln{fill:none;stroke:var(--viz-1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.tbl-end,.tbl-hdot{fill:var(--viz-1);stroke:var(--tbl-bg,var(--card));stroke-width:2}
+.tbl-endval{font:600 12px var(--ui);fill:var(--label);font-variant-numeric:tabular-nums}
+.tbl-cross{stroke:var(--label-3);stroke-width:1;shape-rendering:crispEdges}
+.tbl-tip{position:absolute;pointer-events:none;display:grid;gap:2px;padding:6px 9px;border-radius:8px;background:var(--card);box-shadow:0 0 0 .5px var(--hair-2),0 6px 18px rgba(0,0,0,.14);white-space:nowrap}
+.tbl-tip b{font:620 12.5px/1.2 var(--ui);color:var(--label);font-variant-numeric:tabular-nums}.tbl-tip span{font:450 11px/1.2 var(--ui);color:var(--label-2)}
+.tbl-sort{display:inline-flex;align-items:center;gap:4px;font:inherit;color:inherit;border-radius:5px;margin:-2px -4px;padding:2px 4px;white-space:nowrap}
+.tbl-sort:hover{background:var(--hover);color:var(--label)}
+.tbl-sort:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.tbl-arr{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity var(--d-quick),transform var(--d-quick)}
+.tbl-sort:hover .tbl-arr{opacity:.45}
+th[aria-sort="ascending"] .tbl-arr,th[aria-sort="descending"] .tbl-arr{opacity:1}
+th[aria-sort="ascending"] .tbl-arr{transform:rotate(180deg)}
+th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
+/* once scrolled sideways, the pinned first column shows its edge */
+.tbl-wrap.scrolled .tbl th:first-child,.tbl-wrap.scrolled .tbl td:first-child{box-shadow:.5px 0 0 var(--hair-2),8px 0 10px -8px rgba(0,0,0,.18)}
+.tbl-wrap.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
+.tbl td.num{position:relative;white-space:nowrap}
+/* magnitude: a full-width faint track with a neutral fill, so it reads as "how much of the column's max", not a link */
+.tbl-bar{position:absolute;left:14px;right:14px;top:calc(10px + 1.5em + 3px);height:3px;border-radius:3px;background:color-mix(in srgb,var(--label) 7%,transparent)}
+.tbl-bar::after{content:"";position:absolute;right:0;top:0;bottom:0;width:calc(100% * var(--v,0));border-radius:3px;background:color-mix(in srgb,var(--label) 30%,transparent)}
+.tbl td.num{padding-bottom:16px}
+.tbl td.num:last-child .tbl-bar{right:10px}
+.tbl-n{position:relative}
+.tbl.cmp td.key{color:var(--label-2);font-weight:560;width:32%}
+.tbl.cmp th.lead{color:var(--label)}
+.tbl.cmp td.win{font-weight:600;color:var(--label)}
+.tbl.cmp td.lose{color:var(--label-2)}
+.tbl-win{width:12px;height:12px;margin:0 5px -1px 0;fill:none;stroke:var(--C);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tbl.cmp tr.on td{background:color-mix(in srgb,var(--B) 8%,var(--tbl-bg))}
+.cp-ui .tbl{--tbl-bg:var(--card-2)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .cp-md-more{margin-top:6px;border-radius:var(--radius-sm);background:var(--card-2);box-shadow:0 0 0 .5px var(--hair-2);padding:6px 10px}
 .cp-md-pop-btn{margin-top:4px;height:var(--size-sm);padding:0 10px;border-radius:var(--radius-pill);font:560 12px/1 var(--ui);color:var(--C);background:color-mix(in srgb,var(--C) 12%,var(--card-2));box-shadow:none;display:inline-flex;align-items:center;gap:5px;width:fit-content;transition:background var(--d-quick),color var(--d-quick)}
 .cp-md-pop-btn:hover{background:color-mix(in srgb,var(--C) 20%,var(--card-2));color:var(--label)}
@@ -1386,7 +1510,7 @@ html[data-theme="dark"] .cp-ui{box-shadow:0 0 0 .5px var(--hair-2),0 6px 18px rg
 .cp-ui-ctrl{display:flex;align-items:center;gap:4px;flex:none}
 .cp-ui-seg{display:inline-flex;padding:2px;border-radius:var(--radius-pill);background:var(--card-3);box-shadow:none}
 .cp-ui-seg button{border:0;background:transparent;color:var(--label-2);font-size:11px;font-weight:600;padding:3px 8px;border-radius:var(--radius-pill);cursor:pointer;transition:background .15s,color .15s}
-.cp-ui-seg button.on{background:var(--card);color:var(--label);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.cp-ui-seg button.on{background:var(--card);color:var(--label);box-shadow:var(--seg-on-shadow)}
 .cp-ui-btn{border:0;height:24px;padding:0 8px;border-radius:var(--radius-pill);background:var(--card-3);color:var(--label-2);font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;cursor:pointer;box-shadow:0 0 0 .5px var(--hair-2);transition:background .14s,color .14s}
 .cp-ui-btn:hover{background:var(--hover);color:var(--label)}
 .cp-ui-btn.done{background:color-mix(in srgb,var(--B) 16%,transparent);color:var(--B)}
@@ -1436,14 +1560,7 @@ html[data-theme="dark"] .cp-ui{box-shadow:0 0 0 .5px var(--hair-2),0 6px 18px rg
 .cp-ui-cell.on{box-shadow:0 0 0 1px var(--cell-c,var(--C));background:color-mix(in srgb,var(--cell-c,var(--C)) 10%,var(--card))}
 .cp-ui-cell-t{font-size:11px;font-weight:700;color:var(--label);display:flex;align-items:center;gap:5px}
 .cp-ui-cell-b{font-size:11px;line-height:1.35;color:var(--label-2)}
-.cp-ui-cmp{width:100%;border-collapse:collapse;font-size:11px;background:var(--card);border-radius:var(--radius-sm);overflow:hidden;box-shadow:0 0 0 .5px var(--hair-2)}
-.cp-ui-cmp th,.cp-ui-cmp td{padding:6px 8px;text-align:left;border-bottom:.5px solid var(--hair-2);vertical-align:top}
-.cp-ui-cmp tr:last-child td{border-bottom:0}
-.cp-ui-cmp th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--label-3);background:var(--card-3)}
-.cp-ui-cmp td.dim{font-weight:600;color:var(--label-2);width:32%}
-.cp-ui-cmp td.win{color:var(--label);font-weight:600;background:color-mix(in srgb,var(--B) 10%,transparent)}
-.cp-ui-cmp tr[data-cp-ui-sel]{cursor:pointer}
-.cp-ui-cmp tr[data-cp-ui-sel]:hover td{background:var(--hover)}
+.tbl tr[data-cp-ui-sel]{cursor:pointer}
 .cp-ui-building{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:var(--radius-sm);background:var(--card-2);box-shadow:0 0 0 .5px var(--hair-2);font-size:11px;color:var(--label-2);margin-top:4px;width:fit-content}
 .cp-props{display:grid;gap:7px;width:100%;max-width:96%}
 .cp-prop{display:grid;gap:6px;padding:10px 12px;border-radius:var(--radius-control);background:var(--card);box-shadow:0 0 0 .5px var(--hair-2),0 6px 16px -10px rgba(0,0,0,.22);transition:opacity var(--d-quick),box-shadow var(--d-quick)}
@@ -2092,10 +2209,10 @@ dialog.sheet:focus{outline:none}
 .brow:hover .chev{color:var(--label-3);transform:translateX(2px)}
 .sh-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .sh-row h3{margin:0;font:500 14px/1 var(--ui);color:var(--label)}
-.sh-seg{display:flex;padding:3px;border-radius:var(--radius-md);background:var(--card-2);box-shadow:none}
+.sh-seg{display:flex;padding:3px;border-radius:var(--radius-md);background:var(--seg-track);box-shadow:none}
 .sh-seg button{display:flex;align-items:center;gap:7px;height:var(--size-md);padding:0 11px 0 8px;border-radius:var(--radius-sm);font:550 13px/1 var(--ui);color:var(--label-2);transition:background var(--d-quick),color var(--d-quick),box-shadow var(--d-quick)}
 .sh-seg button:hover{color:var(--label)}
-.sh-seg button[aria-pressed="true"]{background:color-mix(in srgb,var(--label) 12%,var(--card));color:var(--label);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.sh-seg button[aria-pressed="true"]{background:var(--seg-on);color:var(--label);box-shadow:var(--seg-on-shadow)}
 .sw{width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.25)}
 .sw.light{background:#ECEDF0}.sw.dark{background:#16171A;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.3)}.sw.auto{background:linear-gradient(135deg,#ECEDF0 50%,#16171A 50%)}
 .sh-foot{display:flex;align-items:center;gap:4px;padding:12px 14px;border-top:0}
@@ -2203,7 +2320,7 @@ dialog.sheet:focus{outline:none}
 .adv-tabs{display:flex;align-items:center;gap:4px;padding:8px 12px 6px;border-bottom:0;flex-wrap:wrap;flex:none}
 .adv-tab{display:inline-flex;align-items:center;gap:5px;height:var(--size-sm);padding:0 9px 0 5px;border-radius:var(--radius-pill);font:560 12px/1 var(--ui);color:var(--label-3);background:transparent;transition:background var(--d-quick),color var(--d-quick)}
 .adv-tab:hover{color:var(--label);background:var(--hover)}
-.adv-tab[aria-selected="true"]{color:var(--label);background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.16),0 0 0 .5px var(--hair-2)}
+.adv-tab[aria-selected="true"]{color:var(--label);background:var(--card);box-shadow:var(--seg-on-shadow)}
 .adv-tab .mk{width:17px;height:17px;flex:none;background:radial-gradient(circle at 36% 30%,#fff 0%,var(--orb) 42%,var(--orb-2) 100%);color:#2A2117;box-shadow:0 0 0 .5px rgba(255,255,255,.14)}
 .adv-tab .mk svg{width:54%;height:54%}
 .adv-scroll{flex:1;min-height:0;overflow-y:auto;padding:12px 14px;display:grid;gap:11px;align-content:start}
@@ -2312,7 +2429,7 @@ dialog.sheet:focus{outline:none}
 .go-seg::-webkit-scrollbar{display:none}
 .go-seg button{display:inline-flex;align-items:center;gap:6px;flex:none;height:28px;padding:0 11px;border-radius:var(--radius-pill);white-space:nowrap;font:550 12px/1 var(--ui);color:var(--label-2);font-variant-numeric:tabular-nums;transition:background var(--d-quick),color var(--d-quick)}
 .go-seg button:hover{color:var(--label)}
-.go-seg button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 .5px var(--hair-2)}
+.go-seg button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:var(--seg-on-shadow)}
 .gen-opts .rg{display:inline-block;flex:none;border-radius:2px;box-shadow:inset 0 0 0 1.4px currentColor;opacity:.8}
 .go-note{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 11px;border-radius:var(--radius-pill);font:550 12px/1 var(--ui);color:var(--label-3);white-space:nowrap;background:var(--orn);box-shadow:inset 0 1px 0 var(--glass-hi),0 0 0 .5px var(--hair-2),0 6px 16px -10px rgba(0,0,0,.22);transition:color var(--d-quick),background var(--d-quick)}
 .go-note:hover{color:var(--label)}
@@ -2328,7 +2445,7 @@ dialog.sheet:focus{outline:none}
 .go-pop[hidden]{display:none}
 .go-pop button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:8px 10px;border-radius:var(--radius-sm);text-align:left;font:500 13px/1.25 var(--ui);color:var(--label-2);font-variant-numeric:tabular-nums;transition:background var(--d-quick),color var(--d-quick)}
 .go-pop button:hover{background:var(--hover);color:var(--label)}
-.go-pop button[aria-selected="true"]{background:var(--card);color:var(--label);font-weight:580;box-shadow:0 1px 3px rgba(0,0,0,.08),0 0 0 .5px var(--hair-2)}
+.go-pop button[aria-selected="true"]{background:var(--card);color:var(--label);font-weight:580;box-shadow:var(--seg-on-shadow)}
 .go-pop .gm-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .go-pop .gr-lbl{display:inline-flex;align-items:center;gap:8px;min-width:0}
 .go-pop .gm-meta{display:inline-flex;align-items:center;gap:6px;flex:none}
@@ -2432,7 +2549,7 @@ body.is-resizing-w,body.is-resizing-w *{cursor:ew-resize!important;user-select:n
 .omni-btn:hover{color:var(--label)}
 .omni-btn:active{transform:scale(.93)}
 .omni-btn .ico{width:13.5px;height:13.5px;stroke-width:1.95;flex:none}
-.omni-btn[data-omni="cmd"][aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:0 1px 3px rgba(0,0,0,.16),0 0 0 .5px var(--hair-2)}
+.omni-btn[data-omni="cmd"][aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:var(--seg-on-shadow)}
 .omni-btn[data-omni="search"][aria-pressed="true"]{background:color-mix(in srgb,var(--B) 20%,var(--card));color:var(--B);box-shadow:0 1px 4px rgba(0,0,0,.18)}
 .omni-btn[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%) translateY(4px);padding:5px 9px;border-radius:var(--radius-sm);white-space:nowrap;pointer-events:none;font:560 12px/1 var(--ui);letter-spacing:-.01em;color:var(--label);background:color-mix(in srgb,var(--chrome) 96%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--chrome-shadow);opacity:0;transition:opacity .14s ease,transform var(--t-snappy) var(--snappy);z-index:12}
 .omni-btn[data-tip]:hover::after,.omni-btn[data-tip]:focus-visible::after{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -2535,10 +2652,15 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .sys-vol-test .ico{width:13px;height:13px}
 .sys-vol-test:hover:not(:disabled){color:var(--label);background:var(--hover)}
 .sys-vol-test:active:not(:disabled){transform:scale(.92)}
-.sys-sw{position:relative;width:34px;height:20px;flex:none;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--label) 16%,transparent);transition:background var(--d-quick);cursor:pointer}
-.sys-sw::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18),0 2px 6px rgba(0,0,0,.12);transition:transform var(--t-snappy) var(--snappy)}
-.sys-sw[aria-checked="true"]{background:var(--ok-fill)}
-.sys-sw[aria-checked="true"]::after{transform:translateX(14px);background:#fff}
+/* Switch. Off is drawn as an outlined track with a grey knob, so it reads as a control in both themes
+   (a pale track with a white knob measured 1.4:1 in light, 1.6:1 in dark). On uses the design system's success fill. */
+.sys-sw{position:relative;width:34px;height:20px;flex:none;border-radius:var(--radius-pill);background:var(--sw-off-track);box-shadow:inset 0 0 0 1.5px var(--sw-off-line);transition:background var(--d-quick),box-shadow var(--d-quick);cursor:pointer}
+.sys-sw::after{content:"";position:absolute;left:4px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--sw-off-knob);transition:transform var(--t-snappy) var(--snappy),width var(--t-snappy) var(--snappy),height var(--t-snappy) var(--snappy),left var(--t-snappy) var(--snappy),top var(--t-snappy) var(--snappy),background var(--d-quick)}
+.sys-sw[aria-checked="true"]{background:var(--ok-fill);box-shadow:none}
+.sys-sw[aria-checked="true"]::after{left:2px;top:2px;width:16px;height:16px;transform:translateX(14px);background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18),0 2px 6px rgba(0,0,0,.12)}
+.sys-sw:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:2px}
+.sys-sw::before{content:"";position:absolute;inset:-6px}
+@media (pointer:coarse){.sys-sw::before{inset:-12px -6px}}
 .sys-pref-lbl{font:560 14px/1.25 var(--ui);color:var(--label)}
 .sys-act-btn{height:28px;padding:0 12px;border-radius:var(--radius-pill);font:580 12px/1 var(--ui);color:var(--label);background:var(--hover);box-shadow:none;flex:none;transition:background var(--d-quick),transform var(--d-press)}
 .sys-act-btn:hover{background:var(--hover)}
@@ -2871,6 +2993,18 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 #line:not(.typed) #routeWrap{display:none}
 .route-wrap .lc-pop{bottom:calc(100% + 14px)}
 .route-wrap{align-self:flex-end;height:36px}.route{height:32px}
+/* composer, two rows once the text wraps: the words get the full width, the controls sit underneath.
+   Single-line text keeps the calm one-row capsule. syncLineRows() decides, with hysteresis. */
+.line .route{max-width:168px}
+.line.multi:not(.is-search) .line-main{flex-wrap:wrap;align-items:center;row-gap:0}
+.line.multi:not(.is-search) #lineInput{order:-1;flex:1 0 100%;padding:8px 8px 6px}
+.line.multi:not(.is-search) #routeWrap{align-self:center}
+/* the left group (+, and the mode chip when there is one) pushes the rest right, whatever is hidden */
+.line.multi:not(.is-search) #plusBtn{margin-right:auto}
+.line.multi:not(.is-search) #plusBtn:has(+ #modeChip:not([hidden])){margin-right:0}
+.line.multi:not(.is-search) #modeChip:not([hidden]){margin-right:auto}
+.line.multi .route{max-width:260px}
+.line.multi .mode-chip{align-self:center}
 .mode-chip{margin:3px 2px 3px 0}.mode-chip .ml.pick{display:inline-flex;align-items:center;gap:2px;cursor:pointer}.mode-chip .ml.pick .ico{width:11px;height:11px;color:var(--label-3)}
 .thumb.link-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 /* Send exists only when there is something to send: no outlined empty state. It folds away while the field is empty and pops in with the first character. */
@@ -2897,6 +3031,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .crew-group.quiet-never .seat .mk,.crew-group.quiet-nomodel .seat .mk{filter:saturate(.35)}
 .review-pop.crew-pop{width:min(372px,calc(100vw - 28px));max-height:calc(100vh - 80px);padding:16px 18px 18px;display:grid;gap:16px}
 .crew-pop .cp-pop-head{display:grid;gap:0;padding-bottom:4px}
+.crew-pop .crew-why{font:450 11.5px/1.35 var(--ui);color:var(--label-3);margin-top:3px}
 .crew-pop .cp-pop-head b{font:650 14px/1.2 var(--ui);letter-spacing:-.018em;color:var(--label)}
 .crew-pop .crew-axis-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .crew-pop .crew-link{font:550 12px/1.2 var(--ui);color:var(--label-2);text-decoration:underline;text-decoration-color:var(--hair-2);text-underline-offset:3px;border-radius:4px}
@@ -3402,8 +3537,8 @@ const WEIGHTS={
 const WEIGHT_ORDER=["observed","reported","proposed","illustrative"];
 function weightLabel(w){const o=WEIGHTS[w];return o?(uiLang()==="zh"?o.zh:o.label):""}
 function weightDesc(w){const o=WEIGHTS[w];return o?(uiLang()==="zh"?o.zhDesc:o.desc):""}
-const W={note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
-const HGUESS={note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,direction:330,proof:390,print:300,list:260,kanban:280,treemap:280,synthesis:300,group:440};
+const W={table:480,note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
+const HGUESS={table:260,note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,direction:330,proof:390,print:300,list:260,kanban:280,treemap:280,synthesis:300,group:440};
 const visibleNodes=()=>board.nodes.filter(n=>n&&!n.hidden&&!n.archived&&!n.tombstone);
 const resizeBounds=n=>n?.type==="kanban"||n?.type==="treemap"?[360,920]:n?.type==="note"?[200,580]:[220,760];
 const nodeW=n=>n?(n.type==="group"?Math.max(240,n.gw||W.group):(n.gw?clamp(n.gw,...resizeBounds(n)):W[n.type]||320)):320;
@@ -3619,7 +3754,7 @@ let crewPopOpen=false;
 function crewQuietReason(){
   if(crewSpeak==="never")return {k:"never",tip:L("Speaks only when you ask","只在你要求时发言")};
   const live=connSummary().engine!=="rules";
-  if(!live)return {k:"nomodel",tip:aiPref==="local"?L("Built-in rules only: no unasked thoughts","只用内置规则：没有主动建议"):L("No model connected: no unasked thoughts","未连接模型：没有主动建议")};
+  if(!live)return {k:"nomodel",tip:aiPref==="local"?L("AI models are off, so no unasked thoughts","AI 模型已关闭，所以不会主动提建议"):L("No AI model available, so no unasked thoughts","没有可用的 AI 模型，所以不会主动提建议")};
   if((SPEAK_UNREAD[crewSpeak]||0)>0&&unreadPins()>=SPEAK_UNREAD[crewSpeak])return {k:"pacing",tip:L("Waiting for you to read the last thought","等你读完上一条建议")};
   if(!advLeft())return {k:"ceiling",tip:L("Resting until the hour is up","本小时已达上限，稍后继续")};
   return null;
@@ -3637,10 +3772,10 @@ function renderCrewPop(){
   const unread=unreadPins(),held=advHeld;
   const seg=(axis,levels,labels,cur)=>`<div class="sp-seg crew-seg" style="grid-template-columns:repeat(${levels.length},minmax(0,1fr))" role="group" aria-labelledby="crew-${axis}-l">${levels.map(k=>`<button type="button" data-crew-${axis}="${k}" aria-pressed="${cur===k}">${L(labels[k][0],labels[k][1])}</button>`).join("")}</div>`;
   const firstUnread=Object.entries(board.pins||{}).find(([id,ps])=>byId(id)&&(ps||[]).some(x=>!x.seen))?.[0];
-  const sum=connSummary(),quiet=crewQuietReason();
-  const hIssue=sum.issue?{t:sum.issue,tone:sum.tone}:quiet?.k==="ceiling"?{t:quiet.tip,tone:"busy"}:null;
+  const quiet=crewQuietReason();
+  const why=quiet&&(quiet.k==="nomodel"||quiet.k==="ceiling")?quiet.tip:""; // only when it changes what the crew does
   const unreadTxt=unread>1?L(`${unread} thoughts waiting`,`${unread} 条建议等你查看`):L("A thought is waiting","有一条建议等你查看");
-  pop.innerHTML=`<div class="cp-pop-head sp-htxt"><b>${L("Crew","成员")}</b><small class="sp-now ${sum.dot}"><i></i><span class="sp-now-mode">${esc(sum.mode)}</span>${hIssue?`<span class="sp-now-issue ${hIssue.tone}">${esc(hIssue.t)}</span>`:""}</small></div>
+  pop.innerHTML=`<div class="cp-pop-head"><b>${L("Crew","成员")}</b>${why?`<span class="crew-why">${esc(why)}</span>`:""}</div>
     ${firstUnread?`<div class="crew-wait"><span><b>${esc(unreadTxt)}</b>${held?`<small>${esc(L(`${held} card${held>1?"s":""} held back until you read`,`${held} 张卡片暂缓，读完后出现`))}</small>`:""}</span><button type="button" class="cbtn" data-crew-show="${esc(firstUnread)}">${L("Show","查看")}</button></div>`:""}
     <div class="crew-axis"><b id="crew-speak-l">${L("Speaks up","主动发言")}</b>${seg("speak",SPEAK_LEVELS,SPEAK_LABEL,crewSpeak)}<p>${L(SPEAK_DESC[crewSpeak][0],SPEAK_DESC[crewSpeak][1])}</p></div>
     <div class="crew-axis"><div class="crew-axis-h"><b id="crew-act-l">${L("Acts on the board","在画板上动手")}</b><button type="button" class="crew-link" data-crew-custom>${L("Customize","自定义")}</button></div>${seg("act",ACT_LEVELS,ACT_LABEL,autonomyCustom?"":crewAct)}<p>${autonomyCustom?esc(autonomyPlain()):L(ACT_DESC[crewAct][0],ACT_DESC[crewAct][1])}</p></div>
@@ -3838,7 +3973,7 @@ function lin(n,d=0){
   return null;
 }
 const bayOf=n=>clamp(Math.floor((n.x+nodeW(n)/2)/BAY),0,3);
-const SLUG_ACRONYMS=new Set(["ai","api","ar","css","faq","fps","gif","gta","hd","html","hud","id","ios","json","md","npc","os","pdf","png","qa","rag","rgb","rpg","sdk","svg","ui","url","ux","vfx","vr","xr"]);
+const SLUG_ACRONYMS=new Set(["ai","api","ar","css","faq","fps","gif","gta","hd","html","hud","id","ios","json","md","npc","os","pdf","png","qa","rag","rgb","rpg","sdk","svg","ui","url","ux","vfx","vr","xr","usa","us","uk","eu","gdp","csv","kpi","roi","sku","b2b","b2c","q1","q2","q3","q4"]);
 const SLUG_SMALL=new Set(["a","an","and","as","at","by","for","from","in","of","on","or","the","to","vs","with"]);
 function isMachineHashToken(s){
   const t=String(s||"").trim();
@@ -4829,7 +4964,7 @@ function proofResults(n){const items=(n?.spec?.items||[]).filter(it=>/^(passed|f
 function cardBody(n){
   const sk=n.status==="sketch",L=lin(n),tm=timeTag(n);
   const head=k=>sk?sketchHead(n):`<div class="card-k">${k}<span class="sp"></span>${cardVotesHTML(n)}</div>`;
-  const group=(cls,...xs)=>{const a=xs.filter(Boolean);return a.length?`<span class="${cls}">${a.join('<span class="foot-sep">·</span>')}</span>`:""};
+  const group=(cls,...xs)=>{const a=xs.filter(Boolean);return a.length?`<span class="${cls}">${a.join('<span class="foot-sep" aria-hidden="true">·</span>')}</span>`:""};
   const fL=(...xs)=>group("foot-l",...xs);
   const fR=(...xs)=>group("foot-r",...xs,sk?"":tm);
   const foot=(left="",right=fR())=>(left||right)?`<div class="foot">${left}<span class="sp"></span>${right}</div>`:"";
@@ -4844,6 +4979,15 @@ function cardBody(n){
     const npHead=sk?head(`${byline(n)}<span class="note-tag notepad-tag"><span class="np-ico">${ic("notepad")}</span><span>${padTag}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag notepad-tag" data-a="edit-tag" title="${padTitle}"><span class="np-ico">${ic("notepad")}</span><span data-edit="tag" spellcheck="false">${padTag}</span></span><span class="sp"></span>${cardVotesHTML(n)}</div>`;
     return `<div class="in">${npHead}
     <h4 data-edit="title">${esc(n.title||"")}</h4><div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>${sk?sketchActs(n):foot(fL(weightHTML(n.weight),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
+  case"table":{/* L is shadowed by lin(n) in cardBody, so translate locally */const tr=(en,zh)=>uiLang()==="zh"?zh:en;const ds=n.data||{columns:[],rows:[]},src=ds.source||{};
+    const from=[src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.kind==="paste"?tr("Pasted","粘贴"):src.label||"",src.edited?tr("edited","已编辑"):"",
+      src.total>(ds.rows||[]).length?tr(`first ${(ds.rows||[]).length} of ${src.total.toLocaleString()} rows`,`前 ${(ds.rows||[]).length} 行，共 ${src.total.toLocaleString()} 行`):src.more?tr(`first ${(ds.rows||[]).length} rows`,`前 ${(ds.rows||[]).length} 行`):""].filter(Boolean).join(" · ");
+    const live=canRefresh(n)&&!sk,where=srcName(src),busy=tblRefreshing.has(n.id),pend=tblPending.has(n.id);
+    const readAt=live&&src.at?`<time title="${esc(tr("Read from ","读取自 ")+where+" · "+new Date(src.at).toLocaleString(uiLang()==="zh"?"zh-CN":"en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}))}">${esc(exactTime(src.at))}</time>`:"";
+    const refresh=live?`<button type="button" class="tbl-refresh${busy?" busy":""}" data-tbl-refresh ${busy?'aria-busy="true" disabled':""} title="${esc(busy?tr("Reading ","正在读取 ")+where+"…":tr("Refresh from ","从 ")+where+tr(""," 刷新"))}" aria-label="${esc(tr("Refresh from ","从 ")+where+tr(""," 刷新"))}">${ic("redo")}</button>`:"";
+    const conflict=pend?`<div class="tbl-conflict" role="group" aria-label="${esc(tr("Newer data from ","来自 ")+where+tr(""," 的新数据"))}"><span>${esc(tr(`${where} has newer data, and you've edited this table.`,`${where} 有新数据，而你也修改过这个表格。`))}</span><span class="tbl-conflict-acts"><button type="button" class="sp-mini" data-tbl-conflict="replace">${tr("Replace my edits","替换我的修改")}</button><button type="button" class="sp-mini" data-tbl-conflict="both">${tr("Keep both","两者都保留")}</button><button type="button" class="sp-mini quiet" data-tbl-conflict="cancel">${tr("Cancel","取消")}</button></span></div>`:"";
+    return `<div class="in">${head(`${byline(n)}${ic("grid")}<span>${tr("Table","表格")}</span>`)}
+    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol,editable:!sk,sort:n.tblSort})}${conflict}${sk?sketchActs(n):foot(fL(from?`<span class="tbl-src">${esc(from)}${refresh}</span>`:""),live?group("foot-r",threadCount(n),readAt):fR(threadCount(n)))}</div>`;}
   case"idea":return `<div class="in">${head(esc(n.kind||"Idea"))}
     <h4 data-edit="text">${esc(n.text)}</h4>${foot(evidenceScale(n),fR(threadCount(n)))}</div>`;
   case"source":{
@@ -5378,6 +5522,275 @@ function cleanCopilotMd(raw){
     .replace(/\n{3,}/g,"\n\n")
     .trim();
 }
+/* Tables: dataset -> model -> one renderer.
+   A dataset is only what was said: {columns:[{name}], rows:[[text]], source}. Column types (number, level, text),
+   units, direction, magnitude, best values and widths are inferred here every time, so there is one source of truth,
+   shared by tables in Copilot replies and table cards on the board. */
+function tableModel(ds){
+  const hdrRaw=(ds.columns||[]).map(c=>String(c?.name??"")),hdr=hdrRaw.map(mdInline),raw=(ds.rows||[]).map(r=>hdrRaw.map((_,ci)=>String(r?.[ci]??"")));
+  // A column is numeric when every filled cell is a number with the same unit; then it can show magnitude.
+  const NUM=/^([-+]?)([$€£¥]?)\s?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s?(%|[kKMB]|x|×)?$/; // thousands only in groups of three, so "49,90" is not 4990
+  const cols=hdr.map((_,ci)=>{const ms=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"")).filter(Boolean).map(t=>t.match(NUM));
+    if(raw.length<2||!ms.length||ms.some(m=>!m)||new Set(ms.map(m=>m[2]+(m[4]||""))).size>1)return null;
+    const vals=raw.map(r=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?Math.abs(parseFloat(m[3].replace(/,/g,""))):null});
+    const max=Math.max(...vals.filter(v=>v!=null));return max>0?vals.map(v=>v==null?null:v/max):null});
+  const SCALES=[["low","medium","high"],["low","moderate","high"],["none","low","medium","high","critical"],["minor","moderate","major","critical"],["低","中","高"]];
+  const BAD_HIGH=/risk|cost|effort|complex|difficult|severity|debt|price|danger|风险|成本|难度|代价|严重|复杂/i,GOOD_HIGH=/impact|value|benefit|confidence|quality|reach|upside|收益|价值|影响|质量|信心/i;
+  const levels=hdr.map((h,ci)=>{const ht=hdrRaw[ci];const dir=BAD_HIGH.test(ht)?-1:GOOD_HIGH.test(ht)?1:0;if(!dir||raw.length<2)return null;
+    const vs=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"").trim().toLowerCase().replace(/^med$/,"medium"));
+    const sc=SCALES.find(sc=>vs.filter(Boolean).length&&vs.every(v=>!v||sc.includes(v)));if(!sc)return null;
+    return vs.map(v=>{if(!v)return null;const q=sc.indexOf(v)/(sc.length-1),good=dir>0?q:1-q;return good>.66?"good":good<.34?"bad":"mid"})});
+  /* Workflow status (Notion's Status, Jira, Linear): finished reads green, in motion blue, stuck red, not started stays
+     neutral. Recognised by a status-like header, or by every value being a known status word. Sorts in workflow order. */
+  const STATUS=[["idle",/^(not started|to ?do|backlog|planned|open|new|queued|未开始|待办|计划中)$/],["now",/^(in progress|doing|in review|review|started|ongoing|wip|active|进行中|审核中|处理中)$/],
+    ["bad",/^(blocked|stuck|failed|at risk|overdue|on hold|阻塞|失败|搁置|逾期)$/],["good",/^(done|complete|completed|shipped|released|live|resolved|closed|finished|已完成|完成|已上线|已解决)$/]];
+  const statusOf=v=>{const t=String(v||"").replace(/\*\*/g,"").trim().toLowerCase();const i=STATUS.findIndex(([,re])=>re.test(t));return i<0?null:i};
+  hdr.forEach((h,ci)=>{if(levels[ci]||cols[ci]||raw.length<2)return;const vs=raw.map(r=>(r[ci]||"").trim()).filter(Boolean);if(!vs.length)return;
+    const ks=vs.map(statusOf);if(ks.some(k=>k==null))return;
+    // Open/Closed, New/Active, Live can describe a store or a role, so without a status-like header they need clear company.
+    if(!/status|state|stage|progress|状态|进度|阶段/i.test(hdrRaw[ci])&&(new Set(ks).size<3||vs.every(v=>/^(open|closed|new|active|live)$/i.test(v))))return;
+    levels[ci]=raw.map(r=>{const k=statusOf(r[ci]);return k==null?null:STATUS[k][0]});levels[ci].status=true});
+  const LVL={good:"var(--C)",mid:"var(--warn,#d97706)",bad:"var(--D)",now:"var(--B)",idle:"var(--label-3)"};
+  // Column width from content (Notion-like): columns keep a comfortable width and the table scrolls instead of squeezing.
+  const avgLen=ci=>{const ts=raw.map(r=>(r[ci]||"").replace(/[*_`]/g,"")).filter(Boolean);return ts.length?ts.reduce((a,t)=>a+t.length,0)/ts.length:0};
+  const LOWER_BETTER=/cost|price|time|week|day|hour|month|effort|risk|debt|latency|size|weight|bug|成本|价格|时间|周|天|小时|月|工作量|延迟|风险/i,HIGHER_BETTER=/impact|value|revenue|score|user|reach|rating|speed|throughput|growth|margin|收益|价值|收入|评分|用户|增长|利润/i;
+  const best=hdr.map((_,ci)=>{if(!cols[ci])return null;const ht=hdrRaw[ci];const dir=LOWER_BETTER.test(ht)?-1:HIGHER_BETTER.test(ht)?1:0;if(!dir)return null;
+    const ks=raw.map(r=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?(m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,"")):null});const ok=ks.filter(k=>k!=null);if(new Set(ok).size<2)return null;
+    const target=dir<0?Math.min(...ok):Math.max(...ok);return ks.map(k=>k===target)});
+  // Time: every filled cell is a date, month, quarter or year. Keys sort chronologically.
+  const MONTHS=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+  const timeKey=(t,hdrTxt,isFirst)=>{t=t.replace(/\*\*/g,"").trim();let m;
+    if((m=t.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/)))return +m[1]*400+ +m[2]*32+ +(m[3]||0);
+    if((m=t.match(/^(\d{4})年(\d{1,2})月$/)))return +m[1]*400+ +m[2]*32;
+    if((m=t.match(/^(\d{1,2})月$/)))return +m[1]*32;
+    if((m=t.match(/^([A-Za-z]{3,9})\.?(?:\s+(\d{4}))?$/))&&MONTHS.includes(m[1].slice(0,3).toLowerCase()))return (+(m[2]||0))*400+(MONTHS.indexOf(m[1].slice(0,3).toLowerCase())+1)*32;
+    if((m=t.match(/^Q([1-4])(?:\s*(\d{4}))?$/i))||(m=t.match(/^(\d{4})\s*Q([1-4])$/i)))return m[0].toUpperCase().startsWith("Q")?(+(m[2]||0))*400+ +m[1]*96:+m[1]*400+ +m[2]*96;
+    if((m=t.match(/^(19|20)\d{2}$/))&&(isFirst||/year|date|period|time|年|日期|时间/i.test(hdrTxt)))return +t*400;
+    return null};
+  const time=hdr.map((_,ci)=>{const vs=raw.map(r=>r[ci]||"").filter(Boolean);if(raw.length<2||vs.length<2)return null;
+    const ks=raw.map(r=>r[ci]?timeKey(r[ci],hdrRaw[ci],ci===0):null);return ks.every((k,i)=>k!=null||!raw[i][ci])?ks:null});
+  time.forEach((t,ci)=>{if(t)cols[ci]=null});
+  // Identifiers are numbers but not quantities: no magnitude, no "best".
+  hdrRaw.forEach((h,ci)=>{if(/^\s*(id|#|no\.?|num(ber)?|code|zip|post(al)?\s?code|phone|sku|ref|rank|position|编号|序号|代码|邮编|电话|排名|名次)\s*$/i.test(h)){cols[ci]=null;best[ci]=null}});
+  // Share: a percentage column whose parts add up to about a whole.
+  const share=hdr.map((_,ci)=>{if(!cols[ci])return false;const ms=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"").match(NUM)).filter(Boolean);
+    if(!ms.length||ms.some(m=>m[4]!=="%"||m[1]==="-"))return false;const sum=ms.reduce((a,m)=>a+parseFloat(m[3].replace(/,/g,"")),0);return sum>=95&&sum<=105});
+  const colW=hdr.map((_,ci)=>cols[ci]?"":levels[ci]?"w-tag":ci===0?"w-first":avgLen(ci)>28?"w-long":"w-text");
+  const sortKey=(r,ci)=>{if(time?.[ci])return time[ci][raw.indexOf(r)];const v=(r[ci]||"").replace(/\*\*/g,"").trim();const m=cols[ci]&&v.match(NUM);if(m)return (m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,""));
+    if(levels[ci]?.status)return statusOf(v);
+    const sc=levels[ci]&&SCALES.find(sc=>sc.includes(v.toLowerCase().replace(/^med$/,"medium")));return sc?sc.indexOf(v.toLowerCase().replace(/^med$/,"medium")):null};
+  const num=(r,ci)=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?(m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,"")):null};
+  return {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey,time,share,num};
+}
+/* Ingest: CSV/TSV/JSON -> dataset. The same mapping will serve MCP results (JSON or text). */
+const TBL_MAX_ROWS=500;
+function parseDelimited(text,delim){
+  text=String(text||"").replace(/^\uFEFF/,"");
+  if(!delim){const head=text.split(/\r?\n/).filter(l=>l.trim()).slice(0,6),score=d=>{const c=head.map(l=>l.split(d).length-1);return c[0]>0&&c.every(x=>x===c[0])?c[0]+10:c[0]};
+    delim=["\t",",",";"].sort((a,b)=>score(b)-score(a))[0]}
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c;continue}
+    if(c==='"'&&cell==="")q=true;else if(c===delim){row.push(cell);cell=""}else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;row.push(cell);rows.push(row);row=[];cell=""}else cell+=c}
+  if(cell!==""||row.length){row.push(cell);rows.push(row)}
+  return rows.map(r=>r.map(x=>x.trim())).filter(r=>r.some(Boolean));
+}
+function datasetFromRows(rows,{header=true}={}){
+  if(!rows.length)return null;const width=Math.max(...rows.map(r=>r.length));
+  const head=header?rows[0]:[],body=header?rows.slice(1):rows;if(!body.length)return null;
+  const columns=Array.from({length:width},(_,i)=>({name:(head[i]||"").trim()||L(`Column ${i+1}`,`第 ${i+1} 列`)}));
+  return {columns,rows:body.slice(0,TBL_MAX_ROWS).map(r=>columns.map((_,i)=>r[i]??"")),total:body.length};
+}
+function datasetFromJSON(v){
+  const isRec=x=>x&&typeof x==="object"&&!Array.isArray(x);
+  const findArr=(x,depth=0)=>{if(Array.isArray(x))return x;if(!isRec(x)||depth>2)return null;
+    const arrs=Object.values(x).map(y=>findArr(y,depth+1)).filter(a=>a&&a.length);if(arrs.length)return arrs.sort((a,b)=>b.length-a.length)[0];
+    const vals=Object.values(x);return depth===0&&vals.length>1&&vals.every(isRec)?Object.entries(x).map(([k,o])=>({id:k,...o})):null};
+  const arr=findArr(v);if(!arr||!arr.length)return null;
+  const cellOf=x=>x==null?"":Array.isArray(x)?(x.every(y=>y==null||typeof y!=="object")?x.join(", "):L(`${x.length} items`,`${x.length} 项`)):isRec(x)?JSON.stringify(x):String(x);
+  if(arr.every(Array.isArray)){const hdr=arr[0].every(x=>typeof x==="string");return datasetFromRows(arr.map(r=>r.map(cellOf)),{header:hdr})}
+  if(!arr.every(isRec))return {columns:[{name:L("Value","值")}],rows:arr.slice(0,TBL_MAX_ROWS).map(x=>[cellOf(x)]),total:arr.length};
+  const flat=o=>{const out={};for(const [k,x] of Object.entries(o)){if(isRec(x))for(const [k2,y] of Object.entries(x))out[`${k}.${k2}`]=y;else out[k]=x}return out};
+  const recs=arr.map(flat),keys=[];recs.slice(0,200).forEach(r=>Object.keys(r).forEach(k=>{if(!keys.includes(k))keys.push(k)}));
+  return {columns:keys.map(name=>({name})),rows:recs.slice(0,TBL_MAX_ROWS).map(r=>keys.map(k=>cellOf(r[k]))),total:recs.length};
+}
+function datasetFromText(text,name=""){
+  const t=String(text||"").trim();if(!t)return null;
+  if(/\.json$/i.test(name)||/^[\[{]/.test(t)){try{return datasetFromJSON(JSON.parse(t))}catch{if(/\.json$/i.test(name))return null}}
+  return datasetFromRows(parseDelimited(t,/\.tsv$/i.test(name)?"\t":null));
+}
+/* Pasted text that is clearly a table: tab-separated (Sheets, Excel, Notion) or strictly regular CSV. */
+function looksTabular(t){const ls=String(t||"").trim().split(/\r?\n/).filter(l=>l.trim());if(ls.length<2)return false;
+  const same=d=>{const c=ls.map(l=>l.split(d).length-1);return c[0]>=1&&c.filter(x=>x===c[0]).length>=Math.ceil(ls.length*.9)};
+  return same("\t")||(ls.length>=3&&ls.map(l=>l.split(",").length-1).every((x,_,a)=>x>=2&&x===a[0]))}
+function makeTableCard(ds,{title,source,at,by}={}){
+  if(!ds)return null;const data={v:1,columns:ds.columns,rows:ds.rows,source:{...source,at:NOW(),hash:tblHash(ds),...(ds.total>ds.rows.length?{total:ds.total}:{})}},gw=tblCardWidth(data);
+  const spot=at?freeSpot(at.x-gw/2,at.y-100,gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
+  return node("table",{title:clip(title||L("Table","表格"),60),data,gw,...(by?{by}:{})},spot);
+}
+/* A table from an address: CSV, TSV or JSON at a URL. Share links become data links (Google Sheets -> CSV export of
+   that tab, GitHub file page -> raw file). Read directly; if the site blocks cross-origin reads and Vellum's local
+   server is serving the page, it reads it instead (public addresses only, redirects checked, data not web pages). */
+function dataUrlOf(u){try{const x=new URL(u);let m;
+  if(x.hostname==="docs.google.com"&&(m=x.pathname.match(/^\/spreadsheets\/d\/([^/]+)/))&&!/\/(export|pub|gviz)/.test(x.pathname)){const gid=((x.hash+x.search).match(/gid=(\d+)/)||[])[1]||"0";return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${gid}`}
+  if(x.hostname==="github.com"&&(m=x.pathname.match(/^\/([^/]+)\/([^/]+)\/blob\/(.+)$/)))return `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}`;
+  return x.href}catch{return u}}
+function looksLikeDataUrl(u){try{const x=new URL(u);return /^https?:$/.test(x.protocol)&&(/\.(csv|tsv|json)$/i.test(x.pathname)||/[?&](output|format)=(csv|tsv|json)\b/i.test(x.search)||/tqx=out:csv/i.test(x.search)||(x.hostname==="docs.google.com"&&/^\/spreadsheets\/d\//.test(x.pathname)))}catch{return false}}
+const viaLocalServer=()=>/^https?:$/.test(location.protocol)&&/^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+async function fetchDataText(url){
+  let err;
+  try{const r=await fetch(url,{signal:timeoutSignal(12000),credentials:"omit"});if(!r.ok)throw new Error("HTTP "+r.status);return {text:await r.text(),type:(r.headers.get("content-type")||"").toLowerCase()}}catch(e){err=e}
+  if(viaLocalServer()){let d=null;try{const r=await fetch(`/fetch-data?url=${encodeURIComponent(url)}`,{signal:timeoutSignal(20000)});d=/json/.test(r.headers.get("content-type")||"")?await r.json():null}catch{}
+    if(d?.ok)return {text:d.text,type:d.type||""};if(d)err=Object.assign(new Error(d.error||"failed"),{proxied:true});} // no JSON = no local reader here
+  throw err;
+}
+function dataFetchMessage(e,host){const k=String(e?.message||"");
+  return k==="web_page_not_data"?L(`${host} returned a web page, not data. If it's a Google Sheet, share it as "Anyone with the link".`,`${host} 返回的是网页而不是数据。如果是 Google 表格，请设置为"知道链接的任何人可查看"。`)
+    :k==="too_large"?L(`That file is over 8 MB. Download it and drop it here instead.`,`文件超过 8 MB，请下载后拖到画板上。`)
+    :/private|redirect/.test(k)?L(`Only public addresses can be read.`,`只能读取公开网址。`)
+    :/HTTP 40[13]/.test(k)?L(`${host} needs you to sign in. Share it publicly, or download the file and drop it here.`,`${host} 需要登录。请公开分享，或下载后拖到画板上。`)
+    :/HTTP 404/.test(k)?L(`Nothing at that address (404).`,`该网址不存在（404）。`)
+    :e?.proxied?L(`Couldn't read ${host}: ${k||"no response"}.`,`无法读取 ${host}：${k||"没有响应"}。`)
+    :L(`${host} doesn't let other pages read it. Download the file and drop it here, or open the address in the Vellum app.`,`${host} 不允许其他网页读取。请下载后拖到画板上，或在 Vellum 应用中打开。`)}
+async function tableFromUrl(raw,{at}={}){
+  const url=dataUrlOf(String(raw||"").trim());let host="",shown="";try{host=new URL(url).hostname.replace(/^www\./,"");shown=new URL(String(raw).trim()).hostname.replace(/^www\./,"")}catch{toast(L("That isn't a web address.","这不是一个网址。"));return null}
+  toast(L(`Reading ${shown||host}…`,`正在读取 ${shown||host}…`));
+  let res;try{res=await fetchDataText(url)}catch(e){toast(dataFetchMessage(e,host));return null}
+  if(/html/.test(res.type)||/^\s*<(!doctype|html)/i.test(res.text)){toast(dataFetchMessage(new Error("web_page_not_data"),host));return null}
+  const name=decodeURIComponent(new URL(url).pathname.split("/").pop()||""),ds=datasetFromText(res.text,/json/.test(res.type)?"data.json":name);
+  if(!ds){toast(L(`${host} didn't return a table (CSV, TSV or JSON).`,`${host} 返回的不是表格数据（CSV、TSV 或 JSON）。`));return null}
+  checkpoint();const v=viewRect(),title=host==="docs.google.com"?L("Google Sheet","Google 表格"):(humanFileTitle(name)||name.replace(/\.[^.]+$/,"")||host);
+  const n=makeTableCard(ds,{title,source:{kind:"url",label:shown||host,url,from:String(raw).trim()}/* label: the address people pasted */,at:at||toWorld(v.w/2,v.h/2)});
+  sel=[n.id];renderAll();persist();follow([n]);
+  toast(L(`Table added from ${shown||host}`,`已从 ${shown||host} 生成表格`),{undo:true});return n;
+}
+/* A table from a Notion database. Notion's API doesn't answer web pages, so Vellum's local server reads it with the
+   integration token saved in MCP Sources (the same one Copilot uses). A link with ?v= is a database view; any Notion
+   link or id works with /table. Rows keep what a person reads in Notion: select names, dates, people, counts. */
+const isNotionUrl=u=>{try{const h=new URL(u).hostname;return /(^|\.)notion\.(so|com|site)$/.test(h)&&!/^file\./.test(h)&&!looksLikeDataUrl(u)}catch{return false}}; // file.notion.so exports are plain CSV
+const looksLikeNotionDb=u=>isNotionUrl(u)&&/[?&]v=[0-9a-f]{32}/i.test(u);
+function notionMessage(k){const fix={actLabel:L("Connect","连接"),onAct:()=>mcpDialog("notion")};
+  return k==="no_token"?[L("Notion isn't connected yet.","Notion 还没有连接。"),fix]
+    :k==="bad_token"?[L("Notion didn't accept the saved token.","Notion 没有接受已保存的令牌。"),fix]
+    :k==="not_shared"?[L("Notion can't see that database. In Notion, open it → ••• → Connections and add your integration.","Notion 看不到这个数据库。请在 Notion 中打开它 → ••• → 连接，添加你的集成。")]
+    :k==="is_page"?[L("That's a Notion page, not a database. Open the database and copy its link.","这是 Notion 页面，不是数据库。请打开数据库并复制它的链接。")]
+    :k==="no_id"?[L("That link doesn't point to a Notion database.","这个链接没有指向 Notion 数据库。")]
+    :k==="rate_limited"?[L("Notion is busy. Try again in a minute.","Notion 繁忙，请稍后再试。")]
+    :k==="no_server"?[L("Reading Notion needs the Vellum app: its local server talks to Notion.","读取 Notion 需要 Vellum 应用：由它的本地服务器连接 Notion。")]
+    :[L(`Couldn't read Notion: ${k||"no response"}.`,`无法读取 Notion：${k||"没有响应"}。`)]}
+async function tableFromNotion(raw,{at}={}){
+  const ref=String(raw||"").trim(),token=String(mcpCfg.notion?.token||"").trim();
+  const fail=k=>{const [m,o]=notionMessage(k);toast(m,o||{});return null};
+  if(!token)return fail("no_token");
+  if(!viaLocalServer())return fail("no_server");
+  toast(L("Reading Notion…","正在读取 Notion…"));
+  let d=null;try{const r=await fetch("/notion/database",{method:"POST",headers:{"Content-Type":"application/json","X-Studio-Client":"canvas"},body:JSON.stringify({ref,token}),signal:timeoutSignal(60000)});d=/json/.test(r.headers.get("content-type")||"")?await r.json():null}catch{}
+  if(!d)return fail("no_server");
+  if(!d.ok)return fail(d.error);
+  if(!d.rows?.length){toast(L(`${d.title||"That database"} has no rows yet.`,`${d.title||"该数据库"} 还没有任何行。`));return null}
+  const ds={columns:d.columns.map(name=>({name})),rows:d.rows};
+  checkpoint();const v=viewRect();
+  const n=makeTableCard(ds,{title:d.title,source:{kind:"notion",label:"Notion",url:d.url||(isNotionUrl(ref)?ref:""),id:d.id,...(d.more?{more:true}:{})},at:at||toWorld(v.w/2,v.h/2)});
+  sel=[n.id];renderAll();persist();follow([n]);
+  toast(L(`Table added from Notion`,`已从 Notion 生成表格`),{undo:true});return n;
+}
+/* Refresh: read a table's source again. The source's content is fingerprinted at every read, so Vellum can tell
+   "the source changed" from "you changed the table". Only when both changed is there a choice to make: replace your
+   edits, keep both (a second card with the fresh data), or cancel. Every outcome is undoable. */
+const tblPending=new Map(),tblRefreshing=new Set(); // in memory only: a pending choice doesn't outlive the session
+const canRefresh=n=>n?.type==="table"&&["url","notion"].includes(n.data?.source?.kind);
+const srcName=src=>src?.kind==="notion"?"Notion":src?.label||L("the source","来源");
+function tblHash(ds){const t=JSON.stringify([(ds.columns||[]).map(c=>c.name),ds.rows||[]]);let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)}return (h>>>0).toString(36)+":"+t.length}
+async function readTableSource(src){
+  if(src.kind==="url"){let host="";try{host=new URL(src.url).hostname.replace(/^www\./,"")}catch{}
+    let res;try{res=await fetchDataText(src.url)}catch(e){return {msg:[dataFetchMessage(e,host)]}}
+    if(/html/.test(res.type)||/^\s*<(!doctype|html)/i.test(res.text))return {msg:[dataFetchMessage(new Error("web_page_not_data"),host)]};
+    const name=decodeURIComponent(new URL(src.url).pathname.split("/").pop()||""),ds=datasetFromText(res.text,/json/.test(res.type)?"data.json":name);
+    return ds?{ds}:{msg:[L(`${host} no longer returns a table.`,`${host} 不再返回表格数据。`)]}}
+  const token=String(mcpCfg.notion?.token||"").trim();if(!token)return {msg:notionMessage("no_token")};if(!viaLocalServer())return {msg:notionMessage("no_server")};
+  let d=null;try{const r=await fetch("/notion/database",{method:"POST",headers:{"Content-Type":"application/json","X-Studio-Client":"canvas"},body:JSON.stringify({ref:src.id||src.url,token}),signal:timeoutSignal(60000)});d=/json/.test(r.headers.get("content-type")||"")?await r.json():null}catch{}
+  if(!d)return {msg:notionMessage("no_server")};if(!d.ok)return {msg:notionMessage(d.error)};
+  return {ds:{columns:d.columns.map(name=>({name})),rows:d.rows,...(d.more?{more:true}:{})}};
+}
+/* What changed, in a few words: rows matched by their first column when it's unique, otherwise as whole rows. */
+function tblDiff(a,b){
+  const names=ds=>(ds.columns||[]).map(c=>c.name).join("\u0001"),sameCols=names(a)===names(b),J=r=>JSON.stringify(r);
+  const keys=ds=>{const k=ds.rows.map(r=>String(r[0]??""));return new Set(k).size===k.length?k:null},ka=keys(a),kb=keys(b);let added=0,removed=0,changed=0;
+  if(sameCols&&ka&&kb){const ma=new Map(a.rows.map((r,i)=>[ka[i],J(r)])),mb=new Map(b.rows.map((r,i)=>[kb[i],J(r)]));
+    for(const [k,v] of mb){if(!ma.has(k))added++;else if(ma.get(k)!==v)changed++}for(const k of ma.keys())if(!mb.has(k))removed++}
+  else{const c=new Map();a.rows.forEach(r=>c.set(J(r),(c.get(J(r))||0)+1));b.rows.forEach(r=>{const k=J(r);if(c.get(k))c.set(k,c.get(k)-1);else added++});c.forEach(v=>removed+=v)}
+  const parts=[!sameCols&&L("columns changed","列有变化"),added&&L(`${added} new`,`新增 ${added} 行`),changed&&L(`${changed} changed`,`修改 ${changed} 行`),removed&&L(`${removed} removed`,`删除 ${removed} 行`)].filter(Boolean);
+  return parts.length?parts.join(", "):"";
+}
+function tblApply(n,ds){
+  checkpoint();const colsChanged=n.data.columns.map(c=>c.name).join("\u0001")!==ds.columns.map(c=>c.name).join("\u0001");
+  const {total,more,edited,...keep}=n.data.source||{};
+  n.data={...n.data,columns:ds.columns,rows:ds.rows.slice(0,TBL_MAX_ROWS),rev:(n.data.rev||0)+1,source:{...keep,at:NOW(),hash:tblHash(ds),...(ds.total>ds.rows.length?{total:ds.total}:{}),...(ds.more?{more:true}:{})}};
+  if(colsChanged){delete n.tblSort;delete n.tblCol;n.gw=tblCardWidth(n.data)}
+  n.updated=NOW();
+}
+async function tblRefresh(id){
+  if(tblRefreshing.has(id))return;const n0=byId(id);if(!canRefresh(n0))return;
+  tblPending.delete(id);tblRefreshing.add(id);renderAll();
+  const r=await readTableSource(n0.data.source);tblRefreshing.delete(id);
+  const n=byId(id);if(!n){renderAll();return} // removed or undone meanwhile
+  const src=n.data.source,where=srcName(src);
+  if(r.msg){renderAll();toast(r.msg[0],r.msg[1]||{});return}
+  if(src.hash===tblHash(r.ds)){n.data.source={...src,at:NOW()};renderAll();persist();
+    toast(src.edited?L(`${where} hasn't changed since it was read. Your edits stay.`,`${where} 自上次读取后没有变化，你的修改保留。`):L(`Up to date with ${where}`,`已与 ${where} 同步`));return}
+  if(src.edited){tblPending.set(id,r.ds);renderAll();return} // both changed: ask
+  const what=tblDiff(n.data,r.ds);
+  if(!what){n.data.source={...src,at:NOW(),hash:tblHash(r.ds)};renderAll();persist();toast(L(`Up to date with ${where}`,`已与 ${where} 同步`));return}
+  tblApply(n,r.ds);renderAll();persist();toast(L(`Updated from ${where}: ${what}`,`已从 ${where} 更新：${what}`),{undo:true});
+}
+function tblResolve(id,choice){
+  const n=byId(id),ds=tblPending.get(id);tblPending.delete(id);if(!n||!ds){renderAll();return}const where=srcName(n.data.source);
+  if(choice==="replace"){tblApply(n,ds);renderAll();persist();toast(L(`Replaced with ${where}'s latest`,`已替换为 ${where} 的最新数据`),{undo:true});return}
+  if(choice==="both"){checkpoint();const {total,more,edited,...keep}=n.data.source;
+    const c=makeTableCard(ds,{title:n.title,source:keep,at:{x:n.x+nodeW(n)+48+tblCardWidth(ds)/2,y:n.y+100}});
+    n.data.source={...n.data.source,at:NOW(),hash:tblHash(ds)}; // your copy now counts as up to date with this read
+    sel=[c.id];renderAll();persist();follow([c]);toast(L(`Latest from ${where} added beside yours`,`已在旁边添加 ${where} 的最新数据`),{undo:true});return}
+  renderAll();
+}
+/* Board width a table card needs: measured, not guessed. The table is laid out once in a hidden card with the real
+   fonts and column rules, at its natural width; the card takes that width plus its padding, between 320 and 960px.
+   960 fits the usual 7-9 columns and stays about two thirds of a 1440px screen at 100%, so the cards around it stay in
+   view; wider tables scroll sideways with the first column pinned. People can still drag the card wider. */
+const TBL_CARD_MIN=320,TBL_CARD_MAX=960;
+function tblCardWidth(ds){
+  const clamp=w=>Math.max(TBL_CARD_MIN,Math.min(TBL_CARD_MAX,Math.ceil(w)));
+  try{
+    const host=document.createElement("div");host.className="card table";host.setAttribute("aria-hidden","true");
+    host.style.cssText="position:absolute;left:-99999px;top:0;visibility:hidden;width:auto;pointer-events:none";
+    host.innerHTML=`<div class="in">${tblBlockHTML(ds)}</div>`;(document.getElementById("nodes")||document.body).appendChild(host);
+    const tbl=host.querySelector("table.tbl");tbl.style.width="max-content";host.querySelector(".tbl-wrap").style.overflow="visible";
+    const pad=(()=>{const cs=getComputedStyle(host.querySelector(".in"));return parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight)})();
+    const w=tbl.offsetWidth;host.remove(); // layout width: unaffected by the canvas zoom transform
+    if(w>0)return clamp(w+pad+2);
+  }catch{}
+  // no layout available: estimate from the same column rules
+  const {raw,cols,colW}=tableModel(ds),base={"w-first":144,"w-text":96,"w-long":180,"w-tag":88};
+  return clamp(colW.reduce((sum,c,ci)=>sum+(cols[ci]?Math.max(72,Math.max(...raw.map(r=>(r[ci]||"").length),String(ds.columns[ci]?.name||"").length)*8+28):base[c]||96),0)+40);
+}
+function tblBlockHTML(ds,{add=false,view="table",col=null,editable=false,sort=null}={}){
+  const {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey}=tableModel(ds);
+  /* Bare machine numbers (4849377.0) read as digits to count, not amounts. Display only — editing and copy keep the
+     source text: drop a ".0" tail the whole column shares, and group thousands from five digits up (years stay 2014). */
+  const BARE=/^-?\d+(\.\d+)?$/,zeroTail=hdr.map((_,ci)=>{const v=raw.map(r=>String(r[ci]??"").trim()).filter(x=>BARE.test(x));return v.length>0&&v.every(x=>/\.0+$/.test(x))});
+  const shown=(x,ci)=>{const v=String(x??"").trim();if(!cols[ci]||!BARE.test(v))return x||"";const [i,f]=(zeroTail[ci]?v.replace(/\.0+$/,""):v).split(".");const neg=i.startsWith("-"),d=neg?i.slice(1):i;return (neg?"-":"")+(d.length>4?d.replace(/\B(?=(\d{3})+$)/g,","):d)+(f?"."+f:"")};
+  const cell=(r,ci)=>{const t=mdInline(shown(r[ci],ci)),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)],k=sortKey(r,ci),dv=k==null?"":` data-v="${k}"`;
+    if(lv)return `<td class="lvl"${dv}><span class="tbl-tag" style="--c:${LVL[lv]}">${t}</span></td>`;
+    if(!c||c[raw.indexOf(r)]==null)return `<td${c?' class="num"':""}${dv}>${t}</td>`;
+    const isBest=best[ci]?.[raw.indexOf(r)];
+    return `<td class="num${isBest?" best":""}"${dv} style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${isBest?`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`:""}${t}${isBest?`<span class="sr-only"> ${L("(best)","（最优）")}</span>`:""}</span></td>`};
+  const hasNum=cols.some(Boolean);
+  const tools=`<div class="tbl-tools"><span class="tbl-gap"></span>${add?`<button type="button" class="tbl-tool" data-tbl-add title="${L("Add to board","添加到画板")}" aria-label="${L("Add to board","添加到画板")}">${ic("plus")}</button>`:""}${hasNum?`<div class="sp-seg sm" role="group" aria-label="${L("View","视图")}"><button type="button" data-tbl-view="table" aria-pressed="${!(hasNum&&view==="chart")}">${L("Table","表格")}</button><button type="button" data-tbl-view="chart" aria-pressed="${hasNum&&view==="chart"}">${L("Chart","图表")}</button></div>`:""}<button type="button" class="tbl-tool" data-tbl-copy title="${L("Copy as a table for Sheets, Excel or Notion","复制为表格，可粘贴到 Sheets、Excel 或 Notion")}" aria-label="${L("Copy table","复制表格")}">${ic("copy")}</button></div>`;
+  const asChart=hasNum&&view==="chart";
+  const order=raw.map((_,i)=>i);
+  if(sort&&sort.dir&&sort.col<hdr.length){const key=i=>{const k=sortKey(raw[i],sort.col);return k==null?(raw[i][sort.col]||"").trim().toLowerCase():k};
+    order.sort((a,b)=>{const x=key(a),y=key(b);if(x===""&&y!=="")return 1;if(y===""&&x!=="")return -1;const c=typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y));return sort.dir==="ascending"?c:-c})}
+  return `<div class="tbl-block"${editable?" data-editable":""}${asChart?` data-view="chart"${col!=null?` data-col="${col}"`:""}`:""}>${tools}<div class="tbl-chart"${asChart?"":" hidden"}></div><div class="tbl-wrap"${asChart?" hidden":""}><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="${sort&&sort.col===ci&&sort.dir?sort.dir:"none"}"`:""}>${ci===0?`<button type="button" class="tbl-check" role="checkbox" aria-checked="false" data-tbl-all aria-label="${L("Select all rows","全选")}"></button>`:""}${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${order.map(ri=>{const r=raw[ri];return `<tr data-i="${ri}" aria-selected="false">${hdr.map((_,ci)=>ci===0?cell(r,ci).replace(/^<td([^>]*)>/,`<td$1><button type="button" class="tbl-check" role="checkbox" aria-checked="false" aria-label="${L("Select row","选择此行")}"></button>`):cell(r,ci)).join("")}</tr>`}).join("")}</tbody></table></div><div class="tbl-foot"><div class="tbl-sel" hidden><span class="tbl-selcount"></span><button type="button" class="sp-mini" data-tbl-ask>${L("Ask","追问")}</button>${editable?`<button type="button" class="sp-mini" data-tbl-del>${L("Delete","删除")}</button>`:""}<button type="button" class="tbl-tool" data-tbl-clear aria-label="${L("Clear selection","取消选择")}" title="${L("Clear selection","取消选择")}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>${editable?`<button type="button" class="tbl-addrow" data-tbl-addrow>${L("+ Add row","+ 添加行")}</button>`:""}</div></div>`;
+}
 function mdBlocksHtml(src){
   const lines=cleanCopilotMd(src).split("\n"),out=[];
   let i=0;
@@ -5411,11 +5824,11 @@ function mdBlocksHtml(src){
     }
     if(tr.includes("|")&&i+1<lines.length&&/^\s*\|?[\s:-]+\|[\s|:-]*$/.test(lines[i+1])){
       flushPara(para);para=[];
-      const rowCells=r=>r.trim().replace(/^\|/,"").replace(/\|$/,"").split("|").map(c=>mdInline(c.trim()));
-      const hdr=rowCells(tr);i+=2;
+      const rawCells=r=>r.trim().replace(/^\|/,"").replace(/\|$/,"").split("|").map(c=>c.trim());
+      const head=rawCells(tr);i+=2;
       const rows=[];
-      while(i<lines.length&&lines[i].includes("|")&&lines[i].trim()){rows.push(rowCells(lines[i]));i++}
-      out.push(`<table class="cp-md-tbl"><thead><tr>${hdr.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${hdr.map((_,ci)=>`<td>${r[ci]||""}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
+      while(i<lines.length&&lines[i].includes("|")&&lines[i].trim()){rows.push(rawCells(lines[i]));i++}
+      out.push(tblBlockHTML({columns:head.map(name=>({name})),rows},{add:true}));
       continue;
     }
     if(/^[-*•]\s+/.test(tr)){
@@ -5481,7 +5894,7 @@ function nodeLineageSig(n){
 }
 
 function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang()])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -5819,7 +6232,7 @@ function connSummary(){
   const name={local:L("Local AI","本地模型"),api:L("Cloud API","云端 API"),claude:"Claude",rules:L("built-in rules","内置规则")}[engine];
   const model=engine==="local"?(studioState.model||"").split("/").pop():engine==="api"?(apiCfg.model||"").split("/").pop():"";
   let issue="",tone="";
-  if(aiPref==="local"){issue=L("AI turned off","AI 已关闭");tone="warn"}
+  if(aiPref==="local"){issue=L("AI models are off","AI 模型已关闭");tone="off"}
   else if(hasApi()&&API_BAD.has(h.k)&&engine!=="local"&&!apiRoutable()){issue=L(`Cloud API ${apiHealthLabel(h).txt.toLowerCase()}`,`云端 API ${apiHealthLabel(h).txt}`);tone="err"}
   else if(engine==="api"&&h.k==="unreachable"){issue=L("Retrying Cloud API","正在重试云端 API");tone="busy"}
   else if(engine==="api"&&h.k==="error"){issue=L("Cloud API returned an error","云端 API 返回错误");tone="warn"}
@@ -5860,6 +6273,7 @@ function renderCrew(){
 function setAiPref(pref){
   aiPref=pref==="local"||pref==="api"?pref:"auto";
   store.set(".aiPref",aiPref);
+  if(aiPref!=="local")store.set(".aiPrefOn",aiPref);
   renderCrew();
   renderCopilot?.();
 }
@@ -6005,16 +6419,16 @@ function renderStudioPop(){
   const sum=connSummary();
   const apiH=apiHealthNow(),apiLab=apiHealthLabel(apiH);
   const manual=typeof connManualCheck!=="undefined"&&connManualCheck;
-  const modeNote=aiPref==="local"?L("Never uses a model.","从不使用模型。")
-    :aiPref==="api"?L("Always uses your Cloud API.","始终使用你的云端 API。")
-    :L("Local AI if running, else Cloud API, else built-in rules.","优先本地模型，其次云端 API，最后内置规则。");
+  /* "Use first" only exists when there is a choice: both engines set up (or Cloud API already preferred). */
+  const firstPref=aiPref==="local"?store.get(".aiPrefOn","auto"):aiPref;
+  const showFirst=(hasApi()&&(studioState.reachable||studioLauncher===true))||firstPref==="api";
   const st=(cls,txt,tip="",attr="")=>`<span class="sp-state ${cls}"${tip?` title="${esc(tip)}"`:""}${attr}><i></i>${esc(txt)}</span>`;
   const btn=(sp,txt,{kind="",tip=""}={})=>`<button type="button" class="sp-mini${kind?" "+kind:""}" data-sp="${sp}"${tip?` title="${esc(tip)}"`:""}>${esc(txt)}</button>`;
   const row=({name,state,detail,detailTip,acts,extra="",attr=""})=>`<div class="sp-svc${extra?" col":""}"${attr}>
         <div class="sp-svc-row">
           <div class="sp-svc-main">
             <div class="sp-svc-top"><span>${name}</span>${state}</div>
-            <div class="sp-svc-sub" title="${esc(detailTip||detail)}">${esc(detail)}</div>
+            ${detail?`<div class="sp-svc-sub" title="${esc(detailTip||detail)}">${esc(detail)}</div>`:""}
           </div>
           <div class="sp-hdr-acts">${acts}</div>
         </div>${extra}
@@ -6023,8 +6437,8 @@ function renderStudioPop(){
   /* Local AI — Start only when the Studio AI service is up to receive it */
   const stDl=stLoad&&studioState.progress&&studioState.progress.startsWith("Downloading");
   const stCase=studioLaunching&&!studioState.reachable?"launching":studioChecking&&(manual||!studioState.checked)?"checking":stReady?"ok":stLoad?"starting":studioState.reachable&&studioState.error?"error":studioState.reachable?"idle":"offline";
-  const stState={launching:st("busy",L("Starting…","启动中…")),checking:st("busy",L("Checking…","检测中…")),ok:st("ok",L("Connected","已连接")),starting:st("busy",stDl?L("Downloading…","下载中…"):L("Starting…","启动中…")),error:st("err",L("Error","出错")),idle:st("",L("Not running","未运行")),offline:st("",L("Not running","未运行"))}[stCase];
-  const stDetail={launching:L("Opening Studio AI…","正在打开 Studio AI…"),checking:L("Runs on this computer","在这台电脑上运行"),ok:models.length?L("Runs on this computer","在这台电脑上运行"):modelShort||L("Runs on this computer","在这台电脑上运行"),starting:models.length?L("Runs on this computer","在这台电脑上运行"):modelShort||L("Loading the model","正在加载模型"),error:studioState.error||"",idle:L("Studio AI is open · model not loaded","Studio AI 已打开 · 模型未加载"),offline:studioLauncher?L("Runs on this computer","在这台电脑上运行"):L("Open Start Studio AI.command to use it","打开 Start Studio AI.command 即可使用")}[stCase];
+  const stState={launching:st("busy",L("Starting…","启动中…")),checking:st("busy",L("Checking…","检测中…")),ok:st("ok",sum.engine==="local"?L("In use","使用中"):L("Connected","已连接")),starting:st("busy",stDl?L("Downloading…","下载中…"):L("Starting…","启动中…")),error:st("err",L("Error","出错")),idle:st("",L("Not running","未运行")),offline:st("",L("Not running","未运行"))}[stCase];
+  const stDetail={launching:L("Opening Studio AI…","正在打开 Studio AI…"),checking:"",ok:models.length?"":modelShort,starting:models.length?"":modelShort,error:studioState.error||"",idle:"",offline:studioLauncher?"":L("Open Start Studio AI.command to use it","打开 Start Studio AI.command 即可使用")}[stCase];
   const stAct=(stCase==="ok"||stCase==="starting")?btn("stop-local",L("Stop","停止"),{tip:L("Stop the local model and free memory","停止本地模型并释放内存")})
     :(stCase==="idle"||stCase==="error")?btn("wake",stCase==="error"?L("Retry","重试"):L("Start","启动"),{tip:L("Load the local model","加载本地模型")})
     :stCase==="offline"&&studioLauncher?btn("launch-studio",L("Start","启动"),{tip:L("Open Studio AI and load the local model","打开 Studio AI 并加载本地模型")}):"";
@@ -6040,8 +6454,9 @@ function renderStudioPop(){
   const apiCase=!hasApi()?(apiCfg.key.trim()?"off":"unset"):apiH.k;
   const apiState=apiCase==="unset"?st("",L("Not configured","未配置")):apiCase==="off"?st("",L("Turned off","已关闭"))
     :apiCase==="checking"?st("busy",L("Checking…","检测中…"),"",` data-api-health="checking"`)
+    :apiH.k==="ok"&&sum.engine==="api"?st("ok",L("In use","使用中"),apiLab.tip,` data-api-health="ok"`)
     :st(apiLab.cls,apiLab.txt,apiLab.tip,` data-api-health="${apiH.k}"`);
-  const apiDetail=!hasApi()?L("Your own OpenAI-compatible key","使用你自己的 OpenAI 兼容密钥"):apiLab.detail;
+  const apiDetail=hasApi()?(apiCfg.model||"").split("/").pop():"";
   const apiNext=sum.engine==="rules"&&aiPref!=="local";
   const apiAct=apiCase==="unset"?btn("api",L("Set up","设置"),{kind:apiNext?"primary":""})
     :apiCase==="off"?btn("api",L("Turn on","开启"),{kind:apiNext?"primary":""})
@@ -6050,12 +6465,12 @@ function renderStudioPop(){
     :(apiCase==="error"||apiCase==="ratelimit")?btn("test-api",L("Retry","重试"))
     :btn("api",L("Edit","编辑"),{tip:L("Change URL, model or key","修改地址、模型或密钥")});
   const chosenImg=pickImageModel();
-  const imgModelsHtml=avImgs.length?`<div class="sp-models">${avImgs.map(m=>{
+  const imgModelsHtml=avImgs.length>1?`<div class="sp-models">${avImgs.map(m=>{
     const on=chosenImg?.id===m.id;
     const imgSub=m.edit?L("Image · Edit capable","生图 · 支持改图"):L("Image generation","仅生图");
     return `<div class="sp-m-wrap" data-active="${on}" data-live="${on}"><button type="button" class="sp-m" data-sp="img-model" data-id="${esc(m.id)}" aria-pressed="${on}" title="${esc(m.notice||m.name||m.id)}"><span class="sp-m-info"><b>${esc(m.name||m.id)}</b><span>${imgSub}</span></span>${avImgs.length>1?`<span class="sp-m-tag">${on?L("Active","当前"):L("Use","切换")}</span>`:""}</button></div>`;
   }).join("")}</div>${chosenImg?.notice?`<div class="sp-prog" style="color:var(--label-3)">${esc(chosenImg.notice)}</div>`:""}`:"";
-  const vidModelsHtml=allVids.length?`<div class="sp-models">${allVids.map(m=>{
+  const vidModelsHtml=allVids.length>1?`<div class="sp-models">${allVids.map(m=>{
     const cleanName=String(m.name||m.id).replace(/\s*\(T2V\)\s*/i,"").trim();
     const specTxt=m.available?L("864×480 · 24fps · ~5s · Text-to-Video","864×480 · 24fps · ~5秒 · 文生视频"):esc(m.reason||L("Not ready","未就绪"));
     const tag=!m.available?L("Offline","未就绪"):allVids.length>1?L("Default","默认"):"";
@@ -6066,27 +6481,25 @@ function renderStudioPop(){
   const imReason=[...(imgSvc.models||[]),...allVids].map(m=>m.reason).find(Boolean)||"";
   const imCase=imgChecking&&(manual||!imgSvc.checked)?"checking":mediaUp?"ok":imStarting?"starting":"off";
   const imState={checking:st("busy",L("Checking…","检测中…")),ok:st("ok",L("Connected","已连接")),starting:st("busy",L("Starting…","启动中…")),off:st("",L("Not running","未运行"))}[imCase];
-  const imDetail=(mediaUp||imCase==="checking")?L("Runs on your Windows PC","在 Windows 电脑上运行")
-    :imCase==="starting"?L("Waiting for the models","等待模型就绪")
+  const vidName=m=>String(m.name||m.id).replace(/\s*\(T2V\)\s*/i,"").trim();
+  const imDetail=imCase==="checking"||imCase==="starting"?""
+    :mediaUp?[avImgs.length===1?(avImgs[0].name||avImgs[0].id):"",allVids.length===1?(allVids[0].available?vidName(allVids[0]):vidName(allVids[0])+" "+L("unavailable","不可用")):""].filter(Boolean).join(" · ")
     :svcStopped?L("Stopped · start it on your Windows PC","已停止 · 请在 Windows 电脑上启动")
     :imgSvc.connected?(imReason||L("Connected, but no models are available","已连接，但没有可用模型")):L("Start it on your Windows PC","请在 Windows 电脑上启动");
   const imAct=(imgSvc.connected&&!svcStopped)?btn("stop-svc",L("Stop","停止"),{tip:L("Stop Windows ComfyUI (image & video) and free VRAM","停止 Windows ComfyUI（同时停止出图和出视频）并释放显存")}):"";
   const idle=aiPref==="local";
   pop.innerHTML=`<div class="sp-head">
-      <div class="sp-htxt"><b>${esc(headTitle)}</b><small class="sp-now ${sum.dot}" title="${esc(sum.mode+(sum.issue?" · "+sum.issue:""))}"><i></i><span class="sp-now-mode">${esc(sum.mode)}</span>${sum.issue?`<span class="sp-now-issue ${sum.tone}">${esc(sum.issue)}</span>`:""}</small></div>
+      <div class="sp-htxt"><b>${esc(headTitle)}</b></div>
       <button type="button" class="sp-refresh ${studioChecking?"spin":""}" data-sp="refresh" title="${L("Test all connections","测试全部连接")}" aria-label="${L("Test all connections","测试全部连接")}">${ic("redo")}</button>
     </div>
-    <div class="sp-route">
-      <div class="sp-seg" role="group" aria-label="${L("AI routing mode","AI 路由模式")}">
-        <button type="button" data-sp="pref" data-val="auto" aria-pressed="${aiPref==="auto"}">${L("Auto","自动")}</button>
-        <button type="button" data-sp="pref" data-val="api" aria-pressed="${aiPref==="api"}">${L("Cloud API","云端 API")}</button>
-        <button type="button" data-sp="pref" data-val="local" aria-pressed="${aiPref==="local"}">${L("Rules only","仅规则")}</button>
-      </div>
-      ${aiPref==="auto"?`<div class="sp-mode-note">${esc(modeNote)}</div>`:""}
+    <div class="sp-ai">
+      <span class="sp-ai-txt"><b id="sp-ai-l">${L("AI models","AI 模型")}</b>${!idle&&sum.engine==="rules"?`<small>${L("Using built-in rules for now","暂时使用内置规则")}</small>`:""}</span>
+      <button type="button" class="sys-sw" role="switch" aria-checked="${!idle}" aria-labelledby="sp-ai-l" data-sp="ai"></button>
     </div>
     <div class="sp-services${idle?" idle":""}">
       ${row({name:L("Local AI","本地模型"),state:stState,detail:stDetail,acts:stAct,extra:modelsHtml+progHtml})}
-      ${row({name:L("Cloud API","云端 API"),state:apiState,detail:apiDetail,acts:apiAct})}
+      ${row({name:L("Cloud API","云端 API"),state:apiState,detail:apiDetail,detailTip:hasApi()?`${apiCfg.model} · ${apiHostOf(apiCfg.baseUrl)}`:"",acts:apiAct})}
+      ${showFirst?`<div class="sp-first"><span id="sp-first-l">${L("Use first","优先使用")}</span><div class="sp-seg sm" role="group" aria-labelledby="sp-first-l"><button type="button" data-sp="first" data-val="auto" aria-pressed="${firstPref!=="api"}">${L("Local AI","本地模型")}</button><button type="button" data-sp="first" data-val="api" aria-pressed="${firstPref==="api"}">${L("Cloud API","云端 API")}</button></div></div>`:""}
     </div>
     <div class="sp-group">
       <div class="sp-subhdr">${L("Images & video","图像与视频")}</div>
@@ -6109,6 +6522,169 @@ function toggleStudioPopover(force){
   if(studioPopOpen&&studioLauncher===null)probeStudioLauncher().then(v=>{studioLauncher=v;renderStudioPop()});
   if(studioPopOpen&&hasApi()){const h=apiHealthNow();if(h.k==="unknown"||(h.k!=="checking"&&Date.now()-h.at>120000))testApi({quiet:true})}
 }
+/* Tables that are wider than their space fade at the right edge until scrolled to the end. */
+(()=>{const fit=w=>{w.classList.toggle("more",w.scrollWidth-w.clientWidth-w.scrollLeft>2);w.classList.toggle("scrolled",w.scrollLeft>1)};let q=0;
+  new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;document.querySelectorAll(".tbl-wrap:not([data-fit])").forEach(w=>{w.dataset.fit="1";fit(w)});document.querySelectorAll('.tbl-block[data-view="chart"]:not([data-init])').forEach(b=>{b.dataset.init="1";tblChart(b,b.dataset.col!=null?+b.dataset.col:null)})})}).observe(document.body,{childList:true,subtree:true});
+  document.addEventListener("scroll",e=>{if(e.target.classList?.contains("tbl-wrap"))fit(e.target)},true);addEventListener("resize",()=>document.querySelectorAll(".tbl-wrap").forEach(fit));})();
+/* Table interactions: view as chart, copy, ask about a row, crosshair. */
+const tblText=el=>{const c=el.cloneNode(true);c.querySelectorAll(".sr-only,button.tbl-check,svg").forEach(x=>x.remove());return c.textContent.replace(/\s+/g," ").trim()};
+/* Chart view: the form follows the data (dataviz rules).
+   time column -> line with a light area, crosshair + tooltip; share column -> bars ranked largest first;
+   otherwise bars in table order, emphasis on the best value when the header says which way is better.
+   Marks use --viz-* tokens (validated per theme); text uses text tokens. Bars: <=12px, 4px rounded data-end,
+   square at the baseline, value at the tip. */
+function tblDataset(block){const tbl=block.querySelector("table"),rows=[...tbl.tBodies[0].rows],picked=rows.filter(r=>r.classList.contains("sel"));
+  return {columns:[...tbl.tHead.rows[0].cells].map(th=>({name:tblText(th)})),rows:(picked.length?picked:rows).map(r=>[...r.cells].map(tblText))}}
+const niceStep=span=>{const raw=span/3,p=Math.pow(10,Math.floor(Math.log10(raw||1))),f=raw/p;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p};
+const fmtTick=v=>Math.abs(v)>=1e6?(v/1e6).toFixed(Math.abs(v)%1e6?1:0)+"M":Math.abs(v)>=1e4?(v/1e3).toFixed(Math.abs(v)%1e3?1:0)+"K":(+v.toFixed(2)).toLocaleString();
+function tblChart(block,ci){
+  const ds=tblDataset(block),m=tableModel(ds),numCols=m.hdr.map((_,i)=>m.cols[i]?i:-1).filter(i=>i>=0);
+  if(ci==null||!numCols.includes(ci))ci=numCols[0];
+  const ch=block.querySelector(".tbl-chart");ch.dataset.col=ci;if(ci==null){ch.innerHTML="";return}
+  const tc=m.time.findIndex(Boolean),labelCol=tc>=0?tc:0,name=m.hdrRaw[ci];
+  const picker=numCols.length>1?`<div class="sp-seg sm" role="group" aria-label="${L("Column","列")}">${numCols.map(i=>`<button type="button" data-tbl-col="${i}" aria-pressed="${i===ci}">${esc(m.hdrRaw[i])}</button>`).join("")}</div>`:`<span>${esc(name)}</span>`;
+  const pts=m.raw.map((r,i)=>({label:r[labelCol],txt:r[ci],v:m.num(r,ci),best:!!m.best[ci]?.[i],t:tc>=0?m.time[tc][i]:i})).filter(p=>p.v!=null);
+  if(tc>=0&&pts.length>=2){ch.innerHTML=`<div class="tbl-ch-head">${picker}</div>${tblLineSVG(pts.sort((a,b)=>a.t-b.t),name,m.hdrRaw[tc],ch.clientWidth||block.clientWidth||360)}`;tblLineHover(ch);return}
+  const BAR_CAP=24,isShare=m.share[ci],all=isShare?[...pts].sort((a,b)=>b.v-a.v):pts,rows=all.slice(0,BAR_CAP),max=Math.max(...rows.map(p=>Math.abs(p.v)),0)||1,anyBest=rows.some(p=>p.best);
+  const note=all.length>BAR_CAP?L(`First ${BAR_CAP} of ${all.length} · sort or select rows to choose`,`前 ${BAR_CAP} 项，共 ${all.length} 项 · 可排序或选择行`):isShare?L("Share of the whole, largest first","占整体的比例，从大到小"):"";
+  ch.innerHTML=`<div class="tbl-ch-head">${picker}${note?`<span class="tbl-ch-note">${note}</span>`:""}</div>
+    <div class="tbl-ch-rows" role="list" aria-label="${esc(L(`${name} by ${m.hdrRaw[labelCol]}`,`各${m.hdrRaw[labelCol]}的${name}`))}">${rows.map(p=>`<div class="tbl-ch-row${p.best?" best":""}${anyBest&&!p.best?" mute":""}" role="listitem" aria-label="${esc(p.label+": "+p.txt+(p.best?L(" (best)","（最优）"):""))}"><span class="tbl-ch-lbl" title="${esc(p.label)}">${esc(p.label)}</span><span class="tbl-ch-bararea"><i class="tbl-ch-bar" style="--w:0" data-w="${(Math.abs(p.v)/max).toFixed(4)}"></i><span class="tbl-ch-val">${p.best?`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`:""}${esc(p.txt)}</span></span></div>`).join("")}</div>`;
+  requestAnimationFrame(()=>ch.querySelectorAll("i[data-w]").forEach(i=>i.style.setProperty("--w",i.dataset.w)));
+}
+function tblLineSVG(pts,name,xName,width){
+  const W=Math.max(260,Math.round(width)),H=168,padL=40,padR=56,padT=14,padB=24,iw=W-padL-padR,ih=H-padT-padB;
+  const vs=pts.map(p=>p.v);let lo=Math.min(...vs),hi=Math.max(...vs);if(lo>=0&&lo<hi*.5)lo=0;if(hi===lo){hi+=1;lo-=lo?1:0}
+  const step=niceStep(hi-lo);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
+  const x=i=>padL+(pts.length===1?iw/2:i*iw/(pts.length-1)),y=v=>padT+ih-(v-lo)/(hi-lo)*ih;
+  const ticks=[];for(let t=lo;t<=hi+1e-9;t+=step)ticks.push(t);
+  const line=pts.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(""),area=`${line}L${x(pts.length-1).toFixed(1)},${(padT+ih).toFixed(1)}L${x(0).toFixed(1)},${(padT+ih).toFixed(1)}Z`;
+  const xl=[0,pts.length>=5?Math.floor((pts.length-1)/2):-1,pts.length-1].filter((v,i,a)=>v>=0&&a.indexOf(v)===i);
+  const last=pts.at(-1),first=pts[0];
+  const summary=L(`Line chart of ${name} by ${xName}: ${first.txt} in ${first.label} to ${last.txt} in ${last.label}.`,`${name} 随${xName}变化的折线图：从 ${first.label} 的 ${first.txt} 到 ${last.label} 的 ${last.txt}。`);
+  return `<div class="tbl-line" data-pts='${esc(JSON.stringify(pts.map((p,i)=>({x:+x(i).toFixed(1),y:+y(p.v).toFixed(1),l:p.label,t:p.txt}))))}'>
+  <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(summary)}" tabindex="0">
+    ${ticks.map(t=>`<line class="tbl-grid" x1="${padL}" x2="${padL+iw}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/><text class="tbl-tick" x="${padL-8}" y="${(y(t)+3.5).toFixed(1)}" text-anchor="end">${fmtTick(t)}</text>`).join("")}
+    ${xl.map(i=>`<text class="tbl-tick x" x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?"start":i===pts.length-1?"end":"middle"}">${esc(pts[i].label)}</text>`).join("")}
+    <path class="tbl-area" d="${area}"/><path class="tbl-ln" d="${line}"/>
+    <circle class="tbl-end" cx="${x(pts.length-1).toFixed(1)}" cy="${y(last.v).toFixed(1)}" r="4"/>
+    <text class="tbl-endval" x="${(x(pts.length-1)+10).toFixed(1)}" y="${(y(last.v)+4).toFixed(1)}">${esc(last.txt)}</text>
+    <line class="tbl-cross" x1="0" x2="0" y1="${padT}" y2="${padT+ih}" visibility="hidden"/><circle class="tbl-hdot" r="4" visibility="hidden"/>
+  </svg><div class="tbl-tip" hidden><b></b><span></span></div></div>`;
+}
+function tblLineHover(ch){
+  const wrap=ch.querySelector(".tbl-line");if(!wrap)return;const svg=wrap.querySelector("svg"),pts=JSON.parse(wrap.dataset.pts),vb=svg.viewBox.baseVal;
+  const cross=svg.querySelector(".tbl-cross"),dot=svg.querySelector(".tbl-hdot"),tip=wrap.querySelector(".tbl-tip");let idx=-1;
+  const show=i=>{idx=Math.max(0,Math.min(pts.length-1,i));const p=pts[idx],sx=svg.clientWidth/vb.width;
+    cross.setAttribute("x1",p.x);cross.setAttribute("x2",p.x);dot.setAttribute("cx",p.x);dot.setAttribute("cy",p.y);cross.setAttribute("visibility","visible");dot.setAttribute("visibility","visible");
+    tip.querySelector("b").textContent=p.t;tip.querySelector("span").textContent=p.l;tip.hidden=false;
+    const left=p.x*sx,tw=tip.offsetWidth;tip.style.left=Math.max(0,Math.min(svg.clientWidth-tw,left-tw/2))+"px";tip.style.top=Math.max(0,p.y-46)+"px"};
+  const hide=()=>{idx=-1;cross.setAttribute("visibility","hidden");dot.setAttribute("visibility","hidden");tip.hidden=true};
+  svg.addEventListener("pointermove",e=>{const r=svg.getBoundingClientRect(),vx=(e.clientX-r.left)/r.width*vb.width;let b=0;pts.forEach((p,i)=>{if(Math.abs(p.x-vx)<Math.abs(pts[b].x-vx))b=i});show(b)});
+  svg.addEventListener("pointerleave",hide);svg.addEventListener("blur",hide);svg.addEventListener("focus",()=>show(pts.length-1));
+  svg.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"||e.key==="ArrowRight"){e.preventDefault();show((idx<0?pts.length-1:idx)+(e.key==="ArrowLeft"?-1:1))}else if(e.key==="Escape")hide()});
+}
+document.addEventListener("click",async e=>{
+  const v=e.target.closest("[data-tbl-view]");
+  if(v){const block=v.closest(".tbl-block"),chart=v.dataset.tblView==="chart";
+    block.querySelectorAll("[data-tbl-view]").forEach(b=>b.setAttribute("aria-pressed",String(b===v)));
+    block.querySelector(".tbl-wrap").hidden=chart;block.querySelector(".tbl-chart").hidden=!chart;if(chart)tblChart(block,+block.querySelector(".tbl-chart").dataset.col||null);
+    const cn=byId(block.closest(".card")?.dataset.id);if(cn){if(chart)cn.tblView="chart";else delete cn.tblView;cn.updated=NOW();block.dataset.init="1";if(chart)block.dataset.view="chart";else delete block.dataset.view;persist()}return}
+  const add=e.target.closest("[data-tbl-add]");
+  if(add){const block=add.closest(".tbl-block"),tbl=block.querySelector("table");
+    const columns=[...tbl.tHead.rows[0].cells].map(th=>({name:tblText(th)})),rows=[...tbl.tBodies[0].rows].sort((a,b)=>+a.dataset.i - +b.dataset.i).map(r=>[...r.cells].map(tblText));
+    const msgEl=add.closest("[data-cp-msg-id],.cp-msg"),msgId=msgEl?.dataset?.cpMsgId||"";
+    let title="";for(let el=block.previousElementSibling;el&&!title;el=el.previousElementSibling){const t=(el.textContent||"").trim();if(/^H[3-6]$/.test(el.tagName)||(el.tagName==="P"&&t.length<=70&&/:$/.test(t)))title=t.replace(/:$/,"")}
+    if(!title)title=L(`${columns[0]?.name||"Table"} comparison`,`${columns[0]?.name||"表格"}对比`);
+    checkpoint();const ctx=ctxNodes(),f=ctx[0];
+    const data={v:1,columns,rows,source:{kind:"copilot",at:NOW(),msg:msgId}},gw=tblCardWidth(data);
+    const spot=f?planBeside([f],gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
+    const made=node("table",{title:clip(title,60),data,gw},spot);
+    if(f)edge(f.id,made.id,"src");sel=[made.id];
+    renderAll();persist();follow([made]);toast(L("Table added to the board","表格已添加到画板"));return}
+  const col=e.target.closest("[data-tbl-col]");if(col){const block=col.closest(".tbl-block");tblChart(block,+col.dataset.tblCol);const cn=byId(block.closest(".card")?.dataset.id);if(cn){cn.tblCol=+col.dataset.tblCol;persist()}return}
+  const cp=e.target.closest("[data-tbl-copy]");
+  if(cp){const tbl=cp.closest(".tbl-block").querySelector("table"),sel=[...tbl.tBodies[0].rows].filter(r=>r.classList.contains("sel"));
+    const tsv=[tbl.tHead.rows[0],...(sel.length?sel:[...tbl.tBodies[0].rows])].map(r=>[...r.cells].map(tblText).join("\t")).join("\n");
+    try{await navigator.clipboard.writeText(tsv);toast(L("Table copied · paste into Sheets, Excel or Notion","表格已复制 · 可粘贴到 Sheets、Excel 或 Notion"))}catch{toast(L("Couldn't copy the table","无法复制表格"))}return}
+  const ask=e.target.closest("[data-tbl-ask]");
+  if(ask){const tbl=ask.closest(".tbl-block").querySelector("table");const names=[...tbl.tBodies[0].rows].filter(r=>r.classList.contains("sel")).map(r=>tblText(r.cells[0]));if(!names.length)return;
+    if(!$("cpInput"))openCopilot(true);const inp=$("cpInput");if(!inp)return;
+    const list=names.map(n=>L(`“${n}”`,`「${n}」`)),joined=list.length>1?list.slice(0,-1).join(L(", ","、"))+L(" and ","和")+list.at(-1):list[0];
+    inp.value=names.length>1?L(`Compare ${joined}.`,`比较${joined}。`):L(`Tell me more about ${joined}.`,`展开讲讲${joined}。`);inp.dispatchEvent(new Event("input",{bubbles:true}));inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);return}
+});
+/* Editing table cards: double-click a cell or a header. Enter commits, Tab / Shift+Tab move, Esc cancels, leaving
+   the field commits. Every commit is one undo step; the model re-infers types, bars, best values and charts. */
+function tblCommit(n,change){checkpoint();change(n.data);n.data.rev=(n.data.rev||0)+1;n.data.source={...(n.data.source||{}),edited:true};n.updated=NOW();renderAll();persist()}
+function tblOpenEditor(n,ri,ci,isHead){
+  const card=document.querySelector(`.card[data-id="${n.id}"]`),tbl=card?.querySelector("table.tbl");if(!tbl)return;
+  const cell=isHead?tbl.tHead.rows[0].cells[ci]:[...tbl.tBodies[0].rows].find(r=>+r.dataset.i===ri)?.cells[ci];if(!cell)return;
+  const old=isHead?String(n.data.columns[ci]?.name??""):String(n.data.rows[ri]?.[ci]??"");
+  const inp=document.createElement("input");inp.className="tbl-edit";inp.value=old;inp.setAttribute("aria-label",isHead?L("Column name","列名"):String(n.data.columns[ci]?.name||""));
+  cell.classList.add("editing");cell.appendChild(inp);inp.focus();inp.select();let done=false;
+  const finish=(save,step=0)=>{if(done)return;done=true;const v=inp.value;inp.remove();cell.classList.remove("editing");
+    const cur=byId(n.id);if(!cur||cur.type!=="table")return; // the card may have been replaced (undo, crew) while editing
+    n=cur;if(save&&v!==old&&(isHead?cur.data.columns[ci]:cur.data.rows[ri]))tblCommit(cur,d=>{if(isHead)d.columns[ci].name=v.trim()||old;else d.rows[ri][ci]=v});
+    if(!step)return;const cols=n.data.columns.length;
+    if(isHead){const nc=ci+step;if(nc>=0&&nc<cols)tblOpenEditor(n,-1,nc,true);return}
+    const shown=[...document.querySelector(`.card[data-id="${n.id}"] table.tbl`).tBodies[0].rows].map(r=>+r.dataset.i),pos=shown.indexOf(ri);
+    let nc=ci+step,np=pos;if(nc>=cols){nc=0;np++}else if(nc<0){nc=cols-1;np--}
+    if(np>=0&&np<shown.length)tblOpenEditor(n,shown[np],nc,false)};
+  inp.addEventListener("keydown",e=>{e.stopPropagation();
+    if(e.key==="Enter"){e.preventDefault();finish(true)}else if(e.key==="Escape"){e.preventDefault();finish(false)}else if(e.key==="Tab"){e.preventDefault();finish(true,e.shiftKey?-1:1)}});
+  inp.addEventListener("blur",()=>finish(true));
+}
+document.addEventListener("dblclick",e=>{
+  const cell=document.elementsFromPoint(e.clientX,e.clientY).map(x=>x.closest?.(".tbl-block[data-editable] td,.tbl-block[data-editable] th")).find(Boolean);
+  if(!cell||e.target.closest?.("input")||cell.querySelector(".tbl-edit"))return;
+  const n=byId(cell.closest(".card")?.dataset.id);if(!n||n.type!=="table")return;
+  e.preventDefault();e.stopPropagation();const isHead=cell.tagName==="TH";
+  tblOpenEditor(n,isHead?-1:+cell.parentElement.dataset.i,cell.cellIndex,isHead);
+},true);
+document.addEventListener("click",e=>{
+  const rf=e.target.closest("[data-tbl-refresh]");if(rf){const id=rf.closest(".card")?.dataset.id;if(id)tblRefresh(id);return}
+  const cf=e.target.closest("[data-tbl-conflict]");if(cf){const id=cf.closest(".card")?.dataset.id;if(id)tblResolve(id,cf.dataset.tblConflict);return}
+  const addRow=e.target.closest("[data-tbl-addrow]");
+  if(addRow){const n=byId(addRow.closest(".card")?.dataset.id);if(!n)return;tblCommit(n,d=>d.rows.push(d.columns.map(()=>"")));tblOpenEditor(n,n.data.rows.length-1,0,false);return}
+  const del=e.target.closest("[data-tbl-del]");
+  if(del){const card=del.closest(".card"),n=byId(card?.dataset.id);if(!n)return;const gone=new Set([...card.querySelectorAll("tbody tr.sel")].map(r=>+r.dataset.i));if(!gone.size)return;
+    tblCommit(n,d=>{d.rows=d.rows.filter((_,i)=>!gone.has(i))});toast(L(`Deleted ${gone.size} row${gone.size>1?"s":""}`,`已删除 ${gone.size} 行`),{undo:true});return}
+});
+/* Row selection (Finder/Notion model): click selects one; Cmd/Ctrl toggles; Shift selects a range; checkboxes toggle; Esc clears. */
+function tblSync(tbl){const rows=[...tbl.tBodies[0].rows],n=rows.filter(r=>r.classList.contains("sel")).length,block=tbl.closest(".tbl-block");
+  rows.forEach(r=>{const on=r.classList.contains("sel");r.setAttribute("aria-selected",String(on));r.querySelector(".tbl-check")?.setAttribute("aria-checked",String(on))});
+  tbl.querySelector("[data-tbl-all]")?.setAttribute("aria-checked",n===0?"false":n===rows.length?"true":"mixed");
+  tbl.classList.toggle("has-sel",n>0);const bar=block?.querySelector(".tbl-sel");
+  if(bar){bar.hidden=!n;bar.querySelector(".tbl-selcount").textContent=L(`${n} selected`,`已选 ${n} 行`);bar.querySelector("[data-tbl-ask]").textContent=n>1?L("Compare","比较"):L("Ask","追问")}
+  const ch=block?.querySelector(".tbl-chart");if(ch&&!ch.hidden)tblChart(block,+ch.dataset.col);}
+document.addEventListener("click",e=>{
+  const all=e.target.closest("[data-tbl-all]");
+  if(all){const tbl=all.closest("table"),rows=[...tbl.tBodies[0].rows],on=!rows.every(r=>r.classList.contains("sel"));rows.forEach(r=>r.classList.toggle("sel",on));tblSync(tbl);return}
+  if(e.target.closest("[data-tbl-clear]")){const tbl=e.target.closest(".tbl-block").querySelector("table");[...tbl.tBodies[0].rows].forEach(r=>r.classList.remove("sel"));tblSync(tbl);return}
+  const tr=e.target.closest(".tbl-block tbody tr");if(!tr)return;
+  if(e.detail>1||e.target.closest("a,button:not(.tbl-check),input,textarea"))return;
+  const tbl=tr.closest("table"),rows=[...tbl.tBodies[0].rows],viaCheck=!!e.target.closest(".tbl-check");
+  if(e.shiftKey&&tbl._anchor&&rows.includes(tbl._anchor)){const [a,b]=[rows.indexOf(tbl._anchor),rows.indexOf(tr)].sort((x,y)=>x-y);if(!(e.metaKey||e.ctrlKey))rows.forEach(r=>r.classList.remove("sel"));rows.slice(a,b+1).forEach(r=>r.classList.add("sel"));getSelection()?.removeAllRanges()}
+  else if(viaCheck||e.metaKey||e.ctrlKey){tr.classList.toggle("sel");tbl._anchor=tr}
+  else{const only=tr.classList.contains("sel")&&rows.filter(r=>r.classList.contains("sel")).length===1;rows.forEach(r=>r.classList.remove("sel"));if(!only)tr.classList.add("sel");tbl._anchor=tr}
+  tblSync(tbl);
+});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;const tbl=document.activeElement?.closest?.(".tbl-block")?.querySelector("table");if(tbl&&tbl.classList.contains("has-sel")){[...tbl.tBodies[0].rows].forEach(r=>r.classList.remove("sel"));tblSync(tbl);e.stopPropagation()}},true);
+document.addEventListener("mouseover",e=>{const td=e.target.closest(".tbl td,.tbl th");const tbl=td?.closest("table");
+  document.querySelectorAll(".tbl .hc").forEach(x=>{if(!tbl||!tbl.contains(x)||x.cellIndex!==td.cellIndex)x.classList.remove("hc")});
+  if(td&&tbl.rows.length>2)[...tbl.rows].forEach(r=>r.cells[td.cellIndex]?.classList.add("hc"));});
+let tblSortT=0;
+document.addEventListener("click",e=>{const b0=e.target.closest(".tbl-sort");if(!b0)return;
+  if(b0.closest(".tbl-block[data-editable]")){clearTimeout(tblSortT);if(e.detail>1)return;tblSortT=setTimeout(()=>tblSortClick(b0),220);return}
+  tblSortClick(b0)});
+function tblSortClick(b){
+  const th=b.closest("th"),tbl=th.closest("table"),ci=[...th.parentElement.children].indexOf(th),body=tbl.tBodies[0];
+  const next={none:"ascending",ascending:"descending",descending:"none"}[th.getAttribute("aria-sort")||"none"];
+  tbl.querySelectorAll("th[aria-sort]").forEach(x=>x.setAttribute("aria-sort","none"));th.setAttribute("aria-sort",next);
+  const key=tr=>{const td=tr.children[ci];return td?.dataset.v!=null&&td.dataset.v!==""?+td.dataset.v:(td?.textContent||"").trim().toLowerCase()};
+  const rows=[...body.rows].sort((a,b)=>{if(next==="none")return +a.dataset.i - +b.dataset.i;const x=key(a),y=key(b);if(x===""&&y!=="")return 1;if(y===""&&x!=="")return -1;const c=typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y));return next==="ascending"?c:-c}); // empty values last, as in spreadsheets
+  rows.forEach(r=>body.appendChild(r));
+  const block=tbl.closest(".tbl-block"),ch=block?.querySelector(".tbl-chart");if(ch&&!ch.hidden)tblChart(block,+ch.dataset.col);
+  const cn=byId(block?.closest(".card")?.dataset.id);if(cn){if(next==="none")delete cn.tblSort;else cn.tblSort={col:ci,dir:next};persist()}}
 let connManualCheck=false;
 /* Studio AI launcher: the local page server (Vellum app / serve_vellum.py) can open the bundled
    service. A page opened any other way can't start programs, so it keeps the instruction. */
@@ -7178,6 +7754,7 @@ function fullTextOf(n){
   if(n.type==="treemap")return flattenTreeNodes(treeMapOf(n),[]).map(x=>x.text).filter(Boolean).join(" -> ");
   if(n.type==="list")return (n.items||[]).map(it=>(it.done?"[x] ":"[ ] ")+it.t).join(" | ");
   if(n.type==="synthesis")return (n.points||[]).join(" | ");
+  if(n.type==="table"){const d=n.data||{};return [(d.columns||[]).map(c=>c.name).join("\t"),...(d.rows||[]).map(r=>r.join("\t"))].join("\n")}
   if(n.type==="source"&&n.full)return n.full;
   if(n.type==="link")return [n.text,n.full,n.url?safeHref(n.url):""].filter(Boolean).join("\n");
   const tagPfx=n.tag?`[Tag: ${n.tag}] `:"";
@@ -10100,6 +10677,7 @@ const CMDS=[
   {c:"/notepad",a:null,d:"Add a structured notepad document"},
   {c:"/question",a:null,d:"Pin an open question on the canvas"},
   {c:"/link",a:null,d:"Save a URL as a link card"},
+  {c:"/table",a:null,d:"Make a table from a CSV, JSON, Google Sheet or Notion database address"},
   {c:"/group",a:null,d:"Create a group frame (or wrap selected cards)"},
   {c:"/organize",a:null,d:"Organize canvas cards cleanly by lane",run:true},
   {c:"/image",a:"wright",d:"Generate images from a description"},
@@ -10348,6 +10926,7 @@ function route(text){
       case"/notepad":return (!arg&&has("treemap"))?mk("tm-brief",null,"Notepad Brief"):mk("notepad",null,"add a notepad",{arg});
       case"/question":return mk("question",null,"pin a question",{arg});
       case"/link":return mk("link",null,"add a link",{arg});
+      case"/table":return mk("table",null,"make a table",{arg});
       case"/group":return mk("group",null,ctx.length>1?"group selection":"add a group",{arg});
       case"/organize":case"/tidy":return mk("config",null,"organize canvas",{patch:{tidy:true},explicit:true});
       case"/image":return mk("image","wright",`render ${genOpts.count} image${genOpts.count>1?"s":""}`,{arg});
@@ -10449,7 +11028,7 @@ function renderLineQueue(){
 function renderRoute(){
   absorbMode();
   let r=route(lineText());const el=$("route");const txt=lineIn.value.trim();
-  $("line")?.classList.toggle("typed",!!txt);
+  const wasTyped=!!$("line")?.classList.contains("typed");$("line")?.classList.toggle("typed",!!txt);if(wasTyped!==!!txt)autoGrow();
   const eb=$("enhanceBtn");if(eb){const showEnh=txt.length>=3&&!/^[/@]\w*$/.test(txt);eb.hidden=!showEnh;eb.classList.toggle("on",!!(sharpened&&!$("sharpen").hidden));eb.setAttribute("aria-pressed",String(!$("sharpen").hidden))}
   const genKind=lineMode==="image"||lineMode==="video"||lineMode==="gif"?lineMode:(r&&(r.kind==="image"||r.kind==="video"||r.kind==="gif")?r.kind:null);
   renderGenOpts(!!genKind,genKind||"image");syncLineSend();
@@ -10549,6 +11128,7 @@ async function execLineRequest(text){
     case"notepad":return createNotepadNode(body);
     case"question":return body?pinQuestionNode(body,ctx):toast("Write your question after /question");
     case"link":return body?createLinkNode(body):openLinkDialog();
+    case"table":return body?(isNotionUrl(body)||/^[0-9a-f-]{32,36}$/i.test(body.trim())?tableFromNotion(body):tableFromUrl(body)):toast(L("Paste a CSV, JSON, Google Sheet or Notion database address after /table","请在 /table 后粘贴 CSV、JSON、Google 表格或 Notion 数据库的网址"));
     case"group":return ctx.length>1?wrapSelectionInGroup(ctx,body||"Group"):createGroupNode(body||"Group");
     case"image":return generateImages(body,{from:f||null});
     case"reverse":{const im=has("image")||has("frame");return im?reversePromptNode(im):toast("Select an image or frame card first")}
@@ -10628,7 +11208,27 @@ async function askAnchored(text,ctx){
   await wait(500);return reply(q,text,"critic");
 }
 const latestProof=()=>board.nodes.filter(n=>n.type==="proof"&&n.status==="ink").sort((a,b)=>b.created-a.created)[0];
-function autoGrow(){if(!lineIn.value){lineIn.style.height="";syncLineClearance?.();return}lineIn.style.height="auto";lineIn.style.height=Math.min(160,Math.max(36,lineIn.scrollHeight))+"px";syncLineClearance?.()}
+function autoGrow(){
+  const size=()=>{lineIn.style.height="auto";lineIn.style.height=Math.min(160,Math.max(36,lineIn.scrollHeight))+"px"};
+  if(!lineIn.value){syncLineRows();lineIn.style.height="";syncLineClearance?.();return}
+  size();if(syncLineRows())size();syncLineClearance?.()
+}
+/* one row while the text fits on one line; two rows (text above, controls below) once it wraps.
+   Going back needs the text to fit the one-row width with room to spare, so the layout never flickers. */
+let lineRowW=0;const lineMeasure=document.createElement("canvas").getContext("2d");
+function lineTextW(v){const cs=getComputedStyle(lineIn);lineMeasure.font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const ls=parseFloat(cs.letterSpacing)||0;return lineMeasure.measureText(v).width+ls*v.length}
+function syncLineRows(){
+  const line=$("line");if(!line)return false;
+  const was=line.classList.contains("multi"),v=lineIn.value;
+  let multi=was;
+  if(!v||line.classList.contains("is-search"))multi=false;
+  else if(!was){if(v.includes("\n")||lineIn.scrollHeight>44){lineRowW=lineIn.clientWidth;multi=true}}
+  else if(!v.includes("\n")&&lineRowW&&lineTextW(v)<lineRowW-28)multi=false;
+  if(multi!==was)line.classList.toggle("multi",multi);
+  return multi!==was;
+}
+addEventListener("resize",()=>{if($("line")?.classList.contains("multi")){$("line").classList.remove("multi");autoGrow()}});
 
 /* slash and @ menu */
 let menuIdx=0,menuItems=[];
@@ -11494,7 +12094,12 @@ function renderCopilotVisual(v,msgId,vIdx){
     }
   }else if(k==="compare"){
     const rows=v.rows||[];
-    body=`<table class="cp-ui-cmp"><thead><tr><th>Factor</th><th>${esc(v.left)}</th><th>${esc(v.right)}</th></tr></thead><tbody>${rows.map((r,i)=>`<tr data-cp-ui-sel="${i}" data-cp-msg="${msgId}" data-cp-ui="${vIdx}" class="${sel===i?"on":""}"><td class="dim">${esc(r.dim)}</td><td class="${r.winner==="left"?"win":""}">${esc(r.a)}</td><td class="${r.winner==="right"?"win":""}">${esc(r.b)}</td></tr>`).join("")}</tbody></table>`;
+    const wins={left:rows.filter(r=>r.winner==="left").length,right:rows.filter(r=>r.winner==="right").length},decided=wins.left+wins.right;
+    const lead=wins.left===wins.right?"":wins.left>wins.right?"left":"right";
+    const verdict=!decided?"":lead?L(`${esc(lead==="left"?v.left:v.right)} wins ${wins[lead]} of ${rows.length}`,`${esc(lead==="left"?v.left:v.right)} 在 ${rows.length} 项中胜出 ${wins[lead]} 项`):L(`Even: ${wins.left} each`,`持平：各胜 ${wins.left} 项`);
+    const mark=`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`;
+    const side=(r,s,t)=>`<td class="${r.winner===s?"win":r.winner&&r.winner!==s?"lose":""}">${r.winner===s?mark:""}${esc(t)}${r.winner===s?`<span class="sr-only"> ${L("(better)","（更优）")}</span>`:""}</td>`;
+    body=`<div class="tbl-wrap"><table class="tbl cmp">${verdict?`<caption>${verdict}</caption>`:""}<thead><tr><th>${L("Factor","因素")}</th><th${lead==="left"?' class="lead"':""}>${esc(v.left)}</th><th${lead==="right"?' class="lead"':""}>${esc(v.right)}</th></tr></thead><tbody>${rows.map((r,i)=>`<tr data-cp-ui-sel="${i}" data-cp-msg="${msgId}" data-cp-ui="${vIdx}" class="${sel===i?"on":""}"><td class="key">${esc(r.dim)}</td>${side(r,"left",r.a)}${side(r,"right",r.b)}</tr>`).join("")}</tbody></table></div>`;
     const cur=rows[sel];
     detail=cur?.note?`<div class="cp-ui-detail"><b>${esc(cur.dim)}:</b> ${esc(cur.note)}</div>`:(v.summary?`<div class="cp-ui-detail">${esc(v.summary)}</div>`:"");
   }
@@ -11509,7 +12114,17 @@ function pinCopilotVisualToBoard(msgId,vIdx){
   if(v.kind==="stance")full=[v.verdict,v.spectrum?`${v.spectrum.left} (${100-v.spectrum.pos}%) ↔ ${v.spectrum.right} (${v.spectrum.pos}%)`:"",...(v.pillars||[]).map(p=>`• ${p.label}: ${p.detail||""}`)].filter(Boolean).join("\n");
   else if(v.kind==="chart")full=[(v.subtitle||""),...(v.items||[]).map(it=>`• ${it.label}: ${it.value}${v.unit?" "+v.unit:""}${it.note?" — "+it.note:""}`)].filter(Boolean).join("\n");
   else if(v.kind==="diagram")full=v.layout==="matrix"?(v.cells||[]).map(c=>`• ${c.label}: ${c.text||(c.items||[]).join(", ")}`).join("\n"):(v.nodes||[]).map((nd,i)=>`${i+1}. ${nd.label}${nd.sub?" ("+nd.sub+")":""}${nd.detail?" — "+nd.detail:""}`).join("\n");
-  else if(v.kind==="compare")full=`${v.left} vs ${v.right}\n`+(v.rows||[]).map(r=>`• ${r.dim}: ${r.a} | ${r.b}`).join("\n");
+  else if(v.kind==="compare"){
+    checkpoint();const ctx=ctxNodes(),f=ctx[0];
+    const columns=[{name:L("Factor","因素")},{name:v.left},{name:v.right},{name:L("Better","更优")}];
+    const rows=(v.rows||[]).map(r=>[r.dim,r.a,r.b,r.winner==="left"?v.left:r.winner==="right"?v.right:"—"]);
+    const data={v:1,columns,rows,source:{kind:"copilot",at:NOW(),msg:msgId}},gw=tblCardWidth(data);
+    const spot=f?planBeside([f],gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
+    const made=node("table",{title:clip(v.title||`${v.left} vs ${v.right}`,60),data,gw,by:"muse",status:"ink",pid:"p-"+uid()},spot);
+    if(f)edge(f.id,made.id,"src");v._pinned=true;sel=[made.id];
+    log("muse",`Pinned table <b>${esc(titleOf(made))}</b>`,made.id);
+    renderAll();renderCopilot();persist();follow([made]);return;
+  }
   checkpoint();
   const isLong=full.length>220,kind=isLong?"notepad":"note",ctx=ctxNodes(),f=ctx[0];
   const spot=f?planBeside([f],W[kind],HGUESS[kind]||210):planCenter(W[kind],HGUESS[kind]||210,-140,-100);
@@ -12816,7 +13431,9 @@ async function addFiles(files,at,onto,{autoAdvisor=true,quiet=false,selectNodes=
     const key="u:"+uid();let n;
     const fmt=fileFormatOf({path:f.name,mime:f.type});
     const cleanTitle=humanFileTitle(f.name)||f.name.replace(/\.[^.]+$/,"")||f.name;
-    if(f.type.startsWith("image/")||/\.(png|jpe?g|webp|gif|bmp|avif|svg)$/i.test(f.name)){await putBlob(key,f);userMedia.set(key,URL.createObjectURL(f));n=node("image",{title:cleanTitle,text:"",media:key,weight:null,path:f.name,fmt:fmt?.label||"Image",mime:f.type,size:f.size},freeSpot(x,y,W.image,380))}
+    const tabDs=/\.(csv|tsv|json)$/i.test(f.name)&&!/\.vellum\.json$/i.test(f.name)&&f.size<20e6?datasetFromText(await f.text().catch(()=>""),f.name):null;
+    if(tabDs){n=makeTableCard(tabDs,{title:cleanTitle,source:{kind:"file",label:f.name},at:{x:x+150,y:y+100}})}
+    else if(f.type.startsWith("image/")||/\.(png|jpe?g|webp|gif|bmp|avif|svg)$/i.test(f.name)){await putBlob(key,f);userMedia.set(key,URL.createObjectURL(f));n=node("image",{title:cleanTitle,text:"",media:key,weight:null,path:f.name,fmt:fmt?.label||"Image",mime:f.type,size:f.size},freeSpot(x,y,W.image,380))}
     else if(f.type.startsWith("video/")||/\.(mp4|webm|mov|m4v|mkv)$/i.test(f.name)){await putBlob(key,f);const url=URL.createObjectURL(f);userMedia.set(key,url);const {poster,dur}=await posterOf(url);const pk="u:"+uid();if(poster){userMedia.set(pk,poster);await putBlob(pk,poster)}
       n=node("recording",{title:cleanTitle,text:"",media:key,poster:poster?pk:"",dur,weight:null,path:f.name,fmt:fmt?.label||"Video",mime:f.type,size:f.size},freeSpot(x,y,W.recording,340))}
     else if(f.type.startsWith("audio/")||/\.(mp3|wav|m4a|ogg|aac|flac|opus)$/i.test(f.name)){await putBlob(key,f);userMedia.set(key,URL.createObjectURL(f));n=node("audio",{title:cleanTitle,text:"",media:key,weight:null,path:f.name,fmt:fmt?.label||"Audio",mime:f.type,size:f.size},freeSpot(x,y,W.audio,190))}
@@ -13811,6 +14428,8 @@ $("studioPop")?.addEventListener("click",async e=>{
   const act=b.dataset.sp;
   if(act==="refresh"||act==="wake"){connManualCheck=act==="refresh";try{await refreshStudioFromPop({wake:act==="wake"})}finally{connManualCheck=false;renderStudioPop()}return}
   if(act==="pref"){setAiPref(b.dataset.val);return}
+  if(act==="ai"){setAiPref(aiPref==="local"?store.get(".aiPrefOn","auto"):"local");renderStudioPop();return}
+  if(act==="first"){if(aiPref==="local")store.set(".aiPrefOn",b.dataset.val==="api"?"api":"auto");else setAiPref(b.dataset.val);renderStudioPop();return}
   if(act==="model"){await switchStudioModel(b.dataset.id);return}
   if(act==="del-model"){await deleteStudioModel(b.dataset.id);return}
   if(act==="check-img"){imgChecking=true;renderStudioPop();await refreshImageService({quiet:true});imgChecking=false;renderStudioPop();return}
@@ -14612,6 +15231,7 @@ function paintResizeHud(el,w,label,sym){
   hud.innerHTML=`<i></i>${label?`<span>${pre}${label} ·</span> `:pre?`<span>${pre}</span>`:""}${Math.round(w)} px`;
 }
 function resetCardWidth(n){
+  if(n?.type==="table"&&n.data){const fit=tblCardWidth(n.data);if(n.gw===fit)return false;checkpoint();n.gw=fit;n.updated=NOW();sfx("pop");renderAll();persist();toast(L(`Fitted to the table (${fit} px)`,`已贴合表格宽度（${fit} px）`));return true}
   if(!n||n.gw==null)return false;
   checkpoint();delete n.gw;n.updated=NOW();sfx("pop");renderAll();persist();
   toast(L(`Width reset (${nodeW(n)} px)`,`已恢复默认宽度（${nodeW(n)} px）`));
@@ -14623,7 +15243,7 @@ wall.addEventListener("pointerdown",e=>{
   closeWirePopMenu();
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2){const [a,b]=[...pointers.values()];gesture={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y),c:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};return}
-  if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop"))return;
+  if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop,.tbl-block tbody td,.tbl-chart"))return;
   const card=e.target.closest(".card");const port=e.target.closest("[data-port]");const rsz=e.target.closest("[data-resize]");const wh=e.target.closest(".w-hit[data-edge]");stopCam();
   if(port&&card){selectedEdgeId=null;const n=byId(card.dataset.id);wireDrag={from:n,role:port.dataset.port==="in"?"in":"out",side:port.dataset.side||"right",d:""};gesture={type:"wire"};wall.setPointerCapture(e.pointerId);return}
   if(rsz&&card&&tool!=="hand"&&!spaceHeld&&e.button===0){selectedEdgeId=null;const n=byId(card.dataset.id);if(n){gesture={type:"resize",id:n.id,n,mode:rsz.dataset.resize||"both",sx:e.clientX,sy:e.clientY,ox:n.x,ow:nodeW(n),oh:nodeH(n),moved:false,snap:null,handleEl:rsz};wall.setPointerCapture(e.pointerId);return}}
@@ -14771,6 +15391,13 @@ wall.addEventListener("pointerup",endPointer);wall.addEventListener("pointercanc
 wall.addEventListener("wheel",e=>{
   closeCardMenu();
   if(e.target.closest(".margin"))return;
+  const tw=e.target.closest(".tbl-wrap");
+  if(tw&&!e.ctrlKey&&!e.metaKey&&Math.abs(e.deltaX)>Math.abs(e.deltaY)&&tw.scrollWidth>tw.clientWidth+1){
+    const atL=tw.scrollLeft<=0&&e.deltaX<0,atR=tw.scrollLeft+tw.clientWidth>=tw.scrollWidth-1&&e.deltaX>0;if(!atL&&!atR)return;
+  }
+  if(tw&&!e.ctrlKey&&!e.metaKey&&Math.abs(e.deltaY)>=Math.abs(e.deltaX)&&tw.scrollHeight>tw.clientHeight+1){
+    const atT=tw.scrollTop<=0&&e.deltaY<0,atB=tw.scrollTop+tw.clientHeight>=tw.scrollHeight-1&&e.deltaY>0;if(!atT&&!atB)return;
+  }
   const padBody=e.target.closest(".notepad-body");
   if(padBody&&!e.ctrlKey&&!e.metaKey&&padBody.scrollHeight>padBody.clientHeight+1){
     const atTop=padBody.scrollTop<=0&&e.deltaY<0,atBot=padBody.scrollTop+padBody.clientHeight>=padBody.scrollHeight-1&&e.deltaY>0;
@@ -14785,7 +15412,7 @@ wall.addEventListener("dblclick",e=>{
   const under=document.elementsFromPoint(e.clientX,e.clientY);
   const rszHit=under.map(x=>x.closest?.(".card-resize")).find(Boolean);
   if(rszHit){const c=rszHit.closest(".card"),n=c?byId(c.dataset.id):null;if(n)resetCardWidth(n);return}
-  if(under.some(x=>x.closest?.("button,textarea,input,audio,a,[contenteditable='true'],[data-a-item],[data-a-kb-item],[data-a-tm-item],[data-a-syn],.card-resize,.todo-add,.kb-add,.line,.margin,.tools,.top-tools,.find-bar,.find-scrim,.wire-pop,.w-hit,.zoom,.top,.pbar,.strip,.selbar,.map,.copilot-panel,.copilot-btn,.studio-pop,.ledger")))return;
+  if(under.some(x=>x.closest?.(".tbl-block tbody td,.tbl-block thead th,.tbl-addrow,.tbl-chart,button,textarea,input,audio,a,[contenteditable='true'],[data-a-item],[data-a-kb-item],[data-a-tm-item],[data-a-syn],.card-resize,.todo-add,.kb-add,.line,.margin,.tools,.top-tools,.find-bar,.find-scrim,.wire-pop,.w-hit,.zoom,.top,.pbar,.strip,.selbar,.map,.copilot-panel,.copilot-btn,.studio-pop,.ledger")))return;
   const card=under.map(x=>x.closest?.(".card")).find(c=>c&&(byId(c.dataset.id)?.type!=="group"||under.some(x=>x.closest?.(".card-k,h4,.grp-resize")?.closest?.(".card")===c)));
   if(card){const n=byId(card.dataset.id);if(n&&n.status==="sketch"){ink(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);return}
     const tagHit=under.map(x=>x.closest?.(".note-tag,[data-edit='tag']")).find(Boolean);
@@ -14862,7 +15489,10 @@ addEventListener("paste",e=>{
   if(t&&t.trim()){
     e.preventDefault();
     const s=t.trim(),lines=s.split(/\r?\n/).length;
-    if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s);
+    if(/^https?:\/\/\S+$/i.test(s)&&looksLikeNotionDb(s))tableFromNotion(s).then(n=>{if(!n)createLinkNode(s)});
+    else if(/^https?:\/\/\S+$/i.test(s)&&looksLikeDataUrl(s))tableFromUrl(s).then(n=>{if(!n)createLinkNode(s)});
+    else if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s);
+    else if(looksTabular(s)){const ds=datasetFromText(s);if(ds){checkpoint();const v=viewRect(),n=makeTableCard(ds,{title:L("Pasted table","粘贴的表格"),source:{kind:"paste"},at:toWorld(v.w/2,v.h/2)});sel=[n.id];renderAll();persist();follow([n]);toast(L("Pasted as a table","已粘贴为表格"),{undo:true})}else createNotepadNode(s)}
     else if(s.length>280||lines>=4)createNotepadNode(s);
     else pinCard("note",s);
   }

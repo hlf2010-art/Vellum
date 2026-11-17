@@ -519,6 +519,35 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('no page errors when steering drafts', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+    // 11. evidence weight: a source you add can be rated on the card and in its sheet, and the pill is legible
+    for (const theme of ['dark', 'light']) {
+      const p = await page(browser, base, { theme });
+      await p.newBoard();
+      const mdPath = path.join(require('os').tmpdir(), 'vellum-smoke-evidence.md');
+      fs.writeFileSync(mdPath, '# Restore scope\n\nA proposal, not an observation.');
+      await p.setInputFiles('#fileIn', mdPath); await p.waitForTimeout(1500);
+      const id = await p.evaluate(() => board.nodes.find(n => n.type === 'source')?.id);
+      const pill = `.card[data-id="${id}"] [data-a="cycle-weight"]`;
+      const w = () => p.evaluate(id => byId(id).weight || null, id);
+      await p.evaluate(id => { focusNodes([byId(id)], 1, 0); select([]); }, id); await p.waitForTimeout(300);
+      const bad = await p.evaluate(LEGIBILITY, `.card[data-id="${id}"] .weight`);
+      check(`an unrated source's pill is legible in ${theme} mode`, bad.length === 0, bad.join(' | '));
+      if (theme === 'light') { await p.context().close(); continue; }
+      check('a source you add shows an Unrated pill you can click', (await p.locator(pill).count()) === 1 && /Unrated/.test(await p.locator(pill).innerText()));
+      const seen = [];
+      for (let i = 0; i < 5; i++) { await p.click(pill); await p.waitForTimeout(150); seen.push(await w()); }
+      check('clicking the pill steps through every weight and back to unrated', seen.join() === 'observed,reported,proposed,illustrative,', seen.join());
+      await p.evaluate(id => openFocus(id), id); await p.waitForTimeout(600);
+      check('the sheet has an Evidence section with the four weights', (await p.locator('#margin .m-evidence [data-m="weight"]').count()) === 4);
+      await p.click('#margin .m-evidence [data-w="reported"]'); await p.waitForTimeout(300);
+      const set = await w();
+      await p.click('#margin .m-evidence [data-w="reported"]'); await p.waitForTimeout(300);
+      check('the sheet sets a weight, and clicking it again clears it', set === 'reported' && (await w()) === null, `${set} then ${await w()}`);
+      check('rating a source is in the change log', await p.evaluate(() => board.log.some(l => /Marked .* as reported/.test(l.html))));
+      check('no page errors when rating evidence', p.errors.length === 0, p.errors.join(' | '));
+      fs.rmSync(mdPath, { force: true });
+      await p.context().close();
+    }
   } finally {
     // 9. legibility: light and dark are designed separately, so both are measured, in the states that change colour
     for (const theme of ['light', 'dark']) {

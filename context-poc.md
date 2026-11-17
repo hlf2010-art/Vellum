@@ -216,3 +216,47 @@ The live models were re-run with 5 runs each:
 - Held items are only listed. The thoughts the crew already showed have no history of their own.
 - Soft signals have no effect beyond the prompt, so whether a repeat after Try again still happens is up to the model.
 - The "edited out" rule works on sentences. Editing within a sentence is not recorded.
+
+## 9. P1: meaning (embeddings) and a Related section (2026-11-18)
+
+**Finding first: embeddings are not a drop-in relevance test.** On the PoC board, the cards related to T were W1, N2, F1, F3 and N3; the unrelated ones were N1, F2, a hiring plan and two others. No model gave every related card a higher similarity to T than every unrelated card:
+
+| Embedding model | Lowest related | Highest unrelated | Separates? |
+|---|---|---|---|
+| openai/text-embedding-3-small | 0.319 (F3: 0.349) | 0.365 (hiring plan) | no |
+| openai/text-embedding-3-large | 0.317 | 0.322 | no |
+| baai/bge-m3 | 0.475 (F3) | 0.539 (espresso) | no |
+| cohere/embed-5-fast | 0.480 | 0.477 | barely |
+| mongodb/voyage-4 | 0.389 | 0.348 | yes, margin 0.04 |
+| google/gemini-embedding-2 | 0.685 | 0.652 | yes, margin 0.03 |
+
+So a single similarity cut-off can't decide relevance, and the right cut-off would differ per model.
+
+**Design.** Meaning is used for recall, not as a verdict:
+- The three cards closest in meaning that links and topic didn't pick become candidates, marked "close in meaning". Each must be at least as close as the board's median card.
+- The model then judges them. It already ignored the unrelated neighbour 10 of 10 times.
+- Vectors come from the Cloud API's `/embeddings`, are cached per card, and are re-fetched only for a card whose content changed.
+- If the endpoint fails, it is tried once and then left alone for that configuration; links and topic still work.
+- Defaults: `google/gemini-embedding-2` on OpenRouter, `text-embedding-3-small` on OpenAI; `apiCfg.embedModel` overrides either.
+
+**Thoughts don't show everything that's related.** With gemini recall, F3 reached the prompt as a scored candidate in every run, yet neither model cited it in a thought (0/10). Each thought is about the most important point (here the legal conflict) and cites one to three cards. So "cited in a thought" measures what the model chose to write about, not what it recognised. The advisor now also returns `related`: every listed card that bears on this one, whether or not the note uses it. This is checked against the given keys like everything else and kept in `board.related`. Your cards are never changed.
+
+**Related section in the card sheet.** It uses the same rows as "Based On":
+- the crew's judgement first, with conflicts at the top and marked "Conflicts"
+- then what links, topic and meaning pick
+- direct sources aren't repeated
+- the reason is in each row's tooltip, and choosing a row goes to that card
+
+This works without a model too, from the deterministic signals.
+
+**Tests.** The new suite has 77 passing checks and 2 known limitations, including 14 new meaning and Related checks on scripted vectors. The smoke test passes 136/136.
+
+**Live results.** These were cut short by the OpenRouter account having no credits (402 on most requests, and the free Qwen tier was rate-limited). In one clean sequential Haiku run, 4 of 5 looks were answered by the model:
+- F3 was judged related in 2 of those 4. Before embeddings, it never reached the model except as an index line.
+- The explicit conflict N3 was flagged in 4 of 4.
+- The pizza card was never judged related.
+- The new retry recovered 3 replies that had used their whole budget on reasoning.
+
+Strategist couldn't be re-measured: every call got a 402.
+
+**Still hypothetical:** whether the meaning layer helps on real boards, in Chinese, and with the local model. The evidence so far comes from one synthetic English board and a handful of runs.

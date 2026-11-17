@@ -18,6 +18,11 @@ const arg = k => { const i = process.argv.indexOf(k); return i > 0 ? process.arg
 const LIVE = arg('--live'), RUNS = +(arg('--runs') || 3), JSON_OUT = arg('--json'), SHOTS = arg('--shots');
 const LIVE_BASE = process.env.LIVE_BASE || 'https://openrouter.ai/api/v1', LIVE_KEY = process.env.LIVE_KEY || '';
 let queue = [], relay = false;
+const LIVE_EMBED = process.env.LIVE_EMBED || 'openai/text-embedding-3-small';
+/* scripted embeddings: one dimension per concept, so meaning is controlled by the test */
+const embed = { mode: 'ok', calls: [] };
+const CONCEPTS = [/onboard|sign-?ups?|quit|first project|abandon|activation|churn|new user|make anything|tutorial/i, /pizza|offsite/i, /espresso|descale/i, /legal|identity/i, /hiring|designers?|researcher/i];
+const fakeVec = t => [...CONCEPTS.map(re => re.test(t) ? 1 : 0), 0.15];
 const requests = [];
 
 function relayCall(body) {
@@ -26,7 +31,10 @@ function relayCall(body) {
     const args = ['-sS', '-m', '120', LIVE_BASE + '/chat/completions', '-H', 'Content-Type: application/json', '--data-binary', '@-'];
     if (LIVE_KEY) args.push('-H', 'Authorization: Bearer ' + LIVE_KEY);
     const c = execFile('curl', args, { maxBuffer: 1 << 24 }, (err, out) => {
-      try { const j = JSON.parse(out); const c = j.choices?.[0]?.message?.content; if (c == null) { console.log('  relay: no content —', JSON.stringify({ finish: j.choices?.[0]?.finish_reason, usage: j.usage && { completion: j.usage.completion_tokens, reasoning: j.usage.completion_tokens_details?.reasoning_tokens }, max_tokens: body.max_tokens })); if (process.env.RELAY_DUMP) fs.writeFileSync(process.env.RELAY_DUMP, JSON.stringify({ body, out: j }, null, 1)); } res(c ?? null); } catch { console.log('  relay failed —', err ? err.message : String(out).trim().slice(0, 300)); res(null); }
+      try { const j = JSON.parse(out); const c = j.choices?.[0]?.message?.content; if (c == null && j.error) { console.log('  relay: upstream error —', j.error.code, String(j.error.metadata?.raw || j.error.message || '').slice(0, 120)); return res(null); }
+      const fin = j.choices?.[0]?.finish_reason || '';
+      if (fin === 'length' && !c) { console.log('  relay: empty reply, finish_reason length (passed through)'); return res({ c: '', finish: 'length' }); }
+      if (c == null) { console.log('  relay: no content —', JSON.stringify({ finish: j.choices?.[0]?.finish_reason, usage: j.usage && { completion: j.usage.completion_tokens, reasoning: j.usage.completion_tokens_details?.reasoning_tokens }, max_tokens: body.max_tokens })); if (process.env.RELAY_DUMP) fs.writeFileSync(process.env.RELAY_DUMP, JSON.stringify({ body, out: j }, null, 1)); } res(c == null ? null : { c, finish: fin }); } catch { console.log('  relay failed —', err ? err.message : String(out).trim().slice(0, 300)); res(null); }
     });
     c.stdin.end(JSON.stringify(body));
   });
@@ -37,6 +45,21 @@ function serve() {
       if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/Vellum-Lumen.html'))) {
         rsp.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return fs.createReadStream(FILE).pipe(rsp);
       }
+      if (req.method === 'POST' && req.url.endsWith('/embeddings')) {
+        let body = ''; req.on('data', c => body += c); req.on('end', async () => {
+          const parsed = JSON.parse(body || '{}'), input = parsed.input || [];
+          embed.calls.push({ n: input.length, model: parsed.model, relay });
+          if (relay) {
+            const out = await new Promise(res => { const c = execFile('curl', ['-sS', '-m', '60', LIVE_BASE + '/embeddings', '-H', 'Content-Type: application/json', '--data-binary', '@-', ...(LIVE_KEY ? ['-H', 'Authorization: Bearer ' + LIVE_KEY] : [])], { maxBuffer: 1 << 26 }, (e, o) => res(e ? null : o)); c.stdin.end(JSON.stringify({ ...parsed, model: LIVE_EMBED })); });
+            if (!out) { rsp.writeHead(502); return rsp.end(); }
+            rsp.writeHead(200, { 'Content-Type': 'application/json' }); return rsp.end(out);
+          }
+          if (embed.mode === 'fail') { rsp.writeHead(503); return rsp.end(); }
+          rsp.writeHead(200, { 'Content-Type': 'application/json' });
+          return rsp.end(JSON.stringify({ data: input.map((t, i) => ({ index: i, embedding: fakeVec(t) })) }));
+        });
+        return;
+      }
       if (req.method === 'POST' && req.url.endsWith('/chat/completions')) {
         let body = ''; req.on('data', c => body += c); req.on('end', async () => {
           const parsed = JSON.parse(body || '{}');
@@ -44,8 +67,8 @@ function serve() {
           const flat = (parsed.messages || []).map(m => typeof m.content === 'string' ? m.content : (m.content || []).map(p => p.text || '').join(' ')).join('\n');
           let txt = null, matched = null, finish = '';
           if (relay) {
-            txt = await relayCall({ ...parsed, model: LIVE, stream: false });
-            matched = 'live';
+            const r = await relayCall({ ...parsed, model: LIVE, stream: false });
+            txt = r ? r.c : null; finish = r ? r.finish : ''; matched = 'live';
           } else {
             const i = queue.findIndex(e => new RegExp(e.match, 's').test(flat));
             const hit = i >= 0 ? queue.splice(i, 1)[0] : null;
@@ -259,12 +282,19 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
     /* ── L: a real model, run several times ──────────────────────────────── */
     if (LIVE) {
       relay = true;
+      if (!process.argv.includes('--no-embed')) await p.evaluate(() => { apiCfg.embedModel = 'live-embed'; ctxVec.clear(); ctxEmbedFailSig = null; });
       const live = { explicit: 0, answered: 0, forkAnswered: 0, far1: 0, far3: 0, pizza: 0, conflict: 0, invalid: 0, pins: 0, repeatModel: 0, repeatShown: 0, edits: 0, ran: 0, forkRepeat: 0, forkRuns: 0, ctrlRepeat: 0 };
       for (let i = 0; i < RUNS; i++) {
         const k0 = await snap();
         const n0 = requests.length;
-        await p.evaluate(t => { board.pins = {}; return runAdvisorOnNode(t, { force: true }); }, ids.T); await p.idle();
+        await p.evaluate(t => { board.pins = {}; if (board.related) delete board.related[t]; return runAdvisorOnNode(t, { force: true }); }, ids.T); await p.idle();
         const reply = requests.slice(n0).find(r => /Include 1 or at most 2 pins/.test(r.full))?.reply || '';
+        const f3line = (requests.slice(n0).find(r => /Include 1 or at most 2 pins/.test(r.full))?.full || '').split('\n').find(l => /Most sign-ups quit/.test(l)) || '(F3 not in prompt)';
+        if (i === 0) console.log('  F3 in the prompt: ' + f3line.slice(0, 120));
+        const relIds = await p.evaluate(t => (board.related?.[t]?.items || []).map(x => x.id), ids.T);
+        if (relIds.includes(ids.F3)) live.relF3 = (live.relF3 || 0) + 1;
+        if (relIds.includes(ids.N1)) live.relPizza = (live.relPizza || 0) + 1;
+        if (relIds.includes(ids.F1)) live.relF1 = (live.relF1 || 0) + 1;
         const out = await p.evaluate(([t, ids]) => { const ps = board.pins[t] || []; const b = ps.flatMap(x => x.basis || []); return { n: ps.length, ids: b.map(x => x.id), rel: Object.fromEntries(b.map(x => [x.id, x.relation])), dropped: ps.flatMap(x => x.basisDropped || []), notes: ps.map(x => x.note).join(' ') }; }, [ids.T, ids]);
         live.ran++;
         if (out.n) live.pins++;
@@ -275,8 +305,9 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
         if (out.rel[ids.N3] === 'conflicts' || /legal|identity check/i.test(out.notes)) live.explicit++;
         if (/\bC\d{1,2}\b/.test(out.notes)) live.keyLeak = (live.keyLeak || 0) + 1;
         if (out.dropped.length) live.invalid++;
-        if (parseJSON(reply)?.pins) live.answered++;
-        const raw = parseJSON(reply), rawNotes = (raw?.pins || []).map(x => x?.note || '').join(' ');
+        const advReplies = requests.slice(n0).filter(r => /Include 1 or at most 2 pins/.test(r.full)).map(r => parseJSON(r.reply));
+        if (advReplies.some(j => j?.pins)) live.answered++;
+        const raw = advReplies.find(j => j?.pins) || parseJSON(reply), rawNotes = (raw?.pins || []).map(x => x?.note || '').join(' ');
         if (/video/i.test(rawNotes)) live.repeatModel++;
         if (/video/i.test(out.notes)) live.repeatShown++;
         if (k0 !== await snap()) live.edits++;
@@ -304,10 +335,15 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
       const lenRetries = await p.evaluate(() => apiLengthRetries);
       check('L', `[${LIVE}] the model itself answered (not the built-in fallback): advisor`, live.answered === R, rate(live.answered) + ` · replies retried after running out of tokens: ${lenRetries}`, 'PASS');
       check('L', `[${LIVE}] the model itself answered (not the built-in fallback): Strategist`, live.forkAnswered === live.forkRuns, rate(live.forkAnswered, live.forkRuns));
+      const emb = await p.evaluate(() => ({ calls: ctxEmbedCalls, vecs: ctxVec.size, failed: !!ctxEmbedFailSig }));
+      if (!process.argv.includes('--no-embed')) check('L', `[${LIVE}] embeddings (${LIVE_EMBED}) were used for meaning`, emb.vecs > 0 && !emb.failed, JSON.stringify(emb));
       check('L', `[${LIVE}] the advisor produced a thought`, live.pins === R, rate(live.pins));
       check('L', `[${LIVE}] cited the far related card F1 (shared words)`, live.far1 >= 1, rate(live.far1), live.far1 >= Math.ceil(R / 2) ? 'PASS' : 'PART');
       check('L', `[${LIVE}] cited the far paraphrase F3 (no shared words, index only)`, live.far3 >= 1, rate(live.far3), live.far3 === R ? 'PASS' : 'PART');
       check('L', `[${LIVE}] never cited or mentioned the neighbouring pizza card`, live.pizza === 0, rate(live.pizza));
+      check('L', `[${LIVE}] judged the far paraphrase F3 related (Related section, not the note)`, (live.relF3 || 0) >= 1, rate(live.relF3 || 0), (live.relF3 || 0) >= Math.ceil(R / 2) ? 'PASS' : 'PART');
+      check('L', `[${LIVE}] judged the far card F1 related`, (live.relF1 || 0) >= 1, rate(live.relF1 || 0), (live.relF1 || 0) >= Math.ceil(R / 2) ? 'PASS' : 'PART');
+      check('L', `[${LIVE}] never judged the neighbouring pizza card related`, !live.relPizza, rate(live.relPizza || 0));
       check('L', `[${LIVE}] flagged the explicit contradiction (legal decision, far away)`, live.explicit >= Math.ceil(R / 2), rate(live.explicit), live.explicit === R ? 'PASS' : 'PART');
       check('L', `[${LIVE}] flagged the subtle tension (tutorial skippers churn more, right beside it)`, live.conflict >= 1, rate(live.conflict), live.conflict >= Math.ceil(R / 2) ? 'PASS' : 'PART');
       check('L', `[${LIVE}] no internal C# key reached the designer`, !live.keyLeak, rate(live.keyLeak || 0));
@@ -422,6 +458,61 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
       check('P0', '…and Undo brings the card back and withdraws the record', await q.evaluate(id => !!byId(id) && !(board.declined || []).some(d => d.kind === 'deleted' && d.ref === id), ag2));
       check('P0', 'no page errors', q.errors.length === 0, q.errors.join(' | '));
       await c2.close();
+    }
+
+    /* ── M: meaning (embeddings) as a recall layer — fresh board, scripted vectors ── */
+    {
+      const { p: q, ctx: c3 } = await openPage(browser, base);
+      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.waitForTimeout(800);
+      await q.evaluate(() => { setCrew({ speak: 'never', act: 'drafts' }); apiCfg.embedModel = 'poc-embed'; ctxVec.clear(); ctxEmbedFailSig = null; });
+      embed.mode = 'ok';
+      const I = await buildFixture(q);
+      const X2 = await q.evaluate(() => { const n = node('note', { text: 'Q3 hiring plan: two designers, one researcher.' }, { x: 2700, y: 1400 }); renderAll(); persist(); return n.id; });
+      const ADV = 'Include 1 or at most 2 pins';
+      const thought = { keywords: ['k'], thoughts: ['a', 'b', 'c'], basis: [], pins: [{ agent: 'critic', note: 'Sign-ups quitting before they make anything is the number three steps should move.', liftAct: 'note', liftLabel: 'Pin it' }] };
+      const e0 = embed.calls.length;
+      await q.evaluate(() => ctxEnsureEmbeddings(visibleNodes().filter(x => x.status === 'ink')));
+      const mk = await q.evaluate(t => Object.fromEntries(ctxCandidates(byId(t), { limit: 8 }).rows.map(r => [r.n.id, r.key])), I.T);
+      queue = [{ id: 'm1', match: ADV, text: { ...thought, related: [{ key: mk[I.F3], relation: 'supports', why: 'same drop-off, other words' }, { key: mk[I.N3], relation: 'conflicts', why: 'legal keeps five steps' }, { key: 'C99', relation: 'supports' }] } }];
+      await q.evaluate(t => { board.pins = {}; return runAdvisorOnNode(t, { force: true }); }, I.T); await q.idle();
+      const req = requests.filter(r => r.matched === 'm1').at(-1)?.full || '';
+      const f3line = req.split('\n').find(l => /Most sign-ups quit/.test(l)) || '';
+      check('M', 'the advisor fetched vectors for the board once, before its look', embed.calls.length === e0 + 1 && embed.calls.at(-1).n >= 8, JSON.stringify(embed.calls.slice(e0)));
+      check('M', 'the paraphrase (F3, no shared words, far away) is now a scored candidate, "close in meaning"', /^C\d+ \[close in meaning\]/.test(f3line), f3line);
+      const cxm = await q.evaluate(t => contextFor(byId(t), { limit: 10 }).picks.map(p => ({ t: p.n.text.slice(0, 18), why: p.why.map(w => w.k).join('+') })), I.T);
+      check('M', 'the unrelated neighbour (pizza) and the other unrelated cards are not promoted', !cxm.some(x => /pizza|espresso|hiring/i.test(x.t)), JSON.stringify(cxm));
+      check('M', 'cards already picked by link or topic keep those reasons first', cxm.some(x => /^Goal/.test(x.t) && x.why.startsWith('wired')) && cxm.some(x => /^Session/.test(x.t) && x.why.startsWith('topic')), JSON.stringify(cxm));
+      check('M', "the crew's judgement of what is related is kept apart from the note (F3, N3; invented key dropped)", await q.evaluate(([t, f3, n3]) => { const r = board.related?.[t]?.items || []; return r.some(x => x.id === f3 && x.relation === 'supports') && r.some(x => x.id === n3 && x.relation === 'conflicts') && r.length === 2; }, [I.T, I.F3, I.N3]), await q.evaluate(t => JSON.stringify(board.related?.[t]), I.T));
+      await q.evaluate(t => openFocus(t), I.T); await q.waitForTimeout(500);
+      const rel = await q.evaluate(() => { const s = document.querySelector('#margin .m-related'); return s ? [...s.querySelectorAll('.src-row')].map(r => r.innerText.replace(/\s+/g, ' ')) : null; });
+      check('M', 'the card sheet has a Related section: the conflict first, marked; the paraphrase included', rel && /Legal decision/.test(rel[0]) && /Conflicts/.test(rel[0]) && rel.some(r => /Most sign-ups quit/.test(r)), JSON.stringify(rel));
+      check('M', '…with no unrelated card in it, and no direct source repeated', rel && !rel.some(r => /pizza|espresso|hiring|Goal: raise/i.test(r)), JSON.stringify(rel));
+      if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await q.evaluate(() => document.querySelectorAll('#toasts > *').forEach(t => t.remove())); await q.locator('#margin .m-related').screenshot({ path: path.join(SHOTS, 'related.png') }); }
+      await q.click(`#margin .m-related [data-id="${I.F3}"]`); await q.waitForTimeout(400);
+      check('M', 'choosing a related card goes to it', await q.evaluate(f3 => focusId === f3 || sel.includes(f3), I.F3));
+      await q.evaluate(() => closeFocus?.());
+      queue = [{ id: 'm2', match: ADV, text: thought }];
+      const e1 = embed.calls.length;
+      await q.evaluate(t => { board.pins = {}; return runAdvisorOnNode(t, { force: true }); }, I.T); await q.idle();
+      check('M', 'vectors are kept: a second look makes no embedding call', embed.calls.length === e1, JSON.stringify(embed.calls.slice(e1)));
+      await q.evaluate(id => { const n = byId(id); checkpoint(); const pd = digest(n), pt = n.title, px = n.text; n.text = 'Q3 hiring plan: two designers, one researcher, one engineer.'; recordNodeEdit(n, pd, pt, px); persist(); }, X2);
+      queue = [{ id: 'm3', match: ADV, text: thought }];
+      await q.evaluate(t => { board.pins = {}; return runAdvisorOnNode(t, { force: true }); }, I.T); await q.idle();
+      check('M', 'editing a card re-embeds only that card', embed.calls.length === e1 + 1 && embed.calls.at(-1).n === 1, JSON.stringify(embed.calls.slice(e1)));
+      // failure: the term layer works alone, and a failing endpoint is not retried on every look
+      await q.evaluate(() => { ctxVec.clear(); ctxEmbedFailSig = null; });
+      embed.mode = 'fail';
+      const e2 = embed.calls.length;
+      queue = [{ id: 'm4', match: ADV, text: thought }, { id: 'm5', match: ADV, text: thought }];
+      await q.evaluate(t => { board.pins = {}; return runAdvisorOnNode(t, { force: true }); }, I.T); await q.idle();
+      const req4 = requests.filter(r => r.matched === 'm4').at(-1)?.full || '';
+      await q.evaluate(t => { board.pins = {}; return runAdvisorOnNode(t, { force: true }); }, I.T); await q.idle();
+      check('M', 'if embeddings fail, the look still happens on links and topic, with the paraphrase back to an index line', /\[index only\][^\n]*Most sign-ups quit/.test(req4) && await q.evaluate(t => !!(board.pins[t] || []).length, I.T), (req4.split('\n').find(l => /Most sign-ups/.test(l)) || 'missing'));
+      check('M', '…and the failing endpoint is tried once, not on every look', embed.calls.length === e2 + 1, `${embed.calls.length - e2} calls`);
+      await q.evaluate(() => { apiCfg.embedModel = ''; apiCfg.baseUrl = 'http://127.0.0.1:1/v1'; });
+      check('M', 'with no embedding model for the endpoint, nothing is fetched', await q.evaluate(() => embedModel() === ''));
+      check('M', 'no page errors', q.errors.length === 0, q.errors.join(' | '));
+      await c3.close();
     }
   } finally {
     await browser.close(); srv.close();

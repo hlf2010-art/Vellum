@@ -4227,22 +4227,60 @@ function ctxCoAttention(id,windowMs=300000){
   for(const c of mine)if(c.id!==id&&times.some(t=>Math.abs(t-c.t)<=windowMs))out.add(c.id);
   return out;
 }
+/* ── meaning: embeddings find related cards that share no words ────────────
+   Measured on the PoC board, no absolute similarity cut-off separated related from unrelated cards across six embedding
+   models (a hiring plan scored above the paraphrase it should lose to). So meaning is a recall signal, not a verdict:
+   the few cards closest in meaning that no other signal picked (and at least as close as the board's median card) become candidates, marked "close in meaning", and the
+   model judging them decides. Vectors come from the Cloud API's /embeddings (OpenAI-compatible) and are kept per card
+   until its content changes. With no embedding model, or after a failure, the term layer works alone. */
+const CTX_MEANING_K=3,ctxVec=new Map();let ctxEmbedFailSig=null,ctxEmbedCalls=0;
+function embedModel(){
+  if(!hasApi()||aiPref==="local")return "";
+  if(apiCfg.embedModel)return apiCfg.embedModel;
+  const b=String(apiCfg.baseUrl||"");
+  /* on the PoC board gemini-embedding-2 separated related from unrelated cards best of six models; OpenAI's small model ranked the paraphrase below a hiring plan */
+  return /openrouter\.ai/i.test(b)?"google/gemini-embedding-2":/api\.openai\.com/i.test(b)?"text-embedding-3-small":"";
+}
+async function ctxEnsureEmbeddings(nodes,{signal}={}){
+  const model=embedModel();if(!model||ctxEmbedFailSig===apiCfgSig()+model)return false;
+  const need=(nodes||[]).filter(n=>n&&!n.tombstone&&n.type!=="group"&&ctxVec.get(n.id)?.d!==digest(n)).slice(0,96);
+  if(!need.length)return true;
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000),onAbort=()=>ctrl.abort();signal?.addEventListener("abort",onAbort,{once:true});
+  try{
+    ctxEmbedCalls++;
+    const res=await fetch(`${apiCfg.baseUrl.replace(/\/+$/,"")}/embeddings`,{method:"POST",signal:ctrl.signal,headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiCfg.key},body:JSON.stringify({model,input:need.map(n=>clip(ctxTextOf(n),2000)||" ")})});
+    if(!res.ok)throw new Error("embeddings HTTP "+res.status);
+    const j=await res.json(),rows=Array.isArray(j?.data)?j.data:[];
+    if(rows.length!==need.length)throw new Error("embeddings: wrong count");
+    rows.forEach((r,i)=>{const v=r?.embedding;if(Array.isArray(v)&&v.length)ctxVec.set(need[i].id,{d:digest(need[i]),v:Float32Array.from(v)})});
+    return true;
+  }catch(e){if(!signal?.aborted)ctxEmbedFailSig=apiCfgSig()+model;return false}
+  finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
+}
+function ctxCos(a,b){if(!a||!b||a.length!==b.length)return null;let d=0,x=0,y=0;for(let i=0;i<a.length;i++){d+=a[i]*b[i];x+=a[i]*a[i];y+=b[i]*b[i]}return x&&y?d/Math.sqrt(x*y):null}
+const ctxVecOf=n=>{const c=n&&ctxVec.get(n.id);return c&&c.d===digest(n)?c.v:null};
 function contextFor(target,{query="",limit=6,pool=null}={}){
   const live=(pool||visibleNodes()).filter(n=>n&&n.status==="ink"&&n.type!=="group"&&!n.tombstone&&n.id!==target?.id);
   const idx=ctxIndex(target?[target,...live]:live);
   const self=ctxTerms((target?ctxTextOf(target):"")+" "+query);
   const wires=target?ctxWires(target.id):new Map(),co=target?ctxCoAttention(target.id):new Set();
   const tc=target?ctxCenter(target):null;
-  const picks=[],skipped=[];
+  const picks=[],skipped=[],tv=ctxVecOf(target),meaning=new Map();
+  if(tv){const sims=live.map(n=>[n,ctxCos(tv,ctxVecOf(n))]).filter(([,c])=>c!=null);
+    /* a floor relative to this board: at least as close as the median card, so a near-empty field doesn't promote noise */
+    const sorted=sims.map(([,c])=>c).sort((a,b)=>a-b),med=sorted.length?sorted[Math.floor((sorted.length-1)/2)]:1;
+    const unpicked=sims.filter(([n,c])=>c>=med&&!wires.get(n.id)&&!ctxRelated(ctxSim(self,idx.docs.get(n.id)||new Map(),idx))).sort((a,b)=>b[1]-a[1]).slice(0,CTX_MEANING_K);
+    for(const [n,c] of sims)meaning.set(n.id,{c,top:unpicked.some(([m])=>m.id===n.id)})}
   for(const n of live){
-    const why=[],d=wires.get(n.id),sim=ctxSim(self,idx.docs.get(n.id)||new Map(),idx);
+    const why=[],d=wires.get(n.id),sim=ctxSim(self,idx.docs.get(n.id)||new Map(),idx),mean=meaning.get(n.id);
     const near=!!tc&&Math.hypot(ctxCenter(n).x-tc.x,ctxCenter(n).y-tc.y)<CTX_NEAR;
     if(d)why.push({k:"wired",d});
     if(ctxRelated(sim))why.push({k:"topic",terms:sim.shared.slice(0,3),score:+sim.score.toFixed(3)});
-    if(!why.length){if(near)skipped.push({n,why:"near on the canvas, but no link and no shared topic"});continue}
+    if(mean?.top)why.push({k:"meaning",score:+mean.c.toFixed(3)});
+    if(!why.length){if(near)skipped.push({n,why:"near on the canvas, but no link, shared topic or close meaning"});continue}
     if(near)why.push({k:"near"});
     if(co.has(n.id))why.push({k:"attention"});
-    const score=(d?1/d:0)+sim.score+(near?.08:0)+(co.has(n.id)?.05:0);
+    const score=(d?1/d:0)+sim.score+(mean?mean.c*(mean.top&&why.length===1?.6:.2):0)+(near?.08:0)+(co.has(n.id)?.05:0);
     picks.push({n,score,why});
   }
   picks.sort((a,b)=>b.score-a.score);
@@ -4252,8 +4290,19 @@ function contextFor(target,{query="",limit=6,pool=null}={}){
 }
 /* a card named in full ("Based on" rows show full titles): its title, or the first sentence of what it says */
 function ctxLabel(n){if(!n)return"";if(n.title||["direction","proof","print","frame"].includes(n.type))return titleOf(n);const t=String(fullTextOf(n)||"").replace(/\s+/g," ").trim(),f=firstSentence(t)||t;return f.length<=160?f.replace(/[.。]$/,""):clip(f,160)}
+/* The Related section of a card's sheet: what the crew judged related (kept apart from its note, which cites only what
+   it used), then what links, topic and meaning pick. Direct sources are already listed under "Based On". */
+function relatedRows(n,limit=5){
+  if(!n)return [];
+  const deps=new Set(inputsOf(n.id).map(x=>x.id)),seen=new Set([n.id,...deps]),rows=[];
+  const judged=board.related?.[n.id];
+  for(const r of judged?.items||[]){const x=byId(r.id);if(!x||isNodeHidden(x)||seen.has(x.id))continue;seen.add(x.id);rows.push({n:x,relation:r.relation,why:r.why||"",by:"crew"})}
+  for(const p of contextFor(n,{limit:8}).picks){if(seen.has(p.n.id)||p.why.every(w=>w.k==="wired"&&w.d===1))continue;seen.add(p.n.id);rows.push({n:p.n,relation:"related",why:ctxWhyText(p.why),by:"signals"})}
+  return rows.sort((a,b)=>(b.relation==="conflicts")-(a.relation==="conflicts")).slice(0,limit);
+}
+const relFetchOnce=new Set();
 function ctxWhyText(why){
-  return why.map(w=>w.k==="wired"?(w.d===1?L("linked directly","直接连线"):L(`${w.d} links away`,`相隔 ${w.d} 条连线`)):w.k==="topic"?L(`shares ${w.terms.join(", ")}`,`共同提到 ${w.terms.join("、")}`):w.k==="near"?L("also near it","位置也相近"):w.k==="attention"?L("you worked on both around the same time","你在相近时间编辑过两者"):"").filter(Boolean).join(" · ");
+  return why.map(w=>w.k==="wired"?(w.d===1?L("linked directly","直接连线"):L(`${w.d} links away`,`相隔 ${w.d} 条连线`)):w.k==="topic"?L(`shares ${w.terms.join(", ")}`,`共同提到 ${w.terms.join("、")}`):w.k==="meaning"?L("close in meaning","意思相近"):w.k==="near"?L("also near it","位置也相近"):w.k==="attention"?L("you worked on both around the same time","你在相近时间编辑过两者"):"").filter(Boolean).join(" · ");
 }
 /* the candidate block an agent sees: keyed for citation, positions withheld on purpose */
 function ctxCandidates(target,{limit=6,query=""}={}){
@@ -6463,6 +6512,12 @@ function renderMargin(){queueMicrotask(placeBars);
     const reviewActs=linSum.needsReview?`<button type="button" class="m-clear" data-m="new-version" title="Fork updated v${(n.rev||1)+1} without overwriting">New v${(n.rev||1)+1}</button><button type="button" class="m-clear" data-m="mark-reviewed" title="Mark upstream changes as reviewed">Mark reviewed</button>`:"";
     srcs=`<div class="m-sec"><h5><span>Based On</span><span class="m-hmeta"><span>${linSum.deps.length}</span>${reviewActs}</span></h5><div class="srcs">${linSum.deps.map(d=>renderSrcRow(d,true)).join("")}</div>${s.length?scaleLabeledHTML(t):""}</div>`;
   }
+  const relHTML=(()=>{
+    if(n.type==="group")return "";
+    if(embedModel()&&!relFetchOnce.has(n.id)&&visibleNodes().some(x=>x.status==="ink"&&!ctxVecOf(x))){relFetchOnce.add(n.id);ctxEnsureEmbeddings(visibleNodes().filter(x=>x.status==="ink")).then(ok=>{if(ok&&focusId===n.id)renderMargin()})}
+    const rows=relatedRows(n);if(!rows.length)return "";
+    return `<div class="m-sec m-related"><h5><span>${L("Related","相关")}</span><span>${rows.length}</span></h5><div class="srcs">${rows.map(r=>`<div class="src-row"><button type="button" class="src-btn" data-m="goto" data-id="${esc(r.n.id)}" title="${esc(r.why)}"><span class="src-kind">${esc(refKindShort(r.n))}</span><span class="sp">${esc(ctxLabel(r.n))}</span>${r.relation==="conflicts"?`<span class="src-pill danger">${L("Conflicts","相矛盾")}</span>`:""}</button></div>`).join("")}</div></div>`;
+  })();
   const listHTML=n.type==="list"?(()=>{const items=n.items||[],done=items.filter(it=>it.done).length;return `<div class="m-sec"><h5><span>Items</span><span class="m-hmeta"><span>${done}/${items.length}</span>${done?`<button type="button" class="m-clear" data-m="clear-done" title="Remove completed items">Clear done</button>`:""}</span></h5>${todoListHTML(n,true)}</div>`})():n.type==="kanban"?(()=>{const cols=kanbanColsOf(n),cards=n.cards||[],lastId=cols[cols.length-1]?.id,done=cards.filter(c=>c.col===lastId).length;return `<div class="m-sec"><h5><span>Board</span><span class="m-hmeta"><span>${done}/${cards.length} done</span>${done?`<button type="button" class="m-clear" data-m="clear-kb-done" title="Remove completed cards">Clear done</button>`:""}</span></h5>${kanbanHTML(n,true)}</div>`})():n.type==="treemap"?(()=>{const {total,branches}=countTreeNodes(treeMapOf(n));return `<div class="m-sec"><h5><span>Tree Map</span><span class="m-hmeta"><span>${branches} ${branches===1?"branch":"branches"} · ${total} nodes</span></span></h5>${treemapHTML(n,true)}</div>`})():"";
   const synHTML=n.type==="synthesis"?`<div class="m-sec"><h5><span>Points</span><span>${(n.points||[]).length}</span></h5>${synPointsHTML(n,true)}</div>`:"";
   const padHTML=n.type==="notepad"?`<div class="m-sec"><h5><span>Document</span><span id="mPadStat">${fmtPadStat(n.text)} · ${(n.text||"").length.toLocaleString()} chars</span></h5><textarea id="mNotepadEd" class="m-notepad-ed" spellcheck="true" placeholder="Write a project brief, outline, spec, or long-form notes…">${esc(n.text||"")}</textarea></div>`:"";
@@ -6481,7 +6536,7 @@ function renderMargin(){queueMicrotask(placeBars);
   const moreMenuHTML=`<div class="m-more-wrap"><button type="button" class="m-iconbtn" data-m="more-toggle" title="More actions" aria-label="More actions"><svg class="ico" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.75" fill="currentColor" stroke="none"/></svg></button><div class="m-more-pop" id="mMorePop" hidden>${moreActs?`<div class="m-more-sec">${moreActs}</div><div class="m-more-div"></div>`:""}<div class="m-more-sec"><button type="button" class="cbtn" data-m="hide-card">${ic("eyeOff")}Hide from canvas</button><button type="button" class="cbtn" data-m="archive">${ic("archive")}Archive</button><button type="button" class="cbtn danger" data-m="delete-card">${ic("trash")}Delete</button></div></div></div>`;
   const notesHTML=thread.length?`<div class="m-sec"><h5><span>Notes</span><span class="m-hmeta"><span>${thread.length}</span>${thread.length>1?`<button type="button" class="m-clear" data-m="clear-msgs" title="Clear all notes">Clear all</button>`:""}</span></h5><div class="thread" id="mThread">${thread.map((msg,idx)=>msgHTML(msg,idx)).join("")}</div></div>`:"";
   m.innerHTML=`<div class="grabber" data-m="close"></div><div class="m-head"><div class="m-head-bar"><div class="m-head-main">${focusTitle(n)}${sublineHTML}</div><div class="m-head-tools">${voteBtns}${dlBtn}${moreMenuHTML}<button type="button" class="m-iconbtn" data-m="close" title="Close (Esc)" aria-label="Close">${ic("x")}</button></div></div></div>
-   <div class="m-body">${htmlMain}${padHTML}${listHTML}${synHTML}${fullHTML}${attachHTML}${plHTML}${srcs}${notesHTML}</div>
+   <div class="m-body">${htmlMain}${padHTML}${listHTML}${synHTML}${fullHTML}${attachHTML}${plHTML}${srcs}${relHTML}${notesHTML}</div>
    <div class="m-foot">${n.type==="proof"?`<div class="m-acts-row">${acts}</div>`:""}<div class="m-chips">${["critic","scout","muse","wright"].map(k=>`<button type="button" data-m="mention" data-k="${k}">@${AGENTS[k].name.toLowerCase()}</button>`).join("")}</div><div class="m-write"><label for="mInput" class="sr">Add a note</label><textarea id="mInput" rows="1" placeholder="Add a note, or ask @${AGENTS[defaultAgentFor(n)].name.toLowerCase()}">${esc(draft)}</textarea><button type="button" class="send" id="mSendBtn" data-m="post" aria-label="Post"${draft.trim()?"":" disabled"}><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div></div>`;
   const ta=qs("#mInput",m),sb=qs("#mSendBtn",m);
   if(ta&&sb){
@@ -6999,6 +7054,7 @@ async function askAdvisorForNode(n,onProgress,signal,{allowOffline=true}={}){
   if(!advisorLiveReady(n))return local();
   const rel=[...inputsOf(n.id),...outputsOf(n.id)].filter((x,i,a)=>x&&!x.archived&&!x.hidden&&!x.tombstone&&x.id!==n.id&&a.findIndex(y=>y&&y.id===x.id)===i).slice(0,3);
   const burst=advBurstCtx&&advBurstCtx.target===n.id?advBurstCtx.others.map(byId).filter(Boolean):[];advBurstCtx=null;
+  await ctxEnsureEmbeddings(visibleNodes().filter(x=>x.status==="ink"),{signal});
   const cand=ctxCandidates(n,{limit:8}),decl=declinedFor(n,{limit:3});
   const ctxText=(cand.rows.length?`\nOther cards on the board, keyed for citation. Where a card sits on the canvas says nothing about whether it matters: judge by content. Many may be unrelated; ignore those.\n${cand.text}`:"")+declinedPromptBlock(decl)+(burst.length?`\nThe designer also just added these cards (context only; leave your note on THIS card, and mention one of them only if it clearly bears on it):\n${burst.map(b=>"- "+clip(titleOf(b),80)).join("\n")}`:"");
   const roles=advisorRolesFor(n);
@@ -7016,6 +7072,7 @@ Return ONLY compact JSON with keys in this EXACT order (keywords and thoughts st
   "keywords": ["3-4 short concrete 1-3 word keywords/clues you spot first in this card or image"],
   "thoughts": ["3 tiny natural 1st-person inner thoughts (5-11 words each, no emoji) flowing logically from noticing concrete keywords -> spotting a question/connection -> deciding one helpful suggestion"],
   "basis": [{"key": "C# of a listed card that actually informed your note", "relation": "supports" | "conflicts" | "extends" | "same-topic", "why": "under 12 words"}] (use [] when no listed card bears on this one),
+  "related": [{"key": "C#", "relation": "supports" | "conflicts" | "extends" | "same-topic", "why": "under 12 words"}] (EVERY listed card that genuinely bears on this card, even if your note does not use it; leave out cards that only sit nearby or share a word),
   "pins": [
     {
       "agent": one of ${JSON.stringify(roles)},
@@ -7038,6 +7095,7 @@ Include 1 or at most 2 pins.`;
     const {v,live}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:1600,signal,memoryMode:cand.cx.picks.length?"compact":"none",onText:handleText},local);
     if(!v||!Array.isArray(v.pins)||!v.pins.length)return local();
     const {basis,dropped}=ctxResolveBasis(v.basis,cand.rows);
+    if(Array.isArray(v.related)&&live){const rel=ctxResolveBasis(v.related,cand.rows).basis;for(const b of basis)if(!rel.some(r=>r.id===b.id))rel.push(b);board.related=board.related||{};board.related[n.id]={at:NOW(),rev:n.rev||1,items:rel}}
     const keyed=new Map(cand.rows.map(r=>[r.key,r]));
     const unkey=t=>String(t||"").replace(/\b(C\d{1,2})\b/g,(m,k)=>{const r=keyed.get(k);if(!r)return m;if(Array.isArray(v.basis)&&!basis.some(b=>b.id===r.n.id))basis.push({id:r.n.id,rev:r.n.rev||1,relation:"related",why:L("named in the note","在建议中提到"),signals:r.why.map(w=>w.k)});return `“${clip(titleOf(r.n),40)}”`});
     const kws=Array.isArray(v.keywords)&&v.keywords.length?v.keywords.slice(0,5).map(String):local().keywords;
@@ -12201,6 +12259,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       const imgNodes=isCasual?[]:ctx.filter(n=>n.type==="image"||n.type==="frame");
       const selectedText=ctx.length?wallText(ctx,{docCap:2200,shortCap:280,totalCap:4200}):"(none selected)";
       const traceSummaryBlock=subSteps.length?`\n[Sub-Agent Reports]\n${subSteps.map(s=>`- ${traceActorInfo(s.from).name} → ${traceActorInfo(s.to).name}${s.handoff?" (Review)":""}: ${s.output}`).join("\n")}\nSynthesize these sub-agent findings cleanly without repeating raw card text.`:"";
+      if(!isCasual&&ctx[0])await ctxEnsureEmbeddings(visibleNodes().filter(x=>x.status==="ink"),{signal:copilotAbort?.signal});
       const digestBlock=isCasual?"":boardDigestForCopilot({query:subSteps.length?"":text,ctx});
       const sys=isCasual
         ?`You are Lumen Copilot, a concise design workspace assistant for board "${board.title||"Untitled"}". The user sent a brief conversational message ("${text.trim()}"). Reply in 1 short, natural sentence (under 18 words). Do NOT roleplay as a human teammate, do NOT mention playtests, synthesis docs, or background work, do NOT output multiple paragraphs, and do NOT add a sign-off.`

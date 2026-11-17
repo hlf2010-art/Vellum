@@ -470,6 +470,22 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('no page errors around the island', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+    // 9. composer: one row for one line; two rows (text full width, controls below) once the text wraps
+    {
+      const p = await page(browser, base, { model: false });
+      const rows = () => p.evaluate(() => { const f = document.querySelector('.line-field').getBoundingClientRect(), i = lineIn.getBoundingClientRect(), s = document.getElementById('sendBtn').getBoundingClientRect();
+        return { multi: document.getElementById('line').classList.contains('multi'), share: i.width / f.width, sendRight: f.right - s.right < 16, sendBelow: s.top >= i.bottom - 2 }; });
+      await p.click('#lineInput'); await p.keyboard.type('A short line'); await p.waitForTimeout(200);
+      const one = await rows();
+      check('a short line keeps the one-row composer', !one.multi, JSON.stringify(one));
+      await p.keyboard.type(", and then enough words that it has to wrap onto another line in the composer, and then some more"); await p.waitForTimeout(200);
+      const two = await rows();
+      check('wrapped text gets the full width with the controls underneath', two.multi && two.share > .9 && two.sendRight && two.sendBelow, JSON.stringify(two));
+      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.waitForTimeout(200);
+      check('clearing the text returns to one row', !(await rows()).multi);
+      check('no page errors in the composer', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
   } finally {
     // 9. legibility: light and dark are designed separately, so both are measured, in the states that change colour
     for (const theme of ['light', 'dark']) {

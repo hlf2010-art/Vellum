@@ -43,4 +43,7 @@ The table's chart view picks its form from the data: a date/month/quarter/year c
 percentage column that adds up to a whole makes bars ranked largest first, anything else keeps table order with
 the best value emphasised. Mark colours are `--viz-1`, `--viz-good`, `--viz-muted`, chosen per theme and checked
 with the dataviz palette validator (lightness band, chroma, colour-blind separation, contrast). Dark mode uses its
-own, lower-lightness steps; the UI accent colours were too bright for large marks on the dark surface.
+own, lower-lightness steps; the UI accent colours were too bright for large marks on the dark surface. In light mode
+the marks are lighter than the text accents (which are tuned for text and read heavy as fills); highlighted marks
+keep 3:1, while muted bars are context and may go lighter because every bar's value is labelled and the table view
+holds the data.

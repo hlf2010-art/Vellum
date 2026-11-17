@@ -482,8 +482,8 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       const viz = await p.evaluate(() => { const cs = getComputedStyle(document.documentElement), hex = v => { const n = parseInt(cs.getPropertyValue(v).trim().slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
         const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
         const r = (a, b) => { const x = lum(a), y = lum(b); return +((Math.max(x, y) + .05) / (Math.min(x, y) + .05)).toFixed(2); };
-        return ['--viz-1', '--viz-good', '--viz-muted'].map(k => r(hex(k), hex('--card'))); });
-      check(`chart marks stand out from the surface in ${theme} mode (at least 3:1)`, viz.every(v => v >= 3), JSON.stringify(viz));
+        return ['--viz-1', '--viz-good'].map(k => r(hex(k), hex('--card'))); });
+      check(`highlighted chart marks stand out from the surface in ${theme} mode (at least 3:1; muted bars are labelled context)`, viz.every(v => v >= 3), JSON.stringify(viz));
       await p.evaluate(() => document.getElementById('tblProbe').remove());
       if (theme === 'light') {
         const tb = await p.evaluate(() => {

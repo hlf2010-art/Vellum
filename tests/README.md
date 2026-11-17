@@ -20,3 +20,50 @@ with a stand-in script, so nothing real is launched:
 ```bash
 python3 studio/macos-app/test_serve_launch.py
 ```
+
+## Data reader (local server)
+
+Tables from a web address read through `/fetch-data` when the site doesn't allow direct reads. It only
+fetches public hosts (redirects re-checked), refuses web pages and stops at 8 MB. Tested against a local
+stand-in for the internet:
+
+```bash
+python3 studio/macos-app/test_serve_fetch.py
+```
+
+## Notion databases (local server)
+
+`/notion/database` turns a Notion database into table rows with the integration token saved in MCP Sources.
+The token is posted by the page, so the endpoint needs the page's exact origin and the `X-Studio-Client` header.
+Tested against a stand-in for Notion's API (property types, paging past 100 rows, the 500-row cap, errors):
+
+```bash
+python3 studio/macos-app/test_serve_notion.py
+```
+
+## Legibility in both themes
+
+Light and dark are designed separately; a colour that works in one is not assumed to work in the other.
+Group 9 of the smoke test opens the Connection and Crew popovers in **both** themes, in the states that change
+colour (normal, error, AI off), and fails if any text is below WCAG 4.5:1 (3:1 for large text), with
+translucent backgrounds composited and dimming included.
+
+When adding or restyling UI:
+
+- Measure contrast in light *and* dark; don't invert one palette to get the other.
+- Dim by changing colour (drop status colour, step down a grey), not by fading text with `opacity`.
+- Selected states carry more than a fill: in light, a darker track makes the white pill stand out; in dark, the
+  pill itself is lighter. Text weight and colour change too (`--seg-on`, `--seg-track`, `--seg-sm-on`).
+- A control that is off must still read as a control: the switch's off state is an outlined track with a grey
+  knob (`--sw-off-*`), checked at 3:1 in both themes. Touch screens get a larger hit area, not a larger switch.
+
+## Charts
+
+The table's chart view picks its form from the data: a date/month/quarter/year column makes a line, a
+percentage column that adds up to a whole makes bars ranked largest first, anything else keeps table order with
+the best value emphasised. Mark colours are `--viz-1`, `--viz-good`, `--viz-muted`, chosen per theme and checked
+with the dataviz palette validator (lightness band, chroma, colour-blind separation, contrast). Dark mode uses its
+own, lower-lightness steps; the UI accent colours were too bright for large marks on the dark surface. In light mode
+the marks are lighter than the text accents (which are tuned for text and read heavy as fills); highlighted marks
+keep 3:1, while muted bars are context and may go lighter because every bar's value is labelled and the table view
+holds the data.

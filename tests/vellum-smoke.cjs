@@ -279,6 +279,48 @@ async function page(browser, base, { model = true } = {}) {
       check('no page errors in the unasked-thoughts flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+
+    // 7. agent permissions: each kind of action follows the setting
+    {
+      const p = await page(browser, base, { model: false });
+      await p.newBoard();
+      await p.type('/claim Kept claim'); await p.waitForTimeout(600);
+      await p.type('/note Kept note'); await p.waitForTimeout(600);
+      const [claim, note] = await p.evaluate(() => [board.nodes.find(n => n.type === 'idea').id, board.nodes.find(n => n.type === 'note').id]);
+      const run = (acts, extra = {}) => p.evaluate(([a, x]) => { const r = dispatchCanvasActions(a, { by: 'critic', ...x }); return { created: r.createdNodes.map(n => ({ id: n.id, status: n.status })), proposed: r.proposed.length, skipped: r.skipped.length }; }, [acts, extra]);
+      check('defaults: create directly, edit and delete ask', await p.evaluate(() => perm('create') === 'direct' && perm('link') === 'direct' && perm('edit') === 'suggest' && perm('delete') === 'suggest'));
+      await p.evaluate(() => setAutonomy({ create: 'suggest' }));
+      let r = await run([{ action: 'create', cardType: 'note', title: 'Asked', text: 'arrives as a draft' }]);
+      check('create set to Ask first arrives as a draft', r.created.length === 1 && r.created[0].status === 'sketch', JSON.stringify(r));
+      await p.evaluate(() => setAutonomy({ create: 'never' }));
+      r = await run([{ action: 'create', cardType: 'note', title: 'Blocked', text: 'should not exist' }]);
+      check('create set to Never creates nothing', r.created.length === 0 && r.skipped === 1 && await p.evaluate(() => !board.nodes.some(n => n.text === 'should not exist')));
+      await p.evaluate(() => setAutonomy({ edit: 'direct' }));
+      await run([{ action: 'edit', target: claim, field: 'text', value: 'Edited directly' }]);
+      check('edit set to Do it applies to a kept card', await p.evaluate(id => byId(id).text === 'Edited directly' && openProps(id).length === 0, claim));
+      await p.evaluate(() => setAutonomy({ edit: 'never', delete: 'never' }));
+      r = await run([{ action: 'edit', target: claim, field: 'text', value: 'nope' }, { action: 'erase', targets: [note] }]);
+      check('edit and delete set to Never change nothing', r.skipped === 2 && r.proposed === 0 && await p.evaluate(([c, n]) => byId(c).text === 'Edited directly' && !!byId(n) && openProps().length === 0, [claim, note]));
+      await p.evaluate(() => setAutonomy({ link: 'suggest' }));
+      r = await run([{ action: 'connect', from: note, to: claim }]);
+      check('link set to Ask first becomes a suggestion', r.proposed === 1 && await p.evaluate(([n, c]) => !board.edges.some(e => e.a === n && e.b === c) && openProps(c).some(p => p.op === 'link'), [note, claim]));
+      await p.evaluate(c => { const pr = openProps(c).find(p => p.op === 'link'); return acceptProposal(pr.id); }, claim); await p.waitForTimeout(300);
+      check('accepting a link suggestion links the cards', await p.evaluate(([n, c]) => board.edges.some(e => e.a === n && e.b === c), [note, claim]));
+      r = await run([{ action: 'erase', targets: [note] }], { userIntent: true });
+      await p.waitForTimeout(700);
+      check('your own words are not limited by agent permissions', await p.evaluate(n => { const x = byId(n); return !x || !!x.tombstone; }, note));
+      check('Copilot is told the current permissions', await p.evaluate(() => /linking cards: it becomes a suggestion/.test(autonomyPromptLine()) && /deleting cards the designer has kept: you may not do it/.test(autonomyPromptLine())));
+      // the dialog
+      await p.click('#crewModeBtn'); await p.waitForTimeout(400);
+      await p.click('[data-sp="autonomy"]'); await p.waitForTimeout(400);
+      check('the permissions dialog opens', await p.evaluate(() => document.querySelectorAll('dialog[open] [data-au]').length === 12));
+      await p.click('dialog[open] [data-au="delete"][data-v="suggest"]'); await p.waitForTimeout(200);
+      check('choosing in the dialog takes effect and is remembered', await p.evaluate(() => perm('delete') === 'suggest' && store.get('.autonomy', {}).delete === 'suggest'));
+      await p.click('dialog[open] [data-au-reset]'); await p.waitForTimeout(200);
+      check('Reset restores the defaults', await p.evaluate(() => JSON.stringify(autonomy) === JSON.stringify(AUTONOMY_DEFAULT)));
+      check('no page errors in the permissions flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
   } finally {
     await browser.close(); srv.close();
   }

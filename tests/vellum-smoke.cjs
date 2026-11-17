@@ -17,12 +17,18 @@ let queue = [];
 const requests = [];
 const probes = [];
 const probe = { status: 200, delay: 0 };
+const launcher = { on: false, posts: [] }; // stands in for serve_vellum.py's /launch/studio-ai
 
 function serve() {
   return new Promise(res => {
     const srv = http.createServer((req, rsp) => {
       if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/Vellum-Lumen.html'))) {
         rsp.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return fs.createReadStream(FILE).pipe(rsp);
+      }
+      if (req.url === '/launch/studio-ai' && launcher.on) {
+        if (req.method === 'POST') launcher.posts.push({ client: req.headers['x-studio-client'], origin: req.headers.origin, host: req.headers.host });
+        rsp.writeHead(200, { 'Content-Type': 'application/json' });
+        return rsp.end(JSON.stringify(req.method === 'POST' ? { ok: true, started: true } : { available: true }));
       }
       if (req.method === 'POST' && req.url.endsWith('/chat/completions')) {
         let body = ''; req.on('data', c => body += c); req.on('end', async () => {
@@ -346,6 +352,17 @@ async function page(browser, base, { model = true } = {}) {
       await p.click('#studioPop [data-sp="pref"][data-val="local"]'); await p.waitForTimeout(200);
       check('Rules only: the header says plainly AI is off, and the unused engines step back', await p.evaluate(() => { const h = document.querySelector('#studioPop .sp-now'); return /warn/.test(h.className) && /^Using built-in rules\s*AI turned off$/.test(h.textContent) && document.querySelector('#studioPop .sp-services').classList.contains('idle') && /rules/.test(document.querySelector('#crewSetBtn .conn-dot').className); }));
       await p.click('#studioPop [data-sp="pref"][data-val="auto"]'); await p.waitForTimeout(200);
+      // Local AI Start: a button when the local server can open Studio AI, the instruction otherwise
+      check('without a launcher, Local AI explains how to open it and offers no Start', await p.evaluate(() => { const r = [...document.querySelectorAll('#studioPop .sp-svc')][0]; return /Start Studio AI\.command/.test(r.textContent) && !r.querySelector('[data-sp="launch-studio"],[data-sp="wake"]'); }));
+      launcher.on = true;
+      await p.evaluate(() => { studioLauncher = null; toggleStudioPopover(false); });
+      await p.click('#crewModeBtn');
+      await p.waitForSelector('#studioPop [data-sp="launch-studio"]', { timeout: 3000 }).catch(() => {});
+      check('with a launcher, Local AI offers Start instead of the command line', await p.evaluate(() => { const r = [...document.querySelectorAll('#studioPop .sp-svc')][0]; return !!r.querySelector('[data-sp="launch-studio"]') && !/\.command/.test(r.textContent); }));
+      await p.click('#studioPop [data-sp="launch-studio"]'); await p.waitForTimeout(300);
+      const launched = await p.evaluate(() => [...document.querySelectorAll('#studioPop .sp-svc')][0].textContent);
+      check('Start asks the page\'s own server to open Studio AI and shows Starting…', launcher.posts.length === 1 && launcher.posts[0].client === 'canvas' && launcher.posts[0].origin === 'http://' + launcher.posts[0].host && /Starting…/.test(launched), JSON.stringify({ posts: launcher.posts, launched }));
+      await p.evaluate(() => { studioLaunching = 0; }); launcher.on = false;
       check('no page errors in the crew-level flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }

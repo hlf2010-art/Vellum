@@ -11,3 +11,12 @@ node tests/vellum-smoke.cjs --headed                      # watch it run
 It checks that every inline script parses, the sample board loads and every card type can be selected without errors, every argument-free command runs from the composer (and text commands wait for their text), free text becomes an idea card, Try again keeps or replaces drafts correctly (including work done meanwhile and Undo), provenance and the change log are recorded, and the Task Island shows a running crew move, reports what arrived, selects it on Show and cancels on Stop. Exit code 0 means all checks passed.
 
 Run it before committing a change to `Vellum-Lumen.html`.
+
+## Studio AI launcher (local server)
+
+`serve_vellum.py` can open Studio AI for the Connection panel's Start button. Its endpoint is tested
+with a stand-in script, so nothing real is launched:
+
+```bash
+python3 studio/macos-app/test_serve_launch.py
+```

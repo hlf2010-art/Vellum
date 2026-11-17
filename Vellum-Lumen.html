@@ -5853,11 +5853,12 @@ function renderStudioPop(){
   const models=Array.isArray(studioState.models)?studioState.models:[];
   /* Local AI — Start only when the Studio AI service is up to receive it */
   const stDl=stLoad&&studioState.progress&&studioState.progress.startsWith("Downloading");
-  const stCase=studioChecking&&(manual||!studioState.checked)?"checking":stReady?"ok":stLoad?"starting":studioState.reachable&&studioState.error?"error":studioState.reachable?"idle":"offline";
-  const stState={checking:st("busy",L("Checking…","检测中…")),ok:st("ok",L("Connected","已连接")),starting:st("busy",stDl?L("Downloading…","下载中…"):L("Starting…","启动中…")),error:st("err",L("Error","出错")),idle:st("",L("Not running","未运行")),offline:st("",L("Not running","未运行"))}[stCase];
-  const stDetail={checking:L("Runs on this computer","在这台电脑上运行"),ok:models.length?L("Runs on this computer","在这台电脑上运行"):modelShort||L("Runs on this computer","在这台电脑上运行"),starting:models.length?L("Runs on this computer","在这台电脑上运行"):modelShort||L("Loading the model","正在加载模型"),error:studioState.error||"",idle:L("Studio AI is open · model not loaded","Studio AI 已打开 · 模型未加载"),offline:L("Open Start Studio AI.command to use it","打开 Start Studio AI.command 即可使用")}[stCase];
+  const stCase=studioLaunching&&!studioState.reachable?"launching":studioChecking&&(manual||!studioState.checked)?"checking":stReady?"ok":stLoad?"starting":studioState.reachable&&studioState.error?"error":studioState.reachable?"idle":"offline";
+  const stState={launching:st("busy",L("Starting…","启动中…")),checking:st("busy",L("Checking…","检测中…")),ok:st("ok",L("Connected","已连接")),starting:st("busy",stDl?L("Downloading…","下载中…"):L("Starting…","启动中…")),error:st("err",L("Error","出错")),idle:st("",L("Not running","未运行")),offline:st("",L("Not running","未运行"))}[stCase];
+  const stDetail={launching:L("Opening Studio AI…","正在打开 Studio AI…"),checking:L("Runs on this computer","在这台电脑上运行"),ok:models.length?L("Runs on this computer","在这台电脑上运行"):modelShort||L("Runs on this computer","在这台电脑上运行"),starting:models.length?L("Runs on this computer","在这台电脑上运行"):modelShort||L("Loading the model","正在加载模型"),error:studioState.error||"",idle:L("Studio AI is open · model not loaded","Studio AI 已打开 · 模型未加载"),offline:studioLauncher?L("Runs on this computer","在这台电脑上运行"):L("Open Start Studio AI.command to use it","打开 Start Studio AI.command 即可使用")}[stCase];
   const stAct=(stCase==="ok"||stCase==="starting")?btn("stop-local",L("Stop","停止"),{tip:L("Stop the local model and free memory","停止本地模型并释放内存")})
-    :(stCase==="idle"||stCase==="error")?btn("wake",stCase==="error"?L("Retry","重试"):L("Start","启动"),{tip:L("Load the local model","加载本地模型")}):"";
+    :(stCase==="idle"||stCase==="error")?btn("wake",stCase==="error"?L("Retry","重试"):L("Start","启动"),{tip:L("Load the local model","加载本地模型")})
+    :stCase==="offline"&&studioLauncher?btn("launch-studio",L("Start","启动"),{tip:L("Open Studio AI and load the local model","打开 Studio AI 并加载本地模型")}):"";
   const gb=b=>b?(b/1e9).toFixed(1)+" GB":"";
   const modelsHtml=models.length?`<div class="sp-models">${models.map(m=>{
     const meta=[m.tier,gb(m.bytes)].filter(Boolean).join(" · ");
@@ -5936,9 +5937,30 @@ function toggleStudioPopover(force){
   $("crewModeBtn")?.setAttribute("aria-expanded",String(studioPopOpen));
   renderStudioPop();
   if(studioPopOpen&&(!studioState.checked||NOW()-studioState.checked>8000))refreshStudioFromPop({wake:false});
+  if(studioPopOpen&&studioLauncher===null)probeStudioLauncher().then(v=>{studioLauncher=v;renderStudioPop()});
   if(studioPopOpen&&hasApi()){const h=apiHealthNow();if(h.k==="unknown"||(h.k!=="checking"&&Date.now()-h.at>120000))testApi({quiet:true})}
 }
 let connManualCheck=false;
+/* Studio AI launcher: the local page server (Vellum app / serve_vellum.py) can open the bundled
+   service. A page opened any other way can't start programs, so it keeps the instruction. */
+let studioLauncher=null,studioLaunching=0;
+async function probeStudioLauncher(){
+  if(!/^https?:$/.test(location.protocol))return false;
+  try{const r=await fetch("/launch/studio-ai",{cache:"no-store",signal:timeoutSignal(1500)});return r.ok&&(await r.json()).available===true}catch{return false}
+}
+async function launchStudio(){
+  studioLaunching=Date.now();renderStudioPop();
+  try{
+    const r=await fetch("/launch/studio-ai",{method:"POST",headers:{"X-Studio-Client":"canvas"},signal:timeoutSignal(5000)});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.ok)throw new Error(d.error||"HTTP "+r.status);
+  }catch{studioLaunching=0;renderStudioPop();toast(L("Couldn't start Studio AI","无法启动 Studio AI"));return}
+  for(let i=0;i<40&&studioLaunching;i++){await wait(750);await checkStudioHealth({quiet:true});if(studioState.reachable)break}
+  const up=studioState.reachable;studioLaunching=0;
+  if(up)await checkStudioHealth({wake:true,quiet:true}); // Start means "run the model", not just open the service
+  else toast(L("Studio AI didn't respond","Studio AI 没有响应"));
+  renderCrew();renderStudioPop();
+}
 async function refreshStudioFromPop({wake=true}={}){
   if(studioChecking)return;
   studioChecking=true;imgChecking=true;
@@ -13567,6 +13589,7 @@ $("studioPop")?.addEventListener("click",async e=>{
   if(act==="img-model"){setImageModel(b.dataset.id);return}
   if(act==="api"){toggleStudioPopover(false);openApiDialog();return}
   if(act==="test-api"){await testApi();return}
+  if(act==="launch-studio"){await launchStudio();return}
   if(act==="adv-mode"){toggleAdvisorMode();return}
   if(act==="adv-level"){setAdvisorLevel(b.dataset.level);return}
   if(act==="autonomy"){toggleStudioPopover(false);openAutonomyDialog();return}

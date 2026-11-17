@@ -2631,6 +2631,9 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .thumb.link-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .send:disabled{background:transparent;color:var(--label-3);box-shadow:inset 0 0 0 1px var(--hair-2)}
 .line-hint:empty{display:none}
+.card .prov-rules{margin-left:6px;font:500 10.5px/1 var(--ui);letter-spacing:.02em;padding:3px 6px;border-radius:999px;color:var(--label-2);background:var(--hover);box-shadow:inset 0 0 0 .5px var(--hair-2)}
+.m-sec.m-prov{padding-block:6px}
+
 @media (max-width:640px){#routeWrap{display:none}}
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="lensDefs"></defs></svg>
@@ -2799,7 +2802,7 @@ function syncHistoryBtns(){
 function persist(){
   clearTimeout(saveT);
   saveT=setTimeout(()=>{
-    board.updated=NOW();
+    recordChanges();board.updated=NOW();
     const slim={...board,nodes:board.nodes.map(({_h,...n})=>n)};
     const lsOk=store.set(".board."+board.id,slim);
     storageOk=lsOk||idbBoardOk;
@@ -2811,11 +2814,13 @@ function persist(){
 function checkpoint(){undoStack.push(snapOfBoard());if(undoStack.length>40)undoStack.shift();redoStack=[];syncHistoryBtns()}
 function undo(){
   const s=undoStack.pop();if(!s){syncHistoryBtns();toast("Nothing to undo");return}
+  recordChanges();changeActor={who:"you",cause:"undo"};setTimeout(()=>{recordChanges();changeActor=null},0);
   redoStack.push(snapOfBoard());if(redoStack.length>40)redoStack.shift();
   Object.assign(board,JSON.parse(s));sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;sfx("undo");syncHistoryBtns();renderAll();persist();toast("Undone");
 }
 function redo(){
   const s=redoStack.pop();if(!s){syncHistoryBtns();toast("Nothing to redo");return}
+  recordChanges();changeActor={who:"you",cause:"redo"};setTimeout(()=>{recordChanges();changeActor=null},0);
   undoStack.push(snapOfBoard());if(undoStack.length>40)undoStack.shift();
   Object.assign(board,JSON.parse(s));sel=sel.filter(id=>{const n=byId(id);return n&&!isNodeHidden(n)});selectedEdgeId=null;sfx("redo");syncHistoryBtns();renderAll();persist();toast("Redone");
 }
@@ -2823,7 +2828,51 @@ function log(who,html,node){board.log.push({t:NOW(),who,html,node:node||null});i
 
 function node(type,props,pos){
   const n={id:uid(),type,x:Math.round(pos?.x??0),y:Math.round(pos?.y??0),created:NOW(),by:"you",status:"ink",rev:1,...props};
-  board.nodes.push(n);return n;
+  if(!n.prov)n.prov=provFor(n);board.nodes.push(n);return n;
+}
+/* ── provenance and the change log ──────────────────────────────────────
+   Stage 1 of the change pipeline: record, don't change behaviour.
+   Every card carries prov {author, engine, at, basis}; engine is human | model | rules | service.
+   Every persist() diffs the board against what was last persisted and appends structured entries to
+   board.changes, so all write paths (present and future) are covered without touching each one.
+   Who did it comes from the card (by) for creations and from changeActor for edits; default is "you". */
+let provCtx=null,changeActor=null,changeShadow=null;
+function withProv(ctx,fn){const prev=provCtx;provCtx=ctx;try{return fn()}finally{provCtx=prev}}
+function engineOf(author){
+  if(provCtx?.engine)return provCtx.engine;
+  if(!author||author==="you")return "human";
+  const r=crewState?.[author]?.lastRun;
+  if(r&&NOW()-r.t<15000)return r.live===true?"model":r.live===false?"rules":"service";
+  return "service";
+}
+function provFor(n){const author=n.by||"you";return {author,engine:engineOf(author),at:NOW(),basis:null}}
+const ENGINE_LABEL={human:["You","你"],model:["model","模型"],rules:["built-in rules","内置规则"],service:["local service","本地服务"]};
+function shadowOf(b){const m=new Map();for(const n of b.nodes)m.set(n.id,{d:digest(n),st:n.status,ar:!!n.archived,hd:!!n.hidden,by:n.by,type:n.type,title:clip(titleOf(n),60)});return {id:b.id,nodes:m,edges:new Set(b.edges.map(e=>e.a+">"+e.b))}}
+function recordChanges(){
+  if(!board)return;
+  if(!changeShadow||changeShadow.id!==board.id){changeShadow=shadowOf(board);return}
+  const now=shadowOf(board),out=[],t=NOW(),act=changeActor||{who:"you"};
+  const entry=(op,id,info,extra={})=>{const who=extra.who||act.who;out.push({t,op,id,type:info.type,title:info.title,who,engine:extra.engine||(who==="you"?"human":act.engine||engineOf(who)),...(act.cause?{cause:act.cause}:{}),...(extra.more||{})})};
+  for(const [id,cur] of now.nodes){
+    const old=changeShadow.nodes.get(id);
+    if(!old){const n=byId(id);if(n?.prov&&!n.prov.basis)n.prov.basis=inputsOf(id).map(x=>({id:x.id,rev:x.rev||1}));entry("create",id,cur,{who:n?.prov?.author||cur.by||act.who,engine:n?.prov?.engine,more:n?.prov?.basis?.length?{basis:n.prov.basis.map(x=>x.id)}:{}});continue}
+    if(old.st==="sketch"&&cur.st==="ink")entry("accept",id,cur);
+    else if(old.d!==cur.d)entry("edit",id,cur);
+    if(old.ar!==cur.ar)entry(cur.ar?"archive":"restore",id,cur);
+    if(old.hd!==cur.hd)entry(cur.hd?"hide":"show",id,cur);
+  }
+  for(const [id,old] of changeShadow.nodes)if(!now.nodes.has(id))entry(old.st==="sketch"&&act.who==="you"?"discard":"delete",id,old);
+  for(const k of now.edges)if(!changeShadow.edges.has(k)){const [x,y]=k.split(">");entry("link",y,{type:"edge",title:clip(titleOf(byId(x))||"",30)+" → "+clip(titleOf(byId(y))||"",30)},{more:{from:x}})}
+  for(const k of changeShadow.edges)if(!now.edges.has(k)){const [x,y]=k.split(">");entry("unlink",y,{type:"edge",title:""},{more:{from:x}})}
+  changeShadow=now;
+  if(out.length){board.changes=Array.isArray(board.changes)?board.changes:[];board.changes.push(...out);if(board.changes.length>500)board.changes.splice(0,board.changes.length-500)}
+}
+function asActor(actor,fn){const prev=changeActor;changeActor=actor;recordChanges();try{const r=fn();if(r&&typeof r.then==="function")return r.finally(()=>{recordChanges();changeActor=prev});recordChanges();changeActor=prev;return r}catch(e){changeActor=prev;throw e}}
+function provLineHTML(n){
+  const p=n?.prov;if(!p)return"";const a=p.author==="you"?null:AGENTS[p.author];
+  const who=a?a.name:L("You","你"),eng=ENGINE_LABEL[p.engine]||["",""],from=(p.basis||[]).length;
+  const engTxt=p.engine==="human"?"":` · ${L(eng[0],eng[1])}`;
+  return `<div class="m-sec m-prov"><h5><span>${L("Made by","生成者")}</span><span class="m-hmeta"><span>${esc(who)}${esc(engTxt)}${from?` · ${L(`from ${from} card${from===1?"":"s"}`,`基于 ${from} 张卡片`)}`:""}</span></span></h5></div>`;
 }
 const DEP_TYPES=new Set(["reference","frozen","live"]);
 function edgeDepType(e,srcNode=byId(e?.a),dstNode=byId(e?.b)){
@@ -3739,7 +3788,7 @@ function cardVotesHTML(n){
   const upT=L("Helpful · Copilot remembers you like this direction","认可 · Copilot 会记住你偏爱此类方向"),dnT=L("Not helpful · Dims card & steers Copilot away","不认可 · 淡化此卡并让 Copilot 避开此类建议");
   return `<span class="card-votes${n.vote?" has-vote":""}"><button type="button" class="vote-btn up${n.vote==="up"?" active":""}" data-a="vote-up" aria-pressed="${n.vote==="up"}" title="${esc(upT)}" aria-label="${esc(upT)}">${ic("thumbUp")}</button><button type="button" class="vote-btn dn${n.vote==="down"?" active":""}" data-a="vote-dn" aria-pressed="${n.vote==="down"}" title="${esc(dnT)}" aria-label="${esc(dnT)}">${ic("thumbDown")}</button></span>`;
 }
-function sketchHead(n){const a=AGENTS[n.by]||AGENTS.muse;const tag=n.type==="direction"?`<span class="chip">${esc(n.letter)}</span>`:n.type==="image"?`<span style="color:var(--label-3);font-weight:500">${esc(kindLabel(n))}</span>`:"";return `<div class="card-k sketch-by"><span class="sparkle"></span><b>${L(`Suggested by ${a.name}`,`由 ${a.name} 建议`)}</b>${tag}<span class="sp"></span>${cardVotesHTML(n)}</div>`}
+function sketchHead(n){const a=AGENTS[n.by]||AGENTS.muse;const tag=n.type==="direction"?`<span class="chip">${esc(n.letter)}</span>`:n.type==="image"?`<span style="color:var(--label-3);font-weight:500">${esc(kindLabel(n))}</span>`:"";return `<div class="card-k sketch-by"><span class="sparkle"></span><b>${L(`Suggested by ${a.name}`,`由 ${a.name} 建议`)}</b>${tag}${n.prov?.engine==="rules"?`<span class="prov-rules" title="${esc(L("Made by the built-in rules because no model answered","没有模型响应，由内置规则生成"))}">${L("built-in rules","内置规则")}</span>`:""}<span class="sp"></span>${cardVotesHTML(n)}</div>`}
 function timeTag(n){const ts=n?.created,t=exactTime(ts);if(!t)return"";const full=new Date(ts).toLocaleString(uiLang()==="zh"?"zh-CN":"en-US",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});return `<time title="${esc(full)}">${esc(t)}</time>`}
 
 const htmlDocs=new Map();
@@ -5169,7 +5218,7 @@ function renderMargin(){queueMicrotask(placeBars);
   const moreMenuHTML=`<div class="m-more-wrap"><button type="button" class="m-iconbtn" data-m="more-toggle" title="More actions" aria-label="More actions"><svg class="ico" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.75" fill="currentColor" stroke="none"/></svg></button><div class="m-more-pop" id="mMorePop" hidden>${acts?`<div class="m-more-sec">${acts}</div><div class="m-more-div"></div>`:""}<div class="m-more-sec"><button type="button" class="cbtn" data-m="hide-card">${ic("eyeOff")}Hide from canvas</button><button type="button" class="cbtn" data-m="archive">${ic("archive")}Archive</button><button type="button" class="cbtn danger" data-m="delete-card">${ic("trash")}Delete</button></div></div></div>`;
   const notesHTML=thread.length?`<div class="m-sec"><h5><span>Notes</span><span class="m-hmeta"><span>${thread.length}</span>${thread.length>1?`<button type="button" class="m-clear" data-m="clear-msgs" title="Clear all notes">Clear all</button>`:""}</span></h5><div class="thread" id="mThread">${thread.map((msg,idx)=>msgHTML(msg,idx)).join("")}</div></div>`:"";
   m.innerHTML=`<div class="grabber" data-m="close"></div><div class="m-head"><div class="m-head-bar"><div class="m-head-main">${focusTitle(n)}${sublineHTML}</div><div class="m-head-tools">${voteBtns}${dlBtn}${moreMenuHTML}<span class="m-head-sep" aria-hidden="true"></span><button type="button" class="m-iconbtn" data-m="close" title="Close (Esc)" aria-label="Close">${ic("x")}</button></div></div></div>
-   <div class="m-body">${htmlMain}${padHTML}${listHTML}${synHTML}${fullHTML}${attachHTML}${plHTML}${srcs}${notesHTML}</div>
+   <div class="m-body">${htmlMain}${padHTML}${listHTML}${synHTML}${fullHTML}${attachHTML}${plHTML}${provLineHTML(n)}${srcs}${notesHTML}</div>
    <div class="m-foot"><div class="m-chips">${["critic","scout","muse","wright"].map(k=>`<button type="button" data-m="mention" data-k="${k}">@${AGENTS[k].name.toLowerCase()}</button>`).join("")}</div><div class="m-write"><label for="mInput" class="sr">Add a note</label><textarea id="mInput" rows="1" placeholder="Add a note, or ask @${AGENTS[defaultAgentFor(n)].name.toLowerCase()}">${esc(draft)}</textarea><button type="button" class="send" id="mSendBtn" data-m="post" aria-label="Post"${draft.trim()?"":" disabled"}><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div></div>`;
   const ta=qs("#mInput",m),sb=qs("#mSendBtn",m);
   if(ta&&sb){
@@ -5323,7 +5372,7 @@ function renderLedger(){
    <ol>${items.map(e=>{const a=AGENTS[e.who];return `<li><button type="button" data-l="goto" data-id="${e.node||""}"><time>${clock(e.t)}</time><span class="mk ${a?"":"you"}">${a?a.mk:AV.you}</span><span class="tx">${e.html}</span></button></li>`}).join("")||'<li style="padding:12px;color:var(--faint)">Nothing decided yet.</li>'}</ol>`;
 }
 
-function renderAll(){
+function renderAll(){if(board&&(!changeShadow||changeShadow.id!==board.id))changeShadow=shadowOf(board);
   litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();
   $("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";
   const archCount=board.nodes.filter(n=>!n.tombstone&&n.archived).length;
@@ -6728,7 +6777,7 @@ function seatWorld(k){const s=qs(`[data-agent="${k}"]`);if(!s||!s.offsetParent)r
 function goHome(k){const c=cursors[k];if(!c)return;const h=seatWorld(k);if(h&&!calm()){moveCursor(k,h.x,h.y);clearTimeout(c._hide);c._hide=setTimeout(()=>{if(!crewState[k].busy)c.classList.remove("on")},620)}else c.classList.remove("on")}
 async function runAgent(k,{read=[],places=[],label,work}){
   preemptBackgroundAdvisors?.();
-  crewState[k].cancel=false;setAgent(k,{busy:true,status:label});
+  crewState[k].cancel=false;setAgent(k,{busy:true,status:label});recordChanges();
   const c=cursorEl(k);const say=s=>{setAgent(k,{status:s});c.querySelector(".lbl").textContent=s[0].toUpperCase()+s.slice(1)};say(label);
   const stopped=()=>crewState[k].cancel;
   const t0=performance.now();let res,err,fin=false;const p=work({say,stopped}).then(r=>res=r,e=>err=e).finally(()=>fin=true);
@@ -6989,7 +7038,7 @@ function treeMapLocal(ns){
   if(!ns.length)return defaultTreeMap("Central Topic");
   const root=clip(titleOf(ns[0])||"Tree Map",36);
   const branches=ns.slice(0,4).map(n=>{
-    const rawPts=n.type==="treemap"?(treeMapOf(n).children||[]).map(c=>c.text):n.type==="list"?(n.items||[]).map(i=>i.t):n.type==="kanban"?(n.cards||[]).map(c=>c.title):n.type==="synthesis"?(n.points||[]):bodyOf(n).split(/[\n.!?]+/).map(s=>s.trim()).filter(s=>s.length>3);
+    const rawPts=n.type==="treemap"?(treeMapOf(n).children||[]).map(c=>c.text):n.type==="list"?(n.items||[]).map(i=>i.t):n.type==="kanban"?(n.cards||[]).map(c=>c.title):n.type==="synthesis"?(n.points||[]):String(fullTextOf(n)||n.text||"").split(/[\n.!?]+/).map(s=>s.trim()).filter(s=>s.length>3);
     const ch=(rawPts||[]).slice(0,3).map(s=>({id:"tm_"+uid(),text:clip(s,34),children:[]}));
     return{id:"tm_"+uid(),text:clip(titleOf(n)||kindLabel(n),28),children:ch};
   });
@@ -9325,6 +9374,8 @@ async function sendLine(){
     return;
   }
   const text=lineText().trim();const r=route(text);if(!r||r.kind==="none")return toast("Unknown move. Type / to see them all.");
+  {const needsText=new Set(["claim","note","question","image","video","gif","search","ask"]),bare=text.match(/^\/(\w+)$/);
+   if(bare&&needsText.has(r.kind)&&!String(r.arg||"").trim()){lineIn.value="/"+bare[1]+" ";autoGrow();renderRoute();lineIn.focus();return toast(L(`Write it after /${bare[1]}`,`请在 /${bare[1]} 后面写上内容`))}}
   if(hasAtt)await commitLineAttachments({triggerAdvisor:false,selectNodes:true});
   const wasCrew=!!MODES_LINE[lineMode]?.crew;
   lineQueuePaused=false;
@@ -10447,7 +10498,7 @@ function copilotLocalReply(text,ctx){
   const actIntent=parseCanvasActionIntent(text,ctx);
   if(actIntent&&actIntent.length){
     const targetAgent=actIntent[0]?.by||"critic";
-    const disp=dispatchCanvasActions(actIntent,{by:targetAgent});
+    const disp=dispatchCanvasActions(actIntent,{by:targetAgent,engine:"rules"});
     const msg=L(`I've applied ${disp.applied.length} direct change${disp.applied.length>1?"s":""} to the board.`,`已直接在白板上执行了 ${disp.applied.length} 项修改。`);
     return {text:msg,visuals:[],proposals:[],chips:copilotStarterChips().slice(0,3),actions:actIntent,actionResults:disp};
   }
@@ -10916,6 +10967,10 @@ function playCanvasActionFeedback(createdNodes, modifiedNodes){
 }
 
 function dispatchCanvasActions(rawActions, opts={}){
+  const who=(opts.by&&AGENTS[opts.by])?opts.by:(opts.agent&&AGENTS[opts.agent]?opts.agent:"copilot");
+  return asActor({who,engine:opts.engine||"model"},()=>withProv({engine:opts.engine||"model"},()=>dispatchCanvasActionsRun(rawActions,opts)));
+}
+function dispatchCanvasActionsRun(rawActions, opts={}){
   const list=Array.isArray(rawActions)?rawActions:(rawActions?[rawActions]:[]);
   if(!list.length)return {applied:[],failed:[],createdNodes:[],modifiedNodes:[]};
   const applied=[],failed=[],createdNodes=[],modifiedNodes=[];
@@ -13549,7 +13604,7 @@ $("line").addEventListener("paste",e=>{
 /* ── keyboard ───────────────────────────────────────────────────────── */
 lineIn.addEventListener("input",()=>{autoGrow();updateMenu();renderRoute();schedulePreview();if(sharpened)closeSharpen()});
 lineIn.addEventListener("focus",()=>{$("line").classList.add("focus");schedulePreview()});
-lineIn.addEventListener("blur",()=>{$("line").classList.remove("focus");setTimeout(closeMenu,150);setTimeout(()=>{if(document.activeElement!==lineIn)clearPreview()},200)});
+lineIn.addEventListener("blur",()=>{$("line").classList.remove("focus");setTimeout(()=>{if(document.activeElement!==lineIn)closeMenu()},150);setTimeout(()=>{if(document.activeElement!==lineIn)clearPreview()},200)});
 lineIn.addEventListener("keydown",e=>{
   if(!$("menu").hidden){
     if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();menuIdx=(menuIdx+(e.key==="ArrowDown"?1:-1)+menuItems.length)%menuItems.length;updateMenu();return}

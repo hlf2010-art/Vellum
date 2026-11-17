@@ -7870,12 +7870,81 @@ function memoryDialog(opts={}){
   if(!bMem.trim()&&!sMem.trim())setTimeout(()=>bIn.focus(),30);
   else d.focus();
 }
-async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false},local){
+/* Small local models (Local AI) get prompts written for them and a check-and-repair pass. In Vellum's model
+   eval (tests/model-eval.cjs) a 4B model given the crew prompts wrote generic directions and made obvious
+   errors: a direction set in another city, a test passing if "fewer than one" player did something, two
+   closing questions, promises of work it would not do. Cloud models keep the crew prompts unchanged. */
+const smallModelOn=()=>aiPref==="auto"&&studioState.status==="ready";
+function projectKind(text){return /\b(game|rpg|jrpg|mmo|roguelike|platformer|visual novel|players?|quests?|level design)s?\b|游戏|玩家|关卡/i.test(String(text||""))?"game":""}
+const PLACES=["Shanghai","Beijing","Peking","Tianjin","Hong Kong","Taipei","Tokyo","Guangzhou","Canton","Hangzhou","Suzhou","Chongqing","Wuhan","Singapore","Seoul","Osaka","Macau","Nanjing","Nanking","London","Paris","New York","Berlin","Lagos","Mumbai","Cairo"];
+function placesIn(text){const t=String(text||"");return PLACES.filter(p=>new RegExp("\\b"+p+"\\b"+(/^Nanjing$/.test(p)?"(?!\\s+(?:East\\s+|West\\s+)?Road)":""),"i").test(t))}
+const SMALL_EX={
+  game:'{"title": "Night Market Ledger", "plan": "You run a stall in 1980s Taipei\'s Shilin night market, haggling with regulars each night while a gangster\'s debt grows.", "risk": "Regulars feel like people with their own reasons, not price tags.", "test": "Ten players play three nights; if fewer than six can name a regular who lied to them, the haggling is not reading as character.", "mode": "story"}',
+  other:'{"title": "Shed on Every Street", "plan": "Each street gets one shared tool shed run by a volunteer, with a paper sign-out sheet on the door.", "risk": "Neighbours trust each other with things that cost money.", "test": "Run two sheds for three weeks; if fewer than half the tools come back on time, the trust is not there yet.", "mode": "desk"}'
+};
+function smallStrategistSystem(kind){
+  return `You are Strategist on a small creative crew. You turn one idea into distinct directions worth testing.\n${kind==="game"?"This idea is a game. Think like a game designer: each direction is a different game someone could actually play, with a player role and something the player does again and again.":"Work out what kind of thing the idea is (an app, a story, a service, an event) and think like an expert maker of that thing."}\nWrite plainly and concretely: name real places, years, groups, objects, and what the person does. Do not use vague words such as immersive, unique, rich, dynamic, engaging or vibrant.`;
+}
+function smallForkPrompt(ideaText,count,brief,existing,wall){
+  const kind=projectKind(`${ideaText} ${brief}`),game=kind==="game",home=placesIn(ideaText);
+  const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}What is on the wall that feeds it:\n${wall||"(nothing yet)"}\n${existing.length?`Directions that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}
+Write exactly ${count} direction${count>1?"s":""}. ${count>1?(game?"Make them differ in all three of: genre or core mechanic, era or part of the setting, and who the player is. ":"Make them differ in approach, in who it is for, and in form. "):""}Use only real places, institutions and events${home.length?`, and stay in ${home.join(" / ")}`:""}. Each should be about people, choices and pressure.
+For each direction, write the fields in this order:
+- "title": 2-4 words, a name, no punctuation at the end
+- "plan": one sentence: ${game?"who the player is, what they do again and again, and the setting detail it rests on":"who it is for, what they do, and the concrete detail it rests on"}
+- "risk": the experience it depends on: a feeling or behaviour, never knowledge (for example ${game?'"players come to care about one neighbour"':'"people trust each other with things that cost money"'})
+- "test": one sentence: a test with real people that would show that experience is NOT happening; use a number of at least 2; never test what people know
+- "mode": "story" | "desk" | "deck"
+Example of the level of detail (a different idea; do not reuse it): ${SMALL_EX[game?"game":"other"]}
+Return {"directions": [ ... ]}.`;
+  return {system:smallStrategistSystem(kind),prompt};
+}
+function forkProblems(v,count,ideaText){
+  const list=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:null);
+  if(!list)return ['reply with {"directions": [...]}'];
+  const out=[],home=placesIn(ideaText),seen=new Set();
+  if(list.length!==count)out.push(`write exactly ${count} directions`);
+  list.forEach((d,i)=>{
+    const k=`direction ${i+1}`;
+    if(!d||typeof d!=="object"){out.push(`${k} must be an object`);return}
+    for(const f of ["title","plan","test"])if(!String(d[f]||(f==="plan"?d.text:"")||"").trim())out.push(`${k} needs a "${f}"`);
+    if(String(d.title||"").split(/\s+/).filter(Boolean).length>5)out.push(`${k}: the title must be 2-4 words`);
+    const t=String(d.title||"").toLowerCase();if(t&&seen.has(t))out.push(`${k} repeats a title`);seen.add(t);
+    const all=`${d.title||""} ${d.plan||d.text||""} ${d.test||""}`;
+    if(home.length){const other=placesIn(all).filter(p=>!home.some(h=>h.toLowerCase()===p.toLowerCase()));if(other.length)out.push(`${k} is set in ${other[0]}, but the idea is in ${home[0]}`)}
+    if(/\b(fewer|less) than (one|1|zero|0)\b/i.test(d.test||""))out.push(`${k}: the test uses an impossible number ("fewer than one")`);
+    if(/Night Market Ledger|Shilin|Shed on Every Street/i.test(all))out.push(`${k} copies the example; write a new one`);
+  });
+  return out;
+}
+/* Small models sometimes end with two questions ("— or —") or promise work they won't do. Keep one question. */
+function tidySmallReply(text){
+  let t=String(text||"").replace(/\n\s*(?:—|--)?\s*or\s*(?:—|--)?\s*\n[\s\S]*$/i,"");
+  t=t.split("\n").filter(l=>!/^\s*\(?\s*(?:if this is what you want,?\s*)?(?:I'?ll|I will|let me|I'm going to)\s+(?:start|begin|go ahead|draft|build|write|set up|adjust|create)\b/i.test(l)&&!/^\s*—\s*$/.test(l)).join("\n").trim();
+  const paras=t.split(/\n\s*\n/),last=paras.pop()||"",qs=last.match(/[^?]*\?/g);
+  paras.push(qs&&qs.length>1?qs[0].trim():last);
+  return paras.join("\n\n").trim();
+}
+async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false,small=null,check=null},local){
   const fullSys=withMemorySystem(system,memoryMode);
+  const sSys=small?withMemorySystem(small.system,memoryMode):fullSys,sPrompt=small?small.prompt:prompt;
+  /* Local AI: an unreadable answer is asked once more; a readable one with obvious errors gets one targeted
+     repair, kept only if it has fewer problems. The caller fills any remaining gap from built-in rules. */
+  const studio=async()=>{
+    const ask=msgs=>studioChat({system:sSys,...(msgs?{messages:msgs}:{prompt:sPrompt}),images:msgs?[]:images,json,maxTokens,onText,signal});
+    let v;
+    try{v=await ask()}catch(e){if(json&&small&&/Invalid JSON|Empty model response/.test(e?.message||""))v=await ask();else throw e}
+    const probs=check?check(v):[];
+    if(probs.length){
+      try{const fixed=await ask([{role:"user",content:sPrompt},{role:"assistant",content:JSON.stringify(v)},{role:"user",content:`Fix only these problems and return the whole JSON again: ${probs.join("; ")}.`}]);if(check(fixed).length<probs.length)v=fixed}
+      catch(e){if(e?.name==="AbortError")throw e}
+    }
+    return v;
+  };
   return viaClaude(
     ()=>json?sampleFn.json(`${fullSys}\n\n${prompt}`,{modelTier}):sampleFn(`${fullSys}\n\n${prompt}`,{modelTier,cache:false,onText}).then(r=>r.text),
     local,
-    {studio:()=>studioChat({system:fullSys,prompt,images,json,maxTokens,onText,signal}),apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal},quiet}
+    {studio,apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal},quiet}
   );
 }
 
@@ -7976,11 +8045,13 @@ async function fork(idea,count=3,brief=""){
   const imgNodes=[idea,...srcs].filter(n=>n&&(n.type==="image"||n.type==="frame"));
   const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${brief?`\nThe designer added: "${brief}"\n`:""}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
-  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({system:`${ROLE.muse}\n${STYLE}`,prompt,images:imgNodes,json:true},()=>forkLocal(idea,count))});
+  const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
+  const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,wallText(srcs)):null;
+  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({system:`${ROLE.muse}\n${STYLE}`,prompt,images:imgNodes,json:true,small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count);
   checkpoint();const pid="p-"+uid();
-  const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",by:"muse",status:"sketch",pid},places[i]);const e=edge(idea.id,n.id,"derive","live");captureDepSnapshot(n,[idea]);freshEdges.add(e.id);return n});
+  const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",...(d.risk?{risk:String(d.risk)}:{}),by:"muse",status:"sketch",pid},places[i]);const e=edge(idea.id,n.id,"derive","live");captureDepSnapshot(n,[idea]);freshEdges.add(e.id);return n});
   setTimeout(()=>freshEdges.clear(),1200);
   log("muse",`Suggested ${made.map(d=>`<b>${d.letter} ${esc(d.title)}</b>`).join(", ")}${live?"":" (offline)"}`,made[0].id);
   sel=[];renderAll();persist();typeIn(made.map(m=>m.id));follow([idea,...made]);
@@ -12015,7 +12086,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;
         const full=await studioChat({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
         const parsed=parseCopilotBlocks(full);
-        aiMsg.text=isCasual?trimCasual(parsed.text||full):(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
+        aiMsg.text=isCasual?trimCasual(parsed.text||full):tidySmallReply(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
       }else if(aiPref!=="local"&&apiRoutable()){
         const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
         const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;

@@ -68,9 +68,8 @@ function checkDirs(dirs) {
 function checkReply(text) {
   const f = [];
   if (!String(text || '').trim()) return ['empty reply'];
-  const paras = String(text).trim().split(/\n\s*\n/);
-  const tail = paras.slice(-2).join(' ');
-  const qs = (tail.match(/\?/g) || []).length;
+  const last = String(text).trim().split(/\n\s*\n/).pop();
+  const qs = (last.match(/\?/g) || []).length; // a question earlier in the reply is fine; the close should ask one thing
   if (qs > 1 || /—\s*or\s*—|^\s*or\s*$/im.test(text)) f.push(`${qs} closing questions, not 1`);
   if (/\b(I'?ll|I will|let me|I'm going to)\s+(start|begin|go ahead|draft|build|write|set up|adjust|create)\b/i.test(text)) f.push('promises work it will not do');
   const words = String(text).split(/\s+/).length;
@@ -177,6 +176,7 @@ const RUN = {
 };
 
 function md(results, meta) {
+  const TASKS = ['fork', 'push', 'merge', 'build'].filter(t => results.some(r => r.task === t));
   const L = [`# Vellum model eval · ${meta.label}`, '', `${meta.when} · engine: ${meta.engine} · ${N} samples per task · Vellum ${meta.commit}`, '',
     '| Task | Samples | Avg seconds | Samples with obvious errors | Errors |', '|---|---|---|---|---|'];
   for (const t of TASKS) {
@@ -199,6 +199,16 @@ function md(results, meta) {
   return L.join('\n');
 }
 
+// --recheck results.json: apply the current checks to saved outputs and rewrite the report
+if (args.recheck) {
+  const d = JSON.parse(fs.readFileSync(args.recheck, 'utf8'));
+  const chk = { fork: checkDirs, push: checkReply, merge: checkReply, build: checkBuild };
+  for (const r of d.results) if (!r.error) r.flags = [...chk[r.task](r.out || (r.task === 'fork' ? [] : r.out)), ...(r.pageErrors || []).slice(0, 1).map(e => 'page error: ' + e)];
+  fs.writeFileSync(args.recheck, JSON.stringify(d, null, 1));
+  fs.writeFileSync(args.recheck.replace(/\.json$/, '.md'), md(d.results, d.meta));
+  console.log('rechecked', args.recheck);
+  process.exit(0);
+}
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const srv = await serve(), base = `http://127.0.0.1:${srv.address().port}`;

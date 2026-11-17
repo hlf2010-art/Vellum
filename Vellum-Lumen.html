@@ -1242,7 +1242,7 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
    stays put when a wide table scrolls. */
 .tbl-wrap{max-width:100%;overflow-x:auto;scrollbar-width:thin}
 .cp-bubble .tbl-wrap{margin:8px 0 10px}
-.tbl{--tbl-bg:var(--card);width:100%;border-collapse:separate;border-spacing:0;font:450 12.5px/1.5 var(--ui);color:var(--label);overflow-wrap:normal;word-break:normal}
+.tbl{--tbl-bg:var(--card);width:max-content;min-width:100%;border-collapse:separate; /* natural width; fills when narrower; never squeezed (it scrolls instead) */border-spacing:0;font:450 12.5px/1.5 var(--ui);color:var(--label);overflow-wrap:normal;word-break:normal}
 .tbl caption{caption-side:top;text-align:left;padding:0 10px 8px;font:600 13px/1.3 var(--ui);letter-spacing:-.01em;color:var(--label)}
 .tbl th,.tbl td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:.5px solid var(--hair-2);background:var(--tbl-bg)}
 .tbl th:first-child,.tbl td:first-child{padding-left:10px}.tbl th:last-child,.tbl td:last-child{padding-right:10px}
@@ -1320,6 +1320,8 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 th[aria-sort="ascending"] .tbl-arr,th[aria-sort="descending"] .tbl-arr{opacity:1}
 th[aria-sort="ascending"] .tbl-arr{transform:rotate(180deg)}
 th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
+/* once scrolled sideways, the pinned first column shows its edge */
+.tbl-wrap.scrolled .tbl th:first-child,.tbl-wrap.scrolled .tbl td:first-child{box-shadow:.5px 0 0 var(--hair-2),8px 0 10px -8px rgba(0,0,0,.18)}
 .tbl-wrap.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
 .tbl td.num{position:relative;white-space:nowrap}
 /* magnitude: a full-width faint track with a neutral fill, so it reads as "how much of the column's max", not a link */
@@ -5430,11 +5432,24 @@ function makeTableCard(ds,{title,source,at,by}={}){
   const spot=at?freeSpot(at.x-gw/2,at.y-100,gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
   return node("table",{title:clip(title||L("Table","表格"),60),data,gw,...(by?{by}:{})},spot);
 }
-/* Board width a table card needs, from the same column widths the renderer uses (clamped; wider tables scroll). */
+/* Board width a table card needs: measured, not guessed. The table is laid out once in a hidden card with the real
+   fonts and column rules, at its natural width; the card takes that width plus its padding, between 320 and 960px.
+   960 fits the usual 7-9 columns and stays about two thirds of a 1440px screen at 100%, so the cards around it stay in
+   view; wider tables scroll sideways with the first column pinned. People can still drag the card wider. */
+const TBL_CARD_MIN=320,TBL_CARD_MAX=960;
 function tblCardWidth(ds){
+  const clamp=w=>Math.max(TBL_CARD_MIN,Math.min(TBL_CARD_MAX,Math.ceil(w)));
+  try{
+    const host=document.createElement("div");host.className="card table";host.setAttribute("aria-hidden","true");
+    host.style.cssText="position:absolute;left:-99999px;top:0;visibility:hidden;width:auto;pointer-events:none";
+    host.innerHTML=`<div class="in">${tblBlockHTML(ds)}</div>`;(document.getElementById("nodes")||document.body).appendChild(host);
+    const tbl=host.querySelector("table.tbl");tbl.style.width="max-content";host.querySelector(".tbl-wrap").style.overflow="visible";
+    const pad=(()=>{const cs=getComputedStyle(host.querySelector(".in"));return parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight)})();
+    const w=tbl.offsetWidth;host.remove(); // layout width: unaffected by the canvas zoom transformif(w>0)return clamp(w+pad+2);
+  }catch{}
+  // no layout available: estimate from the same column rules
   const {raw,cols,colW}=tableModel(ds),base={"w-first":144,"w-text":96,"w-long":180,"w-tag":88};
-  const w=colW.reduce((sum,c,ci)=>sum+(cols[ci]?Math.max(72,Math.max(...raw.map(r=>(r[ci]||"").length),String(ds.columns[ci]?.name||"").length)*8+28):base[c]||96),0);
-  return Math.max(360,Math.min(760,Math.round(w+40)));
+  return clamp(colW.reduce((sum,c,ci)=>sum+(cols[ci]?Math.max(72,Math.max(...raw.map(r=>(r[ci]||"").length),String(ds.columns[ci]?.name||"").length)*8+28):base[c]||96),0)+40);
 }
 function tblBlockHTML(ds,{add=false,view="table",col=null}={}){
   const {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey}=tableModel(ds);
@@ -6178,7 +6193,7 @@ function toggleStudioPopover(force){
   if(studioPopOpen&&hasApi()){const h=apiHealthNow();if(h.k==="unknown"||(h.k!=="checking"&&Date.now()-h.at>120000))testApi({quiet:true})}
 }
 /* Tables that are wider than their space fade at the right edge until scrolled to the end. */
-(()=>{const fit=w=>w.classList.toggle("more",w.scrollWidth-w.clientWidth-w.scrollLeft>2);let q=0;
+(()=>{const fit=w=>{w.classList.toggle("more",w.scrollWidth-w.clientWidth-w.scrollLeft>2);w.classList.toggle("scrolled",w.scrollLeft>1)};let q=0;
   new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;document.querySelectorAll(".tbl-wrap:not([data-fit])").forEach(w=>{w.dataset.fit="1";fit(w)});document.querySelectorAll('.tbl-block[data-view="chart"]:not([data-init])').forEach(b=>{b.dataset.init="1";tblChart(b,b.dataset.col!=null?+b.dataset.col:null)})})}).observe(document.body,{childList:true,subtree:true});
   document.addEventListener("scroll",e=>{if(e.target.classList?.contains("tbl-wrap"))fit(e.target)},true);addEventListener("resize",()=>document.querySelectorAll(".tbl-wrap").forEach(fit));})();
 /* Table interactions: view as chart, copy, ask about a row, crosshair. */
@@ -14760,6 +14775,7 @@ function paintResizeHud(el,w,label,sym){
   hud.innerHTML=`<i></i>${label?`<span>${pre}${label} ·</span> `:pre?`<span>${pre}</span>`:""}${Math.round(w)} px`;
 }
 function resetCardWidth(n){
+  if(n?.type==="table"&&n.data){const fit=tblCardWidth(n.data);if(n.gw===fit)return false;checkpoint();n.gw=fit;n.updated=NOW();sfx("pop");renderAll();persist();toast(L(`Fitted to the table (${fit} px)`,`已贴合表格宽度（${fit} px）`));return true}
   if(!n||n.gw==null)return false;
   checkpoint();delete n.gw;n.updated=NOW();sfx("pop");renderAll();persist();
   toast(L(`Width reset (${nodeW(n)} px)`,`已恢复默认宽度（${nodeW(n)} px）`));

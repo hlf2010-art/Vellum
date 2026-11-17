@@ -507,7 +507,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
           const r = { added: board.nodes.length - n0, type: n.type, title: n.title, cols: n.data.columns.map(c => c.name).join('|'), rows: n.data.rows.map(x => x.join('/')).join(';'), src: n.data.source.kind, gw: n.gw, text: fullTextOf(n).split('\n').length, rendered: !!el?.querySelector('table.tbl'), id: n.id };
           undo(); r.undone = !board.nodes.some(x => x.id === n.id); redo(); r.redone = board.nodes.some(x => x.id === n.id); persist(); return r;
         });
-        check('Add to board turns a reply table into a table card with its data intact, sized to fit, readable by the crew, undoable', card.added === 1 && card.type === 'table' && card.title === 'Three ways to fix sync' && card.cols === 'Option|Cost|Risk' && card.rows === 'Rebuild/$120k/High;Patch/$38k/Low' && card.src === 'copilot' && card.gw >= 360 && card.text === 3 && card.rendered && card.undone && card.redone, JSON.stringify(card));
+        check('Add to board turns a reply table into a table card with its data intact, sized to fit, readable by the crew, undoable', card.added === 1 && card.type === 'table' && card.title === 'Three ways to fix sync' && card.cols === 'Option|Cost|Risk' && card.rows === 'Rebuild/$120k/High;Patch/$38k/Low' && card.src === 'copilot' && card.gw >= 320 && card.gw <= 960 && card.text === 3 && card.rendered && card.undone && card.redone, JSON.stringify(card));
         await p.waitForTimeout(1500); await p.reload(); await p.waitForTimeout(2500); // let the debounced save land first
         check('a table card survives a reload', await p.evaluate(id => { const n = byId(id); return !!n && n.type === 'table' && n.data.rows.length === 2; }, card.id));
         const pin = await p.evaluate(() => { board.copilot = board.copilot || []; board.copilot.push({ id: 'mP', role: 'ai', text: '', visuals: [{ kind: 'compare', title: 'Rebuild vs Patch', left: 'Rebuild', right: 'Patch', rows: [{ dim: 'Cost', a: '$120k', b: '$38k', winner: 'right' }] }] });
@@ -530,6 +530,14 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         });
         check('import: CSV quotes, escapes and line breaks; "49,90" is not 4990; nested JSON flattens; ids are not quantities; big files keep 500 of N; tabular files become tables, broken ones stay files; pasted TSV becomes a table, prose does not',
           ing.csv === 'Name|Note ; Acme, Inc.|Said "hi"\nthen left ; Globex|ok' && !ing.euNumeric && ing.nestedCols === 'id|user.city|tags' && ing.nestedFirst === '1|Oslo|a, b' && !ing.idIsQuantity && ing.bigRows === 500 && ing.bigTotal === 700 && ing.files === 'table,source' && ing.fileSrc === 'growth.csv' && ing.pasted === 'table:Region|Q1' && ing.prose === false, JSON.stringify(ing));
+        const fit = await p.evaluate(() => {
+          const mk = cols => ({ columns: Array.from({ length: cols }, (_, i) => ({ name: 'Field ' + (i + 1) })), rows: [Array.from({ length: cols }, (_, i) => 'value ' + i), Array.from({ length: cols }, (_, i) => 'value ' + i)] });
+          const z0 = cam.s, measure = ds => { const gw = tblCardWidth(ds), n = node('table', { title: 'w', data: { v: 1, ...ds }, gw }, { x: 0, y: 0 }); renderAll(); const w = document.querySelector(`.card[data-id="${n.id}"] .tbl-wrap`); const r = { gw, scrolls: w.scrollWidth > w.clientWidth + 1 }; board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll(); return r; };
+          const small = measure(mk(3)), wide = measure(mk(14)); cam.s = .33; const wideZoomed = measure(mk(14)); cam.s = z0;
+          const n = node('table', { title: 'r', data: { v: 1, ...mk(3) }, gw: 900 }, { x: 0, y: 0 }); resetCardWidth(n); const refit = n.gw === small.gw; board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll();
+          return { small, wide, wideZoomed, refit };
+        });
+        check('table cards fit their table (no sideways scroll), stop at 960px and scroll beyond, measure the same at any zoom, and refit on reset', !fit.small.scrolls && fit.small.gw < 960 && fit.wide.gw === 960 && fit.wide.scrolls && fit.wideZoomed.gw === 960 && fit.refit, JSON.stringify(fit));
         check('table rows: click selects one, Cmd adds, Shift selects a range, and the selection bar appears', sel.one === 'A' && sel.two === 'A,C' && sel.range === 'A,B,C' && sel.single === 'B' && sel.bar === false, JSON.stringify(sel));
         check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
       }

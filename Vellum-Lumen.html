@@ -1071,6 +1071,22 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 .m-sub-sep{margin:0 6px;color:var(--label-4);flex:none}
 .m-head-sep{width:1px;height:16px;background:var(--hair-2);margin:0 2px;flex:none}
 .m-more-wrap{position:relative;display:inline-flex}
+/* Copilot: one header row; menus for "more" and "+" */
+.cp-more-wrap,.cp-plus-wrap{position:relative;display:inline-flex}
+.cp-more-pop,.cp-plus-pop{position:absolute;z-index:80;min-width:210px;padding:5px;border-radius:var(--radius-media);background:var(--card);box-shadow:var(--card-shadow-up),0 18px 40px rgba(0,0,0,.25);display:grid;gap:2px}
+.cp-more-pop{top:calc(100% + 6px);right:0}
+.cp-plus-pop{bottom:calc(100% + 8px);left:0}
+.cp-more-pop[hidden],.cp-plus-pop[hidden]{display:none}
+.cp-more-pop button,.cp-plus-pop button{display:flex;align-items:center;gap:8px;height:var(--size-md);padding:0 10px;border-radius:var(--radius-sm);font:550 13px/1 var(--ui);color:var(--label);text-align:left;white-space:nowrap}
+.cp-more-pop button:hover,.cp-plus-pop button:hover{background:var(--hover)}
+.cp-more-pop button .ico,.cp-plus-pop button .ico{width:15px;height:15px;color:var(--label-2)}
+.cp-more-pop button.danger{color:var(--danger-ink)}.cp-more-pop button.danger .ico{color:var(--danger-ink)}
+.cp-more-pop small{padding:6px 10px 3px;font:450 11px/1.3 var(--ui);color:var(--label-3)}
+.cp-prop .cp-votes{display:none}
+.cp-prop-test{margin:6px 0 0;font:450 13px/1.4 var(--ui);color:var(--label-2)}
+.cp-prop-test b{font-weight:600;color:var(--label)}
+.cp-prop-warn{display:flex;align-items:center;gap:6px;margin:8px 0 0;font:500 12px/1.35 var(--ui);color:color-mix(in srgb,var(--warn) 80%,var(--label))}
+.cp-prop-warn .ico{width:14px;height:14px;flex:none;color:var(--warn-fill)}
 .m-more-pop{position:absolute;top:calc(100% + 6px);right:0;z-index:80;min-width:176px;padding:5px;border-radius:var(--radius-media);background:var(--card);box-shadow:var(--card-shadow-up),0 18px 40px rgba(0,0,0,.45);display:grid;gap:4px}
 .m-more-pop[hidden]{display:none!important}
 .m-more-sec{display:grid;gap:2px}
@@ -2950,6 +2966,13 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .review-pop .rp-sub{padding:8px 14px 2px;font:600 11px/1.2 var(--ui);letter-spacing:.04em;text-transform:uppercase;color:var(--label-3)}
 
 @media (max-width:640px){#routeWrap{display:none}}
+
+/* Focused text fields: no grey ring. The field brightens and a soft warm glow (the same light that means "alive") surrounds it. */
+:root{--field-glow:0 0 0 4px rgba(255,190,120,.15),0 4px 20px -2px rgba(255,165,80,.34)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--field-glow:0 0 0 4px rgba(255,190,120,.09),0 4px 22px -2px rgba(255,165,80,.24)}}
+:root[data-theme="dark"]{--field-glow:0 0 0 4px rgba(255,190,120,.09),0 4px 22px -2px rgba(255,165,80,.24)}
+.cp-box:focus-within,.m-write:focus-within,.mem-box:focus,.mcp-in:focus,.field input:focus,.sh-id input:focus,.adv-reply-in:focus,.bp-name:focus,.m-code-ed:focus,.m-notepad-ed:focus{background:var(--card);box-shadow:var(--field-glow)}
+.line.focus .line-field{box-shadow:inset 0 1px 0 var(--glass-hi),inset 0 -1px 0 var(--glass-lo),var(--field-glow),0 20px 48px -18px rgba(0,0,0,.4)}
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="lensDefs"></defs></svg>
 <script>
@@ -10175,7 +10198,7 @@ function restoreConfigSnapshot(snap,{silent=false}={}){
   setThemePref(snap.theme||"auto");
   if(snap.gen){genOpts={...genOpts,...snap.gen};store.set(".gen",genOpts);if(!$("genOpts")?.hidden)renderGenOpts(true)}
   if(snap.tool)setTool(snap.tool);
-  if(snap.copilotMode)copilotMode=snap.copilotMode;
+  /* Copilot picks who helps automatically; old saved modes are ignored. */
   if(typeof snap.copilotOpen==="boolean"&&snap.copilotOpen!==copilotOpen)openCopilot(snap.copilotOpen);
   if(snap.boardTitle!==undefined&&snap.boardTitle!==board.title){board.title=snap.boardTitle;$("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";persist()}
   renderCopilot?.();
@@ -11056,7 +11079,7 @@ function mcpDialog(startProv="",opts={}){
 }
 
 /* ── Copilot: multi-turn design partner synced with the board & crew ── */
-let copilotOpen=false,copilotMode="ask",copilotAbort=null,copilotStreaming=false,cpCloseTimer=0,cpPeekTimer=0;
+let copilotOpen=false,copilotMode="auto",copilotAbort=null,copilotStreaming=false,cpCloseTimer=0,cpPeekTimer=0;
 const cpKey=id=>"cp-"+id;
 function clearCopilotPeek(){clearTimeout(cpPeekTimer);$("copilotBtn")?.classList.remove("is-peek")}
 function openCopilot(open,focusNode=null){
@@ -11188,7 +11211,7 @@ function parseCopilotBlocks(raw){
     const arr=Array.isArray(input)?input:(input&&typeof input==="object"?[input]:[]);
     return arr.slice(0,4).map(pr=>{
       if(!pr||typeof pr!=="object")return null;
-      const rawKind=String(pr.kind||"").toLowerCase();
+      const rawKind=String(pr.kind||pr.cardType||pr.card_type||(pr.type&&!/^(create|update|delete|edit|add)$/i.test(pr.type)?pr.type:"")||"").toLowerCase();
       const kind=rawKind==="generate_media"||(!rawKind&&pr.media_kind)?(String(pr.media_kind||pr.mediaKind||pr.type||"image").toLowerCase()==="video"?"video":"image"):(rawKind||"note");
       const items=Array.isArray(pr.items)?pr.items.map(cleanCopilotField).filter(Boolean):undefined;
       return {...pr,kind,title:cleanCopilotField(pr.title),text:cleanCopilotField(pr.text||pr.body||pr.summary||pr.note||pr.content||pr.markdown),test:cleanCopilotField(pr.test),prompt:cleanCopilotField(pr.prompt),query:cleanCopilotField(pr.query),...(pr.scope?{scope:String(pr.scope).toLowerCase()==="studio"?"studio":"board"}:{}),...(items?{items}:{})};
@@ -11223,7 +11246,7 @@ function parseCopilotBlocks(raw){
       try{
         const parsed=parseAIJson(m[1]);
         const list=Array.isArray(parsed)?parsed:(parsed&&typeof parsed==="object"?[parsed]:[]);
-        if(list.length&&list.some(x=>x&&typeof x==="object"&&(x.kind||x.media_kind||x.prompt||x.query))){
+        if(list.length&&list.some(x=>x&&typeof x==="object"&&(x.kind||x.cardType||x.card_type||x.media_kind||x.prompt||x.query||(x.action&&x.title)))){
           proposals=normProps(list);text=text.replace(m[0],"");break;
         }
       }catch{}
@@ -11233,6 +11256,11 @@ function parseCopilotBlocks(raw){
     const bare=text.match(/(\{\s*"kind"\s*:\s*"(?:generate_media|image|video|gif|search|direction|note|notepad|list|kanban|treemap|config|memory)"[\s\S]*?\})/);
     if(bare){try{const parsed=parseAIJson(bare[1]);if(parsed&&typeof parsed==="object"){proposals=normProps([parsed]);text=text.replace(bare[0],"")}}catch{}}
   }
+  // Bare JSON objects anywhere in the text (no fence, any of the schemas small models produce).
+  {const spans=[];for(let i=0;i<text.length;i++){if(text[i]!=="{")continue;let d=0,j=i,inStr=false;for(;j<text.length;j++){const ch=text[j];if(inStr){if(ch==="\\"){j++;continue}if(ch==='"')inStr=false;continue}if(ch==='"')inStr=true;else if(ch==="{")d++;else if(ch==="}"){d--;if(!d)break}}if(d===0&&j<text.length){spans.push([i,j+1]);i=j}}
+   const found=[];const inFence=i=>((text.slice(0,i).match(/```/g)||[]).length%2)===1;for(const [a,b] of spans.reverse()){if(inFence(a))continue;const chunk=text.slice(a,b);if(!/"\s*:/.test(chunk))continue;let obj=null;try{obj=parseAIJson(chunk)}catch{}if(obj&&typeof obj==="object"){if(!proposals.length&&(obj.kind||obj.cardType||obj.card_type||(obj.action&&obj.title)))found.unshift(obj);text=text.slice(0,a)+text.slice(b)}}
+   if(found.length&&!proposals.length)proposals=normProps(found);
+   text=text.replace(/^\s*(?:[-*]\s*)?(?:\*\*)?(?:proposals?|actions?|json)(?:\*\*)?\s*:?\s*$/gim,"").replace(/^\s*[-*]\s*$/gm,"")}
   const cm=text.match(/```chips\s*([\s\S]*?)```/i);
   if(cm){
     try{
@@ -11250,6 +11278,13 @@ function parseCopilotBlocks(raw){
     text=stanceFallback.title&&stanceFallback.text?`**${stanceFallback.title}** — ${stanceFallback.text}`:(stanceFallback.text||stanceFallback.title);
   }
   proposals=proposals.map(pr=>{
+    if(pr.kind==="direction"){
+      let t=pr.text||"",test=pr.test||"";
+      const tm=t.match(/\n*\s*(?:\*\*)?Test(?:\*\*)?\s*[:：]\s*([\s\S]+)$/i);
+      if(tm&&!test){test=tm[1].trim();t=t.slice(0,tm.index).trim()}
+      const threshold=/\d/.test(test)&&/(pass|fail|≥|>=|at least|threshold|%|\b\d+\s*(?:\/|of|out of)\s*\d+)/i.test(test);
+      pr={...pr,text:t,test,needsThreshold:!threshold};
+    }
     if((pr.kind==="note"||pr.kind==="notepad")&&!pr.title&&!pr.text){
       const fbTitle=stanceFallback?.title||clip(firstSentence(text.replace(/\*+/g,"")),44);
       const fbText=stanceFallback?.text||clip(text.replace(/\*+/g,"").replace(/\s+/g," ").trim(),220);
@@ -11274,7 +11309,7 @@ function isValidCopilotChip(c){
 function copilotStarterChips(){
   const ctx=ctxNodes(),sketches=groups().size;
   if(ctx.some(n=>n.type==="image"||n.type==="frame"))return ["Examine this image","Suggest 2 directions from this","Generate sharper variations"];
-  if(ctx.length)return [`Critique ${titleOf(ctx[0])}`,"Propose 2 directions","Find real web references"];
+  if(ctx.length){const c0=ctx[0],nm=c0.type==="direction"&&c0.letter?c0.letter:clip(titleOf(c0),18);return [`Critique ${nm}`,"Propose 2 directions","Find web references"]}
   if(sketches)return ["Should we keep waiting sketches?","What evidence is weakest?","Suggest next 3 moves"];
   return ["Critique weak evidence","Propose 2 directions to test","Generate a visual keyframe","Find real reference photos"];
 }
@@ -11297,25 +11332,17 @@ function renderCopilot(){
   const extPills=extAll.length?`<div class="cp-ext" id="cpExtCtx"><span class="cp-ext-lbl">MCP (${extActive.length})</span>${extAll.map(it=>{const m=mcpMeta(it.provider),on=it.active!==false;return `<div class="cp-ext-pill${on?"":" muted"}" style="--mc:${m.color}"><span class="cp-ext-dot"></span><button type="button" class="cp-ext-tog" data-cp-ext-tog="${esc(it.id)}" title="${esc(`${m.name}: ${it.title} — click to ${on?"mute":"activate"}`)}"><span>${esc(m.short)}: ${esc(it.title)}</span></button><button type="button" class="cp-ext-act" data-cp-ext-view="${esc(it.id)}" title="Preview">${ic("eye")}</button><button type="button" class="cp-ext-act" data-cp-ext-pin="${esc(it.id)}" title="Pin to canvas">${ic("plus")}</button><button type="button" class="cp-ext-act" data-cp-ext-del="${esc(it.id)}" title="Detach">${ic("x")}</button></div>`}).join("")}</div>`:`<div class="cp-ext" id="cpExtCtx"></div>`;
   p.innerHTML=`<header class="cp-head">
       <span class="mk">${AV.muse}</span>
-      <div class="cp-titles"><b>Lumen Copilot</b><small id="cpSub">${esc(src.label)}</small></div>
-      <button type="button" class="cp-iconbtn${extActive.length?" has-mcp":""}" data-cp="mcp" title="MCP Sources (GitHub, Google Notebook, Notion, Figma)" aria-label="MCP Sources and Connectors">${ic("plug")}</button>
+      <div class="cp-titles" title="${esc(src.label)}"><b>Lumen Copilot</b></div>
       <button type="button" class="cp-iconbtn${hasAnyMemory()?" has-mem":""}" data-cp="memory" title="Memory &amp; Brief" aria-label="Memory and Brief">${ic("book")}</button>
-      <button type="button" class="cp-iconbtn" data-cp="clear" title="Clear chat" aria-label="Clear chat">${ic("trash")}</button>
+      <span class="cp-more-wrap"><button type="button" class="cp-iconbtn" data-cp="more" title="More" aria-label="More" aria-haspopup="menu">${ic("more")}</button>
+        <div class="cp-more-pop" role="menu" hidden><button type="button" role="menuitem" data-cp="mcp">${ic("plug")}${L("Sources","数据源")}</button><button type="button" role="menuitem" class="danger" data-cp="clear">${ic("trash")}${L("Clear chat","清空对话")}</button><small>${esc(src.label)}</small></div></span>
       <button type="button" class="cp-iconbtn" data-cp="close" title="Close Copilot (⌘.)" aria-label="Close Copilot">${ic("x")}</button>
     </header>
-    <div class="cp-sub">
-      <span class="cp-ctx" title="${esc(ctxLabel)}">${ic("sparkles")}<span>${esc(ctxLabel)}</span></span>
-      <div class="cp-sub-r">
-        <button type="button" class="cp-mcp-mini${extActive.length?" on":""}" data-cp="mcp" title="Connect or pull GitHub, Google Notebook (NotebookLM), Notion, Figma, or MCP servers">${ic("plug")}<span>${extActive.length?`${extActive.length} MCP`:"MCP"}</span></button>
-        <div class="cp-modes" role="group" aria-label="Copilot mode">
-          ${[["ask","Ask"],["crew","Crew"],["plan","Plan"]].map(([k,l])=>`<button type="button" data-cp-mode="${k}" aria-pressed="${copilotMode===k}">${l}</button>`).join("")}
-        </div>
-      </div>
-    </div>
     <div class="cp-msgs" id="cpMsgs">${msgs.length?msgs.map(renderCopilotMsg).join(""):`<div class="cp-empty"><h3>Think across the board</h3><p>Ask about selected cards, images, or pull live context from <b>GitHub</b>, <b>Google Notebook (NotebookLM)</b>, <b>Notion</b>, or <b>Figma</b> via MCP.</p></div>`}</div>
     <div class="cp-chips">${chips.map(c=>`<button type="button" class="cp-chip" data-cp-chip="${esc(c)}">${esc(c)}</button>`).join("")}</div>
     <footer class="cp-foot">${compCards}${extPills}<div id="cpQueue" class="q-list cp-q" aria-live="polite"></div><form id="cpForm" class="cp-box" autocomplete="off">
-      <button type="button" class="lbtn" id="cpFileBtn" title="Upload files or images" aria-label="Upload files or images">${ic("plus")}</button>
+      <span class="cp-plus-wrap"><button type="button" class="lbtn" id="cpFileBtn" title="Add" aria-label="Add files or sources" aria-haspopup="menu">${ic("plus")}</button>
+        <div class="cp-plus-pop" role="menu" hidden><button type="button" role="menuitem" data-cp-plus="files">${ic("fileImg")}${L("Upload files or images","上传文件或图片")}</button><button type="button" role="menuitem" data-cp-plus="source">${ic("plug")}${L("Add from Notion, GitHub or Figma","从 Notion、GitHub 或 Figma 添加")}</button></div></span>
       <textarea id="cpInput" rows="1" placeholder="${ctx.length?L("Ask about selection…","询问选中卡片…"):L("Ask Copilot…","向 Copilot 提问…")}"></textarea>
       <button type="button" class="lbtn" id="cpEnhBtn" title="Polish message" aria-label="Polish message">${ic("sparkles")}</button>
       <button type="button" class="lbtn" id="cpMicBtn" title="Dictate" aria-label="Dictate" aria-pressed="${listening}">${$("micBtn").innerHTML}</button>
@@ -11332,7 +11359,8 @@ function renderCopilot(){
     inp.onkeydown=e=>{if(e.key==="Escape"){e.preventDefault();openCopilot(false);return}if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(inp.value.trim())sendCopilotMessage(inp.value)}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="e"){e.preventDefault();polishCopilotInput()}};
   }
   if($("cpForm"))$("cpForm").onsubmit=e=>{e.preventDefault();const v=$("cpInput")?.value||"";if(copilotStreaming&&!v.trim()){stopCopilot();return}sendCopilotMessage(v)};
-  if($("cpFileBtn"))$("cpFileBtn").onclick=()=>pickFilesFor("canvas");
+  if($("cpFileBtn"))$("cpFileBtn").onclick=e=>{e.stopPropagation();const pop=qs(".cp-plus-pop",p);if(pop)pop.hidden=!pop.hidden};
+  qsa("[data-cp-plus]",p).forEach(b=>b.onclick=()=>{const pop=qs(".cp-plus-pop",p);if(pop)pop.hidden=true;if(b.dataset.cpPlus==="files")pickFilesFor("canvas");else mcpDialog()});
   if($("cpStopBtn"))$("cpStopBtn").onclick=()=>stopCopilot();
   if($("cpMicBtn"))$("cpMicBtn").onclick=()=>toggleVoice($("cpInput"));
   if($("cpEnhBtn"))$("cpEnhBtn").onclick=()=>polishCopilotInput();
@@ -11505,7 +11533,7 @@ function renderCopilotMsg(m){
     return `<div class="cp-msg user"><div class="cp-bubble">${mdLite(m.text)}</div>${cardBadges}${extBadges}</div>`;
   }
   const ag=AGENTS[m.agent];
-  if(!m.streaming&&m.text&&(/\{\s*"kind"\s*:\s*"(?:generate_media|image|video|gif|search|direction|note|notepad|list|kanban|treemap|config|memory)"/.test(m.text)||/```actions?/i.test(m.text))){
+  if(!m.streaming&&m.text&&(/\{\s*"kind"\s*:\s*"(?:generate_media|image|video|gif|search|direction|note|notepad|list|kanban|treemap|config|memory)"/.test(m.text)||/"(?:cardType|card_type)"\s*:|\{\s*"action"\s*:/.test(m.text)||/```actions?/i.test(m.text))){
     const rescued=parseCopilotBlocks(m.text);
     if(rescued.proposals.length||rescued.visuals.length||rescued.chips.length||rescued.actions.length){
       m.text=rescued.text;
@@ -11528,7 +11556,7 @@ function renderCopilotMsg(m){
     const doneLbl=k==="config"?"Applied":k==="memory"?"Saved":"Placed";
     return `<div class="cp-prop ${ltr?"pg-"+ltr:""}${pr.vote==="up"?" approved":pr.vote==="down"?" disliked":""}" data-msg-id="${m.id}" data-prop-idx="${idx}">
       <div class="cp-prop-top"><span class="cp-prop-tag">${esc(lbl)}</span>${pr.mode?`<span>${esc(MODES[pr.mode]||pr.mode)}</span>`:""}</div>
-      ${pr.title?`<h4>${esc(pr.title)}</h4>`:""}${body?`<p>${esc(clip(body,160))}</p>`:""}
+      ${pr.title?`<h4>${esc(pr.title)}</h4>`:""}${body?`<p>${esc(clip(body,160))}</p>`:""}${k==="direction"&&pr.test?`<p class="cp-prop-test"><b>${L("Test","测试")}</b> ${esc(clip(pr.test,140))}</p>`:""}${k==="direction"&&pr.needsThreshold?`<p class="cp-prop-warn">${ic("warn")}${L("No pass/fail threshold yet. Ask for one before placing it.","还没有及格线，放到画板前先补上。")}</p>`:""}
       <div class="cp-prop-act"><span class="cp-votes"><button type="button" class="vote-btn up${pr.vote==="up"?" active":""}" data-cp-vote="up" data-cp-prop="${idx}" data-cp-msg="${m.id}" aria-pressed="${pr.vote==="up"}" title="${esc(L("Helpful · Copilot remembers you like this direction","认可 · Copilot 会记住你偏爱此类方向"))}" aria-label="Like">${ic("thumbUp")}</button><button type="button" class="vote-btn dn${pr.vote==="down"?" active":""}" data-cp-vote="down" data-cp-prop="${idx}" data-cp-msg="${m.id}" aria-pressed="${pr.vote==="down"}" title="${esc(L("Not helpful · Dims card & steers Copilot away","不认可 · 淡化此卡并让 Copilot 避开此类建议"))}" aria-label="Dislike">${ic("thumbDown")}</button></span><button type="button" class="cp-place ${pr.placed?"placed":""}" data-cp-place="${idx}" data-cp-msg="${m.id}">${pr.placed?ic("check")+" "+doneLbl:ic("plus")+" "+cta}</button>${(k==="config"||k==="memory")&&pr.placed&&pr.snap?`<button type="button" class="cp-place placed" data-cp-revert="${idx}" data-cp-msg="${m.id}">Revert</button>`:""}</div>
     </div>`;
   }).join("");
@@ -11542,9 +11570,8 @@ function renderCopilotMsg(m){
     ${bubbleHTML}
     ${actionsHTML}
     ${visuals?`<div class="cp-ui-stack">${visuals}</div>`:""}
-    ${visuals?`<div class="cp-ui-stack">${visuals}</div>`:""}
-    ${m.streaming?"":`<div class="cp-msg-votes${m.vote?" has-vote":""}"><button type="button" class="vote-btn up${m.vote==="up"?" active":""}" data-cp-mvote="up" data-cp-msg="${m.id}" aria-pressed="${m.vote==="up"}" title="Like response" aria-label="Like response">${ic("thumbUp")}</button><button type="button" class="vote-btn dn${m.vote==="down"?" active":""}" data-cp-mvote="down" data-cp-msg="${m.id}" aria-pressed="${m.vote==="down"}" title="Dislike response" aria-label="Dislike response">${ic("thumbDown")}</button></div>`}
     ${props?`<div class="cp-props">${props}</div>`:""}
+    ${m.streaming?"":`<div class="cp-msg-votes${m.vote?" has-vote":""}"><button type="button" class="vote-btn up${m.vote==="up"?" active":""}" data-cp-mvote="up" data-cp-msg="${m.id}" aria-pressed="${m.vote==="up"}" title="Like response" aria-label="Like response">${ic("thumbUp")}</button><button type="button" class="vote-btn dn${m.vote==="down"?" active":""}" data-cp-mvote="down" data-cp-msg="${m.id}" aria-pressed="${m.vote==="down"}" title="Dislike response" aria-label="Dislike response">${ic("thumbDown")}</button></div>`}
   </div>`;
 }
 async function polishCopilotInput(){
@@ -11731,7 +11758,7 @@ function planCopilotDelegation(text,ctx,mode){
   if(wantStrat)roles.push("muse");
   if(wantWright)roles.push("wright");
   if(wantCritic)roles.push("critic");
-  if(mode==="ask"&&!roles.length)return [];
+  if((mode==="ask"||mode==="auto")&&!roles.length)return [];
   if(!roles.length)roles.push(mode==="plan"?"muse":"critic");
   const primary=roles.slice(0,2);
   const steps=primary.map((r,i)=>({
@@ -12385,7 +12412,7 @@ function initCopilot(){
     syncCopilotContext();
   }
   $("copilotPanel")?.addEventListener("click",e=>{
-    const c=e.target.closest("[data-cp]");if(c){const a=c.dataset.cp;if(a==="close")return openCopilot(false);if(a==="memory")return memoryDialog();if(a==="mcp")return mcpDialog();if(a==="clear"){board.copilot=[];cpQueue=[];cpQueuePaused=false;renderCopilot();persist();return}}
+    const c=e.target.closest("[data-cp]");if(!e.target.closest(".cp-more-wrap,.cp-plus-wrap"))qsa(".cp-more-pop,.cp-plus-pop").forEach(x=>x.hidden=true);if(c){const a=c.dataset.cp;if(a==="more"){const pop=qs(".cp-more-pop");if(pop)pop.hidden=!pop.hidden;return}qsa(".cp-more-pop").forEach(x=>x.hidden=true);if(a==="close")return openCopilot(false);if(a==="memory")return memoryDialog();if(a==="mcp")return mcpDialog();if(a==="clear"){board.copilot=[];cpQueue=[];cpQueuePaused=false;renderCopilot();persist();return}}
     const un=e.target.closest("[data-cp-unctx]");if(un){const id=un.dataset.cpUnctx;lineExtras=lineExtras.filter(x=>x!==id);select(sel.filter(x=>x!==id));return}
     const fc=e.target.closest("[data-cp-focus-card]");if(fc){const n=byId(fc.dataset.cpFocusCard);if(n){select([n.id],{menus:false});focusNodes([n],.95)}return}
     const fm=e.target.closest("[data-cp-full-msg]");if(fm){openCopilotFullMsgModal(fm.dataset.cpFullMsg);return}

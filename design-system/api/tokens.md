@@ -113,6 +113,7 @@ Every token, one section per family. In CSS use `var(--name)`; type styles are a
 | `--shadow-card` | `0 0 0 .5px rgba(11,12,14,.07), 0 1px 1px rgba(11,12,14,.03), 0 2px 4px -1px rgba(11,12,14,.04), 0 12px 28px -16px rgba(11,12,14,.16)` | `0 0 0 .5px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.035), 0 14px 34px -16px rgba(0,0,0,.8)` | Resting card on the board. |
 | `--shadow-card-up` | `0 0 0 .5px rgba(11,12,14,.08), 0 2px 3px rgba(11,12,14,.04), 0 8px 16px -6px rgba(11,12,14,.08), 0 34px 64px -28px rgba(11,12,14,.28)` | `0 0 0 .5px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.05), 0 34px 70px -24px rgba(0,0,0,.9)` | Hovered or dragged card; the open-card sheet. |
 | `--shadow-chrome` | `0 0 0 .5px rgba(11,12,14,.08), 0 1px 2px rgba(11,12,14,.04), 0 12px 32px -14px rgba(11,12,14,.24)` | `0 0 0 .5px rgba(255,255,255,.07), 0 14px 40px -14px rgba(0,0,0,.85)` | Floating glass chrome: composer, tool rail, toasts, menus. |
+| `--shadow-field-focus` | `0 0 0 4px rgba(255,190,120,.15), 0 4px 20px -2px rgba(255,165,80,.34)` | `0 0 0 4px rgba(255,190,120,.09), 0 4px 22px -2px rgba(255,165,80,.24)` | Focus on a text field: the field turns `card` and this soft warm glow surrounds it, instead of a grey ring. The same warm light the crew uses for "alive". Buttons and other controls keep the `focus` ring. |
 
 ## Size
 

@@ -975,7 +975,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(400, {"error": "Expected a 90-second mono WAV excerpt"})
                 return self.reply(200, {"text": transcribe(self.rfile.read(size))})
             body = json.loads(self.rfile.read(size))
-            is_json = isinstance(body.get("response_format"), dict) and body["response_format"].get("type") == "json_object"
+            # Vellum asks for JSON in words (grammar-constrained JSON is far slower in llama.cpp) and flags it
+            # with "json": true, so such requests still get the lower temperature.
+            is_json = body.get("json") is True or (
+                isinstance(body.get("response_format"), dict) and body["response_format"].get("type") == "json_object")
             args = {
                 "model": active_spec()["model"],
                 "messages": body["messages"],

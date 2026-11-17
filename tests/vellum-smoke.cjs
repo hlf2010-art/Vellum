@@ -49,9 +49,15 @@ function serve() {
           if (hit && hit.delay) await new Promise(r => setTimeout(r, hit.delay));
           if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503); return rsp.end(); }
           rsp.writeHead(200, { 'Content-Type': 'text/event-stream' });
+          rsp.on('error', () => {});
           const txt = typeof hit.text === 'string' ? hit.text : JSON.stringify(hit.text);
-          for (let k = 0; k < txt.length; k += 40) rsp.write('data: ' + JSON.stringify({ choices: [{ delta: { content: txt.slice(k, k + 40) } }] }) + '\n\n');
-          rsp.end('data: [DONE]\n\n');
+          for (let k = 0; k < txt.length; k += 40) {
+            if (rsp.destroyed) return;
+            rsp.write('data: ' + JSON.stringify({ choices: [{ delta: { content: txt.slice(k, k + 40) } }] }) + '\n\n');
+            // `stall`: send the first chunk, then go quiet, as a slow model does mid-answer
+            if (hit.stall && k === 0) await new Promise(r => setTimeout(r, hit.stall));
+          }
+          if (!rsp.destroyed) rsp.end('data: [DONE]\n\n');
         });
         return;
       }
@@ -434,9 +440,73 @@ async function page(browser, base, { model = true } = {}) {
       await p.evaluate(id => select([id]), id); await p.type('/fork 3'); await p.waitForTimeout(1000);
       await p.click('#island [data-isl="toggle"]'); await p.waitForTimeout(400);
       await p.click('#island [data-isl-stop]'); await p.idle(); await p.waitForTimeout(3000);
-      const st = await p.evaluate(() => ({ state: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, busy: crewBusy(), late: board.nodes.some(n => /Late/.test(n.title || '')) }));
+      const st = await p.evaluate(() => ({ state: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, busy: crewBusy(), late: board.nodes.some(n => /Late/.test(n.title || '')), rules: board.nodes.filter(n => n.type === 'direction').length !== 3 }));
       check('Stop on the island cancels the move', st.state === 'cancelled' && !st.busy && !st.late, JSON.stringify(st));
+      check('Stop does not fall back to built-in rules', !st.rules, JSON.stringify(st));
       check('no page errors around the island', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 9. Local AI: JSON is asked for in words (no grammar mode), and running out of time is not Stop
+    {
+      const p = await page(browser, base, { model: false });
+      const gens = []; let local = { text: '', delay: 0 };
+      const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+      await p.route('http://127.0.0.1:59631/**', async route => {
+        const req = route.request(), url = req.url();
+        if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+        if (/\/studio\/health/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ status: 'ready', model: 'smoke-local', modelId: 'smoke', vision: true, models: [] }) });
+        if (/\/studio\/generate/.test(url)) {
+          gens.push(JSON.parse(req.postData() || '{}'));
+          const { text, delay } = local;
+          if (delay) await new Promise(r => setTimeout(r, delay));
+          const sse = text.match(/[\s\S]{1,40}/g).map(c => 'data: ' + JSON.stringify({ choices: [{ delta: { content: c } }] }) + '\n\n').join('') + 'data: [DONE]\n\n';
+          return route.fulfill({ status: 200, contentType: 'text/event-stream', headers: cors, body: sse }).catch(() => {});
+        }
+        return route.fulfill({ status: 404, headers: cors, body: '' });
+      });
+      await p.evaluate(async () => { await checkStudioHealth({ wake: false, quiet: true }); window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
+      check('Local AI reads as ready', await p.evaluate(() => studioState.status === 'ready' && connSummary().engine === 'local'));
+      const forkOn = async label => {
+        await p.newBoard(); await p.type(label); await p.waitForTimeout(800);
+        const id = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+        await p.evaluate(id => select([id]), id); await p.type('/fork 3'); await p.idle();
+        return p.evaluate(() => ({ titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','), engines: board.nodes.filter(n => n.type === 'direction').map(n => n.prov?.engine).join(','), task: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, toasts: __toasts.splice(0) }));
+      };
+      // a small model answering in prose around fenced JSON still gives directions
+      local = { text: 'Here are three:\n```json\n' + JSON.stringify(dirs('Loc')) + '\n```', delay: 0 };
+      let r = await forkOn('Local idea');
+      const g = gens.at(-1) || {};
+      check('Local AI is asked for plain text, never grammar-constrained JSON', g.response_format?.type === 'text' && g.json === true, JSON.stringify({ rf: g.response_format, json: g.json }));
+      check('the JSON instruction is in the system message instead', /JSON object only/.test((g.messages || [])[0]?.content || '') && g.messages[0].role === 'system');
+      check('directions arrive from Local AI answering in prose around JSON', r.titles === 'Loc A,Loc B,Loc C' && r.engines === 'model,model,model' && r.task === 'done', JSON.stringify(r));
+      // the time limit runs out: built-in rules answer, and the designer is told why
+      local = { text: JSON.stringify(dirs('Slow')), delay: 3000 };
+      await p.evaluate(() => { AI_TIMEOUT_MS = 1500; });
+      r = await forkOn('Slow idea');
+      check('a Local AI timeout falls back to built-in rules instead of failing', r.titles === 'Walk it through,Lay it all out,Cut to one moment' && r.engines === 'rules,rules,rules' && r.task === 'done', JSON.stringify(r));
+      check('and says which engine ran out of time and which answered', r.toasts.some(t => /^Local AI took longer than 2 s, so built-in rules answered instead\.$/.test(t)), JSON.stringify(r.toasts));
+      check('no page errors in the Local AI flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 10. Copilot: a timeout keeps the partial answer and says it is cut off; Stop still just stops
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const last = () => p.evaluate(() => { const m = board.copilot.at(-1); return { text: m.text, cutOff: !!m.cutOff, streaming: !!m.streaming }; });
+      await p.evaluate(() => { AI_TIMEOUT_MS = 1500; });
+      queue = [{ id: 'cut', match: 'cutoff-question', text: 'Open in the interrogation room at night, with the rain on the window and the clerk', stall: 4000 }];
+      await p.evaluate(() => sendCopilotMessage('cutoff-question: where should the game open?'));
+      let m = await last();
+      check('a Copilot answer that runs out of time keeps what arrived', /^Open in the interrogation room/.test(m.text), JSON.stringify({ m, req: requests.slice(-3).map(x => x.matched) }));
+      check('and says plainly that it is cut off', m.cutOff && /Cut off:\*\* Cloud API took longer than 2 s\. Ask again to continue\.$/.test(m.text), JSON.stringify(m));
+      await p.evaluate(() => { AI_TIMEOUT_MS = 20000; });
+      queue = [{ id: 'stop', match: 'stop-question', text: 'A partial answer the designer chose to stop, and then it goes on much longer', stall: 4000 }];
+      await p.evaluate(() => { sendCopilotMessage('stop-question: who is the translator?'); });
+      await p.waitForTimeout(1200);
+      await p.evaluate(() => stopCopilot()); await p.waitForTimeout(600);
+      m = await last();
+      check('Stop in Copilot is not reported as a timeout', !m.cutOff && !/Cut off/.test(m.text) && !m.streaming && /^A partial answer/.test(m.text), JSON.stringify(m));
+      check('no page errors in the Copilot timeout flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
   } finally {

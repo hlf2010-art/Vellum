@@ -7114,23 +7114,42 @@ async function readChatStream(res,ctrl,{json,onText}){
   if(!clean)throw new Error("Empty model response");
   return json?parseAIJson(clean):clean;
 }
-async function studioChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=95000,onText,signal}){
-  const msgs=await buildChatMessages({system,prompt,messages,images});
+/* Running out of time is not the designer pressing Stop. Only the caller's signal ends in an AbortError;
+   our own time limit ends in a TimeoutError, so callers fall back (Cloud API, then built-in rules) and say
+   why. `partial` keeps whatever text had already streamed. */
+function aiTimeoutError(who,ms,partial=""){
+  const s=Math.round(ms/1000);
+  const e=new Error(L(`${who} took longer than ${s} s`,`${who}超过 ${s} 秒仍未完成`));
+  e.name="TimeoutError";e.partial=partial;return e;
+}
+const JSON_ONLY="Reply with one JSON object only: no prose before or after it, no code fences.";
+let AI_TIMEOUT_MS=95000; // one model call's time limit (Local AI and Cloud API); the smoke test shortens it
+async function studioChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal}){
+  let msgs=await buildChatMessages({system,prompt,messages,images});
+  /* No grammar-constrained JSON mode for Local AI: llama.cpp samples it about 16x slower (one Strategist
+     fork took 443 s against 27 s as plain text on a 4-core CPU), so crew moves hit the time limit.
+     Ask for JSON in words instead; readChatStream parses it with parseAIJson either way. */
+  if(json)msgs=msgs[0]?.role==="system"?[{...msgs[0],content:msgs[0].content+"\n"+JSON_ONLY},...msgs.slice(1)]:[{role:"system",content:JSON_ONLY},...msgs];
   const ctrl=new AbortController();
   const onAbort=()=>ctrl.abort();
   if(signal){if(signal.aborted)throw new DOMException("Aborted","AbortError");signal.addEventListener("abort",onAbort,{once:true})}
-  const timer=setTimeout(()=>ctrl.abort(),timeoutMs);
+  let timedOut=false,partial="";
+  const timer=setTimeout(()=>{timedOut=true;ctrl.abort()},timeoutMs);
+  const track=d=>{if(d?.text)partial=d.text;onText?.(d)};
   try{
     const res=await fetch(`${STUDIO_URL}/studio/generate`,{
       method:"POST",signal:ctrl.signal,
       headers:{"Content-Type":"application/json","X-Studio-Client":"canvas"},
-      body:JSON.stringify({messages:msgs,response_format:{type:json?"json_object":"text"},max_tokens:Math.min(4600,maxTokens)})
+      body:JSON.stringify({messages:msgs,response_format:{type:"text"},json:!!json,max_tokens:Math.min(4600,maxTokens)})
     });
     if(!res.ok){
       if(res.status===503){studioState.status="loading";renderCrew()}
       throw new Error("Studio HTTP "+res.status);
     }
-    return await readChatStream(res,ctrl,{json,onText});
+    return await readChatStream(res,ctrl,{json,onText:track});
+  }catch(e){
+    if(timedOut&&!signal?.aborted)throw aiTimeoutError(L("Local AI","本地模型"),timeoutMs,partial);
+    throw e;
   }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
 const TALK=k=>`You are ${AGENTS[k].name} on a small design crew, talking with the designer about one card. Your craft: ${AGENTS[k].craft} In conversation you answer what was said; you do not run your usual procedure unless asked.`;
@@ -7221,27 +7240,34 @@ function wallText(ns,{docCap=4500,shortCap=700,totalCap=14000,excludeIds=null,co
   }).join("\n");
 }
 async function viaClaude(remote,local,opts={}){
+  /* A Stop (AbortError) ends the move. A timeout (TimeoutError) falls through to the next engine, and the
+     designer is told which engine ran out of time and which one answered instead. */
+  let late=null;
+  const sayLate=used=>{if(late)toast(L(`${late.message}, so ${used} answered instead.`,`${late.message}，已改用${used}。`))};
   if(aiPref==="auto"&&studioState.status==="ready"&&opts.studio){
     try{const v=await opts.studio();if(v!=null)return {v,live:true,engine:"studio"}}
-    catch(e){if(e?.name==="AbortError")throw e}
+    catch(e){if(e?.name==="AbortError")throw e;if(e?.name==="TimeoutError")late=e}
   }
   if(aiPref!=="local"&&apiRoutable()&&opts.studio){
-    try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null)return {v,live:true,engine:"api"}}
-    catch(e){if(e?.name==="AbortError")throw e}
+    try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null){sayLate(L("Cloud API","云端 API"));return {v,live:true,engine:"api"}}}
+    catch(e){if(e?.name==="AbortError")throw e;if(e?.name==="TimeoutError")late=late||e}
   }
   if(aiPref!=="local"&&sampleFn&&!(opts.apiArgs?.images?.length)){
-    try{const v=await Promise.race([remote(),wait(100000).then(()=>{throw {code:"timeout"}})]);if(v==null)throw {code:"empty"};return {v,live:true,engine:"claude"}}
+    try{const v=await Promise.race([remote(),wait(100000).then(()=>{throw {code:"timeout"}})]);if(v==null)throw {code:"empty"};sayLate("Claude");return {v,live:true,engine:"claude"}}
     catch(e){if(e&&e.code==="not_granted"){sampleFn=null;renderCrew();toast("Claude access was declined. Falling back to local rules.")}
       else if(e&&e.code==="rate_limited")toast("Claude is busy. Drawn on device.");}
   }
+  sayLate(L("built-in rules","内置规则"));
   return {v:await local(),live:false,engine:"local"};
 }
-async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=95000,onText,signal}){
+async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal}){
   const msgs=await buildChatMessages({system,prompt,messages,images});
   const ctrl=new AbortController();
   const onAbort=()=>ctrl.abort();
   if(signal){if(signal.aborted)throw new DOMException("Aborted","AbortError");signal.addEventListener("abort",onAbort,{once:true})}
-  const timer=setTimeout(()=>ctrl.abort(),timeoutMs);
+  let timedOut=false,partial="";
+  const timer=setTimeout(()=>{timedOut=true;ctrl.abort()},timeoutMs);
+  const track=d=>{if(d?.text)partial=d.text;onText?.(d)};
   const sentCfg={...apiCfg},t0=performance.now();let gotHeaders=false;
   try{
     const body={model:apiCfg.model,messages:msgs,stream:true,temperature:0.45,max_tokens:Math.min(4600,maxTokens)};
@@ -7259,10 +7285,11 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
       throw new Error("API HTTP "+res.status);
     }
     setApiHealth("ok",{cfg:sentCfg,ms:Math.round(performance.now()-t0)});
-    return await readChatStream(res,ctrl,{json,onText});
+    return await readChatStream(res,ctrl,{json,onText:track});
   }catch(e){
     if(e instanceof TypeError&&!signal?.aborted)setApiHealth("unreachable",{cfg:sentCfg,detail:"network"});
-    else if(e?.name==="AbortError"&&!signal?.aborted&&!gotHeaders)setApiHealth("unreachable",{cfg:sentCfg,detail:"timeout"});
+    else if(e?.name==="AbortError"&&timedOut&&!signal?.aborted&&!gotHeaders)setApiHealth("unreachable",{cfg:sentCfg,detail:"timeout"});
+    if(timedOut&&!signal?.aborted)throw aiTimeoutError(L("Cloud API","云端 API"),timeoutMs,partial);
     throw e;
   }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
@@ -7614,7 +7641,7 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
     task.done(res.quality==="partial"?{tone:"warn",note:L("Partial pack — the full pass did not finish","部分结果：完整解析未完成")}:{});
     return res;
   }catch(err){
-    const msg=err?.name==="AbortError"||crewState.scout.cancel?(localMode?"Stopped or timed out waiting for Local AI. Try Retry or check Studio AI in Settings.":"Reverse prompt stopped."):(err?.message||"Could not reverse prompt");
+    const msg=err?.name==="AbortError"||crewState.scout.cancel?"Reverse prompt stopped.":err?.name==="TimeoutError"?`${err.message}. Try Retry or check Studio AI in Settings.`:(err?.message||"Could not reverse prompt");
     n.plError=msg;
     plBusyNodes.delete(n.id);
     plStreamText.delete(n.id);
@@ -11968,7 +11995,14 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       cpTask?.cancelled();
       if(aiMsg.trace)aiMsg.trace.steps.forEach(s=>{if(s.status==="running")s.status="skipped"});
       aiMsg.text=parseCopilotBlocks(aiMsg.text).text||"Stopped.";
+    }else if(e?.name==="TimeoutError"&&parseCopilotBlocks(aiMsg.text||"").text?.trim()){
+      /* Ran out of time mid-answer: keep what arrived, and say plainly that it is cut off. */
+      cpTask?.fail(e.message);
+      if(aiMsg.trace)aiMsg.trace.steps.forEach(s=>{if(s.status==="running")s.status="skipped"});
+      aiMsg.text=parseCopilotBlocks(aiMsg.text).text.trimEnd()+"\n\n"+L(`**Cut off:** ${e.message}. Ask again to continue.`,`**回答不完整：**${e.message}。再问一次可继续。`);
+      aiMsg.cutOff=true;
     }else{
+      if(e?.name==="TimeoutError")toast(L(`${e.message}, so built-in rules answered instead.`,`${e.message}，已改用内置规则。`));
       const loc=copilotLocalReply(text,ctx);aiMsg.text=loc.text;aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;
     }
   }finally{

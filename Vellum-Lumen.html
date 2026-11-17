@@ -1290,6 +1290,14 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 /* Below the table, so selecting never moves the table: the selection bar replaces "+ Add row" while rows are selected */
 .tbl-foot{display:flex;align-items:center;min-height:0}
 .tbl-foot:has(.tbl-sel:not([hidden])) .tbl-addrow{display:none}
+.tbl-src{display:inline-flex;align-items:center;gap:4px}
+.tbl-refresh{width:22px;height:22px;margin:-4px 0;display:grid;place-items:center;border-radius:6px;color:var(--label-3)}
+.tbl-refresh:hover{background:var(--hover);color:var(--label)}.tbl-refresh:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.tbl-refresh .ico{width:13px;height:13px}.tbl-refresh.busy .ico{animation:tblSpin .9s linear infinite}
+@keyframes tblSpin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.tbl-refresh.busy .ico{animation:none;opacity:.5}}
+.tbl-conflict{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px;padding:10px 12px;border-radius:10px;font:500 12.5px/1.4 var(--ui);color:var(--label);background:color-mix(in srgb,var(--B) 8%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--B) 22%,transparent)}
+.tbl-conflict>span:first-child{flex:1 1 220px}.tbl-conflict-acts{display:flex;gap:6px;flex-wrap:wrap}
+.tbl-conflict .sp-mini.quiet{background:transparent;box-shadow:none;color:var(--label-2)}.tbl-conflict .sp-mini.quiet:hover{color:var(--label)}
 .tbl-sel{display:flex;align-items:center;gap:8px;margin-top:6px;font:550 12px/1 var(--ui);color:var(--label-2)}
 .tbl-gap{flex:1}
 .tbl td.hc,.tbl th.hc{background:color-mix(in srgb,var(--label) 3%,var(--tbl-bg))}
@@ -4843,8 +4851,12 @@ function cardBody(n){
   case"table":{/* L is shadowed by lin(n) in cardBody, so translate locally */const tr=(en,zh)=>uiLang()==="zh"?zh:en;const ds=n.data||{columns:[],rows:[]},src=ds.source||{};
     const from=[src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.kind==="paste"?tr("Pasted","粘贴"):src.label||"",src.edited?tr("edited","已编辑"):"",
       src.total>(ds.rows||[]).length?tr(`first ${(ds.rows||[]).length} of ${src.total.toLocaleString()} rows`,`前 ${(ds.rows||[]).length} 行，共 ${src.total.toLocaleString()} 行`):src.more?tr(`first ${(ds.rows||[]).length} rows`,`前 ${(ds.rows||[]).length} 行`):""].filter(Boolean).join(" · ");
+    const live=canRefresh(n)&&!sk,where=srcName(src),busy=tblRefreshing.has(n.id),pend=tblPending.has(n.id);
+    const readAt=live&&src.at?`<time title="${esc(tr("Read from ","读取自 ")+where+" · "+new Date(src.at).toLocaleString(uiLang()==="zh"?"zh-CN":"en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}))}">${esc(exactTime(src.at))}</time>`:"";
+    const refresh=live?`<button type="button" class="tbl-refresh${busy?" busy":""}" data-tbl-refresh ${busy?'aria-busy="true" disabled':""} title="${esc(busy?tr("Reading ","正在读取 ")+where+"…":tr("Refresh from ","从 ")+where+tr(""," 刷新"))}" aria-label="${esc(tr("Refresh from ","从 ")+where+tr(""," 刷新"))}">${ic("redo")}</button>`:"";
+    const conflict=pend?`<div class="tbl-conflict" role="group" aria-label="${esc(tr("Newer data from ","来自 ")+where+tr(""," 的新数据"))}"><span>${esc(tr(`${where} has newer data, and you've edited this table.`,`${where} 有新数据，而你也修改过这个表格。`))}</span><span class="tbl-conflict-acts"><button type="button" class="sp-mini" data-tbl-conflict="replace">${tr("Replace my edits","替换我的修改")}</button><button type="button" class="sp-mini" data-tbl-conflict="both">${tr("Keep both","两者都保留")}</button><button type="button" class="sp-mini quiet" data-tbl-conflict="cancel">${tr("Cancel","取消")}</button></span></div>`:"";
     return `<div class="in">${head(`${byline(n)}${ic("grid")}<span>${tr("Table","表格")}</span>`)}
-    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol,editable:!sk,sort:n.tblSort})}${sk?sketchActs(n):foot(fL(from?`<span>${esc(from)}</span>`:""),fR(threadCount(n)))}</div>`;}
+    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol,editable:!sk,sort:n.tblSort})}${conflict}${sk?sketchActs(n):foot(fL(from?`<span class="tbl-src">${esc(from)}${refresh}</span>`:""),live?group("foot-r",threadCount(n),readAt):fR(threadCount(n)))}</div>`;}
   case"idea":return `<div class="in">${head(esc(n.kind||"Idea"))}
     <h4 data-edit="text">${esc(n.text)}</h4>${foot(evidenceScale(n),fR(threadCount(n)))}</div>`;
   case"source":{
@@ -5460,7 +5472,7 @@ function looksTabular(t){const ls=String(t||"").trim().split(/\r?\n/).filter(l=>
   const same=d=>{const c=ls.map(l=>l.split(d).length-1);return c[0]>=1&&c.filter(x=>x===c[0]).length>=Math.ceil(ls.length*.9)};
   return same("\t")||(ls.length>=3&&ls.map(l=>l.split(",").length-1).every((x,_,a)=>x>=2&&x===a[0]))}
 function makeTableCard(ds,{title,source,at,by}={}){
-  if(!ds)return null;const data={v:1,columns:ds.columns,rows:ds.rows,source:{...source,at:NOW(),...(ds.total>ds.rows.length?{total:ds.total}:{})}},gw=tblCardWidth(data);
+  if(!ds)return null;const data={v:1,columns:ds.columns,rows:ds.rows,source:{...source,at:NOW(),hash:tblHash(ds),...(ds.total>ds.rows.length?{total:ds.total}:{})}},gw=tblCardWidth(data);
   const spot=at?freeSpot(at.x-gw/2,at.y-100,gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
   return node("table",{title:clip(title||L("Table","表格"),60),data,gw,...(by?{by}:{})},spot);
 }
@@ -5529,6 +5541,64 @@ async function tableFromNotion(raw,{at}={}){
   const n=makeTableCard(ds,{title:d.title,source:{kind:"notion",label:"Notion",url:d.url||(isNotionUrl(ref)?ref:""),id:d.id,...(d.more?{more:true}:{})},at:at||toWorld(v.w/2,v.h/2)});
   sel=[n.id];renderAll();persist();follow([n]);
   toast(L(`Table added from Notion`,`已从 Notion 生成表格`),{undo:true});return n;
+}
+/* Refresh: read a table's source again. The source's content is fingerprinted at every read, so Vellum can tell
+   "the source changed" from "you changed the table". Only when both changed is there a choice to make: replace your
+   edits, keep both (a second card with the fresh data), or cancel. Every outcome is undoable. */
+const tblPending=new Map(),tblRefreshing=new Set(); // in memory only: a pending choice doesn't outlive the session
+const canRefresh=n=>n?.type==="table"&&["url","notion"].includes(n.data?.source?.kind);
+const srcName=src=>src?.kind==="notion"?"Notion":src?.label||L("the source","来源");
+function tblHash(ds){const t=JSON.stringify([(ds.columns||[]).map(c=>c.name),ds.rows||[]]);let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)}return (h>>>0).toString(36)+":"+t.length}
+async function readTableSource(src){
+  if(src.kind==="url"){let host="";try{host=new URL(src.url).hostname.replace(/^www\./,"")}catch{}
+    let res;try{res=await fetchDataText(src.url)}catch(e){return {msg:[dataFetchMessage(e,host)]}}
+    if(/html/.test(res.type)||/^\s*<(!doctype|html)/i.test(res.text))return {msg:[dataFetchMessage(new Error("web_page_not_data"),host)]};
+    const name=decodeURIComponent(new URL(src.url).pathname.split("/").pop()||""),ds=datasetFromText(res.text,/json/.test(res.type)?"data.json":name);
+    return ds?{ds}:{msg:[L(`${host} no longer returns a table.`,`${host} 不再返回表格数据。`)]}}
+  const token=String(mcpCfg.notion?.token||"").trim();if(!token)return {msg:notionMessage("no_token")};if(!viaLocalServer())return {msg:notionMessage("no_server")};
+  let d=null;try{const r=await fetch("/notion/database",{method:"POST",headers:{"Content-Type":"application/json","X-Studio-Client":"canvas"},body:JSON.stringify({ref:src.id||src.url,token}),signal:timeoutSignal(60000)});d=/json/.test(r.headers.get("content-type")||"")?await r.json():null}catch{}
+  if(!d)return {msg:notionMessage("no_server")};if(!d.ok)return {msg:notionMessage(d.error)};
+  return {ds:{columns:d.columns.map(name=>({name})),rows:d.rows,...(d.more?{more:true}:{})}};
+}
+/* What changed, in a few words: rows matched by their first column when it's unique, otherwise as whole rows. */
+function tblDiff(a,b){
+  const names=ds=>(ds.columns||[]).map(c=>c.name).join("\u0001"),sameCols=names(a)===names(b),J=r=>JSON.stringify(r);
+  const keys=ds=>{const k=ds.rows.map(r=>String(r[0]??""));return new Set(k).size===k.length?k:null},ka=keys(a),kb=keys(b);let added=0,removed=0,changed=0;
+  if(sameCols&&ka&&kb){const ma=new Map(a.rows.map((r,i)=>[ka[i],J(r)])),mb=new Map(b.rows.map((r,i)=>[kb[i],J(r)]));
+    for(const [k,v] of mb){if(!ma.has(k))added++;else if(ma.get(k)!==v)changed++}for(const k of ma.keys())if(!mb.has(k))removed++}
+  else{const c=new Map();a.rows.forEach(r=>c.set(J(r),(c.get(J(r))||0)+1));b.rows.forEach(r=>{const k=J(r);if(c.get(k))c.set(k,c.get(k)-1);else added++});c.forEach(v=>removed+=v)}
+  const parts=[!sameCols&&L("columns changed","列有变化"),added&&L(`${added} new`,`新增 ${added} 行`),changed&&L(`${changed} changed`,`修改 ${changed} 行`),removed&&L(`${removed} removed`,`删除 ${removed} 行`)].filter(Boolean);
+  return parts.length?parts.join(", "):"";
+}
+function tblApply(n,ds){
+  checkpoint();const colsChanged=n.data.columns.map(c=>c.name).join("\u0001")!==ds.columns.map(c=>c.name).join("\u0001");
+  const {total,more,edited,...keep}=n.data.source||{};
+  n.data={...n.data,columns:ds.columns,rows:ds.rows.slice(0,TBL_MAX_ROWS),rev:(n.data.rev||0)+1,source:{...keep,at:NOW(),hash:tblHash(ds),...(ds.total>ds.rows.length?{total:ds.total}:{}),...(ds.more?{more:true}:{})}};
+  if(colsChanged){delete n.tblSort;delete n.tblCol;n.gw=tblCardWidth(n.data)}
+  n.updated=NOW();
+}
+async function tblRefresh(id){
+  if(tblRefreshing.has(id))return;const n0=byId(id);if(!canRefresh(n0))return;
+  tblPending.delete(id);tblRefreshing.add(id);renderAll();
+  const r=await readTableSource(n0.data.source);tblRefreshing.delete(id);
+  const n=byId(id);if(!n){renderAll();return} // removed or undone meanwhile
+  const src=n.data.source,where=srcName(src);
+  if(r.msg){renderAll();toast(r.msg[0],r.msg[1]||{});return}
+  if(src.hash===tblHash(r.ds)){n.data.source={...src,at:NOW()};renderAll();persist();
+    toast(src.edited?L(`${where} hasn't changed since it was read. Your edits stay.`,`${where} 自上次读取后没有变化，你的修改保留。`):L(`Up to date with ${where}`,`已与 ${where} 同步`));return}
+  if(src.edited){tblPending.set(id,r.ds);renderAll();return} // both changed: ask
+  const what=tblDiff(n.data,r.ds);
+  if(!what){n.data.source={...src,at:NOW(),hash:tblHash(r.ds)};renderAll();persist();toast(L(`Up to date with ${where}`,`已与 ${where} 同步`));return}
+  tblApply(n,r.ds);renderAll();persist();toast(L(`Updated from ${where}: ${what}`,`已从 ${where} 更新：${what}`),{undo:true});
+}
+function tblResolve(id,choice){
+  const n=byId(id),ds=tblPending.get(id);tblPending.delete(id);if(!n||!ds){renderAll();return}const where=srcName(n.data.source);
+  if(choice==="replace"){tblApply(n,ds);renderAll();persist();toast(L(`Replaced with ${where}'s latest`,`已替换为 ${where} 的最新数据`),{undo:true});return}
+  if(choice==="both"){checkpoint();const {total,more,edited,...keep}=n.data.source;
+    const c=makeTableCard(ds,{title:n.title,source:keep,at:{x:n.x+nodeW(n)+48+tblCardWidth(ds)/2,y:n.y+100}});
+    n.data.source={...n.data.source,at:NOW(),hash:tblHash(ds)}; // your copy now counts as up to date with this read
+    sel=[c.id];renderAll();persist();follow([c]);toast(L(`Latest from ${where} added beside yours`,`已在旁边添加 ${where} 的最新数据`),{undo:true});return}
+  renderAll();
 }
 /* Board width a table card needs: measured, not guessed. The table is laid out once in a hidden card with the real
    fonts and column rules, at its natural width; the card takes that width plus its padding, between 320 and 960px.
@@ -5670,7 +5740,7 @@ function nodeLineageSig(n){
 }
 
 function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??""]])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -6417,6 +6487,8 @@ document.addEventListener("dblclick",e=>{
   tblOpenEditor(n,isHead?-1:+cell.parentElement.dataset.i,cell.cellIndex,isHead);
 },true);
 document.addEventListener("click",e=>{
+  const rf=e.target.closest("[data-tbl-refresh]");if(rf){const id=rf.closest(".card")?.dataset.id;if(id)tblRefresh(id);return}
+  const cf=e.target.closest("[data-tbl-conflict]");if(cf){const id=cf.closest(".card")?.dataset.id;if(id)tblResolve(id,cf.dataset.tblConflict);return}
   const addRow=e.target.closest("[data-tbl-addrow]");
   if(addRow){const n=byId(addRow.closest(".card")?.dataset.id);if(!n)return;tblCommit(n,d=>d.rows.push(d.columns.map(()=>"")));tblOpenEditor(n,n.data.rows.length-1,0,false);return}
   const del=e.target.closest("[data-tbl-del]");

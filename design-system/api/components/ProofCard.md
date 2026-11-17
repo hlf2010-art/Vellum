@@ -1,7 +1,7 @@
 <!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # ProofCard
 
-Draft: an experiment that tests a direction.
+An experiment that tests a direction.
 
 `Vellum.ProofCard` · Board
 
@@ -32,6 +32,7 @@ Draft: an experiment that tests a direction.
 | `onRebuild` | `() => void` |  |
 | `onTest` | `() => void` |  |
 | `onSnapshot` | `() => void` |  |
+| `onChange` | `() => void` | "Change": select the card and focus the composer. |
 | `onIterate` | `(text: string) => void` |  |
 
 ## More

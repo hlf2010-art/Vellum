@@ -66,6 +66,7 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 - **Sentence case everywhere.** Use “Upload file or media”, not “Upload File”. The only uppercase style is `eyebrow` (e.g. OVERVIEW on the minimap).
 - **Speak plainly, to “you”.** The composer invites *“Write an idea, or / for commands”*. Crew work names who did it and what, then counts it: *“**Strategist** · 1 direction”*, *“Scout suggests an edit”*.
 - **Agents suggest, you decide.** The crew never silently changes or deletes a card you kept. Its work arrives as a draft, and its changes arrive as proposals. Copy must say who is suggesting what (*“Critic suggests deleting this card”*) and leave the decision to the person.
+- **Card actions sit at the very bottom, right-aligned**, below everything else, with the primary action last. Button labels are plain verbs and never end in an ellipsis (*Change*, not *Change…*).
 - **Decisions are verbs, never OK/Cancel.** Real examples: **Keep** · **Retry** · **Discard** · **Accept** · **Decline** · **Review** · **Fit**.
 - **Counts, not adjectives.** *“1 waiting”*, *“1 draft”*, *“5/7 rated”*, *“2 notes · 5:44 AM”*. Use tabular numerals (`meta`).
 - **Middle dot `·` joins facts.** It separates kind and source (*“MD · Playtest Telemetry”*), actions in hints (*“Double-click canvas to add a sticky · Drag card O port to connect · Drop files anywhere”*) and a label from its shortcut in tooltips (*“Lasso select · S”*, *“Undo · ⌘Z”*).
@@ -162,6 +163,7 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 
 ## Iconography
 - **Icons:** Vellum's own inline SVG line icons (card kinds too: notepad, video, image, frame, audio, link, group) on a 24×24 grid. They use `stroke: currentColor`, stroke width 1.65 (2–2.2 inside the composer), round caps and joins, and no fills. They render at 16px, or 19px in the composer. They are drawn in the Lucide idiom but are Vellum's own paths. The **Icons** asset group holds the canvas tools, composer controls and crew glyphs, exported with `label` ink (#0B0C0E) or each crew ink.
+- **Lineage icon:** a tiny wire (two dots joined by an S-curve), tinted with the lineage `-fill`. It means "built from" and replaces the word: write *[icon] B · 4 sources*, not *From Direction B · 4 sources*. The full sentence goes in the tooltip.
 - **Crew glyphs** (in avatar orbs): Scout = compass, Strategist = forking branches, Wright = stacked blocks, Critic = balance scale.
 - **Logo:** [`assets/Logos/vellum-mark.svg`](assets/Logos/vellum-mark.svg) is the app mark: a dark rounded tile with a white beam split by a prism into the four lineage colours. In product chrome, the project switcher shows a spectrum tile (conic gradient of the spectrum) at 22px with a 7px radius. Never recolour the mark or redraw the prism.
 - No emoji in UI. Letters A–D are text inside `LineageChip`, never icons.

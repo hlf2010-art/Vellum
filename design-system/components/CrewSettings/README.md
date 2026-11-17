@@ -5,7 +5,7 @@ Hand-written from `Vellum-Lumen.html` on branch `claude/lumen-v2` (commit `92098
 - **Speaks up:** Never · When it matters · Often. Default *When it matters*: *“One thought at a time; the next comes after you read it.”*
 - **Acts on the board:** Only drafts · Can create cards. Default *Only drafts*: *“Anything it makes arrives as a draft for you to keep or discard. Edits and deletions of your cards are always suggestions.”*
 - **Locked lanes:** one toggle chip per stage (Gather, Explore, Prototype, Snapshot). *“Only you change kept cards in a locked lane. Lock single cards from their menu.”* Snapshot is locked on a new board.
-- Footer: **Customize…** and **Memory**.
+- Footer: **Customize** and **Memory**.
 
 This is the product's autonomy contract: **agents suggest, you decide.** Whatever the settings, the crew never edits or deletes a card you kept. It proposes the change on the card instead (`Card` `proposal`). Write specs and copy that keep that promise.
 

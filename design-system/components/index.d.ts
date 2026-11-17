@@ -240,6 +240,6 @@ export interface ProofCardProps {
   /** Number of sources changed since the latest version. */
   sourcesChanged?: number;
   sources?: number; time?: string; iterating?: boolean;
-  onOpen?: () => void; onFix?: () => void; onRebuild?: () => void; onTest?: () => void; onSnapshot?: () => void; onIterate?: (text: string) => void;
+  onOpen?: () => void; onFix?: () => void; onRebuild?: () => void; onTest?: () => void; onSnapshot?: () => void; /** "Change": select the card and focus the composer. */ onChange?: () => void; onIterate?: (text: string) => void;
 }
 export declare function ProofCard(p: ProofCardProps): JSX.Element;

@@ -314,7 +314,7 @@
       h('div', { className: 'vl-sec' }, h('b', null, h(Icon, { name: 'lock' }), 'Locked lanes'),
         h('div', { className: 'vl-locks' }, lanes.map(function(l){ var on = lockedNow.indexOf(l) >= 0; return h('button', { key: l, type: 'button', className: 'vl-lock', 'aria-pressed': String(on), onClick: function(){ setLocked(on ? lockedNow.filter(function(x){ return x !== l; }) : lockedNow.concat([l])); } }, h(Icon, { name: 'lock' }), l); })),
         h('span', null, 'Only you change kept cards in a locked lane. Lock single cards from their menu.')),
-      h('div', { className: 'vl-cp-foot' }, h(Button, null, 'Customize…'), h(Button, { icon: 'notepad' }, 'Memory')));
+      h('div', { className: 'vl-cp-foot' }, h(Button, null, 'Customize'), h(Button, { icon: 'notepad' }, 'Memory')));
   }
 
   function CardMenu(p){
@@ -342,6 +342,7 @@
   /* ── P2a: app parts ─────────────────────────────────────────────────────── */
   var MINUS = '<path d="M5 12h14"/>';
   ICONS.minus = MINUS;
+  ICONS.lineage = '<circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7.2 6c6.3 0 3.3 12 9.6 12"/>';
   ICONS.thumbUp = '<path d="M7 10v11"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>';
   ICONS.thumbDown = '<path d="M17 14V3"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/>';
   var KIND_NAMES = { source: 'Source', recording: 'Recording', image: 'Image', frame: 'Frame', audio: 'Audio', link: 'Link', notepad: 'Notepad', idea: 'Core thesis', synthesis: 'Synthesis', direction: 'Direction', question: 'Question', note: 'Sticky', proof: 'Proof', list: 'Action list', kanban: 'Kanban', snapshot: 'Snapshot', group: 'Group' };
@@ -619,7 +620,7 @@
             h('button', { type: 'button', 'aria-label': 'Next version', disabled: at === latest, onClick: function(){ setAt(at + 1); } }, h(Icon, { name: 'chevron' })))
           : h('span', { className: 'vl-pc-ver1' }, 'v' + v.ver)),
         h('h4', null, p.title),
-        p.test ? h('p', { className: 'vl-pc-test' }, h('b', null, 'Test '), p.test) : null,
+        p.test ? h('p', { className: 'vl-pc-test', title: p.test }, h('b', null, 'Test '), p.test) : null,
         building ? h('div', { className: 'vl-pc-res' }, h('div', { className: 'vl-pc-cap' }, h('span', null, 'Wright is building v' + nextVer + (p.buildNote ? ': ' + p.buildNote : '')))) :
         r ? h('div', { className: 'vl-pc-res' },
             h('div', { className: 'vl-pc-blocks', role: 'img', 'aria-label': summary }, blocks),
@@ -631,10 +632,10 @@
         iter && !old && !building ? h('form', { className: 'vl-pc-iter', onSubmit: function(e){ e.preventDefault(); if (txt.trim() && p.onIterate) p.onIterate(txt); setTxt(''); setIter(false); } },
             h('input', { autoFocus: true, value: txt, onChange: function(e){ setTxt(e.target.value); }, onKeyDown: function(e){ if (e.key === 'Escape') setIter(false); }, placeholder: 'What should v' + nextVer + ' change?', 'aria-label': 'What should v' + nextVer + ' change?' }),
             h('button', { type: 'submit', className: 'vl-send', disabled: !txt.trim(), 'aria-label': 'Build v' + nextVer }, h(Icon, { name: 'send' }))) : null,
-        h('div', { className: 'vl-pc-acts' }, primary,
-          h(Button, { size: 'sm', onClick: p.onOpen }, 'Open'),
-          !old && !building && !iter ? h(Button, { size: 'sm', variant: 'ghost', onClick: function(){ setIter(true); } }, 'Change…') : null),
-        h('div', { className: 'vl-pc-meta' }, h('span', null, 'From Direction ' + (p.lineage || '') + ' · ' + (p.sources || 0) + ' sources'), h('span', { className: 'vl-sp' }), h('span', null, p.time || ''))));
+        h('div', { className: 'vl-pc-meta' }, h('span', { className: 'vl-from', title: 'Built from Direction ' + (p.lineage || '') + ' and ' + (p.sources || 0) + ' sources' }, h(Icon, { name: 'lineage' }), (p.lineage || '') + ' \u00b7 ' + (p.sources || 0) + ' sources'), h('span', { className: 'vl-sp' }), h('span', null, p.time || '')),
+        h('div', { className: 'vl-pc-acts' },
+          !old && !building ? h(Button, { size: 'sm', variant: 'ghost', onClick: p.onChange }, 'Change') : null,
+          h(Button, { size: 'sm', onClick: p.onOpen }, 'Open'), primary)));
   }
 
   window.Vellum = { ProofCard: ProofCard, Segmented: Segmented, Tooltip: Tooltip, Kbd: Kbd, Tag: Tag, TextField: TextField, Checkbox: Checkbox, Switch: Switch, Tabs: Tabs, Progress: Progress, ProgressRing: ProgressRing, Skeleton: Skeleton, EmptyState: EmptyState, InlineAlert: InlineAlert, Sheet: Sheet, SheetSection: SheetSection, SourceRow: SourceRow, EvidenceBlocks: EvidenceBlocks, Overview: Overview, Wire: Wire, Port: Port, StageHeader: StageHeader, SelectionStrip: SelectionStrip, CrewCursor: CrewCursor, CommandMenu: CommandMenu, Dialog: Dialog, Card: Card, LineageChip: LineageChip, EvidenceWeight: EvidenceWeight, CrewMark: CrewMark, Button: Button, ReviewPill: ReviewPill, ToolRail: ToolRail, Composer: Composer, Toast: Toast, DraftBar: DraftBar, TaskIsland: TaskIsland, CrewBar: CrewBar, CrewSettings: CrewSettings, CardMenu: CardMenu, Icon: Icon, Root: Root, CREW: CREW };

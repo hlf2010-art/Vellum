@@ -282,7 +282,14 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .pc-fails .ico{flex:none;width:14px;height:14px;margin-top:1px;stroke-width:2.4}
 .pc-drift{display:flex;align-items:center;gap:6px;margin:10px 0 0;font:500 12px/1.35 var(--ui);color:color-mix(in srgb,var(--warn) 80%,var(--label))}
 .pc-drift .ico{width:14px;height:14px;flex:none;color:var(--warn-fill)}
-.pc-acts{display:flex;align-items:center;gap:6px;margin-top:12px}
+.pc-acts{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:14px}
+.card.proof .foot{padding-top:12px;margin-top:0}
+.pc-acts .cbtn[data-a="pc-change"]{background:transparent;color:var(--label-2)}.pc-acts .cbtn[data-a="pc-change"]:hover{background:var(--hover);color:var(--label)}
+/* Lineage icon: a tiny wire in the lineage hue; it reads as "built from", so the word is not needed. */
+.pc-from{display:inline-flex;align-items:center;gap:5px}
+.pc-from .ico{width:16px;height:16px;stroke-width:1.8;color:var(--label-3)}
+.pg-A .pc-from .ico{color:var(--A-fill)}.pg-B .pc-from .ico{color:var(--B-fill)}.pg-C .pc-from .ico{color:var(--C-fill)}.pg-D .pc-from .ico{color:var(--D-fill)}
+.pc-from .ico circle{fill:currentColor;stroke:none}
 .pc-acts .cbtn{height:var(--size-sm)}
 :lang(zh) .pc-test{white-space:normal}
 .card.frame .card-k-src,.card.image .card-k-src,.card.recording .card-k-src{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2968,7 +2975,7 @@ const FONT_CSS=window.VELLUM_FONT_CSS||"";
 
 const ICONS={
   more:'<circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/>',
-  x:'<path d="M7 7l10 10M17 7 7 17"/>',check:'<path d="m5.5 12.5 4 4 9-9.5"/>',chev:'<path d="m7 9.5 5 5 5-5"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  x:'<path d="M7 7l10 10M17 7 7 17"/>',check:'<path d="m5.5 12.5 4 4 9-9.5"/>',chev:'<path d="m7 9.5 5 5 5-5"/>',lineage:'<circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7.2 6c6.3 0 3.3 12 9.6 12"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   play:'<path d="M8 5.7v12.6a1 1 0 0 0 1.53.85l10.07-6.3a1 1 0 0 0 0-1.7L9.53 4.85A1 1 0 0 0 8 5.7z" fill="currentColor" stroke="none"/>',
   pause:'<rect x="6.5" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" stroke="none"/>',
   eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
@@ -4892,8 +4899,8 @@ function cardBody(n){
     <h4>${esc(vn.spec?.title||L_("Proof","原型"))}</h4>
     ${dir?.test?`<p class="pc-test" title="${esc(dir.test)}"><b>${L_("Test","测试")}</b> ${esc(dir.test)}</p>`:""}
     ${resHTML}${note}
-    ${sk?sketchActs(n):`<div class="pc-acts">${primary}${btn("try",L_("Open","打开"))}${old?"":btn("pc-change",L_("Change…","修改…"))}</div>
-    ${foot(`<span>${L_(`From Direction ${L||""}`,`来自方向 ${L||""}`)}${fx.length?` · ${L_(`${fx.length} sources`,`${fx.length} 份来源`)}`:""}</span>`,fR(threadCount(n)))}`}</div>`}
+    ${sk?sketchActs(n):`${foot(`<span class="pc-from" title="${esc(L_(`Built from Direction ${L||""}${fx.length?` and ${fx.length} sources`:""}`,`基于方向 ${L||""}${fx.length?` 和 ${fx.length} 份来源`:""}`))}">${ic("lineage")}${L||""}${fx.length?` · ${L_(`${fx.length} sources`,`${fx.length} 份来源`)}`:""}</span>`,fR(threadCount(n)))}
+    <div class="pc-acts">${old?"":btn("pc-change",L_("Change","修改"))}${btn("try",L_("Open","打开"))}${primary}</div>`}</div>`}
   case"print":return `<div class="in">${head(`<span class="chip">${L||"·"}</span>${uiLang()==="zh"?"定稿快照":"Snapshot"}`)}
     <div class="edition" style="margin-top:14px">No. ${n.ed}<sup>${uiLang()==="zh"?`来自原型 v${n.spec?.version||1}`:`of proof v${n.spec?.version||1}`}</sup></div><h4 style="margin-top:8px">${esc(n.spec?.title||"")}</h4><p>${esc(clip(n.spec?.lede,140))}</p>
     ${foot(`<span>${uiLang()==="zh"?"独立离线 HTML":"Standalone HTML"}</span>`,fR(threadCount(n)))}</div>`;
@@ -13027,7 +13034,7 @@ function upstreamDeleteDialog(ids,impact){
     <div class="imp-opts">
       <div class="imp-opt primary"><div><b>Hide from canvas</b><small>Hides visually only. Keeps edges, lineage, and downstream snapshots intact. Show anytime.</small></div><button type="button" class="cbtn solid" data-imp="hide">Hide</button></div>
       <div class="imp-opt"><div><b>Archive source</b><small>Excludes from new AI runs. Downstream cards stay inspectable and show “Source archived”.</small></div><button type="button" class="cbtn" data-imp="archive">Archive</button></div>
-      <div class="imp-opt"><div><b>Permanently delete</b><small>Scrubs content &amp; local media (cannot undo). Downstream cards remain and mark “Unavailable · Review required”.</small></div><button type="button" class="cbtn" style="color:#E0245E;border-color:color-mix(in srgb,#E0245E 40%,var(--hair))" data-imp="perm-step1">Delete…</button></div>
+      <div class="imp-opt"><div><b>Permanently delete</b><small>Scrubs content &amp; local media (cannot undo). Downstream cards remain and mark “Unavailable · Review required”.</small></div><button type="button" class="cbtn" style="color:#E0245E;border-color:color-mix(in srgb,#E0245E 40%,var(--hair))" data-imp="perm-step1">Delete</button></div>
     </div>
     <div class="imp-confirm" id="impPermConfirm" hidden><b>Confirm permanent deletion — scrubbed data cannot be recovered via Undo.</b><div class="imp-confirm-acts"><button type="button" class="cbtn" data-imp="perm-cancel">Cancel</button><button type="button" class="cbtn" style="background:#E0245E;border-color:#E0245E;color:#fff" data-imp="perm-confirm">Confirm Permanent Delete</button></div></div>
   </div>`;

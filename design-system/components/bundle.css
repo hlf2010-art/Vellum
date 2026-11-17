@@ -684,7 +684,7 @@
 .vl-pc-ver button:last-child .vl-ico{transform:rotate(-90deg)}
 .vl-pc-ver .vl-ico{width:var(--icon-xs);height:var(--icon-xs);stroke-width:2.2}
 .vl-pc h4{margin:7px 0 0;font:var(--text-card-title);letter-spacing:-.022em;color:var(--label);text-wrap:pretty}
-.vl-pc-test{margin:6px 0 0;font:450 13px/1.4 var(--font-ui);color:var(--label-2);text-wrap:pretty}
+.vl-pc-test{margin:6px 0 0;font:450 13px/1.4 var(--font-ui);color:var(--label-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vl-pc-test b{font-weight:600;color:var(--label)}
 .vl-pc-res{margin-top:12px;padding:10px 12px;border-radius:var(--radius-md);background:var(--card-2)}
 .vl-pc-blocks{display:flex;gap:3px;margin-bottom:8px}
@@ -707,7 +707,7 @@
 .vl-pc-iter input::placeholder{color:var(--label-3)}
 .vl-root .vl-pc-iter .vl-send{width:var(--size-sm);height:var(--size-sm);border-radius:50%;display:grid;place-items:center;flex:none}
 .vl-pc-iter .vl-send .vl-ico{width:var(--icon-sm);height:var(--icon-sm)}
-.vl-pc-acts{display:flex;align-items:center;gap:6px;margin-top:12px}
+.vl-pc-acts{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:14px}
 .vl-pc-meta{display:flex;align-items:center;gap:8px;margin-top:12px;font:var(--text-meta);color:var(--label-3);font-variant-numeric:tabular-nums}
 .vl-pc-meta .vl-sp{flex:1}
 /* Viewing an older version: results dim, the way back is the primary action. */
@@ -715,3 +715,9 @@
 .vl-pc.is-old .vl-pc-res{opacity:.7}
 @media (prefers-reduced-motion:reduce){.vl-pc-sweep{animation:none;background:color-mix(in srgb,var(--light) 20%,transparent)}}
 .vl-pc-iter input:focus,.vl-pc-iter input:focus-visible{outline:0;box-shadow:none}
+
+/* Lineage icon: a tiny wire in the lineage fill, read as "built from". */
+.vl-from{display:inline-flex;align-items:center;gap:5px}
+.vl-from .vl-ico{width:var(--icon-md);height:var(--icon-md);stroke-width:1.8;color:var(--label-3)}
+.vl-from .vl-ico circle{fill:currentColor;stroke:none}
+.vl-pc[style*="--A"] .vl-from .vl-ico{color:var(--A-fill)}.vl-pc[style*="--B"] .vl-from .vl-ico{color:var(--B-fill)}.vl-pc[style*="--C"] .vl-from .vl-ico{color:var(--C-fill)}.vl-pc[style*="--D"] .vl-from .vl-ico{color:var(--D-fill)}

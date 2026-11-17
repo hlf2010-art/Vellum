@@ -10,6 +10,8 @@ node tests/vellum-smoke.cjs --headed                      # watch it run
 
 It checks that every inline script parses, the sample board loads and every card type can be selected without errors, every argument-free command runs from the composer (and text commands wait for their text), free text becomes an idea card, Try again keeps or replaces drafts correctly (including work done meanwhile and Undo), provenance and the change log are recorded, and the Task Island shows a running crew move, reports what arrived, selects it on Show and cancels on Stop. Exit code 0 means all checks passed.
 
+It also checks that what you type reaches the model: words typed on a crew draft revise it (the request carries your words and the draft), Critic answers the question you typed, and a question or an @mention of someone else is not taken as a revision. A source you add can be rated on its card (an Unrated pill) and in its sheet. A reply that hits its length limit or time limit says it was cut off, a timeout is never mistaken for Stop, and a timed-out crew move falls back to built-in rules with a message saying why. The scripted endpoint can send `finish_reason` (`finish`) and stream slowly (`slow`, ms per chunk) for these.
+
 Run it before committing a change to `Vellum-Lumen.html`.
 
 ## Studio AI launcher (local server)

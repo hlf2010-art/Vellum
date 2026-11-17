@@ -60,7 +60,12 @@ function serve() {
           if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503); return rsp.end(); }
           rsp.writeHead(200, { 'Content-Type': 'text/event-stream' });
           const txt = typeof hit.text === 'string' ? hit.text : JSON.stringify(hit.text);
-          for (let k = 0; k < txt.length; k += 40) rsp.write('data: ' + JSON.stringify({ choices: [{ delta: { content: txt.slice(k, k + 40) } }] }) + '\n\n');
+          for (let k = 0; k < txt.length; k += 40) {
+            if (hit.slow) await new Promise(r => setTimeout(r, hit.slow)); // a slow model, chunk by chunk
+            if (rsp.destroyed) return;
+            rsp.write('data: ' + JSON.stringify({ choices: [{ delta: { content: txt.slice(k, k + 40) } }] }) + '\n\n');
+          }
+          if (hit.finish) rsp.write('data: ' + JSON.stringify({ choices: [{ delta: {}, finish_reason: hit.finish }] }) + '\n\n');
           rsp.end('data: [DONE]\n\n');
         });
         return;
@@ -546,6 +551,31 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('rating a source is in the change log', await p.evaluate(() => board.log.some(l => /Marked .* as reported/.test(l.html))));
       check('no page errors when rating evidence', p.errors.length === 0, p.errors.join(' | '));
       fs.rmSync(mdPath, { force: true });
+      await p.context().close();
+    }
+    // 12. a reply that ran out of tokens or time says so, and a timeout is not mistaken for Stop
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      queue = [{ id: 'len1', match: 'Lumen Copilot', text: 'Start with the restore prediction test, because', finish: 'length' }];
+      await p.type('What should we test first?'); await p.idle();
+      for (let i = 0; i < 40 && !(await p.evaluate(() => (board.copilot || []).some(m => m.role === 'ai' && /Cut off/.test(m.text || '')))); i++) await p.waitForTimeout(250);
+      const cop = await p.evaluate(() => (board.copilot || []).filter(m => m.role === 'ai').map(m => m.text).at(-1) || '');
+      check('a Copilot reply cut at its length limit says so', requests.some(x => x.matched === 'len1') && /Cut off: the reply reached its length limit/.test(cop), cop.slice(-160));
+      await p.evaluate(() => { LOCAL_AI_MS = 0; });
+      queue = [{ id: 'early1', match: 'TIMEOUT-EARLY', text: 'too late', delay: 3000 }];
+      const early = await p.evaluate(async () => { try { await apiChat({ prompt: 'TIMEOUT-EARLY', timeoutMs: 800 }); return 'no error'; } catch (e) { return `${e.name}: ${e.message}`; } });
+      check('no answer in time is a named timeout, not an abort', /^TimeoutError: The model didn't finish within 1 s/.test(early), early);
+      queue = [{ id: 'slow1', match: 'TIMEOUT-MID', text: Array.from({ length: 24 }, (_, i) => `Point ${i + 1}: a restore preview lists edit ${i * 7 + 3}.`).join(' '), slow: 250 }]; // varied, so the repetition guard leaves it alone
+      const mid = await p.evaluate(async () => { try { return await apiChat({ prompt: 'TIMEOUT-MID', timeoutMs: 1200 }); } catch (e) { return `${e.name}: ${e.message}`; } });
+      check('a reply cut off by time keeps what arrived and says it was cut off', /^Point 1:/.test(mid) && /Cut off: the model didn't finish within 1 s\./.test(mid), mid.slice(-120));
+      await p.evaluate(() => { apiHealth = { k: 'unknown', sig: '', at: 0 }; }); // the early timeout marked the API unreachable for a while
+      queue = [{ id: 'rules1', match: 'TIMEOUT-RULES', text: '{}', delay: 3000 }];
+      const fb = await p.evaluate(async () => { const r = await viaClaude(async () => null, async () => 'from rules', { studio: () => null, apiArgs: { prompt: 'TIMEOUT-RULES', json: true, timeoutMs: 800 } }); return { engine: r.engine, v: r.v, toast: [...document.querySelectorAll('#toasts > *')].map(t => t.innerText).join(' / ') }; });
+      check('a crew move that times out falls back to built-in rules and says why', fb.engine === 'local' && fb.v === 'from rules' && /didn't finish within 1 s\. Built-in rules drafted this instead/.test(fb.toast), JSON.stringify(fb));
+      await p.evaluate(() => { LOCAL_AI_MS = 240000; });
+      check('local models get the longer time limit', await p.evaluate(() => isLocalBase('http://127.0.0.1:59700/v1') && isLocalBase('http://localhost:11434/v1') && !isLocalBase('https://openrouter.ai/api/v1')));
+      check('no page errors around cut-off and timed-out replies', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
   } finally {

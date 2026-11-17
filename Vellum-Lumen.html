@@ -7597,10 +7597,15 @@ async function buildChatMessages({system,prompt,messages,images}){
   msgs.push({role:"user",content:urls.length?[{type:"text",text:prompt},...urls.map(url=>({type:"image_url",image_url:{url}}))]:prompt});
   return msgs;
 }
-async function readChatStream(res,ctrl,{json,onText}){
+/* A model that runs out of time or tokens must not look finished. */
+let LOCAL_AI_MS=240000; // matches Studio AI's own upstream limit; a model on this machine can be slow
+const isLocalBase=u=>/^https?:\/\/(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\]|[^/:]+\.local)(?::|\/|$)/i.test(String(u||""));
+function aiTimeoutError(ms){const e=new Error(L(`The model didn't finish within ${Math.round(ms/1000)} s`,`模型在 ${Math.round(ms/1000)} 秒内没有完成`));e.name="TimeoutError";return e}
+const cutNote=(why,ms)=>"\n\n_"+(why==="time"?L(`Cut off: the model didn't finish within ${Math.round(ms/1000)} s.`,`未完成：模型在 ${Math.round(ms/1000)} 秒内没有写完。`):L("Cut off: the reply reached its length limit.","未完成：回复达到了长度上限。"))+"_";
+async function readChatStream(res,ctrl,{json,onText,timedOut=()=>false,timeoutMs=0}){
   const reader=res.body?.getReader();
   if(!reader)throw new Error("No response stream");
-  const dec=new TextDecoder();let buf="",full="",loopStopped=false;
+  const dec=new TextDecoder();let buf="",full="",loopStopped=false,cut=null;
   const pushDelta=d=>{
     if(!d)return;
     full+=d;
@@ -7617,7 +7622,7 @@ async function readChatStream(res,ctrl,{json,onText}){
   const consumeLine=ln=>{
     const line=ln.trim();if(!line.startsWith("data:"))return;
     const payload=line.slice(5).trim();if(!payload||payload==="[DONE]")return;
-    try{const j=JSON.parse(payload);pushDelta(j.choices?.[0]?.delta?.content??j.choices?.[0]?.message?.content??"")}catch{}
+    try{const j=JSON.parse(payload);if(j.choices?.[0]?.finish_reason==="length")cut="length";pushDelta(j.choices?.[0]?.delta?.content??j.choices?.[0]?.message?.content??"")}catch{}
   };
   try{
     while(!loopStopped){
@@ -7626,18 +7631,23 @@ async function readChatStream(res,ctrl,{json,onText}){
       const lines=buf.split(/\r?\n/);buf=lines.pop()||"";
       for(const ln of lines){consumeLine(ln);if(loopStopped)break}
     }
-  }catch(e){if(!loopStopped)throw e}
-  if(!loopStopped&&buf.trim())consumeLine(buf);
+  }catch(e){if(!loopStopped){if(!timedOut())throw e;if(json||!full.trim())throw aiTimeoutError(timeoutMs);cut="time"}}
+  // an aborted stream can also just end, so check the clock as well as the exception
+  if(!cut&&!loopStopped&&timedOut()){if(json||!full.trim())throw aiTimeoutError(timeoutMs);cut="time"}
+  if(!loopStopped&&cut!=="time"&&buf.trim())consumeLine(buf);
   const clean=trimRepetitionLoop(full).text.trim();
   if(!clean)throw new Error("Empty model response");
-  return json?parseAIJson(clean):clean;
+  if(json){try{return parseAIJson(clean)}catch(e){if(cut==="length")throw new Error(L("The model's reply hit its length limit before it finished","模型的回复在写完前达到了长度上限"));throw e}}
+  if(!cut)return clean;
+  const marked=clean+cutNote(cut,timeoutMs);onText?.({text:marked,delta:""});return marked;
 }
 async function studioChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=95000,onText,signal}){
   const msgs=await buildChatMessages({system,prompt,messages,images});
   const ctrl=new AbortController();
   const onAbort=()=>ctrl.abort();
   if(signal){if(signal.aborted)throw new DOMException("Aborted","AbortError");signal.addEventListener("abort",onAbort,{once:true})}
-  const timer=setTimeout(()=>ctrl.abort(),timeoutMs);
+  timeoutMs=Math.max(timeoutMs,LOCAL_AI_MS);let timedOut=false;
+  const timer=setTimeout(()=>{timedOut=true;ctrl.abort()},timeoutMs);
   try{
     const res=await fetch(`${STUDIO_URL}/studio/generate`,{
       method:"POST",signal:ctrl.signal,
@@ -7648,8 +7658,9 @@ async function studioChat({system,prompt,messages,images=[],json=false,maxTokens
       if(res.status===503){studioState.status="loading";renderCrew()}
       throw new Error("Studio HTTP "+res.status);
     }
-    return await readChatStream(res,ctrl,{json,onText});
-  }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
+    return await readChatStream(res,ctrl,{json,onText,timedOut:()=>timedOut,timeoutMs});
+  }catch(e){if(timedOut&&e?.name==="AbortError")throw aiTimeoutError(timeoutMs);throw e}
+  finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
 const TALK=k=>`You are ${AGENTS[k].name} on a small design crew, talking with the designer about one card. Your craft: ${AGENTS[k].craft} In conversation you answer what was said; you do not run your usual procedure unless asked.`;
 const TALK_RULES=`1. Answer what the designer just said first, and use everything they gave you (if they named two things, address both).
@@ -7742,11 +7753,11 @@ function wallText(ns,{docCap=4500,shortCap=700,totalCap=14000,excludeIds=null,co
 async function viaClaude(remote,local,opts={}){
   if(aiPref==="auto"&&studioState.status==="ready"&&opts.studio){
     try{const v=await opts.studio();if(v!=null)return {v,live:true,engine:"studio"}}
-    catch(e){if(e?.name==="AbortError")throw e}
+    catch(e){if(e?.name==="AbortError")throw e;if(e?.name==="TimeoutError")toast(L(`${e.message}. Trying the next engine; a faster model or fewer cards helps.`,`${e.message}。正在改用下一个引擎；换更快的模型或减少卡片会有帮助。`))}
   }
   if(aiPref!=="local"&&apiRoutable()&&opts.studio){
     try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null)return {v,live:true,engine:"api"}}
-    catch(e){if(e?.name==="AbortError")throw e}
+    catch(e){if(e?.name==="AbortError")throw e;if(e?.name==="TimeoutError")toast(L(`${e.message}. Built-in rules drafted this instead; a faster model or fewer cards helps.`,`${e.message}。已改由内置规则起草；换更快的模型或减少卡片会有帮助。`))}
   }
   if(aiPref!=="local"&&sampleFn&&!(opts.apiArgs?.images?.length)){
     try{const v=await Promise.race([remote(),wait(100000).then(()=>{throw {code:"timeout"}})]);if(v==null)throw {code:"empty"};return {v,live:true,engine:"claude"}}
@@ -7760,7 +7771,8 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
   const ctrl=new AbortController();
   const onAbort=()=>ctrl.abort();
   if(signal){if(signal.aborted)throw new DOMException("Aborted","AbortError");signal.addEventListener("abort",onAbort,{once:true})}
-  const timer=setTimeout(()=>ctrl.abort(),timeoutMs);
+  if(isLocalBase(apiCfg.baseUrl))timeoutMs=Math.max(timeoutMs,LOCAL_AI_MS);let timedOut=false;
+  const timer=setTimeout(()=>{timedOut=true;ctrl.abort()},timeoutMs);
   const sentCfg={...apiCfg},t0=performance.now();let gotHeaders=false;
   try{
     const body={model:apiCfg.model,messages:msgs,stream:true,temperature:0.45,max_tokens:Math.min(4600,maxTokens)};
@@ -7778,10 +7790,11 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
       throw new Error("API HTTP "+res.status);
     }
     setApiHealth("ok",{cfg:sentCfg,ms:Math.round(performance.now()-t0)});
-    return await readChatStream(res,ctrl,{json,onText});
+    return await readChatStream(res,ctrl,{json,onText,timedOut:()=>timedOut,timeoutMs});
   }catch(e){
     if(e instanceof TypeError&&!signal?.aborted)setApiHealth("unreachable",{cfg:sentCfg,detail:"network"});
     else if(e?.name==="AbortError"&&!signal?.aborted&&!gotHeaders)setApiHealth("unreachable",{cfg:sentCfg,detail:"timeout"});
+    if(timedOut&&e?.name==="AbortError")throw aiTimeoutError(timeoutMs);
     throw e;
   }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
@@ -12495,7 +12508,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         ?`You are Lumen Copilot, a concise design workspace assistant for board "${board.title||"Untitled"}". The user sent a brief conversational message ("${text.trim()}"). Reply in 1 short, natural sentence (under 18 words). Do NOT roleplay as a human teammate, do NOT mention playtests, synthesis docs, or background work, do NOT output multiple paragraphs, and do NOT add a sign-off.`
         :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\nCONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
 
-      const maxTok=isCasual?64:1500;
+      const maxTok=isCasual?64:3000;
       if(aiPref==="auto"&&studioState.status==="ready"){
         const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
         const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;

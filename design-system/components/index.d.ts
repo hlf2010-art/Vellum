@@ -233,7 +233,7 @@ export declare function InlineAlert(p: InlineAlertProps): JSX.Element;
 export interface ProofVersion { ver: number; image?: string; results?: { passed?: number; failed?: number; waiting?: number }; failed?: string[]; /** What the next version changed (shown when viewing this one). */ changed?: string; }
 export interface ProofCardProps {
   title: string; lineage?: Lineage; format?: 'page' | 'tour' | 'deck';
-  /** The direction's test, e.g. "Run with 5 players…; pass if 4 notice…". */
+  /** The direction's test. Not shown on the card (it lives on the direction and in the sheet); kept for the sheet. */
   test?: string;
   versions?: ProofVersion[]; viewing?: number;
   state?: 'idle' | 'building'; buildNote?: string;

@@ -487,6 +487,55 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('no page errors in the composer', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+    // 10. what you type reaches the model: revising a draft, asking Critic, Scout on a draft
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      await p.type('Steer idea: restore without surprises'); await p.waitForTimeout(800);
+      const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+      queue = [{ id: 'st1', match: '"directions"', text: dirs('Plain') }];
+      await p.evaluate(id => select([id]), idea); await p.type('/fork 3'); await p.idle();
+      const drafts = () => p.evaluate(() => board.nodes.filter(n => n.type === 'direction' && n.status === 'sketch').map(n => n.id));
+      const routeOf = async t => { await p.type(t, false); await p.waitForTimeout(250); return p.evaluate(() => route(lineText())); };
+      await p.evaluate(ids => select(ids), await drafts());
+      const ask = 'Make every option tell the creator what a restore will overwrite, and name the risk';
+      let r = await routeOf(ask);
+      check('plain words on a crew draft route to a revision, not a generic check', r && r.kind === 'revise' && r.agent === 'muse' && r.arg === ask, JSON.stringify(r));
+      r = await routeOf('Why did you pick these three?');
+      check('a question about a draft is still answered, not taken as a revision', r && r.kind !== 'revise', JSON.stringify(r));
+      r = await routeOf('@critic does this hold up');
+      check('an @mention of someone else still goes to them', r && r.kind !== 'revise' && r.agent === 'critic', JSON.stringify(r));
+      r = await routeOf('@strategist ' + ask);
+      check('an @mention of the draft\'s author revises it with the words after the mention', r && r.kind === 'revise' && r.arg === ask, JSON.stringify(r));
+      queue = [{ id: 'st2', match: 'tell the creator what a restore will overwrite', text: dirs('Revised') }];
+      await p.type(ask); await p.idle();
+      const req = requests.filter(q => q.matched === 'st2').at(-1);
+      check('the revision request carries your words and the draft being revised', !!req && req.full.includes(ask) && /The draft being revised/.test(req.full) && /Plain A/.test(req.full), req ? req.full.slice(-300) : 'no request matched');
+      const titles = await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','));
+      check('the revised drafts replace the old ones in place', titles === 'Revised A,Revised B,Revised C', titles);
+      check('the change log says what you asked for', await p.evaluate(() => /Asked for a revision of 3 suggestions: .*tell the creator/.test(board.log.at(-1)?.html || '')), await p.evaluate(() => board.log.at(-1)?.html));
+      // Scout on a draft explains what to do instead of asking you to select cards
+      await p.evaluate(ids => gather(ids.map(byId)), await drafts()); await p.waitForTimeout(300);
+      check('Scout on a draft says how to change it', /type how it should change/.test(await p.toast()), await p.toast());
+      // Critic answers the question you typed, and your question stays on the card
+      await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+Enter'); await p.waitForTimeout(600);
+      const a = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'A' && n.status === 'ink')?.id);
+      const q = 'Check the risk that creators never see the overwrite list';
+      queue = [{ id: 'cq', match: 'The designer asks: "Check the risk', text: 'It rests on a proposal, not an observation. Who has watched a restore?' }];
+      await p.evaluate(id => select([id]), a); await p.type(q); await p.idle();
+      check('Critic is asked the question you typed', requests.some(x => x.matched === 'cq'), requests.slice(-2).map(x => x.prompt).join(' || '));
+      check('your question and Critic\'s answer are both on the card', await p.evaluate(([id, q]) => { const t = board.threads[id] || []; return t.some(m => m.who === 'you' && m.text === q) && t.some(m => m.who === 'critic' && /Who has watched/.test(m.text)); }, [a, q]));
+      // a synthesis draft is revised the same way
+      const notes = await p.evaluate(() => [pinCard('note', 'Creators restore after big edits'), pinCard('note', 'Backups are per package')].map(n => n.id));
+      queue = [{ id: 'syn1', match: '"points"', text: { title: 'First read', points: ['**One.** a', '**Two.** b', '**Three.** c'] } }];
+      await p.evaluate(ids => gather(ids.map(byId)), notes); await p.idle();
+      const syn = await p.evaluate(() => board.nodes.find(n => n.type === 'synthesis' && n.status === 'sketch')?.id);
+      queue = [{ id: 'syn2', match: 'Separate what has shipped', text: { title: 'Second read', points: ['**Shipped.** a', '**Proposed.** b', '**Open.** c'] } }];
+      await p.evaluate(id => select([id]), syn); await p.type('Separate what has shipped from what is only proposed'); await p.idle();
+      check('a synthesis draft is revised with your words', requests.some(x => x.matched === 'syn2' && /First read/.test(x.full)) && await p.evaluate(() => board.nodes.some(n => n.type === 'synthesis' && n.title === 'Second read')), await p.evaluate(() => board.nodes.filter(n => n.type === 'synthesis').map(n => n.title).join()));
+      check('no page errors when steering drafts', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
   } finally {
     // 9. legibility: light and dark are designed separately, so both are measured, in the states that change colour
     for (const theme of ['light', 'dark']) {

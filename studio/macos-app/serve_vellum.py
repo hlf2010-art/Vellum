@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Static and cutout HTTP server for the bundled Vellum macOS app."""
 import argparse
+import atexit
+import contextlib
 import html as html_lib
 import ipaddress
 import json
 import os
 import re
+import signal
 import socket
 import subprocess
+import sys
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -17,6 +21,47 @@ from urllib.request import Request, urlopen
 APP_DIR = Path(__file__).resolve().parents[2]
 CUTOUT = APP_DIR / "studio" / "cutout" / "foreground.swift"
 cutout_slot = threading.Lock()
+
+# Studio AI launcher: lets the page's Start button open the bundled local model service.
+STUDIO_PORT = 59631
+STUDIO_SCRIPT = Path(os.environ.get("VELLUM_STUDIO_SCRIPT") or (APP_DIR / "Start Studio AI.command"))
+studio_lock = threading.Lock()
+studio_proc = None
+
+
+def port_in_use(port: int) -> bool:
+    with contextlib.suppress(OSError), socket.create_connection(("127.0.0.1", port), timeout=0.3):
+        return True
+    return False
+
+
+def launch_studio() -> dict:
+    """Start Studio AI once; never with arguments from the request."""
+    global studio_proc
+    if not STUDIO_SCRIPT.is_file():
+        return {"ok": False, "error": "missing"}
+    with studio_lock:
+        if port_in_use(STUDIO_PORT) or (studio_proc and studio_proc.poll() is None):
+            return {"ok": True, "started": False}
+        studio_proc = subprocess.Popen(
+            [sys.executable, str(STUDIO_SCRIPT), "--serve"],
+            cwd=str(STUDIO_SCRIPT.parent),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},
+        )
+        return {"ok": True, "started": True}
+
+
+def stop_launched_studio():
+    proc = studio_proc
+    if proc and proc.poll() is None:
+        proc.terminate()
+        try:
+            proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            proc.kill()
 
 
 class VellumHandler(SimpleHTTPRequestHandler):
@@ -31,6 +76,19 @@ class VellumHandler(SimpleHTTPRequestHandler):
             or (urlsplit(origin).scheme in ("http", "https") and urlsplit(origin).hostname in ("localhost", "127.0.0.1"))
         )
 
+    def same_origin(self):
+        origin = self.headers.get("Origin", "")
+        host = self.headers.get("Host", "")
+        return bool(origin) and urlsplit(origin).netloc == host and host.split(":")[0] in ("127.0.0.1", "localhost")
+
+    def send_json(self, code, obj):
+        body = json.dumps(obj).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_OPTIONS(self):
         if self.path != "/cutout" or not self.cutout_allowed():
             return self.send_error(403)
@@ -38,6 +96,14 @@ class VellumHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
+        if self.path == "/launch/studio-ai":
+            # Custom header + exact same origin: other sites can't trigger this (their preflight is refused).
+            if not self.same_origin() or self.headers.get("X-Studio-Client") != "canvas":
+                return self.send_error(403)
+            try:
+                return self.send_json(200, launch_studio())
+            except OSError:
+                return self.send_json(503, {"ok": False, "error": "spawn_failed"})
         if self.path != "/cutout" or not self.cutout_allowed() or self.headers.get("X-Studio-Client") != "canvas":
             return self.send_error(403)
         try:
@@ -83,6 +149,8 @@ class VellumHandler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+        elif req_path == "/launch/studio-ai":
+            return self.send_json(200, {"available": STUDIO_SCRIPT.is_file()})
         elif req_path == "/fetch-link":
             if not self.cutout_allowed():
                 return self.send_error(403)
@@ -156,6 +224,8 @@ def main():
     parser.add_argument("--port", type=int, default=8791)
     args = parser.parse_args()
     os.chdir(APP_DIR)
+    atexit.register(stop_launched_studio)
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))  # run atexit when the app quits us
     server = ThreadingHTTPServer(("127.0.0.1", args.port), VellumHandler)
     print(f"Vellum UI ready at http://127.0.0.1:{args.port}/Vellum-Lumen.html", flush=True)
     server.serve_forever()

@@ -16,6 +16,7 @@ import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
+from urllib.error import HTTPError
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 APP_DIR = Path(__file__).resolve().parents[2]
@@ -104,6 +105,18 @@ class VellumHandler(SimpleHTTPRequestHandler):
                 return self.send_json(200, launch_studio())
             except OSError:
                 return self.send_json(503, {"ok": False, "error": "spawn_failed"})
+        if self.path == "/notion/database":
+            # The page's Notion token is posted here, so only this page may call it (custom header + same origin).
+            if not self.same_origin() or self.headers.get("X-Studio-Client") != "canvas":
+                return self.send_error(403)
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+                if not 0 < size <= 16_000:
+                    raise ValueError
+                body = json.loads(self.rfile.read(size))
+            except (ValueError, json.JSONDecodeError):
+                return self.send_json(400, {"ok": False, "error": "bad_request"})
+            return self.send_json(200, notion_database(str(body.get("ref") or ""), str(body.get("token") or "")))
         if self.path != "/cutout" or not self.cutout_allowed() or self.headers.get("X-Studio-Client") != "canvas":
             return self.send_error(403)
         try:
@@ -230,6 +243,149 @@ def fetch_data(raw_url: str) -> dict:
         return {"ok": False, "error": str(exc)[:80] or "invalid"}
     except Exception as exc:
         return {"ok": False, "error": str(exc)[:120]}
+
+
+# Notion database -> table rows, through Notion's REST API with the integration token saved in MCP Sources.
+NOTION_API = os.environ.get("VELLUM_NOTION_API", "https://api.notion.com").rstrip("/")
+NOTION_MAX_ROWS = 500
+
+
+def notion_db_id(ref: str):
+    """Database id from an id or a notion.so link (the id is in the path; ?v= is the view, not the database)."""
+    ref = (ref or "").strip()
+    path = urlsplit(ref).path if "://" in ref else ref
+    hits = re.findall(r"[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}", path, re.I)
+    if not hits:
+        return None
+    h = hits[-1].replace("-", "").lower()
+    return f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:]}"
+
+
+def _notion_call(path, token, body=None):
+    req = Request(f"{NOTION_API}/v1/{path}", data=json.dumps(body).encode() if body is not None else None,
+                  method="POST" if body is not None else "GET",
+                  headers={"Authorization": f"Bearer {token}", "Notion-Version": "2022-06-28",
+                           "Content-Type": "application/json", "User-Agent": "Vellum/1.0 (+table import)"})
+    try:
+        with urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read(DATA_MAX_BYTES))
+    except HTTPError as err:
+        try:
+            info = json.loads(err.read(4000) or b"{}")
+        except ValueError:
+            info = {}
+        code, msg = info.get("code", ""), str(info.get("message", ""))
+        if err.code == 401:
+            raise ValueError("bad_token")
+        if err.code == 404 or code == "object_not_found":
+            raise ValueError("not_shared")
+        if "is a page" in msg:
+            raise ValueError("is_page")
+        if err.code == 429:
+            raise ValueError("rate_limited")
+        raise ValueError(f"HTTP {err.code}")
+
+
+def _rt(items):
+    return "".join(x.get("plain_text", "") for x in (items or []) if isinstance(x, dict))
+
+
+def _ndate(v):
+    def one(x):
+        x = str(x or "")
+        return x[:10] + (" " + x[11:16] if len(x) > 10 and x[11:16] != "00:00" else "")
+    if isinstance(v, str):
+        return one(v)
+    if not isinstance(v, dict) or not v.get("start"):
+        return ""
+    return one(v["start"]) + (" → " + one(v["end"]) if v.get("end") else "")
+
+
+def _nnum(n):
+    if n is None:
+        return ""
+    return str(int(n)) if isinstance(n, float) and n.is_integer() else str(n)
+
+
+def notion_cell(p) -> str:
+    """One property value as the text a person would read in Notion."""
+    if not isinstance(p, dict):
+        return ""
+    t = p.get("type")
+    v = p.get(t)
+    if t in ("title", "rich_text"):
+        return _rt(v)
+    if t == "number":
+        return _nnum(v)
+    if t in ("select", "status"):
+        return (v or {}).get("name", "")
+    if t == "multi_select":
+        return ", ".join(o.get("name", "") for o in v or [])
+    if t == "date":
+        return _ndate(v)
+    if t in ("created_time", "last_edited_time"):
+        return _ndate(v)
+    if t == "checkbox":
+        return "Yes" if v else "No"
+    if t in ("people",):
+        return ", ".join(x.get("name", "") for x in v or [] if x.get("name"))
+    if t in ("created_by", "last_edited_by"):
+        return (v or {}).get("name", "")
+    if t in ("url", "email", "phone_number"):
+        return v or ""
+    if t == "files":
+        return ", ".join(f.get("name", "") for f in v or [])
+    if t == "relation":
+        return str(len(v)) if v else ""
+    if t == "unique_id":
+        return f"{(v or {}).get('prefix') + '-' if (v or {}).get('prefix') else ''}{(v or {}).get('number', '')}"
+    if t == "formula":
+        ft = (v or {}).get("type")
+        fv = (v or {}).get(ft)
+        return ("Yes" if fv else "No") if ft == "boolean" else _ndate(fv) if ft == "date" else _nnum(fv) if ft == "number" else str(fv or "")
+    if t == "rollup":
+        rt = (v or {}).get("type")
+        if rt == "number":
+            return _nnum(v.get("number"))
+        if rt == "date":
+            return _ndate(v.get("date"))
+        if rt == "array":
+            return ", ".join(x for x in (notion_cell(i) for i in v.get("array") or []) if x)
+    return ""
+
+
+def notion_database(ref: str, token: str) -> dict:
+    db = notion_db_id(ref)
+    if not db:
+        return {"ok": False, "error": "no_id"}
+    if not token.strip():
+        return {"ok": False, "error": "no_token"}
+    try:
+        meta = _notion_call(f"databases/{db}", token.strip())
+        props = meta.get("properties") or {}
+        names = sorted(props, key=lambda k: props[k].get("type") != "title")  # title column first, then Notion's order
+        rows, cursor, more = [], None, False
+        while len(rows) < NOTION_MAX_ROWS:
+            page = _notion_call(f"databases/{db}/query", token.strip(),
+                                {"page_size": 100, **({"start_cursor": cursor} if cursor else {})})
+            for r in page.get("results") or []:
+                rp = r.get("properties") or {}
+                rows.append([notion_cell(rp.get(n)) for n in names])
+            cursor = page.get("next_cursor")
+            if not page.get("has_more") or not cursor:
+                break
+        else:
+            more = True
+        if len(rows) > NOTION_MAX_ROWS:
+            rows, more = rows[:NOTION_MAX_ROWS], True
+        # Columns empty in every row add nothing to read (the title column always stays).
+        keep = [i for i, n in enumerate(names) if i == 0 or any(r[i] for r in rows)]
+        return {"ok": True, "id": db, "title": _rt(meta.get("title")) or "Notion database", "url": meta.get("url", ""),
+                "columns": [names[i] for i in keep], "rows": [[r[i] for i in keep] for r in rows], "more": more}
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)[:80]}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:120] or "failed"}
 
 
 def fetch_link_summary(raw_url: str) -> dict:

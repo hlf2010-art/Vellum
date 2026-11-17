@@ -31,6 +31,16 @@ stand-in for the internet:
 python3 studio/macos-app/test_serve_fetch.py
 ```
 
+## Notion databases (local server)
+
+`/notion/database` turns a Notion database into table rows with the integration token saved in MCP Sources.
+The token is posted by the page, so the endpoint needs the page's exact origin and the `X-Studio-Client` header.
+Tested against a stand-in for Notion's API (property types, paging past 100 rows, the 500-row cap, errors):
+
+```bash
+python3 studio/macos-app/test_serve_notion.py
+```
+
 ## Legibility in both themes
 
 Light and dark are designed separately; a colour that works in one is not assumed to work in the other.

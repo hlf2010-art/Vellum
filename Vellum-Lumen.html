@@ -4830,7 +4830,7 @@ function cardBody(n){
     <h4 data-edit="title">${esc(n.title||"")}</h4><div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>${sk?sketchActs(n):foot(fL(weightHTML(n.weight),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
   case"table":{/* L is shadowed by lin(n) in cardBody, so translate locally */const tr=(en,zh)=>uiLang()==="zh"?zh:en;const ds=n.data||{columns:[],rows:[]},src=ds.source||{};
     const from=[src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.kind==="paste"?tr("Pasted","粘贴"):src.label||"",src.edited?tr("edited","已编辑"):"",
-      src.total>(ds.rows||[]).length?tr(`first ${(ds.rows||[]).length} of ${src.total.toLocaleString()} rows`,`前 ${(ds.rows||[]).length} 行，共 ${src.total.toLocaleString()} 行`):""].filter(Boolean).join(" · ");
+      src.total>(ds.rows||[]).length?tr(`first ${(ds.rows||[]).length} of ${src.total.toLocaleString()} rows`,`前 ${(ds.rows||[]).length} 行，共 ${src.total.toLocaleString()} 行`):src.more?tr(`first ${(ds.rows||[]).length} rows`,`前 ${(ds.rows||[]).length} 行`):""].filter(Boolean).join(" · ");
     return `<div class="in">${head(`${byline(n)}${ic("grid")}<span>${tr("Table","表格")}</span>`)}
     <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol,editable:!sk,sort:n.tblSort})}${sk?sketchActs(n):foot(fL(from?`<span>${esc(from)}</span>`:""),fR(threadCount(n)))}</div>`;}
   case"idea":return `<div class="in">${head(esc(n.kind||"Idea"))}
@@ -5364,7 +5364,16 @@ function tableModel(ds){
     const vs=raw.map(r=>(r[ci]||"").replace(/\*\*/g,"").trim().toLowerCase().replace(/^med$/,"medium"));
     const sc=SCALES.find(sc=>vs.filter(Boolean).length&&vs.every(v=>!v||sc.includes(v)));if(!sc)return null;
     return vs.map(v=>{if(!v)return null;const q=sc.indexOf(v)/(sc.length-1),good=dir>0?q:1-q;return good>.66?"good":good<.34?"bad":"mid"})});
-  const LVL={good:"var(--C)",mid:"var(--warn,#d97706)",bad:"var(--D)"};
+  /* Workflow status (Notion's Status, Jira, Linear): finished reads green, in motion blue, stuck red, not started stays
+     neutral. Recognised by a status-like header, or by every value being a known status word. Sorts in workflow order. */
+  const STATUS=[["idle",/^(not started|to ?do|backlog|planned|open|new|queued|未开始|待办|计划中)$/],["now",/^(in progress|doing|in review|review|started|ongoing|wip|active|进行中|审核中|处理中)$/],
+    ["bad",/^(blocked|stuck|failed|at risk|overdue|on hold|阻塞|失败|搁置|逾期)$/],["good",/^(done|complete|completed|shipped|released|live|resolved|closed|finished|已完成|完成|已上线|已解决)$/]];
+  const statusOf=v=>{const t=String(v||"").replace(/\*\*/g,"").trim().toLowerCase();const i=STATUS.findIndex(([,re])=>re.test(t));return i<0?null:i};
+  hdr.forEach((h,ci)=>{if(levels[ci]||cols[ci]||raw.length<2)return;const vs=raw.map(r=>(r[ci]||"").trim()).filter(Boolean);if(!vs.length)return;
+    const ks=vs.map(statusOf);if(ks.some(k=>k==null))return;
+    if(!/status|state|stage|progress|状态|进度|阶段/i.test(hdrRaw[ci])&&new Set(ks).size<2)return;
+    levels[ci]=raw.map(r=>{const k=statusOf(r[ci]);return k==null?null:STATUS[k][0]});levels[ci].status=true});
+  const LVL={good:"var(--C)",mid:"var(--warn,#d97706)",bad:"var(--D)",now:"var(--B)",idle:"var(--label-3)"};
   // Column width from content (Notion-like): columns keep a comfortable width and the table scrolls instead of squeezing.
   const avgLen=ci=>{const ts=raw.map(r=>(r[ci]||"").replace(/[*_`]/g,"")).filter(Boolean);return ts.length?ts.reduce((a,t)=>a+t.length,0)/ts.length:0};
   const LOWER_BETTER=/cost|price|time|week|day|hour|month|effort|risk|debt|latency|size|weight|bug|成本|价格|时间|周|天|小时|月|工作量|延迟|风险/i,HIGHER_BETTER=/impact|value|revenue|score|user|reach|rating|speed|throughput|growth|margin|收益|价值|收入|评分|用户|增长|利润/i;
@@ -5391,6 +5400,7 @@ function tableModel(ds){
     if(!ms.length||ms.some(m=>m[4]!=="%"||m[1]==="-"))return false;const sum=ms.reduce((a,m)=>a+parseFloat(m[3].replace(/,/g,"")),0);return sum>=95&&sum<=105});
   const colW=hdr.map((_,ci)=>cols[ci]?"":levels[ci]?"w-tag":ci===0?"w-first":avgLen(ci)>28?"w-long":"w-text");
   const sortKey=(r,ci)=>{if(time?.[ci])return time[ci][raw.indexOf(r)];const v=(r[ci]||"").replace(/\*\*/g,"").trim();const m=cols[ci]&&v.match(NUM);if(m)return (m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,""));
+    if(levels[ci]?.status)return statusOf(v);
     const sc=levels[ci]&&SCALES.find(sc=>sc.includes(v.toLowerCase().replace(/^med$/,"medium")));return sc?sc.indexOf(v.toLowerCase().replace(/^med$/,"medium")):null};
   const num=(r,ci)=>{const m=(r[ci]||"").replace(/\*\*/g,"").match(NUM);return m?(m[1]==="-"?-1:1)*parseFloat(m[3].replace(/,/g,"")):null};
   return {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey,time,share,num};
@@ -5476,6 +5486,36 @@ async function tableFromUrl(raw,{at}={}){
   const n=makeTableCard(ds,{title,source:{kind:"url",label:shown||host,url,from:String(raw).trim()}/* label: the address people pasted */,at:at||toWorld(v.w/2,v.h/2)});
   sel=[n.id];renderAll();persist();follow([n]);
   toast(L(`Table added from ${shown||host}`,`已从 ${shown||host} 生成表格`),{undo:true});return n;
+}
+/* A table from a Notion database. Notion's API doesn't answer web pages, so Vellum's local server reads it with the
+   integration token saved in MCP Sources (the same one Copilot uses). A link with ?v= is a database view; any Notion
+   link or id works with /table. Rows keep what a person reads in Notion: select names, dates, people, counts. */
+const isNotionUrl=u=>{try{const h=new URL(u).hostname;return /(^|\.)notion\.(so|com|site)$/.test(h)}catch{return false}};
+const looksLikeNotionDb=u=>isNotionUrl(u)&&/[?&]v=[0-9a-f]{32}/i.test(u);
+function notionMessage(k){const fix={actLabel:L("Connect","连接"),onAct:()=>mcpDialog("notion")};
+  return k==="no_token"?[L("Notion isn't connected yet.","Notion 还没有连接。"),fix]
+    :k==="bad_token"?[L("Notion didn't accept the saved token.","Notion 没有接受已保存的令牌。"),fix]
+    :k==="not_shared"?[L("Notion can't see that database. In Notion, open it → ••• → Connections and add your integration.","Notion 看不到这个数据库。请在 Notion 中打开它 → ••• → 连接，添加你的集成。")]
+    :k==="is_page"?[L("That's a Notion page, not a database. Open the database and copy its link.","这是 Notion 页面，不是数据库。请打开数据库并复制它的链接。")]
+    :k==="no_id"?[L("That link doesn't point to a Notion database.","这个链接没有指向 Notion 数据库。")]
+    :k==="rate_limited"?[L("Notion is busy. Try again in a minute.","Notion 繁忙，请稍后再试。")]
+    :k==="no_server"?[L("Reading Notion needs the Vellum app: its local server talks to Notion.","读取 Notion 需要 Vellum 应用：由它的本地服务器连接 Notion。")]
+    :[L(`Couldn't read Notion: ${k||"no response"}.`,`无法读取 Notion：${k||"没有响应"}。`)]}
+async function tableFromNotion(raw,{at}={}){
+  const ref=String(raw||"").trim(),token=String(mcpCfg.notion?.token||"").trim();
+  const fail=k=>{const [m,o]=notionMessage(k);toast(m,o||{});return null};
+  if(!token)return fail("no_token");
+  if(!viaLocalServer())return fail("no_server");
+  toast(L("Reading Notion…","正在读取 Notion…"));
+  let d=null;try{const r=await fetch("/notion/database",{method:"POST",headers:{"Content-Type":"application/json","X-Studio-Client":"canvas"},body:JSON.stringify({ref,token}),signal:timeoutSignal(45000)});d=/json/.test(r.headers.get("content-type")||"")?await r.json():null}catch{}
+  if(!d)return fail("no_server");
+  if(!d.ok)return fail(d.error);
+  if(!d.rows?.length){toast(L(`${d.title||"That database"} has no rows yet.`,`${d.title||"该数据库"} 还没有任何行。`));return null}
+  const ds={columns:d.columns.map(name=>({name})),rows:d.rows};
+  checkpoint();const v=viewRect();
+  const n=makeTableCard(ds,{title:d.title,source:{kind:"notion",label:"Notion",url:d.url||(isNotionUrl(ref)?ref:""),id:d.id,...(d.more?{more:true}:{})},at:at||toWorld(v.w/2,v.h/2)});
+  sel=[n.id];renderAll();persist();follow([n]);
+  toast(L(`Table added from Notion`,`已从 Notion 生成表格`),{undo:true});return n;
 }
 /* Board width a table card needs: measured, not guessed. The table is laid out once in a hidden card with the real
    fonts and column rules, at its natural width; the card takes that width plus its padding, between 320 and 960px.
@@ -10344,7 +10384,7 @@ const CMDS=[
   {c:"/notepad",a:null,d:"Add a structured notepad document"},
   {c:"/question",a:null,d:"Pin an open question on the canvas"},
   {c:"/link",a:null,d:"Save a URL as a link card"},
-  {c:"/table",a:null,d:"Make a table from a CSV, JSON or Google Sheet address"},
+  {c:"/table",a:null,d:"Make a table from a CSV, JSON, Google Sheet or Notion database address"},
   {c:"/group",a:null,d:"Create a group frame (or wrap selected cards)"},
   {c:"/organize",a:null,d:"Organize canvas cards cleanly by lane",run:true},
   {c:"/image",a:"wright",d:"Generate images from a description"},
@@ -10795,7 +10835,7 @@ async function execLineRequest(text){
     case"notepad":return createNotepadNode(body);
     case"question":return body?pinQuestionNode(body,ctx):toast("Write your question after /question");
     case"link":return body?createLinkNode(body):openLinkDialog();
-    case"table":return body?tableFromUrl(body):toast(L("Paste a CSV, JSON or Google Sheet address after /table","请在 /table 后粘贴 CSV、JSON 或 Google 表格的网址"));
+    case"table":return body?(isNotionUrl(body)||/^[0-9a-f-]{32,36}$/i.test(body.trim())?tableFromNotion(body):tableFromUrl(body)):toast(L("Paste a CSV, JSON, Google Sheet or Notion database address after /table","请在 /table 后粘贴 CSV、JSON、Google 表格或 Notion 数据库的网址"));
     case"group":return ctx.length>1?wrapSelectionInGroup(ctx,body||"Group"):createGroupNode(body||"Group");
     case"image":return generateImages(body,{from:f||null});
     case"reverse":{const im=has("image")||has("frame");return im?reversePromptNode(im):toast("Select an image or frame card first")}
@@ -15129,7 +15169,8 @@ addEventListener("paste",e=>{
   if(t&&t.trim()){
     e.preventDefault();
     const s=t.trim(),lines=s.split(/\r?\n/).length;
-    if(/^https?:\/\/\S+$/i.test(s)&&looksLikeDataUrl(s))tableFromUrl(s).then(n=>{if(!n)createLinkNode(s)});
+    if(/^https?:\/\/\S+$/i.test(s)&&looksLikeNotionDb(s))tableFromNotion(s).then(n=>{if(!n)createLinkNode(s)});
+    else if(/^https?:\/\/\S+$/i.test(s)&&looksLikeDataUrl(s))tableFromUrl(s).then(n=>{if(!n)createLinkNode(s)});
     else if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s);
     else if(looksTabular(s)){const ds=datasetFromText(s);if(ds){checkpoint();const v=viewRect(),n=makeTableCard(ds,{title:L("Pasted table","粘贴的表格"),source:{kind:"paste"},at:toWorld(v.w/2,v.h/2)});sel=[n.id];renderAll();persist();follow([n]);toast(L("Pasted as a table","已粘贴为表格"),{undo:true})}else createNotepadNode(s)}
     else if(s.length>280||lines>=4)createNotepadNode(s);

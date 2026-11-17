@@ -17,6 +17,7 @@ let queue = [];
 const requests = [];
 const probes = [];
 const probe = { status: 200, delay: 0 };
+const notionPosts = [];
 const launcher = { on: false, posts: [] }; // stands in for serve_vellum.py's /launch/studio-ai
 
 function serve() {
@@ -26,6 +27,14 @@ function serve() {
         rsp.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return fs.createReadStream(FILE).pipe(rsp);
       }
       if (req.url === '/data/sales.csv') { rsp.writeHead(200, { 'Content-Type': 'text/csv' }); return rsp.end('Rank,Region,Q1\n1,North,120\n2,South,90'); }
+      if (req.method === 'POST' && req.url === '/notion/database') { // stands in for serve_vellum.py's Notion reader
+        let body = ''; req.on('data', c => body += c); req.on('end', () => {
+          const b = JSON.parse(body || '{}'); notionPosts.push({ ...b, client: req.headers['x-studio-client'] });
+          rsp.writeHead(200, { 'Content-Type': 'application/json' });
+          rsp.end(JSON.stringify(b.token !== 'ntn_good' ? { ok: false, error: 'bad_token' } : /aaaaaaaa/.test(b.ref) ? { ok: false, error: 'not_shared' }
+            : { ok: true, id: 'db1', title: 'Sprint board', url: 'https://www.notion.so/acme/db1', columns: ['Name', 'Status', 'Points'], rows: [['Ship tables', 'Done', '5'], ['Notion import', 'In progress', '3']], more: true }));
+        }); return;
+      }
       if (req.url === '/launch/studio-ai' && launcher.on) {
         if (req.method === 'POST') launcher.posts.push({ client: req.headers['x-studio-client'], origin: req.headers.origin, host: req.headers.host });
         rsp.writeHead(200, { 'Content-Type': 'application/json' });
@@ -476,7 +485,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.evaluate(() => { toggleStudioPopover(false); setAiPref('auto'); toggleCrewPop(true); }); await p.waitForTimeout(400);
       bad.push(...(await p.evaluate(LEGIBILITY, '#crewPop')).map(x => `crew: ${x}`));
       await p.evaluate(() => { const d = document.createElement('div'); d.id = 'tblProbe'; d.style.cssText = 'position:fixed;left:20px;top:20px;width:360px;padding:14px;z-index:99999;background:var(--card)';
-        d.innerHTML = `<div class="cp-bubble">${mdBlocksHtml('| Option | Cost | Risk | Impact |\n|---|---|---|---|\n| Rebuild | $120k | High | Medium |\n| Patch | $30k | Low | High |').join('')}</div><table class="tbl"><thead><tr><th>Factor</th><th>A</th></tr></thead><tbody><tr><td class="key">Risk</td><td class="win">Low</td></tr></tbody></table>`; document.body.append(d); });
+        d.innerHTML = `<div class="cp-bubble">${mdBlocksHtml('| Option | Cost | Risk | Impact |\n|---|---|---|---|\n| Rebuild | $120k | High | Medium |\n| Patch | $30k | Low | High |').join('')}${mdBlocksHtml('| Task | Status |\n|---|---|\n| A | Done |\n| B | In progress |\n| C | Blocked |\n| D | Not started |').join('')}</div><table class="tbl"><thead><tr><th>Factor</th><th>A</th></tr></thead><tbody><tr><td class="key">Risk</td><td class="win">Low</td></tr></tbody></table>`; document.body.append(d); });
       bad.push(...(await p.evaluate(LEGIBILITY, '#tblProbe')).map(x => `table: ${x}`));
       await p.evaluate(() => { const d = document.getElementById('tblProbe'); d.innerHTML = mdBlocksHtml('| Month | Signups |\n|---|---|\n| Jan | 1,240 |\n| Feb | 1,410 |\n| Mar | 1,720 |').join(''); d.querySelector('[data-tbl-view="chart"]').click(); });
       bad.push(...(await p.evaluate(LEGIBILITY, '#tblProbe')).map(x => `chart: ${x}`));
@@ -568,6 +577,23 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         }, base);
         check('a table from an address: the CSV becomes a drawn, selected table card that remembers its address and gets a readable title; bare numbers display grouped (years stay as written); ordinary links stay links; Sheets and GitHub links become data links; rank is not a quantity',
           url.type === 'table' && url.drawn && url.grouped && url.title === '2014 USA States' && url.cols === 'Rank|Region|Q1' && url.src === 'url:/data/sales.csv' && !url.rankIsQuantity && url.link === 'link' && url.sheet === 'https://docs.google.com/spreadsheets/d/AbC/export?format=csv&gid=7' && url.gh === 'https://raw.githubusercontent.com/a/b/main/x.csv' && !url.blog, JSON.stringify(url));
+        const notion = await p.evaluate(async () => {
+          const paste = t => { const dt = new DataTransfer(); dt.setData('text/plain', t); document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true })); };
+          const toasts = () => [...document.querySelectorAll('#toasts .toast span')].map(x => x.textContent).join(' | ');
+          const saved = mcpCfg.notion.token, view = 'https://www.notion.so/acme/Sprint-0123456789abcdef0123456789abcdef?v=fedcba9876543210fedcba9876543210';
+          mcpCfg.notion.token = ''; const before = board.nodes.length; paste(view); await new Promise(r => setTimeout(r, 150));
+          const noToken = { made: board.nodes.at(-1).type, msg: toasts(), act: !!document.querySelector('#toasts .toast button') };
+          mcpCfg.notion.token = 'ntn_good'; const n = await tableFromNotion(view);
+          const drawn = !!document.querySelector(`.card[data-id="${n.id}"] .tbl-wrap`), foot = document.querySelector(`.card[data-id="${n.id}"]`).textContent;
+          const tags = [...document.querySelectorAll(`.card[data-id="${n.id}"] .tbl-tag`)].map(t => t.textContent + '=' + t.style.getPropertyValue('--c')).join('|');
+          const plain = tblBlockHTML({ columns: [{ name: 'Door' }, { name: 'Note' }], rows: [['open', 'Done soon'], ['open', 'x']] }).includes('tbl-tag');
+          const denied = await tableFromNotion('https://www.notion.so/acme/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'), msg = toasts();
+          mcpCfg.notion.token = saved; board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll();
+          return { noToken, title: n.title, src: n.data.source.kind + ':' + n.data.source.label, cols: n.data.columns.map(c => c.name).join('|'), drawn, tags, plain, more: /first 2 rows/.test(foot), denied, sharedHint: /Connections/.test(msg), made: board.nodes.length - before };
+        });
+        check('a Notion database link becomes a table card through the local server; without a token the link stays a link and the toast opens Notion settings; unshared databases say how to share; workflow status reads as tags (done green, in progress blue) only when it is clearly a status',
+          notion.noToken.made === 'link' && /Notion isn't connected/.test(notion.noToken.msg) && notion.noToken.act && notion.title === 'Sprint board' && notion.src === 'notion:Notion' && notion.cols === 'Name|Status|Points' && notion.drawn && notion.tags === 'Done=var(--C)|In progress=var(--B)' && !notion.plain && notion.more && notion.denied === null && notion.sharedHint
+          && notionPosts.length === 2 && notionPosts[0].client === 'canvas' && notionPosts[0].ref.includes('?v='), JSON.stringify({ ...notion, notionPosts }));
         check('table rows: click selects one, Cmd adds, Shift selects a range, and the selection bar appears', sel.one === 'A' && sel.two === 'A,C' && sel.range === 'A,B,C' && sel.single === 'B' && sel.bar === false, JSON.stringify(sel));
         check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
       }

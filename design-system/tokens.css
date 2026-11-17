@@ -1,0 +1,238 @@
+/* Vellum — generated from tokens.json */
+:root, [data-theme="light"] {
+  --canvas: #ecedf0; /* The board itself: the infinite canvas behind every card. Never put body text directly on it except hints in `label-3`. */
+  --canvas-lift: #f8f8fa; /* Raised regions of the board: stage bays and lane backgrounds. */
+  --card: #ffffff; /* Card faces, the open-card sheet (Margin) and solid menus. Primary text ground. */
+  --card-2: #f5f6f8; /* Inset wells inside a card: link URLs, file paths, audio bars, segmented controls. */
+  --card-3: #ecedf1; /* Deepest inset and pressed wells inside a card. */
+  --label: #0b0c0e; /* Primary text and icons on `card`, `card-2`, `canvas` and `chrome`. Card titles, button labels. */
+  --label-2: rgba(11,12,14,.70); /* Secondary text on `card` and `chrome`: card body copy, idle tool icons, tooltips. */
+  --label-3: rgba(11,12,14,.58); /* Tertiary text on `card`, `card-2`, `card-3` and `canvas`: card kind line, timestamps, meta, eyebrows, kanban “+ Add…”, audio timecodes. Passes 4.5:1 on every surface in both themes. Dark is .52 here; Lumen ships .48, which fails on inset wells (4.4:1 on `card-2`, 4.2:1 on `card-3`). Raised for contrast on 2026-11-17, so bring Lumen in line. */
+  --label-4: rgba(11,12,14,.14); /* Disabled glyphs (an empty composer's send arrow). Not for readable text. */
+  --hair: rgba(11,12,14,.075); /* Hairline borders: inset rings on wells and segmented controls. */
+  --hair-2: rgba(11,12,14,.13); /* Stronger hairline: chip rings, evidence-weight rings, mode chips. */
+  --thread: rgba(11,12,14,.2); /* Wires between cards on the board (lineage links). */
+  --hover: rgba(11,12,14,.045); /* Hover fill for ghost buttons, menu rows and tool buttons; also the secondary button fill. */
+  --press: rgba(11,12,14,.08); /* Pressed fill for ghost buttons and menu rows. */
+  --chrome: rgba(252,252,253,.8); /* Floating glass UI over the board: composer, tool rail, toasts, menus, tooltips, review pill. Always with backdrop blur. */
+  --chrome-ink: #0c0d0f; /* Text on `chrome` surfaces when `label` is not used. */
+  --act: #0c0d0f; /* Primary action fill — the one decisive button (Send, Apply). Inverts per theme. */
+  --on-act: #ffffff; /* Text and icons on `act`. */
+  --focus: #3f444e; /* Selection marquee and focus treatments on the board. */
+  --danger: #e12f34; /* Destructive and Stop actions: Delete, Stop, the “suggests deleting” tint, struck words in a diff. Used as a 12–14% tint with the full colour as text, and solid only on hover. Light `#e12f34` is 4.5:1 on `card`, and white on it (the solid hover fill) is also 4.5:1. Deepened on 2026-11-17 from Lumen's `#e5484d` (3.9:1). Bring Lumen in line. Dark `#ff6369` is unchanged. */
+  --ok: #247a50; /* Success and healthy states: the connected-model dot in crew settings, and the 22% tint behind accepted words in a proposal diff. Used on `card`, `canvas` and `chrome`. Light `#247a50`: 5.3:1 on `card`, 4.9:1 on `card-2`, 4.5:1 on `canvas`. Dark `#30a46c`: 5.4:1 on `card`, 6.4:1 on `canvas`. The branch only uses `#30a46c` as a fallback (`var(--ok,#30a46c)`). Light was deepened on 2026-11-17 for contrast. */
+  --warn: #a25904; /* Caution states: the crew-on-built-in-rules dot in crew settings, and the “card changed since this was suggested” line on a proposal. Used on `card`, `canvas` and `chrome`. Light `#a25904`: 5.3:1 on `card`, 4.9:1 on `card-2`, 4.5:1 on `canvas`, so the 12px stale line now passes. Dark `#d97706`: 5.3:1 on `card`, 6.4:1 on `canvas`. The branch only uses `#d97706` as a fallback (`var(--warn,#d97706)`). Light was deepened on 2026-11-17 for contrast. */
+  --A: #9f5a00; /* Lineage A — the first direction in a fork. Wires, chips, adopted rings, Reported evidence, Wright's progress, the first kanban column. Light is `#9f5a00`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.6:1 on `canvas`, so it's usable as text. Deepened on 2026-11-17 from Lumen's `#db7c00` (3.0:1). Bring Lumen in line. */
+  --B: #2066db; /* Lineage B — the second direction. Also Proposal evidence, search hits and the Search mode. Light is `#2066db`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.5:1 on `canvas`, so it's usable as small text on all three. Deepened on 2026-11-17 from Lumen's `#2b6fe0`, which failed on `card-2` (4.4:1) and `canvas` (4.0:1). Bring Lumen in line. */
+  --C: #0b7b50; /* Lineage C — the third direction. Also Observed evidence, the Locked kanban column and live status dots. Light is `#0b7b50`: 5.3:1 on `card`, 4.9:1 on `card-2` and 4.5:1 on `canvas`, so it's usable as text. Deepened on 2026-11-17 from Lumen's `#0e9662` (3.8:1). Bring Lumen in line. */
+  --D: #d93b72; /* Lineage D — the fourth direction. A mark colour (wires, chip, adopted ring, error dot). Kept exactly as Lumen ships it: raw D as text is 4.4:1 on light `card`, so for text mix it toward ink like the other lineage hues. If an accessible variant is ever needed, `#d8346d` reaches 4.53:1 with the same hue. */
+  --chip-ink: #ffffff; /* Letter on a lineage chip (A–D) — white in light, near-black in dark. White on light A, B and C chips passes at 5.3:1. White on D is 4.4:1, because D is kept as Lumen ships it (flagged). */
+  --light: #ffffff; /* 'Light is alive': the glow colour of working crew, live drafts and the review pulse dot. */
+  --bloom: rgba(255,190,110,.5); /* Warm glow around something the crew is working on or waiting on you for. Only as a soft shadow, never a fill. */
+  --crew-scout: #1d4ed8; /* Scout's ink (reads sources, weighs evidence). Avatar glyph and its tooltip icon. */
+  --crew-strategist: #6d28d9; /* Strategist's ink (forks a claim into testable directions). */
+  --crew-wright: #b45309; /* Wright's ink (builds proofs: pages, decks, action lists). */
+  --crew-critic: #047857; /* Critic's ink (checks work against its sources). */
+  --orb-off: #d9dade; /* An idle crew avatar's fill: unlit until that crew member is working. */
+  --note-butter: #fce15d; /* Sticky note paper (butter tone, the default). Same in both themes. */
+  --note-ink: #925600; /* The 6px dot in a sticky's tag, on `note-butter`. `#925600` reaches 4.52:1 on the paper, so it can also carry small text. Sticky body text is near-black ink at 88%. Same in both themes, like the paper. Deepened on 2026-11-17 from Lumen's `#9a5b00` (4.15:1). Bring Lumen in line. */
+  --shadow-card: 0 0 0 .5px rgba(11,12,14,.07), 0 1px 1px rgba(11,12,14,.03), 0 2px 4px -1px rgba(11,12,14,.04), 0 12px 28px -16px rgba(11,12,14,.16); /* Resting card on the board. */
+  --shadow-card-up: 0 0 0 .5px rgba(11,12,14,.08), 0 2px 3px rgba(11,12,14,.04), 0 8px 16px -6px rgba(11,12,14,.08), 0 34px 64px -28px rgba(11,12,14,.28); /* Hovered or dragged card; the open-card sheet. */
+  --shadow-chrome: 0 0 0 .5px rgba(11,12,14,.08), 0 1px 2px rgba(11,12,14,.04), 0 12px 32px -14px rgba(11,12,14,.24); /* Floating glass chrome: composer, tool rail, toasts, menus. */
+}
+[data-theme="dark"] {
+  --canvas: #050608;
+  --canvas-lift: #0a0b0e;
+  --card: #1b1c20;
+  --card-2: #22242a;
+  --card-3: #2a2c33;
+  --label: #f4f5f7;
+  --label-2: rgba(244,245,247,.68);
+  --label-3: rgba(244,245,247,.52);
+  --label-4: rgba(244,245,247,.11);
+  --hair: rgba(255,255,255,.07);
+  --hair-2: rgba(255,255,255,.12);
+  --thread: rgba(255,255,255,.16);
+  --hover: rgba(255,255,255,.055);
+  --press: rgba(255,255,255,.09);
+  --chrome: rgba(26,27,31,.78);
+  --chrome-ink: #f3f4f6;
+  --act: #f3f4f6;
+  --on-act: #0a0b0d;
+  --focus: #c8ccd4;
+  --danger: #ff6369;
+  --ok: #30a46c;
+  --warn: #d97706;
+  --A: #ffb547;
+  --B: #5aa2ff;
+  --C: #45d49a;
+  --D: #ff6b95;
+  --chip-ink: #0a0b0d;
+  --light: #f4f5f7;
+  --bloom: rgba(255,236,206,.55);
+  --crew-scout: #7ab3ff;
+  --crew-strategist: #c4a5ff;
+  --crew-wright: #ffb547;
+  --crew-critic: #45d49a;
+  --orb-off: #2a2b30;
+  --note-butter: #fce15d;
+  --note-ink: #925600;
+  --shadow-card: 0 0 0 .5px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.035), 0 14px 34px -16px rgba(0,0,0,.8);
+  --shadow-card-up: 0 0 0 .5px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.05), 0 34px 70px -24px rgba(0,0,0,.9);
+  --shadow-chrome: 0 0 0 .5px rgba(255,255,255,.07), 0 14px 40px -14px rgba(0,0,0,.85);
+}
+:root {
+  --space-2: 2px; /* Gap between segmented-control buttons. */
+  --space-4: 4px; /* Gap between tool-rail buttons. */
+  --space-6: 6px; /* Default inline gap: icon to label, chips in a row, tool-rail padding, media inset inside a card. */
+  --space-8: 8px; /* Gap between stacked composer parts and floating UI. */
+  --space-10: 10px; /* Menu row and toast inner gaps. */
+  --space-12: 12px; /* Card footer top spacing; header control padding. */
+  --space-16: 16px; /* Screen gutter for all floating chrome; card top padding. */
+  --space-18: 18px; /* Card inline padding (16px 18px 17px). */
+  --radius-chip: 5.5px; /* Lineage chip (18px square). */
+  --radius-sm: 10px; /* Action-strip buttons, link wells, selection marquee. */
+  --radius-md: 12px; /* Project switcher, tooltips. */
+  --radius-media: 14px; /* Images and video inside a card (6px inset); menu rows. */
+  --radius-control: 16px; /* 44px square controls: Send, Add, Mic; review popover. */
+  --radius-card: 20px; /* Every card on the board. */
+  --radius-field: 22px; /* Composer field. */
+  --radius-sheet: 28px; /* Open-card sheet (Margin) and dialogs. */
+  --radius-pill: 999px; /* Pills: tool rail, review pill, evidence weight, mode chip, zoom control. */
+  --font-ui: "Inter Var", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: "Lumen Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --text-direction-title: 650 21px/25px var(--font-ui); /* Title of a Direction card (a lettered A–D proposal). */
+  --text-idea-title: 620 19px/27px var(--font-ui); /* The claim on an Idea / Core Thesis card. */
+  --text-card-title: 600 17px/22px var(--font-ui); /* Title of Source, Recording, Link and most other cards. */
+  --text-note-text: 470 15.5px/24.5px var(--font-ui); /* Handwritten-feel text on a sticky note. */
+  --text-body: 400 14px/20px var(--font-ui); /* Card body copy and default UI text. */
+  --text-toast: 550 13.5px/1.35 var(--font-ui); /* Toast and inline notice messages. */
+  --text-label: 600 13px/1 var(--font-ui); /* Button labels, menu commands, review pill. */
+  --text-tooltip: 400 12.5px/1.45 var(--font-ui); /* Tooltips and helper copy. */
+  --text-card-kind: 550 12px/16px var(--font-ui); /* The kind line at the top of every card, in `label-3`. */
+  --text-meta: 500 12px/1.35 var(--font-ui); /* Card footers and timestamps, tabular numerals, in `label-3`. */
+  --text-weight: 560 11px/1 var(--font-ui); /* Evidence-weight pill text. */
+  --text-eyebrow: 600 10.5px/1 var(--font-ui); /* Uppercase panel captions (minimap). The only uppercase style. */
+  --text-chip: 750 10px/1 var(--font-ui); /* The letter inside a lineage chip. */
+  --text-mono: 500 12px/1.3 var(--font-mono); /* URLs on link cards. */
+  --text-mono-small: 450 11px/1.35 var(--font-mono); /* File paths and media timecodes. */
+}
+.direction-title {
+  font-family: var(--font-ui);
+  font-size: 21px;
+  line-height: 25px;
+  font-weight: 650;
+  letter-spacing: -0.022em;
+}
+.idea-title {
+  font-family: var(--font-ui);
+  font-size: 19px;
+  line-height: 27px;
+  font-weight: 620;
+  letter-spacing: -0.022em;
+}
+.card-title {
+  font-family: var(--font-ui);
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+.note-text {
+  font-family: var(--font-ui);
+  font-size: 15.5px;
+  line-height: 24.5px;
+  font-weight: 470;
+  letter-spacing: -0.01em;
+}
+.body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: -0.006em;
+}
+.toast {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.35;
+  font-weight: 550;
+  letter-spacing: 0;
+}
+.label {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.tooltip {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  line-height: 1.45;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.card-kind {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 550;
+  letter-spacing: -0.002em;
+}
+.meta {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.weight {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 560;
+  letter-spacing: 0;
+}
+.eyebrow {
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.chip {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.mono-small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 450;
+  letter-spacing: 0;
+}
+@font-face {
+  font-family: "Inter Var";
+  src: url("fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lumen Mono";
+  src: url("fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

@@ -1,0 +1,32 @@
+<!-- @dsCard height=300 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||"light"</script><link rel="stylesheet" href="../../tokens.css"><script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="../bundle.js"></script><style>
+html,body{margin:0;height:100%}
+body{background:var(--canvas);font-family:var(--font-ui);-webkit-font-smoothing:antialiased;position:relative;overflow:hidden;width:960px;height:300px}
+.art{position:absolute;left:480px;top:0;width:480px;height:300px}
+.ink{fill:var(--label)}
+.blk{rx:var(--radius-card)}
+.A{fill:var(--A)}.B{fill:var(--B)}.C{fill:var(--C)}.D{fill:var(--D)}
+.chipt{rx:var(--radius-chip)}
+.chipt.cut{fill:var(--canvas)}
+.txt{position:absolute;left:40px;bottom:36px;max-width:440px}
+h1{margin:0;font:650 120px/.92 var(--font-ui);letter-spacing:-.045em;color:var(--label)}
+p{margin:14px 0 0;font:450 14px/1.4 var(--font-ui);color:var(--label-2);letter-spacing:-.006em}
+</style></head>
+<body>
+<svg class="art" viewBox="0 0 480 300" aria-hidden="true">
+<!-- blocks: label slab 176×full + A 128×168, B 168×104, C 168×132, D 128×68 (radius-card corners)
+     arrangement: one tall ink slab bleeding top/bottom with four lineage satellites, B and C bleeding off the right edge
+     pattern: geometric/modular — lineage chips (18px, radius-chip) on a 32px pitch cut from the slab; "the canvas is quiet and the work is loud": neutral field, four lettered hues
+     steps and radii: space-16 gaps, space-18 chip size, radius-card 20, radius-chip 5.5 -->
+<rect class="ink" x="0" y="-24" width="176" height="348"/>
+<rect class="chipt cut" x="28" y="40" width="18" height="18"/><rect class="chipt cut" x="60" y="40" width="18" height="18"/><rect class="chipt cut" x="92" y="40" width="18" height="18"/><rect class="chipt cut" x="124" y="40" width="18" height="18"/><rect class="chipt cut" x="28" y="72" width="18" height="18"/><rect class="chipt A" x="60" y="72" width="18" height="18"/><rect class="chipt cut" x="92" y="72" width="18" height="18"/><rect class="chipt cut" x="124" y="72" width="18" height="18"/><rect class="chipt cut" x="28" y="104" width="18" height="18"/><rect class="chipt cut" x="60" y="104" width="18" height="18"/><rect class="chipt cut" x="92" y="104" width="18" height="18"/><rect class="chipt cut" x="124" y="104" width="18" height="18"/><rect class="chipt cut" x="28" y="136" width="18" height="18"/><rect class="chipt cut" x="60" y="136" width="18" height="18"/><rect class="chipt B" x="92" y="136" width="18" height="18"/><rect class="chipt cut" x="124" y="136" width="18" height="18"/><rect class="chipt C" x="28" y="168" width="18" height="18"/><rect class="chipt cut" x="60" y="168" width="18" height="18"/><rect class="chipt cut" x="92" y="168" width="18" height="18"/><rect class="chipt cut" x="124" y="168" width="18" height="18"/><rect class="chipt cut" x="28" y="200" width="18" height="18"/><rect class="chipt cut" x="60" y="200" width="18" height="18"/><rect class="chipt cut" x="92" y="200" width="18" height="18"/><rect class="chipt D" x="124" y="200" width="18" height="18"/><rect class="chipt cut" x="28" y="232" width="18" height="18"/><rect class="chipt cut" x="60" y="232" width="18" height="18"/><rect class="chipt cut" x="92" y="232" width="18" height="18"/><rect class="chipt cut" x="124" y="232" width="18" height="18"/>
+<rect class="blk A" x="192" y="24" width="128" height="168"/>
+<rect class="blk B" x="336" y="24" width="168" height="104"/>
+<rect class="blk C" x="336" y="144" width="168" height="132"/>
+<rect class="blk D" x="192" y="208" width="128" height="68"/>
+</svg>
+<div class="txt"><h1>Vellum</h1><p>A thinking board where the canvas stays quiet and the work is loud.</p></div>
+</body>
+</html>

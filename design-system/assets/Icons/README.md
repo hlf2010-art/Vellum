@@ -1,0 +1,3 @@
+Vellum's own 24×24 line icons, copied from the app's inline SVG: canvas tools (select, lasso, hand, upload, organize, search, undo, redo), composer controls (plus, mic, send, enhance), draft actions (retry), search, lock, crew settings, top bar (settings, archive) and the four crew glyphs.
+
+Stroke 1.65, round caps and joins, no fill. In product they use `currentColor`. These exported files are inked #0B0C0E (`label`, light theme). The crew glyphs are inked in their crew colours (Scout #1D4ED8, Strategist #6D28D9, Wright #B45309, Critic #047857). For dark-theme use, take the paths from `Vellum.Icon` / the bundle rather than these files.

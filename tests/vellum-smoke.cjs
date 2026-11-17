@@ -61,7 +61,12 @@ function serve() {
           if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503); return rsp.end(); }
           rsp.writeHead(200, { 'Content-Type': 'text/event-stream' });
           const txt = typeof hit.text === 'string' ? hit.text : JSON.stringify(hit.text);
-          for (let k = 0; k < txt.length; k += 40) rsp.write('data: ' + JSON.stringify({ choices: [{ delta: { content: txt.slice(k, k + 40) } }] }) + '\n\n');
+          for (let k = 0; k < txt.length; k += 40) {
+            if (hit.slow) await new Promise(r => setTimeout(r, hit.slow)); // a slow model, chunk by chunk
+            if (rsp.destroyed) return;
+            rsp.write('data: ' + JSON.stringify({ choices: [{ delta: { content: txt.slice(k, k + 40) } }] }) + '\n\n');
+          }
+          if (hit.finish) rsp.write('data: ' + JSON.stringify({ choices: [{ delta: {}, finish_reason: hit.finish }] }) + '\n\n');
           rsp.end('data: [DONE]\n\n');
         });
         return;
@@ -485,6 +490,109 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.waitForTimeout(200);
       check('clearing the text returns to one row', !(await rows()).multi);
       check('no page errors in the composer', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 10. what you type reaches the model: revising a draft, asking Critic, Scout on a draft
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      await p.type('Steer idea: restore without surprises'); await p.waitForTimeout(800);
+      const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+      queue = [{ id: 'st1', match: '"directions"', text: dirs('Plain') }];
+      await p.evaluate(id => select([id]), idea); await p.type('/fork 3'); await p.idle();
+      const drafts = () => p.evaluate(() => board.nodes.filter(n => n.type === 'direction' && n.status === 'sketch').map(n => n.id));
+      const routeOf = async t => { await p.type(t, false); await p.waitForTimeout(250); return p.evaluate(() => route(lineText())); };
+      await p.evaluate(ids => select(ids), await drafts());
+      const ask = 'Make every option tell the creator what a restore will overwrite, and name the risk';
+      let r = await routeOf(ask);
+      check('plain words on a crew draft route to a revision, not a generic check', r && r.kind === 'revise' && r.agent === 'muse' && r.arg === ask, JSON.stringify(r));
+      r = await routeOf('Why did you pick these three?');
+      check('a question about a draft is still answered, not taken as a revision', r && r.kind !== 'revise', JSON.stringify(r));
+      r = await routeOf('@critic does this hold up');
+      check('an @mention of someone else still goes to them', r && r.kind !== 'revise' && r.agent === 'critic', JSON.stringify(r));
+      r = await routeOf('@strategist ' + ask);
+      check('an @mention of the draft\'s author revises it with the words after the mention', r && r.kind === 'revise' && r.arg === ask, JSON.stringify(r));
+      queue = [{ id: 'st2', match: 'tell the creator what a restore will overwrite', text: dirs('Revised') }];
+      await p.type(ask); await p.idle();
+      const req = requests.filter(q => q.matched === 'st2').at(-1);
+      check('the revision request carries your words and the draft being revised', !!req && req.full.includes(ask) && /The draft being revised/.test(req.full) && /Plain A/.test(req.full), req ? req.full.slice(-300) : 'no request matched');
+      const titles = await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','));
+      check('the revised drafts replace the old ones in place', titles === 'Revised A,Revised B,Revised C', titles);
+      check('the change log says what you asked for', await p.evaluate(() => /Asked for a revision of 3 suggestions: .*tell the creator/.test(board.log.at(-1)?.html || '')), await p.evaluate(() => board.log.at(-1)?.html));
+      // Scout on a draft explains what to do instead of asking you to select cards
+      await p.evaluate(ids => gather(ids.map(byId)), await drafts()); await p.waitForTimeout(300);
+      check('Scout on a draft says how to change it', /type how it should change/.test(await p.toast()), await p.toast());
+      // Critic answers the question you typed, and your question stays on the card
+      await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+Enter'); await p.waitForTimeout(600);
+      const a = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'A' && n.status === 'ink')?.id);
+      const q = 'Check the risk that creators never see the overwrite list';
+      queue = [{ id: 'cq', match: 'The designer asks: "Check the risk', text: 'It rests on a proposal, not an observation. Who has watched a restore?' }];
+      await p.evaluate(id => select([id]), a); await p.type(q); await p.idle();
+      check('Critic is asked the question you typed', requests.some(x => x.matched === 'cq'), requests.slice(-2).map(x => x.prompt).join(' || '));
+      check('your question and Critic\'s answer are both on the card', await p.evaluate(([id, q]) => { const t = board.threads[id] || []; return t.some(m => m.who === 'you' && m.text === q) && t.some(m => m.who === 'critic' && /Who has watched/.test(m.text)); }, [a, q]));
+      // a synthesis draft is revised the same way
+      const notes = await p.evaluate(() => [pinCard('note', 'Creators restore after big edits'), pinCard('note', 'Backups are per package')].map(n => n.id));
+      queue = [{ id: 'syn1', match: '"points"', text: { title: 'First read', points: ['**One.** a', '**Two.** b', '**Three.** c'] } }];
+      await p.evaluate(ids => gather(ids.map(byId)), notes); await p.idle();
+      const syn = await p.evaluate(() => board.nodes.find(n => n.type === 'synthesis' && n.status === 'sketch')?.id);
+      queue = [{ id: 'syn2', match: 'Separate what has shipped', text: { title: 'Second read', points: ['**Shipped.** a', '**Proposed.** b', '**Open.** c'] } }];
+      await p.evaluate(id => select([id]), syn); await p.type('Separate what has shipped from what is only proposed'); await p.idle();
+      check('a synthesis draft is revised with your words', requests.some(x => x.matched === 'syn2' && /First read/.test(x.full)) && await p.evaluate(() => board.nodes.some(n => n.type === 'synthesis' && n.title === 'Second read')), await p.evaluate(() => board.nodes.filter(n => n.type === 'synthesis').map(n => n.title).join()));
+      check('no page errors when steering drafts', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 11. evidence weight: a source you add can be rated on the card and in its sheet, and the pill is legible
+    for (const theme of ['dark', 'light']) {
+      const p = await page(browser, base, { theme });
+      await p.newBoard();
+      const mdPath = path.join(require('os').tmpdir(), 'vellum-smoke-evidence.md');
+      fs.writeFileSync(mdPath, '# Restore scope\n\nA proposal, not an observation.');
+      await p.setInputFiles('#fileIn', mdPath); await p.waitForTimeout(1500);
+      const id = await p.evaluate(() => board.nodes.find(n => n.type === 'source')?.id);
+      const pill = `.card[data-id="${id}"] [data-a="cycle-weight"]`;
+      const w = () => p.evaluate(id => byId(id).weight || null, id);
+      await p.evaluate(id => { focusNodes([byId(id)], 1, 0); select([]); }, id); await p.waitForTimeout(300);
+      const bad = await p.evaluate(LEGIBILITY, `.card[data-id="${id}"] .weight`);
+      check(`an unrated source's pill is legible in ${theme} mode`, bad.length === 0, bad.join(' | '));
+      if (theme === 'light') { await p.context().close(); continue; }
+      check('a source you add shows an Unrated pill you can click', (await p.locator(pill).count()) === 1 && /Unrated/.test(await p.locator(pill).innerText()));
+      const seen = [];
+      for (let i = 0; i < 5; i++) { await p.click(pill); await p.waitForTimeout(150); seen.push(await w()); }
+      check('clicking the pill steps through every weight and back to unrated', seen.join() === 'observed,reported,proposed,illustrative,', seen.join());
+      await p.evaluate(id => openFocus(id), id); await p.waitForTimeout(600);
+      check('the sheet has an Evidence section with the four weights', (await p.locator('#margin .m-evidence [data-m="weight"]').count()) === 4);
+      await p.click('#margin .m-evidence [data-w="reported"]'); await p.waitForTimeout(300);
+      const set = await w();
+      await p.click('#margin .m-evidence [data-w="reported"]'); await p.waitForTimeout(300);
+      check('the sheet sets a weight, and clicking it again clears it', set === 'reported' && (await w()) === null, `${set} then ${await w()}`);
+      check('rating a source is in the change log', await p.evaluate(() => board.log.some(l => /Marked .* as reported/.test(l.html))));
+      check('no page errors when rating evidence', p.errors.length === 0, p.errors.join(' | '));
+      fs.rmSync(mdPath, { force: true });
+      await p.context().close();
+    }
+    // 12. a reply that ran out of tokens or time says so, and a timeout is not mistaken for Stop
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      queue = [{ id: 'len1', match: 'Lumen Copilot', text: 'Start with the restore prediction test, because', finish: 'length' }];
+      await p.type('What should we test first?'); await p.idle();
+      for (let i = 0; i < 40 && !(await p.evaluate(() => (board.copilot || []).some(m => m.role === 'ai' && /Cut off/.test(m.text || '')))); i++) await p.waitForTimeout(250);
+      const cop = await p.evaluate(() => (board.copilot || []).filter(m => m.role === 'ai').map(m => m.text).at(-1) || '');
+      check('a Copilot reply cut at its length limit says so', requests.some(x => x.matched === 'len1') && /Cut off: the reply reached its length limit/.test(cop), cop.slice(-160));
+      await p.evaluate(() => { LOCAL_AI_MS = 0; });
+      queue = [{ id: 'early1', match: 'TIMEOUT-EARLY', text: 'too late', delay: 3000 }];
+      const early = await p.evaluate(async () => { try { await apiChat({ prompt: 'TIMEOUT-EARLY', timeoutMs: 800 }); return 'no error'; } catch (e) { return `${e.name}: ${e.message}`; } });
+      check('no answer in time is a named timeout, not an abort', /^TimeoutError: The model didn't finish within 1 s/.test(early), early);
+      queue = [{ id: 'slow1', match: 'TIMEOUT-MID', text: Array.from({ length: 24 }, (_, i) => `Point ${i + 1}: a restore preview lists edit ${i * 7 + 3}.`).join(' '), slow: 250 }]; // varied, so the repetition guard leaves it alone
+      const mid = await p.evaluate(async () => { try { return await apiChat({ prompt: 'TIMEOUT-MID', timeoutMs: 1200 }); } catch (e) { return `${e.name}: ${e.message}`; } });
+      check('a reply cut off by time keeps what arrived and says it was cut off', /^Point 1:/.test(mid) && /Cut off: the model didn't finish within 1 s\./.test(mid), mid.slice(-120));
+      await p.evaluate(() => { apiHealth = { k: 'unknown', sig: '', at: 0 }; }); // the early timeout marked the API unreachable for a while
+      queue = [{ id: 'rules1', match: 'TIMEOUT-RULES', text: '{}', delay: 3000 }];
+      const fb = await p.evaluate(async () => { const r = await viaClaude(async () => null, async () => 'from rules', { studio: () => null, apiArgs: { prompt: 'TIMEOUT-RULES', json: true, timeoutMs: 800 } }); return { engine: r.engine, v: r.v, toast: [...document.querySelectorAll('#toasts > *')].map(t => t.innerText).join(' / ') }; });
+      check('a crew move that times out falls back to built-in rules and says why', fb.engine === 'local' && fb.v === 'from rules' && /didn't finish within 1 s\. Built-in rules drafted this instead/.test(fb.toast), JSON.stringify(fb));
+      await p.evaluate(() => { LOCAL_AI_MS = 240000; });
+      check('local models get the longer time limit', await p.evaluate(() => isLocalBase('http://127.0.0.1:59700/v1') && isLocalBase('http://localhost:11434/v1') && !isLocalBase('https://openrouter.ai/api/v1')));
+      check('no page errors around cut-off and timed-out replies', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
   } finally {

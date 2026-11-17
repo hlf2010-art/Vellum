@@ -427,7 +427,7 @@
         stages.map(function(s, i){ return h('button', { key: i, type: 'button', role: 'tab', 'aria-selected': String(i === at), className: cx(i === at && 'is-on'), title: s + ' (' + (i + 1) + ')', onClick: function(){ setAt(i); if (p.onStage) p.onStage(i); } }, s, pending.indexOf(i) >= 0 ? h('i', { className: 'vl-ov-dot', 'aria-label': 'new crew work' }) : null); })));
   }
 
-  /* Wire + Port: how cards connect. A wire is a mark, so lineage wires use the *-mark hue. */
+  /* Wire + Port: how cards connect. A wire is a mark, so lineage wires use the *-fill hue. */
   function Wire(p){
     var a = p.from || [0, 0], b = p.to || [200, 80], dx = Math.max(40, Math.abs(b[0] - a[0]) * .5);
     var d = 'M' + a[0] + ' ' + a[1] + ' C' + (a[0] + dx) + ' ' + a[1] + ' ' + (b[0] - dx) + ' ' + b[1] + ' ' + b[0] + ' ' + b[1];

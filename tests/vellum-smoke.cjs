@@ -474,6 +474,13 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.evaluate(() => { toggleStudioPopover(false); setAiPref('auto'); toggleCrewPop(true); }); await p.waitForTimeout(400);
       bad.push(...(await p.evaluate(LEGIBILITY, '#crewPop')).map(x => `crew: ${x}`));
       check(`every text in the Connection and Crew popovers reaches 4.5:1 in ${theme} mode`, bad.length === 0, bad.join(' | '));
+      const sw = await p.evaluate(() => {
+        const cs = getComputedStyle(document.documentElement), hex = v => { const n = parseInt(cs.getPropertyValue(v).trim().slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+        const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
+        const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+        return { knob: +ratio(hex('--sw-off-knob'), hex('--sw-off-track')).toFixed(2), line: +ratio(hex('--sw-off-line'), hex('--card')).toFixed(2) };
+      });
+      check(`a switch that is off still reads as a control in ${theme} mode (knob and outline at least 3:1)`, sw.knob >= 3 && sw.line >= 3, JSON.stringify(sw));
       await p.context().close();
     }
 

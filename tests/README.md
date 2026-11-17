@@ -34,3 +34,5 @@ When adding or restyling UI:
 - Dim by changing colour (drop status colour, step down a grey), not by fading text with `opacity`.
 - Selected states carry more than a fill: in light, a darker track makes the white pill stand out; in dark, the
   pill itself is lighter. Text weight and colour change too (`--seg-on`, `--seg-track`, `--seg-sm-on`).
+- A control that is off must still read as a control: the switch's off state is an outlined track with a grey
+  knob (`--sw-off-*`), checked at 3:1 in both themes. Touch screens get a larger hit area, not a larger switch.

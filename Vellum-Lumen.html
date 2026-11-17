@@ -2190,6 +2190,7 @@ dialog.sheet:focus{outline:none}
 .adv-tab .mk svg{width:54%;height:54%}
 .adv-scroll{flex:1;min-height:0;overflow-y:auto;padding:12px 14px;display:grid;gap:11px;align-content:start}
 .adv-note{margin:0;font:430 13px/1.55 var(--ui);color:var(--label-2);letter-spacing:-.006em}
+.adv-basis{margin:-4px 0 0;display:grid;gap:3px;font:450 12px/1.5 var(--ui);color:var(--label-3)}.adv-basis b{font-weight:500}.adv-basis p{margin:0}.adv-basis a{color:var(--label-2);text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 30%,transparent);text-underline-offset:2px;border-radius:4px}.adv-basis a:hover{color:var(--label)}.adv-rel.conflicts{color:var(--danger-ink,var(--danger))}
 .adv-note .adv-b,.adv-note strong{font-weight:650;color:var(--label)}
 .adv-replies{display:grid;gap:7px;padding-top:10px;border-top:.5px dashed var(--hair)}
 .adv-rep{display:grid;gap:3px;padding:8px 10px;border-radius:var(--radius-sm);background:color-mix(in srgb,var(--hover) 68%,transparent);border-left:2.5px solid color-mix(in srgb,var(--B) 56%,transparent)}
@@ -3437,9 +3438,9 @@ function persist(){
    it announced. An entity someone else changed since is skipped, and you are told. Redo replays with the same check. */
 let txSeq=0;
 const txAuthor=()=>{const w=changeActor?.who;return w&&w!=="you"?w:"you"};
-const HIST_KEYS=["nodes","edges","proposals"],HIST_MAPS=["adopted","threads","pins"];
+const HIST_KEYS=["nodes","edges","proposals","declined"],HIST_MAPS=["adopted","threads","pins"];
 /* history ignores render caches such as a card's measured height (_h) */
-const histSnap=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,proposals:board.proposals||[]},(k,v)=>k==="_h"?undefined:v);
+const histSnap=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,proposals:board.proposals||[],declined:board.declined||[]},(k,v)=>k==="_h"?undefined:v);
 function histState(){return JSON.parse(histSnap())}
 /* compare entities ignoring render caches and metadata filled in after the fact (a card's basis list) */
 const histKey=v=>JSON.stringify(v??null,(k,x)=>k==="_h"||k==="basis"?undefined:x);
@@ -3711,10 +3712,11 @@ async function acceptProposal(id,{force=false}={}){
   log("you",`Accepted ${esc(AGENTS[pr.who]?.name||"Copilot")}'s edit to <b>${esc(titleOf(n))}</b>`,n.id);
   sfx("keep");renderAll();persist();renderReview();toast(L("Change applied.","已应用修改。"),{undo:true});
 }
-function rejectProposal(id){
+function rejectProposal(id,reason=""){
   const pr=(board.proposals||[]).find(p=>p.id===id&&p.status==="open");if(!pr)return;
-  checkpoint();pr.status="rejected";pr.resolvedAt=NOW();expandedProps.delete(id);
+  checkpoint();pr.status="rejected";pr.resolvedAt=NOW();expandedProps.delete(id);if(reason)pr.reason=clip(reason,300);
   const n=byId(pr.target);
+  {const from=pr.op==="link"?byId(pr.change.from):null;declineRecord(pr.op,{title:n?titleOf(n):"",text:pr.op==="link"?`link from “${from?titleOf(from):"a card"}”`:pr.op==="delete"?L("delete this card","删除这张卡片"):Object.keys(pr.before).map(f=>`${f}: ${f===pr.change.field?pr.change.value:pr.change[f]}`).join("; "),by:pr.who,target:pr.target,reason,ref:pr.id})}
   noteChange({op:"reject-proposal",id:pr.target,type:n?.type,title:clip(n?titleOf(n):"",60),who:"you",engine:"human",from:pr.who});
   log("you",`Declined ${esc(AGENTS[pr.who]?.name||"Copilot")}'s ${pr.op==="delete"?"deletion of":"edit to"} <b>${esc(n?titleOf(n):"a card")}</b>`,pr.target);
   renderAll();persist();renderReview();toast(L("Suggestion declined.","已拒绝该建议。"),{undo:true});
@@ -3903,8 +3905,8 @@ function recordNodeEdit(n,prevDigest,prevTitle,prevText){
   if(nd===prevDigest)return;
   const prevRev=n.rev||1;
   n.versions=Array.isArray(n.versions)?n.versions:[];
-  n.versions.push({rev:prevRev,t:n.updated||n.created||NOW(),digest:prevDigest,title:clip(prevTitle||"",80),text:clip(prevText||"",160)});
-  if(n.versions.length>8)n.versions.shift();
+  n.versions.push({rev:prevRev,t:n.updated||n.created||NOW(),digest:prevDigest,title:clip(prevTitle||"",160),text:clipDoc(prevText||"",4000)});
+  if(n.versions.length>20)n.versions.shift();
   n.rev=prevRev+1;n.digest=nd;n.updated=NOW();
 }
 function captureDepSnapshot(child,srcs){
@@ -4128,6 +4130,159 @@ function exactTime(t){
   if(d.getFullYear()!==now.getFullYear())opts.year="numeric";
   return d.toLocaleString(loc,opts);
 }
+
+/* ── context: what an agent reads, and why ───────────────────────────────
+   An agent's view of the board is chosen by meaning, not by where cards sit. A card is read when it is wired to the
+   card in question, or when the two share distinctive terms (weighted by how rare each term is on this board).
+   Nearness on the canvas never qualifies a card by itself; it only breaks ties between cards that already relate.
+   Every pick carries its reasons, so an agent's note can name the cards it rests on and why.
+   On a small board, the cards no signal picked are listed as an index, so a model can still find a link that shares
+   no words (a paraphrase); what it cites is checked against the keys it was given. */
+const CTX_NEAR=560,CTX_INDEX_MAX=30;
+/* the query stop list drops "step" and "page", which carry meaning inside a card */
+const CTX_KEEP=new Set(["step","steps","page","wall"]);
+const CTX_EXTRA_STOP=new Set(["the","and","for","are","was","were","has","had","not","but","our","its","than","then","also","only","each","every","other","such","same","into","onto","per","via","yet","too","who","get","got","one","two","new","use","used","using","way","lot","card","cards","note","notes","idea","ideas","maybe","really","still","even","well","good","great","three","four","five","six","seven","eight","nine","ten","twice","half","first","second","third"]);
+function ctxStem(w){
+  w=w.toLowerCase();
+  if(w.length>4&&w.endsWith("ies"))w=w.slice(0,-3)+"y";
+  else if(w.length>5&&w.endsWith("ing"))w=w.slice(0,-3);
+  else if(w.length>4&&w.endsWith("ed"))w=w.slice(0,-2);
+  else if(w.length>3&&w.endsWith("s")&&!w.endsWith("ss"))w=w.slice(0,-1);
+  return w.slice(0,7);
+}
+/* stem -> the first surface word seen, so reasons read as words, not stems */
+function ctxTerms(text){
+  const out=new Map(),s=String(text||"");
+  for(const w of s.match(/[A-Za-z][A-Za-z'-]{2,}/g)||[]){const lw=w.toLowerCase().replace(/'s$/,"");if((CTX_STOP_WORDS.has(lw)&&!CTX_KEEP.has(lw))||CTX_EXTRA_STOP.has(lw))continue;const k=ctxStem(lw);if(k.length>=3&&!out.has(k))out.set(k,lw)}
+  for(const run of s.match(/[一-鿿]{2,}/g)||[])for(let i=0;i<run.length-1;i++){const k=run.slice(i,i+2);if(!out.has(k))out.set(k,k)}
+  return out;
+}
+const ctxTextOf=n=>[n.title||"",titleOf(n),fullTextOf(n),n.test||""].join(" ");
+function ctxIndex(pool){
+  const docs=new Map(),df=new Map();
+  for(const n of pool){const t=ctxTerms(ctxTextOf(n));docs.set(n.id,t);for(const k of t.keys())df.set(k,(df.get(k)||0)+1)}
+  const N=pool.length,cap=Math.max(2,N*.5);
+  return {docs,idf:k=>Math.log((N+1)/((df.get(k)||0)+.5)),rare:k=>(df.get(k)||0)<=cap};
+}
+/* cosine over rare-weighted terms ranks; "distinct" counts shared terms that are not on half the board */
+function ctxSim(a,b,idx){
+  let dot=0,na=0,nb=0,distinct=0;const shared=[];
+  for(const [k] of a){const w=idx.idf(k)**2;na+=w;if(b.has(k)){dot+=w;shared.push([k,w]);if(idx.rare(k))distinct++}}
+  for(const [k] of b)nb+=idx.idf(k)**2;
+  const score=na&&nb?dot/Math.sqrt(na*nb):0;
+  return {score,distinct,shared:shared.sort((x,y)=>y[1]-x[1]).map(([k])=>a.get(k)||k)};
+}
+/* a topic link needs two shared distinctive terms, or a strong overlap between short cards */
+const ctxRelated=s=>s.distinct>=2||s.score>=.3;
+function ctxCenter(n){return {x:n.x+nodeW(n)/2,y:n.y+(n._h||200)/2}}
+function ctxWires(id,depth=3){
+  const dist=new Map([[id,0]]),q=[id];
+  const nb=x=>{const n=byId(x),out=[];for(const e of board.edges)if(e.a===x)out.push(e.b);else if(e.b===x)out.push(e.a);for(const k of ["idea","dir","on","proof"])if(n?.[k])out.push(n[k]);for(const m of board.nodes)for(const k of ["idea","dir","on","proof"])if(m[k]===x)out.push(m.id);return out};
+  for(let i=0;i<q.length;i++){const x=q[i],d=dist.get(x);if(d>=depth)continue;for(const y of nb(x))if(!dist.has(y)){dist.set(y,d+1);q.push(y)}}
+  dist.delete(id);return dist;
+}
+/* cards you edited within a few minutes of editing this one: a weak hint of shared attention. Creations are left out:
+   cards made in one burst are not related for that reason (the first run of the PoC showed it lighting up everything). */
+function ctxCoAttention(id,windowMs=300000){
+  const mine=(board.changes||[]).filter(c=>c.who==="you"&&c.id&&c.op==="edit");
+  const times=mine.filter(c=>c.id===id).map(c=>c.t);const out=new Set();
+  if(!times.length)return out;
+  for(const c of mine)if(c.id!==id&&times.some(t=>Math.abs(t-c.t)<=windowMs))out.add(c.id);
+  return out;
+}
+function contextFor(target,{query="",limit=6,pool=null}={}){
+  const live=(pool||visibleNodes()).filter(n=>n&&n.status==="ink"&&n.type!=="group"&&!n.tombstone&&n.id!==target?.id);
+  const idx=ctxIndex(target?[target,...live]:live);
+  const self=ctxTerms((target?ctxTextOf(target):"")+" "+query);
+  const wires=target?ctxWires(target.id):new Map(),co=target?ctxCoAttention(target.id):new Set();
+  const tc=target?ctxCenter(target):null;
+  const picks=[],skipped=[];
+  for(const n of live){
+    const why=[],d=wires.get(n.id),sim=ctxSim(self,idx.docs.get(n.id)||new Map(),idx);
+    const near=!!tc&&Math.hypot(ctxCenter(n).x-tc.x,ctxCenter(n).y-tc.y)<CTX_NEAR;
+    if(d)why.push({k:"wired",d});
+    if(ctxRelated(sim))why.push({k:"topic",terms:sim.shared.slice(0,3),score:+sim.score.toFixed(3)});
+    if(!why.length){if(near)skipped.push({n,why:"near on the canvas, but no link and no shared topic"});continue}
+    if(near)why.push({k:"near"});
+    if(co.has(n.id))why.push({k:"attention"});
+    const score=(d?1/d:0)+sim.score+(near?.08:0)+(co.has(n.id)?.05:0);
+    picks.push({n,score,why});
+  }
+  picks.sort((a,b)=>b.score-a.score);
+  const kept=picks.slice(0,limit);
+  const rest=live.filter(n=>!kept.some(p=>p.n.id===n.id));
+  return {picks:kept,skipped,index:live.length<=CTX_INDEX_MAX?rest:[]};
+}
+/* a card named in full ("Based on" rows show full titles): its title, or the first sentence of what it says */
+function ctxLabel(n){if(!n)return"";if(n.title||["direction","proof","print","frame"].includes(n.type))return titleOf(n);const t=String(fullTextOf(n)||"").replace(/\s+/g," ").trim(),f=firstSentence(t)||t;return f.length<=160?f.replace(/[.。]$/,""):clip(f,160)}
+function ctxWhyText(why){
+  return why.map(w=>w.k==="wired"?(w.d===1?L("linked directly","直接连线"):L(`${w.d} links away`,`相隔 ${w.d} 条连线`)):w.k==="topic"?L(`shares ${w.terms.join(", ")}`,`共同提到 ${w.terms.join("、")}`):w.k==="near"?L("also near it","位置也相近"):w.k==="attention"?L("you worked on both around the same time","你在相近时间编辑过两者"):"").filter(Boolean).join(" · ");
+}
+/* the candidate block an agent sees: keyed for citation, positions withheld on purpose */
+function ctxCandidates(target,{limit=6,query=""}={}){
+  const cx=contextFor(target,{limit,query});
+  const rows=[...cx.picks.map(p=>({n:p.n,why:p.why,tag:ctxWhyText(p.why)})),...cx.index.map(n=>({n,why:[{k:"index"}],tag:"index only"}))];
+  rows.forEach((r,i)=>r.key="C"+(i+1));
+  const line=r=>r.why[0].k==="index"?`${r.key} [index only] ${clip(titleOf(r.n),80)}${fullTextOf(r.n)&&fullTextOf(r.n)!==titleOf(r.n)?" — "+clip(firstSentence(fullTextOf(r.n)),90):""}`:`${r.key} [${r.tag}] ${clip(titleOf(r.n),80)} — ${clip(fullTextOf(r.n),r.why.some(w=>w.k==="wired")?260:160)}`;
+  return {cx,rows,text:rows.map(line).join("\n")};
+}
+/* what the model cited, checked: only keys it was given survive, and each keeps the signals that put it there */
+function ctxResolveBasis(raw,rows){
+  const byKey=new Map(rows.map(r=>[r.key,r])),seen=new Set(),out=[],dropped=[];
+  for(const b of Array.isArray(raw)?raw:[]){
+    const key=String(b?.key||b||"").trim().toUpperCase(),r=byKey.get(key);
+    if(!r){if(key)dropped.push(key);continue}
+    if(seen.has(r.n.id))continue;seen.add(r.n.id);
+    const rel=String(b?.relation||"").toLowerCase();
+    out.push({id:r.n.id,rev:r.n.rev||1,relation:["supports","conflicts","extends","same-topic"].includes(rel)?rel:"related",why:clip(String(b?.why||""),120),signals:r.why.map(w=>w.k)});
+  }
+  return {basis:out,dropped};
+}
+
+/* ── decisions: what you turned down stays on the record ──────────────────
+   Discarding a draft, ignoring a thought, declining a suggestion and adopting one direction over its siblings each leave
+   a record with what was turned down, about which card, and why when you said why (your reply in a thought's thread is
+   taken as the reason). Records are undone with the act that made them. Agents are shown the records that bear on what
+   they are working on, and anything they produce that repeats one is held back, unless a card added since answers it. */
+function declineRecord(kind,{title="",text="",by="",target=null,reason="",ref=null}={}){
+  board.declined=Array.isArray(board.declined)?board.declined:[];
+  const d={id:"dc-"+uid(),kind,title:clip(title,120),text:clipDoc(String(text||""),1200),by:by||"",target:target||null,ref:ref||null,reason:clip(reason||"",300),at:NOW()};
+  board.declined.push(d);if(board.declined.length>200)board.declined.shift();
+  noteChange({op:"decline-"+kind,id:target||ref||d.id,type:kind,title:clip(title||text,60),who:"you",engine:"human",...(d.reason?{reason:clip(d.reason,120)}:{})});
+  return d;
+}
+function setDeclineReason(id,reason){const d=(board.declined||[]).find(x=>x.id===id||x.ref===id);if(!d)return null;d.reason=clip(String(reason||""),300);persist();return d}
+const declText=d=>[d.title,d.text].filter(Boolean).join(" — ");
+function declinedFor(target,{query="",limit=3,kinds=null}={}){
+  const all=(board.declined||[]).filter(d=>!kinds||kinds.includes(d.kind));if(!all.length)return [];
+  const pool=visibleNodes().filter(n=>n.status==="ink");
+  const idx=ctxIndex(pool),self=ctxTerms((target?ctxTextOf(target):"")+" "+query);
+  return all.map(d=>{const s=ctxSim(self,ctxTerms(declText(d)+" "+d.reason),idx),same=!!target&&(d.target===target.id||d.ref===target.id);return {d,score:(same?1:0)+s.score,ok:same||ctxRelated(s)}})
+    .filter(x=>x.ok).sort((a,b)=>b.score-a.score).slice(0,limit).map(x=>x.d);
+}
+/* a card made after the decision that speaks to what was declined, or to the reason given */
+function declAnsweredBy(d){
+  const pool=visibleNodes().filter(n=>n.status==="ink"&&n.type!=="group"&&(n.created||0)>d.at&&n.ref!==d.ref);
+  if(!pool.length)return null;
+  const idx=ctxIndex(pool),self=ctxTerms(declText(d)+" "+d.reason);
+  let best=null;for(const n of pool){const s=ctxSim(self,ctxTerms(ctxTextOf(n)),idx);if(ctxRelated(s)&&(!best||s.score>best.s))best={n,s:s.score}}
+  return best?.n||null;
+}
+/* does this text repeat something declined? */
+function echoOfDeclined(text,{kinds=null}={}){
+  const all=(board.declined||[]).filter(d=>!kinds||kinds.includes(d.kind));if(!all.length||!String(text||"").trim())return null;
+  const idx=ctxIndex(visibleNodes().filter(n=>n.status==="ink")),t=ctxTerms(text);
+  let best=null;
+  for(const d of all){const s=ctxSim(t,ctxTerms(declText(d)),idx);if(s.score>=.42&&s.shared.length>=2&&(!best||s.score>best.score))best={d,score:s.score}}
+  if(!best)return null;
+  return {...best,answeredBy:declAnsweredBy(best.d)};
+}
+function declinedPromptBlock(items){
+  if(!items.length)return "";
+  const kind={draft:"a draft",pin:"a thought",edit:"a suggested edit",delete:"a suggested deletion",link:"a suggested link","passed-over":"a direction not adopted"};
+  return `\nIdeas the designer already turned down (do not offer them again unless a newer card answers the reason; if you revisit one, say which card changes things):\n${items.map(d=>`- “${clip(declText(d),140)}” (${kind[d.kind]||d.kind}, ${relDate(d.at)})${d.reason?` — reason: ${clip(d.reason,160)}`:" — no reason given"}`).join("\n")}`;
+}
+function revisionsOf(n){return [...(n?.versions||[]),...(n?[{rev:n.rev||1,t:n.updated||n.created,title:n.title||"",text:n.text||"",current:true}]:[])]}
 
 /* ── the seeded study: MOD WORK · restore ───────────────────────────── */
 function seed(){
@@ -6503,7 +6658,10 @@ function renderAdvPop(){
   const tools=`<button type="button" class="ib" data-adv-reroll title="${esc(L("Ask crew for a fresh angle","重新生成一条建议"))}" aria-label="Ask crew for a fresh angle">${ic("redo")}</button><button type="button" class="ib" data-adv-close title="${esc(L("Close","关闭"))}" aria-label="Close">${ic("x")}</button>`;
   const reps=Array.isArray(p.replies)?p.replies:[];
   const repsHTML=reps.length?`<div class="adv-replies">${reps.map(r=>{const isYou=r.who==="you",ra=isYou?null:(AGENTS[r.who]||a),tm=exactTime(r.t);return `<div class="adv-rep${isYou?" you":""}" data-adv-rep="${esc(r.id||"")}"><div class="adv-rep-h"><span>${esc(isYou?L("You","我"):ra.name)}</span>${tm?`<time>${esc(tm)}</time>`:""}</div><div class="adv-rep-tx${r.typing?" typing":""}">${mdLite(r.text||"")}</div></div>`}).join("")}</div>`:"";
-  pop.innerHTML=`<span class="adv-pop-tail" aria-hidden="true"></span><div class="adv-head"><span class="mk">${a.mk}</span><b>${esc(a.name)}</b>${tools}</div>${tabsHTML}<div class="adv-scroll">${body?`<p class="adv-note">${renderAdvNote(body,kws)}</p>`:""}${repsHTML}</div><div class="adv-dock"><div class="adv-reply"><input type="text" class="adv-reply-in" data-adv-in data-pin-id="${esc(p.id)}" placeholder="${esc(L(`Reply to ${a.name}…`,`回复 ${a.name}…`))}" value="${esc(keepDraft)}" autocomplete="off" spellcheck="false"><button type="button" class="adv-send" data-adv-send="${esc(p.id)}"${keepDraft.trim()?"":" disabled"} aria-label="${esc(L("Send reply","发送回复"))}" title="${esc(L("Send (Enter)","发送 (Enter)"))}">${UP_SVG}</button></div><div class="adv-acts"><button type="button" class="adv-ign" data-adv-del="${esc(p.id)}">${L("Ignore","忽略")}</button>${lift}</div></div>`;
+  const relWord={conflicts:L("Conflicts","相矛盾"),supports:L("Supports","支持"),extends:L("Builds on","延伸")};
+  const basisList=(p.basis||[]).filter(b=>byId(b.id)&&!isNodeHidden(byId(b.id)));
+  const basisHTML=basisList.length?`<div class="adv-basis"><b>${L("Based on","依据")}</b>${basisList.map(b=>`<p>${relWord[b.relation]?`<span class="adv-rel ${esc(b.relation)}">${esc(relWord[b.relation])}</span> · `:""}<a href="#" data-adv-basis="${esc(b.id)}" title="${esc(b.why||"")}">${esc(ctxLabel(byId(b.id)))}</a></p>`).join("")}</div>`:"";
+  pop.innerHTML=`<span class="adv-pop-tail" aria-hidden="true"></span><div class="adv-head"><span class="mk">${a.mk}</span><b>${esc(a.name)}</b>${tools}</div>${tabsHTML}<div class="adv-scroll">${body?`<p class="adv-note">${renderAdvNote(body,kws)}</p>`:""}${basisHTML}${repsHTML}</div><div class="adv-dock"><div class="adv-reply"><input type="text" class="adv-reply-in" data-adv-in data-pin-id="${esc(p.id)}" placeholder="${esc(L(`Reply to ${a.name}…`,`回复 ${a.name}…`))}" value="${esc(keepDraft)}" autocomplete="off" spellcheck="false"><button type="button" class="adv-send" data-adv-send="${esc(p.id)}"${keepDraft.trim()?"":" disabled"} aria-label="${esc(L("Send reply","发送回复"))}" title="${esc(L("Send (Enter)","发送 (Enter)"))}">${UP_SVG}</button></div><div class="adv-acts"><button type="button" class="adv-ign" data-adv-del="${esc(p.id)}">${L("Ignore","忽略")}</button>${lift}</div></div>`;
   placeAdvPop();
   const scrollEl=qs(".adv-scroll",pop);if(scrollEl&&reps.length)scrollEl.scrollTop=scrollEl.scrollHeight;
   if(wasFocused){const ni=qs("[data-adv-in]",pop);if(ni){ni.focus();ni.setSelectionRange(ni.value.length,ni.value.length)}}
@@ -6699,7 +6857,7 @@ function localAdvisorForNode(n){
         note:n.weight==="observed"
           ?`**“${clip(title,30)}”** was **observed firsthand**, so it is worth linking it straight to whichever claim leans on it so nothing drifts.`
           :`Before betting a big call on **“${clip(title,30)}”**, maybe mark whether it was **observed directly** or just an **early clue**?`,
-        liftAct:"gather",liftLabel:"Synthesize with nearby cards"
+        liftAct:"gather",liftLabel:"Synthesize with related cards"
       }]
     };
   }
@@ -6750,7 +6908,7 @@ function relatedFor(n){
   const direct=[...inputsOf(n.id),...outputsOf(n.id)];
   const seen=new Set([n.id]),out=[];
   for(const x of direct){if(x&&!x.archived&&!seen.has(x.id)){seen.add(x.id);out.push(x)}}
-  if(!out.length){const b=bayOf(n);for(const x of visibleNodes())if(!seen.has(x.id)&&x.type!=="group"&&bayOf(x)===b&&x.status==="ink"){seen.add(x.id);out.push(x);if(out.length>=3)break}}
+  if(!out.length)for(const p of contextFor(n,{limit:3}).picks)if(!seen.has(p.n.id)){seen.add(p.n.id);out.push(p.n)}
   return out;
 }
 function isVisualNode(n){return !!n&&(n.type==="image"||n.type==="frame"||n.type==="recording")}
@@ -6767,13 +6925,14 @@ async function askAdvisorForNode(n,onProgress,signal,{allowOffline=true}={}){
   if(!advisorLiveReady(n))return local();
   const rel=[...inputsOf(n.id),...outputsOf(n.id)].filter((x,i,a)=>x&&!x.archived&&!x.hidden&&!x.tombstone&&x.id!==n.id&&a.findIndex(y=>y&&y.id===x.id)===i).slice(0,3);
   const burst=advBurstCtx&&advBurstCtx.target===n.id?advBurstCtx.others.map(byId).filter(Boolean):[];advBurstCtx=null;
-  const ctxText=(rel.length?`\nConnected lineage context:\n${wallText(rel,{excludeIds:[n.id],compactDocs:true,shortCap:150,totalCap:750})}`:"")+(burst.length?`\nThe designer also just added these cards (context only; leave your note on THIS card, and mention one of them only if it clearly bears on it):\n${burst.map(b=>"- "+clip(titleOf(b),80)).join("\n")}`:"");
+  const cand=ctxCandidates(n,{limit:8}),decl=declinedFor(n,{limit:3});
+  const ctxText=(cand.rows.length?`\nOther cards on the board, keyed for citation. Where a card sits on the canvas says nothing about whether it matters: judge by content. Many may be unrelated; ignore those.\n${cand.text}`:"")+declinedPromptBlock(decl)+(burst.length?`\nThe designer also just added these cards (context only; leave your note on THIS card, and mention one of them only if it clearly bears on it):\n${burst.map(b=>"- "+clip(titleOf(b),80)).join("\n")}`:"");
   const roles=advisorRolesFor(n);
   const forkRule=["idea","note","notepad"].includes(n.type)?`"fork","critique","list","gather","visuals","note"`
     :(isVisualNode(n)?(rel.length?`"note","critique","list","gather","visuals"`:`"note","critique","list","visuals"`):(rel.length?`"critique","note","list","gather","visuals"`:`"critique","note","list","visuals"`));
   const imgInstr=imgNodes.length?`\nIMPORTANT: An image/screenshot is attached. Look closely at what is visually inside it (layout, UI/copy, objects, labels/text, lighting, composition, mood) and base keywords, thoughts, AND note concretely on what you actually see — never give generic template filler. Prioritize "note" or "critique" (observing concrete details & asking one clarifying question) as liftAct instead of searching for more images; use "visuals" only when external visual references are clearly needed.`:"";
   const linkInstr=n.type==="link"?`\nIMPORTANT: This is an external web link card (${safeHref(n.url)}). You cannot read the webpage body unless the user wrote notes in Content. Base your keywords, thoughts, and note strictly on the domain, URL path/topic, and any user note — never fabricate webpage facts or borrow unrelated board jargon.`:"";
-  const prompt=`You are a senior colleague looking at a card the designer just put on the canvas. Talk like a teammate: plain, specific and candid. Say what you actually think, doubts included. No praise openers, no emoji, no template phrasing. Anything you propose is a suggestion the designer has not agreed to; the decision is theirs. Stay strictly grounded in THIS card's own Title, URL, and Content (and Connected lineage context only when directly wired below). Never invent connections or borrow metrics/jargon from unrelated cards.${imgInstr}${linkInstr}
+  const prompt=`You are a senior colleague looking at a card the designer just put on the canvas. Talk like a teammate: plain, specific and candid. Say what you actually think, doubts included. No praise openers, no emoji, no template phrasing. Anything you propose is a suggestion the designer has not agreed to; the decision is theirs. Ground your note in THIS card's own Title, URL and Content. Use another card only if it genuinely bears on this one, and cite it in basis; never invent connections or borrow metrics/jargon from unrelated cards. If a card contradicts this one, say so plainly and name it rather than blending the two. Refer to cards by title, never by their C# key.${imgInstr}${linkInstr}
 Card (${kindLabel(n)}):
 Title: ${titleOf(n)}
 ${n.type==="link"&&n.url?`URL: ${safeHref(n.url)}\n`:""}Content: ${clip(fullTextOf(n),1000)}${ctxText}
@@ -6782,6 +6941,7 @@ Return ONLY compact JSON with keys in this EXACT order (keywords and thoughts st
 {
   "keywords": ["3-4 short concrete 1-3 word keywords/clues you spot first in this card or image"],
   "thoughts": ["3 tiny natural 1st-person inner thoughts (5-11 words each, no emoji) flowing logically from noticing concrete keywords -> spotting a question/connection -> deciding one helpful suggestion"],
+  "basis": [{"key": "C# of a listed card that actually informed your note", "relation": "supports" | "conflicts" | "extends" | "same-topic", "why": "under 12 words"}] (use [] when no listed card bears on this one),
   "pins": [
     {
       "agent": one of ${JSON.stringify(roles)},
@@ -6801,8 +6961,11 @@ Include 1 or at most 2 pins.`;
     if(ks!==lastK||ts!==lastT){lastK=ks;lastT=ts;onProgress({keywords:kws,thoughts:th})}
   }:undefined;
   try{
-    const {v}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:750,signal,memoryMode:rel.length?"compact":"none",onText:handleText},local);
+    const {v}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:1600,signal,memoryMode:cand.cx.picks.length?"compact":"none",onText:handleText},local);
     if(!v||!Array.isArray(v.pins)||!v.pins.length)return local();
+    const {basis,dropped}=ctxResolveBasis(v.basis,cand.rows);
+    const keyed=new Map(cand.rows.map(r=>[r.key,r]));
+    const unkey=t=>String(t||"").replace(/\b(C\d{1,2})\b/g,(m,k)=>{const r=keyed.get(k);if(!r)return m;if(Array.isArray(v.basis)&&!basis.some(b=>b.id===r.n.id))basis.push({id:r.n.id,rev:r.n.rev||1,relation:"related",why:L("named in the note","在建议中提到"),signals:r.why.map(w=>w.k)});return `“${clip(titleOf(r.n),40)}”`});
     const kws=Array.isArray(v.keywords)&&v.keywords.length?v.keywords.slice(0,5).map(String):local().keywords;
     return {
       keywords:kws,
@@ -6811,10 +6974,11 @@ Include 1 or at most 2 pins.`;
         id:"pin-"+uid(),
         agent:AGENTS[p.agent]?p.agent:roles[0],
         keywords:kws,
-        note:String(p.note||[p.take,p.edge].filter(Boolean).join(" ")||""),
+        note:unkey(p.note||[p.take,p.edge].filter(Boolean).join(" ")||""),
         liftAct:["fork","critique","list","gather","visuals","note"].includes(p.liftAct)?p.liftAct:"note",
         liftLabel:String(p.liftLabel||"Try as draft card"),
         liftQuery:p.liftQuery?String(p.liftQuery):"",
+        ...(Array.isArray(v.basis)?{basis}:{}),...(dropped.length?{basisDropped:dropped}:{}),
         t:NOW()
       }))
     };
@@ -6898,7 +7062,9 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
     const finalLine=th[th.length-1]||localRes.thoughts[2]||"Leaving a quick note in the corner ✍️";
     await pushLine(finalLine,500,true);
     board.pins=board.pins||{};
-    board.pins[nodeId]=res?.pins||localRes.pins;
+    {const fallback=contextFor(n,{limit:2}).picks.map(p=>({id:p.n.id,rev:p.n.rev||1,relation:"related",why:ctxWhyText(p.why),signals:p.why.map(w=>w.k)}));
+     const kept=[];for(const p of (res?.pins||localRes.pins)){if(!Array.isArray(p.basis))p.basis=fallback;const e=echoOfDeclined(p.note||[p.take,p.edge].filter(Boolean).join(" "));if(e&&!e.answeredBy){noteChange({op:"hold-repeat",id:nodeId,type:"pin",title:clip(declText(e.d),60),who:p.agent||lead,engine:"rules",declined:e.d.id});continue}if(e)p.revisits={id:e.d.id,by:e.answeredBy.id};kept.push(p)}
+     if(kept.length)board.pins[nodeId]=kept;}
     hideAdvStream(true);
     const updatedEl=nodeEl(nodeId);if(updatedEl)updatedEl._sig="";
     renderNodes();renderAdvPop();persist();
@@ -6919,8 +7085,9 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
     renderNodes();
   }
 }
-function dismissAdvPin(nodeId,pinId){
+function dismissAdvPin(nodeId,pinId,reason=""){
   if(!board.pins?.[nodeId])return;
+  {const p=board.pins[nodeId].find(x=>x.id===pinId);if(p){const said=(p.replies||[]).filter(r=>r.who==="you").at(-1)?.text||"";declineRecord("pin",{title:clip(String(p.note||"").replace(/\*\*/g,""),120),text:String(p.note||"").replace(/\*\*/g,""),by:p.agent,target:nodeId,reason:reason||said,ref:p.id})}}
   board.pins[nodeId]=board.pins[nodeId].filter(p=>p.id!==pinId);
   if(!board.pins[nodeId].length)delete board.pins[nodeId];
   const el=nodeEl(nodeId);if(el)el._sig="";
@@ -6943,7 +7110,8 @@ async function execAdvisorLift(nodeId,pinId,opts={}){
   if(pin.liftAct==="list"){await makeList([n]);return}
   if(pin.liftAct==="gather"){
     const direct=[...inputsOf(n.id),...outputsOf(n.id)].filter((x,i,a)=>x&&!x.archived&&!x.hidden&&!x.tombstone&&x.id!==n.id&&a.findIndex(y=>y&&y.id===x.id)===i);
-    const targets=direct.length?[n,...direct.slice(0,3)]:[n];
+    const related=direct.length?direct:contextFor(n,{limit:3}).picks.map(p=>p.n);
+    const targets=related.length?[n,...related.slice(0,3)]:[n];
     await gather(targets);return;
   }
   // Default: turn the suggestion into a translucent Sketch Note linked cleanly to .pbar
@@ -7926,16 +8094,19 @@ async function fork(idea,count=3,brief=""){
   const places=planFork(idea,count).places.map(({x,y,w,h})=>({x,y,w,h}));
   const srcs=sourcesFor(idea);
   const imgNodes=[idea,...srcs].filter(n=>n&&(n.type==="image"||n.type==="frame"));
-  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${brief?`\nThe designer added: "${brief}"\n`:""}
+  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${declinedPromptBlock(declinedFor(idea,{limit:4,kinds:["draft","passed-over"]}))}\n${brief?`\nThe designer added: "${brief}"\n`:""}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
   const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({system:`${ROLE.muse}\n${STYLE}`,prompt,images:imgNodes,json:true},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
-  const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count);
+  const held=[];
+  const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count).filter(d=>{const e=echoOfDeclined(`${d.title||""} — ${d.plan||d.text||""}`,{kinds:["draft","passed-over"]});if(e&&!e.answeredBy){held.push(e.d);noteChange({op:"hold-repeat",id:idea.id,type:"direction",title:clip(d.title||"",60),who:"muse",engine:live?"model":"rules",declined:e.d.id});return false}if(e)d._revisits={id:e.d.id,by:e.answeredBy.id};return true});
+  if(!list.length){persist();return toast(L(`Strategist only came up with directions you already turned down (${held.map(d=>`“${clip(d.title,28)}”`).join(", ")}). Add what changed, then fork again.`,`Strategist 只想到了你已否决的方向（${held.map(d=>`「${clip(d.title,28)}」`).join("、")}）。补充新的信息后再试。`))}
   checkpoint();const pid="p-"+uid();
-  const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",by:"muse",status:"sketch",pid},places[i]);const e=edge(idea.id,n.id,"derive","live");captureDepSnapshot(n,[idea]);freshEdges.add(e.id);return n});
+  const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",by:"muse",status:"sketch",pid,...(d._revisits?{revisits:d._revisits}:{})},places[i]);const e=edge(idea.id,n.id,"derive","live");captureDepSnapshot(n,[idea]);freshEdges.add(e.id);return n});
   setTimeout(()=>freshEdges.clear(),1200);
   log("muse",`Suggested ${made.map(d=>`<b>${d.letter} ${esc(d.title)}</b>`).join(", ")}${live?"":" (offline)"}`,made[0].id);
   sel=[];renderAll();persist();typeIn(made.map(m=>m.id));follow([idea,...made]);
+  if(held.length)toast(L(`Held back ${held.length} direction${held.length>1?"s":""} you already turned down`,`已略过 ${held.length} 个你否决过的方向`));
 }
 function topicOf(text){
   const t=String(text||"").replace(/[“”"]/g,"");
@@ -8335,6 +8506,7 @@ async function erase(ids,opts={}){
     if(ns.every(n=>n.status==="sketch")){
       checkpoint();
       ns.forEach(n=>{const el=nodeEl(n.id);if(el){dissolve(el);el.classList.add("erasing")}});await wait(calm()?0:320);
+      for(const n of ns)declineRecord("draft",{title:n.type==="direction"?n.title:titleOf(n),text:[fullTextOf(n),n.test].filter(Boolean).join(" Test: "),by:n.by,target:n.idea||n._src||inputsOf(n.id)[0]?.id||null,reason:opts.reason||"",ref:n.id});
       const gone=new Set(ns.map(n=>n.id));
       board.nodes=board.nodes.filter(n=>!gone.has(n.id));
       board.edges=board.edges.filter(e=>!gone.has(e.a)&&!gone.has(e.b));
@@ -8433,6 +8605,7 @@ async function redrawMove(t,ns,ins){
 function adopt(d){
   if(!d||d.type!=="direction")return toast(L("Select a direction to adopt.","请先选中一个方向再采纳。"));if(d.status==="sketch")return toast("Keep this direction first.");
   if(board.adopted[d.idea]===d.id)return;checkpoint();board.adopted[d.idea]=d.id;
+  {const sibs=board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"&&!x.tombstone);board.declined=(board.declined||[]).filter(r=>!(r.kind==="passed-over"&&(r.target===d.idea||r.ref===d.id)));for(const x of sibs)declineRecord("passed-over",{title:`${x.letter} · ${x.title}`,text:[x.text,x.test].filter(Boolean).join(" Test: "),by:x.by,target:d.idea,reason:L(`Adopted ${d.letter} · ${d.title} instead`,`改为采纳 ${d.letter} · ${d.title}`),ref:x.id})}
   log("you",`Adopted <b>${d.letter} ${esc(d.title)}</b>`,d.id);sfx("keep");renderAll();persist();
   const st=qs(`[data-stamp="${d.id}"]`);if(st&&!calm()){st.classList.add("slam")}
   toast(`Adopted ${d.title}`,{undo:true});
@@ -11124,13 +11297,18 @@ function boardDigestForCopilot({query="",ctx=[]}={}){
   const docs=inked.filter(n=>isFullDoc(n)&&!excludeIds.has(n.id));
   const docIds=new Set(inked.filter(isFullDoc).map(n=>n.id));
   const fullDocIds=selectRelevantDocIds(docs,query,{ctx,maxFull:2,totalCap:4200});
-  const recent=inked.filter(n=>!docIds.has(n.id)&&!excludeIds.has(n.id)).slice(-6);
+  const focus=(ctx||[])[0]||null;
+  const relPicks=(focus||String(query||"").trim())?contextFor(focus,{query,limit:8}).picks.filter(p=>!excludeIds.has(p.n.id)&&!docIds.has(p.n.id)):[];
+  const relIds=new Set(relPicks.map(p=>p.n.id));
+  const relBlock=relPicks.length?`\nCards related by link or topic (where cards sit on the canvas is ignored):\n${relPicks.map(p=>`- ${clip(titleOf(p.n),80)} [${ctxWhyText(p.why)}]: ${clip(fullTextOf(p.n),160)}`).join("\n")}`:"";
+  const declBlock=declinedPromptBlock(declinedFor(focus,{query,limit:4}));
+  const recent=inked.filter(n=>!docIds.has(n.id)&&!excludeIds.has(n.id)&&!relIds.has(n.id)).slice(-6);
   const likes=[...new Set([...liked,...propLiked])],dislikes=[...new Set([...disliked,...propDisliked])];
   const prefLine=(likes.length||dislikes.length)?`\nFeedback — Approved: ${likes.join(", ")||"none"}. Disliked: ${dislikes.join(", ")||"none"}.`:"";
   const docsBlock=docs.length?`\nMarkdown & brief docs (${fullDocIds.size}/${docs.length} matched loaded in full; rest indexed):\n${wallText(docs,{compactDocs:true,fullDocIds,docCap:2200,totalCap:4200})}`:"";
   const mcpBlock=mcpContextDigest({query,excludeIds});
   const recentBlock=recent.length?`\nOther recent cards (excluding selected & full docs):\n${wallText(recent,{shortCap:190,totalCap:1400})}`:"";
-  return `Board "${board.title||"Untitled"}" (${board.nodes.length} cards: ${summary||"empty"}). Adopted: ${adopted.join(", ")||"none"}.${prefLine}${docsBlock}${mcpBlock}${recentBlock}`;
+  return `Board "${board.title||"Untitled"}" (${board.nodes.length} cards: ${summary||"empty"}). Adopted: ${adopted.join(", ")||"none"}.${prefLine}${relBlock}${declBlock}${docsBlock}${mcpBlock}${recentBlock}`;
 }
 const CP_SCHEMA_RE=/^(?:for (?:direction|image|search)|short title|body|string|\.\.\.|concrete 5-minute user check|detailed visual scene description|concise web search keywords|concise rule or project decision to save|action \d+)$/i;
 const UI_TONES={A:"var(--A)",B:"var(--B)",C:"var(--C)",D:"var(--D)",amber:"var(--A)",green:"var(--B)",blue:"var(--C)",coral:"var(--D)",red:"var(--D)"};
@@ -13715,6 +13893,7 @@ $("advPop")?.addEventListener("click",e=>{
   if(e.target.closest("[data-adv-close]")){closeAdvPop();return}
   if(e.target.closest("[data-adv-reroll]")){const id=openAdvNodeId;closeAdvPop();if(id)scheduleAdvisor(id,{force:true});return}
   const del=e.target.closest("[data-adv-del]");if(del){if(openAdvNodeId)dismissAdvPin(openAdvNodeId,del.dataset.advDel);return}
+  const bas=e.target.closest("[data-adv-basis]");if(bas){e.preventDefault();const t=byId(bas.dataset.advBasis);if(t){closeAdvPop();select([t.id]);focusNodes([t],1)}return}
   const lift=e.target.closest("[data-adv-lift]");if(lift&&openAdvNodeId){execAdvisorLift(openAdvNodeId,lift.dataset.advLift);return}
   const snd=e.target.closest("[data-adv-send]");if(snd&&openAdvNodeId){const inp=qs("[data-adv-in]",$("advPop"));if(inp&&inp.value.trim()){const v=inp.value;inp.value="";replyToAdvPin(openAdvNodeId,snd.dataset.advSend,v)}return}
 });

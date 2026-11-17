@@ -20,3 +20,14 @@ with a stand-in script, so nothing real is launched:
 ```bash
 python3 studio/macos-app/test_serve_launch.py
 ```
+
+## Context and decision-memory proof of concept
+
+`tests/context-poc.cjs` checks the claims in `context-poc.md`: cards keep identity, revisions, links and decision records across edits, moves and a reload; the agent reads cards by link and topic, never by position alone; it names what its thoughts rest on; and ideas you turned down stay on the record and are not offered again.
+
+```bash
+node tests/context-poc.cjs                                              # deterministic, scripted model
+node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a real model, via an OpenAI-compatible relay
+```
+
+`--live` sends the synthetic fixture board (no user data) to `LIVE_BASE` (default `https://openrouter.ai/api/v1`, key from `LIVE_KEY` or an injecting proxy). `--json out.json` writes every check; `--shots dir` saves a screenshot of a thought's "Based on" line. Lines marked KNOWN are recorded limitations; PART means a live rate below the bar but above zero.

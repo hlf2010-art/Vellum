@@ -4897,7 +4897,6 @@ function cardBody(n){
     return `<div class="thumb${old?" is-old":""}"><iframe title="" tabindex="-1" loading="lazy" data-srcdoc="1"></iframe><span class="badge">${esc(fmtName)}</span><div class="open"><button type="button" data-a="try">${ic("eye")}${L_("Open","打开")}</button></div></div><div class="in">
     ${sk?sketchHead(n):`<div class="card-k"><span class="chip">${L||"·"}</span>${L_("Proof","原型")}<span class="sp"></span>${verSw}</div>`}
     <h4>${esc(vn.spec?.title||L_("Proof","原型"))}</h4>
-    ${dir?.test?`<p class="pc-test" title="${esc(dir.test)}"><b>${L_("Test","测试")}</b> ${esc(dir.test)}</p>`:""}
     ${resHTML}${note}
     ${sk?sketchActs(n):`${foot(`<span class="pc-from" title="${esc(L_(`Built from Direction ${L||""}${fx.length?` and ${fx.length} sources`:""}`,`基于方向 ${L||""}${fx.length?` 和 ${fx.length} 份来源`:""}`))}">${ic("lineage")}${L||""}${fx.length?` · ${L_(`${fx.length} sources`,`${fx.length} 份来源`)}`:""}</span>`,fR(threadCount(n)))}
     <div class="pc-acts">${old?"":btn("pc-change",L_("Change","修改"))}${btn("try",L_("Open","打开"))}${primary}</div>`}</div>`}

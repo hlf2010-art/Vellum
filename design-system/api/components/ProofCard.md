@@ -18,7 +18,7 @@ An experiment that tests a direction.
 | `title` | `string` |  |
 | `lineage` | `Lineage` |  |
 | `format` | `'page' \| 'tour' \| 'deck'` |  |
-| `test` | `string` | The direction's test, e.g. "Run with 5 players…; pass if 4 notice…". |
+| `test` | `string` | The direction's test. Not shown on the card (it lives on the direction and in the sheet); kept for the sheet. |
 | `versions` | `ProofVersion[]` |  |
 | `viewing` | `number` |  |
 | `state` | `'idle' \| 'building'` |  |

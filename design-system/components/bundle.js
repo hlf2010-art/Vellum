@@ -620,7 +620,6 @@
             h('button', { type: 'button', 'aria-label': 'Next version', disabled: at === latest, onClick: function(){ setAt(at + 1); } }, h(Icon, { name: 'chevron' })))
           : h('span', { className: 'vl-pc-ver1' }, 'v' + v.ver)),
         h('h4', null, p.title),
-        p.test ? h('p', { className: 'vl-pc-test', title: p.test }, h('b', null, 'Test '), p.test) : null,
         building ? h('div', { className: 'vl-pc-res' }, h('div', { className: 'vl-pc-cap' }, h('span', null, 'Wright is building v' + nextVer + (p.buildNote ? ': ' + p.buildNote : '')))) :
         r ? h('div', { className: 'vl-pc-res', title: fails.length ? 'Failed: ' + fails.join('; ') : undefined },
             h('div', { className: 'vl-pc-blocks', role: 'img', 'aria-label': summary }, blocks),

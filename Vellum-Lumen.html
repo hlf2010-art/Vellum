@@ -9107,8 +9107,10 @@ h1,h2{margin:0;font-weight:640;letter-spacing:-.025em;text-wrap:balance}
 .grp li button:hover{background:var(--surf-hover)}
 .grp li button[aria-current="true"]{background:var(--surf);box-shadow:var(--shadow)}
 .grp li .t{flex:1;min-width:0}
-.mk{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--surf)}
-.mk.bad{background:var(--bad-f)}.mk.bad::after{content:"✕"}.mk.ok{background:var(--ok-f)}.mk.ok::after{content:"✓"}.mk.mute{box-shadow:inset 0 0 0 1.5px var(--q)}.mk.none{background:var(--pg)}
+.mk{position:relative;flex:none;width:18px;height:18px;border-radius:50%}
+/* The glyph is drawn as an SVG mask, so it sits exactly in the centre (a text ✕ rides on its baseline). */
+.mk.bad::after,.mk.ok::after{content:"";position:absolute;inset:0;background:var(--surf);-webkit-mask:var(--g) center/100% 100% no-repeat;mask:var(--g) center/100% 100% no-repeat}
+.mk.bad{background:var(--bad-f);--g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.5 3.5l5 5M8.5 3.5l-5 5' stroke='black' stroke-width='1.8' stroke-linecap='round' fill='none'/%3E%3C/svg%3E")}.mk.ok{background:var(--ok-f);--g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6.2l2 2 4-4.4' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E")}.mk.mute{box-shadow:inset 0 0 0 1.5px var(--q)}.mk.none{background:var(--pg)}
 .grp.passed li button{color:var(--ink-2)}
 .detail{align-self:start;position:sticky;top:20px;background:var(--surf);border-radius:20px;box-shadow:var(--shadow);padding:28px 30px 30px;min-height:220px}
 .detail h2{display:flex;align-items:flex-start;gap:12px;font-size:clamp(24px,2.6vw,30px);line-height:1.2;margin:0}

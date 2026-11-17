@@ -34,6 +34,7 @@ The colours here are the same ones the app uses (`main@285e8f6`). Every text col
 
 - **Changing a token:** edit `tokens.json`, then run `python3 scripts/sync_tokens.py` to rewrite `tokens.css` (`--check` fails if they differ, for CI). Update the matching variable in `Vellum-Lumen.html`, and keep the usage note's contrast figures true.
 - **Changing a component's props or a token's usage:** edit `components/index.d.ts` or `tokens.json`, then run `python3 scripts/build_api.py` to regenerate `api/` (`--check` for CI).
+- **Adding or changing a component preview:** run `python3 scripts/build_gallery.py` to rebuild the gallery in `index.html` (`--check` for CI).
 
 ---
 
@@ -135,7 +136,12 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 - Floating chrome is `chrome` + `shadow-chrome` + `backdrop-filter: blur(22–30px) saturate(1.3–1.4)`. Surfaces you read or type into (composer, draft bar, Task Island) are near-opaque (90–95%) with a light blur and an inner top highlight, so text stays crisp. When reduced transparency is on, all chrome falls back to solid `card`.
 - No borders on cards. Separation comes from hairline rings in the shadow (`.5px`) and from `hair` / `hair-2`.
 - **Space, not rules.** Inside sheets, popovers and lists, separate groups with spacing and a small heading, never divider lines between rows or sections. A hairline appears in only one place: at a scroll edge, while content is actually scrolling beneath the head or the composer. Rows get a `hover` fill instead of a rule. Metadata on one line is joined with middle dots (`Synthesis · v1 · by Scout · Nov 17, 11:22 AM`), never with vertical bars.
-- **Controls appear when they can act.** A Send button with nothing to send is hidden, not drawn as an empty outline. Buttons are fill only; outlines are for focus.
+- **Controls appear when they can act.** A Send button with nothing to send is hidden, not drawn as an empty outline.
+- **Light, not lines.** Vellum should feel weightless: flat, but lit. Shape comes from **fill**, **elevation** and **light**, never from outlines:
+  - **Fill:** buttons, pills, tags, chips, inputs and alerts are tinted fills with no ring. A danger button is a 14% red tint with `danger-ink` text, nothing more.
+  - **Elevation:** floating things (cards, sheets, menus) separate by a soft shadow.
+  - **Light:** glass chrome gets a 1px inner top highlight (a sheen) instead of an edge, and the lineage glow fades out rather than stopping at a box.
+  - **Outlines are allowed in four places only, kept as quiet as possible:** the keyboard focus ring; a control that holds state and would otherwise vanish (an unchecked checkbox, a radio ring, at 3:1); a group's frame on the canvas; and the edge of a colour swatch, so a white swatch shows on white.
 
 ### Motion
 - Durations: `duration-press` 90ms, `duration-quick` 150ms (hover and colour), `duration-base` 240ms, `duration-spring` 410ms, `duration-slow` 600ms. Easing: `easing-standard` `cubic-bezier(.22,.8,.24,1)`.
@@ -177,3 +183,16 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 | `CrewBar` | Crew seats, crew settings button and model pill. |
 | `CrewSettings` | How much the crew may say and do, and locked lanes. |
 | `CardMenu` | A card's right-click menu: ask, open, lock, duplicate, hide, archive, delete. |
+| `Sheet` | The Margin: a card opened to read and write in full, with `SheetSection`, `SourceRow` and `EvidenceBlocks`. |
+| `Overview` | The minimap: zoom, stage schematic and stage tabs. |
+| `Wire` · `Port` | How cards connect, and the handles to connect them. |
+| `StageHeader` | The big stage name above each bay, with its lane lock. |
+| `SelectionStrip` | Actions for the selected card, floating above it. |
+| `CrewCursor` | Where a crew member is working, and what it is doing. |
+| `CommandMenu` | What the composer offers after `/` or `@`. |
+| `Dialog` | A question that needs an answer before you go on. Use rarely. |
+| `Segmented` · `Tabs` | Choose one of 2–4 options · switch views of one thing. |
+| `TextField` · `Checkbox` · `Switch` | Filled input well · tick off an item · a setting that applies at once. |
+| `Tooltip` · `Kbd` · `Tag` | Label plus shortcut · a key · a small filled label. |
+| `Progress` · `ProgressRing` · `Skeleton` | Work with a known end · compact progress · content on its way. |
+| `EmptyState` · `InlineAlert` | What goes here and what to do next · a message tied to one place. |

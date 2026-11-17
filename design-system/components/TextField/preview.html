@@ -1,0 +1,13 @@
+<!-- @dsCard group="Controls" height=330 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||"light"</script><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="../bundle.js"></script><style>body{margin:0;background:var(--canvas)}#root{padding:20px}.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}.col{display:grid;gap:14px;justify-items:start}</style><style>.stage{position:relative}.demo-card{position:absolute;width:150px;height:64px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-card);font:600 13px/1.3 var(--font-ui);color:var(--label);padding:12px 14px}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var V = window.Vellum, h = React.createElement;
+function go(el){ ReactDOM.createRoot(document.getElementById("root")).render(h(V.Root, null, el)); }
+go(h('div',{className:'col',style:{width:360}},h(V.TextField,{label:'Board name',value:'Ashen Crown · Faction HUD'}),h(V.TextField,{label:'Model endpoint',placeholder:'https://api.example.com/v1',help:'Only this browser stores it.'}),h(V.TextField,{label:'API key',value:'sk-…',error:'That key was refused. Check it and try again.'}),h(V.TextField,{label:'Note',multiline:true,optional:true,placeholder:'Anything the crew should know'})));
+</script>
+</body>
+</html>

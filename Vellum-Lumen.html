@@ -8534,8 +8534,11 @@ h1,h2{margin:0;font-weight:640;letter-spacing:-.025em;text-wrap:balance}
 .mk.bad{background:var(--bad-f)}.mk.bad::after{content:"✕"}.mk.ok{background:var(--ok-f)}.mk.ok::after{content:"✓"}.mk.mute{box-shadow:inset 0 0 0 1.5px var(--q)}.mk.none{background:var(--pg)}
 .grp.passed li button{color:var(--ink-2)}
 .detail{align-self:start;position:sticky;top:20px;background:var(--surf);border-radius:20px;box-shadow:var(--shadow);padding:28px 30px 30px;min-height:220px}
-.detail h2{font-size:clamp(24px,2.6vw,30px);line-height:1.15;margin:14px 0 0}
-.detail p{color:var(--ink-2);font-size:17px;line-height:1.6;margin:12px 0 0;max-width:56ch}
+.detail h2{display:flex;align-items:flex-start;gap:12px;font-size:clamp(24px,2.6vw,30px);line-height:1.2;margin:0}
+.detail h2 .mk{width:24px;height:24px;font-size:12px;margin-top:.2em}
+.detail h2 .mk.mute{box-shadow:inset 0 0 0 2px var(--q)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.detail p{color:var(--ink-2);font-size:17px;line-height:1.6;margin:12px 0 0 36px;max-width:56ch}
 .foot{display:flex;align-items:center;gap:16px;max-width:1040px;margin:0 auto;padding:30px 32px 40px}
 /* story: a guided tour */
 .story{max-width:680px;margin:0 auto;padding:30px 32px 40px}
@@ -8596,7 +8599,7 @@ else{let cur=0,q="";const ORDER=[["bad","Needs a fix"],["mute","Waiting"],["","O
   const single=groups.length===1;
   $("ul").innerHTML=groups.map(([label,k,rows])=>'<div class="grp '+(k==="ok"?"passed":"")+'">'+(single?"":'<h3>'+label+'</h3>')+'<ul>'+rows.map(([it,i])=>'<li><button data-k="'+i+'" aria-current="'+(i===cur)+'"><span class="mk '+(k||"none")+'" aria-hidden="true"></span><span class="t">'+E(it.title)+'</span></button></li>').join("")+'</ul></div>').join("")||'<p class="msg" style="padding:0 12px">Nothing matches.</p>';
   $("ul").querySelectorAll("button").forEach(b=>b.onclick=()=>{cur=+b.dataset.k;list();detail()})}
- function detail(){const it=D.items[cur];if(!it){$("detail").innerHTML="";return}$("detail").innerHTML=ST(it.tag)+'<h2>'+E(it.title)+'</h2><p>'+E(it.body)+'</p>'}
+ function detail(){const it=D.items[cur];if(!it){$("detail").innerHTML="";return}const k=tc(it.tag||"")||"none";$("detail").innerHTML='<h2><span class="mk '+k+'" aria-hidden="true"></span><span>'+(it.tag?'<span class="sr">'+E(it.tag)+': </span>':"")+E(it.title)+'</span></h2><p>'+E(it.body)+'</p>'}
  if($("q"))$("q").oninput=e=>{q=e.target.value.toLowerCase();list()};
  $("cta").onclick=()=>{const bad=D.items.filter(i=>/fail/i.test(i.tag||""));if(bad.length){$("msg").textContent="Retrying "+bad.map(b=>b.title.toLowerCase()).join(", ")+"…";$("cta").disabled=true;
   setTimeout(()=>{D.items.forEach(i=>{if(/fail|wait/i.test(i.tag||""))i.tag="Written"});$("msg").textContent="Done. Every change is written.";$("cta").disabled=false;verdict();list();detail()},1400)}else $("msg").textContent="Noted."};

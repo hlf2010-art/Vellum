@@ -83,7 +83,7 @@
 .vl-scale{flex:1;display:flex;height:6px;border-radius:var(--radius-pill);overflow:hidden;gap:2.5px;background:var(--hover)}
 /* Evidence blocks are marks, not text: they use the *-fill tokens (3:1+), one block per source up to 16. */
 .vl-scale.is-count{background:none;overflow:visible;gap:3px}
-.vl-scale.is-count i{flex:1;max-width:44px}
+.vl-scale.is-count i{flex:1}
 .vl-scale i{display:block;border-radius:var(--radius-pill);background:var(--C-fill)}
 .vl-scale i.r{background:var(--A-fill)}
 .vl-scale i.n{background:var(--press)}
@@ -688,7 +688,7 @@
 .vl-pc-test b{font-weight:600;color:var(--label)}
 .vl-pc-res{margin-top:12px;padding:10px 12px;border-radius:var(--radius-md);background:var(--card-2)}
 .vl-pc-blocks{display:flex;gap:3px;margin-bottom:8px}
-.vl-pc-blocks i{flex:1;max-width:44px;height:6px;border-radius:var(--radius-pill)}
+.vl-pc-blocks i{flex:1;height:6px;border-radius:var(--radius-pill)}
 .vl-pc-blocks i.is-ok{background:var(--ok-fill)}
 .vl-pc-blocks i.is-bad{background:var(--danger)}
 .vl-pc-blocks i.is-wait{background:var(--press)}

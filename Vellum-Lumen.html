@@ -735,7 +735,7 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-now-issue.err{color:color-mix(in srgb,var(--D) 88%,var(--label))}
 .sp-now.warn i{background:var(--warn,#d97706)}
 .sp-now.err i{background:var(--D)}
-.sp-services.idle .sp-svc{opacity:.5}
+.sp-services.idle .sp-svc-main,.sp-services.idle .sp-models,.sp-services.idle .sp-prog{opacity:.5}
 .sp-services.idle .sp-state{color:var(--label-3)}
 .sp-services.idle .sp-state i{background:var(--label-4)}
 .sp-group{display:grid;gap:2px}
@@ -3513,7 +3513,7 @@ const ACT_DESC={drafts:["Anything it makes arrives as a draft for you to keep or
 let crewPopOpen=false;
 function crewQuietReason(){
   if(crewSpeak==="never")return {k:"never",tip:L("Speaks only when you ask","只在你要求时发言")};
-  const live=aiPref!=="local"&&(studioState.status==="ready"||hasApi()||!!sampleFn);
+  const live=aiPref!=="local"&&(studioState.status==="ready"||apiRoutable()||!!sampleFn);
   if(!live)return {k:"nomodel",tip:aiPref==="local"?L("Built-in rules only: no unasked thoughts","只用内置规则：没有主动建议"):L("No model connected: no unasked thoughts","未连接模型：没有主动建议")};
   if((SPEAK_UNREAD[crewSpeak]||0)>0&&unreadPins()>=SPEAK_UNREAD[crewSpeak])return {k:"pacing",tip:L("Waiting for you to read the last thought","等你读完上一条建议")};
   if(!advLeft())return {k:"ceiling",tip:L("Resting until the hour is up","本小时已达上限，稍后继续")};
@@ -5579,6 +5579,16 @@ const API_BAD=new Set(["auth","notfound","unreachable","error"]);
 const apiHostOf=u=>{try{return new URL(u).host}catch{return String(u||"").replace(/^https?:\/\//,"").split("/")[0]||"server"}};
 function apiHealthNow(){return apiHealth.sig===apiCfgSig()?apiHealth:{k:"unknown",sig:"",at:0,ms:null,detail:""}}
 const apiBad=()=>hasApi()&&API_BAD.has(apiHealthNow().k);
+/* Routing and display share this: skip the Cloud API only when it is known to be broken.
+   A rejected key or missing model waits for new settings or a passing re-check;
+   an unreachable host is retried after a minute. */
+function apiRoutable(){
+  if(!hasApi())return false;
+  const h=apiHealthNow();
+  if(h.k==="auth"||h.k==="notfound")return false;
+  if(h.k==="unreachable"&&Date.now()-h.at<60000)return false;
+  return true;
+}
 function classifyApiStatus(status){
   if(status>=200&&status<300)return "ok";
   if(status===401||status===403)return "auth";
@@ -5632,8 +5642,8 @@ function apiHealthLabel(h=apiHealthNow()){
 /* What actually answers the crew right now — mirrors viaClaude's routing — plus anything wrong underneath. */
 function connSummary(){
   const ready=studioState.status==="ready",starting=studioState.status==="loading";
-  const h=apiHealthNow(),apiOk=hasApi()&&!API_BAD.has(h.k);
-  const engine=aiPref==="local"?"rules":aiPref==="auto"&&ready?"local":apiOk?"api":sampleFn?"claude":"rules";
+  const h=apiHealthNow();
+  const engine=aiPref==="local"?"rules":aiPref==="auto"&&ready?"local":apiRoutable()?"api":sampleFn?"claude":"rules";
   const name={local:L("Local AI","本地模型"),api:L("Cloud API","云端 API"),claude:"Claude",rules:L("built-in rules","内置规则")}[engine];
   const model=engine==="local"?(studioState.model||"").split("/").pop():engine==="api"?(apiCfg.model||"").split("/").pop():"";
   let issue="",tone="";
@@ -5642,8 +5652,9 @@ function connSummary(){
   else if(aiPref==="api"&&!hasApi()){issue=L("Cloud API not configured","云端 API 未配置");tone="warn"}
   else if(aiPref==="auto"&&starting){issue=L("Local AI starting…","本地模型启动中…");tone="busy"}
   else if(engine==="api"&&h.k==="checking"){issue=L("Checking Cloud API…","正在检测云端 API…");tone="busy"}
+  else if(engine==="api"&&h.k==="ratelimit"){issue=L("Cloud API rate limited","云端 API 被限流");tone="warn"}
   else if(engine==="rules"){issue=L("No model connected","未连接模型");tone="warn"}
-  const dot=tone==="err"?"err":tone==="warn"?"warn":engine==="rules"?"warn":tone==="busy"?"busy":"ok";
+  const dot=engine==="rules"?"warn":"ok"; // the dot describes the mode; the issue line carries its own color
   return {engine,dot,mode:L(`Using ${name}`,`正在使用${name}`)+(model?` · ${model}`:""),issue,tone};
 }
 function uiLang(){return store.get(".lang","en")==="zh"?"zh":"en"}
@@ -5654,12 +5665,13 @@ function aiSource(){
     return {live:false,kind:"local",cls:"",label:L("Rules only","仅规则"),title:L("Using built-in rules","正在使用内置规则")};
   }
   if(aiPref==="api"){
-    if(hasApi())return {live:true,kind:"api",cls:"claude",label:apiCfg.model.split("/").pop()||"Cloud API",title:`Cloud API (${apiCfg.model})`};
+    if(apiRoutable())return {live:true,kind:"api",cls:"claude",label:apiCfg.model.split("/").pop()||"Cloud API",title:`Cloud API (${apiCfg.model})`};
+    if(hasApi())return {live:false,kind:"local",cls:"",label:L("API error","API 出错"),title:L("Cloud API isn't working — using built-in rules","云端 API 不可用 — 正在使用内置规则")};
     return {live:false,kind:"local",cls:"",label:L("API unset","API 未配置"),title:L("Cloud API selected — click to add API key","已选择云端 API — 请先配置密钥")};
   }
   if(studioState.status==="ready")return {live:true,kind:"studio",cls:"live",label:L("Local AI","本地模型"),title:L(`Local AI (${studioState.model||"Qwen3-VL"})`,`本地模型 (${studioState.model||"Qwen3-VL"})`)};
   if(studioState.status==="loading")return {live:false,busy:true,kind:"loading",cls:"busy",label:L("Starting AI…","启动中…"),title:L("Local AI is warming up on 127.0.0.1:59631","本地模型正在预热 (127.0.0.1:59631)")};
-  if(hasApi())return {live:true,kind:"api",cls:"claude",label:apiCfg.model.split("/").pop()||"Cloud API",title:`Cloud API (${apiCfg.model})`};
+  if(apiRoutable())return {live:true,kind:"api",cls:"claude",label:apiCfg.model.split("/").pop()||"Cloud API",title:`Cloud API (${apiCfg.model})`};
   if(sampleFn)return {live:true,kind:"claude",cls:"claude",label:"Claude",title:"Claude"};
   return {live:false,kind:"local",cls:"",label:L("Offline","离线"),title:L("Offline · using built-in rules (click to wake Local AI or set Cloud API)","离线 · 使用内置规则（点击唤醒本地模型或配置云端 API）")};
 }
@@ -5881,11 +5893,14 @@ function renderStudioPop(){
     return `<div class="sp-m-wrap" data-active="${!!m.available}"><div class="sp-m" aria-pressed="${!!m.available}" title="${esc(m.reason||m.name||m.id)}" style="cursor:default"><span class="sp-m-info"><b>${esc(cleanName)}</b><span>${specTxt}</span></span><span class="sp-m-tag">${tag}</span></div></div>`;
   }).join("")}</div>`:"";
   /* Media Studio: separate from routing */
-  const imCase=imgChecking&&(manual||!imgSvc.checked)?"checking":mediaUp?"ok":(imgSvc.connected&&!svcStopped)?"starting":"off";
+  const imStarting=imgSvc.connected&&!svcStopped&&/start|load|warm/i.test(imgSvc.serviceStatus||"");
+  const imReason=[...(imgSvc.models||[]),...allVids].map(m=>m.reason).find(Boolean)||"";
+  const imCase=imgChecking&&(manual||!imgSvc.checked)?"checking":mediaUp?"ok":imStarting?"starting":"off";
   const imState={checking:st("busy",L("Checking…","检测中…")),ok:st("ok",L("Connected","已连接")),starting:st("busy",L("Starting…","启动中…")),off:st("",L("Not running","未运行"))}[imCase];
   const imDetail=(mediaUp||imCase==="checking")?L("Runs on your Windows PC","在 Windows 电脑上运行")
     :imCase==="starting"?L("Waiting for the models","等待模型就绪")
-    :svcStopped?L("Stopped · start it on your Windows PC","已停止 · 请在 Windows 电脑上启动"):L("Start it on your Windows PC","请在 Windows 电脑上启动");
+    :svcStopped?L("Stopped · start it on your Windows PC","已停止 · 请在 Windows 电脑上启动")
+    :imgSvc.connected?(imReason||L("Connected, but no models are available","已连接，但没有可用模型")):L("Start it on your Windows PC","请在 Windows 电脑上启动");
   const imAct=(imgSvc.connected&&!svcStopped)?btn("stop-svc",L("Stop","停止"),{tip:L("Stop Windows ComfyUI (image & video) and free VRAM","停止 Windows ComfyUI（同时停止出图和出视频）并释放显存")}):"";
   const idle=aiPref==="local";
   pop.innerHTML=`<div class="sp-head">
@@ -5901,7 +5916,7 @@ function renderStudioPop(){
       <div class="sp-mode-note">${esc(modeNote)}</div>
     </div>
     <div class="sp-services${idle?" idle":""}">
-      ${models.length||!stReady?row({name:L("Local AI","本地模型"),state:stState,detail:stDetail,acts:stAct,extra:modelsHtml+progHtml}):""}
+      ${row({name:L("Local AI","本地模型"),state:stState,detail:stDetail,acts:stAct,extra:modelsHtml+progHtml})}
       ${row({name:L("Cloud API","云端 API"),state:apiState,detail:apiDetail,acts:apiAct})}
     </div>
     <div class="sp-group">
@@ -5929,7 +5944,7 @@ async function refreshStudioFromPop({wake=true}={}){
   if(studioChecking)return;
   studioChecking=true;imgChecking=true;
   if(studioPopOpen)renderStudioPop();
-  await Promise.allSettled([checkStudioHealth({wake,quiet:true}),refreshImageService({quiet:true}),wake&&hasApi()?testApi():null]);
+  await Promise.allSettled([checkStudioHealth({wake,quiet:true}),refreshImageService({quiet:true}),(wake||connManualCheck)&&hasApi()?testApi():null]);
   studioChecking=false;imgChecking=false;
   renderCrew();
 }
@@ -6575,7 +6590,7 @@ function isVisualNode(n){return !!n&&(n.type==="image"||n.type==="frame"||n.type
 function advisorLiveReady(n){
   const hasImg=isVisualNode(n);
   if(aiPref==="local")return false;
-  if(hasApi())return true;
+  if(apiRoutable())return true;
   if(studioState.status==="ready"&&(!hasImg||studioState.vision!==false))return true;
   return !!sampleFn&&!hasImg;
 }
@@ -6794,8 +6809,11 @@ async function checkStudioHealth({wake=false,quiet=true}={}){
     if(!r.ok)throw new Error("HTTP "+r.status);
     const d=await r.json();
     studioState={reachable:true,status:d.status||"loading",model:d.model||"",modelId:d.modelId||"",vision:d.vision!==false,progress:d.progress||"",error:d.error||"",models:Array.isArray(d.models)?d.models:[],latency:Math.max(1,Math.round(nowMs()-t0)),checked:NOW()};
-    if(wake&&studioState.status!=="ready"){
-      fetch(`${STUDIO_URL}/studio/start`,{method:"POST",headers:{"X-Studio-Client":"canvas"},signal:timeoutSignal(3000)}).catch(()=>{});
+    if(wake&&studioState.status!=="ready"&&studioState.status!=="loading"){
+      try{
+        const s=await fetch(`${STUDIO_URL}/studio/start`,{method:"POST",headers:{"X-Studio-Client":"canvas"},signal:timeoutSignal(3000)});
+        if(s.ok)studioState={...studioState,status:"loading",error:""};
+      }catch{}
     }
   }catch{
     studioState={reachable:false,status:"offline",model:"",modelId:"",vision:true,progress:"",error:"",models:[],latency:null,checked:NOW()};
@@ -7040,7 +7058,7 @@ async function viaClaude(remote,local,opts={}){
     try{const v=await opts.studio();if(v!=null)return {v,live:true,engine:"studio"}}
     catch(e){if(e?.name==="AbortError")throw e}
   }
-  if(aiPref!=="local"&&hasApi()&&opts.studio){
+  if(aiPref!=="local"&&apiRoutable()&&opts.studio){
     try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null)return {v,live:true,engine:"api"}}
     catch(e){if(e?.name==="AbortError")throw e}
   }
@@ -7172,12 +7190,12 @@ async function vellumPlComplete({messages,maxTokens=2200,signal,timeoutMs=180000
     if(targetId&&d?.text)paintPlLiveStream(targetId,d.text);
     onText?.(d);
   };
-  if(!isLocalPlEngine()&&!hasApi())await ensureLocalPlReady();
+  if(!isLocalPlEngine()&&!apiRoutable())await ensureLocalPlReady();
   if(isLocalPlEngine()){
     try{const out=await studioChat({messages,maxTokens,timeoutMs,onText:streamText,signal});if(out&&String(out).trim())return String(out)}
-    catch(e){if(e?.name==="AbortError"||signal?.aborted)throw e;if(!hasApi())throw e}
+    catch(e){if(e?.name==="AbortError"||signal?.aborted)throw e;if(!apiRoutable())throw e}
   }
-  if(aiPref!=="local"&&hasApi()){
+  if(aiPref!=="local"&&apiRoutable()){
     const out=await apiChat({messages,maxTokens,timeoutMs,onText:streamText,signal});
     if(out&&String(out).trim())return String(out);
   }
@@ -7226,7 +7244,7 @@ async function reverseCompactFallback(dataUrl,signal,ratioHint="",nodeId=activeP
     if(nodeId&&d?.text)paintPlLiveStream(nodeId,d.text);
   };
   if(isLocalPlEngine())raw=await studioChat({system:sys,prompt,images:[dataUrl],json:true,maxTokens:950,timeoutMs:150000,onText:streamText,signal});
-  else if(aiPref!=="local"&&hasApi())raw=await apiChat({system:sys,prompt,images:[dataUrl],json:true,maxTokens:950,timeoutMs:120000,onText:streamText,signal});
+  else if(aiPref!=="local"&&apiRoutable())raw=await apiChat({system:sys,prompt,images:[dataUrl],json:true,maxTokens:950,timeoutMs:120000,onText:streamText,signal});
   const j=typeof raw==="object"?raw:parseAIJson(raw);
   const pos=plCleanField(j?.positive);
   if(!pos)throw new Error("Model returned an empty prompt");
@@ -7351,7 +7369,7 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
   }
   const forceRun=force||isCorruptPlPack(n.plPack,n.plExports);
   if(plBusyNodes.has(n.id)){if(reveal)revealPromptPack(n);toast("Already analyzing this image");return null}
-  if(!isLocalPlEngine()&&!hasApi())await ensureLocalPlReady();
+  if(!isLocalPlEngine()&&!apiRoutable())await ensureLocalPlReady();
   const localMode=isLocalPlEngine();
   const dataUrl=await nodeImageDataURL(n,localMode?896:1280);
   if(!dataUrl){toast("No image data available to analyze");return null}
@@ -7399,7 +7417,7 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
       if((!res||!res.pack?.positive||isCorruptPlPack(res.pack))&&partialPack?.positive){
         res={pack:partialPack,observation:null,obsSummary:"",quality:"partial"};
       }
-      if((!res||!res.pack?.positive||isCorruptPlPack(res.pack))&&!crewState.scout.cancel&&hasApi()){
+      if((!res||!res.pack?.positive||isCorruptPlPack(res.pack))&&!crewState.scout.cancel&&apiRoutable()){
         try{
           if(!prevScout)setAgent("scout",{status:"reverse · compact pass"});
           task.update({phase:L("Compact pass","精简解析")});
@@ -8180,7 +8198,7 @@ async function erase(ids,opts={}){
   await permanentlyDeleteNodes(ns.map(n=>n.id),opts);
   return "deleted";
 }
-const modelExpected=()=>aiPref!=="local"&&(studioState.status==="ready"||hasApi()||!!sampleFn);
+const modelExpected=()=>aiPref!=="local"&&(studioState.status==="ready"||apiRoutable()||!!sampleFn);
 const isStandIn=n=>!!(n?.gen?.preview||n?.src?.placeholder);
 /* Try again's history helpers: the transactions the move itself opened are the ones that touch the nodes it made. */
 const txTouches=(tx,ids)=>!!tx.patch&&(Object.keys(tx.patch.nodes||{}).some(id=>ids.has(id))||Object.values(tx.patch.edges||{}).some(([a,b])=>[a,b].some(e=>e&&(ids.has(e.a)||ids.has(e.b)))));
@@ -11753,7 +11771,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         const full=await studioChat({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
         const parsed=parseCopilotBlocks(full);
         aiMsg.text=isCasual?trimCasual(parsed.text||full):(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
-      }else if(aiPref!=="local"&&hasApi()){
+      }else if(aiPref!=="local"&&apiRoutable()){
         const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
         const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;
         const full=await apiChat({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
@@ -13540,7 +13558,7 @@ $("studioPop")?.addEventListener("change",e=>{if(e.target.id==="advLevelSel")set
 $("studioPop")?.addEventListener("click",async e=>{
   const b=e.target.closest("[data-sp]");if(!b)return;
   const act=b.dataset.sp;
-  if(act==="refresh"||act==="wake"){connManualCheck=act==="refresh";try{await refreshStudioFromPop({wake:true})}finally{connManualCheck=false;renderStudioPop()}return}
+  if(act==="refresh"||act==="wake"){connManualCheck=act==="refresh";try{await refreshStudioFromPop({wake:act==="wake"})}finally{connManualCheck=false;renderStudioPop()}return}
   if(act==="pref"){setAiPref(b.dataset.val);return}
   if(act==="model"){await switchStudioModel(b.dataset.id);return}
   if(act==="del-model"){await deleteStudioModel(b.dataset.id);return}

@@ -271,9 +271,9 @@ async function page(browser, base, { model = true } = {}) {
       await p.evaluate(() => select([])); await p.type('note: quiet please'); await p.waitForTimeout(1200); await p.idle();
       check('Off means no unasked looks', advReqs().length === before);
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);
-      const seg = await p.evaluate(() => [...document.querySelectorAll('[data-sp="adv-level"]')].map(b => b.dataset.level + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(','));
-      check('settings offer Off, Quiet and Active', seg === 'off*,quiet,active', seg);
-      await p.click('[data-sp="adv-level"][data-level="active"]'); await p.waitForTimeout(300);
+      const seg = await p.evaluate(() => { const s = document.getElementById('advLevelSel'); return s ? [...s.options].map(o => o.value + (o.selected ? '*' : '')).join(',') : 'none'; });
+      check('settings offer Off, Quiet and Active in a select', seg === 'off*,quiet,active', seg);
+      await p.selectOption('#advLevelSel', 'active'); await p.waitForTimeout(300);
       check('choosing Active takes effect', await p.evaluate(() => advisorLevel === 'active' && advisorMode === true && advLeft() === 20));
       check('no page errors in the unasked-thoughts flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
@@ -312,11 +312,11 @@ async function page(browser, base, { model = true } = {}) {
       // the dialog
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);
       await p.click('[data-sp="autonomy"]'); await p.waitForTimeout(400);
-      check('the permissions dialog opens', await p.evaluate(() => document.querySelectorAll('dialog[open] [data-au]').length === 12));
-      await p.click('dialog[open] [data-au="delete"][data-v="suggest"]'); await p.waitForTimeout(200);
+      check('the permissions dialog opens with a select per action', await p.evaluate(() => document.querySelectorAll('dialog[open] select[data-au]').length === 4 && document.querySelector('dialog[open] label[for="au-edit"]') !== null));
+      await p.selectOption('dialog[open] #au-delete', 'suggest'); await p.waitForTimeout(200);
       check('choosing in the dialog takes effect and is remembered', await p.evaluate(() => perm('delete') === 'suggest' && store.get('.autonomy', {}).delete === 'suggest'));
       await p.click('dialog[open] [data-au-reset]'); await p.waitForTimeout(200);
-      check('Reset restores the defaults', await p.evaluate(() => JSON.stringify(autonomy) === JSON.stringify(AUTONOMY_DEFAULT)));
+      check('Reset restores the defaults', await p.evaluate(() => JSON.stringify(autonomy) === JSON.stringify(AUTONOMY_DEFAULT) && document.querySelector('dialog[open] #au-edit').value === 'suggest'));
       check('no page errors in the permissions flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }

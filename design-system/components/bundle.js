@@ -593,8 +593,8 @@
     var primary = null;
     if (building) primary = h(Button, { size: 'sm', variant: 'primary', loading: true }, 'Building v' + nextVer);
     else if (old) primary = h(Button, { size: 'sm', onClick: function(){ setAt(latest); } }, 'Back to v' + versions[latest].ver);
-    else if (r && r.failed) primary = h(Button, { size: 'sm', variant: 'primary', icon: 'retry', onClick: p.onFix }, 'Fix ' + r.failed + ' failed');
-    else if (drift) primary = h(Button, { size: 'sm', variant: 'primary', icon: 'retry', onClick: p.onRebuild }, 'Rebuild with ' + drift + ' change' + (drift > 1 ? 's' : ''));
+    else if (r && r.failed) primary = h(Button, { size: 'sm', variant: 'primary', onClick: p.onFix }, 'Fix ' + r.failed + ' failed');
+    else if (drift) primary = h(Button, { size: 'sm', variant: 'primary', onClick: p.onRebuild }, 'Rebuild with ' + drift + ' change' + (drift > 1 ? 's' : ''));
     else if (!r) primary = h(Button, { size: 'sm', variant: 'primary', icon: 'ask', onClick: p.onTest }, 'Ask Critic to test');
     else if (r.waiting) primary = h(Button, { size: 'sm', variant: 'primary', icon: 'ask', onClick: p.onTest }, 'Test ' + r.waiting + ' waiting');
     else primary = h(Button, { size: 'sm', variant: 'primary', icon: 'check', onClick: p.onSnapshot }, 'Snapshot');
@@ -615,7 +615,7 @@
           h('span', { className: 'vl-sp' }),
           versions.length > 1 ? h('span', { className: 'vl-pc-ver', role: 'group', 'aria-label': 'Version' },
             h('button', { type: 'button', 'aria-label': 'Previous version', disabled: at === 0, onClick: function(){ setAt(at - 1); } }, h(Icon, { name: 'chevron' })),
-            h('span', null, 'v' + v.ver, h('small', null, ' of ' + versions[latest].ver)),
+            h('span', null, 'v' + v.ver),
             h('button', { type: 'button', 'aria-label': 'Next version', disabled: at === latest, onClick: function(){ setAt(at + 1); } }, h(Icon, { name: 'chevron' })))
           : h('span', { className: 'vl-pc-ver1' }, 'v' + v.ver)),
         h('h4', null, p.title),

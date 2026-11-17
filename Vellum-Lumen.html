@@ -3684,6 +3684,24 @@ function proposalBarHTML(n){
     return `<div class="prop-bar${pr.op==="delete"?" is-del":""}" data-prop="${esc(pr.id)}"><div class="prop-top"><span class="mk">${a?a.mk:COPILOT_ICO}</span><span class="prop-what">${esc(what)}</span><span class="prop-acts">${pr.op==="edit"?`<button type="button" class="prop-btn" data-prop-act="view">${open?L("Hide","收起"):L("Review","查看")}</button>`:""}<button type="button" class="prop-btn" data-prop-act="reject">${L("Decline","拒绝")}</button><button type="button" class="prop-btn ok" data-prop-act="accept">${pr.stale?L("Accept anyway","仍然接受"):L("Accept","接受")}</button></span></div>${stale}${diff}</div>`;
   }).join("");
 }
+/* Subline provenance: only crew work is marked ("Synthesis by Scout"); your own cards carry no byline.
+   The engine (model, built-in rules, local service) and the source count go in the tooltip. */
+function provAuthor(n){const p=n?.prov,author=p?p.author:n.by;return author&&author!=="you"?(AGENTS[author]?.name||author):null}
+function provBy(n){const w=provAuthor(n);return w?esc(L(` by ${w}`,` · ${w} 生成`)):""}
+function provTitle(n){
+  const w=provAuthor(n);if(!w)return"";const p=n.prov,eng=p&&p.engine&&p.engine!=="human"?ENGINE_LABEL[p.engine]:null,from=(p?.basis||[]).length;
+  let t=L(`Made by ${w}`,`由 ${w} 生成`);if(eng)t+=L(` using ${eng[0]}`,`，使用${eng[1]}`);if(from)t+=L(` from ${from} card${from===1?"":"s"}`,`，基于 ${from} 张卡片`);
+  return ` title="${esc(t)}"`;
+}
+function relDate(t){
+  const s=(Date.now()-t)/1000,d=new Date(t),today=new Date();today.setHours(0,0,0,0);
+  if(s<60)return L("just now","刚刚");
+  if(s<3600){const m=Math.floor(s/60);return L(`${m} min ago`,`${m} 分钟前`)}
+  if(d>=today){const h=Math.floor(s/3600);return L(`${h} h ago`,`${h} 小时前`)}
+  if(d>=today-864e5)return L("Yesterday","昨天");
+  const zh=uiLang()==="zh",same=d.getFullYear()===today.getFullYear();
+  try{return d.toLocaleDateString(zh?"zh-CN":"en-US",{month:zh?"numeric":"short",day:"numeric",year:same?undefined:"numeric"})}catch(e){return fmtDateTime(t)}
+}
 function provSubHTML(n){
   const p=n?.prov,author=p?p.author:n.by,a=author==="you"?null:AGENTS[author];
   const who=a?a.name:(author&&author!=="you"?author:null);
@@ -6091,14 +6109,14 @@ function renderMargin(){queueMicrotask(placeBars);
     const defT=n.type==="note"?(uiLang()==="zh"?"便签":"Sticky"):(uiLang()==="zh"?"记事本":"Notepad");
     subParts.push(`<span class="m-tag-editable" contenteditable="true" data-f="tag" data-ph="${esc(defT)}" title="${esc(uiLang()==="zh"?"点击编辑标签":"Click to edit tag")}" spellcheck="false">${esc(n.tag||"")}</span>`);
   }else if(fmtLbl){
-    subParts.push(`<span>${esc(fmtLbl)}</span>`);
+    subParts.push(`<span${provTitle(n)}>${esc(fmtLbl)}${provBy(n)}</span>`);
   }
   if(n.size)subParts.push(`<span>${esc(fmtFileSize(n.size))}</span>`);
   if(n.gen?.ratio)subParts.push(`<span>${esc(n.gen.ratio==="1:1"?"Square":n.gen.ratio)}</span>`);
   if(n.gen?.model)subParts.push(`<span>${esc(n.gen.model)}</span>`);
-  subParts.push(`<span>v${n.rev}</span>`);
-  subParts.push(`<span class="m-by">${provSubHTML(n)}</span>`);
-  if(n.updated||n.created)subParts.push(`<span>${esc(fmtDateTime(n.updated||n.created))}</span>`);
+  if((n.type==="note"||n.type==="notepad")&&provBy(n))subParts.push(`<span${provTitle(n)}>${provBy(n).trim()}</span>`);
+  if(n.rev>1)subParts.push(`<span title="${esc(L(`Revised ${n.rev-1} time${n.rev>2?"s":""}`,`修改过 ${n.rev-1} 次`))}">v${n.rev}</span>`);
+  if(n.updated||n.created){const t=n.updated||n.created;subParts.push(`<time datetime="${esc(new Date(t).toISOString())}" title="${esc(fmtDateTime(t))}">${esc(relDate(t))}</time>`)}
   if(n.type==="link"&&n.url)subParts.push(`<a href="${esc(safeHref(n.url))}" target="_blank" rel="noopener noreferrer">${esc(n.host||linkHost(n.url)||"Link")}</a>`);
   else if(n.src?.url)subParts.push(`<a href="${esc(n.src.url)}" target="_blank" rel="noopener">${esc(n.src.source||"Source")}</a>`);
   const sublineHTML=`<div class="m-subline">${subParts.join('<span class="m-sub-sep" aria-hidden="true">·</span>')}</div>`;

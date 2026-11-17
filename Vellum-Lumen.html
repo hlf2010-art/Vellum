@@ -1082,6 +1082,11 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 .srcs button{display:flex;align-items:baseline;gap:9px;padding:8px 8px;margin:0 -8px;border-radius:var(--radius-sm);text-align:left;font:550 14px/1.35 var(--ui);color:var(--label);transition:background var(--d-quick)}
 .srcs button:last-child{border-bottom:0}
 .srcs button:hover{color:var(--label);background:var(--hover)}
+/* Source rows: the kind chip sits above the title, left-aligned; an exception pill (if any) sits at the right, centred. */
+.srcs .src-btn{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:5px;align-items:center;width:100%}
+.srcs .src-btn>.src-kind,.srcs .src-btn>.ico{grid-column:1;justify-self:start}
+.srcs .src-btn>.sp{grid-column:1}
+.srcs .src-btn>:last-child:not(.sp):not(.src-kind):not(.ico){grid-column:2;grid-row:1/span 2}
 .srcs button:hover .sp{text-decoration:underline;text-decoration-color:var(--label-4);text-underline-offset:3px}
 .srcs button .src-kind{flex:none;font:600 11px/1 var(--ui);color:var(--label-3);padding:3px 6px;border-radius:var(--radius-xs);background:var(--hover);letter-spacing:.01em}
 .srcs button .sp{flex:1;min-width:0;overflow-wrap:anywhere}

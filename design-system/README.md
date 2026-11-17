@@ -84,7 +84,7 @@ Vellum is a thinking board. Sources, claims and lettered directions sit as cards
 - **Crew inks:** `crew-scout`, `crew-strategist`, `crew-wright`, `crew-critic` are for crew avatars and their tooltip icons only. An idle crew member is unlit (`orb-off`). A working one glows warm (`light` + `bloom`): **light means alive**.
 - **Action:** the single decisive button uses `act`/`on-act`. This is a near-black pill in light and near-white in dark, never a brand blue. `danger` is a 14% tint and turns solid on hover; words on a red tint or on translucent chrome use `danger-ink` (Stop, Delete, struck words in a diff).
 - **Sticky notes** are the one warm paper object: `note-butter` with `note-ink`.
-- **Status:** `ok` (connected, accepted) and `warn` (built-in rules, stale proposal) are mark colours for dots and tints. `danger` marks destructive proposals and actions.
+- **Status:** `ok` (connected, accepted) and `warn` (built-in rules, stale proposal). Like lineage, they have two roles in light: `ok` / `warn` are text-safe inks, and `ok-mark` / `warn-mark` are for fills (a Switch's on-state, status dots, done rings, stale wires). `danger` already works this way, with `danger` for fills and `danger-ink` for words. **Rule of thumb:** if it's a word, use the ink; if it's a shape, use the mark.
 
 ### Type
 - One family: **Inter** (`--font-ui`, served as “Inter Var”, optical sizing on), with **Geist Mono** (“Lumen Mono”, `--font-mono`) for URLs, paths and timecodes only.

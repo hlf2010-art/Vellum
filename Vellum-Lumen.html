@@ -24,7 +24,7 @@
   --hair:rgba(11,12,14,.075); --hair-2:rgba(11,12,14,.13); --thread:rgba(11,12,14,.2); --hover:rgba(11,12,14,.045); --press:rgba(11,12,14,.08);
   --dot:rgba(11,12,14,.1); --chip-ink:#FFFFFF; --ink-mix:92%; --ink-to:#000; --sketch-mix:42%; --sketch-bg:78%; --focus:#3F444E;
   --chrome:rgba(252,252,253,.8); --chrome-hair:rgba(12,13,15,.08); --chrome-ink:#0C0D0F;
-  --act:#0C0D0F; --on-act:#FFFFFF; --danger:#E12F34; --danger-ink:#B02529; --ok:#247A50; --warn:#886600;
+  --act:#0C0D0F; --on-act:#FFFFFF; --danger:#E12F34; --danger-ink:#B02529; --ok:#247A50; --warn:#886600; --ok-mark:#2A9A62; --warn-mark:#AB8209;
   --A:#9F5A00; --B:#2066DB; --C:#0B7B50; --D:#CA2760; --A-mark:#C97200; --B-mark:#2B6FE0; --C-mark:#0E9662; --D-mark:#D93B72;
   --light:#FFFFFF; --bloom:rgba(255,190,110,.5); --bloom-2:rgba(120,170,255,.35);
   --orb-off:#D9DADE; --orb-off-ink:rgba(12,13,15,.55);
@@ -46,7 +46,7 @@
   --hair:rgba(255,255,255,.07); --hair-2:rgba(255,255,255,.12); --thread:rgba(255,255,255,.16); --hover:rgba(255,255,255,.055); --press:rgba(255,255,255,.09);
   --dot:rgba(244,245,247,.085); --chip-ink:#0A0B0D; --ink-mix:86%; --ink-to:#fff; --sketch-mix:70%; --sketch-bg:52%; --focus:#C8CCD4;
   --chrome:rgba(26,27,31,.78); --chrome-hair:rgba(255,255,255,.08); --chrome-ink:#F3F4F6;
-  --act:#F3F4F6; --on-act:#0A0B0D; --danger:#FF6369; --danger-ink:#FF797E; --ok:#30A46C; --print-a:50%; --print-b:56%; --print-c:42%; --print-dim:.92; --print-chip:50%; --warn:#D97706;
+  --act:#F3F4F6; --on-act:#0A0B0D; --danger:#FF6369; --danger-ink:#FF797E; --ok:#30A46C; --print-a:50%; --print-b:56%; --print-c:42%; --print-dim:.92; --print-chip:50%; --warn:#D97706; --ok-mark:var(--ok); --warn-mark:var(--warn);
   --A:#FFB547; --B:#5AA2FF; --C:#45D49A; --D:#FF6B95; --A-mark:var(--A); --B-mark:var(--B); --C-mark:var(--C); --D-mark:var(--D);
   --bloom:rgba(255,236,206,.55); --bloom-2:rgba(140,190,255,.35);
   --orb-off:#2A2B30; --orb-off-ink:rgba(243,244,246,.6);
@@ -60,7 +60,7 @@
   --hair:rgba(255,255,255,.07); --hair-2:rgba(255,255,255,.12); --thread:rgba(255,255,255,.16); --hover:rgba(255,255,255,.055); --press:rgba(255,255,255,.09);
   --dot:rgba(244,245,247,.085); --chip-ink:#0A0B0D; --ink-mix:86%; --ink-to:#fff; --sketch-mix:70%; --sketch-bg:52%; --focus:#C8CCD4;
   --chrome:rgba(26,27,31,.78); --chrome-hair:rgba(255,255,255,.08); --chrome-ink:#F3F4F6;
-  --act:#F3F4F6; --on-act:#0A0B0D; --danger:#FF6369; --danger-ink:#FF797E; --ok:#30A46C; --print-a:50%; --print-b:56%; --print-c:42%; --print-dim:.92; --print-chip:50%; --warn:#D97706;
+  --act:#F3F4F6; --on-act:#0A0B0D; --danger:#FF6369; --danger-ink:#FF797E; --ok:#30A46C; --print-a:50%; --print-b:56%; --print-c:42%; --print-dim:.92; --print-chip:50%; --warn:#D97706; --ok-mark:var(--ok); --warn-mark:var(--warn);
   --A:#FFB547; --B:#5AA2FF; --C:#45D49A; --D:#FF6B95; --A-mark:var(--A); --B-mark:var(--B); --C-mark:var(--C); --D-mark:var(--D);
   --bloom:rgba(255,236,206,.55); --bloom-2:rgba(140,190,255,.35);
   --orb-off:#2A2B30; --orb-off-ink:rgba(243,244,246,.6);
@@ -746,7 +746,7 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .sp-now-issue{grid-column:2;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:450;color:var(--label-3)}
 .sp-now-issue.warn{color:color-mix(in srgb,var(--warn) 88%,var(--label))}
 .sp-now-issue.err{color:color-mix(in srgb,var(--D) 88%,var(--label))}
-.sp-now.warn i{background:var(--warn)}
+.sp-now.warn i{background:var(--warn-mark)}
 .sp-now.err i{background:var(--D)}
 .sp-route+.sp-services{margin-top:-4px}
 .sp-services.idle .sp-svc-main,.sp-services.idle .sp-models,.sp-services.idle .sp-prog{opacity:.5}
@@ -2827,8 +2827,8 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .crew-set .ico{width:17px;height:17px}
 .crew-set:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:2px}
 .crew-set .conn-dot{position:absolute;right:2px;top:2px;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 2px var(--canvas,#0b0c0e);background:var(--label-4,#666)}
-.crew-set .conn-dot.ok{background:var(--ok)}
-.crew-set .conn-dot.rules{background:var(--warn)}
+.crew-set .conn-dot.ok{background:var(--ok-mark)}
+.crew-set .conn-dot.rules{background:var(--warn-mark)}
 .crew-set .conn-dot.error{background:var(--D,#ca2760)}
 /* why the crew is quiet: the avatars say so */
 .crew-group.quiet-pacing .seat .ring{outline:1.5px dashed color-mix(in srgb,var(--label-3) 70%,transparent);outline-offset:1px}

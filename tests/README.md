@@ -36,3 +36,11 @@ When adding or restyling UI:
   pill itself is lighter. Text weight and colour change too (`--seg-on`, `--seg-track`, `--seg-sm-on`).
 - A control that is off must still read as a control: the switch's off state is an outlined track with a grey
   knob (`--sw-off-*`), checked at 3:1 in both themes. Touch screens get a larger hit area, not a larger switch.
+
+## Charts
+
+The table's chart view picks its form from the data: a date/month/quarter/year column makes a line, a
+percentage column that adds up to a whole makes bars ranked largest first, anything else keeps table order with
+the best value emphasised. Mark colours are `--viz-1`, `--viz-good`, `--viz-muted`, chosen per theme and checked
+with the dataviz palette validator (lightness band, chroma, colour-blind separation, contrast). Dark mode uses its
+own, lower-lightness steps; the UI accent colours were too bright for large marks on the dark surface.

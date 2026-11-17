@@ -76,7 +76,7 @@ const LEGIBILITY = scope => {
     if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
     if (el.closest('[aria-hidden="true"]')) return; // decorative (e.g. footer separators)
     const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
-    const cs = getComputedStyle(el), bg = bgOf(el), fg = parse(cs.color), px = parseFloat(cs.fontSize);
+    const cs = getComputedStyle(el), bg = bgOf(el), fg = parse(el instanceof SVGElement ? cs.fill : cs.color), px = parseFloat(cs.fontSize);
     const need = px >= 24 || (parseInt(cs.fontWeight) >= 700 && px >= 18.66) ? 3 : 4.5;
     const v = ratio(over([fg[0], fg[1], fg[2], fg[3] * opa(el)], bg), bg);
     if (v < need) out.push(`${v.toFixed(2)} "${el.textContent.trim().slice(0, 30)}"`);
@@ -477,6 +477,13 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.evaluate(() => { const d = document.createElement('div'); d.id = 'tblProbe'; d.style.cssText = 'position:fixed;left:20px;top:20px;width:360px;padding:14px;z-index:99999;background:var(--card)';
         d.innerHTML = `<div class="cp-bubble">${mdBlocksHtml('| Option | Cost | Risk | Impact |\n|---|---|---|---|\n| Rebuild | $120k | High | Medium |\n| Patch | $30k | Low | High |').join('')}</div><table class="tbl"><thead><tr><th>Factor</th><th>A</th></tr></thead><tbody><tr><td class="key">Risk</td><td class="win">Low</td></tr></tbody></table>`; document.body.append(d); });
       bad.push(...(await p.evaluate(LEGIBILITY, '#tblProbe')).map(x => `table: ${x}`));
+      await p.evaluate(() => { const d = document.getElementById('tblProbe'); d.innerHTML = mdBlocksHtml('| Month | Signups |\n|---|---|\n| Jan | 1,240 |\n| Feb | 1,410 |\n| Mar | 1,720 |').join(''); d.querySelector('[data-tbl-view="chart"]').click(); });
+      bad.push(...(await p.evaluate(LEGIBILITY, '#tblProbe')).map(x => `chart: ${x}`));
+      const viz = await p.evaluate(() => { const cs = getComputedStyle(document.documentElement), hex = v => { const n = parseInt(cs.getPropertyValue(v).trim().slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+        const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
+        const r = (a, b) => { const x = lum(a), y = lum(b); return +((Math.max(x, y) + .05) / (Math.min(x, y) + .05)).toFixed(2); };
+        return ['--viz-1', '--viz-good', '--viz-muted'].map(k => r(hex(k), hex('--card'))); });
+      check(`chart marks stand out from the surface in ${theme} mode (at least 3:1)`, viz.every(v => v >= 3), JSON.stringify(viz));
       await p.evaluate(() => document.getElementById('tblProbe').remove());
       if (theme === 'light') {
         const tb = await p.evaluate(() => {
@@ -506,6 +513,10 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         const pin = await p.evaluate(() => { board.copilot = board.copilot || []; board.copilot.push({ id: 'mP', role: 'ai', text: '', visuals: [{ kind: 'compare', title: 'Rebuild vs Patch', left: 'Rebuild', right: 'Patch', rows: [{ dim: 'Cost', a: '$120k', b: '$38k', winner: 'right' }] }] });
           pinCopilotVisualToBoard('mP', 0); const n = board.nodes.at(-1); return { type: n.type, cols: n.data.columns.map(c => c.name).join('|'), row: n.data.rows[0].join('/') }; });
         check('pinning a Copilot comparison keeps it as a table, with who is better as a column', pin.type === 'table' && pin.cols === 'Factor|Rebuild|Patch|Better' && pin.row === 'Cost/$120k/$38k/Patch', JSON.stringify(pin));
+        const forms = await p.evaluate(() => { const run = md => { const d = document.createElement('div'); d.innerHTML = mdBlocksHtml(md).join(''); document.body.append(d); d.querySelector('[data-tbl-view="chart"]').click(); const r = { line: !!d.querySelector('.tbl-line svg'), labels: [...d.querySelectorAll('.tbl-ch-lbl')].map(x => x.textContent).join('>'), sortedYears: '' }; d.remove(); return r; };
+          const m = tableModel({ columns: [{ name: 'Year' }, { name: 'Users' }], rows: [['2021', '10'], ['2022', '30']] });
+          return { time: run('| Month | Signups |\n|---|---|\n| Jan | 1 |\n| Feb | 2 |'), share: run('| Channel | Share |\n|---|---|\n| A | 20% |\n| B | 80% |'), bars: run('| Option | Cost |\n|---|---|\n| A | $3 |\n| B | $1 |'), yearIsTime: !!m.time[0] && !m.cols[0] }; });
+        check('charts follow the data: months make a line, shares rank largest first, others keep table order; a year column is time, not a quantity', forms.time.line && !forms.share.line && forms.share.labels === 'B>A' && forms.bars.labels === 'A>B' && forms.yearIsTime, JSON.stringify(forms));
         check('table rows: click selects one, Cmd adds, Shift selects a range, and the selection bar appears', sel.one === 'A' && sel.two === 'A,C' && sel.range === 'A,B,C' && sel.single === 'B' && sel.bar === false, JSON.stringify(sel));
         check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
       }

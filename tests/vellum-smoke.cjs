@@ -538,6 +538,24 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
           return { small, wide, wideZoomed, refit };
         });
         check('table cards fit their table (no sideways scroll), stop at 960px and scroll beyond, measure the same at any zoom, and refit on reset', !fit.small.scrolls && fit.small.gw < 960 && fit.wide.gw === 960 && fit.wide.scrolls && fit.wideZoomed.gw === 960 && fit.refit, JSON.stringify(fit));
+        const ed = await p.evaluate(async () => {
+          const ds = { columns: [{ name: 'Option' }, { name: 'Cost' }], rows: [['Rebuild', '$120k'], ['Patch', '$38k'], ['Vendor', '$72k']] };
+          const n = node('table', { title: 'E', data: { v: 1, ...ds, source: { kind: 'copilot' } }, gw: tblCardWidth(ds), tblSort: { col: 1, dir: 'ascending' } }, { x: 0, y: 0 }); renderAll(); focusNodes([n], 1, 0);
+          await new Promise(r => setTimeout(r, 400));
+          const card = () => document.querySelector(`.card[data-id="${n.id}"]`), key = (k, o = {}) => document.querySelector('.tbl-edit').dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, ...o }));
+          const top0 = card().querySelector('table').getBoundingClientRect().top; card().querySelector('tbody tr td:nth-child(2)').click(); const moved = Math.abs(card().querySelector('table').getBoundingClientRect().top - top0);
+          tblOpenEditor(n, 1, 0, false); document.querySelector('.tbl-edit').value = 'Patch it'; key('Tab'); const tabbed = document.querySelector('.tbl-edit')?.closest('td')?.cellIndex === 1;
+          document.querySelector('.tbl-edit').value = '$30k'; key('Enter');
+          tblOpenEditor(n, -1, 1, true); document.querySelector('.tbl-edit').value = 'Total cost'; key('Enter');
+          tblOpenEditor(n, 0, 0, false); document.querySelector('.tbl-edit').value = 'nope'; key('Escape');
+          card().querySelector('[data-tbl-addrow]').click(); document.querySelector('.tbl-edit').value = 'Do nothing'; key('Enter');
+          const order = [...card().querySelectorAll('tbody tr')].map(r => tblText(r.cells[0])).join('>');
+          const r = { moved, tabbed, row1: n.data.rows[1].join('/'), header: n.data.columns[1].name, row0: n.data.rows[0][0], rows: n.data.rows.length, order, edited: !!n.data.source.edited, best: tblText(card().querySelector('td.best') || document.body).slice(0, 5) };
+          undo(); undo(); r.undone = byId(n.id).data.rows.length; // undo replaces the node object const cp = document.createElement('div'); cp.innerHTML = mdBlocksHtml('| A | B |\n|---|---|\n| x | 1 |\n| y | 2 |').join(''); r.replyEditable = !!cp.querySelector('[data-editable],[data-tbl-addrow]');
+          board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll(); return r;
+        });
+        check('table cards edit in place: selecting does not move the table; Tab moves on; Enter commits, Esc cancels; headers rename; added rows sort last when empty; types re-infer; marked edited; undoable; reply tables stay read-only',
+          ed.moved < 1 && ed.tabbed && ed.row1 === 'Patch it/$30k' && ed.header === 'Total cost' && ed.row0 === 'Rebuild' && ed.rows === 4 && ed.order === 'Patch it>Vendor>Rebuild>Do nothing' && ed.edited && ed.best === '$30k' && ed.undone === 3 && !ed.replyEditable, JSON.stringify(ed));
         check('table rows: click selects one, Cmd adds, Shift selects a range, and the selection bar appears', sel.one === 'A' && sel.two === 'A,C' && sel.range === 'A,B,C' && sel.single === 'B' && sel.bar === false, JSON.stringify(sel));
         check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
       }

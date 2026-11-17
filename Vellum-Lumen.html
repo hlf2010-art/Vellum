@@ -1266,10 +1266,16 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .card .tbl thead th{position:sticky;top:0;z-index:2}.card .tbl thead th:first-child{z-index:3}
 .cp-bubble .tbl-block{margin:8px 0 10px}.cp-bubble .tbl-block .tbl-wrap{margin:0}
 .tbl-tools{display:flex;align-items:center;gap:6px;min-height:26px;margin:0 0 6px}
+.tbl-selcount{white-space:nowrap}
 .tbl-tool{width:24px;height:24px;display:grid;place-items:center;border-radius:6px;color:var(--label-3)}
 .tbl-tool:hover{background:var(--hover);color:var(--label)}.tbl-tool .ico{width:13px;height:13px}
 .tbl-tool:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
 .tbl-block .tbl th:first-child,.tbl-block .tbl td:first-child{padding-left:34px}
+.tbl td.editing,.tbl th.editing{position:relative}
+.tbl-edit{position:absolute;inset:2px;z-index:4;width:calc(100% - 4px);padding:0 10px;border:0;border-radius:6px;font:inherit;color:var(--label);background:var(--card);box-shadow:0 0 0 2px var(--focus,#5b8cff),0 4px 12px rgba(0,0,0,.12);outline:none}
+.tbl td:first-child .tbl-edit{padding-left:32px}
+.tbl-addrow{margin:6px 0 0;padding:6px 10px;border-radius:7px;font:500 12px/1 var(--ui);color:var(--label-3)}
+.tbl-addrow:hover{background:var(--hover);color:var(--label)}.tbl-addrow:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
 .tbl-check{position:absolute;left:11px;top:12px;width:15px;height:15px;border-radius:4px;box-shadow:inset 0 0 0 1.5px var(--sw-off-line);background:var(--tbl-bg);opacity:0;transition:opacity var(--d-quick),background var(--d-quick)}
 .tbl th .tbl-check{top:7px}
 .tbl tr:hover .tbl-check,.tbl.has-sel .tbl-check,.tbl-check:focus-visible{opacity:1}
@@ -1281,7 +1287,10 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .tbl-block tbody tr{cursor:default}
 .tbl-block .tbl tbody tr.sel td{background:color-mix(in srgb,var(--B) 10%,var(--tbl-bg))}
 .tbl-block .tbl tbody tr.sel:hover td{background:color-mix(in srgb,var(--B) 14%,var(--tbl-bg))}
-.tbl-sel{display:flex;align-items:center;gap:8px;font:550 12px/1 var(--ui);color:var(--label-2)}
+/* Below the table, so selecting never moves the table: the selection bar replaces "+ Add row" while rows are selected */
+.tbl-foot{display:flex;align-items:center;min-height:0}
+.tbl-foot:has(.tbl-sel:not([hidden])) .tbl-addrow{display:none}
+.tbl-sel{display:flex;align-items:center;gap:8px;margin-top:6px;font:550 12px/1 var(--ui);color:var(--label-2)}
 .tbl-gap{flex:1}
 .tbl td.hc,.tbl th.hc{background:color-mix(in srgb,var(--label) 3%,var(--tbl-bg))}
 .tbl tbody tr:hover td.hc{background:color-mix(in srgb,var(--label) 7%,var(--tbl-bg))}
@@ -4820,10 +4829,10 @@ function cardBody(n){
     return `<div class="in">${npHead}
     <h4 data-edit="title">${esc(n.title||"")}</h4><div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>${sk?sketchActs(n):foot(fL(weightHTML(n.weight),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
   case"table":{/* L is shadowed by lin(n) in cardBody, so translate locally */const tr=(en,zh)=>uiLang()==="zh"?zh:en;const ds=n.data||{columns:[],rows:[]},src=ds.source||{};
-    const from=[src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.kind==="paste"?tr("Pasted","粘贴"):src.label||"",
+    const from=[src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.kind==="paste"?tr("Pasted","粘贴"):src.label||"",src.edited?tr("edited","已编辑"):"",
       src.total>(ds.rows||[]).length?tr(`first ${(ds.rows||[]).length} of ${src.total.toLocaleString()} rows`,`前 ${(ds.rows||[]).length} 行，共 ${src.total.toLocaleString()} 行`):""].filter(Boolean).join(" · ");
     return `<div class="in">${head(`${byline(n)}${ic("grid")}<span>${tr("Table","表格")}</span>`)}
-    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol})}${sk?sketchActs(n):foot(fL(from?`<span>${esc(from)}</span>`:""),fR(threadCount(n)))}</div>`;}
+    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol,editable:!sk,sort:n.tblSort})}${sk?sketchActs(n):foot(fL(from?`<span>${esc(from)}</span>`:""),fR(threadCount(n)))}</div>`;}
   case"idea":return `<div class="in">${head(esc(n.kind||"Idea"))}
     <h4 data-edit="text">${esc(n.text)}</h4>${foot(evidenceScale(n),fR(threadCount(n)))}</div>`;
   case"source":{
@@ -5451,7 +5460,7 @@ function tblCardWidth(ds){
   const {raw,cols,colW}=tableModel(ds),base={"w-first":144,"w-text":96,"w-long":180,"w-tag":88};
   return clamp(colW.reduce((sum,c,ci)=>sum+(cols[ci]?Math.max(72,Math.max(...raw.map(r=>(r[ci]||"").length),String(ds.columns[ci]?.name||"").length)*8+28):base[c]||96),0)+40);
 }
-function tblBlockHTML(ds,{add=false,view="table",col=null}={}){
+function tblBlockHTML(ds,{add=false,view="table",col=null,editable=false,sort=null}={}){
   const {hdrRaw,hdr,raw,NUM,cols,SCALES,levels,LVL,best,colW,sortKey}=tableModel(ds);
   const cell=(r,ci)=>{const t=mdInline(r[ci]||""),c=cols[ci],lv=levels[ci]?.[raw.indexOf(r)],k=sortKey(r,ci),dv=k==null?"":` data-v="${k}"`;
     if(lv)return `<td class="lvl"${dv}><span class="tbl-tag" style="--c:${LVL[lv]}">${t}</span></td>`;
@@ -5459,9 +5468,12 @@ function tblBlockHTML(ds,{add=false,view="table",col=null}={}){
     const isBest=best[ci]?.[raw.indexOf(r)];
     return `<td class="num${isBest?" best":""}"${dv} style="--v:${c[raw.indexOf(r)].toFixed(3)}"><span class="tbl-bar" aria-hidden="true"></span><span class="tbl-n">${isBest?`<svg class="tbl-win" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.4 5 8.8 9.6 3.6"/></svg>`:""}${t}${isBest?`<span class="sr-only"> ${L("(best)","（最优）")}</span>`:""}</span></td>`};
   const hasNum=cols.some(Boolean);
-  const tools=`<div class="tbl-tools"><div class="tbl-sel" hidden><span class="tbl-selcount"></span><button type="button" class="sp-mini" data-tbl-ask>${L("Ask","追问")}</button><button type="button" class="tbl-tool" data-tbl-clear aria-label="${L("Clear selection","取消选择")}" title="${L("Clear selection","取消选择")}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><span class="tbl-gap"></span>${add?`<button type="button" class="tbl-tool" data-tbl-add title="${L("Add to board","添加到画板")}" aria-label="${L("Add to board","添加到画板")}">${ic("plus")}</button>`:""}${hasNum?`<div class="sp-seg sm" role="group" aria-label="${L("View","视图")}"><button type="button" data-tbl-view="table" aria-pressed="${!(hasNum&&view==="chart")}">${L("Table","表格")}</button><button type="button" data-tbl-view="chart" aria-pressed="${hasNum&&view==="chart"}">${L("Chart","图表")}</button></div>`:""}<button type="button" class="tbl-tool" data-tbl-copy title="${L("Copy as a table for Sheets, Excel or Notion","复制为表格，可粘贴到 Sheets、Excel 或 Notion")}" aria-label="${L("Copy table","复制表格")}">${ic("copy")}</button></div>`;
+  const tools=`<div class="tbl-tools"><span class="tbl-gap"></span>${add?`<button type="button" class="tbl-tool" data-tbl-add title="${L("Add to board","添加到画板")}" aria-label="${L("Add to board","添加到画板")}">${ic("plus")}</button>`:""}${hasNum?`<div class="sp-seg sm" role="group" aria-label="${L("View","视图")}"><button type="button" data-tbl-view="table" aria-pressed="${!(hasNum&&view==="chart")}">${L("Table","表格")}</button><button type="button" data-tbl-view="chart" aria-pressed="${hasNum&&view==="chart"}">${L("Chart","图表")}</button></div>`:""}<button type="button" class="tbl-tool" data-tbl-copy title="${L("Copy as a table for Sheets, Excel or Notion","复制为表格，可粘贴到 Sheets、Excel 或 Notion")}" aria-label="${L("Copy table","复制表格")}">${ic("copy")}</button></div>`;
   const asChart=hasNum&&view==="chart";
-  return `<div class="tbl-block"${asChart?` data-view="chart"${col!=null?` data-col="${col}"`:""}`:""}>${tools}<div class="tbl-chart"${asChart?"":" hidden"}></div><div class="tbl-wrap"${asChart?" hidden":""}><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="none"`:""}>${ci===0?`<button type="button" class="tbl-check" role="checkbox" aria-checked="false" data-tbl-all aria-label="${L("Select all rows","全选")}"></button>`:""}${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${raw.map((r,ri)=>`<tr data-i="${ri}" aria-selected="false">${hdr.map((_,ci)=>ci===0?cell(r,ci).replace(/^<td([^>]*)>/,`<td$1><button type="button" class="tbl-check" role="checkbox" aria-checked="false" aria-label="${L("Select row","选择此行")}"></button>`):cell(r,ci)).join("")}</tr>`).join("")}</tbody></table></div></div>`;
+  const order=raw.map((_,i)=>i);
+  if(sort&&sort.dir&&sort.col<hdr.length){const key=i=>{const k=sortKey(raw[i],sort.col);return k==null?(raw[i][sort.col]||"").trim().toLowerCase():k};
+    order.sort((a,b)=>{const x=key(a),y=key(b);if(x===""&&y!=="")return 1;if(y===""&&x!=="")return -1;const c=typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y));return sort.dir==="ascending"?c:-c})}
+  return `<div class="tbl-block"${editable?" data-editable":""}${asChart?` data-view="chart"${col!=null?` data-col="${col}"`:""}`:""}>${tools}<div class="tbl-chart"${asChart?"":" hidden"}></div><div class="tbl-wrap"${asChart?" hidden":""}><table class="tbl"><thead><tr>${hdr.map((c,ci)=>`<th class="${[cols[ci]?"num":"",colW[ci]].filter(Boolean).join(" ")}"${raw.length>1?` aria-sort="${sort&&sort.col===ci&&sort.dir?sort.dir:"none"}"`:""}>${ci===0?`<button type="button" class="tbl-check" role="checkbox" aria-checked="false" data-tbl-all aria-label="${L("Select all rows","全选")}"></button>`:""}${raw.length>1?`<button type="button" class="tbl-sort" title="${L("Sort","排序")}">${c}<svg class="tbl-arr" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 2.2v5.6M2.6 5.6 5 8l2.4-2.4"/></svg></button>`:c}</th>`).join("")}</tr></thead><tbody>${order.map(ri=>{const r=raw[ri];return `<tr data-i="${ri}" aria-selected="false">${hdr.map((_,ci)=>ci===0?cell(r,ci).replace(/^<td([^>]*)>/,`<td$1><button type="button" class="tbl-check" role="checkbox" aria-checked="false" aria-label="${L("Select row","选择此行")}"></button>`):cell(r,ci)).join("")}</tr>`}).join("")}</tbody></table></div><div class="tbl-foot"><div class="tbl-sel" hidden><span class="tbl-selcount"></span><button type="button" class="sp-mini" data-tbl-ask>${L("Ask","追问")}</button>${editable?`<button type="button" class="sp-mini" data-tbl-del>${L("Delete","删除")}</button>`:""}<button type="button" class="tbl-tool" data-tbl-clear aria-label="${L("Clear selection","取消选择")}" title="${L("Clear selection","取消选择")}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>${editable?`<button type="button" class="tbl-addrow" data-tbl-addrow>${L("+ Add row","+ 添加行")}</button>`:""}</div></div>`;
 }
 function mdBlocksHtml(src){
   const lines=cleanCopilotMd(src).split("\n"),out=[];
@@ -5564,7 +5576,7 @@ function nodeLineageSig(n){
 }
 
 function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??""]])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??""]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -6282,6 +6294,41 @@ document.addEventListener("click",async e=>{
     const list=names.map(n=>L(`“${n}”`,`「${n}」`)),joined=list.length>1?list.slice(0,-1).join(L(", ","、"))+L(" and ","和")+list.at(-1):list[0];
     inp.value=names.length>1?L(`Compare ${joined}.`,`比较${joined}。`):L(`Tell me more about ${joined}.`,`展开讲讲${joined}。`);inp.dispatchEvent(new Event("input",{bubbles:true}));inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);return}
 });
+/* Editing table cards: double-click a cell or a header. Enter commits, Tab / Shift+Tab move, Esc cancels, leaving
+   the field commits. Every commit is one undo step; the model re-infers types, bars, best values and charts. */
+function tblCommit(n,change){checkpoint();change(n.data);n.data.rev=(n.data.rev||0)+1;n.data.source={...(n.data.source||{}),edited:true};n.updated=NOW();renderAll();persist()}
+function tblOpenEditor(n,ri,ci,isHead){
+  const card=document.querySelector(`.card[data-id="${n.id}"]`),tbl=card?.querySelector("table.tbl");if(!tbl)return;
+  const cell=isHead?tbl.tHead.rows[0].cells[ci]:[...tbl.tBodies[0].rows].find(r=>+r.dataset.i===ri)?.cells[ci];if(!cell)return;
+  const old=isHead?String(n.data.columns[ci]?.name??""):String(n.data.rows[ri]?.[ci]??"");
+  const inp=document.createElement("input");inp.className="tbl-edit";inp.value=old;inp.setAttribute("aria-label",isHead?L("Column name","列名"):String(n.data.columns[ci]?.name||""));
+  cell.classList.add("editing");cell.appendChild(inp);inp.focus();inp.select();let done=false;
+  const finish=(save,step=0)=>{if(done)return;done=true;const v=inp.value;inp.remove();cell.classList.remove("editing");
+    const cur=byId(n.id);if(!cur||cur.type!=="table")return; // the card may have been replaced (undo, crew) while editing
+    n=cur;if(save&&v!==old&&(isHead?cur.data.columns[ci]:cur.data.rows[ri]))tblCommit(cur,d=>{if(isHead)d.columns[ci].name=v.trim()||old;else d.rows[ri][ci]=v});
+    if(!step)return;const cols=n.data.columns.length;
+    if(isHead){const nc=ci+step;if(nc>=0&&nc<cols)tblOpenEditor(n,-1,nc,true);return}
+    const shown=[...document.querySelector(`.card[data-id="${n.id}"] table.tbl`).tBodies[0].rows].map(r=>+r.dataset.i),pos=shown.indexOf(ri);
+    let nc=ci+step,np=pos;if(nc>=cols){nc=0;np++}else if(nc<0){nc=cols-1;np--}
+    if(np>=0&&np<shown.length)tblOpenEditor(n,shown[np],nc,false)};
+  inp.addEventListener("keydown",e=>{e.stopPropagation();
+    if(e.key==="Enter"){e.preventDefault();finish(true)}else if(e.key==="Escape"){e.preventDefault();finish(false)}else if(e.key==="Tab"){e.preventDefault();finish(true,e.shiftKey?-1:1)}});
+  inp.addEventListener("blur",()=>finish(true));
+}
+document.addEventListener("dblclick",e=>{
+  const cell=document.elementsFromPoint(e.clientX,e.clientY).map(x=>x.closest?.(".tbl-block[data-editable] td,.tbl-block[data-editable] th")).find(Boolean);
+  if(!cell||e.target.closest?.("input")||cell.querySelector(".tbl-edit"))return;
+  const n=byId(cell.closest(".card")?.dataset.id);if(!n||n.type!=="table")return;
+  e.preventDefault();e.stopPropagation();const isHead=cell.tagName==="TH";
+  tblOpenEditor(n,isHead?-1:+cell.parentElement.dataset.i,cell.cellIndex,isHead);
+},true);
+document.addEventListener("click",e=>{
+  const addRow=e.target.closest("[data-tbl-addrow]");
+  if(addRow){const n=byId(addRow.closest(".card")?.dataset.id);if(!n)return;tblCommit(n,d=>d.rows.push(d.columns.map(()=>"")));tblOpenEditor(n,n.data.rows.length-1,0,false);return}
+  const del=e.target.closest("[data-tbl-del]");
+  if(del){const card=del.closest(".card"),n=byId(card?.dataset.id);if(!n)return;const gone=new Set([...card.querySelectorAll("tbody tr.sel")].map(r=>+r.dataset.i));if(!gone.size)return;
+    tblCommit(n,d=>{d.rows=d.rows.filter((_,i)=>!gone.has(i))});toast(L(`Deleted ${gone.size} row${gone.size>1?"s":""}`,`已删除 ${gone.size} 行`),{undo:true});return}
+});
 /* Row selection (Finder/Notion model): click selects one; Cmd/Ctrl toggles; Shift selects a range; checkboxes toggle; Esc clears. */
 function tblSync(tbl){const rows=[...tbl.tBodies[0].rows],n=rows.filter(r=>r.classList.contains("sel")).length,block=tbl.closest(".tbl-block");
   rows.forEach(r=>{const on=r.classList.contains("sel");r.setAttribute("aria-selected",String(on));r.querySelector(".tbl-check")?.setAttribute("aria-checked",String(on))});
@@ -6294,7 +6341,7 @@ document.addEventListener("click",e=>{
   if(all){const tbl=all.closest("table"),rows=[...tbl.tBodies[0].rows],on=!rows.every(r=>r.classList.contains("sel"));rows.forEach(r=>r.classList.toggle("sel",on));tblSync(tbl);return}
   if(e.target.closest("[data-tbl-clear]")){const tbl=e.target.closest(".tbl-block").querySelector("table");[...tbl.tBodies[0].rows].forEach(r=>r.classList.remove("sel"));tblSync(tbl);return}
   const tr=e.target.closest(".tbl-block tbody tr");if(!tr)return;
-  if(e.target.closest("a,button:not(.tbl-check),input,textarea"))return;
+  if(e.detail>1||e.target.closest("a,button:not(.tbl-check),input,textarea"))return;
   const tbl=tr.closest("table"),rows=[...tbl.tBodies[0].rows],viaCheck=!!e.target.closest(".tbl-check");
   if(e.shiftKey&&tbl._anchor&&rows.includes(tbl._anchor)){const [a,b]=[rows.indexOf(tbl._anchor),rows.indexOf(tr)].sort((x,y)=>x-y);if(!(e.metaKey||e.ctrlKey))rows.forEach(r=>r.classList.remove("sel"));rows.slice(a,b+1).forEach(r=>r.classList.add("sel"));getSelection()?.removeAllRanges()}
   else if(viaCheck||e.metaKey||e.ctrlKey){tr.classList.toggle("sel");tbl._anchor=tr}
@@ -6305,14 +6352,19 @@ document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;const tbl=doc
 document.addEventListener("mouseover",e=>{const td=e.target.closest(".tbl td,.tbl th");const tbl=td?.closest("table");
   document.querySelectorAll(".tbl .hc").forEach(x=>{if(!tbl||!tbl.contains(x)||x.cellIndex!==td.cellIndex)x.classList.remove("hc")});
   if(td&&tbl.rows.length>2)[...tbl.rows].forEach(r=>r.cells[td.cellIndex]?.classList.add("hc"));});
-document.addEventListener("click",e=>{const b=e.target.closest(".tbl-sort");if(!b)return;
+let tblSortT=0;
+document.addEventListener("click",e=>{const b0=e.target.closest(".tbl-sort");if(!b0)return;
+  if(b0.closest(".tbl-block[data-editable]")){clearTimeout(tblSortT);if(e.detail>1)return;tblSortT=setTimeout(()=>tblSortClick(b0),220);return}
+  tblSortClick(b0)});
+function tblSortClick(b){
   const th=b.closest("th"),tbl=th.closest("table"),ci=[...th.parentElement.children].indexOf(th),body=tbl.tBodies[0];
   const next={none:"ascending",ascending:"descending",descending:"none"}[th.getAttribute("aria-sort")||"none"];
   tbl.querySelectorAll("th[aria-sort]").forEach(x=>x.setAttribute("aria-sort","none"));th.setAttribute("aria-sort",next);
   const key=tr=>{const td=tr.children[ci];return td?.dataset.v!=null&&td.dataset.v!==""?+td.dataset.v:(td?.textContent||"").trim().toLowerCase()};
-  const rows=[...body.rows].sort((a,b)=>{if(next==="none")return +a.dataset.i - +b.dataset.i;const x=key(a),y=key(b);const c=typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y));return next==="ascending"?c:-c});
+  const rows=[...body.rows].sort((a,b)=>{if(next==="none")return +a.dataset.i - +b.dataset.i;const x=key(a),y=key(b);if(x===""&&y!=="")return 1;if(y===""&&x!=="")return -1;const c=typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y));return next==="ascending"?c:-c}); // empty values last, as in spreadsheets
   rows.forEach(r=>body.appendChild(r));
-  const block=tbl.closest(".tbl-block"),ch=block?.querySelector(".tbl-chart");if(ch&&!ch.hidden)tblChart(block,+ch.dataset.col);});
+  const block=tbl.closest(".tbl-block"),ch=block?.querySelector(".tbl-chart");if(ch&&!ch.hidden)tblChart(block,+ch.dataset.col);
+  const cn=byId(block?.closest(".card")?.dataset.id);if(cn){if(next==="none")delete cn.tblSort;else cn.tblSort={col:ci,dir:next};persist()}}
 let connManualCheck=false;
 /* Studio AI launcher: the local page server (Vellum app / serve_vellum.py) can open the bundled
    service. A page opened any other way can't start programs, so it keeps the instruction. */
@@ -14956,7 +15008,7 @@ wall.addEventListener("dblclick",e=>{
   const under=document.elementsFromPoint(e.clientX,e.clientY);
   const rszHit=under.map(x=>x.closest?.(".card-resize")).find(Boolean);
   if(rszHit){const c=rszHit.closest(".card"),n=c?byId(c.dataset.id):null;if(n)resetCardWidth(n);return}
-  if(under.some(x=>x.closest?.(".tbl-block tbody td,.tbl-chart,button,textarea,input,audio,a,[contenteditable='true'],[data-a-item],[data-a-kb-item],[data-a-tm-item],[data-a-syn],.card-resize,.todo-add,.kb-add,.line,.margin,.tools,.top-tools,.find-bar,.find-scrim,.wire-pop,.w-hit,.zoom,.top,.pbar,.strip,.selbar,.map,.copilot-panel,.copilot-btn,.studio-pop,.ledger")))return;
+  if(under.some(x=>x.closest?.(".tbl-block tbody td,.tbl-block thead th,.tbl-addrow,.tbl-chart,button,textarea,input,audio,a,[contenteditable='true'],[data-a-item],[data-a-kb-item],[data-a-tm-item],[data-a-syn],.card-resize,.todo-add,.kb-add,.line,.margin,.tools,.top-tools,.find-bar,.find-scrim,.wire-pop,.w-hit,.zoom,.top,.pbar,.strip,.selbar,.map,.copilot-panel,.copilot-btn,.studio-pop,.ledger")))return;
   const card=under.map(x=>x.closest?.(".card")).find(c=>c&&(byId(c.dataset.id)?.type!=="group"||under.some(x=>x.closest?.(".card-k,h4,.grp-resize")?.closest?.(".card")===c)));
   if(card){const n=byId(card.dataset.id);if(n&&n.status==="sketch"){ink(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);return}
     const tagHit=under.map(x=>x.closest?.(".note-tag,[data-edit='tag']")).find(Boolean);

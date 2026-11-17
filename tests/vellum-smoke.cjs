@@ -244,80 +244,102 @@ async function page(browser, base, { model = true } = {}) {
       await p.context().close();
     }
 
-    // 6. unasked thoughts: one look per burst, an hourly budget, and a real Off
+    // 6. one crew level: pacing by what you have read, a hidden ceiling, and a real "only when asked"
     {
       const p = await page(browser, base);
       await p.newBoard();
-      await p.evaluate(() => { advQuietMs = 300; advMaxWaitMs = 2000; setAdvisorLevel('quiet'); advSpent = []; advHeld = 0; });
-      const looks = () => requests.filter(r => /at most 2 pins/.test(r.prompt) || /pins/.test(r.prompt) && /keywords/.test(r.prompt)).length;
+      await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; });
       const advReqs = () => requests.filter(r => r.full && /Include 1 or at most 2 pins/.test(r.full));
+      const add = async list => { for (const t of list) { await p.evaluate(() => select([])); await p.type('note: ' + t); await p.waitForTimeout(120); } await p.waitForTimeout(1400); await p.idle(); };
+      check('Suggest is the default level', await p.evaluate(() => crewLevel === 'suggest' && perm('create') === 'suggest' && perm('edit') === 'suggest' && perm('delete') === 'suggest' && advisorMode && !advisorAuto));
       let before = advReqs().length;
-      for (const t of ['note: Wukong sold about 30M copies', 'note: GTA VI launches in November', 'note: Ananta launches in January', 'note: Mainland rules bar organised crime', 'note: Sleeping Dogs was praised for melee']) { await p.evaluate(() => select([])); await p.type(t); await p.waitForTimeout(120); }
-      await p.waitForTimeout(2600); await p.idle();
+      await add(['Wukong sold about 30M copies', 'GTA VI launches in November', 'Ananta launches in January', 'Mainland rules bar organised crime', 'Sleeping Dogs was praised for melee']);
       const burst = advReqs().slice(before);
       check('a burst of five new cards gets one look', burst.length === 1, `${burst.length} looks`);
       check('the other cards in the burst are given as context', burst.length === 1 && /also just added/.test(burst[0].full));
-      await p.evaluate(() => { advSpent = Array.from({ length: 6 }, () => NOW()); });
+      await p.evaluate(() => { const id = board.nodes.find(n => n.type === 'note').id; board.pins = { [id]: [{ id: 'pin-t', agent: 'critic', note: 'An unread thought', t: NOW(), seen: false }] }; });
       before = advReqs().length;
-      for (const t of ['note: one more fact', 'note: and another fact']) { await p.evaluate(() => select([])); await p.type(t); await p.waitForTimeout(120); }
-      await p.waitForTimeout(1200); await p.idle();
-      check('no looks once the hourly budget is used', advReqs().length === before, `${advReqs().length - before} looks`);
+      await add(['one more fact', 'and another fact']);
+      check('no new look while a thought is unread', advReqs().length === before, `${advReqs().length - before} looks`);
       check('cards held back are counted', await p.evaluate(() => advHeld >= 2));
+      await p.evaluate(() => { for (const ps of Object.values(board.pins)) ps.forEach(x => x.seen = true); });
+      before = advReqs().length;
+      await add(['after reading the thought']);
+      check('the next look comes once you have read it', advReqs().length === before + 1, `${advReqs().length - before} looks`);
+      await p.evaluate(() => { board.pins = { x: [{ id: 'old', agent: 'critic', note: 'ignored', t: NOW() - 3600000, seen: false }] }; advFadeMs = 60000; });
+      check('a thought ignored for a while fades and stops holding the next', await p.evaluate(() => unreadPins() === 0 && board.pins.x[0].faded === true));
+      await p.evaluate(() => { board.pins = {}; advSpent = Array.from({ length: ADV_HARD_CAP }, () => NOW()); });
+      before = advReqs().length;
+      await add(['past the hidden ceiling']);
+      check('a hidden hourly ceiling still guards cost', advReqs().length === before);
       before = advReqs().length;
       await p.evaluate(() => scheduleAdvisor(board.nodes.find(n => n.type === 'note').id, { force: true })); await p.waitForTimeout(800); await p.idle();
-      check('a look you ask for ignores the budget', advReqs().length === before + 1, `${advReqs().length - before} looks`);
-      await p.evaluate(() => { setAdvisorLevel('off'); advSpent = []; });
+      check('a look you ask for ignores pacing and the ceiling', advReqs().length === before + 1, `${advReqs().length - before} looks`);
+      await p.evaluate(() => { setCrewLevel('asked'); advSpent = []; board.pins = {}; advQuietMs = 300; });
       before = advReqs().length;
-      await p.evaluate(() => select([])); await p.type('note: quiet please'); await p.waitForTimeout(1200); await p.idle();
-      check('Off means no unasked looks', advReqs().length === before);
+      await add(['quiet please']);
+      check('"Only when asked" means no unasked looks', advReqs().length === before && await p.evaluate(() => !advisorMode && perm('link') === 'suggest'));
+      await p.evaluate(() => setCrewLevel('collab'));
+      check('Collaborate creates directly, drafts follow-ups, allows two unread', await p.evaluate(() => perm('create') === 'direct' && advisorAuto && CREW_UNREAD.collab === 2 && perm('delete') === 'suggest'));
+      // the crew pill and popover
+      await p.evaluate(() => setCrewLevel('suggest'));
+      check('the crew pill shows the level', /Suggest/.test(await p.evaluate(() => document.getElementById('crewSetBtn').textContent)));
+      await p.click('#crewSetBtn'); await p.waitForTimeout(300);
+      const seg = await p.evaluate(() => [...document.querySelectorAll('#crewPop [data-crew-level]')].map(b => b.dataset.crewLevel + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(','));
+      check('the crew popover offers three levels as a segmented control', seg === 'asked,suggest*,collab' && await p.evaluate(() => !!document.querySelector('#crewPop .sp-seg')), seg);
+      await p.click('#crewPop [data-crew-level="collab"]'); await p.waitForTimeout(300);
+      check('choosing a level takes effect and shows on the pill', await p.evaluate(() => crewLevel === 'collab' && store.get('.crewLevel') === 'collab' && /Collaborate/.test(document.getElementById('crewSetBtn').textContent)));
+      await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+      // the connection popover is only about the connection
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);
-      const seg = await p.evaluate(() => { const s = document.getElementById('advLevelSel'); return s ? [...s.options].map(o => o.value + (o.selected ? '*' : '')).join(',') : 'none'; });
-      check('settings offer Off, Quiet and Active in a select', seg === 'off*,quiet,active', seg);
-      await p.selectOption('#advLevelSel', 'active'); await p.waitForTimeout(300);
-      check('choosing Active takes effect', await p.evaluate(() => advisorLevel === 'active' && advisorMode === true && advLeft() === 20));
-      check('no page errors in the unasked-thoughts flows', p.errors.length === 0, p.errors.join(' | '));
+      const conn = await p.evaluate(() => document.getElementById('studioPop').innerText);
+      check('the connection popover is only about the connection', /Connection/.test(conn) && /Using Cloud API/.test(conn) && !/Unasked thoughts|Agent permissions|Auto follow-up|Start Studio AI/.test(conn), conn.slice(0, 160));
+      check('no page errors in the crew-level flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
-
-    // 7. agent permissions: each kind of action follows the setting
+    // 7. customizing the crew, and locks
     {
       const p = await page(browser, base, { model: false });
       await p.newBoard();
       await p.type('/claim Kept claim'); await p.waitForTimeout(600);
       await p.type('/note Kept note'); await p.waitForTimeout(600);
       const [claim, note] = await p.evaluate(() => [board.nodes.find(n => n.type === 'idea').id, board.nodes.find(n => n.type === 'note').id]);
-      const run = (acts, extra = {}) => p.evaluate(([a, x]) => { const r = dispatchCanvasActions(a, { by: 'critic', ...x }); return { created: r.createdNodes.map(n => ({ id: n.id, status: n.status })), proposed: r.proposed.length, skipped: r.skipped.length }; }, [acts, extra]);
-      check('defaults: create directly, edit and delete ask', await p.evaluate(() => perm('create') === 'direct' && perm('link') === 'direct' && perm('edit') === 'suggest' && perm('delete') === 'suggest'));
-      await p.evaluate(() => setAutonomy({ create: 'suggest' }));
+      const run = (acts, extra = {}) => p.evaluate(([a, x]) => { const r = dispatchCanvasActions(a, { by: 'critic', ...x }); return { created: r.createdNodes.map(n => ({ id: n.id, status: n.status })), proposed: r.proposed.length, skipped: r.skipped.length, locked: r.skipped.filter(s => s.locked).length }; }, [acts, extra]);
       let r = await run([{ action: 'create', cardType: 'note', title: 'Asked', text: 'arrives as a draft' }]);
-      check('create set to Ask first arrives as a draft', r.created.length === 1 && r.created[0].status === 'sketch', JSON.stringify(r));
-      await p.evaluate(() => setAutonomy({ create: 'never' }));
-      r = await run([{ action: 'create', cardType: 'note', title: 'Blocked', text: 'should not exist' }]);
-      check('create set to Never creates nothing', r.created.length === 0 && r.skipped === 1 && await p.evaluate(() => !board.nodes.some(n => n.text === 'should not exist')));
-      await p.evaluate(() => setAutonomy({ edit: 'direct' }));
+      check('at Suggest, agent cards arrive as drafts', r.created.length === 1 && r.created[0].status === 'sketch', JSON.stringify(r));
+      await p.click('#crewSetBtn'); await p.waitForTimeout(300);
+      await p.click('#crewPop [data-crew-custom]'); await p.waitForTimeout(400);
+      check('Customize shows a segmented control per action', await p.evaluate(() => document.querySelectorAll('dialog[open] .sp-seg').length === 4));
+      check('deleting cannot be set to Do it', await p.evaluate(() => [...document.querySelectorAll('dialog[open] [data-au="delete"]')].map(b => b.dataset.v).join() === 'suggest,never'));
+      await p.click('dialog[open] [data-au="edit"][data-v="direct"]'); await p.waitForTimeout(200);
+      check('a custom choice takes effect and the pill says Custom', await p.evaluate(() => perm('edit') === 'direct' && autonomyCustom && /Custom/.test(document.getElementById('crewSetBtn').textContent)));
       await run([{ action: 'edit', target: claim, field: 'text', value: 'Edited directly' }]);
-      check('edit set to Do it applies to a kept card', await p.evaluate(id => byId(id).text === 'Edited directly' && openProps(id).length === 0, claim));
-      await p.evaluate(() => setAutonomy({ edit: 'never', delete: 'never' }));
+      check('edit set to Do it applies to a kept card', await p.evaluate(id => byId(id).text === 'Edited directly', claim));
+      await p.click('dialog[open] [data-au="edit"][data-v="never"]'); await p.click('dialog[open] [data-au="delete"][data-v="never"]'); await p.waitForTimeout(200);
       r = await run([{ action: 'edit', target: claim, field: 'text', value: 'nope' }, { action: 'erase', targets: [note] }]);
-      check('edit and delete set to Never change nothing', r.skipped === 2 && r.proposed === 0 && await p.evaluate(([c, n]) => byId(c).text === 'Edited directly' && !!byId(n) && openProps().length === 0, [claim, note]));
-      await p.evaluate(() => setAutonomy({ link: 'suggest' }));
-      r = await run([{ action: 'connect', from: note, to: claim }]);
-      check('link set to Ask first becomes a suggestion', r.proposed === 1 && await p.evaluate(([n, c]) => !board.edges.some(e => e.a === n && e.b === c) && openProps(c).some(p => p.op === 'link'), [note, claim]));
-      await p.evaluate(c => { const pr = openProps(c).find(p => p.op === 'link'); return acceptProposal(pr.id); }, claim); await p.waitForTimeout(300);
-      check('accepting a link suggestion links the cards', await p.evaluate(([n, c]) => board.edges.some(e => e.a === n && e.b === c), [note, claim]));
-      r = await run([{ action: 'erase', targets: [note] }], { userIntent: true });
-      await p.waitForTimeout(700);
-      check('your own words are not limited by agent permissions', await p.evaluate(n => { const x = byId(n); return !x || !!x.tombstone; }, note));
-      check('Copilot is told the current permissions', await p.evaluate(() => /linking cards: it becomes a suggestion/.test(autonomyPromptLine()) && /deleting cards the designer has kept: you may not do it/.test(autonomyPromptLine())));
-      // the dialog
-      await p.click('#crewModeBtn'); await p.waitForTimeout(400);
-      await p.click('[data-sp="autonomy"]'); await p.waitForTimeout(400);
-      check('the permissions dialog opens with a select per action', await p.evaluate(() => document.querySelectorAll('dialog[open] select[data-au]').length === 4 && document.querySelector('dialog[open] label[for="au-edit"]') !== null));
-      await p.selectOption('dialog[open] #au-delete', 'suggest'); await p.waitForTimeout(200);
-      check('choosing in the dialog takes effect and is remembered', await p.evaluate(() => perm('delete') === 'suggest' && store.get('.autonomy', {}).delete === 'suggest'));
+      check('edit and delete set to Never change nothing', r.skipped === 2 && r.proposed === 0 && await p.evaluate(([c, n]) => byId(c).text === 'Edited directly' && !!byId(n), [claim, note]));
       await p.click('dialog[open] [data-au-reset]'); await p.waitForTimeout(200);
-      check('Reset restores the defaults', await p.evaluate(() => JSON.stringify(autonomy) === JSON.stringify(AUTONOMY_DEFAULT) && document.querySelector('dialog[open] #au-edit').value === 'suggest'));
-      check('no page errors in the permissions flows', p.errors.length === 0, p.errors.join(' | '));
+      check('Reset returns to the level preset', await p.evaluate(() => !autonomyCustom && JSON.stringify(autonomy) === JSON.stringify(CREW_PRESET[crewLevel])));
+      await p.click('dialog[open] [data-d="close"]').catch(() => {}); await p.evaluate(() => document.querySelector('dialog[open]')?.close()); await p.waitForTimeout(200);
+      // locks
+      await p.evaluate(id => { select([id]); openCardMenu(byId(id), 200, 200); }, claim); await p.waitForTimeout(200);
+      check('the card menu offers Lock', await p.evaluate(() => !!document.querySelector('#cardMenu [data-cm="lock"]')));
+      await p.click('#cardMenu [data-cm="lock"]'); await p.waitForTimeout(300);
+      check('a locked card shows a lock', await p.evaluate(id => byId(id).locked === true && !!document.querySelector(`[data-id="${id}"] .lock-badge`), claim));
+      r = await run([{ action: 'edit', target: claim, field: 'text', value: 'agent rewrite' }, { action: 'erase', targets: [claim] }]);
+      check('agents cannot change or suggest changes to a locked card', r.locked === 2 && r.proposed === 0 && await p.evaluate(id => byId(id).text === 'Edited directly' && openProps(id).length === 0, claim));
+      await run([{ action: 'edit', target: claim, field: 'text', value: 'Changed because you asked' }], { userIntent: true });
+      check('your own words still change a locked card', await p.evaluate(id => byId(id).text === 'Changed because you asked', claim));
+      check('the Snapshot lane starts locked', await p.evaluate(() => lockedBays().includes(3) && document.querySelector('[data-bay-lock="3"]')?.getAttribute('aria-pressed') === 'true'));
+      await p.evaluate(() => setCrewLevel('collab'));
+      const snap = await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'In Snapshot', text: 'snapshot card', pos: { x: 3100, y: 300 } }], { by: 'wright' }).createdNodes[0].id);
+      r = await run([{ action: 'edit', target: snap, field: 'text', value: 'changed later' }]);
+      check('kept cards in a locked lane are protected', r.locked === 1 && await p.evaluate(id => byId(id).text === 'snapshot card', snap));
+      await p.evaluate(() => toggleBayLock(3)); await p.waitForTimeout(200);
+      r = await run([{ action: 'edit', target: snap, field: 'text', value: 'changed later' }]);
+      check('unlocking the lane lets suggestions through again', r.locked === 0 && r.proposed === 1);
+      check('Copilot is told about locks and permissions', await p.evaluate(() => /Locked cards/.test(autonomyPromptLine()) && /deleting cards the designer has kept: it becomes a suggestion/.test(autonomyPromptLine())));
+      check('no page errors in the customize and lock flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
     // 8. Task Island: real crew work shows at the top, says what arrived, and can be stopped

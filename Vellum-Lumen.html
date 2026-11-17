@@ -2713,6 +2713,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
   <aside id="copilotPanel" class="copilot-panel" hidden aria-label="Copilot"></aside>
   <section id="studioPop" class="studio-pop" hidden role="dialog" aria-label="Studio AI and local engines"></section>
   <section id="reviewPop" class="review-pop" hidden role="dialog" aria-label="Pending drafts"></section>
+  <section id="crewPop" class="review-pop crew-pop" hidden role="dialog" aria-label="Crew"></section>
   <section id="agentPop" class="review-pop agent-pop" hidden role="dialog" aria-label="Agent board activity"></section>
   <section id="boardsPop" class="boards-pop" hidden role="dialog" aria-label="Switch board"></section>
   <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
@@ -2758,6 +2759,34 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .line-hint:empty{display:none}
 .card .prov-rules{margin-left:6px;font:500 10.5px/1 var(--ui);letter-spacing:.02em;padding:3px 6px;border-radius:999px;color:var(--label-2);background:var(--hover);box-shadow:inset 0 0 0 .5px var(--hair-2)}
 .m-sec.m-prov{padding-block:6px}
+
+/* crew level pill, crew popover, locks */
+.crew-set{display:inline-flex;align-items:center;gap:4px;height:36px;padding:0 10px 0 12px;border-radius:999px;font:560 12.5px/1 var(--ui);color:var(--label-2);background:var(--chrome);box-shadow:var(--chrome-shadow);white-space:nowrap}
+.crew-set:hover{color:var(--label)}
+.crew-set .cm-chev{width:12px;height:12px;opacity:.7}
+.crew-set:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:2px}
+.review-pop.crew-pop{width:min(360px,calc(100vw - 28px));padding:14px 14px 12px;display:grid;gap:10px}
+.crew-pop .cp-pop-head{display:grid;gap:2px}
+.crew-pop .cp-pop-head b{font:650 14px/1.2 var(--ui);color:var(--label)}
+.crew-pop .cp-pop-head span{font:450 12px/1.3 var(--ui);color:var(--label-3)}
+.crew-pop .crew-seg button{height:30px;font-size:12px}
+.crew-pop .crew-desc{margin:0;font:450 12.5px/1.5 var(--ui);color:var(--label-2)}
+.crew-pop .crew-status{margin:0;font:500 12px/1.4 var(--ui);color:var(--label)}
+.crew-pop .crew-sec{display:grid;gap:3px;padding-top:10px;border-top:1px solid var(--hair-2);font:450 12px/1.45 var(--ui);color:var(--label-3)}
+.crew-pop .crew-sec b{display:inline-flex;align-items:center;gap:6px;font:600 12px/1.2 var(--ui);color:var(--label-2)}
+.crew-pop .crew-sec .ico{width:13px;height:13px}
+.crew-pop .crew-foot{display:flex;gap:6px;flex-wrap:wrap;padding-top:2px}
+.crew-pop .crew-foot .cbtn{height:30px;font-size:12px}
+.au-row .au-seg{width:auto;min-width:228px}
+.card .lock-badge{position:absolute;top:8px;right:8px;z-index:7;width:20px;height:20px;display:grid;place-items:center;border-radius:6px;background:var(--hover);color:var(--label-2);pointer-events:auto}
+.card .lock-badge .ico{width:12px;height:12px}
+.bay-lock{pointer-events:auto;align-self:center;width:24px;height:24px;display:grid;place-items:center;border-radius:7px;color:var(--label-3);background:transparent;opacity:.55;transition:opacity var(--d-quick),background var(--d-quick)}
+.bay-lock .ico{width:13px;height:13px}
+.bay-lock:hover,.bay-lock:focus-visible{opacity:1;background:var(--hover)}
+.bay-lock.on{opacity:1;color:var(--label)}
+/* connection popover: actions read as actions */
+.sp-svc>.sp-mini,.sp-svc .sp-hdr-acts .sp-mini{background:transparent;box-shadow:inset 0 0 0 1px var(--hair-2)}
+.sp-svc>.sp-mini:hover,.sp-svc .sp-hdr-acts .sp-mini:hover{background:var(--hover)}
 .sp-svc.sp-col .sp-svc-main{flex:1 1 auto;min-width:0}
 .sp-svc.sp-col .sp-svc-sub{white-space:normal;overflow:visible;text-overflow:clip}
 .sp-lvl{display:flex;gap:4px}
@@ -3418,27 +3447,75 @@ function asActor(actor,fn){const prev=changeActor;changeActor=actor;recordChange
 /* What agents may do on their own, per kind of action: "direct" (do it), "suggest" (ask first), "never".
    Creating something suggested arrives as a draft; linking, editing or deleting suggested arrives as a proposal on the card.
    Drafts are the agents' own space, and changes translated from your own words are yours, so neither is gated. */
-const AUTONOMY_DEFAULT={create:"direct",link:"direct",edit:"suggest",delete:"suggest"};
+/* One dial for how much the crew does on its own. Each level is a preset of the permissions below plus pacing.
+   Deleting always asks: it is the one action that cannot be taken back by looking at a draft. */
+const CREW_LEVELS=["asked","suggest","collab"];
+const CREW_PRESET={asked:{create:"suggest",link:"suggest",edit:"suggest",delete:"suggest"},suggest:{create:"suggest",link:"direct",edit:"suggest",delete:"suggest"},collab:{create:"direct",link:"direct",edit:"suggest",delete:"suggest"}};
+const CREW_UNREAD={asked:0,suggest:1,collab:2},CREW_QUIET={asked:6000,suggest:6000,collab:3000};
+let crewLevel=store.get(".crewLevel",null)||(store.get(".advisorLevel",null)==="off"?"asked":"suggest");
+if(!CREW_LEVELS.includes(crewLevel))crewLevel="suggest";
+const AUTONOMY_DEFAULT={...CREW_PRESET.suggest};
 const AUTONOMY_ROWS=[["create",["Create cards and comments","新建卡片和评论"]],["link",["Link cards","连线"]],["edit",["Edit your kept cards","修改你已确认的卡片"]],["delete",["Delete your kept cards","删除你已确认的卡片"]]];
 const AUTONOMY_LEVELS=[["direct",["Do it","直接做"]],["suggest",["Ask first","先问"]],["never",["Never","不允许"]]];
-let autonomy={...AUTONOMY_DEFAULT,...(store.get(".autonomy",{})||{})};
-const perm=k=>["direct","suggest","never"].includes(autonomy[k])?autonomy[k]:AUTONOMY_DEFAULT[k];
-function setAutonomy(patch){autonomy={...autonomy,...patch};store.set(".autonomy",autonomy);renderStudioPop?.()}
+const CREW_LABEL={asked:["Only when asked","只在我要求时"],suggest:["Suggest","建议"],collab:["Collaborate","协作"]};
+const CREW_SHORT={asked:["When asked","按需"],suggest:["Suggest","建议"],collab:["Collaborate","协作"]};
+let crewPopOpen=false;
+function renderCrewPop(){
+  const pop=$("crewPop");if(!pop)return;
+  pop.hidden=!crewPopOpen;renderCrew?.();if(!crewPopOpen)return;
+  const btn=$("crewSetBtn");
+  if(btn){const r=btn.getBoundingClientRect();pop.style.top=Math.round(r.bottom+8)+"px";pop.style.right=Math.max(14,Math.round(innerWidth-r.right))+"px"}
+  const unread=unreadPins(),held=advHeld;
+  const status=crewLevel==="asked"?"":[unread?L(`${unread} thought${unread>1?"s":""} waiting for you`,`${unread} 条建议等你查看`):"",held?L(`${held} card${held>1?"s":""} held back until you read it`,`${held} 张卡片待你读完后再看`):""].filter(Boolean).join(" · ");
+  pop.innerHTML=`<div class="cp-pop-head"><b>${L("Crew","成员")}</b><span>${L("How much the crew does on its own","成员自己做多少")}</span></div>
+    <div class="sp-seg crew-seg" role="group" aria-label="${esc(L("How much the crew does on its own","成员自己做多少"))}">${CREW_LEVELS.map(k=>`<button type="button" data-crew-level="${k}" aria-pressed="${!autonomyCustom&&crewLevel===k}">${L(CREW_LABEL[k][0],CREW_LABEL[k][1])}</button>`).join("")}</div>
+    <p class="crew-desc">${autonomyCustom?L(`Custom: ${autonomySummary()}. Pick a level to go back to a preset.`,`自定义：${autonomySummary()}。选择一个档位即可恢复预设。`):L(CREW_DESC[crewLevel][0],CREW_DESC[crewLevel][1])}</p>
+    ${status?`<p class="crew-status">${esc(status)}</p>`:""}
+    <div class="crew-sec"><b>${ic("lock")}${L("Locks","锁定")}</b><span>${L(`Locked cards and lanes are yours alone. ${lockedBays().length?lockedBays().map(i=>bayName(BAYS[i])).join(", ")+(lockedBays().length>1?" are":" is")+" locked.":"No lanes are locked."} Lock a card from its right-click menu, or a lane from the lock beside its title.`,`锁定的卡片和泳道只有你能改。${lockedBays().length?lockedBays().map(i=>bayName(BAYS[i])).join("、")+" 已锁定。":"目前没有锁定的泳道。"}右键卡片可锁定卡片，泳道标题旁的锁可锁定泳道。`)}</span></div>
+    <div class="crew-foot"><button type="button" class="cbtn" data-crew-custom>${L("Customize…","自定义…")}</button><button type="button" class="cbtn" data-crew-memory>${ic("book")}${L("Memory","记忆")}</button><button type="button" class="cbtn" data-crew-copilot>${ic("sparkles")}Copilot</button></div>`;
+}
+function toggleCrewPop(force){
+  const next=force===undefined?!crewPopOpen:!!force;if(next===crewPopOpen)return;crewPopOpen=next;
+  if(crewPopOpen){if(studioPopOpen)toggleStudioPopover(false);if(reviewPopOpen)toggleReviewPop(false);if(agentPopKey)toggleAgentPop(null)}
+  renderCrewPop();
+}
+const CREW_DESC={asked:["The crew speaks and acts only when you ask. Anything it makes arrives as a draft.","成员只在你要求时发言和行动，产出都以草稿出现。"],
+  suggest:["One unasked thought at a time; the next comes after you've read it. New cards arrive as drafts, edits and deletions as suggestions.","一次只留一条主动建议，读过才有下一条。新卡片以草稿出现，修改和删除以建议出现。"],
+  collab:["Up to two unasked thoughts at a time, and it drafts a follow-up when it has one. Cards it creates land directly; edits and deletions are still suggestions.","一次最多两条主动建议，并会起草后续卡片。它新建的卡片直接落到画板上，修改和删除仍以建议出现。"]};
+let autonomyCustom=!!store.get(".autonomyCustom",false);
+let autonomy=autonomyCustom?{...CREW_PRESET[crewLevel],...(store.get(".autonomy",{})||{})}:{...CREW_PRESET[crewLevel]};
+const perm=k=>{const v=["direct","suggest","never"].includes(autonomy[k])?autonomy[k]:CREW_PRESET[crewLevel][k];return k==="delete"&&v==="direct"?"suggest":v};
+function setAutonomy(patch){autonomy={...autonomy,...patch};if(autonomy.delete==="direct")autonomy.delete="suggest";autonomyCustom=JSON.stringify(autonomy)!==JSON.stringify(CREW_PRESET[crewLevel]);store.set(".autonomy",autonomy);store.set(".autonomyCustom",autonomyCustom);renderCrewPop?.()}
+function setCrewLevel(level){
+  crewLevel=CREW_LEVELS.includes(level)?level:"suggest";store.set(".crewLevel",crewLevel);
+  autonomy={...CREW_PRESET[crewLevel]};autonomyCustom=false;store.set(".autonomy",autonomy);store.set(".autonomyCustom",false);
+  advisorMode=crewLevel!=="asked";advisorAuto=crewLevel==="collab";advQuietMs=CREW_QUIET[crewLevel];
+  store.set(".advisor",advisorMode);store.set(".advisorAuto",advisorAuto);
+  if(!advisorMode){for(const t of advTimers.values())clearTimeout(t);advTimers.clear();advBurst.clear();clearTimeout(advBurstT)}
+  renderCrew();renderCrewPop?.();
+}
 function autonomySummary(){const short={direct:L("do it","直接做"),suggest:L("ask","先问"),never:L("never","不允许")};return AUTONOMY_ROWS.map(([k,l])=>`${L({create:"Create",link:"Link",edit:"Edit",delete:"Delete"}[k],{create:"新建",link:"连线",edit:"修改",delete:"删除"}[k])}: ${short[perm(k)]}`).join(" · ")}
 function autonomyPromptLine(){
   const say={direct:"you may do it directly",suggest:"it becomes a suggestion the designer accepts or declines (say you suggested it, never that you did it)",never:"you may not do it; tell the designer instead"};
-  return `Board permissions set by the designer: creating cards or comments: ${say[perm("create")]}${perm("create")==="suggest"?" (cards arrive as drafts)":""}; linking cards: ${say[perm("link")]}; editing cards the designer has kept: ${say[perm("edit")]}; deleting cards the designer has kept: ${say[perm("delete")]}. Your own drafts you may always edit.`;
+  return `Board permissions set by the designer: creating cards or comments: ${say[perm("create")]}${perm("create")==="suggest"?" (cards arrive as drafts)":""}; linking cards: ${say[perm("link")]}; editing cards the designer has kept: ${say[perm("edit")]}; deleting cards the designer has kept: ${say[perm("delete")]}. Locked cards (and every kept card in a locked lane, such as Snapshot) you may not change or suggest changes to. Your own drafts you may always edit.`;
 }
 function openAutonomyDialog(){
-  const row=([k,l])=>`<div class="au-row"><label for="au-${k}">${L(l[0],l[1])}</label><select class="set-select" id="au-${k}" data-au="${k}">${AUTONOMY_LEVELS.map(([v,vl])=>`<option value="${v}"${perm(k)===v?" selected":""}>${L(vl[0],vl[1])}</option>`).join("")}</select></div>`;
-  const body=()=>`<p class="au-lede">${L("What the crew may do on the board without asking. Drafts are always theirs to change, and anything you ask for in your own words is done as asked.","成员无需询问即可在画板上做的事。草稿始终由它们自行修改；你用自己的话要求的操作会照做。")}</p>${AUTONOMY_ROWS.map(row).join("")}<div class="au-foot"><button type="button" class="cbtn" data-au-reset>${L("Reset to defaults","恢复默认")}</button><button type="button" class="cbtn solid" data-d="close">${L("Done","完成")}</button></div>`;
-  openDialog(L("Agent permissions","成员权限"),`<div id="auBody">${body()}</div>`,d=>{
-    d.onchange=e=>{const sl=e.target.closest("select[data-au]");if(sl)setAutonomy({[sl.dataset.au]:sl.value})};
-    d.onclick=e=>{if(e.target.closest("[data-au-reset]")){autonomy={...AUTONOMY_DEFAULT};store.set(".autonomy",autonomy);renderStudioPop?.();qs("#auBody",d).innerHTML=body()}};
+  const row=([k,l])=>{const opts=AUTONOMY_LEVELS.filter(([v])=>!(k==="delete"&&v==="direct"));return `<div class="au-row"><span id="au-l-${k}">${L(l[0],l[1])}</span><div class="sp-seg au-seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))" role="group" aria-labelledby="au-l-${k}">${opts.map(([v,vl])=>`<button type="button" data-au="${k}" data-v="${v}" aria-pressed="${perm(k)===v}">${L(vl[0],vl[1])}</button>`).join("")}</div></div>`};
+  const body=()=>`<p class="au-lede">${L("Fine-tune what the crew may do without asking. Deleting always asks first. Drafts are always theirs to change, locked cards are yours alone, and anything you ask for in your own words is done as asked.","细调成员无需询问即可做的事。删除始终先问。草稿由它们自行修改，锁定的卡片只有你能改，你用自己的话要求的操作会照做。")}</p>${AUTONOMY_ROWS.map(row).join("")}<div class="au-foot"><button type="button" class="cbtn" data-au-reset>${L(`Reset to “${CREW_LABEL[crewLevel][0]}”`,`恢复为「${CREW_LABEL[crewLevel][1]}」`)}</button><button type="button" class="cbtn solid" data-d="close">${L("Done","完成")}</button></div>`;
+  openDialog(L("Customize the crew","自定义成员权限"),`<div id="auBody">${body()}</div>`,d=>{
+    d.onclick=e=>{const b=e.target.closest("button[data-au]");if(b){setAutonomy({[b.dataset.au]:b.dataset.v});qs("#auBody",d).innerHTML=body();return}
+      if(e.target.closest("[data-au-reset]")){setCrewLevel(crewLevel);qs("#auBody",d).innerHTML=body()}};
   });
 }
 const PROP_FIELDS=["title","text","tag","tone"];
 const openProps=id=>(board.proposals||[]).filter(p=>p.status==="open"&&(!id||p.target===id));
+/* Locks: a locked card, or any kept card in a locked lane, is changed only by you. The Snapshot lane starts locked. */
+const lockedBays=()=>Array.isArray(board?.lockedBays)?board.lockedBays:[3];
+const isLocked=n=>!!n&&n.status==="ink"&&(!!n.locked||lockedBays().includes(bayOf(n)));
+/* built outside renderNodes, whose loop declares its own local L */
+function lockBadgeHTML(n){return isLocked(n)?`<span class="lock-badge" title="${esc(n.locked?L("Locked: only you can change this card","已锁定：只有你能修改这张卡片"):L("In a locked lane: only you can change this card","位于锁定泳道：只有你能修改这张卡片"))}">${ic("lock")}</span>`:""}
+function toggleCardLock(n){if(!n)return;checkpoint();n.locked=!n.locked;log("you",`${n.locked?"Locked":"Unlocked"} <b>${esc(titleOf(n))}</b>`,n.id);renderAll();persist();toast(n.locked?L("Locked: only you can change this card.","已锁定：只有你能修改这张卡片。"):L("Unlocked.","已解锁。"),{undo:true})}
+function toggleBayLock(i){board.lockedBays=lockedBays().includes(i)?lockedBays().filter(x=>x!==i):[...lockedBays(),i];renderBays();renderNodes();persist();toast(lockedBays().includes(i)?L(`${bayName(BAYS[i])} is locked: only you can change its cards.`,`${bayName(BAYS[i])}已锁定：只有你能修改其中的卡片。`):L(`${bayName(BAYS[i])} is unlocked.`,`${bayName(BAYS[i])}已解锁。`))}
 function propose(who,engine,op,n,change){
   board.proposals=Array.isArray(board.proposals)?board.proposals:[];
   const before={};for(const f of PROP_FIELDS)if(change[f]!==undefined)before[f]=n[f]??"";
@@ -4389,7 +4466,7 @@ function flyToBay(i){
 function renderBays(){
   const used=new Set(visibleNodes().filter(n=>n.status==="ink").map(bayOf));
   $("bays").innerHTML=BAYS.map((b,i)=>{const em=bayEmpty(b);return `<div class="bay" style="left:${i*BAY}px;width:${BAY}px">
-    <div class="bay-head"><span class="step">${b.n}</span><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p></div>
+    <div class="bay-head"><span class="step">${b.n}</span><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" title="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic("lock")}</button></div>
     ${used.has(i)?"":`<div class="bay-empty"><span class="glyph"><svg class="ico" viewBox="0 0 24 24">${b.icon}</svg></span><h3>${esc(em[0])}</h3><p>${esc(em[1])}</p></div>`}
   </div>`}).join("");
 }
@@ -5168,7 +5245,7 @@ function nodeLineageSig(n){
   return refs.map(r=>`${r.sourceId}:${r.depType}:${r.status}:${r.node?(r.node.rev||1)+":"+digest(r.node):"T"}`).join("|");
 }
 
-function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
+function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
   n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang()])}
 const iframeDocs=new Map();
 function advPinHTML(n){
@@ -5208,7 +5285,7 @@ function renderNodes(){
     if(el._sig!==sig){
       if(el._sig&&el.querySelector("[contenteditable]:focus,input:focus,textarea:focus"))continue;
       const rszHTML=RESIZABLE_TYPES.has(n.type)?'<span class="card-resize is-l" data-resize="wl" title="Drag left edge to resize · Alt symmetric · Double-click to reset" aria-hidden="true"></span><span class="card-resize is-r" data-resize="wr" title="Drag right edge to resize · Alt symmetric · Double-click to reset" aria-hidden="true"></span>':"";
-      el.innerHTML=cardBody(n)+proposalBarHTML(n)+lineageCardHTML(n)+advPinHTML(n)+'<span class="crop" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="port port-in" data-port="in" data-side="left" title="Upstream input (parent)"></span><span class="port port-out" data-port="out" data-side="right" title="Downstream output (child)"></span>'+rszHTML;el._sig=sig;
+      el.innerHTML=lockBadgeHTML(n)+cardBody(n)+proposalBarHTML(n)+lineageCardHTML(n)+advPinHTML(n)+'<span class="crop" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="port port-in" data-port="in" data-side="left" title="Upstream input (parent)"></span><span class="port port-out" data-port="out" data-side="right" title="Downstream output (child)"></span>'+rszHTML;el._sig=sig;
       const fr=el.querySelector("iframe[data-srcdoc]");if(fr){if(fr.dataset.srcdoc==="html")populateHtmlIframe(fr,n);else{fr.onload=()=>fr.parentElement?.classList.add("ready");fr.srcdoc=pageHTML(n.spec,{thumb:true})}}
       const pdfFr=el.querySelector("iframe[data-src-pdf]");if(pdfFr){pdfFr.onload=()=>pdfFr.parentElement?.classList.add("ready");pdfFr.src=pdfFr.dataset.srcPdf+"#toolbar=0&navpanes=0&scrollbar=0";setTimeout(()=>pdfFr.parentElement?.classList.add("ready"),250)}
       const urlFr=el.querySelector("iframe[data-src-url]");if(urlFr){urlFr.onload=()=>urlFr.parentElement?.classList.add("ready");urlFr.src=urlFr.dataset.srcUrl}
@@ -5451,6 +5528,7 @@ function renderCrew(){
   const seatsHtml=Object.values(AGENTS).map(a=>{const s=crewState[a.key];const waiting=board.nodes.some(n=>n.status==="sketch"&&n.by===a.key);
     return `<button type="button" class="seat ${s.busy?"busy":""} ${waiting&&!s.busy?"waiting":""}" data-agent="${a.key}" aria-label="${a.name}: ${esc(s.status||(waiting?"waiting for you":"free"))}"><span class="mk">${a.mk}</span><span class="ring"></span></button>`}).join("");
   $("crew").innerHTML=`<div class="crew-seats" role="group" aria-label="AI Crew">${seatsHtml}</div>`
+    +`<button type="button" id="crewSetBtn" class="crew-set" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(L("How much the crew does on its own","成员自己做多少"))}">${esc(autonomyCustom?L("Custom","自定义"):L(CREW_SHORT[crewLevel][0],CREW_SHORT[crewLevel][1]))}${ic("chev","ico cm-chev")}</button>`
     +`<button type="button" id="crewModeBtn" class="crew-mode ${mode.cls||""}" aria-haspopup="dialog" aria-expanded="${studioPopOpen}" title="${esc(mode.title)}" aria-label="${esc(modeLbl)}: ${esc(mode.title)}"><b></b><span>${esc(modeLbl)}</span>${ic("chev","ico cm-chev")}</button>`;
   paintCopilotHeader?.();
   renderLineCrew?.();
@@ -5583,23 +5661,16 @@ function renderStudioPop(){
   const avVids=allVids.filter(m=>m.available);
   const mediaUp=imgSvc.connected&&(avImgs.length||avVids.length);
   const svcStopped=imgSvc.serviceStatus==="stopped";
-  const headTitle=mode.kind==="studio"?L("AI & Media","AI 与媒体服务")
-    :mode.kind==="loading"?L("Starting Studio AI…","正在启动本地 AI…")
-    :mode.kind==="api"?L("AI & Media · Cloud API","AI 与媒体 · 云端 API")
-    :mode.kind==="claude"?L("AI & Media · Claude","AI 与媒体 · Claude")
-    :mode.kind==="paused"?L("AI & Media · Rules Only","AI 与媒体 · 仅规则")
-    :L("AI & Media","AI 与媒体服务");
-  const headSub=mode.kind==="studio"?`${modelShort||"Qwen3-VL"}${studioState.latency!=null?" · "+studioState.latency+"ms":""}`
-    :mode.kind==="loading"?L("Warming local engine…","正在预热本地引擎…")
-    :mode.kind==="api"?`${apiCfg.model}`
-    :mode.kind==="claude"?L("Connected","已连接")
-    :mode.kind==="paused"?L("Rules only · AI bypassed","仅使用规则 · 已跳过大模型")
-    :mediaUp?L("Local AI asleep · Media ready","本地 AI 待机 · 媒体服务就绪")
-    :svcStopped?L("Local AI asleep · Media stopped","本地 AI 待机 · 媒体服务已停止")
-    :L("Built-in rules · Offline","内置规则 · 离线");
+  const headTitle=L("Connection","连接");
+  const headSub=mode.kind==="studio"?L(`Using Local AI · ${modelShort||"Qwen3-VL"}${studioState.latency!=null?" · "+studioState.latency+"ms":""}`,`正在使用本地 AI · ${modelShort||"Qwen3-VL"}`)
+    :mode.kind==="loading"?L("Starting Local AI…","正在启动本地 AI…")
+    :mode.kind==="api"?L(`Using Cloud API · ${(apiCfg.model||"").split("/").pop()}`,`正在使用云端 API · ${(apiCfg.model||"").split("/").pop()}`)
+    :mode.kind==="claude"?L("Using Claude","正在使用 Claude")
+    :aiPref==="local"?L("Built-in rules only, by your choice","按你的选择只用内置规则")
+    :L("No model connected · built-in rules only","未连接模型 · 只用内置规则");
   const stStateHtml=stReady?`<span class="sp-state ok"><i></i>${L("Ready","就绪")}</span>`
     :stLoad?`<span class="sp-state busy"><i></i>${esc(studioState.progress&&studioState.progress.startsWith("Downloading")?L("Downloading","下载中"):L("Warming","预热中"))}</span>`
-    :`<span class="sp-state"><i></i>${stStopped?L("Stopped","已停止"):L("Offline","离线")}</span>`;
+    :`<span class="sp-state"><i></i>${stStopped?L("Stopped","已停止"):hasApi()&&aiPref!=="local"?L("Not running · not needed","未运行 · 当前不需要"):L("Not running","未运行")}</span>`;
   const stActHtml=(stReady||stLoad)
     ?`<button type="button" class="sp-mini danger" data-sp="stop-local" title="${esc(L("Stop local model and free memory","停止本地模型并释放内存"))}">${L("Stop","停止")}</button>`
     :`<button type="button" class="sp-mini" data-sp="wake">${L("Wake","唤醒")}</button>`;
@@ -5611,7 +5682,7 @@ function renderStudioPop(){
     :`<button type="button" class="sp-mini" data-sp="check-img">${imgChecking?"…":L("Check","检测")}</button>`;
   const imSub=svcStopped?L("Stopped · start manually on Windows","已停止 · 需在 Windows 手动启动")
     :(mediaUp?[avImgs.length?`${avImgs[0].name||avImgs[0].id}${avImgs.length>1?` +${avImgs.length-1}`:""}`:"",avVids.length?"MiniMax H3":""].filter(Boolean).join(" · ")
-    :imgSvc.connected?L("Waiting for model","等待模型就绪"):L("Windows host offline","Windows 端未连接"));
+    :imgSvc.connected?L("Waiting for model","等待模型就绪"):L("Not running","Windows 端未连接"));
   const chosenImg=pickImageModel();
   const imgModelsHtml=avImgs.length?`<div class="sp-subhdr">${L("Image","图像")}</div><div class="sp-models">${avImgs.map(m=>{
     const on=chosenImg?.id===m.id;
@@ -5625,7 +5696,7 @@ function renderStudioPop(){
     return `<div class="sp-m-wrap" data-active="${!!m.available}"><div class="sp-m" aria-pressed="${!!m.available}" title="${esc(m.reason||m.name||m.id)}" style="cursor:default"><span class="sp-m-info"><b>${esc(cleanName)}</b><span>${specTxt}</span></span><span class="sp-m-tag">${tag}</span></div></div>`;
   }).join("")}</div>`:"";
   const apiModelShort=hasApi()?(apiCfg.model||"").split("/").pop():"";
-  const apiSub=hasApi()?`${apiModelShort}`:L("Not configured","未配置");
+  const apiSub=hasApi()?(()=>{try{return new URL(apiCfg.baseUrl).host}catch{return apiModelShort}})():L("Not configured","未配置");
   const models=Array.isArray(studioState.models)?studioState.models:[];
   const gb=b=>b?(b/1e9).toFixed(1)+" GB":"";
   const modelsHtml=models.length?`<div class="sp-models">${models.map(m=>{
@@ -5635,7 +5706,7 @@ function renderStudioPop(){
     return `<div class="sp-m-wrap" data-active="${!!m.active}" data-live="${!!(m.active&&stReady)}"><button type="button" class="sp-m" data-sp="model" data-id="${esc(m.id)}" aria-pressed="${!!m.active}"><span class="sp-m-info"><b>${esc(m.label)}</b><span>${esc(meta)}</span></span></button>${delBtn}<button type="button" class="sp-m-tag" data-sp="model" data-id="${esc(m.id)}">${esc(tag)}</button></div>`;
   }).join("")}</div>`:"";
   const progHtml=studioState.error?`<div class="sp-prog err">${esc(studioState.error)}</div>`:studioState.progress?`<div class="sp-prog">${esc(studioState.progress)}</div>`:"";
-  const showHint=!models.length&&!stReady&&!stLoad&&!stStopped&&!studioState.error&&aiPref==="auto";
+  const showHint=!models.length&&!stReady&&!stLoad&&!stStopped&&!studioState.error&&aiPref==="auto"&&!hasApi();
   const oldLauncherHint=stReady&&!models.length?`<div class="sp-hint">${L("Relaunch","重新启动")} <code>Start Studio AI.command</code> ${L("to switch models.","以切换本地模型。")}</div>`:"";
   pop.innerHTML=`<div class="sp-head">
       <div class="sp-htxt"><b>${esc(headTitle)}</b><small title="${esc(headSub)}">${esc(headSub)}</small></div>
@@ -5678,33 +5749,9 @@ function renderStudioPop(){
         </div>
         <button type="button" class="sp-mini" data-sp="api">${hasApi()?L("Edit","编辑"):L("Set","配置")}</button>
       </div>
-      <div class="sp-svc sp-col">
-        <div class="sp-svc-main">
-          <div class="sp-svc-top"><span>${L("Unasked thoughts","主动建议")}</span></div>
-          <div class="sp-svc-sub">${advisorLevel==="off"?L("The crew only speaks when you ask","只在你询问时发言"):L(`One look per burst of new cards · ${advUsed()} of ${ADV_BUDGET[advisorLevel]} used this hour${advHeld?` · ${advHeld} held back`:""}`,`每批新卡片看一次 · 本小时已用 ${advUsed()}/${ADV_BUDGET[advisorLevel]}${advHeld?` · ${advHeld} 张未看`:""}`)}</div>
-        </div>
-        <select class="set-select" id="advLevelSel" aria-label="${esc(L("How proactive the crew is","主动程度"))}">${[["off",L("Off","关闭")],["quiet",L("Quiet","安静")],["active",L("Active","活跃")]].map(([k,l])=>`<option value="${k}"${advisorLevel===k?" selected":""}>${l}</option>`).join("")}</select>
-      </div>
-      <div class="sp-svc">
-        <div class="sp-svc-main">
-          <div class="sp-svc-top"><span>${L("Agent permissions","成员权限")}</span></div>
-          <div class="sp-svc-sub" title="${esc(autonomySummary())}">${esc(autonomySummary())}</div>
-        </div>
-        <button type="button" class="sp-mini" data-sp="autonomy">${L("Edit","编辑")}</button>
-      </div>
-      ${typeof advisorMode==="undefined"||advisorMode?`<div class="sp-svc">
-        <div class="sp-svc-main">
-          <div class="sp-svc-top"><span>${L("Auto follow-up","自动起草后续卡片")}</span></div>
-          <div class="sp-svc-sub">${L("Draft top suggested follow-up as a sketch","自动将首选建议起草为待审草稿")}</div>
-        </div>
-        <button type="button" class="sp-mini ${typeof advisorAuto!=="undefined"&&advisorAuto?"on":""}" data-sp="adv-auto" aria-pressed="${typeof advisorAuto!=="undefined"&&advisorAuto}">${typeof advisorAuto!=="undefined"&&advisorAuto?L("On","开启"):L("Off","关闭")}</button>
-      </div>`:""}
     </div>
     ${showHint?`<div class="sp-hint">${L("Run","运行")} <code>Start Studio AI.command</code> ${L("for local vision & voice.","以启用本地视觉与语音。")}</div>`:oldLauncherHint}
-    <div class="sp-foot">
-      <button type="button" data-sp="memory">${ic("book")}${L("Memory","记忆")}</button>
-      <button type="button" data-sp="copilot">${ic("sparkles")}${L("Open Copilot","打开 Copilot")}</button>
-    </div>`;
+`;
 }
 function toggleStudioPopover(force){
   const next=force===undefined?!studioPopOpen:!!force;
@@ -6032,21 +6079,20 @@ function renderAll(){if(board&&(!changeShadow||changeShadow.id!==board.id))chang
 /* ── advisor co-work pins & humanized thinking whisper ─────────────────── */
 /* How proactive the crew is, unasked. Off: never. Quiet: one look per burst of new cards, at most ADV_BUDGET.quiet an hour.
    Active: the same batching with a larger budget. Anything you ask for (a pin's Try again) is outside the budget. */
-const ADV_BUDGET={quiet:6,active:20};
-let advQuietMs=6000,advMaxWaitMs=20000;
-let advisorLevel=store.get(".advisorLevel",null)||(store.get(".advisor",true)?"quiet":"off");
-let advisorMode=advisorLevel!=="off";
+const ADV_HARD_CAP=30;
+let advQuietMs=CREW_QUIET[crewLevel]||6000,advMaxWaitMs=20000,advFadeMs=600000;
+let advisorLevel=null;
+let advisorMode=crewLevel!=="asked";
 let advSpent=(store.get(".advSpent",[])||[]).filter(t=>NOW()-t<3600000);
 let advBurst=new Set(),advBurstT=0,advBurstStart=0,advBurstCtx=null,advHeld=0;
 const advUsed=()=>{advSpent=advSpent.filter(t=>NOW()-t<3600000);return advSpent.length};
-const advLeft=()=>Math.max(0,(ADV_BUDGET[advisorLevel]||0)-advUsed());
-function setAdvisorLevel(level){
-  advisorLevel=["off","quiet","active"].includes(level)?level:"quiet";advisorMode=advisorLevel!=="off";
-  store.set(".advisorLevel",advisorLevel);store.set(".advisor",advisorMode);
-  if(!advisorMode){for(const t of advTimers.values())clearTimeout(t);advTimers.clear();advBurst.clear();clearTimeout(advBurstT)}
-  renderCrew();renderStudioPop?.();
-}
-let advisorAuto=store.get(".advisorAuto",false);
+/* a hidden ceiling guards cost; what the user feels is the unread rule: no new thought while earlier ones wait */
+const advLeft=()=>Math.max(0,ADV_HARD_CAP-advUsed());
+function fadeIgnoredPins(){let changed=false;for(const ps of Object.values(board?.pins||{}))for(const p of ps||[])if(!p.seen&&NOW()-(p.t||0)>advFadeMs){p.seen=true;p.faded=true;changed=true}if(changed){renderNodes();persist()}return changed}
+const unreadPins=()=>{fadeIgnoredPins();let k=0;for(const ps of Object.values(board?.pins||{}))for(const p of ps||[])if(!p.seen)k++;return k};
+function setAdvisorLevel(level){setCrewLevel({off:"asked",quiet:"suggest",active:"collab"}[level]||level)}
+setInterval(()=>{if(board&&advHeld)renderCrewPop?.();if(board)fadeIgnoredPins()},30000);
+let advisorAuto=crewLevel==="collab";
 let openAdvNodeId=null;
 let openAdvIdx=0;
 const advThinking=new Map();
@@ -6450,7 +6496,7 @@ function scheduleAdvisor(nodeId,{force=false,delay=1400}={}){
 function fireAdvisorBurst(){
   const ids=[...advBurst].filter(id=>{const n=byId(id);return n&&!n.archived&&n.status!=="sketch"&&n.type!=="group"});advBurst.clear();
   if(!ids.length||!advisorMode)return;
-  if(!advLeft()){advHeld+=ids.length;renderStudioPop?.();return}
+  if(unreadPins()>=(CREW_UNREAD[crewLevel]||0)||!advLeft()){advHeld+=ids.length;renderCrewPop?.();return}
   /* one look per burst: the card with the most to say about, preferring cards without a pin yet */
   const score=id=>{const n=byId(id),txt=(fullTextOf(n)+" "+(n.title||"")).trim();return Math.min(txt.length,600)+(n.media||n.url?200:0)-((board.pins?.[id]||[]).length?1000:0)+(n.updated||n.created||0)/1e13};
   ids.sort((a,b)=>score(b)-score(a));
@@ -6470,7 +6516,7 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
   const advCtrl=new AbortController();advAborts.set(nodeId,advCtrl);
   try{
     let curKws=(localRes.keywords||[]).slice(0,2),curLines=[],liveKws=false,liveLines=0;
-    if(!force&&advisorLiveReady(n)){advSpent.push(NOW());store.set(".advSpent",advSpent);renderStudioPop?.()}
+    if(!force&&advisorLiveReady(n)){advSpent.push(NOW());store.set(".advSpent",advSpent);advHeld=0}
     const dataP=askAdvisorForNode(n,({keywords,thoughts})=>{
       if(!advThinking.has(nodeId)||advCtrl.signal.aborted)return;
       if(keywords.length){liveKws=true;curKws=keywords.slice(0,5)}
@@ -8317,6 +8363,7 @@ function fullCardMenuActs(n){
   acts.push({k:"copilot",label:L("Ask Copilot","问问 Copilot"),ic:"ask"});
   acts.push({k:"open",label:L("Open Details","卡片全屏详情"),key:"↵",ic:"arrow"});
   acts.push({sep:true});
+  if(n.status==="ink")acts.push({k:"lock",label:n.locked?L("Unlock","解锁"):L("Lock","锁定"),ic:"lock"});
   acts.push({k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"});
   acts.push({k:"hide",label:L("Hide from canvas","从画布隐藏"),ic:"eyeOff"});
   acts.push({k:"archive",label:L("Archive","归档卡片"),key:"⇧H",ic:"archive"});
@@ -8364,6 +8411,7 @@ $("cardMenu")?.addEventListener("click",e=>{
   if(k==="edit")return startEdit(n.id,"text",{collapseEnd:true});
   if(k==="edit-tag")return startEdit(n.id,"tag",{collapseEnd:false});
   if(k==="look")return openStage(n);
+  if(k==="lock")return toggleCardLock(n);
   if(k==="dup")return duplicateSelection();
   if(k==="hide")return hideFromCanvasNodes([n.id]);
   if(k==="archive")return archiveNodes([n.id]);
@@ -8585,6 +8633,14 @@ $("reviewBtn").addEventListener("click",()=>{
   if(groups().size<=1&&!openProps().length){toggleReviewPop(false);return nextReview(0)}
   toggleReviewPop();
 });
+$("crewPop")?.addEventListener("click",e=>{
+  const lv=e.target.closest("[data-crew-level]");if(lv){setCrewLevel(lv.dataset.crewLevel);return}
+  if(e.target.closest("[data-crew-custom]")){toggleCrewPop(false);openAutonomyDialog();return}
+  if(e.target.closest("[data-crew-memory]")){toggleCrewPop(false);memoryDialog();return}
+  if(e.target.closest("[data-crew-copilot]")){toggleCrewPop(false);openCopilot(true);return}
+});
+document.addEventListener("pointerdown",e=>{const b=e.target.closest?.("[data-bay-lock]");if(b){e.stopPropagation();e.preventDefault()}},true);
+document.addEventListener("click",e=>{const b=e.target.closest?.("[data-bay-lock]");if(b){e.stopPropagation();toggleBayLock(+b.dataset.bayLock)}},true);
 $("reviewPop")?.addEventListener("click",e=>{
   {const g=e.target.closest("[data-rp-prop-go],[data-rp-prop-accept],[data-rp-prop-reject]");if(g){e.stopPropagation();const id=g.dataset.rpPropGo||g.dataset.rpPropAccept||g.dataset.rpPropReject,pr=(board.proposals||[]).find(p=>p.id===id);
     if(g.dataset.rpPropAccept)acceptProposal(id,{force:!!pr?.stale});else if(g.dataset.rpPropReject)rejectProposal(id);else{const n=pr&&byId(pr.target);if(n){expandedProps.add(id);focusNodes([n],Math.max(cam.s,.8));select([n.id]);renderNodes()}}
@@ -11696,6 +11752,7 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
   const skipped=[];
   const ruleFor=k=>opts.userIntent?"direct":perm(k);
   const gate=n=>!opts.userIntent&&n&&n.status==="ink"&&!createdNodes.includes(n);
+  const lockedOut=n=>!opts.userIntent&&isLocked(n)&&!createdNodes.includes(n);
   checkpoint();
   for(const act of list){
     if(!act||typeof act!=="object")continue;
@@ -11763,6 +11820,7 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
         const targetId=resolveNodeId(act.target||act.id||act.nodeId)||ctxNodes()[0]?.id;
         const n=targetId?byId(targetId):null;
         if(!n){failed.push({action:"edit",target:act.target,error:"Target node not found"});continue}
+        if(lockedOut(n)){skipped.push({action:"edit",id:n.id,title:titleOf(n),locked:true});continue}
         if(gate(n)&&perm("edit")==="never"){skipped.push({action:"edit",id:n.id,title:titleOf(n)});continue}
         if(gate(n)&&perm("edit")==="suggest"){
           const change={};
@@ -11792,6 +11850,8 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
       }else if(["erase","delete","remove"].includes(type)){
         const raw=act.targets||act.ids||(act.target?[act.target]:(act.id?[act.id]:[]));
         let list=(Array.isArray(raw)?raw:[raw]).map(resolveNodeId).filter(Boolean);
+        list.filter(id=>lockedOut(byId(id))).forEach(id=>skipped.push({action:"delete",id,title:titleOf(byId(id)),locked:true}));list=list.filter(id=>!lockedOut(byId(id)));
+        if(!list.length&&skipped.some(x=>x.locked&&x.action==="delete"))continue;
         const blocked=perm("delete")==="never"?list.filter(id=>gate(byId(id))):[];
         blocked.forEach(id=>skipped.push({action:"delete",id,title:titleOf(byId(id))}));list=list.filter(id=>!blocked.includes(id));
         const kept=perm("delete")==="suggest"?list.filter(id=>gate(byId(id))):[];
@@ -11803,7 +11863,7 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
           applied.push({action:"erase",ids:list});
           log(who,`AI removed ${list.length} card(s)`,null);
         }else if(ctxNodes().length&&!act.target&&!act.id){
-          let ids=ctxNodes().map(x=>x.id);
+          let ids=ctxNodes().map(x=>x.id).filter(id=>{if(lockedOut(byId(id))){skipped.push({action:"delete",id,title:titleOf(byId(id)),locked:true});return false}return true});if(!ids.length)continue;
           const blockedSel=perm("delete")==="never"?ids.filter(id=>gate(byId(id))):[];
           blockedSel.forEach(id=>skipped.push({action:"delete",id,title:titleOf(byId(id))}));ids=ids.filter(id=>!blockedSel.includes(id));
           const keptSel=perm("delete")==="suggest"?ids.filter(id=>gate(byId(id))):[];
@@ -11818,6 +11878,7 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
       }else if(["edge","connect","link"].includes(type)){
         const a=resolveNodeId(act.from||act.source||act.a)||ctxNodes()[0]?.id;
         const b=resolveNodeId(act.to||act.target||act.b)||ctxNodes()[1]?.id;
+        if(a&&b&&a!==b&&lockedOut(byId(b))){skipped.push({action:"link",from:a,to:b,locked:true});continue}
         if(a&&b&&a!==b&&ruleFor("link")==="never"){skipped.push({action:"link",from:a,to:b});continue}
         if(a&&b&&a!==b&&ruleFor("link")==="suggest"&&!createdNodes.some(x=>x.id===a||x.id===b)){
           const pr=propose(who,opts.engine||"model","link",byId(b),{from:a,kind:act.kind||"derive",depType:act.depType||"live"});proposed.push({action:"propose-link",id:b,title:titleOf(byId(b)),proposal:pr.id});continue;
@@ -11851,7 +11912,9 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
       failed.push({action:act.action||"unknown",error:err?.message||String(err)});
     }
   }
-  if(skipped.length)toast(L(`${skipped.length} action${skipped.length>1?"s":""} not allowed by your agent permissions`,`${skipped.length} 项操作被你的成员权限阻止`));
+  {const lk=skipped.filter(x=>x.locked).length,pm=skipped.length-lk;
+   if(lk)toast(L(`${lk} change${lk>1?"s":""} to locked cards not made`,`${lk} 项对锁定卡片的修改未执行`));
+   if(pm)toast(L(`${pm} action${pm>1?"s":""} not allowed by your crew settings`,`${pm} 项操作被你的成员设置阻止`));}
   if(!applied.length&&proposed.length){
     renderAll();persist();renderReview?.();
     const k=proposed.length;toast(L(`${k} suggested change${k>1?"s":""} waiting for you`,`${k} 项修改建议等待你确认`),{undo:true});
@@ -13264,7 +13327,8 @@ $("lineCtx").addEventListener("click",e=>{
 $("ledger").addEventListener("click",e=>{const b=e.target.closest("[data-l]");if(!b)return;if(b.dataset.l==="close"){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}const t=byId(b.dataset.id);if(t){select([t.id]);focusNodes([t],1)}});
 $("rail").addEventListener("click",e=>{const b=e.target.closest("[data-bay]");if(b)flyToBay(+b.dataset.bay)});
 $("crew").addEventListener("click",e=>{
-  if(e.target.closest("#crewModeBtn")){toggleStudioPopover();return}
+  if(e.target.closest("#crewSetBtn")){toggleCrewPop();return}
+  if(e.target.closest("#crewModeBtn")){toggleCrewPop(false);toggleStudioPopover();return}
   const b=e.target.closest("[data-agent]");if(!b)return;
   toggleAgentPop(b.dataset.agent);
 });
@@ -13322,6 +13386,7 @@ document.addEventListener("pointerdown",e=>{
   if(!e.target.closest?.("[data-agent]"))hideTip();
   if(studioPopOpen&&!e.target.closest?.("#studioPop")&&!e.target.closest?.("#crewModeBtn"))toggleStudioPopover(false);
   if(reviewPopOpen&&!e.target.closest?.("#reviewPop")&&!e.target.closest?.("#reviewBtn"))toggleReviewPop(false);
+  if(crewPopOpen&&!e.target.closest?.("#crewPop")&&!e.target.closest?.("#crewSetBtn")&&!e.target.closest?.("dialog"))toggleCrewPop(false);
   if(agentPopKey&&!e.target.closest?.("#agentPop")&&!e.target.closest?.("#crew [data-agent]"))toggleAgentPop(null);
   if(boardsPopOpen&&!e.target.closest?.("#boardsPop")&&!e.target.closest?.("#projectBtn"))toggleBoardsPop(false);
   if(openAdvNodeId&&!e.target.closest?.("#advPop")&&!e.target.closest?.("[data-adv-pin]"))closeAdvPop();
@@ -14407,7 +14472,7 @@ addEventListener("keydown",e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();if(findOpen)setOmniMode("cmd",{focus:true});else lineIn.focus();return}
   if((e.metaKey||e.ctrlKey)&&e.key==="."){e.preventDefault();openCopilot();return}
   if(typing)return;
-  if(e.key==="Escape"){if(cardMenuOpen){closeCardMenu();return}if($("wirePop")?.querySelector(".wp-dep-menu:not([hidden])")){closeWirePopMenu();return}if(openAdvNodeId){closeAdvPop();return}if(agentPopKey){toggleAgentPop(null);return}if(boardsPopOpen){toggleBoardsPop(false);$("projectBtn")?.focus();return}if(reviewPopOpen){toggleReviewPop(false);$("reviewBtn")?.focus();return}if(studioPopOpen){const wasKb=!!document.activeElement?.closest?.("#studioPop");toggleStudioPopover(false);if(wasKb)$("crewModeBtn")?.focus();return}if(genPop){const back=genPop==="ratio"?"genRatioBtn":"genModelBtn";const wasKb=!!document.activeElement?.closest?.(".go-drop");genPop=null;renderGenOpts(true);if(wasKb)$(back)?.focus();return}if(copilotOpen){openCopilot(false);return}if(findOpen){toggleFindBar(false);return}if(!$("ledger").hidden){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}if(focusId){e.preventDefault();closeFocus();return}selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();return}
+  if(e.key==="Escape"){if(cardMenuOpen){closeCardMenu();return}if($("wirePop")?.querySelector(".wp-dep-menu:not([hidden])")){closeWirePopMenu();return}if(openAdvNodeId){closeAdvPop();return}if(agentPopKey){toggleAgentPop(null);return}if(boardsPopOpen){toggleBoardsPop(false);$("projectBtn")?.focus();return}if(reviewPopOpen){toggleReviewPop(false);$("reviewBtn")?.focus();return}if(crewPopOpen){toggleCrewPop(false);$("crewSetBtn")?.focus();return}if(studioPopOpen){const wasKb=!!document.activeElement?.closest?.("#studioPop");toggleStudioPopover(false);if(wasKb)$("crewModeBtn")?.focus();return}if(genPop){const back=genPop==="ratio"?"genRatioBtn":"genModelBtn";const wasKb=!!document.activeElement?.closest?.(".go-drop");genPop=null;renderGenOpts(true);if(wasKb)$(back)?.focus();return}if(copilotOpen){openCopilot(false);return}if(findOpen){toggleFindBar(false);return}if(!$("ledger").hidden){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}if(focusId){e.preventDefault();closeFocus();return}selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();return}
   if(onBtn&&(e.key===" "||e.key==="Enter"))return;
   if(e.key===" "&&!spaceHeld){spaceHeld=true;wall.classList.add("hand");e.preventDefault();return}
   const latest=groups().get(currentPid());

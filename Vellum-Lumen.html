@@ -1126,6 +1126,7 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 .m-hero .play .ico{width:20px;height:20px;margin-left:3px}
 .m-sec{padding:12px 24px;grid-column:1/-1;min-width:0}
 .m-sec:last-child{border-bottom:0}
+.m-acts-row{display:flex;justify-content:flex-end;gap:6px;padding:2px 2px 10px}.m-acts-row .cbtn{height:var(--size-sm)}
 .margin .todo li{border-bottom:0}
 .margin .todo-add{border-top:0}
 .margin.is-scrolled .m-head{border-bottom-color:var(--hair)}
@@ -6207,7 +6208,7 @@ function renderMargin(){queueMicrotask(placeBars);
   marginThreadLen=thread.length;
   const draft=fresh?"":(qs("#mInput",m)?.value||"");
   m.className="margin"+(linTag?" pg-"+linTag:"")+(hero?" has-hero":"");
-  const acts=marginActs(n);
+  const acts=marginActs(n),moreActs=n.type==="proof"?"":acts;
   ensureRevision(n);
   const mFmt=fileFormatOf(n),isHtml=isHtmlSource(n),hasAttach=(n.type==="source"||n.type==="audio"||n.type==="recording")&&(n.media||isHtml);
   const subParts=[];
@@ -6241,10 +6242,9 @@ function renderMargin(){queueMicrotask(placeBars);
     else if(d.status==="frozen_changed")pill=`<span class="src-pill muted">${L("Frozen","已冻结")} v${d.fixedEntry?.rev||1}→v${d.node?.rev||1}</span>`;
     else if(d.status==="archived")pill=`<span class="src-pill muted">${L("Archived","已归档")}</span>`;
     else if(d.status==="hidden")pill=`<span class="src-pill muted">${L("Hidden","已隐藏")}</span>`;
-    else if(d.depType==="frozen")pill=`<span class="src-pill" title="${esc(L("Pinned to the version it had when linked","固定为引用时的版本"))}">${L("Frozen","已冻结")}</span>`;
     else if(showWeight&&d.node)pill=weightHTML(d.fixedEntry?.weight??d.node.weight,true);
     const main=d.node
-      ?`<button type="button" class="src-btn" data-m="goto" data-id="${d.sourceId}">${d.depType==="frozen"?ic("lock"):`<span class="src-kind">${esc(refKindShort(d.node))}</span>`}<span class="sp">${esc(srcFullTitle(d))}</span>${pill}</button>`
+      ?`<button type="button" class="src-btn" data-m="goto" data-id="${d.sourceId}"><span class="src-kind">${esc(refKindShort(d.node))}</span><span class="sp">${esc(srcFullTitle(d))}</span>${pill}</button>`
       :`<div class="src-btn" style="opacity:.78;cursor:default"><span class="src-kind">✕</span><span class="sp">${esc(d.title)}</span>${pill}</div>`;
     let actBtn="";
     if(d.status==="hidden")actBtn=`<button type="button" class="src-act" data-m="restore-src" data-id="${d.sourceId}">Show</button>`;
@@ -6276,11 +6276,11 @@ function renderMargin(){queueMicrotask(placeBars);
   if(n.plPack||plBusyNodes.has(n.id)||n.plError)m.classList.add("has-pl");
   if(plBusyNodes.has(n.id))m.classList.add("is-pl-busy");
   const plHTML=plBody?`<div class="m-sec">${plBody}</div>`:"";
-  const moreMenuHTML=`<div class="m-more-wrap"><button type="button" class="m-iconbtn" data-m="more-toggle" title="More actions" aria-label="More actions"><svg class="ico" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.75" fill="currentColor" stroke="none"/></svg></button><div class="m-more-pop" id="mMorePop" hidden>${acts?`<div class="m-more-sec">${acts}</div><div class="m-more-div"></div>`:""}<div class="m-more-sec"><button type="button" class="cbtn" data-m="hide-card">${ic("eyeOff")}Hide from canvas</button><button type="button" class="cbtn" data-m="archive">${ic("archive")}Archive</button><button type="button" class="cbtn danger" data-m="delete-card">${ic("trash")}Delete</button></div></div></div>`;
+  const moreMenuHTML=`<div class="m-more-wrap"><button type="button" class="m-iconbtn" data-m="more-toggle" title="More actions" aria-label="More actions"><svg class="ico" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.75" fill="currentColor" stroke="none"/></svg></button><div class="m-more-pop" id="mMorePop" hidden>${moreActs?`<div class="m-more-sec">${moreActs}</div><div class="m-more-div"></div>`:""}<div class="m-more-sec"><button type="button" class="cbtn" data-m="hide-card">${ic("eyeOff")}Hide from canvas</button><button type="button" class="cbtn" data-m="archive">${ic("archive")}Archive</button><button type="button" class="cbtn danger" data-m="delete-card">${ic("trash")}Delete</button></div></div></div>`;
   const notesHTML=thread.length?`<div class="m-sec"><h5><span>Notes</span><span class="m-hmeta"><span>${thread.length}</span>${thread.length>1?`<button type="button" class="m-clear" data-m="clear-msgs" title="Clear all notes">Clear all</button>`:""}</span></h5><div class="thread" id="mThread">${thread.map((msg,idx)=>msgHTML(msg,idx)).join("")}</div></div>`:"";
   m.innerHTML=`<div class="grabber" data-m="close"></div><div class="m-head"><div class="m-head-bar"><div class="m-head-main">${focusTitle(n)}${sublineHTML}</div><div class="m-head-tools">${voteBtns}${dlBtn}${moreMenuHTML}<button type="button" class="m-iconbtn" data-m="close" title="Close (Esc)" aria-label="Close">${ic("x")}</button></div></div></div>
    <div class="m-body">${htmlMain}${padHTML}${listHTML}${synHTML}${fullHTML}${attachHTML}${plHTML}${srcs}${notesHTML}</div>
-   <div class="m-foot"><div class="m-chips">${["critic","scout","muse","wright"].map(k=>`<button type="button" data-m="mention" data-k="${k}">@${AGENTS[k].name.toLowerCase()}</button>`).join("")}</div><div class="m-write"><label for="mInput" class="sr">Add a note</label><textarea id="mInput" rows="1" placeholder="Add a note, or ask @${AGENTS[defaultAgentFor(n)].name.toLowerCase()}">${esc(draft)}</textarea><button type="button" class="send" id="mSendBtn" data-m="post" aria-label="Post"${draft.trim()?"":" disabled"}><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div></div>`;
+   <div class="m-foot">${n.type==="proof"?`<div class="m-acts-row">${acts}</div>`:""}<div class="m-chips">${["critic","scout","muse","wright"].map(k=>`<button type="button" data-m="mention" data-k="${k}">@${AGENTS[k].name.toLowerCase()}</button>`).join("")}</div><div class="m-write"><label for="mInput" class="sr">Add a note</label><textarea id="mInput" rows="1" placeholder="Add a note, or ask @${AGENTS[defaultAgentFor(n)].name.toLowerCase()}">${esc(draft)}</textarea><button type="button" class="send" id="mSendBtn" data-m="post" aria-label="Post"${draft.trim()?"":" disabled"}><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div></div>`;
   const ta=qs("#mInput",m),sb=qs("#mSendBtn",m);
   if(ta&&sb){
     const syncM=()=>{ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,110)+"px";sb.disabled=!ta.value.trim()};
@@ -6315,7 +6315,9 @@ function marginActs(n){
   const b=(a,label,cls="",icn="")=>`<button type="button" class="cbtn ${cls}" data-m="${a}">${icn?ic(icn):""}${label}</button>`;
   switch(n.type){
     case"direction":return board.adopted[n.idea]===n.id?b("try","Try")+b("build","Build Proof","pg"):b("try","Try")+b("adopt","Adopt","pg","stamp");
-    case"proof":return b("try","Open")+b("rebuild","Build v"+(n.ver+1))+b("critique","Critique")+b("print","Snapshot","solid","print");
+    case"proof":{const r=proofResults(n),drift=driftOf(n).changed.length;
+      const primary=r&&r.failed?b("rebuild",`Fix ${r.failed} failed`,"solid"):drift?b("rebuild",`Rebuild with ${drift} change${drift>1?"s":""}`,"solid"):!r?b("critique","Ask Critic to test","solid"):r.waiting?b("critique",`Test ${r.waiting} waiting`,"solid"):b("print","Snapshot","solid","print");
+      return b("try","Open")+primary}
     case"print":return b("try","View")+b("download","Download","solid","down");
     case"recording":return b("open",n.gen?"Open Video":"Open Recording","solid","play")+b("shot-split","Split Shots","","frame")+b("to-gif","Make GIF","","gif")+b("to-video","Make Video","","video");
     case"audio":return b("gather","Ask Scout");

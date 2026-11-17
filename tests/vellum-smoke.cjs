@@ -73,6 +73,8 @@ const dirs = tag => ({ directions: ['A', 'B', 'C'].map(l => ({ title: `${tag} ${
 
 async function page(browser, base, { model = true } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
+  // Studio AI may be running on this machine; the suite must not depend on it (section 9 routes its own)
+  await ctx.route('http://127.0.0.1:59631/**', r => r.abort());
   const p = await ctx.newPage();
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2500);
@@ -504,7 +506,7 @@ async function page(browser, base, { model = true } = {}) {
       r = await forkOn('An RPG set in Shanghai about rival police forces in the 1930s and the translators caught between them.');
       const sf = gens.filter(x => x.kind === 'fork').at(-1), fx = gens.filter(x => x.kind === 'fix').at(-1);
       check('a full idea is branched without questions', !r.asked, JSON.stringify(r.asked));
-      check('Local AI gets the small-model Strategist prompt', /Think like a game designer/.test(sf?.messages?.[0]?.content || '') && /stay in Shanghai/.test(userText(sf)) && /"risk"/.test(userText(sf)));
+      check('Local AI gets the small-model Strategist prompt', /Think like a game designer/.test(sf?.messages?.[0]?.content || '') && /stay in Shanghai/.test(userText(sf)) && /the experience it depends on/.test(userText(sf)), userText(sf).slice(0, 300));
       check('obvious errors get one targeted repair', !!fx && /direction 2 is set in Beijing, but the idea is in Shanghai/.test(userText(fx)) && /impossible number/.test(userText(fx)) && r.titles === 'Fixed A,Fixed B,Fixed C', JSON.stringify({ r, fix: fx && userText(fx).slice(-300) }));
       check('one closing question, no promised work', await p.evaluate(() => tidySmallReply("Yes.\n\n- **A:** b\n\nWhat first?\n\n— or —\n\nDo you want X?") === "Yes.\n\n- **A:** b\n\nWhat first?" && tidySmallReply("Yes.\n\n(If this is what you want, I'll start drafting the structure.)\n\nWhich one? Or that one?") === "Yes.\n\nWhich one?"));
       check('a famous street names its city (Wangfujing is in Beijing; Nanjing Road is in Shanghai)', await p.evaluate(() => placesIn('You patrol Wangfujing Street').join() === 'Beijing' && placesIn('a shop on Nanjing Road in Shanghai').join() === 'Shanghai'));

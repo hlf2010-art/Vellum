@@ -1,0 +1,17 @@
+<!-- @dsCard group="Board" height=200 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||"light"</script><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="../bundle.js"></script><style>body{margin:0;background:var(--canvas)}#root{padding:20px}.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}.col{display:grid;gap:14px;justify-items:start}</style><style>.stage{position:relative}.demo-card{position:absolute;width:150px;height:64px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-card);font:600 13px/1.3 var(--font-ui);color:var(--label);padding:12px 14px}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var V = window.Vellum, h = React.createElement;
+function go(el){ ReactDOM.createRoot(document.getElementById("root")).render(h(V.Root, null, el)); }
+function pair(y,lin,state,label){return h('div',{className:'stage',style:{height:96,width:520}},
+  h('div',{className:'demo-card',style:{left:0,top:16}},label,h(V.Port,{side:'right',connected:true})),
+  h('div',{style:{position:'absolute',left:150,top:0}},h(V.Wire,{from:[0,48],to:[210,30],lineage:lin,state:state,width:220,height:96})),
+  h('div',{className:'demo-card',style:{left:360,top:0}},'Direction',h(V.Port,{side:'left',kind:'in',connected:true})));}
+go(h('div',{className:'col'},pair(0,null,null,'Source'),pair(0,'B',null,'Claim · lineage B')));
+</script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vellum Design System</title>
+<link rel="icon" href="assets/Logos/vellum-mark.svg">
+<link rel="stylesheet" href="tokens.css">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--canvas);color:var(--label);font:14px/1.45 var(--font-ui);-webkit-font-smoothing:antialiased}
+a{color:var(--B)}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--chrome);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);box-shadow:var(--shadow-chrome)}
+.top img{width:24px;height:24px}
+.top b{font:650 15px/1 var(--font-ui);letter-spacing:-.01em}
+.top .sp{flex:1}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:var(--hover);box-shadow:inset 0 0 0 .5px var(--hair-2)}
+.seg button{border:0;background:none;font:550 12.5px/1 var(--font-ui);color:var(--label-2);padding:7px 12px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.wrap{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;max-width:1280px;margin:0 auto;padding:20px 16px 64px}
+nav ul{list-style:none;margin:0;padding:0;position:sticky;top:76px}
+nav li a{display:block;padding:6px 10px;border-radius:10px;color:var(--label-2);text-decoration:none;font:500 13px/1.2 var(--font-ui)}
+nav li a:hover{background:var(--hover);color:var(--label)}
+.nav-g{margin:14px 10px 4px;font:600 10.5px/1 var(--font-ui);letter-spacing:.04em;text-transform:uppercase;color:var(--label-3)}
+.cover{width:100%;height:308px;border:0;border-radius:var(--radius-card);box-shadow:var(--shadow-card);background:var(--canvas);display:block}
+.intro{margin:20px 2px 8px;max-width:680px;color:var(--label-2)}
+.comp{margin-top:32px}
+.comp-hd{display:flex;align-items:baseline;gap:10px}
+.comp h2{margin:0;font:650 21px/25px var(--font-ui);letter-spacing:-.022em}
+.grp{font:550 12px/16px var(--font-ui);color:var(--label-3)}
+.sum{margin:6px 0 12px;max-width:720px;color:var(--label-2)}
+.comp iframe{width:100%;border:0;border-radius:var(--radius-card);background:var(--canvas);box-shadow:var(--shadow-card);display:block}
+.links{display:flex;gap:16px;margin:10px 2px 0;font:500 12.5px/1 var(--font-ui)}
+@media (max-width:760px){.wrap{grid-template-columns:1fr}nav{display:none}}
+</style>
+</head>
+<body>
+<header class="top"><img src="assets/Logos/vellum-mark.svg" alt=""><b>Vellum Design System</b><span class="sp"></span>
+<div class="seg" role="group" aria-label="Theme"><button type="button" data-t="light" aria-pressed="true">Light</button><button type="button" data-t="dark" aria-pressed="false">Dark</button></div></header>
+<div class="wrap">
+<nav aria-label="Components"><ul><li><a href="#top">Overview</a></li><li class="nav-g">Board</li><li><a href="#Card">Card</a></li><li><a href="#CardMenu">CardMenu</a></li><li><a href="#Port">Port</a></li><li><a href="#ProofCard">ProofCard</a></li><li><a href="#SelectionStrip">SelectionStrip</a></li><li><a href="#Sheet">Sheet</a></li><li><a href="#SourceRow">SourceRow</a></li><li><a href="#StageHeader">StageHeader</a></li><li><a href="#Wire">Wire</a></li><li class="nav-g">Lineage</li><li><a href="#EvidenceBlocks">EvidenceBlocks</a></li><li><a href="#EvidenceWeight">EvidenceWeight</a></li><li><a href="#LineageChip">LineageChip</a></li><li class="nav-g">Crew</li><li><a href="#CrewBar">CrewBar</a></li><li><a href="#CrewCursor">CrewCursor</a></li><li><a href="#CrewMark">CrewMark</a></li><li><a href="#CrewSettings">CrewSettings</a></li><li><a href="#DraftBar">DraftBar</a></li><li><a href="#ReviewPill">ReviewPill</a></li><li><a href="#TaskIsland">TaskIsland</a></li><li><a href="#Toast">Toast</a></li><li class="nav-g">Actions</li><li><a href="#Button">Button</a></li><li><a href="#Dialog">Dialog</a></li><li class="nav-g">Canvas chrome</li><li><a href="#CommandMenu">CommandMenu</a></li><li><a href="#Composer">Composer</a></li><li><a href="#Overview">Overview</a></li><li><a href="#ToolRail">ToolRail</a></li><li class="nav-g">Controls</li><li><a href="#Checkbox">Checkbox</a></li><li><a href="#Kbd">Kbd</a></li><li><a href="#Segmented">Segmented</a></li><li><a href="#Switch">Switch</a></li><li><a href="#Tabs">Tabs</a></li><li><a href="#Tag">Tag</a></li><li><a href="#TextField">TextField</a></li><li><a href="#Tooltip">Tooltip</a></li><li class="nav-g">Feedback</li><li><a href="#EmptyState">EmptyState</a></li><li><a href="#InlineAlert">InlineAlert</a></li><li><a href="#Progress">Progress</a></li><li><a href="#Skeleton">Skeleton</a></li></ul></nav>
+<main id="top">
+<iframe class="cover" data-src="components/Cover/preview.html" title="Vellum cover"></iframe>
+<p class="intro">Every component below is live, rendered from <code>components/bundle.js</code> with <code>tokens.css</code>. Guidelines and the brand book are in <a href="README.md">README.md</a>.</p>
+
+<section class="comp" id="Card">
+  <div class="comp-hd"><h2>Card</h2><span class="grp">Board</span></div>
+  <p class="sum">Every object on a Vellum board is a Card: a card face, radius-card corners, shadow-card, then a kind line, title, body and footer.</p>
+  <iframe data-src="components/Card/preview.html" style="height:2828px" title="Card preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Card/README.md">Guidelines</a><a href="api/components/Card.md">Props</a><a href="components/Card/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="CardMenu">
+  <div class="comp-hd"><h2>CardMenu</h2><span class="grp">Board</span></div>
+  <p class="sum">The right-click (or ⋯) menu for a card.</p>
+  <iframe data-src="components/CardMenu/preview.html" style="height:388px" title="CardMenu preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/CardMenu/README.md">Guidelines</a><a href="api/components/CardMenu.md">Props</a><a href="components/CardMenu/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Port">
+  <div class="comp-hd"><h2>Port</h2><span class="grp">Board</span></div>
+  <p class="sum">The connection handles on a card&#x27;s edge.</p>
+  <iframe data-src="components/Port/preview.html" style="height:128px" title="Port preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Port/README.md">Guidelines</a><a href="api/components/Port.md">Props</a><a href="components/Port/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="ProofCard">
+  <div class="comp-hd"><h2>ProofCard</h2><span class="grp">Board</span></div>
+  <p class="sum">An experiment that tests a direction.</p>
+  <iframe data-src="components/ProofCard/preview.html" style="height:1468px" title="ProofCard preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/ProofCard/README.md">Guidelines</a><a href="api/components/ProofCard.md">Props</a><a href="components/ProofCard/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="SelectionStrip">
+  <div class="comp-hd"><h2>SelectionStrip</h2><span class="grp">Board</span></div>
+  <p class="sum">Actions for the selected card, floating just above it: one pill of glass.</p>
+  <iframe data-src="components/SelectionStrip/preview.html" style="height:128px" title="SelectionStrip preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/SelectionStrip/README.md">Guidelines</a><a href="api/components/SelectionStrip.md">Props</a><a href="components/SelectionStrip/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Sheet">
+  <div class="comp-hd"><h2>Sheet</h2><span class="grp">Board</span></div>
+  <p class="sum">The Margin: a card opened to read and write in full.</p>
+  <iframe data-src="components/Sheet/preview.html" style="height:648px" title="Sheet preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Sheet/README.md">Guidelines</a><a href="api/components/Sheet.md">Props</a><a href="components/Sheet/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="SourceRow">
+  <div class="comp-hd"><h2>SourceRow</h2><span class="grp">Board</span></div>
+  <p class="sum">One row of “Based on” inside a Sheet: the kind on its own line, the full title under it, and at most one pill at the right.</p>
+  <iframe data-src="components/SourceRow/preview.html" style="height:238px" title="SourceRow preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/SourceRow/README.md">Guidelines</a><a href="api/components/SourceRow.md">Props</a><a href="components/SourceRow/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="StageHeader">
+  <div class="comp-hd"><h2>StageHeader</h2><span class="grp">Board</span></div>
+  <p class="sum">The big stage name above each bay: number, name, subtitle and lock.</p>
+  <iframe data-src="components/StageHeader/preview.html" style="height:158px" title="StageHeader preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/StageHeader/README.md">Guidelines</a><a href="api/components/StageHeader.md">Props</a><a href="components/StageHeader/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Wire">
+  <div class="comp-hd"><h2>Wire</h2><span class="grp">Board</span></div>
+  <p class="sum">How cards connect on the board: a soft cubic curve from an out-port to an in-port, ending in a small dot.</p>
+  <iframe data-src="components/Wire/preview.html" style="height:208px" title="Wire preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Wire/README.md">Guidelines</a><a href="api/components/Wire.md">Props</a><a href="components/Wire/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="EvidenceBlocks">
+  <div class="comp-hd"><h2>EvidenceBlocks</h2><span class="grp">Lineage</span></div>
+  <p class="sum">How much evidence a card rests on, as one block per source.</p>
+  <iframe data-src="components/EvidenceBlocks/preview.html" style="height:178px" title="EvidenceBlocks preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/EvidenceBlocks/README.md">Guidelines</a><a href="api/components/EvidenceBlocks.md">Props</a><a href="components/EvidenceBlocks/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="EvidenceWeight">
+  <div class="comp-hd"><h2>EvidenceWeight</h2><span class="grp">Lineage</span></div>
+  <p class="sum">How much a source can carry, shown as a pill: Observed, Reported, Proposal or Illustration.</p>
+  <iframe data-src="components/EvidenceWeight/preview.html" style="height:72px" title="EvidenceWeight preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/EvidenceWeight/README.md">Guidelines</a><a href="api/components/EvidenceWeight.md">Props</a><a href="components/EvidenceWeight/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="LineageChip">
+  <div class="comp-hd"><h2>LineageChip</h2><span class="grp">Lineage</span></div>
+  <p class="sum">The A–D letter that ties a card, wire or proposal to its direction.</p>
+  <iframe data-src="components/LineageChip/preview.html" style="height:72px" title="LineageChip preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/LineageChip/README.md">Guidelines</a><a href="api/components/LineageChip.md">Props</a><a href="components/LineageChip/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="CrewBar">
+  <div class="comp-hd"><h2>CrewBar</h2><span class="grp">Crew</span></div>
+  <p class="sum">The crew cluster at the top right: four crew seats, the crew settings button, and the model pill.</p>
+  <iframe data-src="components/CrewBar/preview.html" style="height:158px" title="CrewBar preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/CrewBar/README.md">Guidelines</a><a href="api/components/CrewBar.md">Props</a><a href="components/CrewBar/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="CrewCursor">
+  <div class="comp-hd"><h2>CrewCursor</h2><span class="grp">Crew</span></div>
+  <p class="sum">Where a crew member is working on the board, and what it is doing: the working orb plus a glass label (“Reading 3/7”, “Building proof B v2”).</p>
+  <iframe data-src="components/CrewCursor/preview.html" style="height:118px" title="CrewCursor preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/CrewCursor/README.md">Guidelines</a><a href="api/components/CrewCursor.md">Props</a><a href="components/CrewCursor/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="CrewMark">
+  <div class="comp-hd"><h2>CrewMark</h2><span class="grp">Crew</span></div>
+  <p class="sum">A crew member&#x27;s avatar orb: Scout, Strategist, Wright or Critic.</p>
+  <iframe data-src="components/CrewMark/preview.html" style="height:88px" title="CrewMark preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/CrewMark/README.md">Guidelines</a><a href="api/components/CrewMark.md">Props</a><a href="components/CrewMark/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="CrewSettings">
+  <div class="comp-hd"><h2>CrewSettings</h2><span class="grp">Crew</span></div>
+  <p class="sum">The crew popover: how much the crew may say and do without asking, and which lanes only you can change.</p>
+  <iframe data-src="components/CrewSettings/preview.html" style="height:478px" title="CrewSettings preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/CrewSettings/README.md">Guidelines</a><a href="api/components/CrewSettings.md">Props</a><a href="components/CrewSettings/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="DraftBar">
+  <div class="comp-hd"><h2>DraftBar</h2><span class="grp">Crew</span></div>
+  <p class="sum">The decision bar for crew work waiting on you: who made it and what, then Discard · Retry · Keep.</p>
+  <iframe data-src="components/DraftBar/preview.html" style="height:208px" title="DraftBar preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/DraftBar/README.md">Guidelines</a><a href="api/components/DraftBar.md">Props</a><a href="components/DraftBar/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="ReviewPill">
+  <div class="comp-hd"><h2>ReviewPill</h2><span class="grp">Crew</span></div>
+  <p class="sum">“N waiting”: a glass pill at the top right that appears when crew work needs your decision.</p>
+  <iframe data-src="components/ReviewPill/preview.html" style="height:88px" title="ReviewPill preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/ReviewPill/README.md">Guidelines</a><a href="api/components/ReviewPill.md">Props</a><a href="components/ReviewPill/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="TaskIsland">
+  <div class="comp-hd"><h2>TaskIsland</h2><span class="grp">Crew</span></div>
+  <p class="sum">Live status for long-running crew work (renders, research, builds), pinned at the top centre of the board.</p>
+  <iframe data-src="components/TaskIsland/preview.html" style="height:478px" title="TaskIsland preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/TaskIsland/README.md">Guidelines</a><a href="api/components/TaskIsland.md">Props</a><a href="components/TaskIsland/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Toast">
+  <div class="comp-hd"><h2>Toast</h2><span class="grp">Crew</span></div>
+  <p class="sum">A one-line notice after something happens, with at most one follow-up action, usually Undo.</p>
+  <iframe data-src="components/Toast/preview.html" style="height:198px" title="Toast preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Toast/README.md">Guidelines</a><a href="api/components/Toast.md">Props</a><a href="components/Toast/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Button">
+  <div class="comp-hd"><h2>Button</h2><span class="grp">Actions</span></div>
+  <p class="sum">Decision buttons.</p>
+  <iframe data-src="components/Button/preview.html" style="height:178px" title="Button preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Button/README.md">Guidelines</a><a href="api/components/Button.md">Props</a><a href="components/Button/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Dialog">
+  <div class="comp-hd"><h2>Dialog</h2><span class="grp">Actions</span></div>
+  <p class="sum">A focused question that needs an answer before you go on.</p>
+  <iframe data-src="components/Dialog/preview.html" style="height:308px" title="Dialog preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Dialog/README.md">Guidelines</a><a href="api/components/Dialog.md">Props</a><a href="components/Dialog/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="CommandMenu">
+  <div class="comp-hd"><h2>CommandMenu</h2><span class="grp">Canvas chrome</span></div>
+  <p class="sum">What the composer offers after / (moves) or @ (crew).</p>
+  <iframe data-src="components/CommandMenu/preview.html" style="height:348px" title="CommandMenu preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/CommandMenu/README.md">Guidelines</a><a href="api/components/CommandMenu.md">Props</a><a href="components/CommandMenu/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Composer">
+  <div class="comp-hd"><h2>Composer</h2><span class="grp">Canvas chrome</span></div>
+  <p class="sum">The command bar at the bottom centre of every board: one calm row where you write an idea or a / command.</p>
+  <iframe data-src="components/Composer/preview.html" style="height:178px" title="Composer preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Composer/README.md">Guidelines</a><a href="api/components/Composer.md">Props</a><a href="components/Composer/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Overview">
+  <div class="comp-hd"><h2>Overview</h2><span class="grp">Canvas chrome</span></div>
+  <p class="sum">The minimap at the bottom left: zoom, a schematic of the four stages, and stage tabs.</p>
+  <iframe data-src="components/Overview/preview.html" style="height:218px" title="Overview preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Overview/README.md">Guidelines</a><a href="api/components/Overview.md">Props</a><a href="components/Overview/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="ToolRail">
+  <div class="comp-hd"><h2>ToolRail</h2><span class="grp">Canvas chrome</span></div>
+  <p class="sum">The vertical canvas tool palette that floats on the left edge of the board.</p>
+  <iframe data-src="components/ToolRail/preview.html" style="height:408px" title="ToolRail preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/ToolRail/README.md">Guidelines</a><a href="api/components/ToolRail.md">Props</a><a href="components/ToolRail/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Checkbox">
+  <div class="comp-hd"><h2>Checkbox</h2><span class="grp">Controls</span></div>
+  <p class="sum">For items you tick off in a list (action-list items, filters).</p>
+  <iframe data-src="components/Checkbox/preview.html" style="height:138px" title="Checkbox preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Checkbox/README.md">Guidelines</a><a href="api/components/Checkbox.md">Props</a><a href="components/Checkbox/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Kbd">
+  <div class="comp-hd"><h2>Kbd</h2><span class="grp">Controls</span></div>
+  <p class="sum">A key, inline in copy or on a button: a filled hover chip in mono 11px.</p>
+  <iframe data-src="components/Kbd/preview.html" style="height:88px" title="Kbd preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Kbd/README.md">Guidelines</a><a href="api/components/Kbd.md">Props</a><a href="components/Kbd/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Segmented">
+  <div class="comp-hd"><h2>Segmented</h2><span class="grp">Controls</span></div>
+  <p class="sum">2–4 mutually exclusive options that apply at once: a filled track with the selected option raised on card.</p>
+  <iframe data-src="components/Segmented/preview.html" style="height:118px" title="Segmented preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Segmented/README.md">Guidelines</a><a href="api/components/Segmented.md">Props</a><a href="components/Segmented/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Switch">
+  <div class="comp-hd"><h2>Switch</h2><span class="grp">Controls</span></div>
+  <p class="sum">For a setting that takes effect at once (Reduce transparency).</p>
+  <iframe data-src="components/Switch/preview.html" style="height:148px" title="Switch preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Switch/README.md">Guidelines</a><a href="api/components/Switch.md">Props</a><a href="components/Switch/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Tabs">
+  <div class="comp-hd"><h2>Tabs</h2><span class="grp">Controls</span></div>
+  <p class="sum">Switch between views of the same thing (Notes · History · Sources).</p>
+  <iframe data-src="components/Tabs/preview.html" style="height:88px" title="Tabs preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Tabs/README.md">Guidelines</a><a href="api/components/Tabs.md">Props</a><a href="components/Tabs/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Tag">
+  <div class="comp-hd"><h2>Tag</h2><span class="grp">Controls</span></div>
+  <p class="sum">A small filled label for kind or status: MD, Question, Changed v1→v2.</p>
+  <iframe data-src="components/Tag/preview.html" style="height:88px" title="Tag preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Tag/README.md">Guidelines</a><a href="api/components/Tag.md">Props</a><a href="components/Tag/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="TextField">
+  <div class="comp-hd"><h2>TextField</h2><span class="grp">Controls</span></div>
+  <p class="sum">A filled input well (card-2) with its label above and help or an error below.</p>
+  <iframe data-src="components/TextField/preview.html" style="height:338px" title="TextField preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/TextField/README.md">Guidelines</a><a href="api/components/TextField.md">Props</a><a href="components/TextField/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Tooltip">
+  <div class="comp-hd"><h2>Tooltip</h2><span class="grp">Controls</span></div>
+  <p class="sum">A short label, plus its shortcut after a middle dot: “Lasso select · S”.</p>
+  <iframe data-src="components/Tooltip/preview.html" style="height:128px" title="Tooltip preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Tooltip/README.md">Guidelines</a><a href="api/components/Tooltip.md">Props</a><a href="components/Tooltip/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="EmptyState">
+  <div class="comp-hd"><h2>EmptyState</h2><span class="grp">Feedback</span></div>
+  <p class="sum">What goes here, and the one thing to do next.</p>
+  <iframe data-src="components/EmptyState/preview.html" style="height:248px" title="EmptyState preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/EmptyState/README.md">Guidelines</a><a href="api/components/EmptyState.md">Props</a><a href="components/EmptyState/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="InlineAlert">
+  <div class="comp-hd"><h2>InlineAlert</h2><span class="grp">Feedback</span></div>
+  <p class="sum">A message that belongs to one place on the page: a tinted fill with an icon, a bold lead and one sentence.</p>
+  <iframe data-src="components/InlineAlert/preview.html" style="height:268px" title="InlineAlert preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/InlineAlert/README.md">Guidelines</a><a href="api/components/InlineAlert.md">Props</a><a href="components/InlineAlert/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Progress">
+  <div class="comp-hd"><h2>Progress</h2><span class="grp">Feedback</span></div>
+  <p class="sum">Work with a known end: a 4px bar, tinted by the crew member doing it.</p>
+  <iframe data-src="components/Progress/preview.html" style="height:178px" title="Progress preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Progress/README.md">Guidelines</a><a href="api/components/Progress.md">Props</a><a href="components/Progress/preview.html">Open preview</a></p>
+</section>
+<section class="comp" id="Skeleton">
+  <div class="comp-hd"><h2>Skeleton</h2><span class="grp">Feedback</span></div>
+  <p class="sum">The shape of content on its way: soft blocks with a slow shimmer (static under reduced motion).</p>
+  <iframe data-src="components/Skeleton/preview.html" style="height:208px" title="Skeleton preview" loading="lazy"></iframe>
+  <p class="links"><a href="components/Skeleton/README.md">Guidelines</a><a href="api/components/Skeleton.md">Props</a><a href="components/Skeleton/preview.html">Open preview</a></p>
+</section>
+</main></div>
+<script>
+const frames=[...document.querySelectorAll('iframe[data-src]')];
+function setTheme(t){document.documentElement.dataset.theme=t;
+ document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===t)));
+ frames.forEach(f=>{f.src=f.dataset.src+'?theme='+t});
+ try{localStorage.setItem('vellum-ds-theme',t)}catch(e){}}
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>setTheme(b.dataset.t)));
+let t='light';try{t=localStorage.getItem('vellum-ds-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch(e){}
+setTheme(t);
+</script>
+</body>
+</html>

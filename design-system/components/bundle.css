@@ -55,7 +55,7 @@
 
 /* notepad */
 .vl-card.is-notepad h4{margin-top:7px;font:var(--text-card-title);letter-spacing:-.022em}
-.vl-notepad{margin-top:10px;padding-top:10px;border-top:1px solid var(--hair);font:430 14px/1.55 var(--font-ui);letter-spacing:-.006em;color:var(--label-2);white-space:pre-line}
+.vl-notepad{margin-top:10px;padding-top:10px;font:430 14px/1.55 var(--font-ui);letter-spacing:-.006em;color:var(--label-2);white-space:pre-line}
 .vl-foot-l{display:inline-flex;align-items:center;gap:8px}
 
 /* audio */
@@ -101,7 +101,7 @@
 .vl-todo-bar{height:3px;margin-top:8px;border-radius:var(--radius-pill);background:var(--hover);overflow:hidden}
 .vl-todo-bar i{display:block;height:100%;border-radius:inherit;background:var(--label)}
 .vl-todo{list-style:none;margin:8px 0 0;padding:0;display:grid}
-.vl-todo li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font:14px/1.4 var(--font-ui);color:var(--label);border-bottom:.5px solid var(--hair)}
+.vl-todo li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font:14px/1.4 var(--font-ui);color:var(--label)}
 .vl-todo li.done{color:var(--label-3)}
 .vl-root .vl-chk{position:relative;width:18px;height:18px;margin-top:1px;border-radius:var(--radius-xs);box-shadow:inset 0 0 0 1.5px var(--label-3);flex:none;display:grid;place-items:center}
 .vl-root .vl-chk::before{content:"";position:absolute;inset:-7px}
@@ -126,7 +126,7 @@
 .vl-kb-h span:last-child{padding:2px 6px;border-radius:var(--radius-pill);font:600 11px/1 var(--font-mono);color:color-mix(in srgb,var(--kb-c) 82%,var(--label));background:color-mix(in srgb,var(--kb-c) 14%,transparent)}
 .vl-kb-col ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .vl-kb-col li{padding:6px 8px;border-radius:var(--radius-xs);background:var(--card);box-shadow:0 0 0 .5px var(--hair),0 1px 2px rgba(0,0,0,.06);font:13px/1.38 var(--font-ui);color:var(--label)}
-.vl-kb-add{margin-top:2px;padding-top:4px;border-top:.5px solid var(--hair);font:12px/1.35 var(--font-ui);color:var(--label-2);padding-left:2px}
+.vl-kb-add{margin-top:2px;padding-top:4px;font:12px/1.35 var(--font-ui);color:var(--label-2);padding-left:2px}
 
 /* group */
 .vl-card.is-group{width:auto;min-width:420px;background:color-mix(in srgb,var(--card) 38%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1.25px color-mix(in srgb,var(--pg,var(--label-3)) 28%,transparent),0 14px 36px -26px rgba(0,0,0,.35)}
@@ -199,7 +199,8 @@
 .vl-root .vl-send{background:color-mix(in srgb,var(--label) 86%,transparent);color:var(--canvas);transition:transform var(--duration-press) ease-out,background-color var(--duration-quick),color var(--duration-quick)}
 .vl-root .vl-send:hover{background:color-mix(in srgb,var(--label) 86%,transparent);color:var(--canvas);box-shadow:inset 0 0 0 100px rgba(255,255,255,.1)}
 .vl-root .vl-send:active{transform:scale(.92)}
-.vl-root .vl-send:disabled{background:transparent;color:var(--label-4);box-shadow:inset 0 0 0 1px var(--hair-2)}
+.vl-root .vl-send{transition:width var(--duration-base) var(--easing-standard),opacity var(--duration-quick),transform var(--duration-base) var(--easing-standard),background-color var(--duration-quick)}
+.vl-root .vl-send:disabled{width:0;min-width:0;padding:0;opacity:0;transform:scale(.4);pointer-events:none;overflow:hidden;box-shadow:none}
 .vl-send .vl-ico{stroke-width:2.2}
 .vl-line textarea{flex:1;min-width:0;height:36px;min-height:36px;max-height:160px;resize:none;border:0;outline:0;background:none;padding:6px 6px;font:450 16px/24px var(--font-ui);letter-spacing:-.014em;color:var(--label)}
 .vl-line textarea::placeholder{color:var(--label-3)}
@@ -291,7 +292,7 @@
 .vl-root .vl-seg button{height:var(--size-sm);padding:0 10px;border-radius:var(--radius-sm);font:550 12px/1 var(--font-ui);color:var(--label-2);white-space:nowrap}
 .vl-root .vl-seg button:hover{color:var(--label);background:color-mix(in srgb,var(--card) 52%,transparent)}
 .vl-root .vl-seg button[aria-pressed="true"]{background:var(--card);color:var(--label);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.18),0 0 0 .5px var(--hair-2)}
-.vl-sec{display:grid;gap:6px;padding-top:10px;border-top:1px solid var(--hair-2);font:450 12px/1.45 var(--font-ui);color:var(--label-3)}
+.vl-sec{display:grid;gap:6px;padding-top:10px;font:450 12px/1.45 var(--font-ui);color:var(--label-3)}
 .vl-sec>b{display:inline-flex;align-items:center;gap:6px;font:600 12px/1.2 var(--font-ui);color:var(--label-2)}
 .vl-sec>b .vl-ico{width:var(--icon-sm);height:var(--icon-sm)}
 .vl-locks{display:flex;flex-wrap:wrap;gap:6px}
@@ -304,7 +305,7 @@
 
 /* CardMenu */
 .vl-cmenu{width:196px;padding:5px;border-radius:var(--radius-media);background:var(--chrome);-webkit-backdrop-filter:blur(26px) saturate(1.3);backdrop-filter:blur(26px) saturate(1.3);box-shadow:var(--shadow-chrome),0 20px 48px -12px rgba(0,0,0,.5)}
-.vl-cm-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px 6px;font:600 12px/1.2 var(--font-ui);color:var(--label-2);border-bottom:.5px solid var(--hair);margin-bottom:4px}
+.vl-cm-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px 6px;font:600 12px/1.2 var(--font-ui);color:var(--label-2);margin-bottom:4px}
 .vl-cm-head b{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--label)}
 .vl-cm-kind{flex:none;padding:3px 5px;border-radius:var(--radius-chip);background:var(--label-3);color:var(--chip-ink);font:750 10px/1 var(--font-ui)}
 .vl-root .vl-cmenu button{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;height:var(--size-md);padding:0 10px;border-radius:var(--radius-sm);font:550 13px/1 var(--font-ui);color:var(--label)}
@@ -314,7 +315,7 @@
 .vl-root .vl-cmenu button.danger,.vl-cmenu button.danger .vl-ico{color:var(--danger-ink)}
 .vl-root .vl-cmenu button.danger:hover{background:color-mix(in srgb,var(--danger) 12%,transparent)}
 .vl-cmenu kbd{margin-left:auto;padding:3px 5px;border-radius:var(--radius-xs);box-shadow:inset 0 0 0 .5px var(--hair-2);font:500 11px/1 var(--font-mono);color:var(--label-3)}
-.vl-cm-sep{height:.5px;margin:4px 6px;background:var(--hair)}
+.vl-cm-sep{height:0;margin:4px 6px}
 
 /* Card — lock badge and crew proposals ("agents suggest, you decide") */
 .vl-lock-badge{position:absolute;top:8px;right:8px;z-index:7;width:20px;height:20px;display:grid;place-items:center;border-radius:var(--radius-xs);background:var(--hover);color:var(--label-2)}

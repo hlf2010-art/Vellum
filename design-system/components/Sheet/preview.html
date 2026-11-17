@@ -1,0 +1,23 @@
+<!-- @dsCard group="Board" height=640 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||"light"</script><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="../bundle.js"></script><style>body{margin:0;background:var(--canvas)}#root{padding:20px}.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}.col{display:grid;gap:14px;justify-items:start}</style><style>.stage{position:relative}.demo-card{position:absolute;width:150px;height:64px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-card);font:600 13px/1.3 var(--font-ui);color:var(--label);padding:12px 14px}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var V = window.Vellum, h = React.createElement;
+function go(el){ ReactDOM.createRoot(document.getElementById("root")).render(h(V.Root, null, el)); }
+go(h('div',{className:'row'},
+  h(V.Sheet,{title:'Evidence Audit · Corner vs World',kind:'synthesis',by:'scout',engine:'local service',time:'3 h ago',timeFull:'Nov 17, 11:22 AM',lineage:null,width:440,bodyHeight:380,
+    tools:[h(V.Button,{key:1,icon:'thumbUp','aria-label':'Useful'}),h(V.Button,{key:2,icon:'thumbDown','aria-label':'Not useful'})],composer:{placeholder:'Add a note, or ask @scout'}},
+    h(V.SheetSection,{title:'Points',meta:3},h('p',null,'9/12 players miss corner toasts while tracking rooftop cover (2.9s lag).')),
+    h(V.SheetSection,{title:'Based on',meta:3},
+      h(V.SourceRow,{kind:'Question',title:'At frame 0:04.2 in heavy neon rain, can colorblind stealth players distinguish Rival Crimson rim from Ally Teal?'}),
+      h(V.SourceRow,{kind:'Notepad',title:'Project Brief · Ashen Crown HUD',weight:'observed'}),
+      h(V.SourceRow,{kind:'Audio',title:'Player P07 Voice Debrief',status:'changed',statusLabel:'Changed v1→v2'})),
+    h(V.SheetSection,null,h(V.EvidenceBlocks,{observed:4,reported:1}))),
+  h(V.Sheet,{title:'01 · Gather · Telemetry, Concept & Brief',kind:'group',time:'4 h ago',width:440,composer:{placeholder:'Add a note, or ask @critic'}})
+));
+</script>
+</body>
+</html>

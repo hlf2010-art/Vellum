@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Vellum","components":[{"name":"Card"},{"name":"LineageChip"},{"name":"EvidenceWeight"},{"name":"CrewMark"},{"name":"Button"},{"name":"ReviewPill"},{"name":"ToolRail"},{"name":"Composer"},{"name":"Toast"},{"name":"DraftBar"},{"name":"TaskIsland"},{"name":"CrewBar"},{"name":"CrewSettings"},{"name":"CardMenu"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Vellum","components":[{"name":"Card"},{"name":"LineageChip"},{"name":"EvidenceWeight"},{"name":"CrewMark"},{"name":"Button"},{"name":"ReviewPill"},{"name":"ToolRail"},{"name":"Composer"},{"name":"Toast"},{"name":"DraftBar"},{"name":"TaskIsland"},{"name":"CrewBar"},{"name":"CrewSettings"},{"name":"CardMenu"},{"name":"Sheet"},{"name":"SourceRow"},{"name":"EvidenceBlocks"},{"name":"Overview"},{"name":"Wire"},{"name":"Port"},{"name":"StageHeader"},{"name":"SelectionStrip"},{"name":"CrewCursor"},{"name":"CommandMenu"},{"name":"Dialog"},{"name":"Segmented"},{"name":"Tooltip"},{"name":"Kbd"},{"name":"Tag"},{"name":"TextField"},{"name":"Checkbox"},{"name":"Switch"},{"name":"Tabs"},{"name":"Progress"},{"name":"Skeleton"},{"name":"EmptyState"},{"name":"InlineAlert"}]} */
 (function(){
   var React = window.React, h = React.createElement;
   function cx(){ return Array.prototype.filter.call(arguments, Boolean).join(' '); }
@@ -338,5 +338,242 @@
       }));
   }
 
-  window.Vellum = { Card: Card, LineageChip: LineageChip, EvidenceWeight: EvidenceWeight, CrewMark: CrewMark, Button: Button, ReviewPill: ReviewPill, ToolRail: ToolRail, Composer: Composer, Toast: Toast, DraftBar: DraftBar, TaskIsland: TaskIsland, CrewBar: CrewBar, CrewSettings: CrewSettings, CardMenu: CardMenu, Icon: Icon, Root: Root, CREW: CREW };
+
+  /* ── P2a: app parts ─────────────────────────────────────────────────────── */
+  var MINUS = '<path d="M5 12h14"/>';
+  ICONS.minus = MINUS;
+  ICONS.thumbUp = '<path d="M7 10v11"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>';
+  ICONS.thumbDown = '<path d="M17 14V3"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/>';
+  var KIND_NAMES = { source: 'Source', recording: 'Recording', image: 'Image', frame: 'Frame', audio: 'Audio', link: 'Link', notepad: 'Notepad', idea: 'Core thesis', synthesis: 'Synthesis', direction: 'Direction', question: 'Question', note: 'Sticky', proof: 'Proof', list: 'Action list', kanban: 'Kanban', snapshot: 'Snapshot', group: 'Group' };
+
+  function useEdges(){
+    var ref = React.useRef(null), st = React.useState({ top: false, more: false }), edges = st[0], set = st[1];
+    function sync(){ var b = ref.current; if (!b) return; var top = b.scrollTop > 2, more = b.scrollTop + b.clientHeight < b.scrollHeight - 2; if (top !== edges.top || more !== edges.more) set({ top: top, more: more }); }
+    React.useLayoutEffect(sync);
+    return [ref, edges, sync];
+  }
+
+  function SheetSection(p){
+    return h('section', { className: 'vl-ssec' },
+      p.title ? h('h5', null, h('span', null, p.title), p.meta != null ? h('span', { className: 'vl-ssec-meta' }, p.meta) : null) : null,
+      p.children);
+  }
+
+  function SheetComposer(p){
+    var st = React.useState(''), val = st[0], setVal = st[1], has = val.trim().length > 0;
+    return h('form', { className: 'vl-swrite', onSubmit: function(e){ e.preventDefault(); if (has && p.onSend) p.onSend(val); setVal(''); } },
+      h('input', { value: val, onChange: function(e){ setVal(e.target.value); }, placeholder: p.placeholder || 'Add a note, or ask @critic', 'aria-label': p.placeholder || 'Add a note' }),
+      h('button', { type: 'submit', className: 'vl-send', disabled: !has, 'aria-label': 'Send' }, h(Icon, { name: 'send' })));
+  }
+
+  /* Sheet (the Margin): a card opened to read and write in full. */
+  function Sheet(p){
+    var e = useEdges(), ref = e[0], edges = e[1], sync = e[2];
+    var crew = p.by && p.by !== 'you' ? CREW[p.by] : null;
+    var parts = [];
+    var kind = p.kindLabel || KIND_NAMES[p.kind] || '';
+    if (kind) parts.push(h('span', { key: 'k', title: crew && p.engine ? 'Made by ' + crew.name + ' using ' + p.engine : undefined }, kind + (crew ? ' by ' + crew.name : '')));
+    if (p.rev > 1) parts.push(h('span', { key: 'v' }, 'v' + p.rev));
+    if (p.time) parts.push(h('time', { key: 't', title: p.timeFull }, p.time));
+    var sub = [];
+    parts.forEach(function(x, i){ if (i) sub.push(h('span', { key: 's' + i, className: 'vl-sdot', 'aria-hidden': 'true' }, '·')); sub.push(x); });
+    return h('div', { className: cx('vl-sheet', edges.top && 'is-scrolled', edges.more && 'has-more'), role: 'dialog', 'aria-label': p.title, style: { '--pg': p.lineage ? 'var(--' + p.lineage + ')' : undefined, width: p.width } },
+      h('header', { className: 'vl-shead' },
+        h('div', { className: 'vl-shead-main' }, h('h2', null, p.title),
+          h('div', { className: 'vl-ssub' }, p.lineage ? h(LineageChip, { lineage: p.lineage }) : null, sub)),
+        h('div', { className: 'vl-stools' }, p.tools, h(Button, { icon: 'x', 'aria-label': 'Close · Esc', className: 'vl-sx', onClick: p.onClose }))),
+      h('div', { className: 'vl-sbody', ref: ref, onScroll: sync, style: { maxHeight: p.bodyHeight } }, p.children),
+      p.composer === false ? null : h('footer', { className: 'vl-sfoot' }, h(SheetComposer, p.composer || {})));
+  }
+
+  /* SourceRow: one line of "Based on" inside a Sheet. Kind on top, full title, an exception or evidence pill at the right. */
+  function SourceRow(p){
+    var pill = p.status ? h('span', { className: cx('vl-spill', p.status === 'changed' && 'is-warn', p.status === 'unavailable' && 'is-danger') }, p.statusLabel || { changed: 'Changed', frozen: 'Frozen', unavailable: 'Unavailable', archived: 'Archived', hidden: 'Hidden' }[p.status])
+      : p.weight ? h(EvidenceWeight, { weight: p.weight }) : null;
+    return h('button', { type: 'button', className: 'vl-srow', onClick: p.onOpen },
+      h('span', { className: 'vl-skind' }, p.kind), h('span', { className: 'vl-stitle' }, p.title), pill);
+  }
+
+  /* EvidenceBlocks: one block per source behind a card (proportional above 16). */
+  function EvidenceBlocks(p){
+    var t = { observed: p.observed || 0, reported: p.reported || 0, proposed: p.proposed || 0, unrated: p.unrated || 0 };
+    var total = t.observed + t.reported + t.proposed + t.unrated, each = total <= 16;
+    var names = { observed: 'observed', reported: 'reported', proposed: 'proposal', unrated: 'unrated' }, cls = { observed: '', reported: 'r', proposed: 'p', unrated: 'n' };
+    var summary = Object.keys(t).filter(function(k){ return t[k]; }).map(function(k){ return t[k] + ' ' + names[k]; }).join(' · ');
+    var blocks = [];
+    Object.keys(t).forEach(function(k){ var n = t[k]; if (!n) return; if (each) for (var i = 0; i < n; i++) blocks.push(h('i', { key: k + i, className: cls[k] || null })); else blocks.push(h('i', { key: k, className: cls[k] || null, style: { flex: n } })); });
+    return h('div', { className: 'vl-evb' },
+      p.label === false ? null : h('div', { className: 'vl-evb-cap', title: 'Every source this card rests on, including those behind linked directions and questions. One block per source.' }, h('span', null, p.label || 'Evidence behind it'), h('span', null, summary)),
+      h('div', { className: cx('vl-scale', each && 'is-count'), role: 'img', 'aria-label': 'Evidence: ' + summary }, blocks));
+  }
+
+  /* Overview: the minimap, bottom left. */
+  var OV_SAMPLE = [[0,.08,.1,.36,.22,0],[0,.5,.1,.36,.18,0],[0,.08,.4,.36,.2,0],[0,.5,.36,.36,.26,0],[0,.08,.68,.36,.2,0],[1,.06,.1,.36,.16,0],[1,.5,.12,.36,.18,'B'],[1,.06,.36,.36,.2,0],[1,.5,.4,.36,.16,'C'],[1,.06,.62,.36,.12,'note'],[2,.06,.1,.36,.28,0],[2,.5,.1,.36,.26,0],[2,.5,.42,.36,.3,0],[2,.06,.48,.36,.2,0],[3,.06,.1,.36,.24,'B'],[3,.5,.1,.36,.22,0],[3,.06,.42,.36,.16,0],[3,.5,.38,.36,.3,0]];
+  function Overview(p){
+    var stages = p.stages || ['Gather', 'Explore', 'Prototype', 'Snapshot'], cur = p.stage == null ? 1 : p.stage, pending = p.pending || [];
+    var zs = React.useState(p.zoom || 34), zoom = zs[0], setZoom = zs[1];
+    var ss = React.useState(cur), at = ss[0], setAt = ss[1];
+    var cards = p.cards || OV_SAMPLE;
+    return h('div', { className: 'vl-ov', role: 'region', 'aria-label': 'Overview' },
+      h('div', { className: 'vl-ov-head' }, h('span', { className: 'vl-ov-title' }, p.title || 'Overview'),
+        h('span', { className: 'vl-ov-zoom', role: 'group', 'aria-label': 'Zoom' },
+          h('button', { type: 'button', 'aria-label': 'Zoom out · ⌘−', onClick: function(){ setZoom(Math.max(10, zoom - 10)); } }, h(Icon, { name: 'minus' })),
+          h('button', { type: 'button', className: 'vl-ov-pct', title: 'Fit board · ⇧1' }, zoom + '%'),
+          h('button', { type: 'button', 'aria-label': 'Zoom in · ⌘+', onClick: function(){ setZoom(Math.min(200, zoom + 10)); } }, h(Icon, { name: 'plus' })))),
+      h('div', { className: 'vl-ov-map', 'aria-hidden': 'true' },
+        stages.map(function(s, i){ return h('div', { key: i, className: cx('vl-ov-bay', i === at && 'is-view') },
+          cards.filter(function(c){ return c[0] === i; }).map(function(c, k){ return h('i', { key: k, className: cx(c[5] === 'note' && 'is-note', c[5] && c[5] !== 'note' && 'is-pg'), style: { left: c[1] * 100 + '%', top: c[2] * 100 + '%', width: c[3] * 100 + '%', height: c[4] * 100 + '%', '--pg': c[5] && c[5] !== 'note' ? 'var(--' + c[5] + '-mark)' : undefined } }); })); })),
+      h('div', { className: 'vl-ov-stages', role: 'tablist', 'aria-label': 'Stages' },
+        stages.map(function(s, i){ return h('button', { key: i, type: 'button', role: 'tab', 'aria-selected': String(i === at), className: cx(i === at && 'is-on'), title: s + ' (' + (i + 1) + ')', onClick: function(){ setAt(i); if (p.onStage) p.onStage(i); } }, s, pending.indexOf(i) >= 0 ? h('i', { className: 'vl-ov-dot', 'aria-label': 'new crew work' }) : null); })));
+  }
+
+  /* Wire + Port: how cards connect. A wire is a mark, so lineage wires use the *-mark hue. */
+  function Wire(p){
+    var a = p.from || [0, 0], b = p.to || [200, 80], dx = Math.max(40, Math.abs(b[0] - a[0]) * .5);
+    var d = 'M' + a[0] + ' ' + a[1] + ' C' + (a[0] + dx) + ' ' + a[1] + ' ' + (b[0] - dx) + ' ' + b[1] + ' ' + b[0] + ' ' + b[1];
+    var w = Math.max(a[0], b[0]) + 8, ht = Math.max(a[1], b[1]) + 8;
+    return h('svg', { className: cx('vl-wire', p.lineage && 'is-pg', p.state && 'is-' + p.state), width: p.width || w, height: p.height || ht, style: { '--pg': p.lineage ? 'var(--' + p.lineage + '-mark)' : undefined, position: p.absolute ? 'absolute' : undefined, left: 0, top: 0 }, 'aria-hidden': 'true' },
+      h('path', { d: d }), h('circle', { cx: b[0], cy: b[1], r: 3 }));
+  }
+  function Port(p){
+    return h('span', { className: cx('vl-port', p.kind === 'in' && 'is-in', p.connected && 'is-connected', p.visible && 'is-visible'), 'data-side': p.side || 'right', role: 'button', tabIndex: 0, 'aria-label': p.kind === 'in' ? 'Drop a wire here' : 'Drag to connect' });
+  }
+
+  /* StageHeader: the big stage name above each bay. */
+  function StageHeader(p){
+    var ls = React.useState(!!p.locked), locked = ls[0], setLocked = ls[1];
+    return h('div', { className: 'vl-stage' }, h('span', { className: 'vl-stage-n' }, p.step || '01'), h('h2', null, p.name || 'Gather'),
+      p.sub ? h('p', null, p.sub) : null,
+      h('button', { type: 'button', className: cx('vl-stage-lock', locked && 'is-on'), 'aria-pressed': String(locked), title: locked ? 'Unlock ' + (p.name || 'stage') : 'Lock ' + (p.name || 'stage') + ': only you change its kept cards', onClick: function(){ setLocked(!locked); if (p.onLock) p.onLock(!locked); } }, h(Icon, { name: 'lock' })));
+  }
+
+  /* SelectionStrip: actions for the selected card, floating above it. Groups are separated by space, not bars. */
+  function SelectionStrip(p){
+    var groups = p.groups || [[{ label: 'Explore', icon: 'enhance' }, { label: 'Ask', icon: 'ask' }], [{ icon: 'copy', label: 'Duplicate', iconOnly: true }, { icon: 'lock', label: 'Lock', iconOnly: true }, { icon: 'trash', label: 'Delete', iconOnly: true, danger: true }]];
+    return h('div', { className: 'vl-strip', role: 'toolbar', 'aria-label': p.label || 'Actions for the selected card', style: { '--pg': p.lineage ? 'var(--' + p.lineage + ')' : undefined } },
+      groups.map(function(g, gi){ return h('div', { key: gi, className: 'vl-strip-g' }, g.map(function(it, i){
+        return h('button', { key: i, type: 'button', className: cx(it.iconOnly && 'is-icon', it.danger && 'is-danger', it.lineage && 'is-pg'), title: it.iconOnly ? it.label + (it.key ? ' · ' + it.key : '') : undefined, 'aria-label': it.iconOnly ? it.label : undefined, onClick: it.onClick },
+          it.icon ? h(Icon, { name: it.icon }) : null, it.iconOnly ? null : it.label); })); }));
+  }
+
+  /* CrewCursor: where a crew member is working on the board, and what it is doing. */
+  function CrewCursor(p){
+    return h('div', { className: 'vl-ccur', role: 'status', 'aria-live': 'polite' }, h(CrewMark, { member: p.member || 'scout', state: 'working', size: 'sm' }), h('span', { className: 'vl-ccur-lbl' }, p.label || 'Reading 3/7'));
+  }
+
+  /* CommandMenu: what the composer offers after "/" or "@". */
+  var CMD_SAMPLE = [{ cmd: '/fork', member: 'strategist', desc: 'Explore directions from the selected claim', hint: '2–4' }, { cmd: '/build', member: 'wright', desc: 'Build a proof from the selected direction' }, { cmd: '/gather', member: 'scout', desc: 'Read the selection and weigh its evidence' }, { cmd: '/critique', member: 'critic', desc: 'Check the selection against its sources' }, { cmd: '/note', desc: 'Add a note where you’re looking' }, { cmd: '/link', desc: 'Save a URL as a link card' }];
+  function CommandMenu(p){
+    var items = p.items || CMD_SAMPLE, as = React.useState(p.active || 0), act = as[0], setAct = as[1];
+    function onKey(e){ if (e.key === 'ArrowDown') { e.preventDefault(); setAct((act + 1) % items.length); } else if (e.key === 'ArrowUp') { e.preventDefault(); setAct((act - 1 + items.length) % items.length); } else if (e.key === 'Enter' && p.onPick) { e.preventDefault(); p.onPick(items[act]); } }
+    return h('div', { className: 'vl-cmd', role: 'listbox', 'aria-label': p.title || 'Moves', tabIndex: 0, onKeyDown: onKey, 'aria-activedescendant': 'vl-cmd-' + act },
+      h('div', { className: 'vl-cmd-h' }, p.title || 'Moves'),
+      items.map(function(it, i){ return h('div', { key: i, id: 'vl-cmd-' + i, role: 'option', 'aria-selected': String(i === act), className: cx('vl-cmd-i', i === act && 'is-active'), onMouseEnter: function(){ setAct(i); }, onClick: function(){ if (p.onPick) p.onPick(it); } },
+        it.member ? h(CrewMark, { member: it.member, size: 'xs' }) : h('span', { className: 'vl-cmd-none', 'aria-hidden': 'true' }),
+        h('span', { className: 'vl-cmd-c' }, it.cmd, it.hint ? h('small', null, ' ' + it.hint) : null),
+        h('span', { className: 'vl-cmd-d' }, it.desc)); }));
+  }
+
+  /* Dialog: a focused task that needs an answer before you go on. Prefer a Sheet or an inline control first. */
+  function Dialog(p){
+    var panel = h('div', { className: 'vl-dlg', role: 'dialog', 'aria-modal': p.scrim ? 'true' : undefined, 'aria-label': p.title, style: { width: p.width } },
+      h('div', { className: 'vl-dlg-head' }, h('h2', null, p.title), h(Button, { variant: 'secondary', icon: 'x', 'aria-label': 'Close · Esc', onClick: p.onClose })),
+      h('div', { className: 'vl-dlg-body' }, p.children),
+      p.actions ? h('div', { className: 'vl-dlg-acts' }, p.actions) : null);
+    return p.scrim ? h('div', { className: 'vl-scrim' }, panel) : panel;
+  }
+
+
+  /* ── P2b: primitives. Fill only (outlines are for focus), labels only when they carry information. ── */
+  var uidN = 0; function useId(prefix){ var r = React.useRef(null); if (!r.current) r.current = (prefix || 'vl') + '-' + (++uidN); return r.current; }
+
+  /* Segmented: 2–4 mutually exclusive options. Public version of the control inside CrewSettings. */
+  function Segmented(p){ return h(Seg, { label: p.label, options: p.options || ['Board', 'List'], value: p.value || (p.options || ['Board'])[0], onChange: p.onChange }); }
+
+  /* Tooltip: a short label plus its shortcut, joined by a middle dot. Shows on hover and keyboard focus. */
+  function Tooltip(p){
+    var id = useId('vl-tip'), st = React.useState(!!p.open), open = st[0], setOpen = st[1];
+    var child = React.Children.only(p.children);
+    var trigger = React.cloneElement(child, { 'aria-describedby': id, onMouseEnter: function(){ setOpen(true); }, onMouseLeave: function(){ if (!p.open) setOpen(false); }, onFocus: function(){ setOpen(true); }, onBlur: function(){ if (!p.open) setOpen(false); } });
+    return h('span', { className: cx('vl-tipwrap', 'is-' + (p.side || 'top')) }, trigger,
+      h('span', { id: id, role: 'tooltip', className: cx('vl-tip', open && 'is-open') }, p.label, p.shortcut ? h('span', { className: 'vl-tip-k' }, ' · ' + p.shortcut) : null));
+  }
+
+  /* Kbd: a key, inline in copy or on a button. */
+  function Kbd(p){ return h('kbd', { className: 'vl-kbd' }, p.children); }
+
+  /* Tag: a small filled label for kind or status. Never outlined. */
+  function Tag(p){ return h('span', { className: cx('vl-tag', p.tone && 'is-' + p.tone), style: p.lineage ? { '--pg': 'var(--' + p.lineage + ')' } : undefined }, p.icon ? h(Icon, { name: p.icon }) : null, p.children); }
+
+  /* TextField: a filled well. The label sits above; help or error sits below. */
+  function TextField(p){
+    var id = useId('vl-tf'), err = !!p.error, Tag2 = p.multiline ? 'textarea' : 'input';
+    var st = React.useState(p.value || ''), val = st[0], setVal = st[1];
+    return h('div', { className: cx('vl-tf', err && 'is-error', p.disabled && 'is-disabled') },
+      p.label ? h('label', { htmlFor: id, className: 'vl-tf-l' }, p.label, p.optional ? h('span', null, ' optional') : null) : null,
+      h(Tag2, { id: id, className: 'vl-input', value: val, rows: p.multiline ? (p.rows || 3) : undefined, placeholder: p.placeholder, disabled: p.disabled, 'aria-invalid': err ? 'true' : undefined, 'aria-describedby': (p.help || p.error) ? id + '-h' : undefined,
+        onChange: function(e){ setVal(e.target.value); if (p.onChange) p.onChange(e.target.value); } }),
+      (p.error || p.help) ? h('div', { id: id + '-h', className: 'vl-tf-h' }, err ? h(Icon, { name: 'alert' }) : null, p.error || p.help) : null);
+  }
+
+  /* Checkbox and Switch. Checkbox for items in a list you tick off; Switch for a setting that applies at once. */
+  function Checkbox(p){
+    var st = React.useState(!!p.checked), on = st[0], set = st[1];
+    return h('label', { className: cx('vl-check', p.disabled && 'is-disabled') },
+      h('input', { type: 'checkbox', checked: on, disabled: p.disabled, onChange: function(e){ set(e.target.checked); if (p.onChange) p.onChange(e.target.checked); } }),
+      h('span', { className: 'vl-check-box', 'aria-hidden': 'true' }, h(Icon, { name: 'check' })), p.label ? h('span', { className: 'vl-check-l' }, p.label) : null);
+  }
+  function Switch(p){
+    var st = React.useState(!!p.checked), on = st[0], set = st[1];
+    return h('label', { className: cx('vl-switch', p.disabled && 'is-disabled') },
+      p.label ? h('span', { className: 'vl-switch-l' }, p.label, p.help ? h('small', null, p.help) : null) : null,
+      h('button', { type: 'button', role: 'switch', 'aria-checked': String(on), disabled: p.disabled, className: 'vl-switch-t', onClick: function(){ set(!on); if (p.onChange) p.onChange(!on); } }, h('span', { className: 'vl-switch-k' })));
+  }
+
+  /* Tabs: a filled pill marks the current tab; no underline rule. */
+  function Tabs(p){
+    var tabs = p.tabs || [{ id: 'notes', label: 'Notes', count: 2 }, { id: 'history', label: 'History' }, { id: 'sources', label: 'Sources', count: 5 }];
+    var st = React.useState(p.value || tabs[0].id), cur = st[0], set = st[1];
+    function pick(id){ set(id); if (p.onChange) p.onChange(id); }
+    return h('div', { className: 'vl-tabs', role: 'tablist', 'aria-label': p.label || 'Sections', onKeyDown: function(e){ var i = tabs.findIndex(function(t){ return t.id === cur; }), d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return; e.preventDefault(); var n = tabs[(i + d + tabs.length) % tabs.length]; pick(n.id); var el = e.currentTarget.querySelector('[data-tab="' + n.id + '"]'); if (el) el.focus(); } },
+      tabs.map(function(t){ var on = t.id === cur; return h('button', { key: t.id, type: 'button', role: 'tab', 'data-tab': t.id, 'aria-selected': String(on), tabIndex: on ? 0 : -1, className: cx(on && 'is-on'), onClick: function(){ pick(t.id); } }, t.label, t.count ? h('span', { className: 'vl-tabs-n' }, t.count) : null); }));
+  }
+
+  /* Progress: a bar for work with a known end, a ring for compact or crew progress. No percentage when it is unknown. */
+  function Progress(p){
+    var known = p.value != null, pct = known ? Math.max(0, Math.min(100, p.value)) : null;
+    return h('div', { className: 'vl-prog' },
+      (p.label || known) ? h('div', { className: 'vl-prog-cap' }, h('span', null, p.label), known && p.showValue !== false ? h('span', null, Math.round(pct) + '%') : null) : null,
+      h('div', { className: cx('vl-prog-t', !known && 'is-indeterminate'), role: 'progressbar', 'aria-label': p.label, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': known ? Math.round(pct) : undefined, style: p.member ? { '--crew': CREW[p.member].ink } : undefined },
+        h('i', { style: known ? { width: pct + '%' } : undefined })));
+  }
+  function ProgressRing(p){
+    var size = p.size || 28, r = (size - 4) / 2, c = 2 * Math.PI * r, known = p.value != null, pct = known ? Math.max(0, Math.min(100, p.value)) : 30;
+    return h('svg', { className: cx('vl-ring', !known && 'is-indeterminate'), width: size, height: size, viewBox: '0 0 ' + size + ' ' + size, role: 'progressbar', 'aria-label': p.label || 'Progress', 'aria-valuenow': known ? Math.round(pct) : undefined, style: p.member ? { '--crew': CREW[p.member].ink } : undefined },
+      h('circle', { cx: size / 2, cy: size / 2, r: r, className: 'tr' }),
+      h('circle', { cx: size / 2, cy: size / 2, r: r, className: 'pg', strokeDasharray: c, strokeDashoffset: c * (1 - pct / 100), transform: 'rotate(-90 ' + size / 2 + ' ' + size / 2 + ')' }));
+  }
+
+  /* Skeleton: the shape of content that is on its way. Static under reduced motion. */
+  function Skeleton(p){
+    if (p.card) return h('div', { className: 'vl-skel-card', 'aria-busy': 'true', 'aria-label': 'Loading' }, h('i', { className: 'vl-skel', style: { width: '40%', height: 10 } }), h('i', { className: 'vl-skel', style: { width: '86%', height: 16, marginTop: 12 } }), h('i', { className: 'vl-skel', style: { width: '64%', height: 16, marginTop: 6 } }), h('i', { className: 'vl-skel', style: { width: '100%', height: 10, marginTop: 18 } }), h('i', { className: 'vl-skel', style: { width: '92%', height: 10, marginTop: 6 } }));
+    return h('i', { className: 'vl-skel', 'aria-hidden': 'true', style: { width: p.width || '100%', height: p.height || 12, borderRadius: p.round ? '50%' : undefined } });
+  }
+
+  /* EmptyState: what goes here, and the one thing to do next. */
+  function EmptyState(p){
+    return h('div', { className: 'vl-empty' }, p.icon ? h('span', { className: 'vl-empty-i' }, h(Icon, { name: p.icon })) : null,
+      h('h3', null, p.title || 'No evidence yet'), p.children ? h('p', null, p.children) : null,
+      p.action ? h('div', { className: 'vl-empty-a' }, p.action) : null);
+  }
+
+  /* InlineAlert: a message that belongs to one place on the page. Tinted fill, never a border box. */
+  function InlineAlert(p){
+    var tone = p.tone || 'info', ico = { info: 'alert', warn: 'alert', danger: 'alert', ok: 'check' }[tone];
+    return h('div', { className: cx('vl-alert', 'is-' + tone), role: tone === 'danger' ? 'alert' : 'status' },
+      h(Icon, { name: ico }), h('div', { className: 'vl-alert-m' }, p.title ? h('b', null, p.title) : null, p.children),
+      p.action ? h('div', { className: 'vl-alert-a' }, p.action) : null);
+  }
+
+  window.Vellum = { Segmented: Segmented, Tooltip: Tooltip, Kbd: Kbd, Tag: Tag, TextField: TextField, Checkbox: Checkbox, Switch: Switch, Tabs: Tabs, Progress: Progress, ProgressRing: ProgressRing, Skeleton: Skeleton, EmptyState: EmptyState, InlineAlert: InlineAlert, Sheet: Sheet, SheetSection: SheetSection, SourceRow: SourceRow, EvidenceBlocks: EvidenceBlocks, Overview: Overview, Wire: Wire, Port: Port, StageHeader: StageHeader, SelectionStrip: SelectionStrip, CrewCursor: CrewCursor, CommandMenu: CommandMenu, Dialog: Dialog, Card: Card, LineageChip: LineageChip, EvidenceWeight: EvidenceWeight, CrewMark: CrewMark, Button: Button, ReviewPill: ReviewPill, ToolRail: ToolRail, Composer: Composer, Toast: Toast, DraftBar: DraftBar, TaskIsland: TaskIsland, CrewBar: CrewBar, CrewSettings: CrewSettings, CardMenu: CardMenu, Icon: Icon, Root: Root, CREW: CREW };
 })();

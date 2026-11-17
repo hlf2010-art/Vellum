@@ -116,6 +116,77 @@ export interface CrewSettingsProps { status?: string; /** Initial value; the con
 export interface CardMenuItem { label: string; icon?: string; key?: string; danger?: boolean; onClick?: () => void; }
 export interface CardMenuProps { title?: string; kind?: string; locked?: boolean; items?: (CardMenuItem | '-')[]; /** Escape. Arrow keys, Home and End move between items. */ onClose?: () => void; /** Focus the first item on open. Use when the menu opens from a right-click or keypress. */ autoFocus?: boolean; }
 
+/* ── App parts ─────────────────────────────────────────────────────────── */
+export interface SheetProps {
+  title: string;
+  /** Card kind; shown with the author as one phrase ("Synthesis by Scout"). */
+  kind?: CardProps['kind']; kindLabel?: string;
+  /** Crew member who made it. Omit or 'you' for your own cards: no byline. */
+  by?: CrewMember | 'you';
+  /** Engine for the tooltip: "local service", "built-in rules", a model name. */
+  engine?: string;
+  /** Shown only from v2. */
+  rev?: number;
+  /** Relative time ("3 h ago") and the full date for its tooltip. */
+  time?: string; timeFull?: string;
+  lineage?: Lineage;
+  /** Round filled buttons before Close (votes, More). */
+  tools?: React.ReactNode;
+  children?: React.ReactNode;
+  /** The note composer; false hides it. */
+  composer?: { placeholder?: string; onSend?: (text: string) => void } | false;
+  onClose?: () => void;
+  width?: number | string; bodyHeight?: number | string;
+}
+export interface SheetSectionProps { title?: string; meta?: React.ReactNode; children?: React.ReactNode; }
+export interface SourceRowProps {
+  /** Kind label shown above the title ("Question", "Direction B"). */
+  kind: string;
+  /** The full title. Never clip it. */
+  title: string;
+  weight?: Weight;
+  /** Exceptions only; the default (live) link shows nothing. */
+  status?: 'changed' | 'frozen' | 'unavailable' | 'archived' | 'hidden'; statusLabel?: string;
+  onOpen?: () => void;
+}
+export interface EvidenceBlocksProps { observed?: number; reported?: number; proposed?: number; unrated?: number; /** Caption; false hides it. Default "Evidence behind it". */ label?: string | false; }
+export interface OverviewProps {
+  zoom?: number;
+  /** Index of the stage in view. */
+  stage?: number;
+  stages?: string[];
+  /** Stage indexes with crew work waiting (a dot on the tab). */
+  pending?: number[];
+  title?: string;
+  /** Schematic cards: [stage, x, y, w, h, tone] with x..h as 0–1 fractions and tone 0 | 'A'–'D' | 'note'. */
+  cards?: [number, number, number, number, number, 0 | Lineage | 'note'][];
+  onStage?: (i: number) => void;
+}
+export interface WireProps { from?: [number, number]; to?: [number, number]; lineage?: Lineage; state?: 'hover' | 'reference' | 'stale'; width?: number; height?: number; absolute?: boolean; }
+export interface PortProps { side?: 'left' | 'right' | 'top' | 'bottom'; kind?: 'in' | 'out'; connected?: boolean; /** Force visible (otherwise shown on card hover or focus). */ visible?: boolean; }
+export interface StageHeaderProps { step?: string; name?: string; sub?: string; locked?: boolean; onLock?: (locked: boolean) => void; }
+export interface StripItem { label: string; icon?: string; iconOnly?: boolean; danger?: boolean; lineage?: boolean; key?: string; onClick?: () => void; }
+export interface SelectionStripProps { /** Groups are separated by space, not bars. */ groups?: StripItem[][]; lineage?: Lineage; label?: string; }
+export interface CrewCursorProps { member?: CrewMember; /** Present tense, counted when possible: "Reading 3/7". */ label?: string; }
+export interface CommandItem { cmd: string; member?: CrewMember; desc: string; hint?: string; }
+export interface CommandMenuProps { title?: string; items?: CommandItem[]; active?: number; onPick?: (item: CommandItem) => void; }
+export interface DialogProps { title: string; children?: React.ReactNode; /** Verbs that repeat the outcome, never OK/Cancel. */ actions?: React.ReactNode; scrim?: boolean; onClose?: () => void; width?: number | string; }
+
+/* ── Primitives ────────────────────────────────────────────────────────── */
+export interface SegmentedProps { label?: string; options?: string[]; value?: string; onChange?: (v: string) => void; }
+export interface TooltipProps { label: string; /** Shown after a middle dot: "Undo · ⌘Z". */ shortcut?: string; side?: 'top' | 'bottom'; open?: boolean; children: React.ReactElement; }
+export interface KbdProps { children?: React.ReactNode; }
+export interface TagProps { tone?: 'ok' | 'warn' | 'danger' | 'lineage'; lineage?: Lineage; icon?: string; children?: React.ReactNode; }
+export interface TextFieldProps { label?: string; value?: string; placeholder?: string; help?: string; error?: string; optional?: boolean; disabled?: boolean; multiline?: boolean; rows?: number; onChange?: (v: string) => void; }
+export interface CheckboxProps { label?: string; checked?: boolean; disabled?: boolean; onChange?: (v: boolean) => void; }
+export interface SwitchProps { label?: string; help?: string; checked?: boolean; disabled?: boolean; onChange?: (v: boolean) => void; }
+export interface TabsProps { tabs?: { id: string; label: string; count?: number }[]; value?: string; label?: string; onChange?: (id: string) => void; }
+export interface ProgressProps { /** 0–100; omit for indeterminate. */ value?: number | null; label?: string; member?: CrewMember; showValue?: boolean; }
+export interface ProgressRingProps { value?: number | null; size?: number; member?: CrewMember; label?: string; }
+export interface SkeletonProps { card?: boolean; width?: number | string; height?: number | string; round?: boolean; }
+export interface EmptyStateProps { icon?: string; title?: string; children?: React.ReactNode; action?: React.ReactNode; }
+export interface InlineAlertProps { tone?: 'info' | 'warn' | 'danger' | 'ok'; title?: string; children?: React.ReactNode; action?: React.ReactNode; }
+
 export declare function Card(p: CardProps): JSX.Element;
 export declare function LineageChip(p: LineageChipProps): JSX.Element;
 export declare function EvidenceWeight(p: EvidenceWeightProps): JSX.Element;
@@ -133,3 +204,28 @@ export declare function CardMenu(p: CardMenuProps): JSX.Element;
 /** Wrap every Vellum render in Root: it sets the font and button resets. */
 export declare function Root(p: { children?: React.ReactNode; className?: string; style?: any }): JSX.Element;
 export declare function Icon(p: { name: string; className?: string }): JSX.Element;
+export declare function Sheet(p: SheetProps): JSX.Element;
+export declare function SheetSection(p: SheetSectionProps): JSX.Element;
+export declare function SourceRow(p: SourceRowProps): JSX.Element;
+export declare function EvidenceBlocks(p: EvidenceBlocksProps): JSX.Element;
+export declare function Overview(p: OverviewProps): JSX.Element;
+export declare function Wire(p: WireProps): JSX.Element;
+export declare function Port(p: PortProps): JSX.Element;
+export declare function StageHeader(p: StageHeaderProps): JSX.Element;
+export declare function SelectionStrip(p: SelectionStripProps): JSX.Element;
+export declare function CrewCursor(p: CrewCursorProps): JSX.Element;
+export declare function CommandMenu(p: CommandMenuProps): JSX.Element;
+export declare function Dialog(p: DialogProps): JSX.Element;
+export declare function Segmented(p: SegmentedProps): JSX.Element;
+export declare function Tooltip(p: TooltipProps): JSX.Element;
+export declare function Kbd(p: KbdProps): JSX.Element;
+export declare function Tag(p: TagProps): JSX.Element;
+export declare function TextField(p: TextFieldProps): JSX.Element;
+export declare function Checkbox(p: CheckboxProps): JSX.Element;
+export declare function Switch(p: SwitchProps): JSX.Element;
+export declare function Tabs(p: TabsProps): JSX.Element;
+export declare function Progress(p: ProgressProps): JSX.Element;
+export declare function ProgressRing(p: ProgressRingProps): JSX.Element;
+export declare function Skeleton(p: SkeletonProps): JSX.Element;
+export declare function EmptyState(p: EmptyStateProps): JSX.Element;
+export declare function InlineAlert(p: InlineAlertProps): JSX.Element;

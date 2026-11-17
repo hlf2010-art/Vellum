@@ -830,7 +830,10 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 .map-zoom button[data-zact="fit"]{padding:0 7px;min-width:38px}
 .map canvas{display:block;width:100%;height:102px;border-radius:var(--radius-sm);cursor:crosshair;touch-action:none;background:color-mix(in srgb,var(--canvas) 76%,transparent);box-shadow:inset 0 0 0 .5px var(--hair)}
 .map canvas.grab{cursor:grab}.map canvas.grabbing{cursor:grabbing}
-.map .stages{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-top:6px}
+.map .stages{display:grid;grid-template-columns:repeat(4,auto);justify-content:space-between;gap:2px;margin-top:6px}
+/* Stage tabs never wrap: the pending dot sits on the corner instead of taking a slot in the label (zh labels are four 12px glyphs). */
+.stages button{white-space:nowrap;padding:0 6px}
+.stages button .st-dot{position:absolute;top:2px;right:1px}
 .map .stages button{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:4px;height:22px;padding:0 4px;border-radius:var(--radius-xs);font:550 11px/1 var(--ui);color:var(--label-3);letter-spacing:-.01em;transition:background var(--d-quick),color var(--d-quick)}
 .map .stages button:hover{color:var(--label);background:color-mix(in srgb,var(--hover) 70%,transparent)}
 .map .stages button.on{color:var(--label);background:var(--hover);font-weight:600;box-shadow:inset 0 0 0 .5px var(--hair)}

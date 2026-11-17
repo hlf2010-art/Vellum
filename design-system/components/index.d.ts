@@ -57,8 +57,20 @@ export interface CardProps {
   proposal?: { member?: CrewMember; op?: 'edit' | 'delete' | 'link'; from?: string; open?: boolean; field?: string; diff?: [string, string]; stale?: boolean };
   width?: number | string;
   headExtra?: React.ReactNode;
+  /** Selected on the board: a focus-colour ring. */
+  selected?: boolean;
+  /** `loading`: the crew is reading or writing this card (a light sweep; static under reduced motion). `error`: the last crew action on it failed. */
+  state?: 'idle' | 'loading' | 'error';
+  /** Error line shown when `state` is `error`. Default "Couldn’t finish. Your card is unchanged." */
+  error?: string;
+  /** Shows a Retry button in the error line. */
+  onRetry?: () => void;
+  /** Click / Enter on the card. */
+  onSelect?: () => void;
+  /** Cards are focusable by default (0). Pass -1 inside a roving-focus board. */
+  tabIndex?: number;
 }
-export interface LineageChipProps { lineage?: Lineage; size?: 'md' | 'lg'; }
+export interface LineageChipProps { lineage?: Lineage; size?: 'md' | 'lg'; /** Ring around the chip, e.g. the active filter. */ selected?: boolean; }
 export interface EvidenceWeightProps { weight?: Weight; }
 export type CrewState = 'free' | 'working' | 'waiting';
 export interface CrewMarkProps { member?: CrewMember; state?: CrewState; working?: boolean; size?: 'md' | 'sm' | 'xs'; }
@@ -66,8 +78,16 @@ export interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   /** Name of a Vellum icon: select, lasso, hand, upload, organize, undo, redo, plus, mic, send, enhance, command, search, doc, x, check, chevron, play, notepad, video, image, audio, link, frame, group, lock, sliders, retry, copy, arrow, eyeOff, archive, trash, ask. */
   icon?: string;
-  children?: React.ReactNode; disabled?: boolean; type?: 'button' | 'submit';
-  onClick?: (e: any) => void; 'aria-label'?: string;
+  children?: React.ReactNode;
+  /** sm 28px (toasts, bars), md 32px (default), lg 36px (sheets). */
+  size?: 'sm' | 'md' | 'lg';
+  /** Shows a spinner, sets aria-busy and blocks clicks. Keep the label. */
+  loading?: boolean;
+  disabled?: boolean;
+  type?: 'button' | 'submit';
+  onClick?: (e: any) => void;
+  /** Required for icon-only buttons; also becomes the tooltip. */
+  'aria-label'?: string;
 }
 export interface ReviewPillProps { count?: number; label?: string; onClick?: () => void; }
 export interface ToolRailProps {
@@ -81,17 +101,20 @@ export interface ComposerProps {
   placeholder?: string; value?: string; hint?: string;
   /** Who handles the request; the chip appears once there is text (or with showRoute). */
   route?: { member?: CrewMember | null; label: string }; showRoute?: boolean;
+  /** Enter sends, Shift+Enter breaks the line; the field grows to 160px. */
   onSend?: (text: string) => void;
+  /** Mic is recording: danger tint, aria-pressed. */
+  recording?: boolean;
 }
 export interface ToastAction { label: string; icon?: string; variant?: 'ghost' | 'secondary' | 'primary'; onClick?: () => void; }
-export interface ToastProps { member?: CrewMember; children?: React.ReactNode; /** Shorthand for a single Undo action. */ undo?: boolean; actions?: ToastAction[]; }
+export interface ToastProps { member?: CrewMember; children?: React.ReactNode; /** Shorthand for a single Undo action. */ undo?: boolean; actions?: ToastAction[]; /** `error`: role=alert, alert icon, danger ring. */ tone?: 'neutral' | 'error'; }
 export interface DraftBarProps { member?: CrewMember; /** e.g. "1 direction", "3 proofs" */ what?: string; count?: number; index?: number; onDiscard?: () => void; onRetry?: () => void; onKeep?: () => void; }
-export interface IslandTask { member: CrewMember; title: string; /** Present-tense verb: "Rendering", "Reading 4 sources" */ phase: string; pct?: number | null; elapsed?: string; }
+export interface IslandTask { member: CrewMember; title: string; /** Present-tense verb: "Rendering", "Reading 4 sources" */ phase: string; pct?: number | null; elapsed?: string; /** Default `running`. `done` and `failed` stay visible until dismissed. */ state?: 'running' | 'queued' | 'done' | 'failed'; /** Replaces the phase line, e.g. "Model timed out". */ note?: string; /** Failed tasks: shows Retry. */ onRetry?: () => void; }
 export interface TaskIslandProps { tasks?: IslandTask[]; open?: boolean; }
 export interface CrewBarProps { seats?: Partial<Record<CrewMember, CrewState>>; connection?: 'none' | 'ok' | 'rules' | 'error'; /** Model pill text, e.g. "Offline"; false hides it. */ mode?: string | false; quiet?: boolean; }
-export interface CrewSettingsProps { status?: string; speaks?: 'Never' | 'When it matters' | 'Often'; acts?: 'Only drafts' | 'Can create cards'; lanes?: string[]; locked?: string[]; }
-export interface CardMenuItem { label: string; icon?: string; key?: string; danger?: boolean; }
-export interface CardMenuProps { title?: string; kind?: string; locked?: boolean; items?: (CardMenuItem | '-')[]; }
+export interface CrewSettingsProps { status?: string; /** Initial value; the control is interactive (arrow keys move between options). */ speaks?: 'Never' | 'When it matters' | 'Often'; acts?: 'Only drafts' | 'Can create cards'; lanes?: string[]; locked?: string[]; onChange?: (v: { speaks: string; acts: string; locked: string[] }) => void; }
+export interface CardMenuItem { label: string; icon?: string; key?: string; danger?: boolean; onClick?: () => void; }
+export interface CardMenuProps { title?: string; kind?: string; locked?: boolean; items?: (CardMenuItem | '-')[]; /** Escape. Arrow keys, Home and End move between items. */ onClose?: () => void; /** Focus the first item on open. Use when the menu opens from a right-click or keypress. */ autoFocus?: boolean; }
 
 export declare function Card(p: CardProps): JSX.Element;
 export declare function LineageChip(p: LineageChipProps): JSX.Element;

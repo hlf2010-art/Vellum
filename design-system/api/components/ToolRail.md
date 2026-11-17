@@ -1,4 +1,4 @@
-<!-- Generated from components/index.d.ts. -->
+<!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # ToolRail
 
 The vertical canvas tool palette that floats on the left edge of the board.
@@ -8,11 +8,7 @@ The vertical canvas tool palette that floats on the left edge of the board.
 ## Use
 
 ```jsx
-<Vellum.ToolRail />
-```
-
-```html
-<x-import component-from-global-scope="Vellum.ToolRail"></x-import>
+<Vellum.Root><Vellum.ToolRail /></Vellum.Root>
 ```
 
 ## Props (ToolRailProps)

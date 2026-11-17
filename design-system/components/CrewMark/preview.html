@@ -8,7 +8,7 @@
 var V = window.Vellum, h = React.createElement;
 ReactDOM.createRoot(document.getElementById('root')).render(h(V.Root, null, h('div', {className:'row'}, 
   h(V.CrewMark,{member:'scout'}),h(V.CrewMark,{member:'strategist'}),h(V.CrewMark,{member:'wright'}),h(V.CrewMark,{member:'critic'}),
-  h(V.CrewMark,{member:'strategist',working:true}),h(V.CrewMark,{member:'scout',size:'sm'}),h(V.CrewMark,{member:'critic',size:'sm',working:true})
+  h(V.CrewMark,{member:'strategist',state:'working'}),h(V.CrewMark,{member:'wright',state:'waiting'}),h(V.CrewMark,{member:'scout',size:'sm'}),h(V.CrewMark,{member:'critic',size:'sm',state:'working'}),h(V.CrewMark,{member:'wright',size:'xs',state:'waiting'})
 )));
 </script>
 </body>

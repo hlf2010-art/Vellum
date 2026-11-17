@@ -44,6 +44,11 @@ Hand-written from `Vellum-Lumen.html` on branch `claude/lumen-v2` (`.card.<kind>
 ## Shared props
 `title`, `children` (body copy), `locked`, `proposal`, `eyebrow`, `meta` (right side of the footer: “2 notes · 5:44 AM”), `footLeft`, `by` (crew byline as an 18px orb), `lineage`, `lit` (crew is working on it), `width`.
 
+## States
+- `selected`: a 2px `focus` ring plus the lifted shadow. Cards are focusable (`tabIndex` 0); `onSelect` fires on click and Enter. Pass `tabIndex={-1}` when the board manages roving focus itself.
+- `state="loading"`: the crew is reading or writing the card. A soft light sweep crosses it (static tint under reduced motion), and `aria-busy` is set. Use it with `lit` on the author's orb, not instead of it.
+- `state="error"`: the last crew action on this card failed. An inline line in `danger-ink` on a danger tint says what happened and that the card is unchanged (default *“Couldn’t finish. Your card is unchanged.”*), with **Retry** when `onRetry` is given. Errors stay on the card they belong to; don't raise a modal.
+
 ## Locks and crew proposals
 - `locked`: a 20px lock badge at the top right. Only you can change the card. Cards in a locked lane get the same badge.
 - `proposal {member, op, open, field, diff, stale}`: a bar under the card body. The crew proposes, you decide.
@@ -57,6 +62,6 @@ Hand-written from `Vellum-Lumen.html` on branch `claude/lumen-v2` (`.card.<kind>
 - **Crew-made cards** (`synthesis`, `question`, `list`, `kanban`) show their author with `by`. Cards a person made show no byline.
 - **Proofs list the sources they were built from.** Never hide that provenance.
 - **Snapshot text is white on the lineage gradient.** In light theme it passes 4.5:1 on `B`, `C` and `D` (5.1–6.4:1), and amber `A` is just under (about 4.2–4.4:1). In dark theme the lighter hues drop white to 2.5–4.0:1, which is a source issue and flagged here. Keep snapshot copy at 14px or larger and titles at 17px/600, and prefer `B` or `D` snapshots where the copy matters.
-- **Don't** fill any card except a snapshot with lineage colour, don't add coloured left borders (kanban items are the one exception the source has), and don't hide evidence weight.
+- **Don't** fill any card except a snapshot with lineage colour, don't add coloured left borders (kanban items now use the same card face; the column header carries the lineage), and don't hide evidence weight.
 
 Wrap renders in `Vellum.Root`.

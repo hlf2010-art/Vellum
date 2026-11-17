@@ -1,4 +1,4 @@
-<!-- Generated from components/index.d.ts. -->
+<!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # EvidenceWeight
 
 How much a source can carry, shown as a pill: Observed, Reported, Proposal or Illustration.
@@ -8,18 +8,14 @@ How much a source can carry, shown as a pill: Observed, Reported, Proposal or Il
 ## Use
 
 ```jsx
-<Vellum.EvidenceWeight />
-```
-
-```html
-<x-import component-from-global-scope="Vellum.EvidenceWeight"></x-import>
+<Vellum.Root><Vellum.EvidenceWeight /></Vellum.Root>
 ```
 
 ## Props (EvidenceWeightProps)
 
 | prop | type | note |
 | --- | --- | --- |
-| `weight` | `'observed' \| 'reported' \| 'proposed' \| 'illustrative'` |  |
+| `weight` | `Weight` |  |
 
 ## More
 

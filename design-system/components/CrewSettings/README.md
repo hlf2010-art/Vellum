@@ -9,4 +9,6 @@ Hand-written from `Vellum-Lumen.html` on branch `claude/lumen-v2` (commit `92098
 
 This is the product's autonomy contract: **agents suggest, you decide.** Whatever the settings, the crew never edits or deletes a card you kept. It proposes the change on the card instead (`Card` `proposal`). Write specs and copy that keep that promise.
 
+Both segmented controls and the lane chips are live: arrow keys move between options, and `onChange({speaks, acts, locked})` reports every change. The props set the initial values.
+
 Segmented controls use `card` for the selected option on a `hover` track. The popover is 372px of `chrome` glass.

@@ -1,4 +1,4 @@
-<!-- Generated from components/index.d.ts. -->
+<!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # CrewBar
 
 The crew cluster at the top right: four crew seats, the crew settings button, and the model pill.
@@ -8,11 +8,7 @@ The crew cluster at the top right: four crew seats, the crew settings button, an
 ## Use
 
 ```jsx
-<Vellum.CrewBar />
-```
-
-```html
-<x-import component-from-global-scope="Vellum.CrewBar"></x-import>
+<Vellum.Root><Vellum.CrewBar /></Vellum.Root>
 ```
 
 ## Props (CrewBarProps)
@@ -21,6 +17,7 @@ The crew cluster at the top right: four crew seats, the crew settings button, an
 | --- | --- | --- |
 | `seats` | `Partial<Record<CrewMember, CrewState>>` |  |
 | `connection` | `'none' \| 'ok' \| 'rules' \| 'error'` |  |
+| `mode` | `string \| false` | Model pill text, e.g. "Offline"; false hides it. |
 | `quiet` | `boolean` |  |
 
 ## More

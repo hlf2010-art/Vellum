@@ -2802,6 +2802,8 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 #world.far .card:not(.group):not(.note)::after{content:attr(data-t);position:absolute;inset:0;padding:calc(9px*var(--far-s));background:none;opacity:1;pointer-events:none;overflow:hidden;
   font:600 calc(12px*var(--far-s))/1.28 var(--ui);letter-spacing:-.01em;color:var(--label);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4}
 #world.far .card.sketch::after{color:var(--label-2)}
+/* A Snapshot is painted in its lineage colour, so its far-zoom label is white like the rest of its text. */
+#world.far .card.print:not(.group):not(.note)::after{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.2)}
 #world.far .card.image:not(.group):not(.note)::after,#world.far .card.frame:not(.group):not(.note)::after,#world.far .card.recording:not(.group):not(.note)::after{content:none}
 @media (prefers-reduced-motion:reduce){.card.inking,.card.inking *{animation:none}}
 /* composer: one calm row; the route shows once there is something to route */
@@ -5436,7 +5438,7 @@ function renderNodes(){
     el.className=["card",n.type,isHtmlSource(n)?"html":"",n.status==="sketch"?"sketch":"",n.vote==="down"?"disliked":"",L?"pg-"+L:"",sel.includes(n.id)?"sel":"",litSet().nodes.has(n.id)?"lit":"",n.pid&&n.pid===currentPid()&&groups().size>1?"current":"",n.type==="direction"&&board.adopted[n.idea]===n.id&&n.status==="ink"?"adopted":"",passed?"passed":"",fCls,el.dataset.extra||""].filter(Boolean).join(" ");
     if(n.tone)el.dataset.tone=n.tone;else delete el.dataset.tone;
     el.style.left=n.x+"px";el.style.top=n.y+"px";el.style.width=nodeW(n)+"px";el.style.height=n.type==="group"?nodeH(n)+"px":"";
-    el.setAttribute("aria-label",(n.status==="sketch"?"Sketch: ":"")+n.type+": "+titleOf(n));el.tabIndex=-1;el.dataset.t=clip(titleOf(n),90);
+    el.setAttribute("aria-label",(n.status==="sketch"?"Sketch: ":"")+n.type+": "+titleOf(n));el.tabIndex=-1;el.dataset.t=clip(n.type==="print"&&(n.title||n.spec?.title)?`No. ${n.ed} · ${n.title||n.spec.title}`:titleOf(n),90);
   }
   qsa("[data-id]",nodesEl).forEach(el=>{if(!keep.has(el.dataset.id))el.remove()});
   for(const n of vis){const el=nodesEl.querySelector(`[data-id="${n.id}"]`);if(el)n._h=el.offsetHeight}

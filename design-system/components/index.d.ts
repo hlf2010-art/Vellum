@@ -229,3 +229,17 @@ export declare function ProgressRing(p: ProgressRingProps): JSX.Element;
 export declare function Skeleton(p: SkeletonProps): JSX.Element;
 export declare function EmptyState(p: EmptyStateProps): JSX.Element;
 export declare function InlineAlert(p: InlineAlertProps): JSX.Element;
+
+export interface ProofVersion { ver: number; image?: string; results?: { passed?: number; failed?: number; waiting?: number }; failed?: string[]; /** What the next version changed (shown when viewing this one). */ changed?: string; }
+export interface ProofCardProps {
+  title: string; lineage?: Lineage; format?: 'page' | 'tour' | 'deck';
+  /** The direction's test, e.g. "Run with 5 players…; pass if 4 notice…". */
+  test?: string;
+  versions?: ProofVersion[]; viewing?: number;
+  state?: 'idle' | 'building'; buildNote?: string;
+  /** Number of sources changed since the latest version. */
+  sourcesChanged?: number;
+  sources?: number; time?: string; iterating?: boolean;
+  onOpen?: () => void; onFix?: () => void; onRebuild?: () => void; onTest?: () => void; onSnapshot?: () => void; onIterate?: (text: string) => void;
+}
+export declare function ProofCard(p: ProofCardProps): JSX.Element;

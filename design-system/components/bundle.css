@@ -661,3 +661,57 @@
 .vl-root .vl-ov-zoom button::before{content:"";position:absolute;inset:-2px}
 .vl-root .vl-ov-stages button::before{content:"";position:absolute;inset:-1px}
 .vl-evb{width:100%}.vl-evb-cap>span:first-child{white-space:nowrap}.vl-evb-cap>span:last-child{text-align:right}
+
+/* ── ProofCard ─────────────────────────────────────────────────────────── */
+.vl-pc{position:relative;width:360px;display:flex;flex-direction:column;background:var(--card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);font-family:var(--font-ui);overflow:hidden}
+.vl-root .vl-pc-thumb{position:relative;display:block;height:132px;margin:6px 6px 0;padding:0;border-radius:var(--radius-media);overflow:hidden;background:var(--card-2);cursor:pointer}
+.vl-pc-thumb img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;transition:transform var(--duration-base) var(--easing-standard)}
+.vl-pc-thumb:hover img{transform:scale(1.02)}
+.vl-pc-ph{position:absolute;inset:0;background:linear-gradient(135deg,var(--card-2),var(--card-3))}
+.vl-pc-fmt{position:absolute;left:8px;top:8px;padding:4px 8px;border-radius:var(--radius-pill);background:rgba(10,11,13,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:600 11px/1 var(--font-ui);color:#fff}
+.vl-pc-sweep{position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,color-mix(in srgb,var(--light) 60%,transparent) 50%,transparent 70%) 0 0/250% 100% no-repeat;animation:vl-scan 1.3s var(--easing-standard) infinite}
+.vl-pc-in{display:flex;flex-direction:column;padding:12px 18px 14px}
+.vl-pc-k{display:flex;align-items:center;gap:7px;font:var(--text-card-kind);color:var(--label-3)}
+.vl-pc-k .vl-sp{flex:1}
+.vl-pc-ver1{font:500 12px/1 var(--font-ui);color:var(--label-3);font-variant-numeric:tabular-nums}
+.vl-pc-ver{display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:var(--radius-pill);background:var(--hover);font:600 12px/1 var(--font-ui);color:var(--label);font-variant-numeric:tabular-nums}
+.vl-pc-ver small{font-weight:500;color:var(--label-3)}
+.vl-root .vl-pc-ver button{position:relative;width:var(--size-xs);height:var(--size-xs);display:grid;place-items:center;border-radius:50%;color:var(--label-2)}
+.vl-root .vl-pc-ver button::before{content:"";position:absolute;inset:-2px}
+.vl-root .vl-pc-ver button:hover:not(:disabled){background:var(--card);color:var(--label)}
+.vl-root .vl-pc-ver button:disabled{opacity:.35;cursor:default}
+.vl-pc-ver button:first-child .vl-ico{transform:rotate(90deg)}
+.vl-pc-ver button:last-child .vl-ico{transform:rotate(-90deg)}
+.vl-pc-ver .vl-ico{width:var(--icon-xs);height:var(--icon-xs);stroke-width:2.2}
+.vl-pc h4{margin:7px 0 0;font:var(--text-card-title);letter-spacing:-.022em;color:var(--label);text-wrap:pretty}
+.vl-pc-test{margin:6px 0 0;font:450 13px/1.4 var(--font-ui);color:var(--label-2);text-wrap:pretty}
+.vl-pc-test b{font-weight:600;color:var(--label)}
+.vl-pc-res{margin-top:12px;padding:10px 12px;border-radius:var(--radius-md);background:var(--card-2)}
+.vl-pc-blocks{display:flex;gap:3px;margin-bottom:8px}
+.vl-pc-blocks i{flex:1;max-width:44px;height:6px;border-radius:var(--radius-pill)}
+.vl-pc-blocks i.is-ok{background:var(--ok-fill)}
+.vl-pc-blocks i.is-bad{background:var(--danger)}
+.vl-pc-blocks i.is-wait{background:var(--press)}
+.vl-pc-cap{display:flex;justify-content:space-between;gap:8px;font:500 12px/1.35 var(--font-ui);color:var(--label-2);font-variant-numeric:tabular-nums}
+.vl-pc-pass{display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--ok)}
+.vl-pc-pass .vl-ico{width:var(--icon-xs);height:var(--icon-xs);stroke-width:2.6}
+.vl-pc-fails{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.vl-pc-fails li{display:flex;align-items:flex-start;gap:6px;font:500 13px/1.35 var(--font-ui);color:var(--danger-ink)}
+.vl-pc-fails .vl-ico{flex:none;width:var(--icon-sm);height:var(--icon-sm);margin-top:1px;stroke-width:2.4}
+.vl-pc-drift,.vl-pc-note{display:flex;align-items:center;gap:6px;margin:10px 0 0;font:500 12px/1.35 var(--font-ui);color:color-mix(in srgb,var(--warn) 80%,var(--label))}
+.vl-pc-note{color:var(--label-2)}
+.vl-pc-drift .vl-ico{width:var(--icon-sm);height:var(--icon-sm);color:var(--warn-fill)}
+.vl-pc-iter{display:flex;align-items:center;gap:6px;margin-top:12px;padding:4px 4px 4px 12px;border-radius:var(--radius-pill);background:var(--card-2)}
+.vl-pc-iter:focus-within{box-shadow:0 0 0 var(--ring-width) color-mix(in srgb,var(--focus) 35%,transparent)}
+.vl-pc-iter input{flex:1;min-width:0;height:var(--size-sm);border:0;outline:0;background:transparent;font:450 14px/1 var(--font-ui);color:var(--label)}
+.vl-pc-iter input::placeholder{color:var(--label-3)}
+.vl-root .vl-pc-iter .vl-send{width:var(--size-sm);height:var(--size-sm);border-radius:50%;display:grid;place-items:center;flex:none}
+.vl-pc-iter .vl-send .vl-ico{width:var(--icon-sm);height:var(--icon-sm)}
+.vl-pc-acts{display:flex;align-items:center;gap:6px;margin-top:12px}
+.vl-pc-meta{display:flex;align-items:center;gap:8px;margin-top:12px;font:var(--text-meta);color:var(--label-3);font-variant-numeric:tabular-nums}
+.vl-pc-meta .vl-sp{flex:1}
+/* Viewing an older version: results dim, the way back is the primary action. */
+.vl-pc.is-old .vl-pc-thumb img{filter:grayscale(.6);opacity:.75}
+.vl-pc.is-old .vl-pc-res{opacity:.7}
+@media (prefers-reduced-motion:reduce){.vl-pc-sweep{animation:none;background:color-mix(in srgb,var(--light) 20%,transparent)}}
+.vl-pc-iter input:focus,.vl-pc-iter input:focus-visible{outline:0;box-shadow:none}

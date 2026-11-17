@@ -1,0 +1,25 @@
+<!-- @dsCard group="Board" height=1990 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||"light"</script><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="../bundle.js"></script><style>body{margin:0;background:var(--canvas)}#root{padding:20px}.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}.col{display:grid;gap:14px;justify-items:start}</style><style>.grid{display:grid;grid-template-columns:repeat(2,360px);gap:24px;align-items:start}.lbl{font:600 11px/1 var(--font-ui);letter-spacing:.04em;text-transform:uppercase;color:var(--label-3);margin:0 0 8px 4px}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var V = window.Vellum, h = React.createElement, IMG = '../../assets/Samples/proof-thumb.png';
+function go(el){ ReactDOM.createRoot(document.getElementById("root")).render(h(V.Root, null, el)); }
+var T='Run with 5 players in heavy rain; pass if 4 notice a faction shift within 1.2s.';
+function cell(label,el){return h('div',null,h('p',{className:'lbl'},label),el);}
+var V2={ver:2,image:IMG,results:{passed:3,failed:1,waiting:1},failed:['Colorblind players can’t tell crimson from teal in neon rain']};
+var V1={ver:1,image:IMG,results:{passed:1,failed:3,waiting:1},failed:['Pager pulse unnoticed while sprinting','Rim glow washes out at 18m'],changed:'rim glow brighter, ECG cadence slower'};
+go(h('div',{className:'grid'},
+  cell('Has failures',h(V.ProofCard,{lineage:'B',title:'Diegetic Faction Dispatch HUD',format:'page',test:T,sources:4,time:'3:09 PM',versions:[V1,V2]})),
+  cell('Passes its test',h(V.ProofCard,{lineage:'B',title:'Diegetic Faction Dispatch HUD',format:'page',test:T,sources:4,time:'4:40 PM',versions:[V1,V2,{ver:3,image:IMG,results:{passed:5,failed:0,waiting:0}}]})),
+  cell('A source changed',h(V.ProofCard,{lineage:'B',title:'Diegetic Faction Dispatch HUD',format:'page',test:T,sources:4,time:'3:09 PM',sourcesChanged:1,versions:[{ver:2,image:IMG,results:{passed:4,failed:0,waiting:1}}]})),
+  cell('Building the next version',h(V.ProofCard,{lineage:'B',title:'Diegetic Faction Dispatch HUD',format:'page',test:T,sources:4,time:'now',state:'building',buildNote:'fixing colour contrast',versions:[V1,V2]})),
+  cell('Not tested yet (slide deck)',h(V.ProofCard,{lineage:'B',title:'Ashen Crown · Milestone 3 review',format:'deck',test:T,sources:6,time:'5:02 PM',versions:[{ver:1,image:IMG}]})),
+  cell('Looking at an older version',h(V.ProofCard,{lineage:'B',title:'Diegetic Faction Dispatch HUD',format:'page',test:T,sources:4,time:'3:09 PM',versions:[V1,V2],viewing:0})),
+  cell('Changing it from the card',h(V.ProofCard,{lineage:'B',title:'Diegetic Faction Dispatch HUD',format:'page',test:T,sources:4,time:'3:09 PM',versions:[V1,V2],iterating:true}))
+));
+</script>
+</body>
+</html>

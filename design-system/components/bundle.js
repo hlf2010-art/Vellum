@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Vellum","components":[{"name":"Card"},{"name":"LineageChip"},{"name":"EvidenceWeight"},{"name":"CrewMark"},{"name":"Button"},{"name":"ReviewPill"},{"name":"ToolRail"},{"name":"Composer"},{"name":"Toast"},{"name":"DraftBar"},{"name":"TaskIsland"},{"name":"CrewBar"},{"name":"CrewSettings"},{"name":"CardMenu"},{"name":"Sheet"},{"name":"SourceRow"},{"name":"EvidenceBlocks"},{"name":"Overview"},{"name":"Wire"},{"name":"Port"},{"name":"StageHeader"},{"name":"SelectionStrip"},{"name":"CrewCursor"},{"name":"CommandMenu"},{"name":"Dialog"},{"name":"Segmented"},{"name":"Tooltip"},{"name":"Kbd"},{"name":"Tag"},{"name":"TextField"},{"name":"Checkbox"},{"name":"Switch"},{"name":"Tabs"},{"name":"Progress"},{"name":"Skeleton"},{"name":"EmptyState"},{"name":"InlineAlert"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Vellum","components":[{"name":"Card"},{"name":"LineageChip"},{"name":"EvidenceWeight"},{"name":"CrewMark"},{"name":"Button"},{"name":"ReviewPill"},{"name":"ToolRail"},{"name":"Composer"},{"name":"Toast"},{"name":"DraftBar"},{"name":"TaskIsland"},{"name":"CrewBar"},{"name":"CrewSettings"},{"name":"CardMenu"},{"name":"Sheet"},{"name":"SourceRow"},{"name":"EvidenceBlocks"},{"name":"Overview"},{"name":"Wire"},{"name":"Port"},{"name":"StageHeader"},{"name":"SelectionStrip"},{"name":"CrewCursor"},{"name":"CommandMenu"},{"name":"Dialog"},{"name":"Segmented"},{"name":"Tooltip"},{"name":"Kbd"},{"name":"Tag"},{"name":"TextField"},{"name":"Checkbox"},{"name":"Switch"},{"name":"Tabs"},{"name":"Progress"},{"name":"Skeleton"},{"name":"EmptyState"},{"name":"InlineAlert"},{"name":"ProofCard"}]} */
 (function(){
   var React = window.React, h = React.createElement;
   function cx(){ return Array.prototype.filter.call(arguments, Boolean).join(' '); }
@@ -575,5 +575,67 @@
       p.action ? h('div', { className: 'vl-alert-a' }, p.action) : null);
   }
 
-  window.Vellum = { Segmented: Segmented, Tooltip: Tooltip, Kbd: Kbd, Tag: Tag, TextField: TextField, Checkbox: Checkbox, Switch: Switch, Tabs: Tabs, Progress: Progress, ProgressRing: ProgressRing, Skeleton: Skeleton, EmptyState: EmptyState, InlineAlert: InlineAlert, Sheet: Sheet, SheetSection: SheetSection, SourceRow: SourceRow, EvidenceBlocks: EvidenceBlocks, Overview: Overview, Wire: Wire, Port: Port, StageHeader: StageHeader, SelectionStrip: SelectionStrip, CrewCursor: CrewCursor, CommandMenu: CommandMenu, Dialog: Dialog, Card: Card, LineageChip: LineageChip, EvidenceWeight: EvidenceWeight, CrewMark: CrewMark, Button: Button, ReviewPill: ReviewPill, ToolRail: ToolRail, Composer: Composer, Toast: Toast, DraftBar: DraftBar, TaskIsland: TaskIsland, CrewBar: CrewBar, CrewSettings: CrewSettings, CardMenu: CardMenu, Icon: Icon, Root: Root, CREW: CREW };
+
+  /* ── ProofCard: an experiment that tests a direction. Results first, thumbnail second. ── */
+  var FORMAT = { page: 'Page', tour: 'Guided tour', deck: 'Slide deck' };
+  function ProofCard(p){
+    var versions = p.versions && p.versions.length ? p.versions : [{ ver: p.ver || 1, results: p.results, failed: p.failed, image: p.image, changed: p.changed }];
+    var latest = versions.length - 1;
+    var vs = React.useState(p.viewing != null ? p.viewing : latest), at = vs[0], setAt = vs[1];
+    var is = React.useState(!!p.iterating), iter = is[0], setIter = is[1];
+    var ts = React.useState(''), txt = ts[0], setTxt = ts[1];
+    var v = versions[at], old = at !== latest, building = p.state === 'building' && !old;
+    var r = v.results || null, fails = v.failed || [];
+    var drift = !old && p.sourcesChanged ? p.sourcesChanged : 0;
+    var nextVer = versions[latest].ver + 1;
+
+    // One next step, chosen by state.
+    var primary = null;
+    if (building) primary = h(Button, { size: 'sm', variant: 'primary', loading: true }, 'Building v' + nextVer);
+    else if (old) primary = h(Button, { size: 'sm', onClick: function(){ setAt(latest); } }, 'Back to v' + versions[latest].ver);
+    else if (r && r.failed) primary = h(Button, { size: 'sm', variant: 'primary', icon: 'retry', onClick: p.onFix }, 'Fix ' + r.failed + ' failed');
+    else if (drift) primary = h(Button, { size: 'sm', variant: 'primary', icon: 'retry', onClick: p.onRebuild }, 'Rebuild with ' + drift + ' change' + (drift > 1 ? 's' : ''));
+    else if (!r) primary = h(Button, { size: 'sm', variant: 'primary', icon: 'ask', onClick: p.onTest }, 'Ask Critic to test');
+    else if (r.waiting) primary = h(Button, { size: 'sm', variant: 'primary', icon: 'ask', onClick: p.onTest }, 'Test ' + r.waiting + ' waiting');
+    else primary = h(Button, { size: 'sm', variant: 'primary', icon: 'check', onClick: p.onSnapshot }, 'Snapshot');
+
+    var blocks = [];
+    if (r) [['passed', 'ok'], ['failed', 'bad'], ['waiting', 'wait']].forEach(function(k){ for (var i = 0; i < (r[k[0]] || 0); i++) blocks.push(h('i', { key: k[0] + i, className: 'is-' + k[1] })); });
+    var summary = r ? [['passed', 'passed'], ['failed', 'failed'], ['waiting', 'waiting']].filter(function(k){ return r[k[0]]; }).map(function(k){ return r[k[0]] + ' ' + k[1]; }).join(' · ') : '';
+
+    return h('article', { className: cx('vl-pc', old && 'is-old', building && 'is-building'), style: { '--pg': p.lineage ? 'var(--' + p.lineage + ')' : undefined }, 'aria-label': 'Proof ' + (p.lineage || '') + ' v' + v.ver + ': ' + p.title },
+      h('button', { type: 'button', className: 'vl-pc-thumb', onClick: p.onOpen, 'aria-label': 'Open ' + p.title },
+        v.image ? h('img', { src: v.image, alt: '' }) : h('span', { className: 'vl-pc-ph' }),
+        h('span', { className: 'vl-pc-fmt' }, FORMAT[p.format] || 'Page'),
+        building ? h('span', { className: 'vl-pc-sweep', 'aria-hidden': 'true' }) : null),
+      h('div', { className: 'vl-pc-in' },
+        h('div', { className: 'vl-pc-k' },
+          p.lineage ? h(LineageChip, { lineage: p.lineage }) : null,
+          h('span', null, 'Proof'),
+          h('span', { className: 'vl-sp' }),
+          versions.length > 1 ? h('span', { className: 'vl-pc-ver', role: 'group', 'aria-label': 'Version' },
+            h('button', { type: 'button', 'aria-label': 'Previous version', disabled: at === 0, onClick: function(){ setAt(at - 1); } }, h(Icon, { name: 'chevron' })),
+            h('span', null, 'v' + v.ver, h('small', null, ' of ' + versions[latest].ver)),
+            h('button', { type: 'button', 'aria-label': 'Next version', disabled: at === latest, onClick: function(){ setAt(at + 1); } }, h(Icon, { name: 'chevron' })))
+          : h('span', { className: 'vl-pc-ver1' }, 'v' + v.ver)),
+        h('h4', null, p.title),
+        p.test ? h('p', { className: 'vl-pc-test' }, h('b', null, 'Test '), p.test) : null,
+        building ? h('div', { className: 'vl-pc-res' }, h('div', { className: 'vl-pc-cap' }, h('span', null, 'Wright is building v' + nextVer + (p.buildNote ? ': ' + p.buildNote : '')))) :
+        r ? h('div', { className: 'vl-pc-res' },
+            h('div', { className: 'vl-pc-blocks', role: 'img', 'aria-label': summary }, blocks),
+            h('div', { className: 'vl-pc-cap' }, h('span', null, summary), r.failed === 0 && r.waiting === 0 ? h('span', { className: 'vl-pc-pass' }, h(Icon, { name: 'check' }), 'Passes its test') : null),
+            fails.length ? h('ul', { className: 'vl-pc-fails' }, fails.slice(0, 2).map(function(f, i){ return h('li', { key: i }, h(Icon, { name: 'x' }), h('span', null, f)); })) : null)
+          : h('div', { className: 'vl-pc-res is-empty' }, h('div', { className: 'vl-pc-cap' }, h('span', null, 'Not tested yet. Critic can check it against the test above.'))),
+        old && v.changed ? h('p', { className: 'vl-pc-note' }, 'v' + versions[latest].ver + ' changed: ' + v.changed) : null,
+        drift ? h('p', { className: 'vl-pc-drift' }, h(Icon, { name: 'alert' }), drift + ' source' + (drift > 1 ? 's' : '') + ' changed since v' + v.ver) : null,
+        iter && !old && !building ? h('form', { className: 'vl-pc-iter', onSubmit: function(e){ e.preventDefault(); if (txt.trim() && p.onIterate) p.onIterate(txt); setTxt(''); setIter(false); } },
+            h('input', { autoFocus: true, value: txt, onChange: function(e){ setTxt(e.target.value); }, onKeyDown: function(e){ if (e.key === 'Escape') setIter(false); }, placeholder: 'What should v' + nextVer + ' change?', 'aria-label': 'What should v' + nextVer + ' change?' }),
+            h('button', { type: 'submit', className: 'vl-send', disabled: !txt.trim(), 'aria-label': 'Build v' + nextVer }, h(Icon, { name: 'send' }))) : null,
+        h('div', { className: 'vl-pc-acts' }, primary,
+          h(Button, { size: 'sm', onClick: p.onOpen }, 'Open'),
+          !old && !building && !iter ? h(Button, { size: 'sm', variant: 'ghost', onClick: function(){ setIter(true); } }, 'Change…') : null),
+        h('div', { className: 'vl-pc-meta' }, h('span', null, 'From Direction ' + (p.lineage || '') + ' · ' + (p.sources || 0) + ' sources'), h('span', { className: 'vl-sp' }), h('span', null, p.time || ''))));
+  }
+
+  window.Vellum = { ProofCard: ProofCard, Segmented: Segmented, Tooltip: Tooltip, Kbd: Kbd, Tag: Tag, TextField: TextField, Checkbox: Checkbox, Switch: Switch, Tabs: Tabs, Progress: Progress, ProgressRing: ProgressRing, Skeleton: Skeleton, EmptyState: EmptyState, InlineAlert: InlineAlert, Sheet: Sheet, SheetSection: SheetSection, SourceRow: SourceRow, EvidenceBlocks: EvidenceBlocks, Overview: Overview, Wire: Wire, Port: Port, StageHeader: StageHeader, SelectionStrip: SelectionStrip, CrewCursor: CrewCursor, CommandMenu: CommandMenu, Dialog: Dialog, Card: Card, LineageChip: LineageChip, EvidenceWeight: EvidenceWeight, CrewMark: CrewMark, Button: Button, ReviewPill: ReviewPill, ToolRail: ToolRail, Composer: Composer, Toast: Toast, DraftBar: DraftBar, TaskIsland: TaskIsland, CrewBar: CrewBar, CrewSettings: CrewSettings, CardMenu: CardMenu, Icon: Icon, Root: Root, CREW: CREW };
 })();

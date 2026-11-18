@@ -340,6 +340,81 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.context().close();
     }
 
+    // 5c. real-world replies keep their buttons, and a search started from a card never breaks the camera
+    {
+      const p = await page(browser, base);
+      await p.route(/(commons\.wikimedia|api\.openverse|wikipedia)\.org/, r => r.abort()); // search falls back to placeholders, deterministically
+      await p.newBoard();
+      await p.evaluate(() => { setCrewLevel('asked'); board.pins = {}; });
+      await p.type('note: I want to build an AI-native OPC business'); await p.idle();
+      const id = await p.evaluate(() => { const n = board.nodes.find(x => x.type === 'note'); board.pins = { [n.id]: [{ id: 'pin-c', agent: 'critic', note: 'Vague.', liftAct: 'note', liftLabel: 'Try as draft card', t: NOW(), seen: true }] }; renderAll(); openAdvNodeId = n.id; openAdvIdx = 0; renderAdvPop(); return n.id; });
+      queue.push({ id: 'pin-c1', match: 'Initial pin you left', text: 'Two interactions: pricing and onboarding.\n```json\nACTIONS: ' + JSON.stringify([{ act: 'list', label: 'Break into steps' }]) + '\n```' }, { id: 'pin-c2', match: 'Initial pin you left', text: 'Just words, no buttons.' });
+      const reply = async t => { await p.evaluate(([id, t]) => replyToAdvPin(id, 'pin-c', t), [id, t]); await p.idle(); };
+      const ui = () => p.evaluate(() => ({ txt: [...document.querySelectorAll('#advPop .adv-rep-tx')].map(e => e.textContent).at(-1), picks: [...document.querySelectorAll('#advPop .adv-picks .adv-lift')].map(b => b.textContent.trim()), lift: document.querySelectorAll('#advPop [data-adv-lift]').length }));
+      await reply('Go on');
+      const a = await ui();
+      check('a word like "interactions:" does not cut the reply, and a code fence around the ACTIONS line is not shown', a.txt === 'Two interactions: pricing and onboarding.' && a.picks.join('|') === 'Break into steps', JSON.stringify(a));
+      await reply('And?');
+      const b = await ui();
+      check('when a reply has no buttons, the pin keeps its own action button', b.picks.length === 0 && b.lift === 1, JSON.stringify(b));
+      check('the prompt keeps image search for things you can see, and not for abstract plans', requests.some(r => r.matched === 'pin-c1' && /never for a plan, strategy, business idea/.test(r.full) && !/"label":"Find references"/.test(r.full)));
+      // the camera: a search started from a card (the pin's "visuals" action) used to set it to NaN
+      await p.evaluate(id => { openAdvNodeId = null; closeAdvPop(); return searchWeb('ai native opc business', { from: byId(id) }); }, id); await p.idle();
+      check('a search started from a card keeps the camera valid and the page error-free', await p.evaluate(() => camOk(cam)) && p.errors.length === 0, JSON.stringify(await p.evaluate(() => cam)) + ' ' + p.errors.join(' | '));
+      const before = await p.evaluate(() => ({ ...cam }));
+      await p.evaluate(() => document.activeElement?.blur());
+      const empty = await p.evaluate(() => { for (let y = 120; y < 700; y += 40) for (let x = 120; x < 1200; x += 40) { const e = document.elementFromPoint(x, y); if (e && e.id === 'wall') return { x, y }; } return null; }); // a drag that starts on a card moves the card, so start on empty canvas
+      await p.mouse.move(empty.x, empty.y); await p.mouse.down(); await p.mouse.move(empty.x - 120, empty.y - 80, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(250);
+      check('and the canvas still pans afterwards', await p.evaluate(b => cam.x !== b.x && camOk(cam), before));
+      await p.evaluate(() => flyTo({ x: NaN, y: 0, s: 1 }));
+      check('a bad camera target is ignored', await p.evaluate(() => camOk(cam)));
+      await p.evaluate(() => { cam = { x: NaN, y: NaN, s: NaN }; board.cam = { x: null, y: null, s: null }; paintCam(); });
+      check('a camera that is already bad heals to a usable view', await p.evaluate(() => camOk(cam) && camOk(board.cam)));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5d. one kanban per project: the crew adds tasks to the board that is there, and never offers a card it already placed
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const kanbans = () => p.evaluate(() => board.nodes.filter(n => n.type === 'kanban' && !n.tombstone).map(n => ({ id: n.id, title: n.title, status: n.status, cards: (n.cards || []).map(c => c.title + '@' + c.col) })));
+      await p.evaluate(() => { node('kanban', { title: 'Prototype Layout', cols: [{ id: 'todo', title: 'To Do' }, { id: 'doing', title: 'In Progress' }, { id: 'done', title: 'Done' }], cards: [{ id: 'k1', title: 'Map key points', col: 'todo' }], by: 'wright', status: 'ink', pid: 'p-t' }, { x: 120, y: 120 }); renderAll(); });
+      const r1 = await p.evaluate(() => { const r = dispatchCanvasActions([{ action: 'create', cardType: 'kanban', title: 'More prototype tasks', cards: [{ title: 'Rooftop traversal', col: 0 }, { title: 'Map key points', col: 0 }] }], { by: 'critic' }); return { proposed: r.proposed.length, created: r.createdNodes.length, open: (board.proposals || []).filter(x => x.status === 'open').length }; });
+      check('a create-kanban action with a board already there makes no second board; for a kept board it becomes a suggested edit', (await kanbans()).length === 1 && r1.created === 0 && r1.proposed === 1 && r1.open === 1, JSON.stringify(r1));
+      await p.evaluate(() => acceptProposal(board.proposals.find(x => x.status === 'open').id, { force: true })); await p.waitForTimeout(200);
+      const k1 = (await kanbans())[0];
+      check('accepting adds only the new task (the one already there is skipped)', k1.cards.join('|') === 'Map key points@todo|Rooftop traversal@todo', k1.cards.join('|'));
+      await p.evaluate(() => dispatchCanvasActions([{ action: 'add_cards', target: 'Prototype Layout', cards: [{ title: 'Neon alley route', col: 1 }] }], { userIntent: true }));
+      check('add_cards puts a task in the column asked for', (await kanbans())[0].cards.includes('Neon alley route@doing'));
+      const r3 = await p.evaluate(() => { const r = dispatchCanvasActions([{ action: 'create', cardType: 'kanban', title: 'Phase 2', separate: true, cards: [{ title: 'Ship it', col: 0 }] }], { userIntent: true }); return { made: r.createdNodes.length, applied: r.applied }; });
+      check('a separate or phased board is still possible when asked for', (await kanbans()).length === 2 && r3.made === 1);
+      const rec = await p.evaluate(() => { const m = { proposals: [{ kind: 'kanban', title: 'Phase 2' }, { kind: 'kanban', title: 'Unrelated board' }, { kind: 'note', title: 'Phase 2' }], actionResults: { applied: [{ action: 'create', cardType: 'kanban', title: 'Phase 2', id: 'x' }] } }; reconcileProposalsWithActions(m); return m.proposals.map(x => !!x.placed); });
+      check('a proposal for something already put on the board shows as placed, others stay offered', rec.join() === 'true,false,false', rec.join());
+      await p.evaluate(() => { board.copilot = [{ id: 'cm1', role: 'ai', text: 'x', proposals: [{ kind: 'kanban', title: 'More tasks', cards: [{ title: 'Check the sniper nests', col: 0 }] }] }]; });
+      await p.evaluate(() => applyCopilotProposal('cm1', 0)); await p.waitForTimeout(300);
+      const after = await kanbans();
+      check('Place on Board with a kanban already there adds to it, and the proposal is then placed', after.length === 2 && after.some(k => k.cards.some(c => c.startsWith('Check the sniper nests'))) && await p.evaluate(() => board.copilot[0].proposals[0].placed === true), JSON.stringify(after));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5e. choosing a direction is not planning: options are direction cards, tasks are a kanban, and only after a direction is adopted
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const kinds = () => p.evaluate(() => board.nodes.filter(n => !n.tombstone).map(n => n.type));
+      const r1 = await p.evaluate(() => { const idea = node('idea', { title: 'An open-world game in Shanghai', text: 'x', by: 'you', status: 'ink', pid: 'p-i' }, { x: 100, y: 100 }); const r = dispatchCanvasActions([{ action: 'create', cardType: 'kanban', title: 'Direction: Vertical Heist District', text: 'Rooftop traversal and dockside heists', from: idea.id }], { by: 'critic', userIntent: true }); const n = r.createdNodes[0]; return { type: n.type, letter: n.letter, idea: n.idea === idea.id, hasText: /Rooftop/.test(n.text) }; });
+      check('with nothing adopted, a "Direction: ..." kanban action becomes a direction card (letter, linked to its claim, text kept)', r1.type === 'direction' && !!r1.letter && r1.idea && r1.hasText, JSON.stringify(r1));
+      const r2 = await p.evaluate(() => ({ prop: proposalKind({ kind: 'kanban', title: 'Option B: Underground economy' }), list: proposalKind({ kind: 'list', title: 'Direction A' }), zh: proposalKind({ kind: 'kanban', title: '方向一：垂直潜入' }), plan: proposalKind({ kind: 'kanban', title: 'Prototype layout tasks' }), note: proposalKind({ kind: 'note', title: 'Direction: x' }) }));
+      check('a proposal that is really an option is shown as a direction, a real task board stays a kanban', r2.prop === 'direction' && r2.list === 'direction' && r2.zh === 'direction' && r2.plan === 'kanban' && r2.note === 'note', JSON.stringify(r2));
+      const r3 = await p.evaluate(() => { const idea = board.nodes.find(n => n.type === 'idea'), d = board.nodes.find(n => n.type === 'direction'); board.adopted = { [idea.id]: d.id }; const k = proposalKind({ kind: 'kanban', title: 'Direction: Vertical Heist District' }); const r = dispatchCanvasActions([{ action: 'create', cardType: 'kanban', title: 'Direction: next steps', cards: [{ title: 'Build the rooftop route', col: 0 }] }], { by: 'critic', userIntent: true }); return { k, made: r.createdNodes.map(n => n.type) }; });
+      check('once a direction is adopted, the same title is a plan and stays a kanban', r3.k === 'kanban' && r3.made.join() === 'kanban', JSON.stringify(r3));
+      check('the prompt tells Copilot to offer options as direction cards, and tasks only after one is adopted', await p.evaluate(() => true) && fs.readFileSync(FILE, 'utf8').includes('CHOOSING A DIRECTION IS NOT PLANNING'));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover
     {
       const p = await page(browser, base);
@@ -845,6 +920,32 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('no page errors in the Auto routing flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+    // 12b. streaming reads as a steady unveil: words arrive one by one and fade in, and the last ones finish before the final render
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const WORDS = 70, LONG = Array.from({ length: WORDS }, (_, i) => 'word' + i).join(' ') + '.';
+      queue = [{ id: 'unveil1', match: 'Lumen Copilot', text: LONG, slow: 60 }];
+      const t0 = Date.now();
+      await p.type('What should we test first?');
+      const samples = [];
+      for (let i = 0; i < 120; i++) {
+        samples.push(await p.evaluate(() => { const b = [...document.querySelectorAll('[data-cp-msg-id] .cp-bubble')].at(-1); return { n: b ? (b.textContent.match(/word\d+/g) || []).length : -1, uv: b ? b.querySelectorAll('.uv').length : 0, streaming: copilotStreaming }; }));
+        if (samples.length > 3 && !samples.at(-1).streaming) break;
+        await p.waitForTimeout(80);
+      }
+      await p.idle();
+      const counts = samples.map(x => x.n).filter(n => n >= 0);
+      check('words appear steadily, never going backwards', counts.length > 8 && counts.every((n, i) => i === 0 || n >= counts[i - 1]) && counts.some(n => n > 0 && n < WORDS), counts.join(','));
+      check('each new word fades in (an animating span while text is arriving)', samples.some(x => x.uv > 0), JSON.stringify(samples.slice(0, 6)));
+      check('it is paced, not dumped: most of the reply was still being revealed after the model finished sending', samples.filter(x => x.n > 0 && x.n < WORDS).length >= 6, counts.join(','));
+      const final = await p.evaluate(() => (board.copilot || []).filter(m => m.role === 'ai').map(m => m.text).at(-1) || '');
+      const bubble = await p.evaluate(() => [...document.querySelectorAll('[data-cp-msg-id] .cp-bubble')].at(-1)?.textContent || '');
+      check('the final message has every word, is no longer animating, and the wait for the reveal is bounded', final.includes('word' + (WORDS - 1)) && (bubble.match(/word\d+/g) || []).length === WORDS && await p.evaluate(() => !document.querySelector('[data-cp-msg-id] .cp-bubble .uv')) && Date.now() - t0 < 12000, `${(bubble.match(/word\d+/g) || []).length} words, ${Date.now() - t0}ms`);
+      check('no page errors while streaming', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 9. composer: one row for one line; two rows (text full width, controls below) once the text wraps
     {
       const p = await page(browser, base, { model: false });

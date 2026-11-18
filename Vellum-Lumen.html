@@ -1471,6 +1471,10 @@ th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
 .cp-md-more summary::-webkit-details-marker{display:none}
 .cp-md-more[open] summary{margin-bottom:8px;padding-bottom:6px;border-bottom:.5px solid var(--hair-2)}
 .cp-caret{display:inline-block;width:6px;height:13px;margin-left:3px;vertical-align:-2px;border-radius:2px;background:var(--C-fill);animation:beat .8s ease-in-out infinite}
+/* streaming reveal: each new word fades in and un-blurs, like Gemini */
+.uv{display:inline-block;animation:uv .64s cubic-bezier(.22,.7,.2,1) both}
+@keyframes uv{from{opacity:0;filter:blur(6px)}to{opacity:1;filter:blur(0)}}
+@media (prefers-reduced-motion:reduce){.uv{animation:none}}
 .cp-thumbs{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
 .cp-thumbs img{width:42px;height:32px;object-fit:cover;border-radius:var(--radius-xs);box-shadow:0 0 0 .5px var(--hair-2)}
 .cp-actions-summary{display:flex;flex-direction:column;gap:5px;padding:8px 10px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--card-2) 92%,transparent);box-shadow:none;margin-top:2px;font:500 12px/1.4 var(--ui);color:var(--label-2);animation:rise .2s var(--ease)}
@@ -3843,6 +3847,7 @@ function openAutonomyDialog(){
   });
 }
 const PROP_FIELDS=["title","text","tag","tone"];
+const propText=v=>Array.isArray(v)?v.map(c=>"• "+String(c&&(c.title??c.t)||c)).join("\n"):v;
 const openProps=id=>(board.proposals||[]).filter(p=>p.status==="open"&&(!id||p.target===id));
 /* Locks: a locked card, or any kept card in a locked lane, is changed only by you. The Snapshot lane starts locked. */
 const lockedBays=()=>Array.isArray(board?.lockedBays)?board.lockedBays:[3];
@@ -3894,7 +3899,7 @@ function rejectProposal(id,reason=""){
   const pr=(board.proposals||[]).find(p=>p.id===id&&p.status==="open");if(!pr)return;
   checkpoint();pr.status="rejected";pr.resolvedAt=NOW();expandedProps.delete(id);if(reason)pr.reason=clip(reason,300);
   const n=byId(pr.target);
-  {const from=pr.op==="link"?byId(pr.change.from):null;declineRecord(pr.op,{title:n?titleOf(n):"",text:pr.op==="link"?`link from “${from?titleOf(from):"a card"}”`:pr.op==="delete"?L("delete this card","删除这张卡片"):Object.keys(pr.before).map(f=>`${f}: ${f===pr.change.field?pr.change.value:pr.change[f]}`).join("; "),by:pr.who,target:pr.target,reason,ref:pr.id})}
+  {const from=pr.op==="link"?byId(pr.change.from):null;declineRecord(pr.op,{title:n?titleOf(n):"",text:pr.op==="link"?`link from “${from?titleOf(from):"a card"}”`:pr.op==="delete"?L("delete this card","删除这张卡片"):Object.keys(pr.before).map(f=>`${f}: ${propText(f===pr.change.field?pr.change.value:pr.change[f])}`).join("; "),by:pr.who,target:pr.target,reason,ref:pr.id})}
   noteChange({op:"reject-proposal",id:pr.target,type:n?.type,title:clip(n?titleOf(n):"",60),who:"you",engine:"human",from:pr.who});
   log("you",`Declined ${esc(AGENTS[pr.who]?.name||"Copilot")}'s ${pr.op==="delete"?"deletion of":"edit to"} <b>${esc(n?titleOf(n):"a card")}</b>`,pr.target);
   renderAll();persist();renderReview();toast(L("Suggestion declined.","已拒绝该建议。"),{undo:true});
@@ -3915,7 +3920,7 @@ function proposalBarHTML(n){
     const a=AGENTS[pr.who],name=a?a.name:"Copilot",open=expandedProps.has(pr.id);
     const from=pr.op==="link"?byId(pr.change.from):null;
     const what=pr.op==="delete"?L(`${name} suggests deleting this card`,`${name} 建议删除此卡片`):pr.op==="link"?L(`${name} suggests linking “${clip(from?titleOf(from):"a card",32)}” into this card`,`${name} 建议把「${clip(from?titleOf(from):"一张卡片",32)}」连到此卡片`):L(`${name} suggests an edit`,`${name} 建议修改`);
-    const diff=open&&pr.op!=="delete"?`<div class="prop-diff">${Object.keys(pr.before).map(f=>`<div><span class="prop-f">${esc(f)}</span>${wordDiffHTML(pr.before[f],f===pr.change.field?pr.change.value:pr.change[f])}</div>`).join("")}</div>`:"";
+    const diff=open&&pr.op!=="delete"?`<div class="prop-diff">${Object.keys(pr.before).map(f=>`<div><span class="prop-f">${esc(f)}</span>${wordDiffHTML(propText(pr.before[f]),propText(f===pr.change.field?pr.change.value:pr.change[f]))}</div>`).join("")}</div>`:"";
     const stale=pr.stale?`<div class="prop-stale">${L("The card changed after this was suggested.","提出建议后卡片已被修改。")}</div>`:"";
     return `<div class="prop-bar${pr.op==="delete"?" is-del":""}" data-prop="${esc(pr.id)}"><div class="prop-top"><span class="mk">${a?a.mk:COPILOT_ICO}</span><span class="prop-what">${esc(what)}</span><span class="prop-acts">${pr.op==="edit"?`<button type="button" class="prop-btn" data-prop-act="view">${open?L("Hide","收起"):L("Review","查看")}</button>`:""}<button type="button" class="prop-btn" data-prop-act="reject">${L("Decline","拒绝")}</button><button type="button" class="prop-btn ok" data-prop-act="accept">${pr.stale?L("Accept anyway","仍然接受"):L("Accept","接受")}</button></span></div>${stale}${diff}</div>`;
   }).join("");
@@ -5029,6 +5034,8 @@ function flushCamAux(){
   paintRailView();placeMargin();placeBars();placeAdvPop?.();placeAdvStream?.();placeCursors();placeStrip();placeWirePop?.();paintMap();paintEdges();
 }
 function paintCam(fast=false){
+  /* last resort: a bad camera (from an old save, or any future bug) heals to the saved one or a default view */
+  if(!camOk(cam))cam=camOk(board.cam)?{...board.cam}:{x:0,y:0,s:.7};
   world.style.transform=`translate3d(${cam.x}px,${cam.y}px,0) scale(${cam.s})`;
   world.classList.toggle("is-zoomed-out",cam.s<0.58);
   const invS=clamp(1/Math.max(.12,cam.s),0.8,1.75).toFixed(2);
@@ -5050,7 +5057,10 @@ function paintCam(fast=false){
 }
 let camSaveT=0;function persistCamSoon(){clearTimeout(camSaveT);camSaveT=setTimeout(persist,600)}
 function stopCam(){cancelAnimationFrame(camAnim);camAnim=0}
+/* a camera with a NaN or zero scale makes every render throw and the canvas impossible to move */
+const camOk=c=>!!c&&Number.isFinite(c.x)&&Number.isFinite(c.y)&&Number.isFinite(c.s)&&c.s>0;
 function flyTo(t,ms=650){
+  if(!camOk(t))return Promise.resolve();
   stopCam();if(calm()||ms<=0){cam={...t};paintCam();return Promise.resolve()}
   const f={...cam},t0=performance.now();
   return new Promise(res=>{const step=now=>{const k=Math.min(1,(now-t0)/ms),e=1-Math.pow(1-k,4);
@@ -6114,6 +6124,75 @@ function mdBlocksHtml(src){
   }
   flushPara(para);
   return out;
+}
+/* ── Smooth streaming ───────────────────────────────────────────────────────────────────────────────────────
+   Models send text in bursts. Painting each burst as it lands (and rebuilding the whole bubble each time) reads as
+   glitchy. Instead the text shown trails the text received: whole words are revealed at a steady pace, a fast model
+   is smoothed (never more than about a second behind), each new word fades in and un-blurs, words already shown are
+   not redrawn, and the view only follows if the reader is already at the bottom. When the stream ends, unveilDrain
+   lets the last words finish before the final render replaces the bubble. Reduced motion shows text at once. */
+const unveilStates=new WeakMap(),UV_DUR=640,UV_STAGGER=34,UV_PAINT_MS=42;
+function unveilSet(el,text,{render=mdLite,scroller=null,wps=26}={}){
+  if(!el)return;
+  let st=unveilStates.get(el);
+  if(!st){
+    /* a bubble that already shows words (the panel was redrawn mid-stream) carries on from there instead of starting over */
+    const have=(el.textContent||"").match(/\S+/g)?.length||0;
+    st={shown:have,acc:0,last:0,raf:0,ts:new Array(have).fill(-1e9),paintedAt:0,paintedText:null,waiters:[]};unveilStates.set(el,st);
+  }
+  st.target=String(text||"");st.render=render;st.scroller=scroller;st.wps=wps;
+  if(calm())st.shown=Infinity;
+  if(!st.raf)st.raf=requestAnimationFrame(t=>unveilTick(el,st,t));
+}
+function unveilWrap(el,st,now){
+  const tw=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement&&n.parentElement.closest("[data-uv-skip]")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  const nodes=[];for(let n;(n=tw.nextNode());)nodes.push(n);
+  let j=0;const plan=nodes.map(tn=>{const parts=tn.nodeValue.split(/(\s+)/),words=parts.filter(x=>x&&!/^\s+$/.test(x)).length,o={tn,parts,start:j,words};j+=words;return o});
+  const total=j;
+  for(let k=st.ts.length,b=0;k<total;k++,b++)st.ts[k]=now+Math.min(b,12)*UV_STAGGER;
+  st.ts.length=Math.min(st.ts.length,total);
+  let first=total;while(first>0&&now-st.ts[first-1]<UV_DUR)first--;
+  for(const pl of plan){
+    if(!pl.words||pl.start+pl.words<=first)continue;
+    const frag=document.createDocumentFragment();let k=pl.start;
+    for(const part of pl.parts){
+      if(!part)continue;
+      if(/^\s+$/.test(part)||k<first){frag.append(part);if(!/^\s+$/.test(part))k++;continue}
+      const sp=document.createElement("span");sp.className="uv";sp.textContent=part;
+      sp.style.animationDelay=Math.round(st.ts[k]-now)+"ms";frag.append(sp);k++;
+    }
+    pl.tn.replaceWith(frag);
+  }
+}
+function unveilTick(el,st,now){
+  st.raf=0;
+  if(!el.isConnected){unveilStates.delete(el);st.waiters.splice(0).forEach(r=>r());return}
+  const toks=st.target.match(/\S+\s*/g)||[],total=toks.length;
+  const dt=st.last?Math.min(120,now-st.last):16;st.last=now;
+  if(st.shown<total){
+    const rate=Math.max(st.wps,(total-st.shown)/(st.draining?.45:.9));
+    st.acc+=rate*dt/1000;const step=Math.floor(st.acc);
+    if(step>=1){st.acc-=step;st.shown=Math.min(total,st.shown+step)}
+  }
+  const n=Math.min(st.shown,total),text=toks.slice(0,n).join("");
+  if(text!==st.paintedText&&(now-st.paintedAt>=UV_PAINT_MS||n>=total)){
+    st.paintedText=text;st.paintedAt=now;
+    const sc=st.scroller,stick=!!sc&&sc.scrollHeight-sc.scrollTop-sc.clientHeight<90;
+    el.innerHTML=st.render(text);
+    if(!calm())unveilWrap(el,st,now);
+    if(stick)sc.scrollTop=sc.scrollHeight;
+  }
+  if(n<total||text!==st.paintedText)st.raf=requestAnimationFrame(t=>unveilTick(el,st,t));
+  else st.waiters.splice(0).forEach(r=>r());
+}
+function unveilDrain(el){
+  const st=el&&unveilStates.get(el);if(!st)return Promise.resolve();
+  st.draining=true;
+  return new Promise(res=>{
+    st.waiters.push(res);if(!st.raf)st.raf=requestAnimationFrame(t=>unveilTick(el,st,t));
+    /* a hidden tab pauses animation frames, and nothing should wait on a reveal for long */
+    setTimeout(()=>{if(!st.waiters.includes(res))return;st.shown=Infinity;unveilTick(el,st,performance.now());st.waiters.splice(0).forEach(r=>r())},3200);
+  });
 }
 function mdCopilot(raw,{streaming=false,hasVisuals=false,msgId=""}={}){
   const blocks=mdBlocksHtml(raw);
@@ -7430,7 +7509,6 @@ function renderAdvPop(){
   const a=AGENTS[p.agent]||AGENTS.critic;
   const body=(p.note||[p.take,p.edge].filter(Boolean).join(" ")).trim();
   const kws=(p.keywords&&p.keywords.length)?p.keywords:extractNodeKeywords(n);
-  const lift=p.liftLabel&&!(p.replies||[]).length?`<button type="button" class="adv-lift" data-adv-lift="${esc(p.id)}">${ic("arrow")}${esc(p.liftLabel)}</button>`:"";
   const tools=`<button type="button" class="ib" data-adv-reroll title="${esc(L("Ask crew for a fresh angle","重新生成一条建议"))}" aria-label="Ask crew for a fresh angle">${ic("redo")}</button><button type="button" class="ib" data-adv-close title="${esc(L("Close","关闭"))}" aria-label="Close">${ic("x")}</button>`;
   const reps=Array.isArray(p.replies)?p.replies:[];
   const repsHTML=reps.length?`<div class="adv-replies">${reps.map(r=>{const isYou=r.who==="you",ra=isYou?null:(AGENTS[r.who]||a),tm=exactTime(r.t);return `<div class="adv-rep${isYou?" you":""}" data-adv-rep="${esc(r.id||"")}"><div class="adv-rep-h"><span>${esc(isYou?L("You","我"):ra.name)}</span>${tm?`<time>${esc(tm)}</time>`:""}</div><div class="adv-rep-tx${r.typing?" typing":""}">${mdLite(r.text||"")}</div></div>`}).join("")}</div>`:"";
@@ -7440,6 +7518,8 @@ function renderAdvPop(){
   const engTag=p.engine==="rules"?`<span class="adv-eng" title="${esc(L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
   /* the buttons under the latest reply; gone once you write again or the reply is still typing */
   const lastR=reps[reps.length-1],picks=lastR&&lastR.who!=="you"&&!lastR.typing&&Array.isArray(lastR.actions)?lastR.actions:[];
+  const waiting=!!lastR&&(lastR.who==="you"||!!lastR.typing);
+  const lift=p.liftLabel&&!picks.length&&!waiting?`<button type="button" class="adv-lift" data-adv-lift="${esc(p.id)}">${ic("arrow")}${esc(p.liftLabel)}</button>`:"";
   const picksHTML=picks.length?`<div class="adv-picks">${picks.map((x,i)=>`<button type="button" class="adv-lift" data-adv-act="${i}" data-adv-pickpin="${esc(p.id)}">${ic("arrow")}${esc(x.label)}</button>`).join("")}</div>`:"";
   pop.innerHTML=`<span class="adv-pop-tail" aria-hidden="true"></span><div class="adv-head"><span class="mk">${a.mk}</span><b>${esc(a.name)}</b>${engTag}${tools}</div>${tabsHTML}<div class="adv-scroll">${body?`<p class="adv-note">${renderAdvNote(body,kws)}</p>`:""}${basisHTML}${repsHTML}${picksHTML}</div><div class="adv-dock"><div class="adv-reply"><input type="text" class="adv-reply-in" data-adv-in data-pin-id="${esc(p.id)}" placeholder="${esc(L(`Reply to ${a.name}…`,`回复 ${a.name}…`))}" value="${esc(keepDraft)}" autocomplete="off" spellcheck="false"><button type="button" class="adv-send" data-adv-send="${esc(p.id)}"${keepDraft.trim()?"":" disabled"} aria-label="${esc(L("Send reply","发送回复"))}" title="${esc(L("Send (Enter)","发送 (Enter)"))}">${UP_SVG}</button></div><div class="adv-acts"><button type="button" class="adv-ign" data-adv-del="${esc(p.id)}">${L("Ignore","忽略")}</button>${lift}</div></div>`;
   placeAdvPop();
@@ -7454,13 +7534,16 @@ const PIN_REPLY_RULES=allowed=>`1. Answer what the designer just said first and 
 4. Your earlier ideas are only suggestions the designer has not agreed to. Do not treat them as decided.
 5. Stay on this card's subject. No filler openings, no "You're right", no emoji, no labels such as "Test:".
 6. Finish with ONE last line, exactly in this form, offering 2-3 things you could do next for the designer to pick from:
-ACTIONS: [{"act":"note","label":"Draft refined note","text":"the note, max 25 words"},{"act":"visuals","label":"Find references","query":"2-5 word image search"}]
-"act" is one of ${allowed.join(", ")}. "label" is 2-4 words. "note" needs "text"; "visuals" needs "query". Offer only things that follow from this conversation.`;
+ACTIONS: [{"act":"note","label":"Draft refined note","text":"the note, max 25 words"},{"act":"list","label":"Break into steps"}]
+"act" is one of ${allowed.join(", ")}. "label" is 2-4 words in the designer's language. "note" needs "text"; "visuals" needs "query". These examples only show the format: offer what actually follows from this conversation.
+"visuals" runs a literal photo search on Wikipedia and Wikimedia. Offer it only when the subject is something you can see (a place, object, product or visual style), and never for a plan, strategy, business idea or other abstract subject.`;
+/* the ACTIONS line starts a line: "interactions:" or "Quick actions:" in a sentence must not match */
+const ADV_ACTIONS_LINE=/(?:^|\n)[ \t]*ACTIONS:[ \t]*([\s\S]*)$/;
 function splitAdvActions(raw,allowed){
   const s=String(raw||"");
-  const m=/\n?[ \t]*ACTIONS:[ \t]*([\s\S]*)$/i.exec(s);
+  const m=ADV_ACTIONS_LINE.exec(s);
   if(!m)return {text:s.trim(),actions:[]};
-  const text=s.slice(0,m.index).trim();let list=[];
+  const text=s.slice(0,m.index).replace(/\n?[ \t]*`{3}[a-z]*[ \t]*$/i,"").trim();let list=[];
   try{const j=m[1].trim(),a=JSON.parse(j.slice(j.indexOf("["),j.lastIndexOf("]")+1));if(Array.isArray(a))list=a}catch{}
   const actions=[];
   for(const a of list){
@@ -7509,10 +7592,11 @@ Reply to the designer's last message in 1-3 plain sentences, in their language:
 ${PIN_REPLY_RULES(allowedActs)}`;
   const {v}=await runAgent(k,{read:directCtx.slice(0,3),places:[],label:`replying to comment`,work:()=>askAI({system:`${TALK(k)}\n${STYLE}`,prompt,images:imgNodes,onText:({text:t})=>{
     /* show the sentences as they stream, but never the ACTIONS line (or the start of it) */
-    aiMsg.text=t.replace(/\n?[ \t]*ACTIONS:[\s\S]*$/i,"").replace(/\n[ \t]*A(?:C(?:T(?:I(?:O(?:N(?:S:?)?)?)?)?)?)?$/,"").trim();
+    aiMsg.text=t.replace(ADV_ACTIONS_LINE,"").replace(/\n[ \t]*(?:`{1,3}[a-z]*|A(?:C(?:T(?:I(?:O(?:N(?:S:?)?)?)?)?)?)?)$/,"").trim();
     const tx=qs(`[data-adv-rep="${aiId}"] .adv-rep-tx`,$("advPop"));
-    if(tx&&openAdvNodeId===nodeId){tx.innerHTML=mdLite(aiMsg.text);const ls=qs(".adv-scroll",$("advPop"));if(ls)ls.scrollTop=ls.scrollHeight}
+    if(tx&&openAdvNodeId===nodeId)unveilSet(tx,aiMsg.text,{scroller:qs(".adv-scroll",$("advPop"))});
   }},()=>replyLocal(n,text,k,orig))});
+  await unveilDrain(qs(`[data-adv-rep="${aiId}"] .adv-rep-tx`,$("advPop")));
   const done=splitAdvActions(v||replyLocal(n,text,k,orig),allowedActs);
   aiMsg.text=done.text||replyLocal(n,text,k,orig);
   if(done.actions.length)aiMsg.actions=done.actions;
@@ -7918,6 +8002,7 @@ async function execAdvisorLift(nodeId,pinId,opts={}){
   if(!n||!pin)return;
   /* a button in the thread passes its own act / query / text; the first pin's button uses the pin's */
   const act=opts.act||pin.liftAct,query=opts.query!==undefined?opts.query:pin.liftQuery;
+  if(opts.act&&!["note","visuals","list","critique","fork","gather"].includes(opts.act))return;
   if(act==="open-ai"){closeAdvPop();toggleStudioPopover(true);return}
   if(act==="visuals"){
     if(opts.auto)return;
@@ -9735,7 +9820,8 @@ async function reply(n,text,agentKey){
   const ctx=[n,...sourcesFor(n).slice(0,6),...(n.type==="question"?[byId(n.on),byId(n.frame)].filter(Boolean):[])];
   const imgNodes=ctx.filter(x=>x&&(x.type==="image"||x.type==="frame"));
   const hist=(board.threads[n.id]||[]).slice(-8,-1).map(m=>(AGENTS[m.who]?AGENTS[m.who].name+(m.who===k?" (you)":""):"Designer")+": "+m.text).join("\n");
-  const {v,live}=await runAgent(k,{read:ctx.slice(0,3),places:[],label:"writing in the margin",work:()=>askAI({system:`${TALK(k)}\n${STYLE}`,prompt:`You are answering in the margin of this card:\n${wallText(ctx)}\n\nThe margin so far:\n${hist||"(empty)"}\n\nThe designer just wrote: "${text}"\n\nAnswer in 1-4 plain sentences, in their language:\n${TALK_RULES}`,images:imgNodes,memoryMode:(ctx.length<=1&&isStandaloneMediaOrLink([n]))?"none":"full",onText:({text:t})=>{msg.text=t;const tx=qs("#mThread .msg:last-child .tx");if(tx&&marginFor===n.id)tx.innerHTML=mdLite(t)}},()=>replyLocal(n,text,k))});
+  const {v,live}=await runAgent(k,{read:ctx.slice(0,3),places:[],label:"writing in the margin",work:()=>askAI({system:`${TALK(k)}\n${STYLE}`,prompt:`You are answering in the margin of this card:\n${wallText(ctx)}\n\nThe margin so far:\n${hist||"(empty)"}\n\nThe designer just wrote: "${text}"\n\nAnswer in 1-4 plain sentences, in their language:\n${TALK_RULES}`,images:imgNodes,memoryMode:(ctx.length<=1&&isStandaloneMediaOrLink([n]))?"none":"full",onText:({text:t})=>{msg.text=t;const tx=qs("#mThread .msg:last-child .tx");if(tx&&marginFor===n.id)unveilSet(tx,t,{scroller:$("mThread")})}},()=>replyLocal(n,text,k))});
+  await unveilDrain(qs("#mThread .msg:last-child .tx"));
   msg.text=v||replyLocal(n,text,k);delete msg.typing;
   log(k,`Replied in the notes on <b>${esc(titleOf(n))}</b>`,n.id);renderAll();persist();
 }
@@ -11364,7 +11450,7 @@ async function generateVideo(prompt,{from=null,sources=[]}={}){
 
 async function searchWeb(query,{nextPage=false,from=null}={}){
   query=String(query||"").trim();if(!query)return toast("Say what to look for, for example: /search headband fitting reference");
-  const count=4,places=from?Array.from({length:count},(_,i)=>{const col=i%2,row=Math.floor(i/2);return freeSpot(from.x+nodeW(from)+56+col*(W.image+22),from.y+row*280,W.image,260)}):planSearch(count),qk=query.toLowerCase();
+  const count=4,places=from?Array.from({length:count},(_,i)=>{const col=i%2,row=Math.floor(i/2);const s=freeSpot(from.x+nodeW(from)+56+col*(W.image+22),from.y+row*280,W.image,260);return {x:s.x,y:s.y,w:W.image,h:260}}):planSearch(count),qk=query.toLowerCase();
   const page=nextPage?(searchPages.get(qk)||1):0;searchPages.set(qk,page+1);
   let offline=false,tk=null;
   const res=await runAgent("scout",{read:[],places,label:"searching Wikimedia & Openverse",task:{kind:"search",title:query},work:async({task})=>{tk=task;
@@ -13132,7 +13218,7 @@ function renderCopilotMsg(m){
   const hasVisuals=validVisuals.length>0;
   const visuals=validVisuals.map((v,idx)=>renderCopilotVisual(v,m.id,idx)).join("");
   const props=(m.proposals||[]).filter(isPopulateableProposal).map((pr,idx)=>{
-    const rawK=String(pr.kind||"note").toLowerCase();
+    const rawK=proposalKind(pr);
     const k=rawK==="generate_media"?(String(pr.media_kind||pr.mediaKind||pr.type||"image").toLowerCase()==="video"?"video":"image"):rawK;
     const ltr=LETTERS.includes(pr.letter)?pr.letter:"";
     const lbl=k==="image"?"Generate Image":k==="video"?"Generate Video":k==="gif"?"Generate GIF":k==="search"?"Web Search":k==="direction"?"Direction":k==="list"?"Action List":k==="kanban"?"Kanban":k==="treemap"?"Tree Map":k==="notepad"?"Notepad":k==="config"?"System Config":k==="memory"?(pr.scope==="studio"?"Studio Rule":"Project Memory"):"Note";
@@ -13512,8 +13598,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
     const pb=parseCopilotBlocks(aiMsg.text);
     const shown=isCasual?trimCasual(pb.text):pb.text;
     const el=qs(`[data-cp-msg-id="${aiMsg.id}"] .cp-bubble`);
-    if(el)el.innerHTML=mdCopilot(shown,{streaming:true})+(pb.hasPendingUi?'<div class="cp-ui-building"><span>Structuring visual breakdown…</span></div>':'')+'<span class="cp-caret"></span>';
-    const sc=$("cpMsgs");if(sc)sc.scrollTop=sc.scrollHeight;
+    if(el)unveilSet(el,shown,{scroller:$("cpMsgs"),render:t=>mdCopilot(t,{streaming:true})+(pb.hasPendingUi?'<div class="cp-ui-building" data-uv-skip><span>Structuring visual breakdown…</span></div>':'')+'<span class="cp-caret"></span>'});
   };
   let cpTask=null;
   const factOn=!skipDelegate&&!isCasual&&factStance(text);
@@ -13549,7 +13634,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       const digestBlock=isCasual?"":boardDigestForCopilot({query:subSteps.length?"":text,ctx});
       const sys=isCasual
         ?`You are Lumen Copilot, a concise design workspace assistant for board "${board.title||"Untitled"}". The user sent a brief conversational message ("${text.trim()}"). Reply in 1 short, natural sentence (under 18 words). Do NOT roleplay as a human teammate, do NOT mention playtests, synthesis docs, or background work, do NOT output multiple paragraphs, and do NOT add a sign-off.`
-        :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\nCONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
+        :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\nCONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Add tasks to a kanban that already exists: {"action":"add_cards","target":"kanban nodeId or title","cards":[{"title":"...","col":0}]}\n- ONE KANBAN PER PROJECT: if a kanban is already on the board, add tasks to it with add_cards and never create a second one. Only when the designer asks for a separate or phased board, create it with "separate":true. A kanban holds tasks to do: a design direction or option is a "direction" card, not a kanban.\n- CHOOSING A DIRECTION IS NOT PLANNING: while nothing is adopted yet ("Adopted: none") and the designer is exploring or asking for options, offer 2-3 options as "direction" cards, each with a one-line test it could fail. Do not use a kanban or list for options. A kanban or list is for tasks, once a direction is adopted or when the designer asks for a plan.\n- Never emit the same card as both an action and a proposal. An action lands on the board directly, so leave it out of the proposals.\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
 
       const maxTok=isCasual?64:3000;
       /* Auto routing, as for the crew: a merge is heavy (cloud first), everything else is light (Local AI first).
@@ -13591,6 +13676,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         const activeAgent=subSteps.length?(subSteps[subSteps.length-1].to||subSteps[0].to):(aiMsg.agent||"critic");
         aiMsg.actionResults=dispatchCanvasActions(aiMsg.actions,{by:activeAgent});
       }
+      if(!isCasual)reconcileProposalsWithActions(aiMsg);
     }
   }catch(e){
     if(e?.name==="AbortError"){
@@ -13603,6 +13689,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       const loc=copilotLocalReply(text,ctx);aiMsg.text=loc.text;aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;
     }
   }finally{
+    if(!copilotAbort?.signal?.aborted)await unveilDrain(qs(`[data-cp-msg-id="${aiMsg.id}"] .cp-bubble`));
     delete aiMsg.streaming;copilotStreaming=false;copilotAbort=null;
     cpTask?.done();
     renderCopilot();persist();
@@ -13611,7 +13698,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
 }
 async function applyCopilotProposal(msgId,idx){
   const m=(board.copilot||[]).find(x=>x.id===msgId),pr=m?.proposals?.[idx];if(!pr)return;
-  const ctx=ctxNodes(),f=ctx[0],k=String(pr.kind||"note").toLowerCase();
+  const ctx=ctxNodes(),f=ctx[0],k=proposalKind(pr);
   const title=cleanCopilotField(pr.title),txt=cleanCopilotField(pr.text),test=cleanCopilotField(pr.test),prompt=cleanCopilotField(pr.prompt),query=cleanCopilotField(pr.query);
   if(k==="config"){
     if(pr.placed)return;
@@ -13648,6 +13735,14 @@ async function applyCopilotProposal(msgId,idx){
     if(f)edge(f.id,made.id,"src");
   }else if(k==="kanban"){
     const spec=normalizeKanbanSpec({title:title||"Copilot Kanban",cols:pr.cols,cards:pr.cards||[{title:txt||"Review next steps",col:0}]},"Copilot Kanban");
+    const kb0=pr.separate?null:kanbanToExtend();
+    if(kb0){
+      const mg=mergeKanbanCards(kb0,spec),prevD=digest(kb0),prevT=kb0.title,prevTx=kb0.text;
+      checkpoint();kb0.cols=mg.cols;kb0.cards=mg.cards;kb0._h=null;kb0.updated=NOW();recordNodeEdit(kb0,prevD,prevT,prevTx);
+      pr.nodeId=kb0.id;pr.placed=true;log("muse",`Copilot added ${mg.added.length} task${mg.added.length===1?"":"s"} to <b>${esc(titleOf(kb0))}</b>`,kb0.id);
+      toast(L(mg.added.length?`Added ${mg.added.length} task${mg.added.length>1?"s":""} to “${clip(titleOf(kb0),32)}”, the kanban already on the board`:`Those tasks are already on “${clip(titleOf(kb0),32)}”`,mg.added.length?`已把 ${mg.added.length} 项任务加到画板上已有的看板「${clip(titleOf(kb0),32)}」`:`这些任务已在看板「${clip(titleOf(kb0),32)}」上`),{undo:true});
+      select([kb0.id]);renderAll();renderCopilot();persist();follow([kb0]);return;
+    }
     const spot=f?planBeside([f],W.kanban,280):planCenter(W.kanban,280,-270,-140);
     made=node("kanban",{_src:f?.id,title:spec.title,cols:spec.cols,cards:spec.cards,dir:ctx.find(n=>n.type==="direction")?.id||null,by:"wright",status:"sketch",pid:"p-"+uid()},spot);
     if(f)edge(f.id,made.id,"src");
@@ -13736,6 +13831,52 @@ function playCanvasActionFeedback(createdNodes, modifiedNodes){
   });
 }
 
+/* One kanban per project: new tasks go onto the board that is already there, and a proposal for something the
+   crew already put on the board is not offered a second time. */
+/* Choosing a direction is not planning. A kanban or list is for tasks; an option to choose between is a direction
+   card (a letter, a claim and a test it could fail). Until a direction is adopted, a kanban or list that is really an
+   option ("Direction: ...", "Option B ...") is a direction card. */
+const DIRECTION_TITLE=/^\s*(?:direction|option|approach)\b|^\s*(?:方向|方案|选项)/i;
+const nothingAdopted=()=>!Object.keys(board.adopted||{}).length;
+const looksLikeDirection=title=>nothingAdopted()&&DIRECTION_TITLE.test(String(title||""));
+function proposalKind(pr){const k=String(pr?.kind||"note").toLowerCase();return (k==="kanban"||k==="list")&&looksLikeDirection(pr?.title)?"direction":k}
+function kanbanToExtend(){
+  const ks=visibleNodes().filter(n=>n.type==="kanban");if(!ks.length)return null;
+  const ctx=ctxNodes(),sel=ctx.find(n=>n.type==="kanban");if(sel)return sel;
+  const dir=ctx.find(n=>n.type==="direction")?.id,same=dir&&ks.find(n=>n.dir===dir);if(same)return same;
+  return ks.slice().sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0))[0];
+}
+function mergeKanbanCards(kb,spec){
+  const cols=kanbanColsOf(kb),have=new Set((kb.cards||[]).map(c=>String(c.title||"").trim().toLowerCase()));
+  const colFor=c=>{const sc=(spec.cols||[]).find(x=>x.id===c.col),byTitle=sc&&cols.find(x=>x.title.toLowerCase()===String(sc.title).toLowerCase());return (byTitle||cols.find(x=>x.id===c.col)||(sc&&cols[spec.cols.indexOf(sc)])||cols[0]).id};
+  const fresh=(spec.cards||[]).filter(c=>!have.has(String(c.title||"").trim().toLowerCase())).map(c=>({id:"k-"+uid(),title:c.title,col:colFor(c)}));
+  return {cols,cards:[...(kb.cards||[]),...fresh],added:fresh};
+}
+function extendKanbanAction(kb,raw,{who,opts,ruleFor,gate,lockedOut,srcTitle}){
+  const m=mergeKanbanCards(kb,normalizeKanbanSpec(raw,kb.title||"Kanban")),base={id:kb.id,title:titleOf(kb),cardType:"kanban",srcTitle};
+  if(!m.added.length)return {kind:"applied",entry:{action:"update",...base,added:0}};
+  if(lockedOut(kb))return {kind:"skipped",entry:{action:"edit",...base,locked:true}};
+  if(gate(kb)){
+    const rule=ruleFor("edit");
+    if(rule==="never")return {kind:"skipped",entry:{action:"edit",...base}};
+    if(rule==="suggest"){const pr=propose(who,opts.engine||"model","edit",kb,{field:"cards",value:m.cards});return {kind:"proposed",entry:{action:"propose-edit",...base,proposal:pr.id}}}
+  }
+  const prevD=digest(kb),prevT=kb.title,prevTx=kb.text;
+  kb.cols=m.cols;kb.cards=m.cards;kb._h=null;kb.updated=NOW();recordNodeEdit(kb,prevD,prevT,prevTx);
+  return {kind:"applied",entry:{action:"update",...base,added:m.added.length}};
+}
+function reconcileProposalsWithActions(m){
+  const res=[m.actionResults,...((m.trace&&m.trace.steps)||[]).map(x=>x.actionResults)].filter(Boolean);
+  const done=res.flatMap(r=>[...(r.applied||[]),...(r.proposed||[])]);
+  if(!done.length||!(m.proposals||[]).length)return;
+  const norm=x=>String(x||"").toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
+  for(const pr of m.proposals){
+    if(!pr||pr.placed)continue;
+    const k=proposalKind(pr),t=norm(pr.title);if(!t)continue;
+    const hit=done.find(d=>{const dt=norm(d.srcTitle||d.title);return d.cardType===k&&dt&&(dt===t||dt.startsWith(t)||t.startsWith(dt))});
+    if(hit){pr.placed=true;pr.nodeId=hit.id}
+  }
+}
 function dispatchCanvasActions(rawActions, opts={}){
   const who=(opts.by&&AGENTS[opts.by])?opts.by:(opts.agent&&AGENTS[opts.agent]?opts.agent:"copilot");
   return asActor({who,engine:opts.engine||"model"},()=>withProv({engine:opts.engine||"model"},()=>dispatchCanvasActionsRun(rawActions,opts)));
@@ -13756,11 +13897,24 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
     try{
       if(["create","add","add_card","node","comment"].includes(type)){
         if(ruleFor("create")==="never"){skipped.push({action:"create",title:act.title||act.text||""});continue}
-        const cardType=type==="comment"?"note":String(act.cardType||act.type||"note").toLowerCase();
+        let cardType=type==="comment"?"note":String(act.cardType||act.type||"note").toLowerCase();
         const isComment=type==="comment"||act.isComment||act.tag==="Comment"||act.title==="Comment";
         const title=cleanCopilotField(act.title||(isComment?"Comment":(cardType==="note"?"Note":"Card")));
-        const text=cleanCopilotField(act.text||act.body||act.content||act.markdown||"");
+        let text=cleanCopilotField(act.text||act.body||act.content||act.markdown||"");
+        if((cardType==="kanban"||cardType==="list")&&looksLikeDirection(title)){
+          cardType="direction";
+          if(!text)text=(Array.isArray(act.cards)?act.cards:Array.isArray(act.items)?act.items:[]).map(c=>cleanCopilotField(typeof c==="string"?c:(c?.title||c?.text||c?.t))).filter(Boolean).join(" · ");
+        }
         const tag=cleanCopilotField(act.tag||(isComment?"Comment":""));
+        if(cardType==="kanban"&&!act.separate){
+          const kb0=(act.target&&byId(resolveNodeId(act.target)))||kanbanToExtend();
+          if(kb0&&kb0.type==="kanban"){
+            const r=extendKanbanAction(kb0,{title,cols:act.cols,cards:act.cards||[{title:text||"Task",col:0}]},{who,opts,ruleFor,gate,lockedOut,srcTitle:title});
+            if(r.kind==="applied"){applied.push(r.entry);if(r.entry.added){modifiedNodes.push(kb0);log(who,`AI added ${r.entry.added} task${r.entry.added>1?"s":""} to <b>${esc(titleOf(kb0))}</b>`,kb0.id)}}
+            else if(r.kind==="proposed")proposed.push(r.entry);else skipped.push(r.entry);
+            continue;
+          }
+        }
         const status=act.status==="sketch"||ruleFor("create")==="suggest"?"sketch":"ink";
         const fromRef=act.from||act.beside||act.attachTo||act.parent;
         const fromNode=fromRef?byId(resolveNodeId(fromRef)):(ctxNodes()[0]||null);
@@ -13842,6 +13996,12 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
           applied.push({action:"edit",id:n.id,title:titleOf(n),field:act.field||"content"});
           log(who,`AI updated card <b>${esc(titleOf(n))}</b>`,n.id);
         }
+      }else if(["add_cards","addcards","add_tasks","kanban_add"].includes(type)){
+        const kb0=(act.target&&byId(resolveNodeId(act.target)))||kanbanToExtend();
+        if(!kb0||kb0.type!=="kanban"){failed.push({action:"add_cards",target:act.target,error:"No kanban to add to"});continue}
+        const r=extendKanbanAction(kb0,{title:kb0.title,cards:act.cards||act.tasks||[]},{who,opts,ruleFor,gate,lockedOut,srcTitle:cleanCopilotField(act.title||kb0.title)});
+        if(r.kind==="applied"){applied.push(r.entry);if(r.entry.added){modifiedNodes.push(kb0);log(who,`AI added ${r.entry.added} task${r.entry.added>1?"s":""} to <b>${esc(titleOf(kb0))}</b>`,kb0.id)}}
+        else if(r.kind==="proposed")proposed.push(r.entry);else skipped.push(r.entry);
       }else if(["erase","delete","remove"].includes(type)){
         const raw=act.targets||act.ids||(act.target?[act.target]:(act.id?[act.id]:[]));
         let list=(Array.isArray(raw)?raw:[raw]).map(resolveNodeId).filter(Boolean);

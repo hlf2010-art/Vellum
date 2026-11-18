@@ -14,6 +14,7 @@
  *   node tests/model-eval.cjs --api https://openrouter.ai/api/v1 --model anthropic/claude-sonnet-5.5
  *                                                     # key from VELLUM_EVAL_KEY
  *   options: --n 3 (samples per task)  --tasks fork,push,merge,build  --out model-eval-results  --label name
+ *            --search keenable   (Scout searches Keenable before branching; key from KEENABLE_API_KEY. Default: Wikipedia)
  *
  * Exit code is 0 when it ran; the check counts are in the report, not a pass/fail gate. */
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -129,12 +130,13 @@ async function open(browser, base) {
     const ok = await p.evaluate(async () => { await checkStudioHealth({ wake: false, quiet: true }); aiPref = 'auto'; apiCfg = { ...apiCfg, enabled: false }; return studioState.status === 'ready'; });
     if (!ok) throw new Error('Studio AI is not ready at ' + STUDIO + '. Start it (Start Studio AI.command) and load a model first.');
   }
+  if (args.search === 'keenable') await p.evaluate(key => { searchCfg = { provider: 'keenable', key, mode: 'pro' }; }, process.env.KEENABLE_API_KEY || 'proxy-injected');
   await p.evaluate(() => { window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
   p.type = async t => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); await p.keyboard.press('Enter'); };
   p.idle = async (max = 600000) => { const t0 = Date.now(); await p.waitForTimeout(600); while (Date.now() - t0 < max && await p.evaluate(() => crewBusy() || copilotStreaming || !!document.querySelector('dialog[open][data-clarify]'))) { await p.evaluate(answerClarify => { if (window.__answerClarify) window.__answerClarify(); }, null); await p.waitForTimeout(500); } await p.waitForTimeout(400); };
   p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(800); };
   // a designer who clicks the options closest to what they said they want (used if Strategist asks first)
-  await p.evaluate(() => { window.__answerClarify = () => { const d = document.querySelector('dialog[open][data-clarify]'); if (!d) return; const want = /1930|concession|settlement|detective|noir|police|story|narrative|choice|people|character/i; for (const g of d.querySelectorAll('[data-clarify-q]')) { const opts = [...g.querySelectorAll('[data-clarify-opt]')]; (opts.find(o => want.test(o.textContent)) || opts[0])?.click(); } d.querySelector('[data-clarify-go]')?.click(); }; });
+  await p.evaluate(() => { window.__answerClarify = () => { const d = document.querySelector('dialog[open][data-clarify]'); if (!d) return; const want = /1930|concession|settlement|detective|noir|police|\bstory\b|narrative|choice|people|character/i; for (const g of d.querySelectorAll('[data-clarify-q]')) { const opts = [...g.querySelectorAll('[data-clarify-opt]')]; (opts.find(o => want.test(o.textContent)) || opts[0])?.click(); } d.querySelector('[data-clarify-go]')?.click(); }; });
   return p;
 }
 
@@ -162,7 +164,8 @@ const RUN = {
     const t0 = Date.now(); await p.type(BRIEF); await p.idle();
     const out = await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => ({ letter: n.letter, title: n.title, text: n.text, test: n.test, engine: n.prov?.engine })));
     const asked = await p.evaluate(() => board.nodes.find(n => n.type === 'idea')?.clarified || null);
-    return { seconds: (Date.now() - t0) / 1000, out, asked, flags: checkDirs(out) };
+    const sources = await p.evaluate(() => board.nodes.filter(n => n.type === 'source' && n.by === 'scout').map(n => ({ kind: n.kind, title: n.title, url: n.src?.url || n.path || '' })));
+    return { seconds: (Date.now() - t0) / 1000, out, asked, sources, flags: checkDirs(out) };
   },
   async push(p) {
     const ids = await seedBoard(p);
@@ -205,6 +208,7 @@ function md(results, meta) {
     for (const r of results.filter(x => x.task === t)) {
       L.push('', `### ${t} #${r.i + 1} · ${r.seconds?.toFixed(0)} s${r.flags?.length ? ' · ⚠ ' + r.flags.join('; ') : ''}${r.error ? ' · crashed: ' + r.error : ''}`, '');
       if (r.asked) L.push(`Strategist asked first: ${r.asked.map(q => `${q.q} → **${q.a}**`).join(' · ')}`, '');
+      if (r.sources) L.push(r.sources.length ? `Scout found: ${r.sources.map(x => `[${x.title}](${x.url}) (${x.kind})`).join(' · ')}` : 'Scout found nothing (or could not search).', '');
       if (t === 'fork') L.push(...(r.out || []).map(d => `- **${d.letter} · ${d.title}** (${d.engine}): ${d.text} *Test:* ${d.test}`));
       else if (t === 'build') L.push(r.out ? [`**${r.out.title}** — ${r.out.kicker || ''}`, '', r.out.lede || '', '', ...(r.out.items || []).map(i => `- **${i.title}:** ${i.body}${i.choices?.length ? ` _(choices: ${i.choices.join(' / ')})_` : ''}`)].join('\n') : '(none)');
       else L.push(r.out || '(empty)');

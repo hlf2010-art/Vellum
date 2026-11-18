@@ -8196,19 +8196,22 @@ function keenableError(status,code){
 }
 async function keenableSearch(q,{maxResults=3,cfg=searchCfg}={}){
   let r;
-  try{r=await fetch("https://api.keenable.ai/v1/search",{method:"POST",signal:timeoutSignal(15000),headers:{"Content-Type":"application/json","X-API-Key":String(cfg.key||"").trim()},body:JSON.stringify({query:q,mode:cfg.mode==="realtime"?"realtime":"pro",max_results:maxResults,snippet_max_length:700})})}
+  try{r=await fetch("https://api.keenable.ai/v1/search",{method:"POST",signal:timeoutSignal(15000),headers:{"Content-Type":"application/json","X-API-Key":String(cfg.key||"").trim()},body:JSON.stringify({query:q,mode:cfg.mode==="realtime"?"realtime":"pro",max_results:maxResults,snippet_max_length:700,exclude_domains:GAME_DB_SITES})})}
   catch(e){throw aiFailError(L("Keenable is unreachable","无法连接 Keenable"))}
   if(!r.ok){let code="";try{code=(await r.json()).code||""}catch{};throw keenableError(r.status,code)}
   const d=await r.json();
   return (Array.isArray(d.results)?d.results:[]).map(x=>({title:String(x.title||""),text:cleanSnippet(x.snippet),url:String(x.url||""),published:String(x.published_at||"")})).filter(x=>x.title&&x.text.length>80);
 }
+// game databases and forums describe existing games, not the world an idea is set in
+const GAME_DB_SITES=["rpg.net","rpggeek.com","boardgamegeek.com","rpgpub.com","drivethrurpg.com","rpg.stackexchange.com","store.steampowered.com","steamcommunity.com","igdb.com","mobygames.com","giantbomb.com","reddit.com"];
 const hostOf=u=>{try{return new URL(u).host.replace(/^www\./,"")}catch{return ""}};
+const ideaCore=t=>String(t||"").replace(/\b(i|we|want|wants|to|make|build|create|an?|the|set|in|on|about|of|for|with|where|you|play|game|games|rpg|jrpg|video|story|idea|app)\b/gi," ").replace(/[^\w\s'-]/g," ").replace(/\s+/g," ").trim();
 function groundQueries(ideaText,brief,picked){
   const lang=textLang(ideaText),answers=(picked||[]).map(x=>String(x.a||"").replace(/^(?:an?|the)\s+/i,"").trim()).filter(Boolean);
   if(lang==="zh")return [...new Set([String(ideaText).replace(/我想(?:做|要做)?|一个|游戏|\b(?:RPG|rpg|game)\b|以|为背景|的/g," ").replace(/\s+/g," ").trim().slice(0,30),...answers.slice(0,2)])].filter(Boolean).slice(0,3);
   const all=`${ideaText} ${brief} ${answers.join(" ")}`,place=placesIn(ideaText)[0]||placesIn(all)[0]||"";
   const y=(all.match(/\b(1[5-9]\d\d|20[0-4]\d)s?\b/)||[])[0],decade=y?y.replace(/^(\d{3})\d(s?)$/,"$10s"):"";
-  const core=String(ideaText).replace(/\b(i|we|want|wants|to|make|build|create|an?|the|set|in|on|about|of|for|with|where|you|play|game|games|rpg|video|story|idea|app)\b/gi," ").replace(/[^\w\s'-]/g," ").replace(/\s+/g," ").trim();
+  const core=ideaCore(ideaText);
   const qs=[];
   if(place){qs.push(`History of ${place}`);if(decade)qs.push(`${place} in the ${decade}`);answers.slice(0,1).forEach(a=>qs.push(`${place} ${a.replace(new RegExp(place,"i"),"").trim()}`))}
   else if(core)qs.push(core);
@@ -8232,11 +8235,14 @@ async function groundIdea(idea,brief,picked){
   const qs=groundQueries(ideaText,brief,picked);if(!qs.length)return [];
   let reached=false,keenWhy="";
   const useKeen=keenableOn(),answers=(picked||[]).map(x=>x.a).filter(Boolean);
-  // Keenable is semantic: the idea in plain words finds context the keyword queries miss
-  const keenQs=[...new Set([`${ideaText} ${answers.join(" ")}`.trim().slice(0,300),...qs])].slice(0,3);
+  /* Keenable is semantic, so it also gets the idea in plain words, but asked for its real history and daily
+     life: asked with "RPG" in it, it returned other people's Shanghai RPGs (RPGnet, forum threads), which
+     are not background and invite copying an existing game. */
+  const plain=lang==="zh"?`${qs[0]||ideaText} 真实历史 日常生活`:`${[ideaCore(ideaText),...answers].join(" ")} real history and daily life`;
+  const keenQs=[...new Set([plain.trim().slice(0,300),...qs])].slice(0,3);
   const res=await runAgent("scout",{read:[idea],places:[],label:L(useKeen?"looking up background (Keenable)":"looking up background","查找背景资料"),task:{kind:"search",title:qs[0]},work:async()=>{
     const found=[],seen=new Set();
-    const take=(got,q,via)=>{for(const it of got){const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3)break}};
+    const take=(got,q,via)=>{let n=0;for(const it of got){const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3||++n>=2)break}};
     if(useKeen){
       for(const q of keenQs){
         try{take(await keenableSearch(q),q,"Keenable");reached=true}

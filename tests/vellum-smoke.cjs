@@ -298,6 +298,36 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.context().close();
     }
 
+    // 5b. a pin thread keeps moving: the crew's reply ends with up to 3 buttons to tap, not a question to answer
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      await p.evaluate(() => { setCrewLevel('asked'); board.pins = {}; });
+      await p.type('note: modern Shanghai'); await p.idle();
+      const id = await p.evaluate(() => { const n = board.nodes.find(x => x.type === 'note'); board.pins = { [n.id]: [{ id: 'pin-r', agent: 'critic', note: 'Modern Shanghai is vague.', liftAct: 'note', liftLabel: 'Try as draft card', t: NOW(), seen: true }] }; renderAll(); openAdvNodeId = n.id; openAdvIdx = 0; renderAdvPop(); return n.id; });
+      const NOTE = 'Shanghai 2026: old lanes under glass towers';
+      const withActions = 'Locked on 2026. I would go street-level: old lanes under glass towers.\nACTIONS: ' + JSON.stringify([{ act: 'note', label: 'Draft refined note', text: NOTE }, { act: 'visuals', label: 'Find references', query: 'Shanghai old lane neon' }, { act: 'bogus', label: 'Nope' }, { act: 'note', label: 'No text' }]);
+      queue.push({ id: 'pin-r1', match: 'Initial pin you left', text: withActions }, { id: 'pin-r2', match: 'Initial pin you left', text: 'Plain answer with no buttons.' }, { id: 'pin-r3', match: 'Initial pin you left', text: withActions });
+      const reply = async t => { await p.evaluate(([id, t]) => replyToAdvPin(id, 'pin-r', t), [id, t]); await p.idle(); };
+      const ui = () => p.evaluate(() => ({ txt: [...document.querySelectorAll('#advPop .adv-rep-tx')].map(e => e.textContent).at(-1), picks: [...document.querySelectorAll('#advPop .adv-picks .adv-lift')].map(b => b.textContent.trim()), lift: document.querySelectorAll('#advPop [data-adv-lift]').length }));
+      await reply('Era setting, 2026');
+      const a = await ui(), req = requests.find(r => r.matched === 'pin-r1');
+      check('a reply shows its sentences without the ACTIONS line', /street-level/.test(a.txt) && !/ACTIONS/.test(a.txt), a.txt);
+      check('it ends with the valid buttons only (bad act and missing text are dropped)', a.picks.join('|') === 'Draft refined note|Find references' && a.lift === 0, JSON.stringify(a));
+      check('the model is told to guess, not to re-ask, and which actions exist for this card', !!req && /never ask it again/.test(req.full) && /note, visuals, list, critique, fork/.test(req.full) && !/gather/.test(req.full.split('ACTIONS:')[1] || ''));
+      await p.evaluate(() => { board.pins[Object.keys(board.pins)[0]][0].replies.push({ id: 'y', who: 'you', text: 'hm', t: NOW() }); renderAdvPop(); });
+      check('the buttons go away once you write again', (await ui()).picks.length === 0);
+      await p.evaluate(() => { board.pins[Object.keys(board.pins)[0]][0].replies.pop(); });
+      await reply('Anything else?');
+      const b = await ui();
+      check('a reply with no buttons is shown as it is', b.txt === 'Plain answer with no buttons.' && b.picks.length === 0, JSON.stringify(b));
+      await reply('Go on');
+      await p.click('#advPop .adv-picks .adv-lift >> nth=0'); await p.waitForTimeout(600);
+      check('tapping a button does it: the note becomes a sketch note and the thread closes', await p.evaluate(([id, NOTE]) => !board.pins[id] && !!board.nodes.find(n => n.status === 'sketch' && n.text === NOTE) && document.getElementById('advPop').hidden, [id, NOTE]));
+      check('no page errors in pin threads', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover
     {
       const p = await page(browser, base);

@@ -775,6 +775,7 @@ async function page(browser, base, { model = true } = {}) {
       check('each answered cloud call is counted against the day', used === 1, String(used));
       check('the Connection panel shows the calls left today', await p.evaluate(() => { toggleStudioPopover(true); const t = document.querySelector('.sp-svc[data-api-health], [data-api-health]')?.closest('.sp-svc')?.textContent || document.body.textContent; toggleStudioPopover(false); return /3 of 4 cloud calls left today/.test(t); }));
       check('the Cloud API dialog has a daily limit field', await p.evaluate(() => { openApiDialog(); const el = document.getElementById('apiDailyIn'); const ok = !!el && el.value === '4'; document.querySelector('dialog[open]')?.close(); return ok; }));
+      check('a Copilot reply with a chart draws it once', await p.evaluate(() => { board.copilot.push({ id: 'viz1', role: 'ai', agent: 'muse', text: 'Here is the split.', visuals: [{ kind: 'chart', title: 'Split', items: [{ label: 'A', value: 60 }, { label: 'B', value: 40 }] }] }); renderCopilot(); const el = document.querySelector('[data-cp-msg-id="viz1"]'); const n = el ? el.querySelectorAll('.cp-ui-stack').length : -1; board.copilot.pop(); renderCopilot(); return n === 1; }));
       check('no page errors in the Auto routing flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }

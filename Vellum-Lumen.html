@@ -12084,7 +12084,6 @@ function renderCopilotMsg(m){
     ${bubbleHTML}
     ${actionsHTML}
     ${visuals?`<div class="cp-ui-stack">${visuals}</div>`:""}
-    ${visuals?`<div class="cp-ui-stack">${visuals}</div>`:""}
     ${m.streaming?"":`<div class="cp-msg-votes${m.vote?" has-vote":""}"><button type="button" class="vote-btn up${m.vote==="up"?" active":""}" data-cp-mvote="up" data-cp-msg="${m.id}" aria-pressed="${m.vote==="up"}" title="Like response" aria-label="Like response">${ic("thumbUp")}</button><button type="button" class="vote-btn dn${m.vote==="down"?" active":""}" data-cp-mvote="down" data-cp-msg="${m.id}" aria-pressed="${m.vote==="down"}" title="Dislike response" aria-label="Dislike response">${ic("thumbDown")}</button></div>`}
     ${props?`<div class="cp-props">${props}</div>`:""}
   </div>`;

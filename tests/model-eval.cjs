@@ -46,6 +46,13 @@ const SONNET_MERGE = "Yes, and I think it fixes the weak spot in the sketch. Fol
 const OTHER_CITY = /\b(Beijing|Peking|Tianjin|Hong Kong|Taipei|Tokyo|Guangzhou|Canton|Hangzhou|Suzhou|Chongqing|Wuhan|Singapore|Seoul|Osaka|Macau|Nanking|Nanjing(?!\s+(?:East\s+|West\s+)?Road)|Wangfujing|Tiananmen|Forbidden City|Ximending|Shibuya|Shinjuku|Ginza|Mong Kok|Kowloon|Victoria Harbour)\b/;
 // things a 1937 scene cannot contain
 const MODERN = /\b(smart ?phones?|cell ?phones?|mobile phones?|your phone|charg(?:ing|er)|text messages?|internet|e-?mails?|laptops?|computers?|wi-?fi|social media|GPS|selfies?|drones?|television|TV|subway|metro)\b/i;
+// the session is in English: Chinese characters, run-together words, or prompt scaffolding in an answer are errors
+function textFlags(t) {
+  const f = [], s = String(t || '');
+  if (/[\u4e00-\u9fff]/.test(s)) f.push('switches to Chinese');
+  const g = s.match(/\b[A-Za-z]+\d{3,4}\b|\b[A-Za-z]{18,}\b/); if (g) f.push(`words run together (${g[0]})`);
+  return f;
+}
 const RULE_TITLES = /^(Walk it through|Lay it all out|Cut to one moment|Make the case)$/;
 function checkDirs(dirs) {
   const f = [];
@@ -64,6 +71,7 @@ function checkDirs(dirs) {
     const city = all.match(OTHER_CITY); if (city) f.push(`${tag}: another city (${city[1]})`);
     if (/\b(fewer|less) than (one|1|zero|0)\b/i.test(d.test)) f.push(`${tag}: impossible number in test`);
     if (/Shilin|Night Market Ledger|reading as character/i.test(all)) f.push(`${tag}: copies the prompt's example`);
+    f.push(...textFlags(all).map(x => `${tag}: ${x}`));
   }
   return f;
 }
@@ -77,6 +85,8 @@ function checkReply(text) {
   const words = String(text).split(/\s+/).length;
   if (words > 230) f.push(`${words} words`);
   const city = String(text).match(OTHER_CITY); if (city) f.push(`another city (${city[1]})`);
+  if (/^\s*`{0,3}\s*chips\s*:?\s*\[/im.test(text) || /\bLabel\s*:/.test(text)) f.push('prompt scaffolding shows (chips/Label)');
+  f.push(...textFlags(text));
   return f;
 }
 function checkBuild(spec) {
@@ -90,6 +100,7 @@ function checkBuild(spec) {
   if (!/1937|shell|bomb|artillery|explosion|blast/i.test(all)) f.push('not the scene that was asked for');
   if (/\b(prototype|playtest|participants?|the test|this page|testers?)\b/i.test(items.map(i => i.body).join(' '))) f.push('describes the prototype instead of being it');
   const anach = [all, ...items.flatMap(i => i.choices || [])].join(' ').match(MODERN); if (anach) f.push(`anachronism in 1937 (${anach[1]})`);
+  f.push(...textFlags(all));
   const city = all.match(OTHER_CITY); if (city) f.push(`another city (${city[1]})`);
   return f;
 }

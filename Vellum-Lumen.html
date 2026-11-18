@@ -7894,6 +7894,17 @@ const SMALL_EX={
 function smallStrategistSystem(kind){
   return `You are Strategist on a small creative crew. You turn one idea into distinct directions worth testing.\n${kind==="game"?"This idea is a game. Think like a game designer: each direction is a different game someone could actually play, with a player role and something the player does again and again.":"Work out what kind of thing the idea is (an app, a story, a service, an event) and think like an expert maker of that thing."}\nWrite plainly and concretely: name real places, years, groups, objects, and what the person does. Do not use vague words such as immersive, unique, rich, dynamic, engaging or vibrant.`;
 }
+/* The answer should be in the designer's language, with normal spacing. Qwen3-VL 8B switched to Chinese half
+   way through an English answer, and ran words together ("in1947", "smugglingcigarettes"). */
+const textLang=t=>/[\u4e00-\u9fff]/.test(String(t||""))?"zh":"en";
+const langLine=lang=>lang==="zh"?"Write every field in Simplified Chinese.":"Write every field in English, with normal spaces between words.";
+function textProblems(all,lang,where){
+  const out=[],t=String(all||"");
+  if(lang==="en"&&/[\u4e00-\u9fff]/.test(t))out.push(`${where}: write everything in English, with no Chinese characters`);
+  const glued=t.match(/\b[A-Za-z]+\d{3,4}\b|\b[A-Za-z]{18,}\b/);
+  if(glued)out.push(`${where}: words run together ("${glued[0]}"); put spaces between words`);
+  return out;
+}
 function smallForkPrompt(ideaText,count,brief,existing,wall){
   const kind=projectKind(`${ideaText} ${brief}`),game=kind==="game",home=placesIn(ideaText);
   const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}What is on the wall that feeds it:\n${wall||"(nothing yet)"}\n${existing.length?`Directions that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}
@@ -7905,6 +7916,7 @@ For each direction, write the fields in this order:
 - "test": one sentence: a test with real people that would show that experience is NOT happening; use a number of at least 2; never test what people know
 - "mode": "story" | "desk" | "deck"
 Example of the level of detail (a different idea; do not reuse it): ${SMALL_EX[game?"game":"other"]}
+${langLine(textLang(ideaText))}
 Return {"directions": [ ... ]}.`;
   return {system:smallStrategistSystem(kind),prompt};
 }
@@ -7921,6 +7933,7 @@ function buildProblems(v,ctxText,isTm){
   const home=placesIn(ctxText);
   if(home.length){const other=placesIn(all).filter(p=>!home.some(h=>h.toLowerCase()===p.toLowerCase()));if(other.length)out.push(`it is set in ${other[0]}, but the direction is in ${home[0]}`)}
   if(/\b(prototype|playtest|participants?|testers?)\b/i.test(items.map(i=>i?.body||"").join(" ")))out.push("write what the person reads and does, not a description of the prototype");
+  out.push(...textProblems(all,textLang(ctxText),"the page"));
   return out;
 }
 function forkProblems(v,count,ideaText){
@@ -7939,12 +7952,22 @@ function forkProblems(v,count,ideaText){
     if(/\b(fewer|less) than (one|1|zero|0)\b/i.test(d.test||""))out.push(`${k}: the test uses an impossible number ("fewer than one")`);
     if(/Night Market Ledger|Shilin|Shed on Every Street/i.test(all))out.push(`${k} copies the example; write a new one`);
     if(/\b(remember|recall|memori[sz]e|forgets?)\b/i.test(d.test||""))out.push(`${k}: the test checks what people remember; test what they feel or do instead`);
+    out.push(...textProblems(all,textLang(ideaText),k));
   });
   return out;
 }
+/* A chips list written without its fence ends up as text; turn it back into chips. */
+function looseChips(text){
+  const s=String(text||""),m=s.match(/\n?[ \t]*`{0,3}[ \t]*chips[ \t]*:?[ \t]*(\[[^\n]*\])[ \t]*`{0,3}[ \t]*$/i);
+  if(!m)return {text:s,chips:[]};
+  let chips=[];try{chips=JSON.parse(m[1]).map(String).map(x=>x.trim()).filter(Boolean).slice(0,3)}catch{}
+  return {text:s.slice(0,m.index).trim(),chips};
+}
 /* Small models sometimes end with two questions ("— or —") or promise work they won't do. Keep one question. */
 function tidySmallReply(text){
-  let t=String(text||"").replace(/\n\s*(?:—|--)?\s*or\s*(?:—|--)?\s*\n[\s\S]*$/i,"");
+  /* the crew prompt's "**label:** insight" pattern, copied literally */
+  let t=String(text||"").replace(/\*\*\s*Label\s*:\s*\*\*\s*([^\n]+)/gi,"**$1**").replace(/\*\*\s*Label\s*:\s*([^*\n]+)\*\*/gi,"**$1**").replace(/^(\s*[-*]?\s*)Label\s*:\s*/gim,"$1");
+  t=t.replace(/\n\s*(?:—|--)?\s*or\s*(?:—|--)?\s*\n[\s\S]*$/i,"");
   t=t.split("\n").filter(l=>!/^\s*\(?\s*(?:if this is what you want,?\s*)?(?:I'?ll|I will|let me|I'm going to)\s+(?:start|begin|go ahead|draft|build|write|set up|adjust|create)\b/i.test(l)&&!/^\s*—\s*$/.test(l)).join("\n").trim();
   const paras=t.split(/\n\s*\n/),last=paras.pop()||"",qs=last.match(/[^?]*\?/g);
   paras.push(qs&&qs.length>1?qs[0].trim():last);
@@ -8082,7 +8105,7 @@ async function clarifyFork(idea,brief){
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
   const kind=projectKind(`${ideaText} ${brief}`),home=placesIn(ideaText);
   const fallback=CLARIFY_FALLBACK[kind==="game"?"game":"other"];
-  const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}The idea is still open. Ask the designer three quick questions whose answers would most change what this becomes${kind==="game"?" (for example who the player is, when and where it happens, and how it plays)":""}. Each question has 4 short, concrete options under 8 words, as different from each other as possible. Use only real places and periods${home.length?`, and stay in ${home.join(" / ")}`:""}.\nReturn {"questions": [{"q": "...", "options": ["...", "...", "...", "..."]}, ... 3 items]}`;
+  const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}The idea is still open. Ask the designer three quick questions whose answers would most change what this becomes${kind==="game"?" (for example who the player is, when and where it happens, and how it plays)":""}. Each question has 4 short, concrete options under 8 words, as different from each other as possible. Use only real places and periods${home.length?`, and stay in ${home.join(" / ")}`:""}. ${langLine(textLang(ideaText))}\nReturn {"questions": [{"q": "...", "options": ["...", "...", "...", "..."]}, ... 3 items]}`;
   const res=await runAgent("muse",{read:[idea],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:smallStrategistSystem(kind),prompt,json:true,maxTokens:900,small:{system:smallStrategistSystem(kind),prompt},check:clarifyProblems},()=>({questions:fallback}))});
   if(!res)return null;
   const got=(Array.isArray(res.v?.questions)?res.v.questions:[]).map(q=>({q:String(q?.q||"").trim(),options:(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4)})).filter(q=>q.q&&q.options.length>=2).slice(0,3);
@@ -12165,6 +12188,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         const full=await studioChat({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
         const parsed=parseCopilotBlocks(full);
         aiMsg.text=isCasual?trimCasual(parsed.text||full):tidySmallReply(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
+        if(!isCasual){const lc=looseChips(aiMsg.text);aiMsg.text=lc.text;if(!(aiMsg.chips||[]).length&&lc.chips.length)aiMsg.chips=lc.chips}
       }else if(aiPref!=="local"&&apiRoutable()){
         const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
         const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;

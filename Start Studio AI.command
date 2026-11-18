@@ -32,7 +32,21 @@ def local_urlopen(target, timeout=5):
 PORT = 59631
 MODEL_DIR = Path.home() / "Library/Caches/InfiniteCanvas/models"
 ACTIVE_FILE = MODEL_DIR / "active_model.txt"
-DEFAULT_MODEL_ID = "qwen3-vl-4b"
+def default_model_id():
+    """Qwen3-VL 8B where there is room for it (16 GB of memory or more), else 4B. In Vellum's model eval the 8B
+    model was clearly better (about 71% of Claude Sonnet against about 60% for 4B) and fast enough on an Apple
+    silicon Mac mini. A model the person picked is remembered and wins over this default."""
+    try:
+        if sys.platform == "darwin":
+            mem = int(subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True, timeout=3).stdout.strip())
+        else:
+            mem = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return "qwen3-vl-4b"
+    return "qwen3-vl-8b" if mem >= 15.5e9 else "qwen3-vl-4b"
+
+
+DEFAULT_MODEL_ID = default_model_id()
 MODELS = {
     "qwen3-vl-4b": {
         "id": "qwen3-vl-4b",
@@ -1001,6 +1015,10 @@ class Handler(BaseHTTPRequestHandler):
                 "frequency_penalty": 0.25,
                 "max_tokens": min(4600, int(body.get("max_tokens", 2400))),
             }
+            if is_json:
+                # No repetition penalties for structured answers: JSON repeats its keys by design, and penalising
+                # common words made Qwen3-VL 8B pick spaceless pieces ("in1947", "smugglingcigarettes").
+                args.update({"presence_penalty": 0, "frequency_penalty": 0, "repeat_penalty": 1.0, "dry_multiplier": 0})
             if not isinstance(args["messages"], list) or not 1 <= len(args["messages"]) <= 8:
                 raise ValueError("Invalid request")
             request = Request(f"http://127.0.0.1:{MODEL_PORT}/v1/chat/completions", data=json.dumps(args).encode(),

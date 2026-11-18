@@ -56,16 +56,20 @@ function serve() {
           const flat = msgs.map(m => typeof m.content === 'string' ? m.content : (m.content || []).map(p => p.text || '').join(' ')).join('\n');
           const i = queue.findIndex(e => new RegExp(e.match, 's').test(flat));
           const hit = i >= 0 ? queue.splice(i, 1)[0] : null;
-          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200), full: flat });
+          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200), full: flat, temp: parsed.temperature, max: parsed.max_tokens });
           if (hit && hit.delay) await new Promise(r => setTimeout(r, hit.delay));
-          if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503); return rsp.end(); }
+          if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503, (hit && hit.headers) || {}); return rsp.end((hit && hit.body) || ''); }
           rsp.writeHead(200, { 'Content-Type': 'text/event-stream' });
+          rsp.on('error', () => {});
           const txt = typeof hit.text === 'string' ? hit.text : JSON.stringify(hit.text);
           for (let k = 0; k < txt.length; k += 40) {
             if (hit.slow) await new Promise(r => setTimeout(r, hit.slow)); // a slow model, chunk by chunk
             if (rsp.destroyed) return;
             rsp.write('data: ' + JSON.stringify({ choices: [{ delta: { content: txt.slice(k, k + 40) } }] }) + '\n\n');
+            // `stall`: send the first chunk, then go quiet, as a slow model does mid-answer
+            if (hit.stall && k === 0) await new Promise(r => setTimeout(r, hit.stall));
           }
+          if (rsp.destroyed) return;
           if (hit.finish) rsp.write('data: ' + JSON.stringify({ choices: [{ delta: {}, finish_reason: hit.finish }] }) + '\n\n');
           rsp.end('data: [DONE]\n\n');
         });
@@ -100,13 +104,21 @@ const LEGIBILITY = scope => {
   return out;
 };
 function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  — ' + detail}`); if (!ok) failures++; }
+const WIKI = { query: { pages: {
+  1: { index: 1, title: 'Shanghai International Settlement', extract: 'The Shanghai International Settlement originated from the 1863 merger of the British and American enclaves in Shanghai. Extraterritoriality was abolished in 1943.', fullurl: 'https://en.wikipedia.org/wiki/Shanghai_International_Settlement' },
+  2: { index: 2, title: 'History of Shanghai', extract: 'The history of Shanghai spans over a thousand years and closely parallels the development of modern China, from fishing village to treaty port.', fullurl: 'https://en.wikipedia.org/wiki/History_of_Shanghai' } } } };
+const wikiRoute = (p, calls = []) => p.route(/wikipedia\.org\/w\/api\.php/, r => { calls.push(new URL(r.request().url()).searchParams.get('gsrsearch')); return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(WIKI) }); });
 const dirs = tag => ({ directions: ['A', 'B', 'C'].map(l => ({ title: `${tag} ${l}`, plan: `Plan ${l}.`, test: `Test ${l}.`, mode: 'story' })) });
 
 async function page(browser, base, { model = true, theme = 'dark' } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: theme });
+  // Studio AI may be running on this machine; the suite must not depend on it (section 9 routes its own)
+  await ctx.route('http://127.0.0.1:59631/**', r => r.abort());
+  await ctx.route(/wikipedia\.org/, r => r.abort()); // the suite never reaches the real Wikipedia
   const p = await ctx.newPage();
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2500);
+  await p.evaluate(() => { SCOUT_GROUNDING = false; }); // sections that test Scout's look-up turn it on
   if (model) await p.evaluate(url => { apiCfg = { enabled: true, baseUrl: url + '/v1', model: 'smoke', key: 'smoke' }; }, base);
   p.type = async (t, enter = true) => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); if (enter) await p.keyboard.press('Enter'); };
   p.idle = async () => { await p.waitForTimeout(400); for (let i = 0; i < 100 && await p.evaluate(() => crewBusy()); i++) await p.waitForTimeout(250); await p.waitForTimeout(500); };
@@ -398,7 +410,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="ok"]'), null, { timeout: 4000 }).catch(() => {});
       const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, headTxt: document.querySelector('#studioPop .sp-head').textContent.trim(), sub: document.querySelector('#studioPop .sp-ai small')?.textContent || '', acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.querySelector('#crewSetBtn .conn-dot').className, sw: document.querySelector('#studioPop .sp-ai [role="switch"]')?.getAttribute('aria-checked'), first: !!document.querySelector('#studioPop .sp-first'), order: [...document.querySelectorAll('#studioPop .sp-svc-top > span:first-child')].map(s => s.textContent), apiDetail: [...document.querySelectorAll('#studioPop .sp-svc')][1]?.querySelector('.sp-svc-sub')?.textContent }));
       check('opening Connection tests the Cloud API for real; the engine in use says "In use" once, the header is just the title', ok.h === 'In use' && ok.headTxt === 'Connection' && ok.sub === '' && ok.apiDetail === 'smoke' && probes.length >= 1 && probes.at(-1).auth === 'Bearer smoke' && requests.every(r => !/^ping$/.test(r.full)), JSON.stringify(ok));
-      check('actions match real state (no Start while Studio AI is closed), the AI switch leads the engines, no "Use first" with one engine, media is grouped apart', ok.acts.join() === 'Edit' && ok.sw === 'true' && !ok.first && ok.order.join() === 'Local AI,Cloud API,Media Studio', JSON.stringify(ok));
+      check('actions match real state (no Start while Studio AI is closed), the AI switch leads the engines, no "Use first" with one engine, Scout search and media are grouped apart', ok.acts.join() === 'Edit,Set up' && ok.sw === 'true' && !ok.first && ok.order.join() === 'Local AI,Cloud API,Scout search,Media Studio', JSON.stringify(ok));
       probe.status = 401;
       await p.click('#studioPop [data-sp="refresh"]');
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="auth"]'), null, { timeout: 4000 }).catch(() => {});
@@ -477,6 +489,10 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       r = await run([{ action: 'edit', target: snap, field: 'text', value: 'changed later' }]);
       check('unlocking the lane lets suggestions through again', r.locked === 0 && r.proposed === 1);
       check('Copilot is told about locks and permissions', await p.evaluate(() => /Locked cards/.test(autonomyPromptLine()) && /deleting cards the designer has kept: it becomes a suggestion/.test(autonomyPromptLine())));
+      await wikiRoute(p);
+      await p.evaluate(() => sendCopilotMessage('When did the International Settlement end?'));
+      check('with no model, a factual question is answered by quoting the sources', /^The Shanghai International Settlement originated from the 1863 merger[^[]*\[1\]/.test(await p.evaluate(() => board.copilot.at(-1).text)), await p.evaluate(() => board.copilot.at(-1).text.slice(0, 200)));
+      await p.unroute(/wikipedia\.org\/w\/api\.php/);
       check('no page errors in the customize and lock flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
@@ -501,9 +517,332 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.evaluate(id => select([id]), id); await p.type('/fork 3'); await p.waitForTimeout(1000);
       await p.click('#island [data-isl="toggle"]'); await p.waitForTimeout(400);
       await p.click('#island [data-isl-stop]'); await p.idle(); await p.waitForTimeout(3000);
-      const st = await p.evaluate(() => ({ state: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, busy: crewBusy(), late: board.nodes.some(n => /Late/.test(n.title || '')) }));
+      const st = await p.evaluate(() => ({ state: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, busy: crewBusy(), late: board.nodes.some(n => /Late/.test(n.title || '')), rules: board.nodes.filter(n => n.type === 'direction').length !== 3 }));
       check('Stop on the island cancels the move', st.state === 'cancelled' && !st.busy && !st.late, JSON.stringify(st));
+      check('Stop does not fall back to built-in rules', !st.rules, JSON.stringify(st));
       check('no page errors around the island', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 9. Local AI: JSON asked for in words, small-model prompt and repair, questions first for an open idea,
+    //    and running out of time is not Stop
+    {
+      const p = await page(browser, base, { model: false });
+      const gens = [];
+      let local = () => ({ text: '', delay: 0 }); // decides each Local AI reply from the request
+      const kindOf = b => { const u = JSON.stringify(b.messages || []); return /three quick questions/.test(u) ? 'ask' : /Fix only these problems/.test(u) ? 'fix' : /senior colleague looking at a card/.test(u) ? 'talk' : 'fork'; };
+      const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+      await p.route('http://127.0.0.1:59631/**', async route => {
+        const req = route.request(), url = req.url();
+        if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+        if (/\/studio\/health/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ status: 'ready', model: 'smoke-local', modelId: 'smoke', vision: true, models: [] }) });
+        if (/\/studio\/generate/.test(url)) {
+          const body = JSON.parse(req.postData() || '{}'); body.kind = kindOf(body); gens.push(body);
+          const { text, delay } = local(body);
+          if (delay) await new Promise(r => setTimeout(r, delay));
+          const sse = String(text || ' ').match(/[\s\S]{1,40}/g).map(c => 'data: ' + JSON.stringify({ choices: [{ delta: { content: c } }] }) + '\n\n').join('') + 'data: [DONE]\n\n';
+          return route.fulfill({ status: 200, contentType: 'text/event-stream', headers: cors, body: sse }).catch(() => {});
+        }
+        return route.fulfill({ status: 404, headers: cors, body: '' });
+      });
+      await p.evaluate(async () => { await checkStudioHealth({ wake: false, quiet: true }); window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
+      check('Local AI reads as ready', await p.evaluate(() => studioState.status === 'ready' && connSummary().engine === 'local'));
+      const Q = { questions: [{ q: 'Who do you play?', options: ['A translator in 1930s Shanghai', 'A dock worker', 'A rich heir', 'A street vendor'] }, { q: 'When is it?', options: ['1937', 'The 1990s', 'Today', '2049'] }, { q: 'How does it play?', options: ['Conversations', 'Tactics', 'Running a business', 'Investigation'] }] };
+      // answer: true picks the first option of each question, false skips, undefined expects no questions
+      const forkOn = async (label, answer) => {
+        await p.newBoard(); await p.type(label); await p.waitForTimeout(800);
+        const id = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+        await p.evaluate(id => select([id]), id); await p.type('/fork 3');
+        await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify]') || board.nodes.some(n => n.type === 'direction'), null, { timeout: 20000 }).catch(() => {});
+        const asked = await p.evaluate(() => document.querySelector('dialog[open][data-clarify]') ? [...document.querySelectorAll('[data-clarify-q] > b')].map(b => b.textContent) : null);
+        if (asked) await p.evaluate(a => { const d = document.querySelector('dialog[open][data-clarify]'); if (a) { d.querySelectorAll('[data-clarify-q]').forEach(g => g.querySelector('[data-clarify-opt]').click()); d.querySelector('[data-clarify-go]').click(); } else d.querySelector('[data-clarify-skip]').click(); }, !!answer);
+        await p.idle();
+        return p.evaluate(asked => ({ asked, titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','), engines: board.nodes.filter(n => n.type === 'direction').map(n => n.prov?.engine).join(','), task: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, toasts: __toasts.splice(0), clarified: board.nodes.find(n => n.type === 'idea')?.clarified || null }), asked);
+      };
+      const lastFork = () => gens.filter(g => g.kind === 'fork').at(-1) || {};
+      const userText = g => JSON.stringify((g.messages || []).filter(m => m.role === 'user').map(m => m.content));
+      // an open idea: Strategist asks three questions first; the answers go into the fork; a small model
+      // answering in prose around fenced JSON still gives directions
+      local = b => ({ text: b.kind === 'ask' ? JSON.stringify(Q) : 'Here are three:\n```json\n' + JSON.stringify(dirs('Loc')) + '\n```' });
+      let r = await forkOn('Local idea', true);
+      check('on Local AI, an open idea gets three one-click questions first', JSON.stringify(r.asked) === JSON.stringify(Q.questions.map(q => q.q)), JSON.stringify(r));
+      check("the designer's choices go into the fork and stay on the idea", /The designer chose: Who do you play\? A translator in 1930s Shanghai; When is it\? 1937; How does it play\? Conversations/.test(userText(lastFork())) && r.clarified?.length === 3, userText(lastFork()).slice(0, 400));
+      const g = lastFork();
+      check('Local AI is asked for plain text, never grammar-constrained JSON', g.response_format?.type === 'text' && g.json === true, JSON.stringify({ rf: g.response_format, json: g.json }));
+      check('the JSON instruction is in the system message instead', /JSON object only/.test((g.messages || [])[0]?.content || '') && g.messages[0].role === 'system');
+      check('directions arrive from Local AI answering in prose around JSON', r.titles === 'Loc A,Loc B,Loc C' && r.engines === 'model,model,model' && r.task === 'done', JSON.stringify(r));
+      // unreadable questions: Strategist uses its own; Skip branches without choices
+      local = b => ({ text: b.kind === 'ask' ? 'not json at all' : JSON.stringify(dirs('Own')) });
+      r = await forkOn('Shanghai game', false);
+      check("when the model's questions can't be read, Strategist asks its own", r.asked?.[0] === 'Who is the player?' && r.asked.length === 3, JSON.stringify(r));
+      check('Skip branches without choices', !r.clarified && !/designer chose/i.test(userText(lastFork())) && r.titles === 'Own A,Own B,Own C', JSON.stringify(r));
+      // a full idea: no questions; the small-model prompt; one targeted repair of an obvious error
+      const bad = { directions: [{ title: 'Settlement Beat', plan: 'You patrol the Settlement in 1935.', test: 'Five players play two shifts; if fewer than three feel watched, it fails.', mode: 'story' }, { title: 'Northern Ledger', plan: 'You smuggle tea in Beijing.', test: 'Six players run three nights; if fewer than one lies, it fails.', mode: 'desk' }, { title: 'Wharf Rats', plan: 'You unload ships on the Huangpu.', test: 'Four players play one night; if fewer than two talk to a foreman, it fails.', mode: 'story' }] };
+      local = b => ({ text: JSON.stringify(b.kind === 'fix' ? dirs('Fixed') : bad) });
+      r = await forkOn('An RPG set in Shanghai about rival police forces in the 1930s and the translators caught between them.');
+      const sf = gens.filter(x => x.kind === 'fork').at(-1), fx = gens.filter(x => x.kind === 'fix').at(-1);
+      check('a full idea is branched without questions', !r.asked, JSON.stringify(r.asked));
+      check('Local AI gets the small-model Strategist prompt', /Think like a game designer/.test(sf?.messages?.[0]?.content || '') && /stay in Shanghai/.test(userText(sf)) && /the experience it depends on/.test(userText(sf)), userText(sf).slice(0, 300));
+      check('obvious errors get one targeted repair', !!fx && /direction 2 is set in Beijing, but the idea is in Shanghai/.test(userText(fx)) && /impossible number/.test(userText(fx)) && r.titles === 'Fixed A,Fixed B,Fixed C', JSON.stringify({ r, fix: fx && userText(fx).slice(-300) }));
+      check('one closing question, no promised work', await p.evaluate(() => tidySmallReply("Yes.\n\n- **A:** b\n\nWhat first?\n\n— or —\n\nDo you want X?") === "Yes.\n\n- **A:** b\n\nWhat first?" && tidySmallReply("Yes.\n\n(If this is what you want, I'll start drafting the structure.)\n\nWhich one? Or that one?") === "Yes.\n\nWhich one?"));
+      check('a famous street names its city (Wangfujing is in Beijing; Nanjing Road is in Shanghai)', await p.evaluate(() => placesIn('You patrol Wangfujing Street').join() === 'Beijing' && placesIn('a shop on Nanjing Road in Shanghai').join() === 'Shanghai'));
+      check('a test that checks memory is sent back', await p.evaluate(() => forkProblems({ directions: [{ title: 'A', plan: 'p', test: 'If fewer than two remember the route, it fails.' }] }, 1, 'Shanghai').some(x => /remember/.test(x))));
+      check("Wright's prototype on Local AI is checked for things its era can't hold", await p.evaluate(() => { const ok = [1, 2, 3, 4].map(i => ({ title: 't' + i, body: 'A neighbour waits by the telephone.' })); return buildProblems({ title: 'T', items: [...ok.slice(0, 3), { title: 'x', body: 'Your phone needs charging.' }] }, 'A lilong in 1937 Shanghai').some(x => /does not exist in 1937/.test(x)) && buildProblems({ title: 'T', items: ok }, 'A lilong in 1937 Shanghai').length === 0; }));
+      check('an English idea gets English answers: Chinese characters and run-together words are sent back', await p.evaluate(() => { const d = { directions: [{ title: 'A', plan: 'A runner in上海的法租界1947年', test: 'If fewer than two feel watched, it fails.' }, { title: 'B', plan: 'You patrol the Bund in1937.', test: 'If fewer than two feel watched, it fails.' }] }; const p = forkProblems(d, 2, 'An RPG set in Shanghai'); return p.some(x => /direction 1: write everything in English/.test(x)) && p.some(x => /direction 2: words run together \("in1937"\)/.test(x)) && forkProblems(d, 2, '上海 RPG').every(x => !/English/.test(x)) && /Simplified Chinese/.test(smallForkPrompt('上海 RPG', 3, '', [], '').prompt); }));
+      check('Copilot on Local AI: placeholder labels go, a loose chips line becomes chips', await p.evaluate(() => tidySmallReply('Yes.\n\n**Label: Story**\n- a\n\n**Label:** Anchor\n- b\n\nWhich one?') === 'Yes.\n\n**Story**\n- a\n\n**Anchor**\n- b\n\nWhich one?' && JSON.stringify(looseChips('Which one?\n\nchips ["Tie it", "Drop it"]')) === JSON.stringify({ text: 'Which one?', chips: ['Tie it', 'Drop it'] })));
+      {
+        const wq = []; await wikiRoute(p, wq); await p.evaluate(() => { SCOUT_GROUNDING = true; });
+        local = b => ({ text: JSON.stringify(dirs('Grounded')) });
+        r = await forkOn('An RPG set in Shanghai about rival police forces in the 1930s and the translators caught between them.');
+        const g = await p.evaluate(() => { const idea = board.nodes.find(n => n.type === 'idea'); const ss = board.nodes.filter(n => n.type === 'source' && n.by === 'scout'); return { titles: ss.map(n => n.title), weights: ss.map(n => n.weight + ':' + n.status), linked: ss.every(n => board.edges.some(e => e.a === n.id && e.b === idea.id)), url: ss[0]?.src?.url }; });
+        const fk = userText(lastFork());
+        check('before branching, Scout looks the idea up on Wikipedia with queries built from its place and period', JSON.stringify(wq) === JSON.stringify(['History of Shanghai', 'Shanghai in the 1930s']), JSON.stringify(wq));
+        check('what Scout finds lands as Source drafts (Reported), linked to the idea, with the link kept', g.titles.join() === 'Shanghai International Settlement,History of Shanghai' && g.weights.every(w => w === 'reported:sketch') && g.linked && /wiki\/Shanghai_International_Settlement/.test(g.url || ''), JSON.stringify(g));
+        check('the fork reads them as background it must not contradict', /Extraterritoriality was abolished in 1943/.test(fk) && /never contradict it; it is not a checklist/.test(fk) && r.titles === 'Grounded A,Grounded B,Grounded C', fk.slice(0, 300));
+        await p.unroute(/wikipedia\.org\/w\/api\.php/);
+        r = await forkOn('An RPG set in Shanghai about dock workers and the gangs who run the wharves in the 1920s and 1930s.');
+        check("when Wikipedia can't be reached, Strategist still branches and says it worked from memory", r.titles === 'Grounded A,Grounded B,Grounded C' && r.toasts.some(t => /couldn't reach Wikipedia, so Strategist is working from memory/.test(t)), JSON.stringify(r));
+        // Keenable, when set up: searched first with the key, the mode and the idea in plain words; a refused key falls back to Wikipedia
+        const kreq = []; let kstatus = 200; const kcors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+        await p.route('https://api.keenable.ai/**', async rt => { const q = rt.request(); if (q.method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: kcors }); kreq.push({ key: q.headers()['x-api-key'], body: JSON.parse(q.postData() || '{}') }); if (kstatus !== 200) return rt.fulfill({ status: kstatus, contentType: 'application/json', headers: kcors, body: JSON.stringify({ error: 'Authentication failed', code: 'invalid_api_key' }) }); return rt.fulfill({ status: 200, contentType: 'application/json', headers: kcors, body: JSON.stringify({ query: 'q', mode: 'realtime', results: [{ title: 'Policing nuisance in 1930s Shanghai', url: 'https://hpchina.blogs.bristol.ac.uk/2024/11/18/x', snippet: 'At 8 o’clock on 10 July 1936, the Reserve Unit, the riot squad of the **Shanghai Municipal Police**, received orders to clear a [slum](https://x.y) on the edge of the Settlement.', published_at: '2024-11-18T00:00:00Z' }] }) }); });
+        await p.evaluate(() => { openSearchDialog(); });
+        await p.click('dialog[open] [data-sr="keenable"]'); await p.fill('#srKeyIn', 'keen_smoke'); await p.selectOption('#srModeSel', 'realtime'); await p.click('dialog[open] [data-sr-save]'); await p.waitForTimeout(200);
+        check('the Scout search sheet saves a Keenable key and mode in this browser', await p.evaluate(() => keenableOn() && searchCfg.mode === 'realtime' && store.get('.searchCfg', {}).key === 'keen_smoke' && !document.querySelector('dialog[open]')));
+        await wikiRoute(p);
+        r = await forkOn('An RPG set in Shanghai about the riot squad and the people it moved on in the summer of 1936.');
+        const kc = await p.evaluate(() => board.nodes.filter(n => n.type === 'source' && n.by === 'scout').map(n => n.kind + ' | ' + n.title + ' | ' + n.text));
+        check('with Keenable set up, Scout searches it first, with the key, the mode and the idea in plain words', kreq.length >= 1 && kreq[0].key === 'keen_smoke' && kreq[0].body.mode === 'realtime' && /riot squad/.test(kreq[0].body.query) && kc.length === 1 && /^Background · hpchina\.blogs\.bristol\.ac\.uk \| Policing nuisance/.test(kc[0]) && /Shanghai Municipal Police, received orders to clear a slum/.test(kc[0]) && /\(2024-11-18\)$/.test(kc[0]), JSON.stringify({ kreq: kreq.slice(0, 1), kc }));
+        kstatus = 401;
+        r = await forkOn('An RPG set in Shanghai about dock strikes and the families on both sides in the spring of 1927.');
+        check('a refused Keenable key falls back to Wikipedia and says so', r.toasts.some(t => /^Keenable rejected the API key \(HTTP 401\), so Scout used Wikipedia instead\.$/.test(t)) && await p.evaluate(() => board.nodes.filter(n => n.type === 'source' && n.by === 'scout').map(n => n.title).join() === 'Shanghai International Settlement,History of Shanghai'), JSON.stringify(r.toasts));
+        await p.unroute('https://api.keenable.ai/**'); await p.unroute(/wikipedia\.org\/w\/api\.php/);
+        await p.evaluate(() => { searchCfg = { provider: 'wikipedia', key: '', mode: 'pro' }; store.set('.searchCfg', searchCfg); });
+        await p.evaluate(() => { SCOUT_GROUNDING = false; });
+      }
+      check('Strategist asks Local AI to create', lastFork().stance === 'create');
+      local = b => ({ text: b.kind === 'fork' ? '<think>Plan three directions first.</think>' + JSON.stringify(dirs('Thought')) : JSON.stringify(Q) });
+      r = await forkOn('An RPG set in Shanghai about the Shanghai Race Club and the bets placed on it in the 1930s by clerks.');
+      check("a thinking model's thoughts are not taken as its answer", r.titles === 'Thought A,Thought B,Thought C', JSON.stringify(r));
+      // the time limit runs out: built-in rules answer, and the designer is told why
+      local = () => ({ text: JSON.stringify(dirs('Slow')), delay: 3000 });
+      await p.evaluate(() => { AI_TIMEOUT_MS = 1500; LOCAL_AI_MS = 1500; });
+      r = await forkOn('Slow idea', false);
+      await p.evaluate(() => { LOCAL_AI_MS = 240000; });
+      check('a Local AI timeout falls back to built-in rules instead of failing', r.titles === 'Walk it through,Lay it all out,Cut to one moment' && r.engines === 'rules,rules,rules' && r.task === 'done', JSON.stringify(r));
+      check('and says which engine ran out of time and which answered', r.toasts.some(t => /^The model didn't finish within 2 s\. Built-in rules drafted this instead; a faster model or fewer cards helps\.$/.test(t)), JSON.stringify(r.toasts));
+      check('no page errors in the Local AI flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 10. Copilot: a timeout keeps the partial answer and says it is cut off; Stop still just stops
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const last = () => p.evaluate(() => { const m = board.copilot.at(-1); return { text: m.text, cutOff: !!m.cutOff, streaming: !!m.streaming }; });
+      {
+        const ids = await p.evaluate(() => { const idea = node('idea', { text: 'An RPG set in Shanghai', by: 'you', status: 'ink' }, { x: 900, y: 300 }); const mk = (l, t, x) => { const n = node('direction', { idea: idea.id, letter: l, title: t, text: x, test: 'Test ' + l, mode: 'story', by: 'muse', status: 'sketch' }, { x: 1300, y: 100 }); edge(idea.id, n.id, 'derive', 'live'); return n.id; }; const a = mk('A', 'Lane House Chronicle', 'One lilong across 1925, 1937 and 1949.'); const b = mk('B', 'Concession Ledger Sim', 'Run a trading house.'); byId(a).vote = 'up'; renderAll(); return { a, b }; });
+        queue = [{ id: 'rel', match: 'related-check', text: 'Fine.' }];
+        await p.evaluate(b => sendCopilotMessage('related-check: how do these compare?', [b]), ids.b);
+        const sys = requests.filter(x => x.matched === 'rel').at(-1)?.full || '';
+        check("Copilot sees the selected card's sibling drafts in full", /Cards connected to the selection/.test(sys) && /Lane House Chronicle.*One lilong across 1925, 1937 and 1949/s.test(sys) && /draft, not kept yet; the designer liked it/.test(sys), sys.slice(sys.indexOf('Cards connected'), sys.indexOf('Cards connected') + 400));
+        await p.newBoard();
+      }
+      await p.evaluate(() => { AI_TIMEOUT_MS = 1500; LOCAL_AI_MS = 1500; }); // the smoke endpoint is on 127.0.0.1, so it gets the local limit
+      queue = [{ id: 'cut', match: 'cutoff-question', text: 'Open in the interrogation room at night, with the rain on the window and the clerk', stall: 4000 }];
+      await p.evaluate(() => sendCopilotMessage('cutoff-question: where should the game open?'));
+      let m = await last();
+      check('a Copilot answer that runs out of time keeps what arrived', /^Open in the interrogation room/.test(m.text), JSON.stringify({ m, req: requests.slice(-3).map(x => x.matched) }));
+      check('and says plainly that it is cut off', /_Cut off: the model didn't finish within 2 s\._$/.test(m.text), JSON.stringify(m));
+      await p.evaluate(() => { AI_TIMEOUT_MS = 20000; LOCAL_AI_MS = 240000; });
+      queue = [{ id: 'stop', match: 'stop-question', text: 'A partial answer the designer chose to stop, and then it goes on much longer', stall: 4000 }];
+      await p.evaluate(() => { sendCopilotMessage('stop-question: who is the translator?'); });
+      await p.waitForTimeout(1200);
+      await p.evaluate(() => stopCopilot()); await p.waitForTimeout(600);
+      m = await last();
+      check('Stop in Copilot is not reported as a timeout', !m.cutOff && !/Cut off/.test(m.text) && !m.streaming && /^A partial answer/.test(m.text), JSON.stringify(m));
+      check('no page errors in the Copilot timeout flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 11. A model that can't answer is said out loud, and the designer's own words drive adopt and build
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      await p.evaluate(() => { window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
+      await p.type('Words idea'); await p.waitForTimeout(800);
+      const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+      // an empty account: rules answer, and the toast, the island and the header all say why
+      queue = [{ id: 'broke', match: '"directions"', status: 402 }];
+      await p.evaluate(id => select([id]), idea); await p.type('/fork 3'); await p.idle();
+      const broke = await p.evaluate(() => ({ titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','), toasts: __toasts.splice(0), note: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.note, health: apiHealthNow().k, routable: apiRoutable(), issue: connSummary().issue, label: apiHealthLabel().txt }));
+      check('an out-of-credits Cloud API falls back to built-in rules', broke.titles === 'Walk it through,Lay it all out,Cut to one moment', JSON.stringify(broke));
+      check('and says so in a toast', broke.toasts.includes('Cloud API is out of credits (HTTP 402), so built-in rules answered instead.'), JSON.stringify(broke.toasts));
+      check('the island says built-in rules answered', broke.note === 'Built-in rules answered', JSON.stringify(broke.note));
+      check('the header stops claiming the Cloud API is in use', broke.health === 'credits' && !broke.routable && broke.issue === 'Cloud API out of credits' && broke.label === 'Out of credits', JSON.stringify(broke));
+      check('a passing re-check brings the Cloud API back', await p.evaluate(async () => { await testApi({ quiet: true }); return apiRoutable() && apiHealthNow().k === 'ok'; }));
+      // free tiers cap requests per minute: wait as long as the server asks and try again; a daily cap is said plainly
+      {
+        const n0 = requests.length;
+        queue = [{ id: 'busy', match: 'ping429', status: 429, body: JSON.stringify({ error: { code: 429, details: [{ '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '1s' }] } }) }, { id: 'pong', match: 'ping429', text: 'pong' }];
+        const r = await p.evaluate(async () => { const t = performance.now(); const v = await apiChat({ prompt: 'ping429' }); return { v, ms: performance.now() - t }; });
+        check('a per-minute 429 waits the retryDelay and tries again', r.v === 'pong' && r.ms >= 1000 && requests.length - n0 === 2, JSON.stringify(r));
+        check('and leaves room for a thinking model (max_tokens + 4096)', requests.at(-1).max === 2200 + 4096, String(requests.at(-1).max));
+        queue = [{ id: 'daily', match: 'ping429', status: 429, body: JSON.stringify({ error: { code: 429, message: 'Quota exceeded for metric: generate_content_free_tier_requests, limit: 0, quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier' } }) }, { id: 'nope', match: 'ping429', text: 'should not be asked' }];
+        const d = await p.evaluate(async () => { try { await apiChat({ prompt: 'ping429' }); return 'answered'; } catch (e) { return e.reason || e.message; } });
+        check('a daily 429 is not retried and says the quota resets tomorrow', d === "Cloud API's daily quota is used up (HTTP 429); it resets tomorrow" && queue.length === 1, d);
+        check('and Vellum stops asking the Cloud API until it resets', await p.evaluate(() => cloudState() === 'out' && cloudLeft() === 0 && autoPlan('heavy').order.join() === ''));
+        queue = []; await p.evaluate(() => { cloudBudget = { day: '', by: {} }; });
+      }
+      // drafts from a working model, kept
+      await p.evaluate(id => { board.nodes = board.nodes.filter(n => n.type !== 'direction'); board.edges = board.edges.filter(e => e.a !== id); renderAll(); select([id]); }, idea);
+      queue = [{ id: 'w', match: '"directions"', text: dirs('W') }];
+      await p.type('/fork 3'); await p.idle();
+      await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').forEach(n => { n.status = 'ink'; })); await p.evaluate(() => { renderAll(); persist(); });
+      const dirA = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'A').id);
+      await p.evaluate(id => select([id]), dirA);
+      await p.type('Should we adopt this?'); await p.idle();
+      check('a question about adopting does not adopt', await p.evaluate(id => !board.adopted[byId(id).idea], dirA));
+      await p.evaluate(() => { const c = document.querySelector('[data-cp=close]'); c && c.click(); });
+      await p.evaluate(id => select([id]), dirA);
+      await p.type('Adopt this direction'); await p.waitForTimeout(800);
+      check('typing "Adopt this direction" adopts it', await p.evaluate(id => board.adopted[byId(id).idea] === id, dirA));
+      // the build request reaches Wright in the designer's words
+      const spec = { title: 'Interrogation at Louza', kicker: 'k', lede: 'l', items: [1, 2, 3, 4].map(i => ({ title: 'Beat ' + i, body: 'b', tag: 't' })), cta: 'Begin' };
+      queue = [{ id: 'build', match: 'The designer asked for: "Build a prototype of the opening interrogation scene"', text: spec }];
+      await p.evaluate(id => select([id]), dirA);
+      await p.type('Build a prototype of the opening interrogation scene'); await p.idle();
+      const proof = await p.evaluate(() => board.nodes.find(n => n.type === 'proof')?.spec?.title);
+      check("Wright builds what the designer asked for, in the designer's words", proof === 'Interrogation at Louza', JSON.stringify({ proof, last: requests.at(-1)?.matched }));
+      {
+        await wikiRoute(p); await p.evaluate(() => { SCOUT_GROUNDING = true; });
+        await p.newBoard(); await p.type('An RPG about smugglers in 1930s Shanghai and the families who hide their goods in lane houses.'); await p.waitForTimeout(800);
+        const gi = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+        queue = [{ id: 'gr', match: 'Background Scout found on the web', text: dirs('Cloud') }];
+        await p.evaluate(id => select([id]), gi); await p.type('/fork 3'); await p.idle();
+        check('with a Cloud API too, Scout looks things up first and the fork reads them', requests.some(x => x.matched === 'gr' && /Shanghai International Settlement/.test(x.full)) && await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.title).join() === 'Cloud A,Cloud B,Cloud C'), JSON.stringify(requests.slice(-1).map(x => x.matched)));
+        await p.evaluate(() => { SCOUT_GROUNDING = false; }); await p.unroute(/wikipedia\.org\/w\/api\.php/);
+      }
+      // facts come only from sources, checked sentence by sentence; ideas are invented freely
+      check('a factual question takes the fact path; an invitation to invent does not', await p.evaluate(() => [
+        'When was the Shanghai Municipal Police disbanded?', 'Who governed the International Settlement?', '公共租界是什么时候结束的？', 'fact: the Bund',
+        "Isn't a trading-house sim really a strategy game, not an RPG? What would make this one feel like a role-playing game?", 'What if the lane house had a ghost?', 'idea: when the lane floods', 'Could we make the ledger visible?', 'Who is the translator?'
+      ].map(factStance).join()) === 'true,true,true,true,false,false,false,false,false');
+      check('only sentences a source supports survive', await p.evaluate(() => { const src = [{ title: 'Shanghai International Settlement', text: 'It originated from the 1863 merger of the British and American enclaves. Extraterritoriality was abolished in 1943.' }]; const r = factCheck('It was formed in 1863 [1]. Extraterritoriality was abolished in 1943 [1]. It was later run from Nanjing in 1950 [1]. The Shanghai Volunteer Corps guarded it [1]. It was lively. The sources don\'t say who designed the flag.', src); return JSON.stringify(r) === JSON.stringify({ kept: ['It was formed in 1863 [1].', 'Extraterritoriality was abolished in 1943 [1].', "The sources don't say who designed the flag."], dropped: 3 }); }));
+      {
+        await wikiRoute(p);
+        queue = [{ id: 'fact', match: 'using only the numbered sources', text: 'The Settlement was formed in 1863 [1]. Extraterritoriality was abolished in 1943 [1]. It was governed from Nanjing in 1950 [1]. It was very lively.' }];
+        await p.evaluate(() => sendCopilotMessage('When did the International Settlement end?'));
+        const m = await p.evaluate(() => board.copilot.at(-1)), fr = requests.filter(x => x.matched === 'fact').at(-1);
+        check('Copilot answers a factual question only from what Scout found, cites it, and drops what it cannot back', m.stance === 'fact' && /^The Settlement was formed in 1863 \[1\]\. Extraterritoriality was abolished in 1943 \[1\]\./.test(m.text) && !/1950|lively/.test(m.text) && /Left out 2 statements the sources don't support/.test(m.text) && /\*\*Sources\*\*\n1\. \[Shanghai International Settlement\]\(https:\/\/en\.wikipedia\.org\/wiki\/Shanghai_International_Settlement\)/.test(m.text), m.text);
+        check('the fact path runs cold (temperature 0.15)', fr && fr.temp === 0.15, JSON.stringify(fr && fr.temp));
+        await p.unroute(/wikipedia\.org\/w\/api\.php/);
+        await p.evaluate(() => sendCopilotMessage('When was the Shanghai Municipal Police disbanded?'));
+        check('with no sources, Copilot will not answer a factual question from memory', /couldn't find sources for this, so I won't answer from memory/.test(await p.evaluate(() => board.copilot.at(-1).text)));
+        queue = [{ id: 'mk', match: 'Invent freely', text: dirs('Made') }];
+        await p.newBoard(); await p.type('Stance idea'); await p.waitForTimeout(700);
+        await p.evaluate(() => select([board.nodes.find(n => n.type === 'idea').id])); await p.type('/fork 3'); await p.idle();
+        const mk = requests.filter(x => x.matched === 'mk').at(-1);
+        check('Strategist invents freely (temperature 0.7), true to the sources', mk && mk.temp === 0.7 && /surprising beats safe/.test(mk.full) && /must agree with the sources/.test(mk.full), JSON.stringify(mk && mk.temp));
+      }
+      check('no page errors in these flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 12. Auto picks the engine per task: heavy work to the Cloud API first, light work on Local AI, a failed
+    //     local draft redone in the cloud, a daily cloud budget with a heavy-only reserve, and a note on who answered
+    {
+      const p = await page(browser, base);
+      const sgens = [];
+      let sreply = () => 'Local reply.';
+      const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+      await p.route('http://127.0.0.1:59631/**', async route => {
+        const req = route.request(), url = req.url();
+        if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+        if (/\/studio\/health/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ status: 'ready', model: 'smoke-local', modelId: 'smoke', vision: true, models: [] }) });
+        if (/\/studio\/generate/.test(url)) {
+          const body = JSON.parse(req.postData() || '{}'); const u = JSON.stringify(body.messages || []);
+          body.kind = /Fix only these problems/.test(u) ? 'fix' : /"directions"|directions/.test(u) && body.json ? 'fork' : 'chat'; sgens.push(body);
+          const t = String(sreply(body) || ' ');
+          const sse = t.match(/[\s\S]{1,40}/g).map(c => 'data: ' + JSON.stringify({ choices: [{ delta: { content: c } }] }) + '\n\n').join('') + 'data: [DONE]\n\n';
+          return route.fulfill({ status: 200, contentType: 'text/event-stream', headers: cors, body: sse }).catch(() => {});
+        }
+        return route.fulfill({ status: 404, headers: cors, body: '' });
+      });
+      await p.evaluate(async () => { await checkStudioHealth({ wake: false, quiet: true }); setApiHealth('ok', {}); cloudBudget = { day: '', by: {} }; window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
+      const plans = await p.evaluate(() => {
+        const o = w => autoPlan(w).order.join('>') || '-';
+        const out = { open: [o('heavy'), o('light')] };
+        apiCfg = { ...apiCfg, daily: 4 }; cloudUse().used = 3; out.reserve = [o('heavy'), o('light')];
+        cloudUse().used = 4; out.out = [o('heavy'), o('light')];
+        cloudUse().used = 0; const s = studioState.status; studioState.status = 'offline'; out.noLocal = [o('heavy'), o('light')];
+        cloudUse().used = 3; out.noLocalReserve = [o('heavy'), o('light')]; studioState.status = s;
+        aiPref = 'api'; out.pinned = [o('heavy'), o('light')]; aiPref = 'auto';
+        const { daily, ...rest } = apiCfg; apiCfg = rest; cloudBudget = { day: '', by: {} };
+        const g = 'https://generativelanguage.googleapis.com/v1beta/openai';
+        out.limits = [cloudDailyLimit({ baseUrl: g }), cloudDailyLimit({ baseUrl: g, daily: 1500 }), cloudDailyLimit({ baseUrl: 'https://openrouter.ai/api/v1' })];
+        return out;
+      });
+      check('Auto: heavy work goes to the Cloud API first, light work stays on Local AI', plans.open.join() === 'api>studio,studio>api', JSON.stringify(plans));
+      check('in the last quarter of the budget, heavy work starts locally (cloud only to redo it) and light work stays local', plans.reserve.join() === 'studio>api,studio', JSON.stringify(plans));
+      check('with the budget spent, nothing goes to the cloud', plans.out.join() === 'studio,studio', JSON.stringify(plans));
+      check('without Local AI the cloud does everything until the reserve, then only heavy work', plans.noLocal.join() === 'api,api' && plans.noLocalReserve.join() === 'api,-', JSON.stringify(plans));
+      check('"Cloud API" mode still pins every task to the cloud', plans.pinned.join() === 'api,api', JSON.stringify(plans));
+      check('Gemini gets its free-tier preset of 20 a day, a set limit wins, other providers have none', JSON.stringify(plans.limits) === '[20,1500,null]', JSON.stringify(plans.limits));
+      const isl = () => p.evaluate(() => ({ note: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.note, titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','), toasts: __toasts.splice(0) }));
+      const forkIdea = async () => {
+        await p.newBoard(); await p.type('An RPG set in Shanghai about rival police forces in the 1930s and the translators caught between them.'); await p.waitForTimeout(800);
+        await p.evaluate(() => select([board.nodes.find(n => n.type === 'idea').id])); await p.type('/fork 3'); await p.idle();
+      };
+      // heavy: the fork goes to the cloud, Local AI is not asked
+      let n0 = sgens.length;
+      queue = [{ id: 'cfork', match: '"directions"', text: dirs('Cloud') }];
+      await forkIdea();
+      let r = await isl();
+      check('a fork in Auto is drafted by the Cloud API, not Local AI', r.titles === 'Cloud A,Cloud B,Cloud C' && !sgens.slice(n0).some(g => g.kind === 'fork'), JSON.stringify({ r, local: sgens.slice(n0).map(g => g.kind) }));
+      check('the island says which model answered and why', r.note === 'Smoke · heavy task', JSON.stringify(r.note));
+      // the cloud fails on a heavy task: Local AI covers, and says why
+      queue = [{ id: 'cdown', match: '"directions"', status: 503 }];
+      sreply = b => b.json ? JSON.stringify(dirs('Local')) : 'Local reply.';
+      await forkIdea();
+      r = await isl();
+      check('when the cloud fails a heavy task, Local AI answers and the toast says why', r.titles === 'Local A,Local B,Local C' && r.toasts.includes('Cloud API returned HTTP 503, so Local AI answered instead.') && r.note === 'Local AI · smoke-local', JSON.stringify(r));
+      // light: Copilot chat on Local AI, a merge on the cloud
+      n0 = requests.length;
+      await p.evaluate(() => sendCopilotMessage('Which of these feels most like an RPG to you?'));
+      let m = await p.evaluate(() => ({ text: board.copilot.at(-1).text, route: board.copilot.at(-1).route, shown: document.querySelector('.cp-msg.ai:last-of-type .cp-route')?.textContent || [...document.querySelectorAll('.cp-route')].at(-1)?.textContent }));
+      check('a Copilot question stays on Local AI', m.text === 'Local reply.' && requests.length === n0 && m.route === 'Local AI · smoke-local', JSON.stringify(m));
+      queue = [{ id: 'merge', match: 'merge-check', text: 'Fold the ledger into the lane.' }];
+      await p.evaluate(() => sendCopilotMessage('merge-check: can we merge A and B into one game?'));
+      m = await p.evaluate(() => ({ text: board.copilot.at(-1).text, route: board.copilot.at(-1).route, shown: [...document.querySelectorAll('.cp-route')].map(e => e.textContent) }));
+      check('a merge in Copilot is heavy: the Cloud API answers, and the reply says so', m.text === 'Fold the ledger into the lane.' && m.route === 'Smoke · heavy task' && m.shown.includes('Smoke · heavy task'), JSON.stringify(m));
+      // reserve: the fork starts locally; a draft still wrong after its repair is redone by the cloud
+      const bad = { directions: [{ title: 'Beat A', plan: 'You patrol the Settlement in 1935.', test: 'Five players play two shifts; if fewer than three feel watched, it fails.', mode: 'story' }, { title: 'Northern Ledger', plan: 'You smuggle tea in Beijing.', test: 'Six players run three nights; if fewer than four bargain, it fails.', mode: 'story' }, { title: 'Dock Clerk', plan: 'You log cargo on the Bund in 1936.', test: 'Four players run one shift; if fewer than two lie on the ledger, it fails.', mode: 'story' }] };
+      sreply = b => b.json ? JSON.stringify(bad) : 'Local reply.';
+      await p.evaluate(() => { apiCfg = { ...apiCfg, daily: 4 }; cloudBudget = { day: '', by: {} }; cloudUse().used = 3; });
+      queue = [{ id: 'rescue', match: '"directions"', text: dirs('Rescued') }];
+      n0 = sgens.length;
+      await forkIdea();
+      r = await isl();
+      const kinds = sgens.slice(n0).map(g => g.kind).join();
+      check('near the end of the budget a fork starts on Local AI, with one repair', kinds === 'fork,fix', kinds);
+      check('a local draft still wrong after its repair is redone by the Cloud API', r.titles === 'Rescued A,Rescued B,Rescued C' && r.toasts.some(t => /^Local AI's draft had problems \(.*Beijing.*\), so Cloud API answered instead\.$/.test(t)), JSON.stringify(r));
+      check('the note says the cloud redid it, and how many calls are left', r.note === "Smoke · redid Local AI's draft · 0 of 4 cloud calls left today", JSON.stringify(r.note));
+      // the cloud can't redo it: the flawed draft beats built-in rules
+      await p.evaluate(() => { cloudBudget = { day: '', by: {} }; cloudUse().used = 3; });
+      queue = [{ id: 'nope', match: '"directions"', status: 503 }];
+      await forkIdea();
+      r = await isl();
+      check("if the cloud can't redo it, the local draft stays (not built-in rules) and the toast says so", /^Beat A,Northern Ledger,Dock Clerk$/.test(r.titles) && r.toasts.some(t => /couldn't redo it, so the draft stays\.$/.test(t)), JSON.stringify(r));
+      // light work never spends the reserve
+      n0 = requests.length;
+      await p.evaluate(() => { cloudBudget = { day: '', by: {} }; cloudUse().used = 3; });
+      await p.evaluate(() => sendCopilotMessage('Which of these should we test first?'));
+      check('in the reserve, a Copilot question does not touch the cloud', requests.length === n0, String(requests.length - n0));
+      // calls are counted; the Connection panel shows what is left
+      await p.evaluate(() => { cloudBudget = { day: '', by: {} }; });
+      queue = [{ id: 'count', match: 'count-check', text: 'ok' }];
+      const used = await p.evaluate(async () => { await apiChat({ prompt: 'count-check' }); return cloudUse().used; });
+      check('each answered cloud call is counted against the day', used === 1, String(used));
+      check('the Connection panel shows the calls left today', await p.evaluate(() => { toggleStudioPopover(true); const t = document.querySelector('.sp-svc[data-api-health], [data-api-health]')?.closest('.sp-svc')?.textContent || document.body.textContent; toggleStudioPopover(false); return /3 of 4 cloud calls left today/.test(t); }));
+      check('the Cloud API dialog has a daily limit field', await p.evaluate(() => { openApiDialog(); const el = document.getElementById('apiDailyIn'); const ok = !!el && el.value === '4'; document.querySelector('dialog[open]')?.close(); return ok; }));
+      check('a Copilot reply with a chart draws it once', await p.evaluate(() => { board.copilot.push({ id: 'viz1', role: 'ai', agent: 'muse', text: 'Here is the split.', visuals: [{ kind: 'chart', title: 'Split', items: [{ label: 'A', value: 60 }, { label: 'B', value: 40 }] }] }); renderCopilot(); const el = document.querySelector('[data-cp-msg-id="viz1"]'); const n = el ? el.querySelectorAll('.cp-ui-stack').length : -1; board.copilot.pop(); renderCopilot(); return n === 1; }));
+      check('no page errors in the Auto routing flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
     // 9. composer: one row for one line; two rows (text full width, controls below) once the text wraps

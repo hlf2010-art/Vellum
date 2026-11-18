@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Loopback inference for Infinite Canvas Studio. Double-click the .command copy on macOS."""
+"""Studio AI: loopback model service for Vellum (Local AI). Double-click the .command copy on macOS: it starts the service and opens Vellum."""
 import atexit
 import base64
 import contextlib
@@ -32,7 +32,21 @@ def local_urlopen(target, timeout=5):
 PORT = 59631
 MODEL_DIR = Path.home() / "Library/Caches/InfiniteCanvas/models"
 ACTIVE_FILE = MODEL_DIR / "active_model.txt"
-DEFAULT_MODEL_ID = "qwen3-vl-4b"
+def default_model_id():
+    """Qwen3-VL 8B where there is room for it (16 GB of memory or more), else 4B. In Vellum's model eval the 8B
+    model was clearly better (about 71% of Claude Sonnet against about 60% for 4B) and fast enough on an Apple
+    silicon Mac mini. A model the person picked is remembered and wins over this default."""
+    try:
+        if sys.platform == "darwin":
+            mem = int(subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True, timeout=3).stdout.strip())
+        else:
+            mem = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return "qwen3-vl-4b"
+    return "qwen3-vl-8b" if mem >= 15.5e9 else "qwen3-vl-4b"
+
+
+DEFAULT_MODEL_ID = default_model_id()
 MODELS = {
     "qwen3-vl-4b": {
         "id": "qwen3-vl-4b",
@@ -58,11 +72,36 @@ MODELS = {
             {"name": "mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf", "sha256": "c6ba85508d82f42590e6eb77d5340369ab6fecf107a7561d809523d8aa5f3bfd", "size": 752289728},
         ],
     },
+    # Same size, but it thinks before every answer: slower, for comparing thinking on and off (tests/model-eval.cjs).
+    "qwen3-vl-8b-thinking": {
+        "id": "qwen3-vl-8b-thinking",
+        "label": "Qwen3-VL 8B Thinking",
+        "model": "Qwen3-VL-8B-Thinking",
+        "tier": "Thinking",
+        "vision": True,
+        "thinking": True,
+        "base": "https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF/resolve/bca5838231f8cc1303cf8810afffcfbdc41bc75a/",
+        "files": [
+            {"name": "Qwen3VL-8B-Thinking-Q4_K_M.gguf", "sha256": "9e54ca761ab1eb0e8bf9eddae356fd3535b910b3bf3e38e10c914f42cf8751cb", "size": 5027784704},
+            {"name": "mmproj-Qwen3VL-8B-Thinking-Q8_0.gguf", "sha256": "c6aebeb17ab596dda1976629ea4ed1bdb94d506fd198630eb8567ae11cfb4684", "size": 752289728},
+        ],
+    },
 }
-SITE_NAME = "Infinite Canvas - Studio.html"
-SITE = Path(__file__).resolve().parent / SITE_NAME
-if not SITE.exists():
-    SITE = SITE.parent.parent / SITE_NAME
+# The page a double-click opens (and / serves): Vellum. The older Infinite Canvas Studio page is used only
+# when this copy of the launcher has no Vellum beside it (or one folder up, as in the app bundle).
+SITE_NAMES = ("Vellum-Lumen.html", "Infinite Canvas - Studio.html")
+
+
+def _find_site():
+    here = Path(__file__).resolve().parent
+    for name in SITE_NAMES:
+        for folder in (here, here.parent):
+            if (folder / name).is_file():
+                return folder / name
+    return here / SITE_NAMES[0]
+
+
+SITE = _find_site()
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 ENGINE = None
 DL_PROC = None
@@ -217,6 +256,8 @@ def model_server(spec, gen):
             opts += ["--presence-penalty", "0.35", "--frequency-penalty", "0.25"]
         if "--dry-multiplier" in help_text:
             opts += ["--dry-multiplier", "0.8", "--dry-allowed-length", "3", "--dry-penalty-last-n", "512"]
+        if spec.get("thinking") and "--reasoning-format" in help_text:
+            opts += ["--reasoning-format", "deepseek"]  # thoughts go to reasoning_content, never into the answer
         if "--sleep-idle-seconds" in help_text:
             opts += ["--sleep-idle-seconds", "300"]
         proc = subprocess.Popen(opts, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -975,7 +1016,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(400, {"error": "Expected a 90-second mono WAV excerpt"})
                 return self.reply(200, {"text": transcribe(self.rfile.read(size))})
             body = json.loads(self.rfile.read(size))
-            is_json = isinstance(body.get("response_format"), dict) and body["response_format"].get("type") == "json_object"
+            # Vellum asks for JSON in words (grammar-constrained JSON is far slower in llama.cpp) and flags it
+            # with "json": true, so such requests still get the lower temperature.
+            is_json = body.get("json") is True or (
+                isinstance(body.get("response_format"), dict) and body["response_format"].get("type") == "json_object")
             args = {
                 "model": active_spec()["model"],
                 "messages": body["messages"],
@@ -987,6 +1031,13 @@ class Handler(BaseHTTPRequestHandler):
                 "frequency_penalty": 0.25,
                 "max_tokens": min(4600, int(body.get("max_tokens", 2400))),
             }
+            if active_spec().get("thinking"):
+                # a thinking model spends tokens before it answers; leave room so the answer isn't cut off
+                args["max_tokens"] = min(8192, args["max_tokens"] + 4096)
+            if is_json:
+                # No repetition penalties for structured answers: JSON repeats its keys by design, and penalising
+                # common words made Qwen3-VL 8B pick spaceless pieces ("in1947", "smugglingcigarettes").
+                args.update({"presence_penalty": 0, "frequency_penalty": 0, "repeat_penalty": 1.0, "dry_multiplier": 0})
             if not isinstance(args["messages"], list) or not 1 <= len(args["messages"]) <= 8:
                 raise ValueError("Invalid request")
             request = Request(f"http://127.0.0.1:{MODEL_PORT}/v1/chat/completions", data=json.dumps(args).encode(),
@@ -1030,7 +1081,7 @@ def main():
                     return
         raise
     start_model()
-    print(f"Infinite Canvas · http://127.0.0.1:{PORT}/", flush=True)
+    print(f"Studio AI · http://127.0.0.1:{PORT}/ · opening {SITE.name}", flush=True)
     if not silent:
         open_studio()
     try:

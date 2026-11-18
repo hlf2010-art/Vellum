@@ -552,7 +552,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       const p = await page(browser, base);
       await p.newBoard();
       const ph = () => p.evaluate(() => document.getElementById('lineInput').placeholder);
-      check('an empty board still invites the first idea', /Write an idea/.test(await ph()), await ph());
+      check('an empty board still invites the first idea, in command-bar words', /write an idea/i.test(await ph()) && /^Type \//.test(await ph()), await ph());
       await p.evaluate(() => { node('note', { text: 'Founder interviews', status: 'ink', by: 'you' }, { x: 100, y: 100 }); node('note', { text: 'Pricing idea for solo founders', status: 'ink', by: 'you' }, { x: 100, y: 500 }); node('idea', { text: 'Sell an AI back office to one-person companies', status: 'ink', by: 'you' }, { x: 500, y: 100 }); select([]); renderLineCtx(); });
       check('with cards on the board the bar reads as commands and search, with no chat wording', /\/ for commands/.test(await ph()) && /search your cards/i.test(await ph()) && !/\bask\b|critic|chat/i.test(await ph()), await ph());
       await p.evaluate(() => { select([board.nodes.find(n => n.type === 'idea').id]); renderLineCtx(); });
@@ -695,6 +695,37 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       const zh = await chips();
       check('and they come in Chinese when the interface is Chinese, every one of them', zh.length === 3 && zh.every(x => /[\u4e00-\u9fff]/.test(x)), zh.join(' | '));
       await p.evaluate(() => { store.set('.lang', 'en'); });
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5l. the bottom bar looks and reads like a command bar: a prompt, keys, no chat controls
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const vis = () => p.evaluate(() => { const v = id => { const e = document.getElementById(id); return !!e && e.offsetParent !== null && e.getBoundingClientRect().width > 0 }; return { send: v('sendBtn'), mic: v('micBtn'), enh: v('enhanceBtn'), route: v('route'), plus: v('plusBtn'), prompt: !!document.querySelector('#line .prompt') && document.querySelector('#line .prompt').offsetParent !== null, ph: lineIn.placeholder, chip: (document.getElementById('route').textContent || '').trim() }; });
+      let v = await vis();
+      check('an empty board still reads as a command bar, not "write an idea"', /\/ for commands/.test(v.ph) && !/drop anything/.test(v.ph), v.ph);
+      check('the bar shows a prompt glyph and no send button, microphone or enhance star', v.prompt && !v.send && !v.mic && !v.enh, JSON.stringify(v));
+      await p.evaluate(() => { node('idea', { title: 'Solo back office', text: 'An AI-run back office for one-person companies', status: 'ink', by: 'you' }, { x: 100, y: 100 }); select([]); renderAll(); });
+      await p.click('#lineInput'); await p.keyboard.type('what should I test first?'); await p.waitForTimeout(250);
+      v = await vis();
+      check('typing a question says Enter asks in the panel, with a key cap, and no send button, microphone or enhance star', /↵/.test(v.chip) && /Ask in panel/.test(v.chip) && !v.send && !v.mic && !v.enh, JSON.stringify(v));
+      check('the Command chip with the AI mark is gone', !/Command/.test(v.chip) && await p.evaluate(() => !document.querySelector('#route .mk')));
+      await p.fill('#lineInput', ''); await p.keyboard.type('/fork'); await p.waitForTimeout(250);
+      v = await vis();
+      check('a command says what Enter will run', /↵/.test(v.chip) && /fork/i.test(v.chip), v.chip);
+      await p.fill('#lineInput', ''); await p.keyboard.type('Plan the next two weeks'); await p.waitForTimeout(250);
+      await p.keyboard.press('Tab'); await p.waitForTimeout(250);
+      check('Tab does not rewrite ordinary words; enhancing is for picture prompts only', await p.evaluate(() => lineIn.value === 'Plan the next two weeks' && document.getElementById('sharpen').hidden));
+      await p.fill('#lineInput', ''); await p.keyboard.type('/image a quiet street at dusk'); await p.waitForTimeout(300);
+      check('an image command still offers to enhance its prompt', (await vis()).enh);
+      await p.fill('#lineInput', ''); await p.waitForTimeout(150);
+      check('the corner radius is that of a bar, not a pill', await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.line-field')).borderTopLeftRadius) <= 16));
+      await p.keyboard.type('hello'); await p.keyboard.press('Enter'); await p.waitForTimeout(400);
+      check('Enter still works with no send button', await p.evaluate(() => lineIn.value === ''));
+      await p.setViewportSize({ width: 560, height: 820 }); await p.click('#lineInput'); await p.keyboard.type('hello there'); await p.waitForTimeout(250);
+      check('on a phone the send button comes back, since there is no hardware Enter', await p.evaluate(() => { const e = document.getElementById('sendBtn'); return e.offsetParent !== null && e.getBoundingClientRect().width > 0; }));
       check('no page errors', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
@@ -1249,7 +1280,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
     // 9. composer: one row for one line; two rows (text full width, controls below) once the text wraps
     {
       const p = await page(browser, base, { model: false });
-      const rows = () => p.evaluate(() => { const f = document.querySelector('.line-field').getBoundingClientRect(), i = lineIn.getBoundingClientRect(), s = document.getElementById('sendBtn').getBoundingClientRect();
+      const rows = () => p.evaluate(() => { const f = document.querySelector('.line-field').getBoundingClientRect(), i = lineIn.getBoundingClientRect(), s = document.getElementById('routeWrap').getBoundingClientRect();
         return { multi: document.getElementById('line').classList.contains('multi'), share: i.width / f.width, sendRight: f.right - s.right < 16, sendBelow: s.top >= i.bottom - 2 }; });
       await p.click('#lineInput'); await p.keyboard.type('A short line'); await p.waitForTimeout(200);
       const one = await rows();

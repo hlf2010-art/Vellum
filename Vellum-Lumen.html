@@ -2941,10 +2941,11 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
     <div class="line-row">
       <div class="line-field">
         <div class="line-main">
-          <button type="button" class="inplus cmd-only" id="plusBtn" aria-label="Add files, a note or a claim" aria-haspopup="menu" title="Add"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <span class="prompt cmd-only" aria-hidden="true">›</span>
           <span id="modeChip" class="mode-chip cmd-only" hidden></span>
           <label for="lineInput" class="sr">Command bar</label>
           <textarea id="lineInput" class="cmd-only" rows="1" spellcheck="false" placeholder="Type / for commands, or search your cards"></textarea>
+          <button type="button" class="inplus cmd-only" id="plusBtn" aria-label="Add files, a note or a claim" aria-haspopup="menu" title="Add"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
           <div class="route-wrap cmd-only" id="routeWrap">
             <button type="button" id="route" class="route" aria-haspopup="menu" aria-expanded="false" aria-live="polite" title="What ↵ will do · click to ask in the side panel"></button>
             <div class="lc-pop" id="lcPop" role="menu" hidden></div>
@@ -3136,6 +3137,23 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .review-pop .rp-sub{padding:8px 14px 2px;font:600 11px/1.2 var(--ui);letter-spacing:.04em;text-transform:uppercase;color:var(--label-3)}
 
 @media (max-width:640px){#routeWrap{display:none}}
+/* command bar: a prompt and keys, not a chat composer */
+#line .line-main{position:relative}
+#line .prompt{position:absolute;left:12px;top:0;height:36px;display:grid;place-items:center;font:500 18px/1 var(--mono);color:var(--label-3);pointer-events:none;transition:color var(--d-quick)}
+#line.focus .prompt{color:var(--label-2)}
+#line.moded .prompt,#line.is-search .prompt{display:none}
+#line:not(.moded):not(.is-search) #lineInput{padding-left:30px}
+#line .line-field{border-radius:14px}
+#line textarea{font:450 15px/20px var(--ui);letter-spacing:-.01em}
+#line #micBtn,#line #sendBtn:not(.is-stop){display:none}
+#line .inplus{width:28px;height:28px;align-self:center;border-radius:8px;color:var(--label-3)}
+#line .inplus .ico{width:15px;height:15px}
+#line .route{background:transparent;gap:7px;padding:0 6px;border-radius:8px;color:var(--label-3)}
+#line .route:hover,#line .route[aria-expanded="true"]{background:var(--hover)}
+#line .route kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:5px;font:500 12px/1 var(--mono);color:var(--label-2);background:var(--hover);box-shadow:0 0 0 .5px var(--hair-2),inset 0 -1px 0 var(--hair-2)}
+#line .route .rt b{color:var(--label-2)}
+@media (max-width:640px){#line #sendBtn:not(.is-stop){display:grid}}
+
 
 /* Focused text fields: no grey ring. The field brightens and a soft warm glow (the same light that means "alive") surrounds it. */
 :root{--field-glow:0 0 0 4px rgba(255,190,120,.15),0 4px 20px -2px rgba(255,165,80,.34)}
@@ -12109,20 +12127,21 @@ function renderRoute(){
   absorbMode();
   let r=route(lineText());const el=$("route");const txt=lineIn.value.trim();
   const wasTyped=!!$("line")?.classList.contains("typed");$("line")?.classList.toggle("typed",!!txt);if(wasTyped!==!!txt)autoGrow();
-  const eb=$("enhanceBtn");if(eb){const showEnh=txt.length>=3&&!/^[/@]\w*$/.test(txt);eb.hidden=!showEnh;eb.classList.toggle("on",!!(sharpened&&!$("sharpen").hidden));eb.setAttribute("aria-pressed",String(!$("sharpen").hidden))}
   const genKind=lineMode==="image"||lineMode==="video"||lineMode==="gif"?lineMode:(r&&(r.kind==="image"||r.kind==="video"||r.kind==="gif")?r.kind:null);
+  const eb=$("enhanceBtn");if(eb){const showEnh=!!genKind&&txt.length>=3&&!/^[/@]\w*$/.test(txt);eb.hidden=!showEnh;eb.classList.toggle("on",!!(sharpened&&!$("sharpen").hidden));eb.setAttribute("aria-pressed",String(!$("sharpen").hidden))}
   renderGenOpts(!!genKind,genKind||"image");syncLineSend();
   if(lineMode)lineIn.placeholder=MODES_LINE[lineMode].ph;
     const key=(r?r.kind+(r.agent||"")+r.label+(r.kind==="search"?searchKindOf(lineText())||searchPref:"")+effectiveLineCtx().map(n=>n.id).join():"idle")+":"+uiLang();
   if(key!==lastRouteKey){
     lastRouteKey=key;
     const chev='<svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
-    if(!r){el.innerHTML=`<span class="mk">${COPILOT_ICO}</span><span class="rt"><b>${L("Command","命令")}</b></span>${chev}`}
+    if(!r){el.innerHTML=`<span class="rt">${L("Choose a command","选择一条命令")}</span>`}
     else{
       const pl=planOf(r),a=AGENTS[pl?.agent||r.agent];if(pl&&pl.agent&&pl.label)r={...r,label:"draft "+pl.label};
       const cfgIco='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg>';
       const noteIco='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5.5h10a1.5 1.5 0 0 1 1.5 1.5v6.6L13.6 18.5H7A1.5 1.5 0 0 1 5.5 17V7A1.5 1.5 0 0 1 7 5.5z"/><path d="M13.5 18.5v-3.4c0-.8.6-1.4 1.4-1.4h3.6"/></svg>';
-      el.innerHTML=(a?`<span class="mk">${a.mk}</span><span class="rt"><b>${a.name}</b> · ${esc(clip(r.label,22))}</span>`:r.kind==="copilot"?`<span class="mk">${COPILOT_ICO}</span><span class="rt"><b>${L("Command","命令")}</b> · ${esc(clip(r.label.replace(/^ask Copilot\s*/i,"")||"answer",20))}</span>`:`${r.kind==="config"?cfgIco:noteIco}<span class="rt">${esc(clip(r.label[0].toUpperCase()+r.label.slice(1),28))}</span>`)+chev;
+      const key="<kbd>\u21b5</kbd>";
+      el.innerHTML=key+(a?`<span class="rt"><b>${a.name}</b> · ${esc(clip(r.label,22))}</span>`:r.kind==="handoff"?`<span class="rt">${L("Ask in panel","在面板中提问")}</span>`:r.kind==="copilot"?`<span class="rt">${L("Ask in panel","在面板中提问")}</span>`:`<span class="rt">${esc(clip(r.label[0].toUpperCase()+r.label.slice(1),28))}</span>`);
       el.classList.remove("swap");void el.offsetWidth;el.classList.add("swap");
     }
   }
@@ -12152,7 +12171,7 @@ function syncStaticLang(){
   if(srchB){const tip=L("Search Mode · ⌘F","搜索模式 · ⌘F");srchB.dataset.tip=tip;srchB.setAttribute("aria-label",L("Search Mode · Find cards (⌘F)","搜索模式 · 搜索卡片 (⌘F)"))}
   const fi=$("findIn");if(fi)fi.placeholder=L("Search cards…","搜索卡片…");
   const rt=$("route");
-  if(rt)rt.title=L("Canvas AI · Execute actions directly on cards (click to pick specialist)","画布执行器 · 直接在画布建卡/改图/整理（点击切换专家）");
+  if(rt)rt.title=L("What Enter will do · click to ask a crew member in the side panel","按回车会做什么 · 点击可在侧边面板问某位成员");
   renderLineHint();
 }
 function renderLineCtx(){
@@ -12169,7 +12188,7 @@ function placeholderFor(ns){
   }
   if(innerWidth<=640)return ns.length?L("/ for commands","/ 命令"):L("Commands or search…","命令或搜索…");
   const f=ns[0];
-  if(!f)return board.nodes.length?L("Type / for commands, or search your cards","输入 / 使用命令，或搜索卡片"):L("Write an idea, or drop anything here","写下你的核心想法，或拖入任何素材开始…");
+  if(!f)return board.nodes.length?L("Type / for commands, or search your cards","输入 / 使用命令，或搜索卡片"):L("Type / for commands, or write an idea to begin","输入 / 使用命令，或直接写下想法开始");
   if(ns.some(n=>n.type==="frame"))return L("Type / for commands on this frame","输入 / 对这一帧执行命令");
   if(ns.length>1)return L("Type / for commands on these cards","输入 / 对选中卡片执行命令");
   switch(f.type){
@@ -16857,8 +16876,8 @@ lineIn.addEventListener("keydown",e=>{
     if((e.key==="Enter"||e.key==="Tab")&&!(menuKind==="omni"&&menuIdx<0)){e.preventDefault();pickMenu(menuIdx,{run:e.key==="Enter"});return}
     if(e.key==="Escape"){closeMenu();return}
   }
-  if(e.key==="Tab"&&!e.shiftKey&&lineIn.value.trim()){e.preventDefault();if(sharpened)applySharpened(sharpened);else sharpen();return}
-  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="e"&&lineIn.value.trim()){e.preventDefault();if(!$("sharpen").hidden&&sharpened)closeSharpen();else sharpen();return}
+  if(e.key==="Tab"&&!e.shiftKey&&lineIn.value.trim()&&!$("enhanceBtn").hidden){e.preventDefault();if(sharpened)applySharpened(sharpened);else sharpen();return}
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="e"&&lineIn.value.trim()&&!$("enhanceBtn").hidden){e.preventDefault();if(!$("sharpen").hidden&&sharpened)closeSharpen();else sharpen();return}
   if(e.key==="Backspace"&&lineMode&&lineIn.selectionStart===0&&lineIn.selectionEnd===0){e.preventDefault();setLineMode(null);return}
   if(e.key==="Escape"){if(genPop){genPop=null;renderGenOpts(true);return}if(sharpened||!$("sharpen").hidden){closeSharpen();return}if(lineMode&&!lineIn.value){setLineMode(null);return}lineIn.blur();return}
   if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();

@@ -46,7 +46,7 @@ The stage comes from what is on the board, not from where cards sit. Only what t
 ## Where the designer talks to the crew
 
 - **The side panel is the only place for conversation.** Ask a question, discuss a card, get proposals. Select cards, right-click one and choose Ask Copilot, or press ⌘., and the selection is the context.
-- **The bottom bar is a command bar and search box.** `/` runs a command, plain words search the cards on the board (and name matching commands), and words with nothing selected become an idea. A question typed there is handed to the panel.
+- **The bottom bar is a command bar and search box,** and looks like one: a prompt, a key cap saying what Enter does, no send button, microphone or enhance star. `/` runs a command, plain words search the cards on the board (and name matching commands), and words with nothing selected become an idea. A question typed there is handed to the panel.
 - **`@name` hands over to the panel** with that member preselected ("Asking Critic"), until the designer drops it. The one exception: with a draft that member made selected, `@name` in the bar still revises that draft.
 - The crew does not speak unasked unless the designer lets it (Settings: Speaks up). That default is still to be decided; see the notes in the project record.
 

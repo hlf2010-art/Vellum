@@ -333,6 +333,9 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .cbtn:hover{background:var(--card-3)}
 .cbtn:active{transform:scale(.95)}
 .cbtn.solid{background:var(--act);color:var(--on-act);box-shadow:none}
+.clar{display:grid;gap:18px}.clar-q{display:grid;gap:8px}.clar-q>b{font:600 13px/1.35 var(--ui);color:var(--label)}
+.clar-opts{display:flex;flex-wrap:wrap;gap:6px}.clar-opt{height:auto;min-height:var(--size-md);padding:6px 12px;white-space:normal;text-align:left;line-height:1.3}
+.clar-opt[aria-pressed="true"]{background:var(--act);color:var(--on-act);box-shadow:none}
 .cbtn.pg{background:var(--pg,var(--act));color:#fff;box-shadow:0 0 18px -4px color-mix(in srgb,var(--pg,transparent) 70%,transparent)}
 .cbtn.solid:hover,.cbtn.pg:hover{filter:brightness(1.08)}
 .cbtn .ico{width:14px;height:14px;stroke-width:2}
@@ -1448,6 +1451,7 @@ th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
 .cp-md-pop-btn{margin-top:4px;height:var(--size-sm);padding:0 10px;border-radius:var(--radius-pill);font:560 12px/1 var(--ui);color:var(--C);background:color-mix(in srgb,var(--C) 12%,var(--card-2));box-shadow:none;display:inline-flex;align-items:center;gap:5px;width:fit-content;transition:background var(--d-quick),color var(--d-quick)}
 .cp-md-pop-btn:hover{background:color-mix(in srgb,var(--C) 20%,var(--card-2));color:var(--label)}
 .cp-md-pop-btn .ico{width:12px;height:12px}
+.cp-route{margin-left:auto;font:500 11px/1.2 var(--ui);color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62%}
 .cp-msg-cards{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;max-width:88%;justify-content:flex-end}
 .cp-msg-card{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px 0 6px;border-radius:var(--radius-pill);font:560 11px/1 var(--ui);color:var(--label-2);background:var(--card-2);box-shadow:none;max-width:220px;cursor:pointer;transition:background var(--d-quick),color var(--d-quick)}
 .cp-msg-card:hover{background:var(--hover);color:var(--label)}
@@ -6161,7 +6165,7 @@ const hasApi=()=>!!(apiCfg.enabled&&apiCfg.key.trim()&&apiCfg.baseUrl.trim()&&ap
    k: unknown | checking | ok | auth | notfound | ratelimit | unreachable | error */
 const apiCfgSig=(c=apiCfg)=>[c.baseUrl,c.model,c.key].join("\u0001");
 let apiHealth={k:"unknown",sig:"",at:0,ms:null,detail:""};
-const API_BAD=new Set(["auth","notfound","unreachable","error"]);
+const API_BAD=new Set(["auth","notfound","credits","unreachable","error"]);
 const apiHostOf=u=>{try{return new URL(u).host}catch{return String(u||"").replace(/^https?:\/\//,"").split("/")[0]||"server"}};
 function apiHealthNow(){return apiHealth.sig===apiCfgSig()?apiHealth:{k:"unknown",sig:"",at:0,ms:null,detail:""}}
 const apiBad=()=>hasApi()&&API_BAD.has(apiHealthNow().k);
@@ -6171,13 +6175,14 @@ const apiBad=()=>hasApi()&&API_BAD.has(apiHealthNow().k);
 function apiRoutable(){
   if(!hasApi())return false;
   const h=apiHealthNow();
-  if(h.k==="auth"||h.k==="notfound")return false;
+  if(h.k==="auth"||h.k==="notfound"||h.k==="credits")return false;
   if(h.k==="unreachable"&&Date.now()-h.at<60000)return false;
   return true;
 }
 function classifyApiStatus(status){
   if(status>=200&&status<300)return "ok";
   if(status===401||status===403)return "auth";
+  if(status===402)return "credits";
   if(status===404)return "notfound";
   if(status===429)return "ratelimit";
   return "error";
@@ -6202,6 +6207,7 @@ async function probeApi(cfg){
       body:JSON.stringify({model:cfg.model,messages:[{role:"user",content:"ping"}],max_tokens:1,stream:false})
     });
     const ms=Math.round(performance.now()-t0);
+    if(r.ok&&apiCfgSig(cfg)===apiCfgSig())countCloudCall();
     return {k:classifyApiStatus(r.status),ms,detail:r.ok?"":"HTTP "+r.status};
   }catch(e){
     return {k:"unreachable",ms:null,detail:e?.name==="TimeoutError"||e?.name==="AbortError"?"timeout":"network"};
@@ -6225,6 +6231,7 @@ function apiHealthLabel(h=apiHealthNow()){
     notfound:{cls:"err",txt:L("Model not found","找不到模型"),detail:`${model} · ${host}`,tip:L(`${host} doesn't know “${apiCfg.model}”, or the URL is wrong`,`${host} 不认识「${apiCfg.model}」，或地址有误`)},
     ratelimit:{cls:"busy",txt:L("Rate limited","被限流"),detail:`${model} · ${host}`,tip:L(`${host} is reachable but asked us to slow down`,`${host} 可以连通，但要求降低请求频率`)},
     unreachable:{cls:"err",txt:L("Unreachable","无法连接"),detail:`${model} · ${host}`,tip:L(`Offline, wrong URL, or blocked by the browser`,`离线、地址有误或被浏览器拦截`)},
+    credits:{cls:"err",txt:L("Out of credits","额度用尽"),detail:`${model} · ${host}`,tip:L(`${host} says the account has no credits left. Top up, then test again`,`${host} 表示账户额度已用尽，充值后再检测`)},
     error:{cls:"err",txt:L("Error","出错"),detail:`${model} · ${host}`,tip:L(`${host} returned ${h.detail||"an error"}`,`${host} 返回 ${h.detail||"错误"}`)}
   }[h.k]||{cls:"",txt:"",detail:"",tip:""};
 }
@@ -6281,6 +6288,50 @@ function setAiPref(pref){
   renderCrew();
   renderCopilot?.();
 }
+function openSearchDialog(){
+  let prov=searchCfg.provider==="keenable"?"keenable":"wikipedia";
+  openDialog(L("Scout search","Scout 搜索"),`<div style="display:grid;gap:10px">
+    <div style="font:500 13px/1.45 var(--ui);color:var(--label-2)">${L("Before Strategist branches an idea, Scout looks up its real background and pins what it finds as Source cards. Wikipedia is free. Keenable searches the whole web, built for AI agents, with your own key.","Strategist 发散之前，Scout 会先查找真实背景，并把结果钉成 Source 卡。维基百科免费；Keenable 面向 AI 智能体检索整个网络，需要你自己的密钥。")}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button type="button" class="sh-btn" data-sr="wikipedia">${L("Wikipedia (free)","维基百科（免费）")}</button>
+      <button type="button" class="sh-btn" data-sr="keenable">Keenable</button>
+    </div>
+    <div id="srKeen" style="display:grid;gap:10px">
+      <label style="display:grid;gap:4px;font:550 12px/1 var(--ui);color:var(--label-2)">${L("Keenable API key (stored locally in this browser)","Keenable API 密钥（仅保存在本浏览器）")}
+        <input id="srKeyIn" type="password" class="mem-box" style="min-height:36px;height:36px;padding:7px 10px" value="${esc(searchCfg.key)}" placeholder="keen_...">
+      </label>
+      <label style="display:grid;gap:4px;font:550 12px/1 var(--ui);color:var(--label-2)">${L("Mode","模式")}
+        <select id="srModeSel" class="mem-box" style="min-height:36px;height:36px;padding:6px 10px">
+          <option value="pro"${searchCfg.mode!=="realtime"?" selected":""}>${L("Pro — deeper retrieval","Pro — 检索更深")}</option>
+          <option value="realtime"${searchCfg.mode==="realtime"?" selected":""}>${L("Realtime — fastest","Realtime — 最快")}</option>
+        </select>
+      </label>
+    </div>
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;padding-top:4px">
+      <span id="srTestOut" role="status" aria-live="polite" style="margin-right:auto;font:500 12px/1.3 var(--ui);color:var(--label-3)"></span>
+      <button type="button" class="sh-btn" data-sr-test>${L("Test","测试")}</button>
+      <button type="button" class="sh-btn" style="background:var(--act);color:var(--on-act)" data-sr-save>${L("Save","保存")}</button>
+    </div>
+  </div>`,d=>{
+    const paint=()=>{d.querySelectorAll("[data-sr]").forEach(b=>{const on=b.dataset.sr===prov;b.style.background=on?"var(--act)":"";b.style.color=on?"var(--on-act)":"";b.setAttribute("aria-pressed",String(on))});$("srKeen").style.display=prov==="keenable"?"grid":"none"};
+    d.querySelectorAll("[data-sr]").forEach(b=>b.onclick=()=>{prov=b.dataset.sr;paint()});
+    const form=()=>({provider:prov,key:$("srKeyIn").value.trim(),mode:$("srModeSel").value==="realtime"?"realtime":"pro"});
+    d.querySelector("[data-sr-test]").onclick=async()=>{
+      const out=$("srTestOut"),c=form();
+      if(c.provider!=="keenable"){out.textContent=L("Wikipedia needs no setup.","维基百科无需设置。");return}
+      if(!c.key){out.textContent=L("Enter your Keenable API key first.","请先填写 Keenable API 密钥。");return}
+      out.textContent=L("Testing…","测试中…");const t0=performance.now();
+      try{const got=await keenableSearch("Shanghai International Settlement",{maxResults:1,cfg:c});out.textContent=L(`Connected · ${Math.round(performance.now()-t0)} ms · ${got.length} result`,`已连接 · ${Math.round(performance.now()-t0)} ms · ${got.length} 条结果`)}
+      catch(e){out.textContent=failReason("Keenable",e)}
+    };
+    d.querySelector("[data-sr-save]").onclick=()=>{
+      const c=form();if(c.provider==="keenable"&&!c.key){$("srTestOut").textContent=L("Enter your Keenable API key first.","请先填写 Keenable API 密钥。");return}
+      searchCfg=c;store.set(".searchCfg",searchCfg);toast(c.provider==="keenable"?L(`Scout will search with Keenable (${c.mode}).`,`Scout 将使用 Keenable（${c.mode}）搜索。`):L("Scout will search Wikipedia.","Scout 将使用维基百科搜索。"));
+      if(dlg.open)dlg.close();if(studioPopOpen)renderStudioPop();
+    };
+    paint();
+  });
+}
 function openApiDialog(){
   const presets={
     openai:{url:"https://api.openai.com/v1",models:[
@@ -6324,6 +6375,10 @@ function openApiDialog(){
     </div>
     <label style="display:grid;gap:4px;font:550 12px/1 var(--ui);color:var(--label-2)">API Key (stored locally in this browser)
       <input id="apiKeyIn" type="password" class="mem-box" style="min-height:36px;height:36px;padding:7px 10px" value="${esc(apiCfg.key)}" placeholder="sk-...">
+    </label>
+    <label style="display:grid;gap:4px;font:550 12px/1 var(--ui);color:var(--label-2)">${L("Daily call limit","每日调用上限")}
+      <input id="apiDailyIn" type="number" min="1" step="1" inputmode="numeric" class="mem-box" style="min-height:36px;height:36px;padding:7px 10px" value="${apiCfg.daily>0?esc(String(apiCfg.daily)):""}" placeholder="${esc(L("Empty: free-tier preset (Gemini 20, others none)","留空：免费档预设（Gemini 20，其他不限）"))}">
+      <span style="font:500 11px/1.35 var(--ui);color:var(--label-3)">${L("Auto keeps the last quarter for heavy work. On a paid plan, enter its limit.","自动模式会把最后四分之一留给重任务。付费方案请填其上限。")}</span>
     </label>
     <label style="display:flex;align-items:center;gap:8px;font:500 13px/1 var(--ui);color:var(--label)">
       <input id="apiEnIn" type="checkbox" ${apiCfg.enabled?"checked":""}> Enable Cloud API fallback / routing
@@ -6372,7 +6427,7 @@ function openApiDialog(){
     });
     renderModels(curProv,apiCfg.model);
     qs("[data-api-clear]",d).onclick=()=>{apiCfg={enabled:false,baseUrl:"https://api.openai.com/v1",model:"gpt-6.1-sol",key:""};store.set(".api",apiCfg);if(aiPref==="api")setAiPref("auto");else renderCrew();d.close()};
-    const formCfg=()=>({enabled:$("apiEnIn").checked,baseUrl:urlIn.value.trim().replace(/\/+$/,""),model:(curProv==="custom"||sel.value==="__custom__")?customIn.value.trim():sel.value,key:$("apiKeyIn").value.trim()});
+    const formCfg=()=>{const dl=parseInt($("apiDailyIn").value,10);return {enabled:$("apiEnIn").checked,baseUrl:urlIn.value.trim().replace(/\/+$/,""),model:(curProv==="custom"||sel.value==="__custom__")?customIn.value.trim():sel.value,key:$("apiKeyIn").value.trim(),...(dl>0?{daily:dl}:{})}};
     let lastTest=null;
     qs("[data-api-test]",d).onclick=async()=>{
       const cfg=formCfg(),out=$("apiTestOut"),btn=qs("[data-api-test]",d);
@@ -6460,7 +6515,7 @@ function renderStudioPop(){
     :apiCase==="checking"?st("busy",L("Checking…","检测中…"),"",` data-api-health="checking"`)
     :apiH.k==="ok"&&sum.engine==="api"?st("ok",L("In use","使用中"),apiLab.tip,` data-api-health="ok"`)
     :st(apiLab.cls,apiLab.txt,apiLab.tip,` data-api-health="${apiH.k}"`);
-  const apiDetail=hasApi()?(apiCfg.model||"").split("/").pop():"";
+  const apiDetail=hasApi()?(apiCfg.model||"").split("/").pop()+(cloudDailyLimit()?` · ${cloudBudgetLine()}`:""):"";
   const apiNext=sum.engine==="rules"&&aiPref!=="local";
   const apiAct=apiCase==="unset"?btn("api",L("Set up","设置"),{kind:apiNext?"primary":""})
     :apiCase==="off"?btn("api",L("Turn on","开启"),{kind:apiNext?"primary":""})
@@ -6506,6 +6561,12 @@ function renderStudioPop(){
       ${showFirst?`<div class="sp-first"><span id="sp-first-l">${L("Use first","优先使用")}</span><div class="sp-seg sm" role="group" aria-labelledby="sp-first-l"><button type="button" data-sp="first" data-val="auto" aria-pressed="${firstPref!=="api"}">${L("Local AI","本地模型")}</button><button type="button" data-sp="first" data-val="api" aria-pressed="${firstPref==="api"}">${L("Cloud API","云端 API")}</button></div></div>`:""}
     </div>
     <div class="sp-group">
+      <div class="sp-subhdr">${L("Research","资料检索")}</div>
+      <div class="sp-services">
+        ${row({name:L("Scout search","Scout 搜索"),state:st("ok",keenableOn()?"Keenable":L("Wikipedia","维基百科")),detail:keenableOn()?L(`Keenable ${searchCfg.mode} · falls back to Wikipedia`,`Keenable ${searchCfg.mode} · 失败时改用维基百科`):L("Free · set up Keenable for deeper web search","免费 · 可设置 Keenable 进行更深的网络检索"),acts:btn("search",keenableOn()?L("Edit","编辑"):L("Set up","设置"))})}
+      </div>
+    </div>
+    <div class="sp-group">
       <div class="sp-subhdr">${L("Images & video","图像与视频")}</div>
       <div class="sp-services">
         ${row({name:L("Media Studio","媒体工作室"),state:imState,detail:imDetail,acts:imAct,extra:imgModelsHtml+vidModelsHtml})}
@@ -6524,7 +6585,7 @@ function toggleStudioPopover(force){
   renderStudioPop();
   if(studioPopOpen&&(!studioState.checked||NOW()-studioState.checked>8000))refreshStudioFromPop({wake:false});
   if(studioPopOpen&&studioLauncher===null)probeStudioLauncher().then(v=>{studioLauncher=v;renderStudioPop()});
-  if(studioPopOpen&&hasApi()){const h=apiHealthNow();if(h.k==="unknown"||(h.k!=="checking"&&Date.now()-h.at>120000))testApi({quiet:true})}
+  if(studioPopOpen&&hasApi()){const h=apiHealthNow(),every=cloudDailyLimit()?1800000:120000;if(h.k==="unknown"||(h.k!=="checking"&&Date.now()-h.at>every))testApi({quiet:true})}
 }
 /* Tables that are wider than their space fade at the right edge until scrolled to the end. */
 (()=>{const fit=w=>{w.classList.toggle("more",w.scrollWidth-w.clientWidth-w.scrollLeft>2);w.classList.toggle("scrolled",w.scrollLeft>1)};let q=0;
@@ -7448,7 +7509,7 @@ Include 1 or at most 2 pins.`;
     if(ks!==lastK||ts!==lastT){lastK=ks;lastT=ts;onProgress({keywords:kws,thoughts:th})}
   }:undefined;
   try{
-    const {v}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:750,signal,memoryMode:rel.length?"compact":"none",onText:handleText},local);
+    const {v}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:750,signal,memoryMode:rel.length?"compact":"none",onText:handleText,quiet:true},local);
     if(!v||!Array.isArray(v.pins)||!v.pins.length)return local();
     const kws=Array.isArray(v.keywords)&&v.keywords.length?v.keywords.slice(0,5).map(String):local().keywords;
     return {
@@ -7731,12 +7792,13 @@ async function buildChatMessages({system,prompt,messages,images}){
 /* A model that runs out of time or tokens must not look finished. */
 let LOCAL_AI_MS=240000; // matches Studio AI's own upstream limit; a model on this machine can be slow
 const isLocalBase=u=>/^https?:\/\/(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\]|[^/:]+\.local)(?::|\/|$)/i.test(String(u||""));
-function aiTimeoutError(ms){const e=new Error(L(`The model didn't finish within ${Math.round(ms/1000)} s`,`模型在 ${Math.round(ms/1000)} 秒内没有完成`));e.name="TimeoutError";return e}
+/* Running out of time is not the designer pressing Stop: only the caller's signal ends in an AbortError. */
+function aiTimeoutError(ms){const e=new Error(L(`The model didn't finish within ${Math.round(ms/1000)} s`,`模型在 ${Math.round(ms/1000)} 秒内没有完成`));e.name="TimeoutError";e.reason=e.message;return e}
 const cutNote=(why,ms)=>"\n\n_"+(why==="time"?L(`Cut off: the model didn't finish within ${Math.round(ms/1000)} s.`,`未完成：模型在 ${Math.round(ms/1000)} 秒内没有写完。`):L("Cut off: the reply reached its length limit.","未完成：回复达到了长度上限。"))+"_";
 async function readChatStream(res,ctrl,{json,onText,timedOut=()=>false,timeoutMs=0}){
   const reader=res.body?.getReader();
   if(!reader)throw new Error("No response stream");
-  const dec=new TextDecoder();let buf="",full="",loopStopped=false,cut=null;
+  const dec=new TextDecoder();let buf="",full="",loopStopped=false,cut=null,finish="";
   const pushDelta=d=>{
     if(!d)return;
     full+=d;
@@ -7753,7 +7815,7 @@ async function readChatStream(res,ctrl,{json,onText,timedOut=()=>false,timeoutMs
   const consumeLine=ln=>{
     const line=ln.trim();if(!line.startsWith("data:"))return;
     const payload=line.slice(5).trim();if(!payload||payload==="[DONE]")return;
-    try{const j=JSON.parse(payload);if(j.choices?.[0]?.finish_reason==="length")cut="length";pushDelta(j.choices?.[0]?.delta?.content??j.choices?.[0]?.message?.content??"")}catch{}
+    try{const j=JSON.parse(payload);const fr=j.choices?.[0]?.finish_reason;if(fr){finish=fr;if(fr==="length")cut="length"}pushDelta(j.choices?.[0]?.delta?.content??j.choices?.[0]?.message?.content??"")}catch{}
   };
   try{
     while(!loopStopped){
@@ -7766,14 +7828,42 @@ async function readChatStream(res,ctrl,{json,onText,timedOut=()=>false,timeoutMs
   // an aborted stream can also just end, so check the clock as well as the exception
   if(!cut&&!loopStopped&&timedOut()){if(json||!full.trim())throw aiTimeoutError(timeoutMs);cut="time"}
   if(!loopStopped&&cut!=="time"&&buf.trim())consumeLine(buf);
-  const clean=trimRepetitionLoop(full).text.trim();
-  if(!clean)throw new Error("Empty model response");
+  // a thinking model's thoughts are not the answer (llama.cpp normally sends them apart, as reasoning_content)
+  const clean=trimRepetitionLoop(full).text.replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/^[\s\S]*?<\/think>/i,"").trim();
+  if(!clean){if(finish!=="length")throw new Error("Empty model response");const e=aiFailError(L("The model used its whole token budget before answering","模型在作答前用完了 token 预算"));e.budget=true;throw e}
   if(json){try{return parseAIJson(clean)}catch(e){if(cut==="length")throw new Error(L("The model's reply hit its length limit before it finished","模型的回复在写完前达到了长度上限"));throw e}}
   if(!cut)return clean;
   const marked=clean+cutNote(cut,timeoutMs);onText?.({text:marked,delta:""});return marked;
 }
-async function studioChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=95000,onText,signal}){
-  const msgs=await buildChatMessages({system,prompt,messages,images});
+/* A model call that failed for a reason the designer should hear about (no credits, refused key, ...). */
+function aiFailError(reason){const e=new Error(reason);e.reason=reason;return e}
+function apiStatusError(status,k,sec=0){
+  const hrs=sec>0?Math.max(1,Math.round(sec/3600)):0;
+  const m={credits:L(`Cloud API is out of credits (HTTP ${status})`,`云端 API 额度用尽（HTTP ${status}）`),
+    auth:L(`Cloud API rejected the key (HTTP ${status})`,`云端 API 拒绝了密钥（HTTP ${status}）`),
+    notfound:L(`Cloud API doesn't know this model (HTTP ${status})`,`云端 API 找不到该模型（HTTP ${status}）`),
+    ratelimit:L(`Cloud API is rate limited (HTTP ${status})`,`云端 API 被限流（HTTP ${status}）`),
+    daily:hrs?L(`Cloud API's daily quota is used up (HTTP ${status}); it resets in about ${hrs} h`,`云端 API 今日额度已用完（HTTP ${status}），约 ${hrs} 小时后重置`):L(`Cloud API's daily quota is used up (HTTP ${status}); it resets tomorrow`,`云端 API 今日额度已用完（HTTP ${status}），明天重置`)}[k];
+  return aiFailError(m||L(`Cloud API returned HTTP ${status}`,`云端 API 返回 HTTP ${status}`));
+}
+/* What to tell the designer when an engine could not answer. */
+function failReason(who,e){
+  if(e?.reason)return e.reason;
+  if(/Invalid JSON|Empty model response/.test(e?.message||""))return L(`${who} gave an answer Vellum couldn't read`,`${who}的回答无法解析`);
+  return L(`${who} failed (${clip(e?.message||"error",60)})`,`${who}出错（${clip(e?.message||"error",60)}）`);
+}
+const JSON_ONLY="Reply with one JSON object only: no prose before or after it, no code fences.";
+let AI_TIMEOUT_MS=95000; // a Cloud API call's time limit (Local AI uses LOCAL_AI_MS); the smoke test shortens both
+/* Two stances. "fact": answer only from sources, low temperature, every claim checked against them. "create":
+   invent freely, higher temperature, but anything presented as real must agree with the sources. */
+const STANCE_TEMP={fact:{text:.15,json:.15},create:{text:.9,json:.7}};
+const CREATE_RULE="Invent freely: characters, smaller places, events, rules and mechanics can all be made up, and surprising beats safe. Anything you present as real (an actual institution, person, street, date or event) must agree with the sources on the wall; when you are not sure something real is right, invent a fictional one instead of guessing.";
+async function studioChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal,stance=""}){
+  let msgs=await buildChatMessages({system,prompt,messages,images});
+  /* No grammar-constrained JSON mode for Local AI: llama.cpp samples it about 16x slower (one Strategist
+     fork took 443 s against 27 s as plain text on a 4-core CPU), so crew moves hit the time limit.
+     Ask for JSON in words instead; readChatStream parses it with parseAIJson either way. */
+  if(json)msgs=msgs[0]?.role==="system"?[{...msgs[0],content:msgs[0].content+"\n"+JSON_ONLY},...msgs.slice(1)]:[{role:"system",content:JSON_ONLY},...msgs];
   const ctrl=new AbortController();
   const onAbort=()=>ctrl.abort();
   if(signal){if(signal.aborted)throw new DOMException("Aborted","AbortError");signal.addEventListener("abort",onAbort,{once:true})}
@@ -7783,15 +7873,18 @@ async function studioChat({system,prompt,messages,images=[],json=false,maxTokens
     const res=await fetch(`${STUDIO_URL}/studio/generate`,{
       method:"POST",signal:ctrl.signal,
       headers:{"Content-Type":"application/json","X-Studio-Client":"canvas"},
-      body:JSON.stringify({messages:msgs,response_format:{type:json?"json_object":"text"},max_tokens:Math.min(4600,maxTokens)})
+      body:JSON.stringify({messages:msgs,response_format:{type:"text"},json:!!json,...(stance?{stance}:{}),max_tokens:Math.min(4600,maxTokens)})
     });
     if(!res.ok){
       if(res.status===503){studioState.status="loading";renderCrew()}
-      throw new Error("Studio HTTP "+res.status);
+      throw aiFailError(res.status===503?L(`Local AI is not ready (HTTP 503)`,`本地模型尚未就绪（HTTP 503）`):L(`Local AI returned HTTP ${res.status}`,`本地模型返回 HTTP ${res.status}`));
     }
     return await readChatStream(res,ctrl,{json,onText,timedOut:()=>timedOut,timeoutMs});
-  }catch(e){if(timedOut&&e?.name==="AbortError")throw aiTimeoutError(timeoutMs);throw e}
-  finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
+  }catch(e){
+    if(timedOut&&e?.name==="AbortError")throw aiTimeoutError(timeoutMs);
+    if(e instanceof TypeError&&!signal?.aborted)throw aiFailError(L("Local AI is not running","本地模型未运行"));
+    throw e;
+  }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
 const TALK=k=>`You are ${AGENTS[k].name} on a small design crew, talking with the designer about one card. Your craft: ${AGENTS[k].craft} In conversation you answer what was said; you do not run your usual procedure unless asked.`;
 const TALK_RULES=`1. Answer what the designer just said first, and use everything they gave you (if they named two things, address both).
@@ -7881,23 +7974,89 @@ function wallText(ns,{docCap=4500,shortCap=700,totalCap=14000,excludeIds=null,co
     return `- ${kindLabel(n)}${nTag}${tag}${w}: ${tClean?tClean+(doc?"\n":". "):""}${body}${n.test?"\n  Test: "+n.test:""}`;
   }).join("\n");
 }
+/* ── Auto: which engine takes which task ─────────────────────────────────────────────
+   Heavy work (forking, building, synthesis, source checks, merges) is where a small local model falls furthest
+   behind, so in Auto it goes to the Cloud API first. Light work (chat, clarify, labels, look-ups) stays on Local
+   AI. A daily cloud budget keeps its last quarter for heavy work, and then spends it only to redo a local draft
+   that failed its checks. "Cloud API" and "Rules only" stay as manual overrides. */
+const CLOUD_RESERVE=.75;
+const isGeminiApi=(cfg=apiCfg)=>/generativelanguage\.googleapis\.com/.test(cfg.baseUrl||"");
+/* apiCfg.daily: a number of calls, "" for no limit, or unset for the provider's free-tier preset (Gemini: 20). */
+function cloudDailyLimit(cfg=apiCfg){const d=cfg.daily;if(d===""||d===null)return null;if(d===undefined)return isGeminiApi(cfg)?20:null;const n=Math.floor(+d);return n>0?n:null}
+// Gemini's daily limits reset at midnight Pacific; other providers are counted by the local day
+function cloudDay(){try{return new Intl.DateTimeFormat("en-CA",{timeZone:isGeminiApi()?"America/Los_Angeles":undefined,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())}catch{return new Date().toISOString().slice(0,10)}}
+// counted per provider and model (free-tier quotas are per model); never keyed by the API key itself
+const budgetKey=()=>`${apiCfg.baseUrl}\u0001${apiCfg.model}`;
+let cloudBudget=(()=>{const b=store.get(".cloudBudget",null);if(!(b&&typeof b==="object"&&b.by))return {day:"",by:{}};
+  for(const k of Object.keys(b.by))if(k.split("\u0001").length>2)delete b.by[k]; // older entries carried the key
+  return b})();
+function cloudUse(){const day=cloudDay();if(cloudBudget.day!==day)cloudBudget={day,by:{}};const k=budgetKey();return cloudBudget.by[k]||(cloudBudget.by[k]={used:0,until:0})}
+const saveCloudBudget=()=>store.set(".cloudBudget",cloudBudget);
+function countCloudCall(){cloudUse().used++;saveCloudBudget()}
+function cloudLeft(){const b=cloudUse(),lim=cloudDailyLimit();if(b.until>Date.now())return 0;return lim==null?Infinity:Math.max(0,lim-b.used)}
+function cloudState(){const lim=cloudDailyLimit(),left=cloudLeft();if(left<=0)return "out";if(lim==null)return "open";return lim-left>=Math.ceil(lim*CLOUD_RESERVE)?"reserve":"open"}
+// the provider said today's quota is gone: stop asking until it resets
+function markCloudOut(sec){const b=cloudUse();b.until=Date.now()+(sec>0?sec*1000:6*3600e3);const lim=cloudDailyLimit();if(lim)b.used=Math.max(b.used,lim);saveCloudBudget();renderCrew?.()}
+function cloudBudgetLine(){const lim=cloudDailyLimit();if(lim==null)return "";const left=cloudLeft();return L(`${left} of ${lim} cloud calls left today`,`今日云端调用剩 ${left}/${lim}`)}
+function autoPlan(weight="light"){
+  const local=studioState.status==="ready",st=cloudState(),cloud=apiRoutable()&&st!=="out";
+  if(aiPref==="local")return {order:[],why:""};
+  if(aiPref==="api")return {order:cloud?["api"]:[],why:"pinned"};
+  if(weight==="heavy"){
+    if(cloud&&st==="open")return {order:local?["api","studio"]:["api"],why:"heavy"};
+    if(cloud)return {order:local?["studio","api"]:["api"],why:"reserve"};
+    return {order:local?["studio"]:[],why:"nocloud"};
+  }
+  return {order:local?(cloud&&st==="open"?["studio","api"]:["studio"]):(cloud&&st==="open"?["api"]:[]),why:"light"};
+}
+function engineName(eng){
+  if(eng==="studio"){const m=(studioState.model||"").split("/").pop();return L("Local AI","本地模型")+(m?` · ${m}`:"")}
+  if(eng==="api")return (apiCfg.model||"").split("/").pop().replace(/[-_]+/g," ").replace(/\b[a-z]/g,c=>c.toUpperCase())||L("Cloud API","云端 API");
+  return eng;
+}
+/* One line for the island and Copilot: which model answered, and why it was that one. */
+function routeNote(eng,{weight,plan,rescued}){
+  const parts=[engineName(eng)];
+  if(eng==="api"){
+    if(rescued)parts.push(L("redid Local AI's draft","重做了本地模型的草稿"));
+    else if(plan?.why==="heavy")parts.push(L("heavy task","重任务"));
+    const b=cloudBudgetLine();if(b)parts.push(b);
+  }else if(eng==="studio"&&weight==="heavy"&&plan?.why==="reserve")parts.push(L("saving cloud calls","节省云端调用"));
+  else if(eng==="studio"&&weight==="heavy"&&plan?.why==="nocloud"&&hasApi()&&cloudState()==="out")parts.push(L("cloud quota used up","云端额度已用完"));
+  return parts.join(" · ");
+}
 async function viaClaude(remote,local,opts={}){
-  if(aiPref==="auto"&&studioState.status==="ready"&&opts.studio){
-    try{const v=await opts.studio();if(v!=null)return {v,live:true,engine:"studio"}}
-    catch(e){if(e?.name==="AbortError")throw e;if(e?.name==="TimeoutError")toast(L(`${e.message}. Trying the next engine; a faster model or fewer cards helps.`,`${e.message}。正在改用下一个引擎；换更快的模型或减少卡片会有帮助。`))}
+  /* A Stop (AbortError) ends the move. Any other failure (time limit, no credits, refused key, an answer
+     that can't be read, a local draft that failed its checks) falls through to the next engine, and the
+     designer is told what went wrong and which engine answered instead. `why` goes back to the caller;
+     `quiet` keeps background work silent. `weight` ("heavy" | "light") picks the order in Auto. */
+  let why="",late=false,draft=null;
+  const note=(who,e)=>{const r=failReason(who,e);if(!why){why=r;late=e?.name==="TimeoutError"}else if(!why.includes(r))why=L(`${why}, and ${r.replace(/^The /,"the ")}`,`${why}；${r}`)};
+  const said=used=>{if(!why||opts.quiet)return;
+    toast(late?L(`${why}. ${used[0].toUpperCase()+used.slice(1)} drafted this instead; a faster model or fewer cards helps.`,`${why}。已改由${used}起草；换更快的模型或减少卡片会有帮助。`)
+      :L(`${why}, so ${used} answered instead.`,`${why}，已改用${used}。`))};
+  const weight=opts.weight||"light",plan=autoPlan(weight),order=plan.order;
+  const cloudAfter=order.includes("studio")&&order.indexOf("api")>order.indexOf("studio");
+  if(opts.studio)for(const eng of order){
+    if(eng==="studio"){
+      try{const v=await opts.studio({escalate:cloudAfter});if(v!=null){said(L("Local AI","本地模型"));return {v,live:true,engine:"studio",why,route:routeNote("studio",{weight,plan})}}}
+      catch(e){if(e?.name==="AbortError")throw e;if(e?.draft!=null)draft=e.draft;note(L("Local AI","本地模型"),e)}
+    }else{
+      try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null){said(L("Cloud API","云端 API"));return {v,live:true,engine:"api",why,route:routeNote("api",{weight,plan,rescued:draft!=null})}}}
+      catch(e){if(e?.name==="AbortError")throw e;note(L("Cloud API","云端 API"),e)}
+    }
   }
-  if(aiPref!=="local"&&apiRoutable()&&opts.studio){
-    try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null)return {v,live:true,engine:"api"}}
-    catch(e){if(e?.name==="AbortError")throw e;if(e?.name==="TimeoutError")toast(L(`${e.message}. Built-in rules drafted this instead; a faster model or fewer cards helps.`,`${e.message}。已改由内置规则起草；换更快的模型或减少卡片会有帮助。`))}
-  }
+  // the cloud couldn't redo a flawed local draft: the draft is still better than built-in rules
+  if(draft!=null){if(!opts.quiet)toast(L(`${why}, so the local draft stays.`,`${why}，保留本地草稿。`));return {v:draft,live:true,engine:"studio",why,route:routeNote("studio",{weight,plan})}}
   if(aiPref!=="local"&&sampleFn&&!(opts.apiArgs?.images?.length)){
-    try{const v=await Promise.race([remote(),wait(100000).then(()=>{throw {code:"timeout"}})]);if(v==null)throw {code:"empty"};return {v,live:true,engine:"claude"}}
+    try{const v=await Promise.race([remote(),wait(100000).then(()=>{throw {code:"timeout"}})]);if(v==null)throw {code:"empty"};said("Claude");return {v,live:true,engine:"claude",why}}
     catch(e){if(e&&e.code==="not_granted"){sampleFn=null;renderCrew();toast("Claude access was declined. Falling back to local rules.")}
       else if(e&&e.code==="rate_limited")toast("Claude is busy. Drawn on device.");}
   }
-  return {v:await local(),live:false,engine:"local"};
+  said(L("built-in rules","内置规则"));
+  return {v:await local(),live:false,engine:"local",why};
 }
-async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=95000,onText,signal}){
+async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal,stance=""}){
   const msgs=await buildChatMessages({system,prompt,messages,images});
   const ctrl=new AbortController();
   const onAbort=()=>ctrl.abort();
@@ -7906,26 +8065,53 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
   const timer=setTimeout(()=>{timedOut=true;ctrl.abort()},timeoutMs);
   const sentCfg={...apiCfg},t0=performance.now();let gotHeaders=false;
   try{
-    const body={model:apiCfg.model,messages:msgs,stream:true,temperature:0.45,max_tokens:Math.min(4600,maxTokens)};
+    /* Many cloud models think before answering (Gemini 2.5 and later, reasoning models), and the thinking counts
+       against max_tokens: Gemini 4 Hydrogen spent ~1,400 of a fork's 2,000 on thoughts and sometimes all of them,
+       leaving no answer. The limit is a ceiling, billed by use, so leave thinking room. */
+    const room=json||maxTokens>=1200;
+    const body={model:apiCfg.model,messages:msgs,stream:true,temperature:STANCE_TEMP[stance]?.[json?"json":"text"]??0.45,max_tokens:Math.min(8192,maxTokens+(room?4096:0))};
     if(json)body.response_format={type:"json_object"};
-    const res=await fetch(`${apiCfg.baseUrl.replace(/\/+$/,"")}/chat/completions`,{
+    const send=()=>fetch(`${apiCfg.baseUrl.replace(/\/+$/,"")}/chat/completions`,{
       method:"POST",signal:ctrl.signal,
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiCfg.key},
       body:JSON.stringify(body)
     });
+    let res=await send();
     gotHeaders=true;
+    /* Free tiers (Gemini's especially) cap requests per minute as well as per day. A per-minute 429 clears in
+       seconds, so wait as long as the server asks (up to 30 s, inside the time limit) and try again, twice at
+       most. A daily cap does not clear today: say so instead of waiting. */
+    for(let tries=0;res.status===429&&tries<2;tries++){
+      const txt=await res.text().catch(()=>"");
+      if(/PerDay|per day|daily/i.test(txt)){const sec=Number((txt.match(/"retryDelay"\s*:\s*"([\d.]+)s"/)||[])[1])||0;markCloudOut(sec);throw apiStatusError(429,"daily",sec)}
+      const ra=Number(res.headers.get("retry-after"))||Number((txt.match(/"retryDelay"\s*:\s*"([\d.]+)s"/)||[])[1])||6;
+      const ms=Math.min(30000,Math.ceil(ra*1000)+500);
+      if(performance.now()-t0+ms>timeoutMs-15000)break;
+      await new Promise((ok,no)=>{const h=setTimeout(ok,ms);ctrl.signal.addEventListener("abort",()=>{clearTimeout(h);no(new DOMException("Aborted","AbortError"))},{once:true})});
+      res=await send();
+    }
     if(!res.ok){
       // Only definite setup problems change the connection status; a passing 5xx/429 is the call's own error.
       const k=classifyApiStatus(res.status);
-      if(k==="auth"||k==="notfound")setApiHealth(k,{cfg:sentCfg,detail:"HTTP "+res.status});
-      throw new Error("API HTTP "+res.status);
+      if(k==="auth"||k==="notfound"||k==="credits")setApiHealth(k,{cfg:sentCfg,detail:"HTTP "+res.status});
+      throw apiStatusError(res.status,k);
     }
     setApiHealth("ok",{cfg:sentCfg,ms:Math.round(performance.now()-t0)});
-    return await readChatStream(res,ctrl,{json,onText,timedOut:()=>timedOut,timeoutMs});
+    countCloudCall();
+    try{return await readChatStream(res,ctrl,{json,onText,timedOut:()=>timedOut,timeoutMs})}
+    catch(e){
+      // a short reply's limit doubles as a length cap; only if a thinking model spent it all before answering, ask once more with room
+      if(!e?.budget||room)throw e;
+      body.max_tokens=Math.min(8192,maxTokens+4096);res=await send();
+      if(!res.ok)throw apiStatusError(res.status,classifyApiStatus(res.status));
+      countCloudCall();
+      return await readChatStream(res,ctrl,{json,onText,timedOut:()=>timedOut,timeoutMs});
+    }
   }catch(e){
     if(e instanceof TypeError&&!signal?.aborted)setApiHealth("unreachable",{cfg:sentCfg,detail:"network"});
     else if(e?.name==="AbortError"&&!signal?.aborted&&!gotHeaders)setApiHealth("unreachable",{cfg:sentCfg,detail:"timeout"});
     if(timedOut&&e?.name==="AbortError")throw aiTimeoutError(timeoutMs);
+    if(e instanceof TypeError&&!signal?.aborted)throw aiFailError(L("Cloud API is unreachable","云端 API 无法连接"));
     throw e;
   }finally{clearTimeout(timer);signal?.removeEventListener("abort",onAbort)}
 }
@@ -8277,7 +8463,7 @@ async function reversePromptNode(n,{force=false,lang="en",stylePreset="balanced"
     task.done(res.quality==="partial"?{tone:"warn",note:L("Partial pack — the full pass did not finish","部分结果：完整解析未完成")}:{});
     return res;
   }catch(err){
-    const msg=err?.name==="AbortError"||crewState.scout.cancel?(localMode?"Stopped or timed out waiting for Local AI. Try Retry or check Studio AI in Settings.":"Reverse prompt stopped."):(err?.message||"Could not reverse prompt");
+    const msg=err?.name==="AbortError"||crewState.scout.cancel?"Reverse prompt stopped.":err?.name==="TimeoutError"?`${err.message}. Try Retry or check Studio AI in Settings.`:(err?.message||"Could not reverse prompt");
     n.plError=msg;
     plBusyNodes.delete(n.id);
     plStreamText.delete(n.id);
@@ -8485,12 +8671,129 @@ function memoryDialog(opts={}){
   if(!bMem.trim()&&!sMem.trim())setTimeout(()=>bIn.focus(),30);
   else d.focus();
 }
-async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full"},local){
+/* Small local models (Local AI) get prompts written for them and a check-and-repair pass. In Vellum's model
+   eval (tests/model-eval.cjs) a 4B model given the crew prompts wrote generic directions and made obvious
+   errors: a direction set in another city, a test passing if "fewer than one" player did something, two
+   closing questions, promises of work it would not do. Cloud models keep the crew prompts unchanged. */
+const smallModelOn=()=>aiPref==="auto"&&studioState.status==="ready";
+function projectKind(text){return /\b(game|rpg|jrpg|mmo|roguelike|platformer|visual novel|players?|quests?|level design)s?\b|游戏|玩家|关卡/i.test(String(text||""))?"game":""}
+const PLACES=["Shanghai","Beijing","Peking","Tianjin","Hong Kong","Taipei","Tokyo","Guangzhou","Canton","Hangzhou","Suzhou","Chongqing","Wuhan","Singapore","Seoul","Osaka","Macau","Nanjing","Nanking","London","Paris","New York","Berlin","Lagos","Mumbai","Cairo"];
+const LANDMARK_CITY={Wangfujing:"Beijing",Tiananmen:"Beijing","Forbidden City":"Beijing",Ximending:"Taipei",Shibuya:"Tokyo",Shinjuku:"Tokyo",Ginza:"Tokyo","Mong Kok":"Hong Kong",Kowloon:"Hong Kong","Victoria Harbour":"Hong Kong"};
+function placesIn(text){
+  const t=String(text||"");
+  const cities=PLACES.filter(p=>new RegExp("\\b"+p+"\\b"+(/^Nanjing$/.test(p)?"(?!\\s+(?:East\\s+|West\\s+)?Road)":""),"i").test(t));
+  for(const [lm,city] of Object.entries(LANDMARK_CITY))if(new RegExp("\\b"+lm+"\\b","i").test(t)&&!cities.includes(city))cities.push(city);
+  return cities;
+}
+const SMALL_EX={
+  game:'{"title": "Night Market Ledger", "plan": "You run a stall in 1980s Taipei\'s Shilin night market, haggling with regulars each night while a gangster\'s debt grows.", "risk": "Regulars feel like people with their own reasons, not price tags.", "test": "Ten players play three nights; if fewer than six can name a regular who lied to them, the haggling is not reading as character.", "mode": "story"}',
+  other:'{"title": "Shed on Every Street", "plan": "Each street gets one shared tool shed run by a volunteer, with a paper sign-out sheet on the door.", "risk": "Neighbours trust each other with things that cost money.", "test": "Run two sheds for three weeks; if fewer than half the tools come back on time, the trust is not there yet.", "mode": "desk"}'
+};
+function smallStrategistSystem(kind){
+  return `You are Strategist on a small creative crew. You turn one idea into distinct directions worth testing.\n${CREATE_RULE}\n${kind==="game"?"This idea is a game. Think like a game designer: each direction is a different game someone could actually play, with a player role and something the player does again and again.":"Work out what kind of thing the idea is (an app, a story, a service, an event) and think like an expert maker of that thing."}\nWrite plainly and concretely: name real places, years, groups, objects, and what the person does. Do not use vague words such as immersive, unique, rich, dynamic, engaging or vibrant.`;
+}
+/* The answer should be in the designer's language, with normal spacing. Qwen3-VL 8B switched to Chinese half
+   way through an English answer, and ran words together ("in1947", "smugglingcigarettes"). */
+const textLang=t=>/[\u4e00-\u9fff]/.test(String(t||""))?"zh":"en";
+const langLine=lang=>lang==="zh"?"Write every field in Simplified Chinese.":"Write every field in English, with normal spaces between words.";
+function textProblems(all,lang,where){
+  const out=[],t=String(all||"");
+  if(lang==="en"&&/[\u4e00-\u9fff]/.test(t))out.push(`${where}: write everything in English, with no Chinese characters`);
+  const glued=t.match(/\b[A-Za-z]+\d{3,4}\b|\b[A-Za-z]{18,}\b/);
+  if(glued)out.push(`${where}: words run together ("${glued[0]}"); put spaces between words`);
+  return out;
+}
+function smallForkPrompt(ideaText,count,brief,existing,wall){
+  const kind=projectKind(`${ideaText} ${brief}`),game=kind==="game",home=placesIn(ideaText);
+  const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}What is on the wall that feeds it:\n${wall||"(nothing yet)"}\n${existing.length?`Directions that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}
+Write exactly ${count} direction${count>1?"s":""}. ${count>1?(game?"Make them differ in all three of: genre or core mechanic, era or part of the setting, and who the player is. ":"Make them differ in approach, in who it is for, and in form. "):""}Use only real places, institutions and events${home.length?`, and stay in ${home.join(" / ")}`:""}. Each should be about people, choices and pressure.
+For each direction, write the fields in this order:
+- "title": 2-4 words, a name, no punctuation at the end
+- "plan": one sentence: ${game?"who the player is, what they do again and again, and the setting detail it rests on":"who it is for, what they do, and the concrete detail it rests on"}
+- "risk": the experience it depends on: a feeling or behaviour, never knowledge (for example ${game?'"players come to care about one neighbour"':'"people trust each other with things that cost money"'})
+- "test": one sentence: a test with real people that would show that experience is NOT happening; use a number of at least 2; never test what people know
+- "mode": "story" | "desk" | "deck"
+Example of the level of detail (a different idea; do not reuse it): ${SMALL_EX[game?"game":"other"]}
+${langLine(textLang(ideaText))}
+Return {"directions": [ ... ]}.`;
+  return {system:smallStrategistSystem(kind),prompt};
+}
+const MODERN_THINGS=/\b(smart ?phones?|cell ?phones?|mobile phones?|your phone|charg(?:ing|er)|text messages?|internet|e-?mails?|laptops?|computers?|wi-?fi|social media|GPS|selfies?|drones?|television|TV|subway|metro)\b/i;
+function buildProblems(v,ctxText,isTm){
+  if(!v||typeof v!=="object")return ["reply with the JSON object"];
+  const out=[],items=Array.isArray(v.items)?v.items:[];
+  if(!String(v.title||"").trim())out.push('needs a "title"');
+  if(!isTm&&(items.length<4||items.length>6))out.push("write 4 to 6 items");
+  items.forEach((it,i)=>{if(!String(it?.title||"").trim()||!String(it?.body||"").trim())out.push(`item ${i+1} needs a title and a body`)});
+  const all=[v.title,v.kicker,v.lede,...items.flatMap(i=>[i?.title,i?.body,...(Array.isArray(i?.choices)?i.choices:[])])].join(" ");
+  const years=(String(ctxText).match(/\b(1[5-9]\d\d)\b/g)||[]).map(Number);
+  if(years.length&&Math.max(...years)<1980){const m=all.match(MODERN_THINGS);if(m)out.push(`"${m[0]}" does not exist in ${Math.max(...years)}; replace it with something of the time`)}
+  const home=placesIn(ctxText);
+  if(home.length){const other=placesIn(all).filter(p=>!home.some(h=>h.toLowerCase()===p.toLowerCase()));if(other.length)out.push(`it is set in ${other[0]}, but the direction is in ${home[0]}`)}
+  if(/\b(prototype|playtest|participants?|testers?)\b/i.test(items.map(i=>i?.body||"").join(" ")))out.push("write what the person reads and does, not a description of the prototype");
+  out.push(...textProblems(all,textLang(ctxText),"the page"));
+  return out;
+}
+function forkProblems(v,count,ideaText){
+  const list=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:null);
+  if(!list)return ['reply with {"directions": [...]}'];
+  const out=[],home=placesIn(ideaText),seen=new Set();
+  if(list.length!==count)out.push(`write exactly ${count} directions`);
+  list.forEach((d,i)=>{
+    const k=`direction ${i+1}`;
+    if(!d||typeof d!=="object"){out.push(`${k} must be an object`);return}
+    for(const f of ["title","plan","test"])if(!String(d[f]||(f==="plan"?d.text:"")||"").trim())out.push(`${k} needs a "${f}"`);
+    if(String(d.title||"").split(/\s+/).filter(Boolean).length>5)out.push(`${k}: the title must be 2-4 words`);
+    const t=String(d.title||"").toLowerCase();if(t&&seen.has(t))out.push(`${k} repeats a title`);seen.add(t);
+    const all=`${d.title||""} ${d.plan||d.text||""} ${d.test||""}`;
+    if(home.length){const other=placesIn(all).filter(p=>!home.some(h=>h.toLowerCase()===p.toLowerCase()));if(other.length)out.push(`${k} is set in ${other[0]}, but the idea is in ${home[0]}`)}
+    if(/\b(fewer|less) than (one|1|zero|0)\b/i.test(d.test||""))out.push(`${k}: the test uses an impossible number ("fewer than one")`);
+    if(/Night Market Ledger|Shilin|Shed on Every Street/i.test(all))out.push(`${k} copies the example; write a new one`);
+    if(/\b(remember|recall|memori[sz]e|forgets?)\b/i.test(d.test||""))out.push(`${k}: the test checks what people remember; test what they feel or do instead`);
+    out.push(...textProblems(all,textLang(ideaText),k));
+  });
+  return out;
+}
+/* A chips list written without its fence ends up as text; turn it back into chips. */
+function looseChips(text){
+  const s=String(text||""),m=s.match(/\n?[ \t]*`{0,3}[ \t]*chips[ \t]*:?[ \t]*(\[[^\n]*\])[ \t]*`{0,3}[ \t]*$/i);
+  if(!m)return {text:s,chips:[]};
+  let chips=[];try{chips=JSON.parse(m[1]).map(String).map(x=>x.trim()).filter(Boolean).slice(0,3)}catch{}
+  return {text:s.slice(0,m.index).trim(),chips};
+}
+/* Small models sometimes end with two questions ("— or —") or promise work they won't do. Keep one question. */
+function tidySmallReply(text){
+  /* the crew prompt's "**label:** insight" pattern, copied literally */
+  let t=String(text||"").replace(/\*\*\s*Label\s*:\s*\*\*\s*([^\n]+)/gi,"**$1**").replace(/\*\*\s*Label\s*:\s*([^*\n]+)\*\*/gi,"**$1**").replace(/^(\s*[-*]?\s*)Label\s*:\s*/gim,"$1");
+  t=t.replace(/\n\s*(?:—|--)?\s*or\s*(?:—|--)?\s*\n[\s\S]*$/i,"");
+  t=t.split("\n").filter(l=>!/^\s*\(?\s*(?:if this is what you want,?\s*)?(?:I'?ll|I will|let me|I'm going to)\s+(?:start|begin|go ahead|draft|build|write|set up|adjust|create)\b/i.test(l)&&!/^\s*—\s*$/.test(l)).join("\n").trim();
+  const paras=t.split(/\n\s*\n/),last=paras.pop()||"",qs=last.match(/[^?]*\?/g);
+  paras.push(qs&&qs.length>1?qs[0].trim():last);
+  return paras.join("\n\n").trim();
+}
+async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false,small=null,check=null,stance="",weight="light"},local){
   const fullSys=withMemorySystem(system,memoryMode);
+  const sSys=small?withMemorySystem(small.system,memoryMode):fullSys,sPrompt=small?small.prompt:prompt;
+  /* Local AI: an unreadable answer is asked once more; a readable one with obvious errors gets one targeted
+     repair, kept only if it has fewer problems. The caller fills any remaining gap from built-in rules. */
+  const studio=async({escalate=false}={})=>{
+    const ask=msgs=>studioChat({system:sSys,...(msgs?{messages:msgs}:{prompt:sPrompt}),images:msgs?[]:images,json,maxTokens,onText,signal,stance});
+    let v;
+    try{v=await ask()}catch(e){if(json&&small&&/Invalid JSON|Empty model response/.test(e?.message||""))v=await ask();else throw e}
+    const probs=check?check(v):[];
+    if(probs.length){
+      try{const fixed=await ask([{role:"user",content:sPrompt},{role:"assistant",content:JSON.stringify(v)},{role:"user",content:`Fix only these problems and return the whole JSON again: ${probs.join("; ")}.`}]);if(check(fixed).length<probs.length)v=fixed}
+      catch(e){if(e?.name==="AbortError")throw e}
+      // still flawed after the repair: in Auto, hand the task to the Cloud API (the draft is kept if that fails)
+      const left=escalate?check(v):[];
+      if(left.length){const e=aiFailError(L(`Local AI's draft had problems (${clip(left[0],70)})`,`本地模型的草稿有问题（${clip(left[0],70)}）`));e.draft=v;throw e}
+    }
+    return v;
+  };
   return viaClaude(
     ()=>json?sampleFn.json(`${fullSys}\n\n${prompt}`,{modelTier}):sampleFn(`${fullSys}\n\n${prompt}`,{modelTier,cache:false,onText}).then(r=>r.text),
     local,
-    {studio:()=>studioChat({system:fullSys,prompt,images,json,maxTokens,onText,signal}),apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal}}
+    {studio,apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal,stance},quiet,weight}
   );
 }
 
@@ -8539,7 +8842,8 @@ async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   const start=read[0]||places[0];if(start){moveCursor(k,(start.x||0)-60,(start.y||0)-80);await wait(30);c.classList.add("on")}
   for(const n of read.slice(0,5)){if(stopped()||fin)break;say("reading "+clip(titleOf(n),34));moveCursor(k,n.x+(W[n.type]||300)*.62,n.y+46);const el=nodeEl(n.id);if(el){el.dataset.extra="reading";el.classList.add("reading")}await wait(calm()?0:260)}
   const outlines=[];
-  const aiLbl=aiPref!=="local"&&studioState.status==="ready"?"drafting with Studio AI":aiPref!=="local"&&sampleFn?"drafting with Claude":"drafting";
+  // with both engines in Auto, either may draft: the note at the end says which one did
+  const aiLbl=aiPref==="auto"&&studioState.status==="ready"&&apiRoutable()&&cloudState()!=="out"?"drafting":aiPref!=="local"&&studioState.status==="ready"?"drafting with Studio AI":aiPref!=="local"&&sampleFn?"drafting with Claude":"drafting";
   if(places.length&&!stopped())say(aiLbl);
   for(const pl of places){moveCursor(k,pl.x+pl.w*.85,pl.y+pl.h*.4);outlines.push(drawOutline(pl));await wait(calm()||fin?0:180)}
   let dots=0;const tick=setInterval(()=>{if(!places.length)return;const pl=places[dots%places.length];dots++;moveCursor(k,pl.x+pl.w*(.3+Math.random()*.6),pl.y+40+Math.random()*(pl.h-60))},900);
@@ -8553,7 +8857,7 @@ async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   goHome(k);setAgent(k,{busy:false,status:""});
   crewState[k].lastRun={t:NOW(),live:err?false:(res&&typeof res==="object"&&"live" in res?!!res.live:null)};
   if(err){task.fail(err?.message);throw err}
-  task.done();return res;
+  task.done(res&&res.live===false&&res.why?{tone:"warn",note:L("Built-in rules answered","内置规则作答")}:res&&res.route?{note:res.route}:{});return res;
 }
 function freeSpot(x,y,w,h,ignore=[]){
   for(let i=0;i<80;i++){
@@ -8577,7 +8881,222 @@ async function typeIn(ids){
 const decodeEnt=s=>{const d=document.createElement("textarea");d.innerHTML=s;return d.value};
 
 /* ── moves ───────────────────────────────────────────────────────────── */
-async function fork(idea,count=3,brief=""){
+/* An open idea ("not sure what kind yet") is where a small model is weakest: it fills the gaps with generic
+   choices. Asking three one-click questions first moves those choices to the designer. */
+function forkIsOpen(idea,brief,srcs){
+  if(srcs.length)return false;
+  if(/\b(not sure|no idea|don'?t know|anything|whatever|surprise me|really different|any kind|open to)\b|不确定|没想好|随便|都行|不知道/i.test(brief))return true;
+  return !brief&&String(fullTextOf(idea)||idea.text||"").split(/\s+/).length<14;
+}
+const CLARIFY_FALLBACK={
+  game:[{q:"Who is the player?",options:["An outsider who just arrived","Someone with power to lose","An ordinary person caught up in events","A criminal or rule-breaker"]},{q:"When does it happen?",options:["The past","The present day","The near future","Across several eras"]},{q:"How does it play?",options:["Story and conversations","Tactics and fights","Running a place or a business","Exploring and investigating"]}],
+  other:[{q:"Who is it for?",options:["Just me","A small team","Customers or the public","A specific community"]},{q:"What form should it take?",options:["An app or tool","A story or piece of media","A service or event","A physical object or place"]},{q:"How big is the first version?",options:["A one-day test","A week-long pilot","A small launch","A long-term project"]}]
+};
+function clarifyProblems(v){
+  const qs=Array.isArray(v?.questions)?v.questions:null;
+  if(!qs)return ['reply with {"questions": [...]}'];
+  const out=[];if(qs.length!==3)out.push("ask exactly 3 questions");
+  qs.forEach((q,i)=>{const o=Array.isArray(q?.options)?q.options.map(x=>String(x||"").trim()).filter(Boolean):[];
+    if(!String(q?.q||"").trim())out.push(`question ${i+1} needs "q"`);
+    if(o.length<3||o.length>4)out.push(`question ${i+1} needs 4 options`);
+    if(o.some(x=>x.length>70))out.push(`question ${i+1}: keep options under 8 words`);
+    if(new Set(o.map(x=>x.toLowerCase())).size<o.length)out.push(`question ${i+1} repeats an option`)});
+  return out;
+}
+async function clarifyFork(idea,brief){
+  const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
+  const kind=projectKind(`${ideaText} ${brief}`),home=placesIn(ideaText);
+  const fallback=CLARIFY_FALLBACK[kind==="game"?"game":"other"];
+  const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}The idea is still open. Ask the designer three quick questions whose answers would most change what this becomes${kind==="game"?" (for example who the player is, when and where it happens, and how it plays)":""}. Each question has 4 short, concrete options under 8 words, as different from each other as possible. Use only real places and periods${home.length?`, and stay in ${home.join(" / ")}`:""}. ${langLine(textLang(ideaText))}\nReturn {"questions": [{"q": "...", "options": ["...", "...", "...", "..."]}, ... 3 items]}`;
+  const res=await runAgent("muse",{read:[idea],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:smallStrategistSystem(kind),prompt,json:true,stance:"create",maxTokens:900,small:{system:smallStrategistSystem(kind),prompt},check:clarifyProblems},()=>({questions:fallback}))});
+  if(!res)return null;
+  const got=(Array.isArray(res.v?.questions)?res.v.questions:[]).map(q=>({q:String(q?.q||"").trim(),options:(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4)})).filter(q=>q.q&&q.options.length>=2).slice(0,3);
+  return clarifyDialog(got.length>=2?got:fallback);
+}
+function clarifyDialog(items){
+  return new Promise(resolve=>{
+    let done=false;const finish=v=>{if(done)return;done=true;delete dlg.dataset.clarify;if(dlg.open)dlg.close();resolve(v)};
+    dlg.className="sheet";dlg.dataset.clarify="1";
+    dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>${L("Before Strategist branches this","在 Strategist 发散之前")}</b><small>${L("Pick what fits. Skip any question you are unsure about.","选出合适的；拿不准的可以不选。")}</small></div><button type="button" class="sh-x" data-clarify-x aria-label="${L("Close","关闭")}">${ic("x")}</button></header>
+    <div class="sh-main clar">${items.map((q,i)=>`<div class="clar-q" role="group" aria-label="${esc(q.q)}" data-clarify-q="${i}"><b>${esc(q.q)}</b><div class="clar-opts">${q.options.map((o,j)=>`<button type="button" class="cbtn clar-opt" data-clarify-opt="${j}" aria-pressed="false">${esc(o)}</button>`).join("")}</div></div>`).join("")}</div>
+    <footer class="sh-foot"><button type="button" class="cbtn" data-clarify-skip>${L("Skip, just branch","跳过，直接发散")}</button><span class="sp"></span><button type="button" class="cbtn solid" data-clarify-go>${L("Branch with these","按这些发散")}</button></footer>`;
+    qsa("[data-clarify-opt]",dlg).forEach(b=>b.onclick=()=>{const g=b.closest("[data-clarify-q]");const on=b.getAttribute("aria-pressed")!=="true";qsa("[data-clarify-opt]",g).forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed",String(on))});
+    qs("[data-clarify-go]",dlg).onclick=()=>finish(qsa("[data-clarify-q]",dlg).map((g,i)=>{const b=qs('[data-clarify-opt][aria-pressed="true"]',g);return b?{q:items[i].q,a:items[i].options[+b.dataset.clarifyOpt]}:null}).filter(Boolean));
+    qs("[data-clarify-skip]",dlg).onclick=()=>finish([]);
+    qs("[data-clarify-x]",dlg).onclick=()=>finish(null);
+    dlg.addEventListener("close",()=>finish(null),{once:true});
+    if(!dlg.open)dlg.showModal();
+    qs("[data-clarify-opt]",dlg)?.focus();
+  });
+}
+/* Before Strategist branches an idea that has nothing on the wall, Scout looks up its real background on
+   Wikipedia and pins what it finds as Source drafts linked to the idea (weight: Reported). The fork reads
+   them, so directions rest on facts rather than on what a model half-remembers, and the designer can open
+   each source or discard a wrong one. The queries come from the idea's own place, period and choices, not
+   from the model: in Vellum's model eval a 4B model asked about the metro and cuisine for a 1930s story.
+   Wikipedia is the only search provider for now; wikiLookup is the one place to add another. */
+let SCOUT_GROUNDING=true; // the smoke test turns it off outside the section that tests it
+/* Scout's search provider. Wikipedia is free and needs no setup. Keenable (keenable.ai, web search built for
+   AI agents) searches the whole web semantically and returns long, dated snippets; it needs the designer's own
+   API key, stored only in this browser like the Cloud API key. Keenable answers browsers directly (CORS). */
+let searchCfg=(()=>{const d={provider:"wikipedia",key:"",mode:"pro"};try{return {...d,...(store.get(".searchCfg",{})||{})}}catch{return d}})();
+const keenableOn=()=>searchCfg.provider==="keenable"&&!!String(searchCfg.key||"").trim();
+const cleanSnippet=t=>String(t||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1").replace(/[*_`]+/g,"").replace(/[#>|]+/g," ").replace(/\s+/g," ").trim();
+function keenableError(status,code){
+  const m={401:L(`Keenable rejected the API key (HTTP 401)`,`Keenable 拒绝了 API 密钥（HTTP 401）`),402:L(`Keenable has no credits left (HTTP 402)`,`Keenable 额度用尽（HTTP 402）`),403:L(`Keenable refused the key (HTTP 403)`,`Keenable 拒绝了该密钥（HTTP 403）`),429:L(`Keenable is rate limited (HTTP 429)`,`Keenable 被限流（HTTP 429）`)}[status];
+  return aiFailError(m||L(`Keenable returned HTTP ${status}${code?" ("+code+")":""}`,`Keenable 返回 HTTP ${status}${code?"（"+code+"）":""}`));
+}
+async function keenableSearch(q,{maxResults=3,cfg=searchCfg}={}){
+  let r;
+  try{r=await fetch("https://api.keenable.ai/v1/search",{method:"POST",signal:timeoutSignal(15000),headers:{"Content-Type":"application/json","X-API-Key":String(cfg.key||"").trim()},body:JSON.stringify({query:q,mode:cfg.mode==="realtime"?"realtime":"pro",max_results:maxResults,snippet_max_length:700,exclude_domains:GAME_DB_SITES})})}
+  catch(e){throw aiFailError(L("Keenable is unreachable","无法连接 Keenable"))}
+  if(!r.ok){let code="";try{code=(await r.json()).code||""}catch{};throw keenableError(r.status,code)}
+  const d=await r.json();
+  return (Array.isArray(d.results)?d.results:[]).map(x=>({title:String(x.title||""),text:cleanSnippet(x.snippet),url:String(x.url||""),published:String(x.published_at||"")})).filter(x=>x.title&&x.text.length>80);
+}
+// game databases and forums describe existing games, not the world an idea is set in
+const GAME_DB_SITES=["rpg.net","rpggeek.com","boardgamegeek.com","rpgpub.com","drivethrurpg.com","rpg.stackexchange.com","store.steampowered.com","steamcommunity.com","igdb.com","mobygames.com","giantbomb.com","reddit.com"];
+const hostOf=u=>{try{return new URL(u).host.replace(/^www\./,"")}catch{return ""}};
+const ideaCore=t=>String(t||"").replace(/\b(i|we|want|wants|to|make|build|create|an?|the|set|in|on|about|of|for|with|where|you|play|game|games|rpg|jrpg|video|story|idea|app)\b/gi," ").replace(/[^\w\s'-]/g," ").replace(/\s+/g," ").trim();
+function groundQueries(ideaText,brief,picked){
+  const lang=textLang(ideaText),answers=(picked||[]).map(x=>String(x.a||"").replace(/^(?:an?|the)\s+/i,"").trim()).filter(Boolean);
+  if(lang==="zh")return [...new Set([String(ideaText).replace(/我想(?:做|要做)?|一个|游戏|\b(?:RPG|rpg|game)\b|以|为背景|的/g," ").replace(/\s+/g," ").trim().slice(0,30),...answers.slice(0,2)])].filter(Boolean).slice(0,3);
+  const all=`${ideaText} ${brief} ${answers.join(" ")}`,place=placesIn(ideaText)[0]||placesIn(all)[0]||"";
+  const y=(all.match(/\b(1[5-9]\d\d|20[0-4]\d)s?\b/)||[])[0],decade=y?y.replace(/^(\d{3})\d(s?)$/,"$10s"):"";
+  const core=ideaCore(ideaText);
+  const qs=[];
+  if(place){qs.push(`History of ${place}`);if(decade)qs.push(`${place} in the ${decade}`);answers.slice(0,1).forEach(a=>qs.push(`${place} ${a.replace(new RegExp(place,"i"),"").trim()}`))}
+  else if(core)qs.push(core);
+  return [...new Set(qs.map(q=>q.trim()).filter(q=>q.length>2))].slice(0,3);
+}
+async function wikiLookup(q,lang){
+  const host=lang==="zh"?"zh.wikipedia.org":"en.wikipedia.org";
+  const u=`https://${host}/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=2&prop=extracts|info&exintro=1&explaintext=1&exchars=700&inprop=url&format=json&origin=*`;
+  const r=await fetch(u,{signal:timeoutSignal(6500)});
+  if(!r.ok)throw new Error("Wikipedia HTTP "+r.status);
+  const d=await r.json();
+  return Object.values(d.query?.pages||{}).sort((a,b)=>(a.index||0)-(b.index||0)).map(p=>({title:String(p.title||""),text:String(p.extract||"").replace(/\s+/g," ").trim(),url:String(p.fullurl||"")})).filter(x=>x.title&&x.text.length>80);
+}
+function planSources(count,near){
+  const inBay=board.nodes.filter(n=>bayOf(n)===0),y0=near?Math.max(80,near.y-60):(inBay.length?Math.max(...inBay.map(n=>n.y+(n._h||HGUESS[n.type]||200)))+80:240),places=[];
+  for(let i=0;i<count;i++){const s=freeSpot(80+(i%2)*(W.source+28),y0+Math.floor(i/2)*260,W.source,230);places.push({x:s.x,y:s.y,w:W.source,h:230})}
+  return places;
+}
+async function groundIdea(idea,brief,picked){
+  const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||""),lang=textLang(ideaText);
+  const qs=groundQueries(ideaText,brief,picked);if(!qs.length)return [];
+  let reached=false,keenWhy="";
+  const useKeen=keenableOn(),answers=(picked||[]).map(x=>x.a).filter(Boolean);
+  /* Keenable is semantic, so it also gets the idea in plain words, but asked for its real history and daily
+     life: asked with "RPG" in it, it returned other people's Shanghai RPGs (RPGnet, forum threads), which
+     are not background and invite copying an existing game. */
+  const plain=lang==="zh"?`${qs[0]||ideaText} 真实历史 日常生活`:`${[ideaCore(ideaText),...answers].join(" ")} real history and daily life`;
+  const keenQs=[...new Set([plain.trim().slice(0,300),...qs])].slice(0,3);
+  const res=await runAgent("scout",{read:[idea],places:[],label:L(useKeen?"looking up background (Keenable)":"looking up background","查找背景资料"),task:{kind:"search",title:qs[0]},work:async()=>{
+    const found=[],seen=new Set();
+    const take=(got,q,via)=>{let n=0;for(const it of got){const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3||++n>=2)break}};
+    if(useKeen){
+      for(const q of keenQs){
+        try{take(await keenableSearch(q),q,"Keenable");reached=true}
+        catch(e){if(e?.name==="AbortError"&&crewState.scout.cancel)throw e;keenWhy=failReason("Keenable",e);break}
+        if(found.length>=3)break;
+      }
+    }
+    if(!found.length)for(const q of qs){
+      try{take(await wikiLookup(q,lang),q,"Wikipedia");reached=true}
+      catch(e){if(e?.name==="AbortError"&&crewState.scout.cancel)throw e}
+      if(found.length>=3)break;
+    }
+    return {found};
+  }});
+  if(keenWhy&&(res?.found||[]).length)toast((res.found.some(x=>x.via==="Wikipedia")?L(`${keenWhy}, so Scout used Wikipedia instead.`,`${keenWhy}，Scout 已改用维基百科。`):L(`${keenWhy}; Scout kept what it had already found.`,`${keenWhy}；Scout 保留了已找到的资料。`)));
+  const found=res?.found||[];
+  if(!found.length){if(keenWhy)toast(L(`${keenWhy}.`,`${keenWhy}。`));toast(reached?L("Scout found no background on Wikipedia, so Strategist is working from memory.","Scout 在维基百科没找到相关背景，Strategist 将凭记忆作答。"):L("Scout couldn't reach Wikipedia, so Strategist is working from memory.","Scout 无法连接维基百科，Strategist 将凭记忆作答。"));return []}
+  checkpoint();
+  const pid="p-"+uid(),spots=planSources(found.length,idea),made=found.map((it,i)=>{
+    const via=it.via==="Keenable"?(hostOf(it.url)||"Keenable"):L("Wikipedia","维基百科");
+    const n=node("source",{_src:idea.id,kind:L(`Background · ${via}`,`背景 · ${via}`),title:clip(it.title,64),text:it.text+(it.published?` (${it.published.slice(0,10)})`:""),weight:"reported",path:it.url,src:{query:it.q,url:it.url,source:it.via||"Wikipedia"},by:"scout",status:"sketch",pid},spots[i]);
+    const e=edge(n.id,idea.id,"src","live");if(e)freshEdges.add(e.id);return n;
+  });
+  setTimeout(()=>freshEdges.clear(),1200);
+  log("scout",`Found ${made.length} background source${made.length>1?"s":""} for <b>${esc(clip(titleOf(idea),50))}</b>: ${made.map(n=>esc(n.title)).join(", ")}`,made[0].id);
+  renderAll();persist();
+  return made;
+}
+/* Is this a question about the real world (fact) or a request to invent (create)? "fact:" / "事实：" and
+   "idea:" / "创意：" force it; otherwise a factual question word without creative intent means fact. */
+function factStance(text){
+  const t=String(text||"").trim();
+  if(/^(?:fact|facts|事实)\s*[:：]/i.test(t))return true;
+  if(/^(?:idea|ideas|create|创意)\s*[:：]/i.test(t))return false;
+  const asks=/[?？]\s*$/.test(t)||/^(?:when|what|which|who|whom|where|how many|how much|is|are|was|were|did|does|do)\b/i.test(t)||/吗|呢|什么时候|哪一年|多少|谁/.test(t);
+  const factual=/\b(when|what year|which year|who (?:was|were|is|ran|led|founded|governed)|how many|how much|where (?:was|is|were|did)|is it true|did .+ (?:exist|happen)|was there|were there|history of|what (?:was|were) the|founded|disbanded|abolished|population|in what year|real|actually|historically)\b/i.test(t)||/什么时候|哪一年|谁是|是谁|多少|在哪|是真的吗|历史上|真实|是否存在|成立|解散/.test(t);
+  const creative=/\b(what if|ideas?|brainstorm|could we|should we|how (?:might|could|would|do|can) (?:we|i|it)|design|direction|mechanics?|players?|make (?:it|this)|feel like|invent|imagine|pitch|prototype|fork|game)\b/i.test(t)||/如果|点子|创意|怎么设计|玩法|想法|原型/.test(t);
+  // automatic only when it names something in the real world (a proper name past the first word, or a year):
+  // "who is the translator?" is about the board's own fiction, not a fact to look up
+  const anchored=/[\u4e00-\u9fff]/.test(t)||/\b(1[0-9]{3}|20[0-9]{2})s?\b/.test(t)||/\s[A-Z][a-z]{2,}/.test(t.replace(/^\s*\S+/,""));
+  return asks&&factual&&!creative&&anchored;
+}
+async function factSources(q,lang){
+  const found=[],seen=new Set();let why="";
+  const take=(got,via)=>{for(const it of got){const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,via});if(found.length>=4)break}};
+  if(keenableOn()){try{take(await keenableSearch(q,{maxResults:4}),"Keenable")}catch(e){why=failReason("Keenable",e)}}
+  if(!found.length){try{take(await wikiLookup(q.replace(/^(?:fact|facts|事实)\s*[:：]\s*/i,"").replace(/[?？]+$/,""),lang),"Wikipedia")}catch{}}
+  return {found,why};
+}
+/* Keep a sentence only if it cites a source and every number and multi-word name in it appears in what it cites. */
+function factCheck(answer,sources){
+  const sents=String(answer||"").replace(/\s+/g," ").trim().split(/(?<=[.!?。！？])\s+(?=\S)/).map(x=>x.trim()).filter(Boolean);
+  const kept=[];let dropped=0;
+  for(const sentence of sents){
+    if(/sources? (?:don'?t|do not|doesn'?t|does not) say|资料(?:里)?没有(?:说|写)/i.test(sentence)){kept.push(sentence);continue}
+    const cites=[...sentence.matchAll(/\[(\d+)\]/g)].map(m=>+m[1]).filter(n=>n>=1&&n<=sources.length);
+    if(!cites.length){dropped++;continue}
+    const ref=cites.map(n=>`${sources[n-1].title} ${sources[n-1].text}`).join(" ").toLowerCase();
+    const body=sentence.replace(/\[\d+\]/g,"");
+    const nums=body.match(/\b\d{2,}(?:[,.]\d+)?\b/g)||[];
+    // a capitalised sentence opener ("The Settlement") is not part of the name
+    const names=(body.match(/\b[A-Z][a-z]+(?:\s+(?:of\s+|the\s+)?[A-Z][a-z]+)+\b/g)||[]).map(n=>n.replace(/^(?:The|A|An|In|On|At|By|For|From|After|Before|During|Its|It|This|That|These|Those|When|Then)\s+/,""));
+    const ok=nums.every(n=>ref.includes(n.toLowerCase()))&&names.every(n=>ref.includes(n.toLowerCase()));
+    if(ok)kept.push(sentence);else dropped++;
+  }
+  return {kept,dropped};
+}
+async function factAnswer(question,{signal}={}){
+  const q=String(question).replace(/^(?:fact|facts|事实)\s*[:：]\s*/i,"").trim(),lang=textLang(q);
+  const {found,why}=await factSources(q,lang);
+  const list=found.map((x,i)=>`${i+1}. [${x.title}](${x.url})${x.via==="Keenable"&&hostOf(x.url)?` · ${hostOf(x.url)}`:""}`).join("\n");
+  if(!found.length)return {text:L(`Scout couldn't find sources for this${why?` (${why})`:""}, so I won't answer from memory. Try rephrasing, or add a source card.`,`Scout 没找到相关资料${why?`（${why}）`:""}，所以我不会凭记忆回答。可以换个说法，或者添加一张资料卡。`),sources:0};
+  const sys=`You answer factual questions for a designer using only the numbered sources below.
+Rules:
+1. End every sentence that states a fact with the number of its source in brackets, like [2].
+2. Use only what the sources say. If they don't answer part of the question, write "The sources don't say." for that part. Never fill a gap from memory.
+3. Copy names, numbers and dates exactly as the sources give them.
+4. Two to five short sentences. No headings, no ideas, no follow-up question. ${langLine(lang)}
+Sources:
+${found.map((x,i)=>`[${i+1}] ${x.title}: ${x.text}`).join("\n")}`;
+  const res=await askAI({system:sys,prompt:q,maxTokens:700,stance:"fact",signal,memoryMode:"none"},()=>null);
+  let kept=[],dropped=0;
+  if(res?.v){({kept,dropped}=factCheck(String(res.v),found))}
+  // no model, or nothing it said held up: quote the sources themselves, which can't be wrong about what they say
+  if(!kept.length)kept=found.slice(0,2).map((x,i)=>`${clip(x.text.split(/(?<=[.!?。！？])\s/)[0]||x.text,260)} [${i+1}]`);
+  const note=dropped?`\n\n${L(`(Left out ${dropped} statement${dropped>1?"s":""} the sources don't support.)`,`（已删去 ${dropped} 句资料不支持的内容。）`)}`:"";
+  return {text:`${kept.join(" ")}${note}\n\n**${L("Sources","资料来源")}**\n${list}`,sources:found.length,dropped,found};
+}
+const PIN_SOURCES_CHIP=()=>L("Pin these sources to the board","把这些资料钉到看板上");
+/* Pin the sources a fact answer cited as Source cards (Reported), so they can be wired to the work. */
+function pinFactSources(found){
+  if(!found?.length)return toast(L("No sources to pin.","没有可钉的资料。"));
+  checkpoint();
+  const pid="p-"+uid(),spots=planSources(found.length,null),made=found.map((it,i)=>{
+    const via=it.via==="Keenable"?(hostOf(it.url)||"Keenable"):L("Wikipedia","维基百科");
+    return node("source",{kind:L(`Source · ${via}`,`资料 · ${via}`),title:clip(it.title,64),text:it.text+(it.published?` (${it.published.slice(0,10)})`:""),weight:"reported",path:it.url,src:{url:it.url,source:it.via||"Wikipedia"},by:"scout",status:"sketch",pid},spots[i]);
+  });
+  log("scout",`Pinned ${made.length} source${made.length>1?"s":""} from a fact answer: ${made.map(n=>esc(n.title)).join(", ")}`,made[0].id);
+  sel=made.map(n=>n.id);renderAll();persist();follow(made);
+  toast(L(`Pinned ${made.length} source${made.length>1?"s":""} to the board.`,`已把 ${made.length} 条资料钉到看板上。`));
+}
+async function fork(idea,count=3,brief="",{ask=true}={}){
   if(!idea)return toast("Select a claim, idea or note to fork.");
   if(idea.type==="treemap"&&!brief)return spawnTreeDirections(idea);
   if(!["idea","note","notepad","treemap"].includes(idea.type))return toast("Strategist forks claims, ideas, notes, notepads and tree maps.");
@@ -8585,17 +9104,29 @@ async function fork(idea,count=3,brief=""){
   const free=LETTERS.filter(l=>!existing.some(d=>d.letter===l));
   if(!free.length)return toast("This claim has four directions already. Discard one to explore again.");
   if(count>free.length)toast(free.length===1?`Room for one more direction. Strategist will suggest ${free[0]}.`:`Room for ${free.length} more directions.`);
+  // the questions make up for a small model; when Auto sends the fork to the cloud there is nothing to make up for
+  if(ask&&smallModelOn()&&autoPlan("heavy").order[0]==="studio"&&!existing.length&&forkIsOpen(idea,brief,sourcesFor(idea))){
+    const picked=await clarifyFork(idea,brief);
+    if(picked===null)return;
+    if(picked.length){idea.clarified=picked;brief=`${brief?brief+"\n":""}The designer chose: ${picked.map(x=>`${x.q} ${x.a}`).join("; ")}. Keep every direction inside these choices.`}
+  }
+  // Scout looks up the real background first (any model; built-in rules couldn't use it), once per idea
+  const scoutSrcs=()=>inputsOf(idea.id).filter(n=>n.type==="source"&&n.by==="scout"&&!n.archived&&!n.hidden);
+  if(SCOUT_GROUNDING&&connSummary().engine!=="rules"&&!sourcesFor(idea).length&&!scoutSrcs().length)await groundIdea(idea,brief,idea.clarified||null);
   count=clamp(count,1,free.length);
   const places=planFork(idea,count).places.map(({x,y,w,h})=>({x,y,w,h}));
-  const srcs=sourcesFor(idea);
+  const srcs=[...new Map([...sourcesFor(idea),...scoutSrcs()].map(n=>[n.id,n])).values()];
+  const groundNote=srcs.some(n=>n.by==="scout"&&n.type==="source")?"\nBackground Scout found on the web is on the wall. Draw on it where it helps and never contradict it; it is not a checklist, so do not build a direction around a single fact.\n":"";
   const imgNodes=[idea,...srcs].filter(n=>n&&(n.type==="image"||n.type==="frame"));
-  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${brief?`\nThe designer added: "${brief}"\n`:""}
+  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${groundNote}${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${brief?`\nThe designer added: "${brief}"\n`:""}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
-  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({system:`${ROLE.muse}\n${STYLE}`,prompt,images:imgNodes,json:true},()=>forkLocal(idea,count))});
+  const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
+  const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,(wallText(srcs)||"")+groundNote):null;
+  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({weight:"heavy",system:`${ROLE.muse}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count);
   checkpoint();const pid="p-"+uid();
-  const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",by:"muse",status:"sketch",pid},places[i]);const e=edge(idea.id,n.id,"derive","live");captureDepSnapshot(n,[idea]);freshEdges.add(e.id);return n});
+  const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",...(d.risk?{risk:String(d.risk)}:{}),by:"muse",status:"sketch",pid},places[i]);const e=edge(idea.id,n.id,"derive","live");captureDepSnapshot(n,[idea]);freshEdges.add(e.id);return n});
   setTimeout(()=>freshEdges.clear(),1200);
   log("muse",`Suggested ${made.map(d=>`<b>${d.letter} ${esc(d.title)}</b>`).join(", ")}${live?"":" (offline)"}`,made[0].id);
   sel=[];renderAll();persist();typeIn(made.map(m=>m.id));follow([idea,...made]);
@@ -8619,7 +9150,7 @@ function forkLocal(idea,count){
   return L.filter(l=>!used.has(l.title)).concat(L).slice(0,count);
 }
 
-async function build(dir,{mode,from,steer=""}={}){
+async function build(dir,{mode,from,brief="",steer=""}={}){
   if(!dir)return toast("Select an adopted direction or Tree Map to build.");
   if(dir.type==="proof"){from=dir;dir=byId(dir.dir)}
   if(!dir||!["direction","treemap"].includes(dir.type))return toast("Wright builds from a direction or Tree Map. Select one.");
@@ -8633,14 +9164,14 @@ async function build(dir,{mode,from,steer=""}={}){
   const imgNodes=srcs.filter(n=>n.type==="image"||n.type==="frame");
   const modeDesc=mode==="story"?"a guided page, one step at a time":mode==="desk"?"an interactive UI / desk listing modules people can search, click, and inspect":"a concise presentation slide deck";
   const prompt=isTm
-    ?`Hierarchical Tree Map:\n${treeMapToMarkdown(treeMapOf(dir))}\n\nOutput type: ${MODES[mode]||"Interactive UI"} (${modeDesc}).\nConnected sources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any updated branches.\n`:""}
+    ?`Hierarchical Tree Map:\n${treeMapToMarkdown(treeMapOf(dir))}\n\nOutput type: ${MODES[mode]||"Interactive UI"} (${modeDesc}).\nConnected sources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any updated branches.\n`:""}${brief?`\nThe designer asked for: "${brief}". Build that.\n`:""}
 Turn each main branch of the Tree Map into clear, concrete ${mode==="deck"?"slides":"UI modules / interactive items"} populated with its sub-topics. Write like a person: short sentences, plain words, no em dashes, no buzzwords. Reply with ONLY JSON:
 {"title": short ${mode==="deck"?"deck":"UI"} title, "kicker": one short context subtitle, "lede": 1-2 sentences, "items": [3 to 7 objects {"title","body" (1-2 sentences synthesizing its sub-topics),"tag" (1-2 word category or count)${mode==="story"?',"choices" (optional array of 2-4 sub-topic options)':""}}], "cta": a short action button label}`
-    :`The claim: "${idea?.text||""}"\nThe adopted direction ${dir.letter}, "${dir.title}": ${dir.text}\nIts test: ${dir.test}\nPage type: ${MODES[mode]} (${modeDesc}).\nSources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any changed sources.${proofResults(from)?.failedTitles?.length?` Fix what failed in v${from.ver} first: ${proofResults(from).failedTitles.join("; ")}.`:""}\n`:""}
+    :`The claim: "${idea?.text||""}"\nThe adopted direction ${dir.letter}, "${dir.title}": ${dir.text}\nIts test: ${dir.test}\nPage type: ${MODES[mode]} (${modeDesc}).\nSources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any changed sources.${proofResults(from)?.failedTitles?.length?` Fix what failed in v${from.ver} first: ${proofResults(from).failedTitles.join("; ")}.`:""}\n`:""}${brief?`\nThe designer asked for: "${brief}". Build exactly that, within this direction.\n`:""}
 Write the real content for this prototype as the people in the test would see it (not a description of the prototype). Write like a person, for the people in the test: short sentences, plain words, no em dashes, no buzzwords, no stacked jargon. Reply with ONLY JSON:
 {"title": short page title, "kicker": one short line of context, "lede": 1-2 sentences, "items": [4 to 6 objects {"title","body" (1-2 sentences),"tag" (one or two words, e.g. a status)${mode==="story"?',"choices" (optional array of 2-4 short options the person can mark)':""}}], "cta": a short button label for the main action}`;
   const fallbackFn=isTm?()=>treeMapToProofSpec(dir,mode):()=>specLocal(dir,mode);
-  const {v,live}=await runAgent("wright",{read:[dir,...srcs.slice(0,3)],places,label:isTm?`building ${mode==="deck"?"deck":"UI"} v${ver}`:`building ${dir.letter} v${ver}`,work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt:withSteer(prompt,steer),images:imgNodes,json:true,maxTokens:2400},fallbackFn)});
+  const {v,live}=await runAgent("wright",{read:[dir,...srcs.slice(0,3)],places,label:isTm?`building ${mode==="deck"?"deck":"UI"} v${ver}`:`building ${dir.letter} v${ver}`,work:()=>askAI({weight:"heavy",system:`${ROLE.wright}\n${STYLE}\n${CREATE_RULE}`,prompt:withSteer(prompt,steer),images:imgNodes,json:true,stance:"create",maxTokens:2400,...(smallModelOn()?{small:{system:`${ROLE.wright}\n${STYLE}\n${CREATE_RULE}`,prompt},check:v=>buildProblems(v,isTm?treeMapToMarkdown(treeMapOf(dir)):`${idea?.text||""} ${dir.title} ${dir.text} ${dir.test||""} ${brief}`,isTm)}:{})},fallbackFn)});
   const spec={...fallbackFn(),...(v&&typeof v==="object"?v:{})};spec.mode=mode;spec.letter=isTm?"":dir.letter;spec.version=ver;
   spec.items=(spec.items||[]).filter(i=>i&&i.title).slice(0,8);
   checkpoint();
@@ -8685,7 +9216,7 @@ async function gather(ns,{steer=""}={}){
     :singleText
     ?`Read and distill this single card for the designer:\n${wallText(evid)}\n\nRules:\n- Ground every point strictly in the text written on this card — never fabricate project facts or substitute unrelated board topics.\n- Highlight the core intent, any open gap or missing context, and one concrete next step.\n- Write plain, helpful language (no headings like "Weight." and no raw filename slugs).\n\nReply with ONLY JSON: {"title": "3-6 word headline capturing this card's topic", "points": ["3 to 4 crisp takeaways; start each with **1-3 word theme.** grounded strictly in this card"]}`
     :`Synthesize these ${evid.length} cards together — focus on what connects them, where they contrast or diverge, and what design implication or open question follows:\n${wallText(evid)}${imgNote}\n\nRules:\n- Do NOT summarize each card separately or list per-image captions one by one.\n- Highlight cross-card patterns, visual or UX tensions, missing context, and one concrete design takeaway.\n- Write plain, helpful language (never output headings like "Weight." or internal terms like "carries strong weight", and never dump raw filename slugs).${wCnt>0?"\n- Note differences in source reliability (e.g. live observation vs. illustration or proposal) briefly in natural English inside one point if useful.":""}\n\nReply with ONLY JSON: {"title": "3-6 word insight headline naming the theme or tension (never just 'A and B')", "points": ["3 to 4 crisp takeaways; start each with **1-3 word theme.** then concrete synthesis across the sources"]}`;
-  const {v,live}=await runAgent("scout",{read:evid,places,label:singleImg?"reading visual card":singleText?"reading card":`synthesizing ${evid.length}`,work:()=>askAI({system:`${ROLE.scout}\n${STYLE}`,prompt:withSteer(synPrompt,steer),images:imgNodes,json:true,memoryMode:isolated?"none":"full"},()=>gatherLocal(evid))});
+  const {v,live}=await runAgent("scout",{read:evid,places,label:singleImg?"reading visual card":singleText?"reading card":`synthesizing ${evid.length}`,work:()=>askAI({weight:"heavy",system:`${ROLE.scout}\n${STYLE}`,prompt:withSteer(synPrompt,steer),images:imgNodes,json:true,memoryMode:isolated?"none":"full"},()=>gatherLocal(evid))});
   const r=(v&&Array.isArray(v.points)&&v.points.length)?v:gatherLocal(evid);
   const pts=(r.points||[]).map(p=>String(p||"").trim()).filter(Boolean)
     .map(p=>p.replace(/^\*\*Weight\.?\*\*\s*/i,"**Source role.** ").replace(/^Weight:\s*/i,"**Source role.** "));
@@ -8837,7 +9368,7 @@ async function spawnTreeNotepad(n,{expand=false}={}){
   }
   const places=[{...spot,w:W.notepad,h:HGUESS.notepad}];
   const imgNodes=srcs.filter(x=>x.type==="image"||x.type==="frame");
-  const {v,live}=await runAgent("wright",{read:[n,...srcs.slice(0,3)],places,label:"drafting expanded brief",work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt:`Expand this Tree Map into a clear, actionable Markdown Notepad brief:\n\n${md}\n${srcs.length?`\nConnected sources:\n${wallText(srcs.slice(0,4))}`:""}\n\nPreserve the root title, turn each main branch into a ## section explaining concrete goals, decisions, constraints, and open questions based on the sub-nodes. Reply ONLY with JSON: {"title": "concise title", "markdown": "markdown body"}`,images:imgNodes,json:true,modelTier:"quick"},()=>({title:root.text,markdown:expandTreeBriefLocal(root)}))});
+  const {v,live}=await runAgent("wright",{read:[n,...srcs.slice(0,3)],places,label:"drafting expanded brief",work:()=>askAI({weight:"heavy",system:`${ROLE.wright}\n${STYLE}`,prompt:`Expand this Tree Map into a clear, actionable Markdown Notepad brief:\n\n${md}\n${srcs.length?`\nConnected sources:\n${wallText(srcs.slice(0,4))}`:""}\n\nPreserve the root title, turn each main branch into a ## section explaining concrete goals, decisions, constraints, and open questions based on the sub-nodes. Reply ONLY with JSON: {"title": "concise title", "markdown": "markdown body"}`,images:imgNodes,json:true,modelTier:"quick"},()=>({title:root.text,markdown:expandTreeBriefLocal(root)}))});
   const docTitle=clip(cleanCopilotField(v?.title)||root.text||"Design Brief",56);
   const docMd=String(v?.markdown||v?.text||expandTreeBriefLocal(root)).trim();
   checkpoint();
@@ -8853,7 +9384,7 @@ async function expandNotepadBrief(n){
   const md=(srcTm&&srcTm.type==="treemap")?treeMapToMarkdown(treeMapOf(srcTm)):(n.text||"");
   const fallbackMd=(srcTm&&srcTm.type==="treemap")?expandTreeBriefLocal(treeMapOf(srcTm)):md;
   const srcs=sourcesFor(n);
-  const {v,live}=await runAgent("wright",{read:[n,...(srcTm?[srcTm]:[]),...srcs.slice(0,2)],places:[{x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)}],label:"expanding brief with Wright",work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt:`Expand this outline into a thorough, scannable Markdown brief preserving every section:\n\n${md}\n\nReply ONLY with JSON: {"title": "concise title", "markdown": "expanded markdown body"}`,json:true,modelTier:"quick"},()=>({title:n.title,markdown:fallbackMd}))});
+  const {v,live}=await runAgent("wright",{read:[n,...(srcTm?[srcTm]:[]),...srcs.slice(0,2)],places:[{x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)}],label:"expanding brief with Wright",work:()=>askAI({weight:"heavy",system:`${ROLE.wright}\n${STYLE}`,prompt:`Expand this outline into a thorough, scannable Markdown brief preserving every section:\n\n${md}\n\nReply ONLY with JSON: {"title": "concise title", "markdown": "expanded markdown body"}`,json:true,modelTier:"quick"},()=>({title:n.title,markdown:fallbackMd}))});
   const nextMd=String(v?.markdown||v?.text||fallbackMd).trim();
   if(!nextMd||nextMd===n.text)return;
   checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;
@@ -8896,7 +9427,7 @@ async function critique(n,{quiet=false,ask=""}={}){
   const msg={who:"critic",t:NOW(),text:"",typing:true};(board.threads[n.id]=board.threads[n.id]||[]).push(msg);renderMargin();
   const extra=n.type==="question"?[byId(n.on),byId(n.frame)].filter(Boolean):[];
   const imgNodes=[n,...extra,...srcs].filter(x=>x&&(x.type==="image"||x.type==="frame"));
-  const {v,live}=await runAgent("critic",{read:[n,...extra,...srcs.slice(0,4)],places:[],label:"checking sources",work:()=>askAI({system:`${ROLE.critic}\n${STYLE}`,prompt:`Check this ${kindLabel(n).toLowerCase()} against what it rests on.\nThe card:\n${wallText([n])}\n${extra.length?"It points at:\n"+wallText(extra)+"\n":""}\nIts sources:\n${wallText(srcs)||"(no sources are wired to it)"}\n${n.type==="proof"&&driftOf(n).moved.length?"Note: some sources changed after this proof was built.\n":""}
+  const {v,live}=await runAgent("critic",{read:[n,...extra,...srcs.slice(0,4)],places:[],label:"checking sources",work:()=>askAI({weight:"heavy",system:`${ROLE.critic}\n${STYLE}`,prompt:`Check this ${kindLabel(n).toLowerCase()} against what it rests on.\nThe card:\n${wallText([n])}\n${extra.length?"It points at:\n"+wallText(extra)+"\n":""}\nIts sources:\n${wallText(srcs)||"(no sources are wired to it)"}\n${n.type==="proof"&&driftOf(n).moved.length?"Note: some sources changed after this proof was built.\n":""}
 ${ask?`\nThe designer asks: "${ask}"\nAnswer that first, then check the card against its sources.\n`:""}Reply in 2-4 sentences of plain prose. Name sources by title. End with one question for the team.`,images:imgNodes,memoryMode:(!srcs.length&&!extra.length&&isStandaloneMediaOrLink([n]))?"none":"full",onText:({text})=>{msg.text=text;const tx=qs("#mThread .msg:last-child .tx");if(tx&&marginFor===n.id)tx.innerHTML=mdLite(text)}},()=>critiqueLocal(n))});
   msg.text=v||critiqueLocal(n);delete msg.typing;msg.live=live;
   log("critic",`Checked <b>${esc(titleOf(n))}</b> against ${srcs.length} sources`,n.id);
@@ -10987,7 +11518,7 @@ function route(text){
   if(m){const c=CMDS.find(x=>x.c==="/"+m[1].toLowerCase());if(!c)return mk("none",null,"Unknown move");const arg=m[2].trim();
     switch(c.c){
       case"/fork":{const n=parseInt(arg)||3;return mk("fork","muse",`fork into ${clamp(n,1,4)}`,{n:clamp(n,1,4),arg:arg.replace(/^\d+\s*/,"")})}
-      case"/build":return mk("build","wright",has("proof")?"build next version":"build a proof");
+      case"/build":return mk("build","wright",has("proof")?"build next version":"build a proof",{arg});
       case"/deck":return mk("deck","wright","build a deck");
       case"/list":return mk("list","wright","action list");
       case"/kanban":return mk("kanban","wright","Kanban board");
@@ -11016,6 +11547,13 @@ function route(text){
       case"/memory":{const txt=arg.trim();if(txt)return mk("memory",null,"save to memory",{arg:txt});return mk("config",null,"open memory",{patch:{openDialog:"memory"},explicit:true})}
       case"/settings":case"/config":{const patch=parseConfigIntent(arg,{explicit:true});return mk("config",null,patch?describeConfigPatch(patch):arg?"configure settings":"open settings",{arg,patch,explicit:true})}
     }}
+  /* Adopting or building a direction comes before revising it: fresh forks are drafts, and "Adopt this
+     direction" or "Build a prototype of the opening scene" on one is a decision, not a revision request. A
+     question ("should we adopt this?") still goes to the crew; "make it darker" still revises. */
+  {const q=/[?？]\s*$/.test(t);
+    if(!q&&has("direction")&&(/^(?:(?:ok(?:ay)?|yes|yeah|great|alright|right)[,.!\s]+)?(?:(?:please|let'?s|i(?:'ll| will)?|we(?:'ll| will)?)\s+)?(?:adopt\b|(?:go with|pick|choose)\s+(?:this|that|it)\b)/i.test(t)||/^(?:好的?[，,\s]*)?那?就?(?:采纳|选定|选(?:这个|这条|它))|^(?:好的?[，,\s]*)?那?就用(?:这个|这条)(?:方向)?[。.!！]?$/.test(t)))return mk("adopt",null,`adopt ${clip(titleOf(has("direction")),28)}`);
+    if(!q&&has("direction")&&!has("proof")&&/\b(build|prototype|mock ?up)\b/i.test(t))return mk("build","wright","build a proof",{arg:t});
+  }
   /* a crew draft is selected: plain words revise it (questions still get an answer, and an @mention of
      someone else still goes to them) */
   {const dr=draftOf(ctx);
@@ -11047,7 +11585,7 @@ function route(text){
   if(!ctx.length&&metaPlanRe.test(t))return mk("copilot",null,"ask Copilot",{arg:t});
   if(q&&(has("frame")||has("proof")))return mk("ask","critic","ask on "+titleOf(has("proof")||has("frame")),{arg:t});
   if(/\b(fork|branch|directions?|alternatives|options|what if|other ways)\b/i.test(t)&&f&&["idea","note","notepad"].includes(f.type))return mk("fork","muse",`fork into ${parseInt((t.match(/\b([2-4])\b/)||[])[1])||3}`,{n:parseInt((t.match(/\b([2-4])\b/)||[])[1])||3,arg:t});
-  if(/\b(build|prototype|proof|mock ?up|make (it|the page))\b/i.test(t)&&(has("direction")||has("proof")||has("treemap")))return mk("build","wright","build a proof");
+  if(/\b(build|prototype|proof|mock ?up|make (it|the page))\b/i.test(t)&&(has("direction")||has("proof")||has("treemap")))return mk("build","wright","build a proof",{arg:t});
   if(/\b(deck|slides?)\b/i.test(t)&&(has("direction")||has("treemap")))return mk("deck","wright","build a deck");
   if(/\b(brief|outline)\b/i.test(t)&&has("treemap"))return mk("tm-brief","wright","Notepad Brief");
   if(/\bkanban\b/i.test(t)&&ctx.length)return mk("kanban","wright","Kanban board");
@@ -11189,7 +11727,7 @@ async function execLineRequest(text){
   const body=(r.arg??text).trim();
   switch(r.kind){
     case"fork":return fork(has("idea")||has("note")||has("notepad")||has("treemap")||f,r.n||3,r.arg||"");
-    case"build":return build(has("proof")||has("direction")||has("treemap"));
+    case"build":return build(has("proof")||has("direction")||has("treemap"),{brief:r.arg||""});
     case"deck":return build(has("direction")||has("proof")||has("treemap"),{mode:"deck"});
     case"tm-brief":return spawnTreeNotepad(has("treemap")||f,{expand:/ai|expand/i.test(body)});
     case"list":return makeList(ctx.length?ctx:[]);
@@ -11867,6 +12405,28 @@ function paintCopilotHeader(){
   const src=aiSource();
   sub.textContent=src.label+(studioState.model&&src.kind==="studio"?" · "+studioState.model.split("/").pop():"");
 }
+/* The cards connected to what the designer selected: its claim, sibling directions, the direction a proof
+   builds, its latest proof. Drafts count: they are what the designer is usually asking about. Without this
+   Copilot saw only kept cards and said it was "working from the title of A". */
+function relatedForCopilot(ctx,excludeIds){
+  const out=[],seen=new Set(excludeIds);
+  const add=(n,why)=>{if(!n||n.archived||n.hidden||seen.has(n.id))return;seen.add(n.id);out.push({n,why})};
+  for(const c of (ctx||[]).slice(0,3)){
+    if(c.type==="direction"){
+      add(byId(c.idea),L("its claim","它的主张"));
+      board.nodes.filter(n=>n.type==="direction"&&n.idea===c.idea).forEach(n=>add(n,L("another direction from the same claim","同一主张的另一个方向")));
+      board.nodes.filter(n=>n.type==="proof"&&n.dir===c.id).slice(-1).forEach(n=>add(n,L("its latest proof","它最新的原型")));
+    }else if(["idea","note","notepad","treemap"].includes(c.type)){
+      board.nodes.filter(n=>n.type==="direction"&&n.idea===c.id).forEach(n=>add(n,L("a direction forked from it","由它发散的方向")));
+    }else if(c.type==="proof")add(byId(c.dir),L("the direction it builds","它所依据的方向"));
+  }
+  return out.slice(0,6);
+}
+function relatedLine({n,why}){
+  const st=[n.status==="sketch"?L("draft, not kept yet","草稿，尚未保留"):"",board.adopted?.[n.idea]===n.id?L("adopted","已采纳"):"",n.vote==="up"?L("the designer liked it","设计师喜欢"):n.vote==="down"?L("the designer disliked it","设计师不喜欢"):""].filter(Boolean).join("; ");
+  const body=clip(String(fullTextOf(n)||"").replace(/\s+/g," "),420);
+  return `- ${kindLabel(n)} (${why}${st?"; "+st:""}): ${prettyTitle(n,76)}${body&&body!==titleOf(n)?". "+body:""}${n.test?"\n  Test: "+clip(n.test,260):""}`;
+}
 function boardDigestForCopilot({query="",ctx=[]}={}){
   const excludeIds=new Set((ctx||[]).map(n=>n.id));
   const counts={};for(const n of board.nodes)if(!n.archived)counts[n.type]=(counts[n.type]||0)+1;
@@ -11880,13 +12440,15 @@ function boardDigestForCopilot({query="",ctx=[]}={}){
   const docs=inked.filter(n=>isFullDoc(n)&&!excludeIds.has(n.id));
   const docIds=new Set(inked.filter(isFullDoc).map(n=>n.id));
   const fullDocIds=selectRelevantDocIds(docs,query,{ctx,maxFull:2,totalCap:4200});
-  const recent=inked.filter(n=>!docIds.has(n.id)&&!excludeIds.has(n.id)).slice(-6);
+  const related=relatedForCopilot(ctx,excludeIds),relIds=new Set(related.map(r=>r.n.id));
+  const recent=inked.filter(n=>!docIds.has(n.id)&&!excludeIds.has(n.id)&&!relIds.has(n.id)).slice(-6);
   const likes=[...new Set([...liked,...propLiked])],dislikes=[...new Set([...disliked,...propDisliked])];
   const prefLine=(likes.length||dislikes.length)?`\nFeedback — Approved: ${likes.join(", ")||"none"}. Disliked: ${dislikes.join(", ")||"none"}.`:"";
   const docsBlock=docs.length?`\nMarkdown & brief docs (${fullDocIds.size}/${docs.length} matched loaded in full; rest indexed):\n${wallText(docs,{compactDocs:true,fullDocIds,docCap:2200,totalCap:4200})}`:"";
   const mcpBlock=mcpContextDigest({query,excludeIds});
   const recentBlock=recent.length?`\nOther recent cards (excluding selected & full docs):\n${wallText(recent,{shortCap:190,totalCap:1400})}`:"";
-  return `Board "${board.title||"Untitled"}" (${board.nodes.length} cards: ${summary||"empty"}). Adopted: ${adopted.join(", ")||"none"}.${prefLine}${docsBlock}${mcpBlock}${recentBlock}`;
+  const relatedBlock=related.length?`\nCards connected to the selection (full text; a draft is a suggestion the designer has not kept yet):\n${related.map(relatedLine).join("\n")}`:"";
+  return `Board "${board.title||"Untitled"}" (${board.nodes.length} cards: ${summary||"empty"}). Adopted: ${adopted.join(", ")||"none"}.${prefLine}${relatedBlock}${docsBlock}${mcpBlock}${recentBlock}`;
 }
 const CP_SCHEMA_RE=/^(?:for (?:direction|image|search)|short title|body|string|\.\.\.|concrete 5-minute user check|detailed visual scene description|concise web search keywords|concise rule or project decision to save|action \d+)$/i;
 const UI_TONES={A:"var(--A)",B:"var(--B)",C:"var(--C)",D:"var(--D)",amber:"var(--A)",green:"var(--B)",blue:"var(--C)",coral:"var(--D)",red:"var(--D)"};
@@ -12313,7 +12875,7 @@ function renderCopilotMsg(m){
   const bubbleHTML=(bubbleBody||m.streaming)?`<div class="cp-bubble">${bubbleBody}${m.streaming?'<span class="cp-caret"></span>':""}</div>`:"";
   const actionsHTML=(m.actions&&m.actions.length)?renderCopilotActionsSummary(m):"";
   return `<div class="cp-msg ai" data-cp-msg-id="${m.id}">
-    <div class="cp-who"><span class="mk">${ag?ag.mk:AV.muse}</span><span>${ag?ag.name:"Lumen Copilot"}</span></div>
+    <div class="cp-who"><span class="mk">${ag?ag.mk:AV.muse}</span><span>${ag?ag.name:"Lumen Copilot"}</span>${m.route&&!m.streaming?`<span class="cp-route" title="${esc(L("Which model answered","由哪个模型作答"))}">${esc(m.route)}</span>`:""}</div>
     ${traceHTML}
     ${bubbleHTML}
     ${actionsHTML}
@@ -12679,8 +13241,12 @@ async function sendCopilotMessage(raw,ctxOverride=null){
     const sc=$("cpMsgs");if(sc)sc.scrollTop=sc.scrollHeight;
   };
   let cpTask=null;
+  const factOn=!skipDelegate&&!isCasual&&factStance(text);
   try{
-    if(skipDelegate){
+    if(factOn){
+      const fa=await factAnswer(text,{signal:copilotAbort.signal});
+      aiMsg.text=fa.text;aiMsg.stance="fact";aiMsg.factSources=fa.found||[];aiMsg.chips=fa.sources?[PIN_SOURCES_CHIP()]:[];
+    }else if(skipDelegate){
       const loc=copilotLocalReply(text,ctx);
       aiMsg.text=loc.text;aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;aiMsg.actions=loc.actions||[];
       if(loc.actionResults)aiMsg.actionResults=loc.actionResults;
@@ -12710,19 +13276,30 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\nCONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
 
       const maxTok=isCasual?64:3000;
-      if(aiPref==="auto"&&studioState.status==="ready"){
-        const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
-        const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;
-        const full=await studioChat({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
-        const parsed=parseCopilotBlocks(full);
-        aiMsg.text=isCasual?trimCasual(parsed.text||full):(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
-      }else if(aiPref!=="local"&&apiRoutable()){
-        const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
-        const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;
-        const full=await apiChat({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
-        const parsed=parseCopilotBlocks(full);
-        aiMsg.text=isCasual?trimCasual(parsed.text||full):(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
-      }else if(aiPref!=="local"&&sampleFn){
+      /* Auto routing, as for the crew: a merge is heavy (cloud first), everything else is light (Local AI first).
+         An engine that fails hands over to the next one, and the designer is told why. */
+      const cpWeight=!isCasual&&/\b(merge|combine|fold|blend|fuse|unify|synthesi[sz]e)\w*|合并|融合|结合|整合/i.test(text)?"heavy":"light";
+      const cpPlan=autoPlan(cpWeight);let cpDone=false,cpWhy="";
+      for(const eng of cpPlan.order){
+        try{
+          const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
+          const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;
+          const full=await (eng==="studio"?studioChat:apiChat)({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
+          const parsed=parseCopilotBlocks(full),body=parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full);
+          aiMsg.text=isCasual?trimCasual(parsed.text||full):eng==="studio"?tidySmallReply(body):body;aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
+          if(!isCasual&&eng==="studio"){const lc=looseChips(aiMsg.text);aiMsg.text=lc.text;if(!(aiMsg.chips||[]).length&&lc.chips.length)aiMsg.chips=lc.chips}
+          if(!isCasual)aiMsg.route=routeNote(eng,{weight:cpWeight,plan:cpPlan});
+          if(cpWhy)toast(L(`${cpWhy}, so ${eng==="studio"?"Local AI":"Cloud API"} answered instead.`,`${cpWhy}，已改用${eng==="studio"?"本地模型":"云端 API"}。`));
+          cpDone=true;break;
+        }catch(e){
+          // a Stop ends here and is handled below (a time-out with part of an answer returns it, marked as cut off)
+          if(e?.name==="AbortError")throw e;
+          if(!cpWhy)cpWhy=failReason(eng==="studio"?L("Local AI","本地模型"):L("Cloud API","云端 API"),e);
+          aiMsg.text="";
+        }
+      }
+      if(cpDone){}
+      else if(aiPref!=="local"&&sampleFn){
         const prompt=`Conversation so far:\n${chatHist.map(h=>h.role+": "+h.content).join("\n")}\n\nRespond to the designer's latest message.`;
         const r=await viaClaude(()=>sampleFn(`${sys}\n\n${prompt}`,{modelTier:"default",cache:false,onText:({text:t})=>{aiMsg.text=t;streamPaint()}}).then(res=>res.text),()=>copilotLocalReply(text,ctx));
         if(typeof r.v==="string"){const parsed=parseCopilotBlocks(r.v);aiMsg.text=isCasual?trimCasual(parsed.text||r.v):(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":r.v));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[])}
@@ -12732,6 +13309,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         aiMsg.text=subSteps.length?`${subSteps.map(s=>`**${traceActorInfo(s.to).name}${s.handoff?" (Review)":""}:** ${s.output}`).join("\n\n")}\n\n${loc.text}`:loc.text;
         aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;aiMsg.actions=loc.actions||[];
         if(loc.actionResults)aiMsg.actionResults=loc.actionResults;
+        if(cpWhy)toast(L(`${cpWhy}, so built-in rules answered instead.`,`${cpWhy}，已改用内置规则。`));
       }
       if(!isCasual&&aiMsg.actions&&aiMsg.actions.length&&!aiMsg.actionResults){
         const activeAgent=subSteps.length?(subSteps[subSteps.length-1].to||subSteps[0].to):(aiMsg.agent||"critic");
@@ -12744,6 +13322,8 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       if(aiMsg.trace)aiMsg.trace.steps.forEach(s=>{if(s.status==="running")s.status="skipped"});
       aiMsg.text=parseCopilotBlocks(aiMsg.text).text||"Stopped.";
     }else{
+      const r=failReason(aiPref==="auto"&&studioState.status==="ready"?L("Local AI","本地模型"):L("Cloud API","云端 API"),e);
+      toast(L(`${r}, so built-in rules answered instead.`,`${r}，已改用内置规则。`));
       const loc=copilotLocalReply(text,ctx);aiMsg.text=loc.text;aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;
     }
   }finally{
@@ -13172,7 +13752,10 @@ function initCopilot(){
     if(e.target.closest("[data-cpq-clear]")){cpQueue=[];cpQueuePaused=false;renderCopilotQueue();return}
     if(e.target.closest("[data-cpq-run]")){cpQueuePaused=false;if(!copilotStreaming&&cpQueue.length){const next=cpQueue.shift();renderCopilotQueue();sendCopilotMessage(next.text,next.ctxIds)}else renderCopilotQueue();return}
     const mb=e.target.closest("[data-cp-mode]");if(mb){copilotMode=mb.dataset.cpMode;renderCopilot();return}
-    const ch=e.target.closest("[data-cp-chip]");if(ch){sendCopilotMessage(ch.dataset.cpChip);return}
+    const ch=e.target.closest("[data-cp-chip]");if(ch){
+      const lastAi=[...(board.copilot||[])].reverse().find(m=>m.role==="ai");
+      if(ch.dataset.cpChip===PIN_SOURCES_CHIP()&&lastAi?.factSources?.length){pinFactSources(lastAi.factSources);return}
+      sendCopilotMessage(ch.dataset.cpChip);return}
     const um=e.target.closest("[data-cp-ui-mode]");if(um){const idx=+um.dataset.cpUi,m=(board.copilot||[]).find(x=>x.id===um.dataset.cpMsg),v=m?.visuals?.[idx];if(v){v._mode=um.dataset.cpUiMode;const box=um.closest(".cp-ui");if(box)box.outerHTML=renderCopilotVisual(v,m.id,idx);persist()}return}
     const us=e.target.closest("[data-cp-ui-sel]");if(us){const idx=+us.dataset.cpUi,m=(board.copilot||[]).find(x=>x.id===us.dataset.cpMsg),v=m?.visuals?.[idx];if(v){v._sel=+us.dataset.cpUiSel;const box=us.closest(".cp-ui");if(box)box.outerHTML=renderCopilotVisual(v,m.id,idx);persist()}return}
     const up=e.target.closest("[data-cp-pin-ui]");if(up){pinCopilotVisualToBoard(up.dataset.cpMsg,+up.dataset.cpPinUi);return}
@@ -14522,6 +15105,7 @@ $("studioPop")?.addEventListener("click",async e=>{
   if(act==="stop-svc"){await stopModelService(false);return}
   if(act==="img-model"){setImageModel(b.dataset.id);return}
   if(act==="api"){toggleStudioPopover(false);openApiDialog();return}
+  if(act==="search"){toggleStudioPopover(false);openSearchDialog();return}
   if(act==="test-api"){await testApi();return}
   if(act==="launch-studio"){await launchStudio();return}
   if(act==="adv-mode"){toggleAdvisorMode();return}

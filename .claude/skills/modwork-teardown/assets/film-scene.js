@@ -100,7 +100,7 @@ export function makeStage(canvas,diagramCanvas,data,gear){
   const localPin=pin?sub(pin,center):null;
   const sectionPin=localPin?[localPin[0]*sliceAxis[2]-localPin[2]*sliceAxis[0],localPin[1],dot(localPin,sliceAxis)]:null;
   // Cut depths where the plane crosses both meshes; the cut chapter snaps to these so the readout is never empty by accident.
-  const shared=sharedSectionDepths(skin,piece,center,sliceAxis,span);
+  const shared=sharedSectionDepths(skin,piece,sliceAxis,center,span);
   const diagram=sectionDiagram(diagramCanvas,
     sectionMesh(skin.positions,skin.indices,sliceAxis,center),sectionMesh(piece.positions,piece.indices,sliceAxis,center),span,sectionPin);
   function draw(m,kind,lift,isWire=false,opacity=1){

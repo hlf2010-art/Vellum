@@ -29,9 +29,10 @@ description: 为 Mod Work 的 NBA 2K 球员与护具制作可交互的 3D 拆解
 在任意目录执行，参数依次为 Mod Work 仓库路径、快照、输出文件：
 
 ```sh
-SKILL_DIR=.claude/skills/modwork-teardown          # 按上面第 2 点调整
+SKILL_DIR="$PWD/.claude/skills/modwork-teardown"    # 在技能所在仓库根执行；个人安装改为 "$HOME/.claude/skills/modwork-teardown"
+OUT_DIR="$PWD"                                      # 输出目录，须已存在；后续命令都用绝对路径，不受 cd 影响
 MODWORK_REPO=/绝对路径/到/ModWork                   # 含 fit-studio/ 的目录
-node "$SKILL_DIR/scripts/build-review.mjs" "$MODWORK_REPO" "$MODWORK_REPO/hb-viewport3.json" headband-review.html
+node "$SKILL_DIR/scripts/build-review.mjs" "$MODWORK_REPO" "$MODWORK_REPO/hb-viewport3.json" "$OUT_DIR/headband-review.html"
 ```
 
 用支持 WebGL 的浏览器直接打开 HTML。入口是一段 22 秒的拆解导览。连续播放展示从佩戴、抬起、复位剖切到测量的过程；点击章节则停在能看清结果的一帧。例如「分离」要同时看见原位线框和抬起的护具，「剖切」要看见复位的护具和两个网格的真实截线。分离距离只用于展示。在展台上拖动可暂停并绕模型旋转，滚轮缩放，Shift 拖动或右键拖动平移，双击复位；触屏支持单指旋转、双指缩放和平移。展台获焦后可用方向键、加减号和 Home 操作相机。「纯画面」可隐藏面板并将模型居中，点「显示导览」或按 Esc 返回。时间条负责定位，左右键每次移动一秒。点章节回到导演取景；换款和复查往返保留手动视角。系统要求减少动态效果时，首次打开保持暂停。
@@ -42,7 +43,7 @@ node "$SKILL_DIR/scripts/build-review.mjs" "$MODWORK_REPO" "$MODWORK_REPO/hb-vie
 
 「纤维场」用哑光肤色展示人物，用针织材质展示发带。佩戴和分离读取原始发带网格；剖切和测量读取该件可用的贴合结果，并将截线和定位点对准该结果。已烘焙的发带还会比较原始模型里完全重合的成对边，显示贴合后两侧顶点的最大错位。这个数值与穿入身体的距离分别解读。肤色由展台着色器生成，快照没有球员皮肤贴图。自由复查使用项目 FitViewport。贴合、风险分类与毫米值沿用快照。自由复查里可以核对源文件名和 SHA-256。它适合本机几何复查，材质贴图、服装和游戏动作在此导出路径之外。涉及分享时按用户指定的资产范围导出。生成页面与查看结果均无需写游戏目录。
 
-需要视频时，可用 `node "$SKILL_DIR/scripts/record-film.mjs" headband-review.html headband-review.mp4`（`SKILL_DIR` 与上文相同，需在装有 Playwright 的目录运行） 导出 1280×720、24 fps 的无声 MP4。命令末尾添加 `--gallery` 可导出 1920×1080、30 fps 的纯画面影片。录制机需能从当前目录解析 Playwright 并启动 Chromium，且 PATH 中有支持 libx264 的 ffmpeg；可用 PLAYWRIGHT_MODULE、CHROMIUM、FFMPEG 分别指定绝对路径。普通离线浏览无需这些录制工具。
+需要视频时，可用 `node "$SKILL_DIR/scripts/record-film.mjs" "$OUT_DIR/headband-review.html" "$OUT_DIR/headband-review.mp4"`（`SKILL_DIR`、`OUT_DIR` 与上文相同，需在装有 Playwright 的目录运行） 导出 1280×720、24 fps 的无声 MP4。命令末尾添加 `--gallery` 可导出 1920×1080、30 fps 的纯画面影片。录制机需能从当前目录解析 Playwright 并启动 Chromium，且 PATH 中有支持 libx264 的 ffmpeg；可用 PLAYWRIGHT_MODULE、CHROMIUM、FFMPEG 分别指定绝对路径。普通离线浏览无需这些录制工具。
 
 ## 把观察转成结论
 

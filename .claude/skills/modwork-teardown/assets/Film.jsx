@@ -128,7 +128,7 @@ export function Film({gear,onSelect,onInspect,initialPlayback,inspectButton}){
         <div className="film-sub"><span className="phase-dash"/> {measuring?'静态贴合判定':headband?geometryLabel:chapters[step].label} <b>/</b> {snapshot.player||gear.id}</div>
         {measuring?<><h1>{result.title}</h1>
           <h2 className="result-reason">{fit?result.reason:hasFittedView(gear)?'未记录单件贴合结果':'仅有原始几何'}</h2>
-          {fit&&<p className="result-source">数据来源：{sources[fit.heatSource]||'来源未记录'}</p>}
+          {fit&&<p className="result-source">数据来源：{sources[fit.heatSource]||fit.heatSource||'来源未记录'}</p>}
           <p className="result-evidence">{fit?result.surface:'这份快照可查看几何，无法确认贴合风险。'}</p>
           {fit&&<dl className="result-metrics"><dt>嵌入顶点 / 受检</dt><dd>{result.vertices}</dd>
             <dt>顶点最小有向距离</dt><dd>{result.distance}</dd></dl>}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Loopback inference for Infinite Canvas Studio. Double-click the .command copy on macOS."""
+"""Studio AI: loopback model service for Vellum (Local AI). Double-click the .command copy on macOS: it starts the service and opens Vellum."""
 import atexit
 import base64
 import contextlib
@@ -59,10 +59,21 @@ MODELS = {
         ],
     },
 }
-SITE_NAME = "Infinite Canvas - Studio.html"
-SITE = Path(__file__).resolve().parent / SITE_NAME
-if not SITE.exists():
-    SITE = SITE.parent.parent / SITE_NAME
+# The page a double-click opens (and / serves): Vellum. The older Infinite Canvas Studio page is used only
+# when this copy of the launcher has no Vellum beside it (or one folder up, as in the app bundle).
+SITE_NAMES = ("Vellum-Lumen.html", "Infinite Canvas - Studio.html")
+
+
+def _find_site():
+    here = Path(__file__).resolve().parent
+    for name in SITE_NAMES:
+        for folder in (here, here.parent):
+            if (folder / name).is_file():
+                return folder / name
+    return here / SITE_NAMES[0]
+
+
+SITE = _find_site()
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 ENGINE = None
 DL_PROC = None
@@ -1033,7 +1044,7 @@ def main():
                     return
         raise
     start_model()
-    print(f"Infinite Canvas · http://127.0.0.1:{PORT}/", flush=True)
+    print(f"Studio AI · http://127.0.0.1:{PORT}/ · opening {SITE.name}", flush=True)
     if not silent:
         open_studio()
     try:

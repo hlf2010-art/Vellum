@@ -721,3 +721,8 @@
 .vl-from .vl-ico{width:var(--icon-md);height:var(--icon-md);stroke-width:1.8;color:var(--label-3)}
 .vl-from .vl-ico circle{fill:currentColor;stroke:none}
 .vl-pc[style*="--A"] .vl-from .vl-ico{color:var(--A-fill)}.vl-pc[style*="--B"] .vl-from .vl-ico{color:var(--B-fill)}.vl-pc[style*="--C"] .vl-from .vl-ico{color:var(--C-fill)}.vl-pc[style*="--D"] .vl-from .vl-ico{color:var(--D-fill)}
+
+/* Focused text fields: the field brightens and a soft warm glow surrounds it; no grey ring. */
+.vl-swrite:focus-within,.vl-pc-iter:focus-within{background:var(--card);box-shadow:var(--shadow-field-focus)}
+.vl-input:focus{background:var(--card);box-shadow:var(--shadow-field-focus)}
+.vl-tf.is-error .vl-input:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 22%,transparent)}

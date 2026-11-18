@@ -10,6 +10,8 @@ node tests/vellum-smoke.cjs --headed                      # watch it run
 
 It checks that every inline script parses, the sample board loads and every card type can be selected without errors, every argument-free command runs from the composer (and text commands wait for their text), free text becomes an idea card, Try again keeps or replaces drafts correctly (including work done meanwhile and Undo), provenance and the change log are recorded, and the Task Island shows a running crew move, reports what arrived, selects it on Show and cancels on Stop (without falling back to rules). Local AI is mocked at `127.0.0.1:59631` to check that JSON is asked for in words rather than grammar-constrained JSON mode, and that running out of time is not treated as Stop: a crew move falls back to built-in rules and says why, and Copilot keeps the partial answer marked as cut off. It also checks Auto routing with both engines mocked: heavy work (forks, builds, merges) goes to the Cloud API first and light work stays on Local AI, a local draft still wrong after its repair is redone in the cloud (and kept if the cloud fails), the daily cloud budget keeps its last quarter for heavy work, and the island and Copilot say which model answered. Exit code 0 means all checks passed.
 
+It also checks that what you type reaches the model: words typed on a crew draft revise it (the request carries your words and the draft), Critic answers the question you typed, and a question or an @mention of someone else is not taken as a revision. A source you add can be rated on its card (an Unrated pill) and in its sheet. A reply that hits its length limit or time limit says it was cut off, a timeout is never mistaken for Stop, and a timed-out crew move falls back to built-in rules with a message saying why. The scripted endpoint can send `finish_reason` (`finish`) and stream slowly (`slow`, ms per chunk) for these.
+
 Run it before committing a change to `Vellum-Lumen.html`.
 
 ## Studio AI launcher (local server)
@@ -20,6 +22,54 @@ with a stand-in script, so nothing real is launched:
 ```bash
 python3 studio/macos-app/test_serve_launch.py
 ```
+
+## Data reader (local server)
+
+Tables from a web address read through `/fetch-data` when the site doesn't allow direct reads. It only
+fetches public hosts (redirects re-checked), refuses web pages and stops at 8 MB. Tested against a local
+stand-in for the internet:
+
+```bash
+python3 studio/macos-app/test_serve_fetch.py
+```
+
+## Notion databases (local server)
+
+`/notion/database` turns a Notion database into table rows with the integration token saved in MCP Sources.
+The token is posted by the page, so the endpoint needs the page's exact origin and the `X-Studio-Client` header.
+Tested against a stand-in for Notion's API (property types, paging past 100 rows, the 500-row cap, errors):
+
+```bash
+python3 studio/macos-app/test_serve_notion.py
+```
+
+## Legibility in both themes
+
+Light and dark are designed separately; a colour that works in one is not assumed to work in the other.
+Group 9 of the smoke test opens the Connection and Crew popovers in **both** themes, in the states that change
+colour (normal, error, AI off), and fails if any text is below WCAG 4.5:1 (3:1 for large text), with
+translucent backgrounds composited and dimming included.
+
+When adding or restyling UI:
+
+- Measure contrast in light *and* dark; don't invert one palette to get the other.
+- Dim by changing colour (drop status colour, step down a grey), not by fading text with `opacity`.
+- Selected states carry more than a fill: in light, a darker track makes the white pill stand out; in dark, the
+  pill itself is lighter. Text weight and colour change too (`--seg-on`, `--seg-track`, `--seg-sm-on`).
+- A control that is off must still read as a control: the switch's off state is an outlined track with a grey
+  knob (`--sw-off-*`), checked at 3:1 in both themes. Touch screens get a larger hit area, not a larger switch.
+
+## Charts
+
+The table's chart view picks its form from the data: a date/month/quarter/year column makes a line, a
+percentage column that adds up to a whole makes bars ranked largest first, anything else keeps table order with
+the best value emphasised. Mark colours are `--viz-1`, `--viz-good`, `--viz-muted`, chosen per theme and checked
+with the dataviz palette validator (lightness band, chroma, colour-blind separation, contrast). Dark mode uses its
+own, lower-lightness steps; the UI accent colours were too bright for large marks on the dark surface. In light mode
+the marks are lighter than the text accents (which are tuned for text and read heavy as fills); highlighted marks
+keep 3:1, while muted bars are context and may go lighter because every bar's value is labelled and the table view
+holds the data.
+
 
 ## Model eval (how well a model does the crew's work)
 

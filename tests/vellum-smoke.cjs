@@ -17,6 +17,8 @@ let queue = [];
 const requests = [];
 const probes = [];
 const probe = { status: 200, delay: 0 };
+const notionPosts = [];
+const salesCsv = { text: 'Rank,Region,Q1\n1,North,120\n2,South,90' }; // the refresh check changes it
 const launcher = { on: false, posts: [] }; // stands in for serve_vellum.py's /launch/studio-ai
 
 function serve() {
@@ -24,6 +26,15 @@ function serve() {
     const srv = http.createServer((req, rsp) => {
       if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/Vellum-Lumen.html'))) {
         rsp.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return fs.createReadStream(FILE).pipe(rsp);
+      }
+      if (req.url === '/data/sales.csv') { rsp.writeHead(200, { 'Content-Type': 'text/csv' }); return rsp.end(salesCsv.text); }
+      if (req.method === 'POST' && req.url === '/notion/database') { // stands in for serve_vellum.py's Notion reader
+        let body = ''; req.on('data', c => body += c); req.on('end', () => {
+          const b = JSON.parse(body || '{}'); notionPosts.push({ ...b, client: req.headers['x-studio-client'] });
+          rsp.writeHead(200, { 'Content-Type': 'application/json' });
+          rsp.end(JSON.stringify(b.token !== 'ntn_good' ? { ok: false, error: 'bad_token' } : /aaaaaaaa/.test(b.ref) ? { ok: false, error: 'not_shared' }
+            : { ok: true, id: 'db1', title: 'Sprint board', url: 'https://www.notion.so/acme/db1', columns: ['Name', 'Status', 'Points'], rows: [['Ship tables', 'Done', '5'], ['Notion import', 'In progress', '3']], more: true }));
+        }); return;
       }
       if (req.url === '/launch/studio-ai' && launcher.on) {
         if (req.method === 'POST') launcher.posts.push({ client: req.headers['x-studio-client'], origin: req.headers.origin, host: req.headers.host });
@@ -52,12 +63,15 @@ function serve() {
           rsp.on('error', () => {});
           const txt = typeof hit.text === 'string' ? hit.text : JSON.stringify(hit.text);
           for (let k = 0; k < txt.length; k += 40) {
+            if (hit.slow) await new Promise(r => setTimeout(r, hit.slow)); // a slow model, chunk by chunk
             if (rsp.destroyed) return;
             rsp.write('data: ' + JSON.stringify({ choices: [{ delta: { content: txt.slice(k, k + 40) } }] }) + '\n\n');
             // `stall`: send the first chunk, then go quiet, as a slow model does mid-answer
             if (hit.stall && k === 0) await new Promise(r => setTimeout(r, hit.stall));
           }
-          if (!rsp.destroyed) rsp.end('data: [DONE]\n\n');
+          if (rsp.destroyed) return;
+          if (hit.finish) rsp.write('data: ' + JSON.stringify({ choices: [{ delta: {}, finish_reason: hit.finish }] }) + '\n\n');
+          rsp.end('data: [DONE]\n\n');
         });
         return;
       }
@@ -68,6 +82,27 @@ function serve() {
 }
 
 const results = []; let failures = 0;
+// WCAG contrast of every text node inside `scope`, backgrounds composited up the ancestor chain (opacity included).
+const LEGIBILITY = scope => {
+  const cv = document.createElement('canvas').getContext('2d');
+  const parse = c => { cv.fillStyle = '#000'; cv.fillStyle = c; const s = cv.fillStyle; if (s.startsWith('#')) { const n = parseInt(s.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255, 1]; } const m = s.match(/-?[\d.]+(e-?\d+)?/g).map(Number); if (/^color\(/.test(s)) return [m[0] * 255, m[1] * 255, m[2] * 255, s.includes('/') ? m[3] : 1]; return [m[0], m[1], m[2], m[3] ?? 1]; };
+  const over = (a, b) => [0, 1, 2].map(i => a[i] * a[3] + b[i] * (1 - a[3])).concat(1);
+  const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  const bgOf = el => { const chain = []; for (let e = el; e && e.nodeType === 1; e = e.parentElement) chain.push(e); let c = parse(getComputedStyle(document.body).backgroundColor); for (const e of chain.reverse()) { const b = parse(getComputedStyle(e).backgroundColor); if (b[3] > 0) c = over(b, c); } return c; };
+  const opa = el => { let o = 1; for (let e = el; e && e.nodeType === 1; e = e.parentElement) o *= parseFloat(getComputedStyle(e).opacity); return o; };
+  const out = [];
+  document.querySelectorAll(scope + ' *').forEach(el => {
+    if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+    if (el.closest('[aria-hidden="true"]')) return; // decorative (e.g. footer separators)
+    const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
+    const cs = getComputedStyle(el), bg = bgOf(el), fg = parse(el instanceof SVGElement ? cs.fill : cs.color), px = parseFloat(cs.fontSize);
+    const need = px >= 24 || (parseInt(cs.fontWeight) >= 700 && px >= 18.66) ? 3 : 4.5;
+    const v = ratio(over([fg[0], fg[1], fg[2], fg[3] * opa(el)], bg), bg);
+    if (v < need) out.push(`${v.toFixed(2)} "${el.textContent.trim().slice(0, 30)}"`);
+  });
+  return out;
+};
 function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  — ' + detail}`); if (!ok) failures++; }
 const WIKI = { query: { pages: {
   1: { index: 1, title: 'Shanghai International Settlement', extract: 'The Shanghai International Settlement originated from the 1863 merger of the British and American enclaves in Shanghai. Extraterritoriality was abolished in 1943.', fullurl: 'https://en.wikipedia.org/wiki/Shanghai_International_Settlement' },
@@ -75,8 +110,8 @@ const WIKI = { query: { pages: {
 const wikiRoute = (p, calls = []) => p.route(/wikipedia\.org\/w\/api\.php/, r => { calls.push(new URL(r.request().url()).searchParams.get('gsrsearch')); return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(WIKI) }); });
 const dirs = tag => ({ directions: ['A', 'B', 'C'].map(l => ({ title: `${tag} ${l}`, plan: `Plan ${l}.`, test: `Test ${l}.`, mode: 'story' })) });
 
-async function page(browser, base, { model = true } = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
+async function page(browser, base, { model = true, theme = 'dark' } = {}) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: theme });
   // Studio AI may be running on this machine; the suite must not depend on it (section 9 routes its own)
   await ctx.route('http://127.0.0.1:59631/**', r => r.abort());
   await ctx.route(/wikipedia\.org/, r => r.abort()); // the suite never reaches the real Wikipedia
@@ -328,7 +363,7 @@ async function page(browser, base, { model = true } = {}) {
       await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
       check('lanes can be locked from the popover', await p.evaluate(() => lockedBays().includes(1) && document.querySelector('#crewPop [data-crew-lock="1"]').getAttribute('aria-pressed') === 'true'));
       await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
-      check('Crew popover: header uses the connection summary, the waiting thought comes first, lock icons only on locked lanes', await p.evaluate(() => { const pop = document.getElementById('crewPop'); const kids = [...pop.children]; const locks = [...pop.querySelectorAll('.crew-lock')]; return !!pop.querySelector('.cp-pop-head .sp-now .sp-now-mode') && kids[1]?.classList.contains('crew-wait') && locks.every(b => !!b.querySelector('.ico') === (b.getAttribute('aria-pressed') === 'true')) && !!pop.querySelector('.crew-axis-h [data-crew-custom]'); }));
+      check('Crew popover: title only unless the crew is held back, the waiting thought comes first, lock icons only on locked lanes', await p.evaluate(() => { const pop = document.getElementById('crewPop'); const kids = [...pop.children]; const locks = [...pop.querySelectorAll('.crew-lock')]; return pop.querySelector('.cp-pop-head').textContent.trim() === 'Crew' && kids[1]?.classList.contains('crew-wait') && locks.every(b => !!b.querySelector('.ico') === (b.getAttribute('aria-pressed') === 'true')) && !!pop.querySelector('.crew-axis-h [data-crew-custom]'); }));
       await p.click('#crewPop [data-crew-show]'); await p.waitForTimeout(500);
       check('Show opens the waiting thought and marks it read', await p.evaluate(id => openAdvNodeId === id && board.pins[id][0].seen === true && !document.querySelector('.crew-group').classList.contains('quiet-pacing'), pinCard));
       await p.evaluate(() => closeAdvPop());
@@ -340,17 +375,17 @@ async function page(browser, base, { model = true } = {}) {
       // the connection popover is only about the connection
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);
       const conn = await p.evaluate(() => document.getElementById('studioPop').innerText);
-      check('the connection popover is only about the connection', /Connection/.test(conn) && /Using Cloud API/.test(conn) && !/Unasked thoughts|Agent permissions|Auto follow-up/.test(conn), conn.slice(0, 160));
+      check('the connection popover is only about the connection, and says nothing twice', /Connection/.test(conn) && !/Unasked thoughts|Agent permissions|Auto follow-up/.test(conn) && (conn.match(/gpt-5|smoke/g) || []).length <= 1 && !/Runs on this computer|OpenAI-compatible key/.test(conn), conn.slice(0, 200));
       // honest connection status: a real test request, not "On"; the header answers what is in use
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="ok"]'), null, { timeout: 4000 }).catch(() => {});
-      const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, head: document.querySelector('#studioPop .sp-now')?.className, headTxt: document.querySelector('#studioPop .sp-now')?.textContent, acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.querySelector('#crewSetBtn .conn-dot').className, note: document.querySelector('#studioPop .sp-mode-note')?.textContent, order: [...document.querySelectorAll('#studioPop .sp-svc-top > span:first-child')].map(s => s.textContent) }));
-      check('opening Connection tests the Cloud API for real and the header names the engine in use', ok.h === 'Connected' && /Using Cloud API/.test(ok.headTxt) && /ok/.test(ok.head) && probes.length >= 1 && probes.at(-1).auth === 'Bearer smoke' && requests.every(r => !/^ping$/.test(r.full)), JSON.stringify(ok));
-      check('actions match real state (no Start while Studio AI is closed), Auto is explained, media is grouped apart', ok.acts.join() === 'Edit,Set up' && /heavy work.*Cloud API.*Local AI/.test(ok.note || '') && ok.order.join() === 'Local AI,Cloud API,Scout search,Media Studio', JSON.stringify(ok));
+      const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, headTxt: document.querySelector('#studioPop .sp-head').textContent.trim(), sub: document.querySelector('#studioPop .sp-ai small')?.textContent || '', acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.querySelector('#crewSetBtn .conn-dot').className, sw: document.querySelector('#studioPop .sp-ai [role="switch"]')?.getAttribute('aria-checked'), first: !!document.querySelector('#studioPop .sp-first'), order: [...document.querySelectorAll('#studioPop .sp-svc-top > span:first-child')].map(s => s.textContent), apiDetail: [...document.querySelectorAll('#studioPop .sp-svc')][1]?.querySelector('.sp-svc-sub')?.textContent }));
+      check('opening Connection tests the Cloud API for real; the engine in use says "In use" once, the header is just the title', ok.h === 'In use' && ok.headTxt === 'Connection' && ok.sub === '' && ok.apiDetail === 'smoke' && probes.length >= 1 && probes.at(-1).auth === 'Bearer smoke' && requests.every(r => !/^ping$/.test(r.full)), JSON.stringify(ok));
+      check('actions match real state (no Start while Studio AI is closed), the AI switch leads the engines, no "Use first" with one engine, Scout search and media are grouped apart', ok.acts.join() === 'Edit,Set up' && ok.sw === 'true' && !ok.first && ok.order.join() === 'Local AI,Cloud API,Scout search,Media Studio', JSON.stringify(ok));
       probe.status = 401;
       await p.click('#studioPop [data-sp="refresh"]');
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="auth"]'), null, { timeout: 4000 }).catch(() => {});
-      const bad = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, head: document.querySelector('#studioPop .sp-now').textContent, headCls: document.querySelector('#studioPop .sp-now').className, issueCls: document.querySelector('#studioPop .sp-now-issue')?.className, fix: document.querySelector('#studioPop [data-sp="api"]').outerHTML, dot: document.querySelector('#crewSetBtn .conn-dot').className }));
-      check('a rejected key: header says rules are in use first, then why, Fix key is the next step, dot is red', bad.h === 'Authentication failed' && /^Using built-in rules\s*Cloud API authentication failed$/.test(bad.head) && /warn/.test(bad.headCls) && /err/.test(bad.issueCls || '') && /primary/.test(bad.fix) && /Fix key/.test(bad.fix) && /error/.test(bad.dot), JSON.stringify(bad));
+      const bad = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, cls: document.querySelector('#studioPop [data-api-health]')?.className, headTxt: document.querySelector('#studioPop .sp-head').textContent.trim(), sub: document.querySelector('#studioPop .sp-ai small')?.textContent || '', fix: document.querySelector('#studioPop [data-sp="api"]').outerHTML, dot: document.querySelector('#crewSetBtn .conn-dot').className }));
+      check('a rejected key: said once on its row (red, Fix key next), the fallback said once under the switch, dot is red', bad.h === 'Authentication failed' && /err/.test(bad.cls) && bad.headTxt === 'Connection' && bad.sub === 'Using built-in rules for now' && /primary/.test(bad.fix) && /Fix key/.test(bad.fix) && /error/.test(bad.dot), JSON.stringify(bad));
       check('routing agrees with the header: a rejected key is skipped, no API request is made', await p.evaluate(async () => { const before = performance.getEntriesByType('resource').filter(e => /chat\/completions/.test(e.name)).length; const r = await viaClaude(() => null, () => 'rules', { studio: () => null, prompt: 'x' }); const after = performance.getEntriesByType('resource').filter(e => /chat\/completions/.test(e.name)).length; return !apiRoutable() && aiSource().kind !== 'api' && r.engine === 'local' && after === before; }));
       check('Test all connections never loads the local model', await p.evaluate(async () => { const urls = []; const f = window.fetch; window.fetch = (u, o) => { urls.push(String(u)); return f(u, o); }; connManualCheck = true; try { await refreshStudioFromPop({ wake: false }); } finally { connManualCheck = false; window.fetch = f; } return !urls.some(u => /studio\/start/.test(u)) && urls.some(u => /chat\/completions/.test(u)); }));
       probe.status = 200;
@@ -364,9 +399,9 @@ async function page(browser, base, { model = true } = {}) {
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="unreachable"]'), null, { timeout: 6000 }).catch(() => {});
       check('an unreachable host reads "Unreachable" with Edit as the next step', await p.evaluate(() => document.querySelector('#studioPop [data-api-health]')?.textContent === 'Unreachable' && /primary/.test(document.querySelector('#studioPop [data-sp="api"]').className)));
       check('after the retry window the header and routing agree again (Using Cloud API · Retrying, no red)', await p.evaluate(() => { const h0 = apiHealth; const before = connSummary(); apiHealth = { ...h0, at: Date.now() - 61000 }; const after = connSummary(); apiHealth = h0; return before.engine === 'rules' && before.tone === 'err' && after.engine === 'api' && after.tone === 'busy' && /Retrying/.test(after.issue); }));
-      await p.click('#studioPop [data-sp="pref"][data-val="local"]'); await p.waitForTimeout(200);
-      check('Rules only: the header says plainly AI is off, and the unused engines step back', await p.evaluate(() => { const h = document.querySelector('#studioPop .sp-now'); return /warn/.test(h.className) && /^Using built-in rules\s*AI turned off$/.test(h.textContent) && document.querySelector('#studioPop .sp-services').classList.contains('idle') && /rules/.test(document.querySelector('#crewSetBtn .conn-dot').className); }));
-      await p.click('#studioPop [data-sp="pref"][data-val="auto"]'); await p.waitForTimeout(200);
+      await p.click('#studioPop [data-sp="ai"]'); await p.waitForTimeout(200);
+      check('AI off: the switch says it, with no extra text; the engines step back', await p.evaluate(() => document.querySelector('#studioPop .sp-head').textContent.trim() === 'Connection' && !document.querySelector('#studioPop .sp-ai small') && document.querySelector('#studioPop [data-sp="ai"]').getAttribute('aria-checked') === 'false' && document.querySelector('#studioPop .sp-services').classList.contains('idle') && /rules/.test(document.querySelector('#crewSetBtn .conn-dot').className)));
+      check('turning AI back on restores the previous preference; "Use first" appears once both engines exist and sets it', await p.evaluate(async () => { setAiPref('api'); setAiPref('local'); document.querySelector('#studioPop [data-sp="ai"]').click(); const restored = aiPref === 'api'; setAiPref('auto'); studioState = { ...studioState, reachable: true }; renderStudioPop(); const seg = document.querySelector('#studioPop .sp-first'); seg?.querySelector('[data-val="api"]').click(); const chose = aiPref === 'api'; setAiPref('auto'); studioState = { ...studioState, reachable: false }; renderStudioPop(); return restored && !!seg && chose && !document.querySelector('#studioPop .sp-first'); }));
       // Local AI Start: a button when the local server can open Studio AI, the instruction otherwise
       check('without a launcher, Local AI explains how to open it and offers no Start', await p.evaluate(() => { const r = [...document.querySelectorAll('#studioPop .sp-svc')][0]; return /Start Studio AI\.command/.test(r.textContent) && !r.querySelector('[data-sp="launch-studio"],[data-sp="wake"]'); }));
       launcher.on = true;
@@ -559,10 +594,11 @@ async function page(browser, base, { model = true } = {}) {
       check("a thinking model's thoughts are not taken as its answer", r.titles === 'Thought A,Thought B,Thought C', JSON.stringify(r));
       // the time limit runs out: built-in rules answer, and the designer is told why
       local = () => ({ text: JSON.stringify(dirs('Slow')), delay: 3000 });
-      await p.evaluate(() => { AI_TIMEOUT_MS = 1500; });
+      await p.evaluate(() => { AI_TIMEOUT_MS = 1500; LOCAL_AI_MS = 1500; });
       r = await forkOn('Slow idea', false);
+      await p.evaluate(() => { LOCAL_AI_MS = 240000; });
       check('a Local AI timeout falls back to built-in rules instead of failing', r.titles === 'Walk it through,Lay it all out,Cut to one moment' && r.engines === 'rules,rules,rules' && r.task === 'done', JSON.stringify(r));
-      check('and says which engine ran out of time and which answered', r.toasts.some(t => /^Local AI took longer than 2 s, so built-in rules answered instead\.$/.test(t)), JSON.stringify(r.toasts));
+      check('and says which engine ran out of time and which answered', r.toasts.some(t => /^The model didn't finish within 2 s\. Built-in rules drafted this instead; a faster model or fewer cards helps\.$/.test(t)), JSON.stringify(r.toasts));
       check('no page errors in the Local AI flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
@@ -579,13 +615,13 @@ async function page(browser, base, { model = true } = {}) {
         check("Copilot sees the selected card's sibling drafts in full", /Cards connected to the selection/.test(sys) && /Lane House Chronicle.*One lilong across 1925, 1937 and 1949/s.test(sys) && /draft, not kept yet; the designer liked it/.test(sys), sys.slice(sys.indexOf('Cards connected'), sys.indexOf('Cards connected') + 400));
         await p.newBoard();
       }
-      await p.evaluate(() => { AI_TIMEOUT_MS = 1500; });
+      await p.evaluate(() => { AI_TIMEOUT_MS = 1500; LOCAL_AI_MS = 1500; }); // the smoke endpoint is on 127.0.0.1, so it gets the local limit
       queue = [{ id: 'cut', match: 'cutoff-question', text: 'Open in the interrogation room at night, with the rain on the window and the clerk', stall: 4000 }];
       await p.evaluate(() => sendCopilotMessage('cutoff-question: where should the game open?'));
       let m = await last();
       check('a Copilot answer that runs out of time keeps what arrived', /^Open in the interrogation room/.test(m.text), JSON.stringify({ m, req: requests.slice(-3).map(x => x.matched) }));
-      check('and says plainly that it is cut off', m.cutOff && /Cut off:\*\* Cloud API took longer than 2 s\. Ask again to continue\.$/.test(m.text), JSON.stringify(m));
-      await p.evaluate(() => { AI_TIMEOUT_MS = 20000; });
+      check('and says plainly that it is cut off', /_Cut off: the model didn't finish within 2 s\._$/.test(m.text), JSON.stringify(m));
+      await p.evaluate(() => { AI_TIMEOUT_MS = 20000; LOCAL_AI_MS = 240000; });
       queue = [{ id: 'stop', match: 'stop-question', text: 'A partial answer the designer chose to stop, and then it goes on much longer', stall: 4000 }];
       await p.evaluate(() => { sendCopilotMessage('stop-question: who is the translator?'); });
       await p.waitForTimeout(1200);
@@ -779,7 +815,295 @@ async function page(browser, base, { model = true } = {}) {
       check('no page errors in the Auto routing flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+    // 9. composer: one row for one line; two rows (text full width, controls below) once the text wraps
+    {
+      const p = await page(browser, base, { model: false });
+      const rows = () => p.evaluate(() => { const f = document.querySelector('.line-field').getBoundingClientRect(), i = lineIn.getBoundingClientRect(), s = document.getElementById('sendBtn').getBoundingClientRect();
+        return { multi: document.getElementById('line').classList.contains('multi'), share: i.width / f.width, sendRight: f.right - s.right < 16, sendBelow: s.top >= i.bottom - 2 }; });
+      await p.click('#lineInput'); await p.keyboard.type('A short line'); await p.waitForTimeout(200);
+      const one = await rows();
+      check('a short line keeps the one-row composer', !one.multi, JSON.stringify(one));
+      await p.keyboard.type(", and then enough words that it has to wrap onto another line in the composer, and then some more"); await p.waitForTimeout(200);
+      const two = await rows();
+      check('wrapped text gets the full width with the controls underneath', two.multi && two.share > .9 && two.sendRight && two.sendBelow, JSON.stringify(two));
+      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.waitForTimeout(200);
+      check('clearing the text returns to one row', !(await rows()).multi);
+      check('no page errors in the composer', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 10. what you type reaches the model: revising a draft, asking Critic, Scout on a draft
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      await p.type('Steer idea: restore without surprises'); await p.waitForTimeout(800);
+      const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+      queue = [{ id: 'st1', match: '"directions"', text: dirs('Plain') }];
+      await p.evaluate(id => select([id]), idea); await p.type('/fork 3'); await p.idle();
+      const drafts = () => p.evaluate(() => board.nodes.filter(n => n.type === 'direction' && n.status === 'sketch').map(n => n.id));
+      const routeOf = async t => { await p.type(t, false); await p.waitForTimeout(250); return p.evaluate(() => route(lineText())); };
+      await p.evaluate(ids => select(ids), await drafts());
+      const ask = 'Make every option tell the creator what a restore will overwrite, and name the risk';
+      let r = await routeOf(ask);
+      check('plain words on a crew draft route to a revision, not a generic check', r && r.kind === 'revise' && r.agent === 'muse' && r.arg === ask, JSON.stringify(r));
+      r = await routeOf('Why did you pick these three?');
+      check('a question about a draft is still answered, not taken as a revision', r && r.kind !== 'revise', JSON.stringify(r));
+      r = await routeOf('@critic does this hold up');
+      check('an @mention of someone else still goes to them', r && r.kind !== 'revise' && r.agent === 'critic', JSON.stringify(r));
+      r = await routeOf('@strategist ' + ask);
+      check('an @mention of the draft\'s author revises it with the words after the mention', r && r.kind === 'revise' && r.arg === ask, JSON.stringify(r));
+      queue = [{ id: 'st2', match: 'tell the creator what a restore will overwrite', text: dirs('Revised') }];
+      await p.type(ask); await p.idle();
+      const req = requests.filter(q => q.matched === 'st2').at(-1);
+      check('the revision request carries your words and the draft being revised', !!req && req.full.includes(ask) && /The draft being revised/.test(req.full) && /Plain A/.test(req.full), req ? req.full.slice(-300) : 'no request matched');
+      const titles = await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','));
+      check('the revised drafts replace the old ones in place', titles === 'Revised A,Revised B,Revised C', titles);
+      check('the change log says what you asked for', await p.evaluate(() => /Asked for a revision of 3 suggestions: .*tell the creator/.test(board.log.at(-1)?.html || '')), await p.evaluate(() => board.log.at(-1)?.html));
+      // Scout on a draft explains what to do instead of asking you to select cards
+      await p.evaluate(ids => gather(ids.map(byId)), await drafts()); await p.waitForTimeout(300);
+      check('Scout on a draft says how to change it', /type how it should change/.test(await p.toast()), await p.toast());
+      // Critic answers the question you typed, and your question stays on the card
+      await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+Enter'); await p.waitForTimeout(600);
+      const a = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'A' && n.status === 'ink')?.id);
+      const q = 'Check the risk that creators never see the overwrite list';
+      queue = [{ id: 'cq', match: 'The designer asks: "Check the risk', text: 'It rests on a proposal, not an observation. Who has watched a restore?' }];
+      await p.evaluate(id => select([id]), a); await p.type(q); await p.idle();
+      check('Critic is asked the question you typed', requests.some(x => x.matched === 'cq'), requests.slice(-2).map(x => x.prompt).join(' || '));
+      check('your question and Critic\'s answer are both on the card', await p.evaluate(([id, q]) => { const t = board.threads[id] || []; return t.some(m => m.who === 'you' && m.text === q) && t.some(m => m.who === 'critic' && /Who has watched/.test(m.text)); }, [a, q]));
+      // a synthesis draft is revised the same way
+      const notes = await p.evaluate(() => [pinCard('note', 'Creators restore after big edits'), pinCard('note', 'Backups are per package')].map(n => n.id));
+      queue = [{ id: 'syn1', match: '"points"', text: { title: 'First read', points: ['**One.** a', '**Two.** b', '**Three.** c'] } }];
+      await p.evaluate(ids => gather(ids.map(byId)), notes); await p.idle();
+      const syn = await p.evaluate(() => board.nodes.find(n => n.type === 'synthesis' && n.status === 'sketch')?.id);
+      queue = [{ id: 'syn2', match: 'Separate what has shipped', text: { title: 'Second read', points: ['**Shipped.** a', '**Proposed.** b', '**Open.** c'] } }];
+      await p.evaluate(id => select([id]), syn); await p.type('Separate what has shipped from what is only proposed'); await p.idle();
+      check('a synthesis draft is revised with your words', requests.some(x => x.matched === 'syn2' && /First read/.test(x.full)) && await p.evaluate(() => board.nodes.some(n => n.type === 'synthesis' && n.title === 'Second read')), await p.evaluate(() => board.nodes.filter(n => n.type === 'synthesis').map(n => n.title).join()));
+      check('no page errors when steering drafts', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 11. evidence weight: a source you add can be rated on the card and in its sheet, and the pill is legible
+    for (const theme of ['dark', 'light']) {
+      const p = await page(browser, base, { theme });
+      await p.newBoard();
+      const mdPath = path.join(require('os').tmpdir(), 'vellum-smoke-evidence.md');
+      fs.writeFileSync(mdPath, '# Restore scope\n\nA proposal, not an observation.');
+      await p.setInputFiles('#fileIn', mdPath); await p.waitForTimeout(1500);
+      const id = await p.evaluate(() => board.nodes.find(n => n.type === 'source')?.id);
+      const pill = `.card[data-id="${id}"] [data-a="cycle-weight"]`;
+      const w = () => p.evaluate(id => byId(id).weight || null, id);
+      await p.evaluate(id => { focusNodes([byId(id)], 1, 0); select([]); }, id); await p.waitForTimeout(300);
+      const bad = await p.evaluate(LEGIBILITY, `.card[data-id="${id}"] .weight`);
+      check(`an unrated source's pill is legible in ${theme} mode`, bad.length === 0, bad.join(' | '));
+      if (theme === 'light') { await p.context().close(); continue; }
+      check('a source you add shows an Unrated pill you can click', (await p.locator(pill).count()) === 1 && /Unrated/.test(await p.locator(pill).innerText()));
+      const seen = [];
+      for (let i = 0; i < 5; i++) { await p.click(pill); await p.waitForTimeout(150); seen.push(await w()); }
+      check('clicking the pill steps through every weight and back to unrated', seen.join() === 'observed,reported,proposed,illustrative,', seen.join());
+      await p.evaluate(id => openFocus(id), id); await p.waitForTimeout(600);
+      check('the sheet has an Evidence section with the four weights', (await p.locator('#margin .m-evidence [data-m="weight"]').count()) === 4);
+      await p.click('#margin .m-evidence [data-w="reported"]'); await p.waitForTimeout(300);
+      const set = await w();
+      await p.click('#margin .m-evidence [data-w="reported"]'); await p.waitForTimeout(300);
+      check('the sheet sets a weight, and clicking it again clears it', set === 'reported' && (await w()) === null, `${set} then ${await w()}`);
+      check('rating a source is in the change log', await p.evaluate(() => board.log.some(l => /Marked .* as reported/.test(l.html))));
+      check('no page errors when rating evidence', p.errors.length === 0, p.errors.join(' | '));
+      fs.rmSync(mdPath, { force: true });
+      await p.context().close();
+    }
+    // 12. a reply that ran out of tokens or time says so, and a timeout is not mistaken for Stop
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      queue = [{ id: 'len1', match: 'Lumen Copilot', text: 'Start with the restore prediction test, because', finish: 'length' }];
+      await p.type('What should we test first?'); await p.idle();
+      for (let i = 0; i < 40 && !(await p.evaluate(() => (board.copilot || []).some(m => m.role === 'ai' && /Cut off/.test(m.text || '')))); i++) await p.waitForTimeout(250);
+      const cop = await p.evaluate(() => (board.copilot || []).filter(m => m.role === 'ai').map(m => m.text).at(-1) || '');
+      check('a Copilot reply cut at its length limit says so', requests.some(x => x.matched === 'len1') && /Cut off: the reply reached its length limit/.test(cop), cop.slice(-160));
+      await p.evaluate(() => { LOCAL_AI_MS = 0; });
+      queue = [{ id: 'early1', match: 'TIMEOUT-EARLY', text: 'too late', delay: 3000 }];
+      const early = await p.evaluate(async () => { try { await apiChat({ prompt: 'TIMEOUT-EARLY', timeoutMs: 800 }); return 'no error'; } catch (e) { return `${e.name}: ${e.message}`; } });
+      check('no answer in time is a named timeout, not an abort', /^TimeoutError: The model didn't finish within 1 s/.test(early), early);
+      queue = [{ id: 'slow1', match: 'TIMEOUT-MID', text: Array.from({ length: 24 }, (_, i) => `Point ${i + 1}: a restore preview lists edit ${i * 7 + 3}.`).join(' '), slow: 250 }]; // varied, so the repetition guard leaves it alone
+      const mid = await p.evaluate(async () => { try { return await apiChat({ prompt: 'TIMEOUT-MID', timeoutMs: 1200 }); } catch (e) { return `${e.name}: ${e.message}`; } });
+      check('a reply cut off by time keeps what arrived and says it was cut off', /^Point 1:/.test(mid) && /Cut off: the model didn't finish within 1 s\./.test(mid), mid.slice(-120));
+      await p.evaluate(() => { apiHealth = { k: 'unknown', sig: '', at: 0 }; }); // the early timeout marked the API unreachable for a while
+      queue = [{ id: 'rules1', match: 'TIMEOUT-RULES', text: '{}', delay: 3000 }];
+      const fb = await p.evaluate(async () => { const r = await viaClaude(async () => null, async () => 'from rules', { studio: () => null, apiArgs: { prompt: 'TIMEOUT-RULES', json: true, timeoutMs: 800 } }); return { engine: r.engine, v: r.v, toast: [...document.querySelectorAll('#toasts > *')].map(t => t.innerText).join(' / ') }; });
+      check('a crew move that times out falls back to built-in rules and says why', fb.engine === 'local' && fb.v === 'from rules' && /didn't finish within 1 s\. Built-in rules drafted this instead/.test(fb.toast), JSON.stringify(fb));
+      await p.evaluate(() => { LOCAL_AI_MS = 240000; });
+      check('local models get the longer time limit', await p.evaluate(() => isLocalBase('http://127.0.0.1:59700/v1') && isLocalBase('http://localhost:11434/v1') && !isLocalBase('https://openrouter.ai/api/v1')));
+      check('no page errors around cut-off and timed-out replies', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
   } finally {
+    // 9. legibility: light and dark are designed separately, so both are measured, in the states that change colour
+    for (const theme of ['light', 'dark']) {
+      const p = await page(browser, base, { theme });
+      const bad = [];
+      for (const [pref, status] of [['auto', 200], ['auto', 401], ['local', 200]]) {
+        probe.status = status;
+        await p.evaluate(pr => { setAiPref(pr); apiHealth = { k: 'unknown', sig: '', at: 0 }; toggleStudioPopover(false); }, pref);
+        await p.click('#crewModeBtn'); await p.waitForTimeout(900);
+        bad.push(...(await p.evaluate(LEGIBILITY, '#studioPop')).map(x => `${pref}/${status}: ${x}`));
+      }
+      probe.status = 200;
+      await p.evaluate(() => { toggleStudioPopover(false); setAiPref('auto'); toggleCrewPop(true); }); await p.waitForTimeout(400);
+      bad.push(...(await p.evaluate(LEGIBILITY, '#crewPop')).map(x => `crew: ${x}`));
+      await p.evaluate(() => { const d = document.createElement('div'); d.id = 'tblProbe'; d.style.cssText = 'position:fixed;left:20px;top:20px;width:360px;padding:14px;z-index:99999;background:var(--card)';
+        d.innerHTML = `<div class="cp-bubble">${mdBlocksHtml('| Option | Cost | Risk | Impact |\n|---|---|---|---|\n| Rebuild | $120k | High | Medium |\n| Patch | $30k | Low | High |').join('')}${mdBlocksHtml('| Task | Status |\n|---|---|\n| A | Done |\n| B | In progress |\n| C | Blocked |\n| D | Not started |').join('')}</div><table class="tbl"><thead><tr><th>Factor</th><th>A</th></tr></thead><tbody><tr><td class="key">Risk</td><td class="win">Low</td></tr></tbody></table>`; document.body.append(d); });
+      bad.push(...(await p.evaluate(LEGIBILITY, '#tblProbe')).map(x => `table: ${x}`));
+      await p.evaluate(() => { const d = document.getElementById('tblProbe'); d.innerHTML = mdBlocksHtml('| Month | Signups |\n|---|---|\n| Jan | 1,240 |\n| Feb | 1,410 |\n| Mar | 1,720 |').join(''); d.querySelector('[data-tbl-view="chart"]').click(); });
+      bad.push(...(await p.evaluate(LEGIBILITY, '#tblProbe')).map(x => `chart: ${x}`));
+      const viz = await p.evaluate(() => { const cs = getComputedStyle(document.documentElement), hex = v => { const n = parseInt(cs.getPropertyValue(v).trim().slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+        const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
+        const r = (a, b) => { const x = lum(a), y = lum(b); return +((Math.max(x, y) + .05) / (Math.min(x, y) + .05)).toFixed(2); };
+        return ['--viz-1', '--viz-good'].map(k => r(hex(k), hex('--card'))); });
+      check(`highlighted chart marks stand out from the surface in ${theme} mode (at least 3:1; muted bars are labelled context)`, viz.every(v => v >= 3), JSON.stringify(viz));
+      await p.evaluate(() => document.getElementById('tblProbe').remove());
+      if (theme === 'light') {
+        const tb = await p.evaluate(() => {
+          const md = mdBlocksHtml('| Option | Cost | Risk |\n|---|---|---|\n| A | $120k | High |\n| B | $30k | Low |').join('');
+          const cmp = renderCopilotVisual({ kind: 'compare', left: 'Rebuild', right: 'Patch', rows: [{ dim: 'Cost', a: '1', b: '2', winner: 'right' }, { dim: 'Time', a: '1', b: '2', winner: 'right' }, { dim: 'Debt', a: '1', b: '2', winner: 'left' }] }, 'm', 0);
+          const d = document.createElement('div'); d.innerHTML = md + cmp;
+          return { numCols: d.querySelectorAll('thead th.num').length, ratios: [...d.querySelectorAll('td.num')].map(x => x.style.getPropertyValue('--v')), verdict: d.querySelector('caption')?.textContent, wins: d.querySelectorAll('td.win .tbl-win').length, risk: [...d.querySelectorAll('td.lvl .tbl-tag')].map(x => x.style.getPropertyValue('--c')).join(), plain: mdBlocksHtml('| Option | Speed |\n|---|---|\n| A | High |\n| B | Low |').join('').includes('tbl-tag') };
+        });
+        const sel = await p.evaluate(() => {
+          const d = document.createElement('div'); d.innerHTML = mdBlocksHtml('| Option | Cost |\n|---|---|\n| A | $1 |\n| B | $2 |\n| C | $3 |').join(''); document.body.append(d);
+          const td = i => d.querySelectorAll('tbody tr')[i].cells[1], click = (el, o = {}) => el.dispatchEvent(new MouseEvent('click', { bubbles: true, ...o }));
+          const names = () => [...d.querySelectorAll('tbody tr.sel')].map(r => tblText(r.cells[0])).join();
+          click(td(0)); const one = names(); click(td(2), { metaKey: true }); const two = names(); click(td(0)); click(td(2), { shiftKey: true }); const range = names();
+          click(td(1)); const single = names(); const bar = d.querySelector('.tbl-sel').hidden; d.remove(); return { one, two, range, single, bar };
+        });
+        const card = await p.evaluate(() => {
+          const n0 = board.nodes.length, d = document.createElement('div');
+          d.innerHTML = `<div class="cp-msg ai" data-cp-msg-id="mX"><div class="cp-bubble">${mdBlocksHtml('Three ways to fix sync:\n\n| Option | Cost | Risk |\n|---|---|---|\n| Rebuild | $120k | High |\n| Patch | $38k | Low |').join('')}</div></div>`; document.body.append(d);
+          d.querySelector('[data-tbl-add]').click(); d.remove();
+          const n = board.nodes.at(-1), el = document.querySelector(`.card[data-id="${n.id}"]`);
+          const r = { added: board.nodes.length - n0, type: n.type, title: n.title, cols: n.data.columns.map(c => c.name).join('|'), rows: n.data.rows.map(x => x.join('/')).join(';'), src: n.data.source.kind, gw: n.gw, text: fullTextOf(n).split('\n').length, rendered: !!el?.querySelector('table.tbl'), id: n.id };
+          undo(); r.undone = !board.nodes.some(x => x.id === n.id); redo(); r.redone = board.nodes.some(x => x.id === n.id); persist(); return r;
+        });
+        check('Add to board turns a reply table into a table card with its data intact, sized to fit, readable by the crew, undoable', card.added === 1 && card.type === 'table' && card.title === 'Three ways to fix sync' && card.cols === 'Option|Cost|Risk' && card.rows === 'Rebuild/$120k/High;Patch/$38k/Low' && card.src === 'copilot' && card.gw >= 320 && card.gw <= 960 && card.text === 3 && card.rendered && card.undone && card.redone, JSON.stringify(card));
+        await p.waitForTimeout(1500); await p.reload(); await p.waitForTimeout(2500); // let the debounced save land first
+        check('a table card survives a reload', await p.evaluate(id => { const n = byId(id); return !!n && n.type === 'table' && n.data.rows.length === 2; }, card.id));
+        const pin = await p.evaluate(() => { board.copilot = board.copilot || []; board.copilot.push({ id: 'mP', role: 'ai', text: '', visuals: [{ kind: 'compare', title: 'Rebuild vs Patch', left: 'Rebuild', right: 'Patch', rows: [{ dim: 'Cost', a: '$120k', b: '$38k', winner: 'right' }] }] });
+          pinCopilotVisualToBoard('mP', 0); const n = board.nodes.at(-1); return { type: n.type, cols: n.data.columns.map(c => c.name).join('|'), row: n.data.rows[0].join('/') }; });
+        check('pinning a Copilot comparison keeps it as a table, with who is better as a column', pin.type === 'table' && pin.cols === 'Factor|Rebuild|Patch|Better' && pin.row === 'Cost/$120k/$38k/Patch', JSON.stringify(pin));
+        const forms = await p.evaluate(() => { const run = md => { const d = document.createElement('div'); d.innerHTML = mdBlocksHtml(md).join(''); document.body.append(d); d.querySelector('[data-tbl-view="chart"]').click(); const r = { line: !!d.querySelector('.tbl-line svg'), labels: [...d.querySelectorAll('.tbl-ch-lbl')].map(x => x.textContent).join('>'), sortedYears: '' }; d.remove(); return r; };
+          const m = tableModel({ columns: [{ name: 'Year' }, { name: 'Users' }], rows: [['2021', '10'], ['2022', '30']] });
+          return { time: run('| Month | Signups |\n|---|---|\n| Jan | 1 |\n| Feb | 2 |'), share: run('| Channel | Share |\n|---|---|\n| A | 20% |\n| B | 80% |'), bars: run('| Option | Cost |\n|---|---|\n| A | $3 |\n| B | $1 |'), yearIsTime: !!m.time[0] && !m.cols[0] }; });
+        check('charts follow the data: months make a line, shares rank largest first, others keep table order; a year column is time, not a quantity', forms.time.line && !forms.share.line && forms.share.labels === 'B>A' && forms.bars.labels === 'A>B' && forms.yearIsTime, JSON.stringify(forms));
+        const ing = await p.evaluate(async () => {
+          const csv = parseDelimited('\uFEFFName,Note\n"Acme, Inc.","Said ""hi""\nthen left"\nGlobex,ok');
+          const eu = datasetFromText('Produkt;Preis\nStuhl;49,90\nTisch;199,00', 'eu.csv'), euM = tableModel(eu);
+          const nested = datasetFromJSON({ data: { items: [{ id: 1, user: { city: 'Oslo' }, tags: ['a', 'b'] }, { id: 2, user: { city: 'Rome' }, tags: [] }] } }), nM = tableModel(nested);
+          const big = datasetFromText('n,v\n' + Array.from({ length: 700 }, (_, i) => `${i},${i}`).join('\n'));
+          const made = await addFiles([new File(['month,users\nJan,10\nFeb,14'], 'growth.csv'), new File(['{"a": [1,'], 'broken.json')], { x: 0, y: 0 });
+          const dt = new DataTransfer(); dt.setData('text/plain', 'Region\tQ1\nNorth\t120\nSouth\t90'); document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
+          const pasted = board.nodes.at(-1);
+          return { csv: csv.map(r => r.join('|')).join(' ; '), euNumeric: !!euM.cols[1], nestedCols: nested.columns.map(c => c.name).join('|'), nestedFirst: nested.rows[0].join('|'), idIsQuantity: !!nM.cols[0], bigRows: big.rows.length, bigTotal: big.total,
+            files: made.map(n => n.type).join(','), fileSrc: made[0].data?.source?.label, pasted: pasted.type + ':' + pasted.data?.columns.map(c => c.name).join('|'), prose: looksTabular('We met, talked, and agreed.\nThen lunch, hiring, and done.') };
+        });
+        check('import: CSV quotes, escapes and line breaks; "49,90" is not 4990; nested JSON flattens; ids are not quantities; big files keep 500 of N; tabular files become tables, broken ones stay files; pasted TSV becomes a table, prose does not',
+          ing.csv === 'Name|Note ; Acme, Inc.|Said "hi"\nthen left ; Globex|ok' && !ing.euNumeric && ing.nestedCols === 'id|user.city|tags' && ing.nestedFirst === '1|Oslo|a, b' && !ing.idIsQuantity && ing.bigRows === 500 && ing.bigTotal === 700 && ing.files === 'table,source' && ing.fileSrc === 'growth.csv' && ing.pasted === 'table:Region|Q1' && ing.prose === false, JSON.stringify(ing));
+        const fit = await p.evaluate(() => {
+          const mk = cols => ({ columns: Array.from({ length: cols }, (_, i) => ({ name: 'Field number ' + (i + 1) })), rows: [Array.from({ length: cols }, (_, i) => 'a longer value ' + i), Array.from({ length: cols }, (_, i) => 'value ' + i)] });
+          const z0 = cam.s, measure = ds => { const gw = tblCardWidth(ds), n = node('table', { title: 'w', data: { v: 1, ...ds }, gw }, { x: 0, y: 0 }); renderAll(); const w = document.querySelector(`.card[data-id="${n.id}"] .tbl-wrap`); const tw = w.querySelector('table').offsetWidth, r = { gw, scrolls: w.scrollWidth > w.clientWidth + 1, slack: w.clientWidth - tw }; board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll(); return r; };
+          const small = measure(mk(3)), wide = measure(mk(14)); cam.s = .33; const wideZoomed = measure(mk(14)); cam.s = z0;
+          const n = node('table', { title: 'r', data: { v: 1, ...mk(3) }, gw: 900 }, { x: 0, y: 0 }); resetCardWidth(n); const refit = n.gw === small.gw; board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll();
+          return { small, wide, wideZoomed, refit };
+        });
+        check('table cards fit their table (no sideways scroll), stop at 960px and scroll beyond, measure the same at any zoom, and refit on reset', !fit.small.scrolls && fit.small.gw < 960 && (fit.small.gw === 320 || fit.small.slack < 24) && fit.wide.gw === 960 && fit.wide.scrolls && fit.wideZoomed.gw === 960 && fit.refit, JSON.stringify(fit));
+        const ed = await p.evaluate(async () => {
+          const ds = { columns: [{ name: 'Option' }, { name: 'Cost' }], rows: [['Rebuild', '$120k'], ['Patch', '$38k'], ['Vendor', '$72k']] };
+          const n = node('table', { title: 'E', data: { v: 1, ...ds, source: { kind: 'copilot' } }, gw: tblCardWidth(ds), tblSort: { col: 1, dir: 'ascending' } }, { x: 0, y: 0 }); renderAll(); focusNodes([n], 1, 0);
+          await new Promise(r => setTimeout(r, 400));
+          const card = () => document.querySelector(`.card[data-id="${n.id}"]`), key = (k, o = {}) => document.querySelector('.tbl-edit').dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, ...o }));
+          const top0 = card().querySelector('table').getBoundingClientRect().top; card().querySelector('tbody tr td:nth-child(2)').click(); const moved = Math.abs(card().querySelector('table').getBoundingClientRect().top - top0);
+          tblOpenEditor(n, 1, 0, false); document.querySelector('.tbl-edit').value = 'Patch it'; key('Tab'); const tabbed = document.querySelector('.tbl-edit')?.closest('td')?.cellIndex === 1;
+          document.querySelector('.tbl-edit').value = '$30k'; key('Enter');
+          tblOpenEditor(n, -1, 1, true); document.querySelector('.tbl-edit').value = 'Total cost'; key('Enter');
+          tblOpenEditor(n, 0, 0, false); document.querySelector('.tbl-edit').value = 'nope'; key('Escape');
+          card().querySelector('[data-tbl-addrow]').click(); document.querySelector('.tbl-edit').value = 'Do nothing'; key('Enter');
+          const order = [...card().querySelectorAll('tbody tr')].map(r => tblText(r.cells[0])).join('>');
+          const r = { moved, tabbed, row1: n.data.rows[1].join('/'), header: n.data.columns[1].name, row0: n.data.rows[0][0], rows: n.data.rows.length, order, edited: !!n.data.source.edited, best: tblText(card().querySelector('td.best') || document.body).slice(0, 5) };
+          undo(); undo(); r.undone = byId(n.id).data.rows.length; // undo replaces the node object const cp = document.createElement('div'); cp.innerHTML = mdBlocksHtml('| A | B |\n|---|---|\n| x | 1 |\n| y | 2 |').join(''); r.replyEditable = !!cp.querySelector('[data-editable],[data-tbl-addrow]');
+          board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll(); return r;
+        });
+        check('table cards edit in place: selecting does not move the table; Tab moves on; Enter commits, Esc cancels; headers rename; added rows sort last when empty; types re-infer; marked edited; undoable; reply tables stay read-only',
+          ed.moved < 1 && ed.tabbed && ed.row1 === 'Patch it/$30k' && ed.header === 'Total cost' && ed.row0 === 'Rebuild' && ed.rows === 4 && ed.order === 'Patch it>Vendor>Rebuild>Do nothing' && ed.edited && ed.best === '$30k' && ed.undone === 3 && !ed.replyEditable, JSON.stringify(ed));
+        const url = await p.evaluate(async base => {
+          const before = board.nodes.length, n = await tableFromUrl(base + '/data/sales.csv'), m = tableModel(n.data);
+          const drawn = !!document.querySelector(`.card[data-id="${n.id}"] .tbl-wrap`) && sel.includes(n.id), title = humanFileTitle('2014_usa_states.csv');
+          const numHTML = tblBlockHTML({ columns: [{ name: 'State' }, { name: 'Year' }, { name: 'Population' }], rows: [['Alabama', '2014', '4849377.0'], ['Alaska', '2014', '736732.0']] }), grouped = numHTML.includes('4,849,377<') && numHTML.includes('736,732<') && numHTML.includes('>2014<') && !numHTML.includes('.0<');
+          const paste = t => { const dt = new DataTransfer(); dt.setData('text/plain', t); document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true })); };
+          paste('https://example.com/blog/post'); const link = board.nodes.at(-1).type;
+          return { made: board.nodes.length - before, drawn, title, grouped, type: n.type, cols: n.data.columns.map(c => c.name).join('|'), src: n.data.source.kind + ':' + n.data.source.url.replace(base, ''), rankIsQuantity: !!m.cols[0], link,
+            sheet: dataUrlOf('https://docs.google.com/spreadsheets/d/AbC/edit#gid=7'), gh: dataUrlOf('https://github.com/a/b/blob/main/x.csv'), blog: looksLikeDataUrl('https://example.com/blog/post') };
+        }, base);
+        check('a table from an address: the CSV becomes a drawn, selected table card that remembers its address and gets a readable title; bare numbers display grouped (years stay as written); ordinary links stay links; Sheets and GitHub links become data links; rank is not a quantity',
+          url.type === 'table' && url.drawn && url.grouped && url.title === '2014 USA States' && url.cols === 'Rank|Region|Q1' && url.src === 'url:/data/sales.csv' && !url.rankIsQuantity && url.link === 'link' && url.sheet === 'https://docs.google.com/spreadsheets/d/AbC/export?format=csv&gid=7' && url.gh === 'https://raw.githubusercontent.com/a/b/main/x.csv' && !url.blog, JSON.stringify(url));
+        const rf = {};
+        const mk = await p.evaluate(async base => { const n = await tableFromUrl(base + '/data/sales.csv'); return { id: n.id, btn: !!document.querySelector(`.card[data-id="${n.id}"] [data-tbl-refresh] svg path`), local: canRefresh({ type: 'table', data: { source: { kind: 'paste' } } }) }; }, base);
+        const step = async fn => p.evaluate(fn, mk.id);
+        const rows = () => step(id => byId(id).data.rows.map(r => r.join('/')).join(';'));
+        await step(id => { document.querySelector(`.card[data-id="${id}"] [data-tbl-refresh]`).click(); }); await p.waitForTimeout(500);
+        rf.same = await rows();
+        salesCsv.text = 'Rank,Region,Q1\n1,North,150\n2,South,90\n3,East,40';
+        await step(id => tblRefresh(id)); await p.waitForTimeout(500);
+        rf.updated = await rows(); rf.toast = await p.evaluate(() => [...document.querySelectorAll('#toasts .toast span')].map(x => x.textContent).join(' | '));
+        await step(id => { tblCommit(byId(id), d => { d.rows[1][2] = '95'; }); });
+        await step(id => tblRefresh(id)); await p.waitForTimeout(500);
+        rf.keptNoChange = (await rows()).includes('South/95') && !(await step(id => !!document.querySelector(`.card[data-id="${id}"] .tbl-conflict`)));
+        salesCsv.text = 'Rank,Region,Q1\n1,North,160\n2,South,90\n3,East,40';
+        await step(id => tblRefresh(id)); await p.waitForTimeout(500);
+        rf.asked = await step(id => !!document.querySelector(`.card[data-id="${id}"] .tbl-conflict`)) && (await rows()).includes('South/95');
+        const before = await p.evaluate(() => board.nodes.length);
+        await step(id => document.querySelector(`.card[data-id="${id}"] [data-tbl-conflict="both"]`).click()); await p.waitForTimeout(300);
+        rf.both = (await p.evaluate(() => board.nodes.length)) === before + 1 && (await rows()).includes('South/95') && await p.evaluate(() => board.nodes.at(-1).data.rows[0].join('/') === '1/North/160' && board.nodes.at(-1).data.source.kind === 'url');
+        await p.evaluate(() => { board.nodes.pop(); renderAll(); });
+        salesCsv.text = 'Rank,Region,Q1\n1,North,170\n2,South,90';
+        await step(id => tblRefresh(id)); await p.waitForTimeout(500);
+        await step(id => document.querySelector(`.card[data-id="${id}"] [data-tbl-conflict="replace"]`).click()); await p.waitForTimeout(300);
+        rf.replaced = await rows(); rf.clean = await step(id => !byId(id).data.source.edited);
+        await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
+        rf.undone = await rows();
+        await step(id => { board.nodes = board.nodes.filter(x => x.id !== id); renderAll(); });
+        check('refresh re-reads the source: unchanged says so; changes apply with a summary and undo; your edits stay when only you changed it; when both changed it asks (Keep both adds the latest beside yours, Replace takes it and can be undone)',
+          mk.btn && !mk.local && rf.same === '1/North/120;2/South/90' && rf.updated === '1/North/150;2/South/90;3/East/40' && /1 new, 1 changed/.test(rf.toast) && rf.keptNoChange && rf.asked && rf.both && rf.replaced === '1/North/170;2/South/90' && rf.clean && rf.undone.includes('South/95'), JSON.stringify({ mk, rf }));
+        const notion = await p.evaluate(async () => {
+          const paste = t => { const dt = new DataTransfer(); dt.setData('text/plain', t); document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true })); };
+          const toasts = () => [...document.querySelectorAll('#toasts .toast span')].map(x => x.textContent).join(' | ');
+          const saved = mcpCfg.notion.token, view = 'https://www.notion.so/acme/Sprint-0123456789abcdef0123456789abcdef?v=fedcba9876543210fedcba9876543210';
+          mcpCfg.notion.token = ''; const before = board.nodes.length; paste(view); await new Promise(r => setTimeout(r, 150));
+          const noToken = { made: board.nodes.at(-1).type, msg: toasts(), act: !!document.querySelector('#toasts .toast button') };
+          mcpCfg.notion.token = 'ntn_good'; const n = await tableFromNotion(view);
+          const drawn = !!document.querySelector(`.card[data-id="${n.id}"] .tbl-wrap`), foot = document.querySelector(`.card[data-id="${n.id}"]`).textContent;
+          const tags = [...document.querySelectorAll(`.card[data-id="${n.id}"] .tbl-tag`)].map(t => t.textContent + '=' + t.style.getPropertyValue('--c')).join('|');
+          const plain = tblBlockHTML({ columns: [{ name: 'Door' }, { name: 'Note' }], rows: [['open', 'Done soon'], ['open', 'x']] }).includes('tbl-tag') || tblBlockHTML({ columns: [{ name: 'Store' }, { name: 'Hours' }], rows: [['Open', '9-5'], ['Closed', '-'], ['Open', '9-5']] }).includes('tbl-tag');
+          const exportIsCsv = !isNotionUrl('https://file.notion.so/f/s/abc/Export.csv') && isNotionUrl('https://www.notion.so/acme/0123456789abcdef0123456789abcdef');
+          const denied = await tableFromNotion('https://www.notion.so/acme/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'), msg = toasts();
+          mcpCfg.notion.token = saved; board.nodes = board.nodes.filter(x => x.id !== n.id); renderAll();
+          return { noToken, title: n.title, src: n.data.source.kind + ':' + n.data.source.label, cols: n.data.columns.map(c => c.name).join('|'), drawn, tags, plain, exportIsCsv, more: /first 2 rows/.test(foot), denied, sharedHint: /Connections/.test(msg), made: board.nodes.length - before };
+        });
+        check('a Notion database link becomes a table card through the local server; without a token the link stays a link and the toast opens Notion settings; unshared databases say how to share; workflow status reads as tags (done green, in progress blue) only when it is clearly a status',
+          notion.noToken.made === 'link' && /Notion isn't connected/.test(notion.noToken.msg) && notion.noToken.act && notion.title === 'Sprint board' && notion.src === 'notion:Notion' && notion.cols === 'Name|Status|Points' && notion.drawn && notion.tags === 'Done=var(--C)|In progress=var(--B)' && !notion.plain && notion.exportIsCsv && notion.more && notion.denied === null && notion.sharedHint
+          && notionPosts.length === 2 && notionPosts[0].client === 'canvas' && notionPosts[0].ref.includes('?v='), JSON.stringify({ ...notion, notionPosts }));
+        check('table rows: click selects one, Cmd adds, Shift selects a range, and the selection bar appears', sel.one === 'A' && sel.two === 'A,C' && sel.range === 'A,B,C' && sel.single === 'B' && sel.bar === false, JSON.stringify(sel));
+        check('tables: numbers show magnitude; Risk High is red and Low green, an unknown direction gets no colour; a comparison states its verdict first', tb.numCols === 1 && tb.ratios.join() === '1.000,0.250' && tb.risk === 'var(--D),var(--C)' && !tb.plain && tb.verdict === 'Patch wins 2 of 3' && tb.wins === 3, JSON.stringify(tb));
+      }
+      await p.evaluate(() => { const n = node('table', { title: 'Probe', data: { v: 1, columns: [{ name: 'Option' }, { name: 'Cost' }, { name: 'Risk' }], rows: [['A', '$1', 'High'], ['B', '$2', 'Low']] } }, { x: 0, y: 0 }); renderAll(); focusNodes([n], 1, 0); window._probeCard = n.id; }); await p.waitForTimeout(900);
+      bad.push(...(await p.evaluate(LEGIBILITY, '.card.table')).map(x => `table card: ${x}`));
+      await p.evaluate(() => { board.nodes = board.nodes.filter(n => n.id !== window._probeCard); renderAll(); });
+      check(`every text in the Connection and Crew popovers, tables and table cards reaches 4.5:1 in ${theme} mode`, bad.length === 0, bad.join(' | '));
+      const sw = await p.evaluate(() => {
+        const cs = getComputedStyle(document.documentElement), hex = v => { const n = parseInt(cs.getPropertyValue(v).trim().slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+        const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
+        const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+        return { knob: +ratio(hex('--sw-off-knob'), hex('--sw-off-track')).toFixed(2), line: +ratio(hex('--sw-off-line'), hex('--card')).toFixed(2) };
+      });
+      check(`a switch that is off still reads as a control in ${theme} mode (knob and outline at least 3:1)`, sw.knob >= 3 && sw.line >= 3, JSON.stringify(sw));
+      await p.context().close();
+    }
+
     await browser.close(); srv.close();
   }
   console.log(results.join('\n'));

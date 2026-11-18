@@ -136,7 +136,7 @@ async function open(browser, base) {
     const ok = await p.evaluate(async () => { await checkStudioHealth({ wake: false, quiet: true }); aiPref = 'auto'; apiCfg = { ...apiCfg, enabled: false }; return studioState.status === 'ready'; });
     if (!ok) throw new Error('Studio AI is not ready at ' + STUDIO + '. Start it (Start Studio AI.command) and load a model first.');
   }
-  if (args.timeout) await p.evaluate(ms => { AI_TIMEOUT_MS = ms; }, Math.round(+args.timeout * 1000));
+  if (args.timeout) await p.evaluate(ms => { AI_TIMEOUT_MS = ms; LOCAL_AI_MS = ms; }, Math.round(+args.timeout * 1000));
   if (args.search === 'keenable') await p.evaluate(key => { searchCfg = { provider: 'keenable', key, mode: 'pro' }; }, process.env.KEENABLE_API_KEY || 'proxy-injected');
   await p.evaluate(() => { window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
   p.type = async t => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); await p.keyboard.press('Enter'); };

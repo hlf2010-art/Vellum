@@ -345,7 +345,7 @@ async function page(browser, base, { model = true } = {}) {
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="ok"]'), null, { timeout: 4000 }).catch(() => {});
       const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, head: document.querySelector('#studioPop .sp-now')?.className, headTxt: document.querySelector('#studioPop .sp-now')?.textContent, acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.querySelector('#crewSetBtn .conn-dot').className, note: document.querySelector('#studioPop .sp-mode-note')?.textContent, order: [...document.querySelectorAll('#studioPop .sp-svc-top > span:first-child')].map(s => s.textContent) }));
       check('opening Connection tests the Cloud API for real and the header names the engine in use', ok.h === 'Connected' && /Using Cloud API/.test(ok.headTxt) && /ok/.test(ok.head) && probes.length >= 1 && probes.at(-1).auth === 'Bearer smoke' && requests.every(r => !/^ping$/.test(r.full)), JSON.stringify(ok));
-      check('actions match real state (no Start while Studio AI is closed), Auto is explained, media is grouped apart', ok.acts.join() === 'Edit,Set up' && /Local AI.*Cloud API/.test(ok.note || '') && ok.order.join() === 'Local AI,Cloud API,Scout search,Media Studio', JSON.stringify(ok));
+      check('actions match real state (no Start while Studio AI is closed), Auto is explained, media is grouped apart', ok.acts.join() === 'Edit,Set up' && /heavy work.*Cloud API.*Local AI/.test(ok.note || '') && ok.order.join() === 'Local AI,Cloud API,Scout search,Media Studio', JSON.stringify(ok));
       probe.status = 401;
       await p.click('#studioPop [data-sp="refresh"]');
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="auth"]'), null, { timeout: 4000 }).catch(() => {});
@@ -464,7 +464,7 @@ async function page(browser, base, { model = true } = {}) {
       const p = await page(browser, base, { model: false });
       const gens = [];
       let local = () => ({ text: '', delay: 0 }); // decides each Local AI reply from the request
-      const kindOf = b => { const u = JSON.stringify(b.messages || []); return /three quick questions/.test(u) ? 'ask' : /Fix only these problems/.test(u) ? 'fix' : 'fork'; };
+      const kindOf = b => { const u = JSON.stringify(b.messages || []); return /three quick questions/.test(u) ? 'ask' : /Fix only these problems/.test(u) ? 'fix' : /senior colleague looking at a card/.test(u) ? 'talk' : 'fork'; };
       const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
       await p.route('http://127.0.0.1:59631/**', async route => {
         const req = route.request(), url = req.url();
@@ -621,7 +621,8 @@ async function page(browser, base, { model = true } = {}) {
         queue = [{ id: 'daily', match: 'ping429', status: 429, body: JSON.stringify({ error: { code: 429, message: 'Quota exceeded for metric: generate_content_free_tier_requests, limit: 0, quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier' } }) }, { id: 'nope', match: 'ping429', text: 'should not be asked' }];
         const d = await p.evaluate(async () => { try { await apiChat({ prompt: 'ping429' }); return 'answered'; } catch (e) { return e.reason || e.message; } });
         check('a daily 429 is not retried and says the quota resets tomorrow', d === "Cloud API's daily quota is used up (HTTP 429); it resets tomorrow" && queue.length === 1, d);
-        queue = [];
+        check('and Vellum stops asking the Cloud API until it resets', await p.evaluate(() => cloudState() === 'out' && cloudLeft() === 0 && autoPlan('heavy').order.join() === ''));
+        queue = []; await p.evaluate(() => { cloudBudget = { day: '', by: {} }; });
       }
       // drafts from a working model, kept
       await p.evaluate(id => { board.nodes = board.nodes.filter(n => n.type !== 'direction'); board.edges = board.edges.filter(e => e.a !== id); renderAll(); select([id]); }, idea);
@@ -675,6 +676,106 @@ async function page(browser, base, { model = true } = {}) {
         check('Strategist invents freely (temperature 0.7), true to the sources', mk && mk.temp === 0.7 && /surprising beats safe/.test(mk.full) && /must agree with the sources/.test(mk.full), JSON.stringify(mk && mk.temp));
       }
       check('no page errors in these flows', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // 12. Auto picks the engine per task: heavy work to the Cloud API first, light work on Local AI, a failed
+    //     local draft redone in the cloud, a daily cloud budget with a heavy-only reserve, and a note on who answered
+    {
+      const p = await page(browser, base);
+      const sgens = [];
+      let sreply = () => 'Local reply.';
+      const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+      await p.route('http://127.0.0.1:59631/**', async route => {
+        const req = route.request(), url = req.url();
+        if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+        if (/\/studio\/health/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ status: 'ready', model: 'smoke-local', modelId: 'smoke', vision: true, models: [] }) });
+        if (/\/studio\/generate/.test(url)) {
+          const body = JSON.parse(req.postData() || '{}'); const u = JSON.stringify(body.messages || []);
+          body.kind = /Fix only these problems/.test(u) ? 'fix' : /"directions"|directions/.test(u) && body.json ? 'fork' : 'chat'; sgens.push(body);
+          const t = String(sreply(body) || ' ');
+          const sse = t.match(/[\s\S]{1,40}/g).map(c => 'data: ' + JSON.stringify({ choices: [{ delta: { content: c } }] }) + '\n\n').join('') + 'data: [DONE]\n\n';
+          return route.fulfill({ status: 200, contentType: 'text/event-stream', headers: cors, body: sse }).catch(() => {});
+        }
+        return route.fulfill({ status: 404, headers: cors, body: '' });
+      });
+      await p.evaluate(async () => { await checkStudioHealth({ wake: false, quiet: true }); setApiHealth('ok', {}); cloudBudget = { day: '', by: {} }; window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
+      const plans = await p.evaluate(() => {
+        const o = w => autoPlan(w).order.join('>') || '-';
+        const out = { open: [o('heavy'), o('light')] };
+        apiCfg = { ...apiCfg, daily: 4 }; cloudUse().used = 3; out.reserve = [o('heavy'), o('light')];
+        cloudUse().used = 4; out.out = [o('heavy'), o('light')];
+        cloudUse().used = 0; const s = studioState.status; studioState.status = 'offline'; out.noLocal = [o('heavy'), o('light')];
+        cloudUse().used = 3; out.noLocalReserve = [o('heavy'), o('light')]; studioState.status = s;
+        aiPref = 'api'; out.pinned = [o('heavy'), o('light')]; aiPref = 'auto';
+        const { daily, ...rest } = apiCfg; apiCfg = rest; cloudBudget = { day: '', by: {} };
+        const g = 'https://generativelanguage.googleapis.com/v1beta/openai';
+        out.limits = [cloudDailyLimit({ baseUrl: g }), cloudDailyLimit({ baseUrl: g, daily: 1500 }), cloudDailyLimit({ baseUrl: 'https://openrouter.ai/api/v1' })];
+        return out;
+      });
+      check('Auto: heavy work goes to the Cloud API first, light work stays on Local AI', plans.open.join() === 'api>studio,studio>api', JSON.stringify(plans));
+      check('in the last quarter of the budget, heavy work starts locally (cloud only to redo it) and light work stays local', plans.reserve.join() === 'studio>api,studio', JSON.stringify(plans));
+      check('with the budget spent, nothing goes to the cloud', plans.out.join() === 'studio,studio', JSON.stringify(plans));
+      check('without Local AI the cloud does everything until the reserve, then only heavy work', plans.noLocal.join() === 'api,api' && plans.noLocalReserve.join() === 'api,-', JSON.stringify(plans));
+      check('"Cloud API" mode still pins every task to the cloud', plans.pinned.join() === 'api,api', JSON.stringify(plans));
+      check('Gemini gets its free-tier preset of 20 a day, a set limit wins, other providers have none', JSON.stringify(plans.limits) === '[20,1500,null]', JSON.stringify(plans.limits));
+      const isl = () => p.evaluate(() => ({ note: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.note, titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','), toasts: __toasts.splice(0) }));
+      const forkIdea = async () => {
+        await p.newBoard(); await p.type('An RPG set in Shanghai about rival police forces in the 1930s and the translators caught between them.'); await p.waitForTimeout(800);
+        await p.evaluate(() => select([board.nodes.find(n => n.type === 'idea').id])); await p.type('/fork 3'); await p.idle();
+      };
+      // heavy: the fork goes to the cloud, Local AI is not asked
+      let n0 = sgens.length;
+      queue = [{ id: 'cfork', match: '"directions"', text: dirs('Cloud') }];
+      await forkIdea();
+      let r = await isl();
+      check('a fork in Auto is drafted by the Cloud API, not Local AI', r.titles === 'Cloud A,Cloud B,Cloud C' && !sgens.slice(n0).some(g => g.kind === 'fork'), JSON.stringify({ r, local: sgens.slice(n0).map(g => g.kind) }));
+      check('the island says which model answered and why', r.note === 'Smoke · heavy task', JSON.stringify(r.note));
+      // the cloud fails on a heavy task: Local AI covers, and says why
+      queue = [{ id: 'cdown', match: '"directions"', status: 503 }];
+      sreply = b => b.json ? JSON.stringify(dirs('Local')) : 'Local reply.';
+      await forkIdea();
+      r = await isl();
+      check('when the cloud fails a heavy task, Local AI answers and the toast says why', r.titles === 'Local A,Local B,Local C' && r.toasts.includes('Cloud API returned HTTP 503, so Local AI answered instead.') && r.note === 'Local AI · smoke-local', JSON.stringify(r));
+      // light: Copilot chat on Local AI, a merge on the cloud
+      n0 = requests.length;
+      await p.evaluate(() => sendCopilotMessage('Which of these feels most like an RPG to you?'));
+      let m = await p.evaluate(() => ({ text: board.copilot.at(-1).text, route: board.copilot.at(-1).route, shown: document.querySelector('.cp-msg.ai:last-of-type .cp-route')?.textContent || [...document.querySelectorAll('.cp-route')].at(-1)?.textContent }));
+      check('a Copilot question stays on Local AI', m.text === 'Local reply.' && requests.length === n0 && m.route === 'Local AI · smoke-local', JSON.stringify(m));
+      queue = [{ id: 'merge', match: 'merge-check', text: 'Fold the ledger into the lane.' }];
+      await p.evaluate(() => sendCopilotMessage('merge-check: can we merge A and B into one game?'));
+      m = await p.evaluate(() => ({ text: board.copilot.at(-1).text, route: board.copilot.at(-1).route, shown: [...document.querySelectorAll('.cp-route')].map(e => e.textContent) }));
+      check('a merge in Copilot is heavy: the Cloud API answers, and the reply says so', m.text === 'Fold the ledger into the lane.' && m.route === 'Smoke · heavy task' && m.shown.includes('Smoke · heavy task'), JSON.stringify(m));
+      // reserve: the fork starts locally; a draft still wrong after its repair is redone by the cloud
+      const bad = { directions: [{ title: 'Beat A', plan: 'You patrol the Settlement in 1935.', test: 'Five players play two shifts; if fewer than three feel watched, it fails.', mode: 'story' }, { title: 'Northern Ledger', plan: 'You smuggle tea in Beijing.', test: 'Six players run three nights; if fewer than four bargain, it fails.', mode: 'story' }, { title: 'Dock Clerk', plan: 'You log cargo on the Bund in 1936.', test: 'Four players run one shift; if fewer than two lie on the ledger, it fails.', mode: 'story' }] };
+      sreply = b => b.json ? JSON.stringify(bad) : 'Local reply.';
+      await p.evaluate(() => { apiCfg = { ...apiCfg, daily: 4 }; cloudBudget = { day: '', by: {} }; cloudUse().used = 3; });
+      queue = [{ id: 'rescue', match: '"directions"', text: dirs('Rescued') }];
+      n0 = sgens.length;
+      await forkIdea();
+      r = await isl();
+      const kinds = sgens.slice(n0).map(g => g.kind).join();
+      check('near the end of the budget a fork starts on Local AI, with one repair', kinds === 'fork,fix', kinds);
+      check('a local draft still wrong after its repair is redone by the Cloud API', r.titles === 'Rescued A,Rescued B,Rescued C' && r.toasts.some(t => /^Local AI's draft had problems \(.*Beijing.*\), so Cloud API answered instead\.$/.test(t)), JSON.stringify(r));
+      check('the note says the cloud redid it, and how many calls are left', r.note === "Smoke · redid Local AI's draft · 0 of 4 cloud calls left today", JSON.stringify(r.note));
+      // the cloud can't redo it: the flawed draft beats built-in rules
+      await p.evaluate(() => { cloudBudget = { day: '', by: {} }; cloudUse().used = 3; });
+      queue = [{ id: 'nope', match: '"directions"', status: 503 }];
+      await forkIdea();
+      r = await isl();
+      check("if the cloud can't redo it, the local draft stays (not built-in rules) and the toast says so", /^Beat A,Northern Ledger,Dock Clerk$/.test(r.titles) && r.toasts.some(t => /couldn't redo it, so the draft stays\.$/.test(t)), JSON.stringify(r));
+      // light work never spends the reserve
+      n0 = requests.length;
+      await p.evaluate(() => { cloudBudget = { day: '', by: {} }; cloudUse().used = 3; });
+      await p.evaluate(() => sendCopilotMessage('Which of these should we test first?'));
+      check('in the reserve, a Copilot question does not touch the cloud', requests.length === n0, String(requests.length - n0));
+      // calls are counted; the Connection panel shows what is left
+      await p.evaluate(() => { cloudBudget = { day: '', by: {} }; });
+      queue = [{ id: 'count', match: 'count-check', text: 'ok' }];
+      const used = await p.evaluate(async () => { await apiChat({ prompt: 'count-check' }); return cloudUse().used; });
+      check('each answered cloud call is counted against the day', used === 1, String(used));
+      check('the Connection panel shows the calls left today', await p.evaluate(() => { toggleStudioPopover(true); const t = document.querySelector('.sp-svc[data-api-health], [data-api-health]')?.closest('.sp-svc')?.textContent || document.body.textContent; toggleStudioPopover(false); return /3 of 4 cloud calls left today/.test(t); }));
+      check('the Cloud API dialog has a daily limit field', await p.evaluate(() => { openApiDialog(); const el = document.getElementById('apiDailyIn'); const ok = !!el && el.value === '4'; document.querySelector('dialog[open]')?.close(); return ok; }));
+      check('no page errors in the Auto routing flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
   } finally {

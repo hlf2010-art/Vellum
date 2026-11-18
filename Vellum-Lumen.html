@@ -1307,6 +1307,7 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .cp-md-pop-btn{margin-top:4px;height:var(--size-sm);padding:0 10px;border-radius:var(--radius-pill);font:560 12px/1 var(--ui);color:var(--C);background:color-mix(in srgb,var(--C) 12%,var(--card-2));box-shadow:none;display:inline-flex;align-items:center;gap:5px;width:fit-content;transition:background var(--d-quick),color var(--d-quick)}
 .cp-md-pop-btn:hover{background:color-mix(in srgb,var(--C) 20%,var(--card-2));color:var(--label)}
 .cp-md-pop-btn .ico{width:12px;height:12px}
+.cp-route{margin-left:auto;font:500 11px/1.2 var(--ui);color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62%}
 .cp-msg-cards{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;max-width:88%;justify-content:flex-end}
 .cp-msg-card{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px 0 6px;border-radius:var(--radius-pill);font:560 11px/1 var(--ui);color:var(--label-2);background:var(--card-2);box-shadow:none;max-width:220px;cursor:pointer;transition:background var(--d-quick),color var(--d-quick)}
 .cp-msg-card:hover{background:var(--hover);color:var(--label)}
@@ -5764,6 +5765,7 @@ async function probeApi(cfg){
       body:JSON.stringify({model:cfg.model,messages:[{role:"user",content:"ping"}],max_tokens:1,stream:false})
     });
     const ms=Math.round(performance.now()-t0);
+    if(r.ok&&apiCfgSig(cfg)===apiCfgSig())countCloudCall();
     return {k:classifyApiStatus(r.status),ms,detail:r.ok?"":"HTTP "+r.status};
   }catch(e){
     return {k:"unreachable",ms:null,detail:e?.name==="TimeoutError"||e?.name==="AbortError"?"timeout":"network"};
@@ -5931,6 +5933,10 @@ function openApiDialog(){
     <label style="display:grid;gap:4px;font:550 12px/1 var(--ui);color:var(--label-2)">API Key (stored locally in this browser)
       <input id="apiKeyIn" type="password" class="mem-box" style="min-height:36px;height:36px;padding:7px 10px" value="${esc(apiCfg.key)}" placeholder="sk-...">
     </label>
+    <label style="display:grid;gap:4px;font:550 12px/1 var(--ui);color:var(--label-2)">${L("Daily call limit","每日调用上限")}
+      <input id="apiDailyIn" type="number" min="1" step="1" inputmode="numeric" class="mem-box" style="min-height:36px;height:36px;padding:7px 10px" value="${apiCfg.daily>0?esc(String(apiCfg.daily)):""}" placeholder="${esc(L("Empty: free-tier preset (Gemini 20, others none)","留空：免费档预设（Gemini 20，其他不限）"))}">
+      <span style="font:500 11px/1.35 var(--ui);color:var(--label-3)">${L("Auto keeps the last quarter for heavy work. On a paid plan, enter its limit.","自动模式会把最后四分之一留给重任务。付费方案请填其上限。")}</span>
+    </label>
     <label style="display:flex;align-items:center;gap:8px;font:500 13px/1 var(--ui);color:var(--label)">
       <input id="apiEnIn" type="checkbox" ${apiCfg.enabled?"checked":""}> Enable Cloud API fallback / routing
     </label>
@@ -5978,7 +5984,7 @@ function openApiDialog(){
     });
     renderModels(curProv,apiCfg.model);
     qs("[data-api-clear]",d).onclick=()=>{apiCfg={enabled:false,baseUrl:"https://api.openai.com/v1",model:"gpt-6.1-sol",key:""};store.set(".api",apiCfg);if(aiPref==="api")setAiPref("auto");else renderCrew();d.close()};
-    const formCfg=()=>({enabled:$("apiEnIn").checked,baseUrl:urlIn.value.trim().replace(/\/+$/,""),model:(curProv==="custom"||sel.value==="__custom__")?customIn.value.trim():sel.value,key:$("apiKeyIn").value.trim()});
+    const formCfg=()=>{const dl=parseInt($("apiDailyIn").value,10);return {enabled:$("apiEnIn").checked,baseUrl:urlIn.value.trim().replace(/\/+$/,""),model:(curProv==="custom"||sel.value==="__custom__")?customIn.value.trim():sel.value,key:$("apiKeyIn").value.trim(),...(dl>0?{daily:dl}:{})}};
     let lastTest=null;
     qs("[data-api-test]",d).onclick=async()=>{
       const cfg=formCfg(),out=$("apiTestOut"),btn=qs("[data-api-test]",d);
@@ -6031,7 +6037,7 @@ function renderStudioPop(){
   const manual=typeof connManualCheck!=="undefined"&&connManualCheck;
   const modeNote=aiPref==="local"?L("Never uses a model.","从不使用模型。")
     :aiPref==="api"?L("Always uses your Cloud API.","始终使用你的云端 API。")
-    :L("Local AI if running, else Cloud API, else built-in rules.","优先本地模型，其次云端 API，最后内置规则。");
+    :L("Picks per task: heavy work (branching, building, synthesis, merges) goes to your Cloud API first, the rest stays on Local AI. Either covers for the other.","按任务选择：重任务（分支、构建、综合、合并）优先云端 API，其余用本地模型，两者互为后备。");
   const st=(cls,txt,tip="",attr="")=>`<span class="sp-state ${cls}"${tip?` title="${esc(tip)}"`:""}${attr}><i></i>${esc(txt)}</span>`;
   const btn=(sp,txt,{kind="",tip=""}={})=>`<button type="button" class="sp-mini${kind?" "+kind:""}" data-sp="${sp}"${tip?` title="${esc(tip)}"`:""}>${esc(txt)}</button>`;
   const row=({name,state,detail,detailTip,acts,extra="",attr=""})=>`<div class="sp-svc${extra?" col":""}"${attr}>
@@ -6065,7 +6071,7 @@ function renderStudioPop(){
   const apiState=apiCase==="unset"?st("",L("Not configured","未配置")):apiCase==="off"?st("",L("Turned off","已关闭"))
     :apiCase==="checking"?st("busy",L("Checking…","检测中…"),"",` data-api-health="checking"`)
     :st(apiLab.cls,apiLab.txt,apiLab.tip,` data-api-health="${apiH.k}"`);
-  const apiDetail=!hasApi()?L("Your own OpenAI-compatible key","使用你自己的 OpenAI 兼容密钥"):apiLab.detail;
+  const apiDetail=!hasApi()?L("Your own OpenAI-compatible key","使用你自己的 OpenAI 兼容密钥"):apiLab.detail+(cloudDailyLimit()?` · ${cloudBudgetLine()}`:"");
   const apiNext=sum.engine==="rules"&&aiPref!=="local";
   const apiAct=apiCase==="unset"?btn("api",L("Set up","设置"),{kind:apiNext?"primary":""})
     :apiCase==="off"?btn("api",L("Turn on","开启"),{kind:apiNext?"primary":""})
@@ -6137,7 +6143,7 @@ function toggleStudioPopover(force){
   renderStudioPop();
   if(studioPopOpen&&(!studioState.checked||NOW()-studioState.checked>8000))refreshStudioFromPop({wake:false});
   if(studioPopOpen&&studioLauncher===null)probeStudioLauncher().then(v=>{studioLauncher=v;renderStudioPop()});
-  if(studioPopOpen&&hasApi()){const h=apiHealthNow();if(h.k==="unknown"||(h.k!=="checking"&&Date.now()-h.at>120000))testApi({quiet:true})}
+  if(studioPopOpen&&hasApi()){const h=apiHealthNow(),every=cloudDailyLimit()?1800000:120000;if(h.k==="unknown"||(h.k!=="checking"&&Date.now()-h.at>every))testApi({quiet:true})}
 }
 let connManualCheck=false;
 /* Studio AI launcher: the local page server (Vellum app / serve_vellum.py) can open the bundled
@@ -7180,12 +7186,13 @@ function aiTimeoutError(who,ms,partial=""){
 }
 /* A model call that failed for a reason the designer should hear about (no credits, refused key, ...). */
 function aiFailError(reason){const e=new Error(reason);e.reason=reason;return e}
-function apiStatusError(status,k){
+function apiStatusError(status,k,sec=0){
+  const hrs=sec>0?Math.max(1,Math.round(sec/3600)):0;
   const m={credits:L(`Cloud API is out of credits (HTTP ${status})`,`云端 API 额度用尽（HTTP ${status}）`),
     auth:L(`Cloud API rejected the key (HTTP ${status})`,`云端 API 拒绝了密钥（HTTP ${status}）`),
     notfound:L(`Cloud API doesn't know this model (HTTP ${status})`,`云端 API 找不到该模型（HTTP ${status}）`),
     ratelimit:L(`Cloud API is rate limited (HTTP ${status})`,`云端 API 被限流（HTTP ${status}）`),
-    daily:L(`Cloud API's daily quota is used up (HTTP ${status}); it resets tomorrow`,`云端 API 今日额度已用完（HTTP ${status}），明天重置`)}[k];
+    daily:hrs?L(`Cloud API's daily quota is used up (HTTP ${status}); it resets in about ${hrs} h`,`云端 API 今日额度已用完（HTTP ${status}），约 ${hrs} 小时后重置`):L(`Cloud API's daily quota is used up (HTTP ${status}); it resets tomorrow`,`云端 API 今日额度已用完（HTTP ${status}），明天重置`)}[k];
   return aiFailError(m||L(`Cloud API returned HTTP ${status}`,`云端 API 返回 HTTP ${status}`));
 }
 /* What to tell the designer when an engine could not answer. */
@@ -7316,21 +7323,74 @@ function wallText(ns,{docCap=4500,shortCap=700,totalCap=14000,excludeIds=null,co
     return `- ${kindLabel(n)}${nTag}${tag}${w}: ${tClean?tClean+(doc?"\n":". "):""}${body}${n.test?"\n  Test: "+n.test:""}`;
   }).join("\n");
 }
+/* ── Auto: which engine takes which task ─────────────────────────────────────────────
+   Heavy work (forking, building, synthesis, source checks, merges) is where a small local model falls furthest
+   behind, so in Auto it goes to the Cloud API first. Light work (chat, clarify, labels, look-ups) stays on Local
+   AI. A daily cloud budget keeps its last quarter for heavy work, and then spends it only to redo a local draft
+   that failed its checks. "Cloud API" and "Rules only" stay as manual overrides. */
+const CLOUD_RESERVE=.75;
+const isGeminiApi=(cfg=apiCfg)=>/generativelanguage\.googleapis\.com/.test(cfg.baseUrl||"");
+/* apiCfg.daily: a number of calls, "" for no limit, or unset for the provider's free-tier preset (Gemini: 20). */
+function cloudDailyLimit(cfg=apiCfg){const d=cfg.daily;if(d===""||d===null)return null;if(d===undefined)return isGeminiApi(cfg)?20:null;const n=Math.floor(+d);return n>0?n:null}
+// Gemini's daily limits reset at midnight Pacific; other providers are counted by the local day
+function cloudDay(){try{return new Intl.DateTimeFormat("en-CA",{timeZone:isGeminiApi()?"America/Los_Angeles":undefined,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())}catch{return new Date().toISOString().slice(0,10)}}
+let cloudBudget=(()=>{const b=store.get(".cloudBudget",null);return b&&typeof b==="object"&&b.by?b:{day:"",by:{}}})();
+function cloudUse(){const day=cloudDay();if(cloudBudget.day!==day)cloudBudget={day,by:{}};const k=apiCfgSig();return cloudBudget.by[k]||(cloudBudget.by[k]={used:0,until:0})}
+const saveCloudBudget=()=>store.set(".cloudBudget",cloudBudget);
+function countCloudCall(){cloudUse().used++;saveCloudBudget()}
+function cloudLeft(){const b=cloudUse(),lim=cloudDailyLimit();if(b.until>Date.now())return 0;return lim==null?Infinity:Math.max(0,lim-b.used)}
+function cloudState(){const lim=cloudDailyLimit(),left=cloudLeft();if(left<=0)return "out";if(lim==null)return "open";return lim-left>=Math.ceil(lim*CLOUD_RESERVE)?"reserve":"open"}
+// the provider said today's quota is gone: stop asking until it resets
+function markCloudOut(sec){const b=cloudUse();b.until=Date.now()+(sec>0?sec*1000:6*3600e3);const lim=cloudDailyLimit();if(lim)b.used=Math.max(b.used,lim);saveCloudBudget();renderCrew?.()}
+function cloudBudgetLine(){const lim=cloudDailyLimit();if(lim==null)return "";const left=cloudLeft();return L(`${left} of ${lim} cloud calls left today`,`今日云端调用剩 ${left}/${lim}`)}
+function autoPlan(weight="light"){
+  const local=studioState.status==="ready",st=cloudState(),cloud=apiRoutable()&&st!=="out";
+  if(aiPref==="local")return {order:[],why:""};
+  if(aiPref==="api")return {order:cloud?["api"]:[],why:"pinned"};
+  if(weight==="heavy"){
+    if(cloud&&st==="open")return {order:local?["api","studio"]:["api"],why:"heavy"};
+    if(cloud)return {order:local?["studio","api"]:["api"],why:"reserve"};
+    return {order:local?["studio"]:[],why:"nocloud"};
+  }
+  return {order:local?(cloud&&st==="open"?["studio","api"]:["studio"]):(cloud&&st==="open"?["api"]:[]),why:"light"};
+}
+function engineName(eng){
+  if(eng==="studio"){const m=(studioState.model||"").split("/").pop();return L("Local AI","本地模型")+(m?` · ${m}`:"")}
+  if(eng==="api")return (apiCfg.model||"").split("/").pop().replace(/[-_]+/g," ").replace(/\b[a-z]/g,c=>c.toUpperCase())||L("Cloud API","云端 API");
+  return eng;
+}
+/* One line for the island and Copilot: which model answered, and why it was that one. */
+function routeNote(eng,{weight,plan,rescued}){
+  const parts=[engineName(eng)];
+  if(eng==="api"){
+    if(rescued)parts.push(L("redid Local AI's draft","重做了本地模型的草稿"));
+    else if(plan?.why==="heavy")parts.push(L("heavy task","重任务"));
+    const b=cloudBudgetLine();if(b)parts.push(b);
+  }else if(eng==="studio"&&weight==="heavy"&&plan?.why==="reserve")parts.push(L("saving cloud calls","节省云端调用"));
+  else if(eng==="studio"&&weight==="heavy"&&plan?.why==="nocloud"&&hasApi()&&cloudState()==="out")parts.push(L("cloud quota used up","云端额度已用完"));
+  return parts.join(" · ");
+}
 async function viaClaude(remote,local,opts={}){
   /* A Stop (AbortError) ends the move. Any other failure (time limit, no credits, refused key, an answer
-     that can't be read) falls through to the next engine, and the designer is told what went wrong and
-     which engine answered instead. `why` goes back to the caller; `quiet` keeps background work silent. */
-  let why="";
+     that can't be read, a local draft that failed its checks) falls through to the next engine, and the
+     designer is told what went wrong and which engine answered instead. `why` goes back to the caller;
+     `quiet` keeps background work silent. `weight` ("heavy" | "light") picks the order in Auto. */
+  let why="",draft=null;
   const note=(who,e)=>{if(!why)why=failReason(who,e)};
   const said=used=>{if(why&&!opts.quiet)toast(L(`${why}, so ${used} answered instead.`,`${why}，已改用${used}。`))};
-  if(aiPref==="auto"&&studioState.status==="ready"&&opts.studio){
-    try{const v=await opts.studio();if(v!=null)return {v,live:true,engine:"studio"}}
-    catch(e){if(e?.name==="AbortError")throw e;note(L("Local AI","本地模型"),e)}
+  const weight=opts.weight||"light",plan=autoPlan(weight),order=plan.order;
+  const cloudAfter=order.includes("studio")&&order.indexOf("api")>order.indexOf("studio");
+  if(opts.studio)for(const eng of order){
+    if(eng==="studio"){
+      try{const v=await opts.studio({escalate:cloudAfter});if(v!=null){said(L("Local AI","本地模型"));return {v,live:true,engine:"studio",why,route:routeNote("studio",{weight,plan})}}}
+      catch(e){if(e?.name==="AbortError")throw e;if(e?.draft!=null)draft=e.draft;note(L("Local AI","本地模型"),e)}
+    }else{
+      try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null){said(L("Cloud API","云端 API"));return {v,live:true,engine:"api",why,route:routeNote("api",{weight,plan,rescued:draft!=null})}}}
+      catch(e){if(e?.name==="AbortError")throw e;note(L("Cloud API","云端 API"),e)}
+    }
   }
-  if(aiPref!=="local"&&apiRoutable()&&opts.studio){
-    try{const v=await apiChat(opts.apiArgs||{prompt:opts.prompt||"",system:opts.system,json:!!opts.json});if(v!=null){said(L("Cloud API","云端 API"));return {v,live:true,engine:"api",why}}}
-    catch(e){if(e?.name==="AbortError")throw e;note(L("Cloud API","云端 API"),e)}
-  }
+  // the cloud couldn't redo a flawed local draft: the draft is still better than built-in rules
+  if(draft!=null){if(!opts.quiet)toast(L(`${why}, and the Cloud API couldn't redo it, so the draft stays.`,`${why}，云端 API 也无法重做，保留该草稿。`));return {v:draft,live:true,engine:"studio",why,route:routeNote("studio",{weight,plan})}}
   if(aiPref!=="local"&&sampleFn&&!(opts.apiArgs?.images?.length)){
     try{const v=await Promise.race([remote(),wait(100000).then(()=>{throw {code:"timeout"}})]);if(v==null)throw {code:"empty"};said("Claude");return {v,live:true,engine:"claude",why}}
     catch(e){if(e&&e.code==="not_granted"){sampleFn=null;renderCrew();toast("Claude access was declined. Falling back to local rules.")}
@@ -7366,7 +7426,7 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
        most. A daily cap does not clear today: say so instead of waiting. */
     for(let tries=0;res.status===429&&tries<2;tries++){
       const txt=await res.text().catch(()=>"");
-      if(/PerDay|per day|daily/i.test(txt))throw apiStatusError(429,"daily");
+      if(/PerDay|per day|daily/i.test(txt)){const sec=Number((txt.match(/"retryDelay"\s*:\s*"([\d.]+)s"/)||[])[1])||0;markCloudOut(sec);throw apiStatusError(429,"daily",sec)}
       const ra=Number(res.headers.get("retry-after"))||Number((txt.match(/"retryDelay"\s*:\s*"([\d.]+)s"/)||[])[1])||6;
       const ms=Math.min(30000,Math.ceil(ra*1000)+500);
       if(performance.now()-t0+ms>timeoutMs-15000)break;
@@ -7380,6 +7440,7 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
       throw apiStatusError(res.status,k);
     }
     setApiHealth("ok",{cfg:sentCfg,ms:Math.round(performance.now()-t0)});
+    countCloudCall();
     return await readChatStream(res,ctrl,{json,onText:track});
   }catch(e){
     if(e instanceof TypeError&&!signal?.aborted)setApiHealth("unreachable",{cfg:sentCfg,detail:"network"});
@@ -8045,12 +8106,12 @@ function tidySmallReply(text){
   paras.push(qs&&qs.length>1?qs[0].trim():last);
   return paras.join("\n\n").trim();
 }
-async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false,small=null,check=null,stance=""},local){
+async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false,small=null,check=null,stance="",weight="light"},local){
   const fullSys=withMemorySystem(system,memoryMode);
   const sSys=small?withMemorySystem(small.system,memoryMode):fullSys,sPrompt=small?small.prompt:prompt;
   /* Local AI: an unreadable answer is asked once more; a readable one with obvious errors gets one targeted
      repair, kept only if it has fewer problems. The caller fills any remaining gap from built-in rules. */
-  const studio=async()=>{
+  const studio=async({escalate=false}={})=>{
     const ask=msgs=>studioChat({system:sSys,...(msgs?{messages:msgs}:{prompt:sPrompt}),images:msgs?[]:images,json,maxTokens,onText,signal,stance});
     let v;
     try{v=await ask()}catch(e){if(json&&small&&/Invalid JSON|Empty model response/.test(e?.message||""))v=await ask();else throw e}
@@ -8058,13 +8119,16 @@ async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,m
     if(probs.length){
       try{const fixed=await ask([{role:"user",content:sPrompt},{role:"assistant",content:JSON.stringify(v)},{role:"user",content:`Fix only these problems and return the whole JSON again: ${probs.join("; ")}.`}]);if(check(fixed).length<probs.length)v=fixed}
       catch(e){if(e?.name==="AbortError")throw e}
+      // still flawed after the repair: in Auto, hand the task to the Cloud API (the draft is kept if that fails)
+      const left=escalate?check(v):[];
+      if(left.length){const e=aiFailError(L(`Local AI's draft had problems (${clip(left[0],70)})`,`本地模型的草稿有问题（${clip(left[0],70)}）`));e.draft=v;throw e}
     }
     return v;
   };
   return viaClaude(
     ()=>json?sampleFn.json(`${fullSys}\n\n${prompt}`,{modelTier}):sampleFn(`${fullSys}\n\n${prompt}`,{modelTier,cache:false,onText}).then(r=>r.text),
     local,
-    {studio,apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal,stance},quiet}
+    {studio,apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal,stance},quiet,weight}
   );
 }
 
@@ -8113,7 +8177,8 @@ async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   const start=read[0]||places[0];if(start){moveCursor(k,(start.x||0)-60,(start.y||0)-80);await wait(30);c.classList.add("on")}
   for(const n of read.slice(0,5)){if(stopped()||fin)break;say("reading "+clip(titleOf(n),34));moveCursor(k,n.x+(W[n.type]||300)*.62,n.y+46);const el=nodeEl(n.id);if(el){el.dataset.extra="reading";el.classList.add("reading")}await wait(calm()?0:260)}
   const outlines=[];
-  const aiLbl=aiPref!=="local"&&studioState.status==="ready"?"drafting with Studio AI":aiPref!=="local"&&sampleFn?"drafting with Claude":"drafting";
+  // with both engines in Auto, either may draft: the note at the end says which one did
+  const aiLbl=aiPref==="auto"&&studioState.status==="ready"&&apiRoutable()&&cloudState()!=="out"?"drafting":aiPref!=="local"&&studioState.status==="ready"?"drafting with Studio AI":aiPref!=="local"&&sampleFn?"drafting with Claude":"drafting";
   if(places.length&&!stopped())say(aiLbl);
   for(const pl of places){moveCursor(k,pl.x+pl.w*.85,pl.y+pl.h*.4);outlines.push(drawOutline(pl));await wait(calm()||fin?0:180)}
   let dots=0;const tick=setInterval(()=>{if(!places.length)return;const pl=places[dots%places.length];dots++;moveCursor(k,pl.x+pl.w*(.3+Math.random()*.6),pl.y+40+Math.random()*(pl.h-60))},900);
@@ -8127,7 +8192,7 @@ async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   goHome(k);setAgent(k,{busy:false,status:""});
   crewState[k].lastRun={t:NOW(),live:err?false:(res&&typeof res==="object"&&"live" in res?!!res.live:null)};
   if(err){task.fail(err?.message);throw err}
-  task.done(res&&res.live===false&&res.why?{tone:"warn",note:L("Built-in rules answered","内置规则作答")}:{});return res;
+  task.done(res&&res.live===false&&res.why?{tone:"warn",note:L("Built-in rules answered","内置规则作答")}:res&&res.route?{note:res.route}:{});return res;
 }
 function freeSpot(x,y,w,h,ignore=[]){
   for(let i=0;i<80;i++){
@@ -8378,7 +8443,7 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
   const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,(wallText(srcs)||"")+groundNote):null;
-  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({system:`${ROLE.muse}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
+  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({weight:"heavy",system:`${ROLE.muse}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count);
   checkpoint();const pid="p-"+uid();
@@ -8427,7 +8492,7 @@ Turn each main branch of the Tree Map into clear, concrete ${mode==="deck"?"slid
 Write the real content for this prototype as the people in the test would see it (not a description of the prototype). Reply with ONLY JSON:
 {"title": short page title, "kicker": one short line of context, "lede": 1-2 sentences, "items": [4 to 6 objects {"title","body" (1-2 sentences),"tag" (one or two words, e.g. a status)${mode==="story"?',"choices" (optional array of 2-4 short options the person can mark)':""}}], "cta": a short button label for the main action}`;
   const fallbackFn=isTm?()=>treeMapToProofSpec(dir,mode):()=>specLocal(dir,mode);
-  const {v,live}=await runAgent("wright",{read:[dir,...srcs.slice(0,3)],places,label:isTm?`building ${mode==="deck"?"deck":"UI"} v${ver}`:`building ${dir.letter} v${ver}`,work:()=>askAI({system:`${ROLE.wright}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",maxTokens:2400,...(smallModelOn()?{small:{system:`${ROLE.wright}\n${STYLE}\n${CREATE_RULE}`,prompt},check:v=>buildProblems(v,isTm?treeMapToMarkdown(treeMapOf(dir)):`${idea?.text||""} ${dir.title} ${dir.text} ${dir.test||""} ${brief}`,isTm)}:{})},fallbackFn)});
+  const {v,live}=await runAgent("wright",{read:[dir,...srcs.slice(0,3)],places,label:isTm?`building ${mode==="deck"?"deck":"UI"} v${ver}`:`building ${dir.letter} v${ver}`,work:()=>askAI({weight:"heavy",system:`${ROLE.wright}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",maxTokens:2400,...(smallModelOn()?{small:{system:`${ROLE.wright}\n${STYLE}\n${CREATE_RULE}`,prompt},check:v=>buildProblems(v,isTm?treeMapToMarkdown(treeMapOf(dir)):`${idea?.text||""} ${dir.title} ${dir.text} ${dir.test||""} ${brief}`,isTm)}:{})},fallbackFn)});
   const spec={...fallbackFn(),...(v&&typeof v==="object"?v:{})};spec.mode=mode;spec.letter=isTm?"":dir.letter;spec.version=ver;
   spec.items=(spec.items||[]).filter(i=>i&&i.title).slice(0,8);
   checkpoint();
@@ -8471,7 +8536,7 @@ async function gather(ns){
     :singleText
     ?`Read and distill this single card for the designer:\n${wallText(evid)}\n\nRules:\n- Ground every point strictly in the text written on this card — never fabricate project facts or substitute unrelated board topics.\n- Highlight the core intent, any open gap or missing context, and one concrete next step.\n- Write plain, helpful language (no headings like "Weight." and no raw filename slugs).\n\nReply with ONLY JSON: {"title": "3-6 word headline capturing this card's topic", "points": ["3 to 4 crisp takeaways; start each with **1-3 word theme.** grounded strictly in this card"]}`
     :`Synthesize these ${evid.length} cards together — focus on what connects them, where they contrast or diverge, and what design implication or open question follows:\n${wallText(evid)}${imgNote}\n\nRules:\n- Do NOT summarize each card separately or list per-image captions one by one.\n- Highlight cross-card patterns, visual or UX tensions, missing context, and one concrete design takeaway.\n- Write plain, helpful language (never output headings like "Weight." or internal terms like "carries strong weight", and never dump raw filename slugs).${wCnt>0?"\n- Note differences in source reliability (e.g. live observation vs. illustration or proposal) briefly in natural English inside one point if useful.":""}\n\nReply with ONLY JSON: {"title": "3-6 word insight headline naming the theme or tension (never just 'A and B')", "points": ["3 to 4 crisp takeaways; start each with **1-3 word theme.** then concrete synthesis across the sources"]}`;
-  const {v,live}=await runAgent("scout",{read:evid,places,label:singleImg?"reading visual card":singleText?"reading card":`synthesizing ${evid.length}`,work:()=>askAI({system:`${ROLE.scout}\n${STYLE}`,prompt:synPrompt,images:imgNodes,json:true,memoryMode:isolated?"none":"full"},()=>gatherLocal(evid))});
+  const {v,live}=await runAgent("scout",{read:evid,places,label:singleImg?"reading visual card":singleText?"reading card":`synthesizing ${evid.length}`,work:()=>askAI({weight:"heavy",system:`${ROLE.scout}\n${STYLE}`,prompt:synPrompt,images:imgNodes,json:true,memoryMode:isolated?"none":"full"},()=>gatherLocal(evid))});
   const r=(v&&Array.isArray(v.points)&&v.points.length)?v:gatherLocal(evid);
   const pts=(r.points||[]).map(p=>String(p||"").trim()).filter(Boolean)
     .map(p=>p.replace(/^\*\*Weight\.?\*\*\s*/i,"**Source role.** ").replace(/^Weight:\s*/i,"**Source role.** "));
@@ -8623,7 +8688,7 @@ async function spawnTreeNotepad(n,{expand=false}={}){
   }
   const places=[{...spot,w:W.notepad,h:HGUESS.notepad}];
   const imgNodes=srcs.filter(x=>x.type==="image"||x.type==="frame");
-  const {v,live}=await runAgent("wright",{read:[n,...srcs.slice(0,3)],places,label:"drafting expanded brief",work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt:`Expand this Tree Map into a clear, actionable Markdown Notepad brief:\n\n${md}\n${srcs.length?`\nConnected sources:\n${wallText(srcs.slice(0,4))}`:""}\n\nPreserve the root title, turn each main branch into a ## section explaining concrete goals, decisions, constraints, and open questions based on the sub-nodes. Reply ONLY with JSON: {"title": "concise title", "markdown": "markdown body"}`,images:imgNodes,json:true,modelTier:"quick"},()=>({title:root.text,markdown:expandTreeBriefLocal(root)}))});
+  const {v,live}=await runAgent("wright",{read:[n,...srcs.slice(0,3)],places,label:"drafting expanded brief",work:()=>askAI({weight:"heavy",system:`${ROLE.wright}\n${STYLE}`,prompt:`Expand this Tree Map into a clear, actionable Markdown Notepad brief:\n\n${md}\n${srcs.length?`\nConnected sources:\n${wallText(srcs.slice(0,4))}`:""}\n\nPreserve the root title, turn each main branch into a ## section explaining concrete goals, decisions, constraints, and open questions based on the sub-nodes. Reply ONLY with JSON: {"title": "concise title", "markdown": "markdown body"}`,images:imgNodes,json:true,modelTier:"quick"},()=>({title:root.text,markdown:expandTreeBriefLocal(root)}))});
   const docTitle=clip(cleanCopilotField(v?.title)||root.text||"Design Brief",56);
   const docMd=String(v?.markdown||v?.text||expandTreeBriefLocal(root)).trim();
   checkpoint();
@@ -8639,7 +8704,7 @@ async function expandNotepadBrief(n){
   const md=(srcTm&&srcTm.type==="treemap")?treeMapToMarkdown(treeMapOf(srcTm)):(n.text||"");
   const fallbackMd=(srcTm&&srcTm.type==="treemap")?expandTreeBriefLocal(treeMapOf(srcTm)):md;
   const srcs=sourcesFor(n);
-  const {v,live}=await runAgent("wright",{read:[n,...(srcTm?[srcTm]:[]),...srcs.slice(0,2)],places:[{x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)}],label:"expanding brief with Wright",work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt:`Expand this outline into a thorough, scannable Markdown brief preserving every section:\n\n${md}\n\nReply ONLY with JSON: {"title": "concise title", "markdown": "expanded markdown body"}`,json:true,modelTier:"quick"},()=>({title:n.title,markdown:fallbackMd}))});
+  const {v,live}=await runAgent("wright",{read:[n,...(srcTm?[srcTm]:[]),...srcs.slice(0,2)],places:[{x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)}],label:"expanding brief with Wright",work:()=>askAI({weight:"heavy",system:`${ROLE.wright}\n${STYLE}`,prompt:`Expand this outline into a thorough, scannable Markdown brief preserving every section:\n\n${md}\n\nReply ONLY with JSON: {"title": "concise title", "markdown": "expanded markdown body"}`,json:true,modelTier:"quick"},()=>({title:n.title,markdown:fallbackMd}))});
   const nextMd=String(v?.markdown||v?.text||fallbackMd).trim();
   if(!nextMd||nextMd===n.text)return;
   checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;
@@ -8681,7 +8746,7 @@ async function critique(n,{quiet=false}={}){
   const msg={who:"critic",t:NOW(),text:"",typing:true};(board.threads[n.id]=board.threads[n.id]||[]).push(msg);renderMargin();
   const extra=n.type==="question"?[byId(n.on),byId(n.frame)].filter(Boolean):[];
   const imgNodes=[n,...extra,...srcs].filter(x=>x&&(x.type==="image"||x.type==="frame"));
-  const {v,live}=await runAgent("critic",{read:[n,...extra,...srcs.slice(0,4)],places:[],label:"checking sources",work:()=>askAI({system:`${ROLE.critic}\n${STYLE}`,prompt:`Check this ${kindLabel(n).toLowerCase()} against what it rests on.\nThe card:\n${wallText([n])}\n${extra.length?"It points at:\n"+wallText(extra)+"\n":""}\nIts sources:\n${wallText(srcs)||"(no sources are wired to it)"}\n${n.type==="proof"&&driftOf(n).moved.length?"Note: some sources changed after this proof was built.\n":""}
+  const {v,live}=await runAgent("critic",{read:[n,...extra,...srcs.slice(0,4)],places:[],label:"checking sources",work:()=>askAI({weight:"heavy",system:`${ROLE.critic}\n${STYLE}`,prompt:`Check this ${kindLabel(n).toLowerCase()} against what it rests on.\nThe card:\n${wallText([n])}\n${extra.length?"It points at:\n"+wallText(extra)+"\n":""}\nIts sources:\n${wallText(srcs)||"(no sources are wired to it)"}\n${n.type==="proof"&&driftOf(n).moved.length?"Note: some sources changed after this proof was built.\n":""}
 Reply in 2-4 sentences of plain prose. Name sources by title. End with one question for the team.`,images:imgNodes,memoryMode:(!srcs.length&&!extra.length&&isStandaloneMediaOrLink([n]))?"none":"full",onText:({text})=>{msg.text=text;const tx=qs("#mThread .msg:last-child .tx");if(tx&&marginFor===n.id)tx.innerHTML=mdLite(text)}},()=>critiqueLocal(n))});
   msg.text=v||critiqueLocal(n);delete msg.typing;msg.live=live;
   log("critic",`Checked <b>${esc(titleOf(n))}</b> against ${srcs.length} sources`,n.id);
@@ -12014,7 +12079,7 @@ function renderCopilotMsg(m){
   const bubbleHTML=(bubbleBody||m.streaming)?`<div class="cp-bubble">${bubbleBody}${m.streaming?'<span class="cp-caret"></span>':""}</div>`:"";
   const actionsHTML=(m.actions&&m.actions.length)?renderCopilotActionsSummary(m):"";
   return `<div class="cp-msg ai" data-cp-msg-id="${m.id}">
-    <div class="cp-who"><span class="mk">${ag?ag.mk:AV.muse}</span><span>${ag?ag.name:"Lumen Copilot"}</span></div>
+    <div class="cp-who"><span class="mk">${ag?ag.mk:AV.muse}</span><span>${ag?ag.name:"Lumen Copilot"}</span>${m.route&&!m.streaming?`<span class="cp-route" title="${esc(L("Which model answered","由哪个模型作答"))}">${esc(m.route)}</span>`:""}</div>
     ${traceHTML}
     ${bubbleHTML}
     ${actionsHTML}
@@ -12416,20 +12481,30 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\nCONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
 
       const maxTok=isCasual?64:1500;
-      if(aiPref==="auto"&&studioState.status==="ready"){
-        const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
-        const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;
-        const full=await studioChat({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
-        const parsed=parseCopilotBlocks(full);
-        aiMsg.text=isCasual?trimCasual(parsed.text||full):tidySmallReply(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
-        if(!isCasual){const lc=looseChips(aiMsg.text);aiMsg.text=lc.text;if(!(aiMsg.chips||[]).length&&lc.chips.length)aiMsg.chips=lc.chips}
-      }else if(aiPref!=="local"&&apiRoutable()){
-        const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
-        const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;
-        const full=await apiChat({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
-        const parsed=parseCopilotBlocks(full);
-        aiMsg.text=isCasual?trimCasual(parsed.text||full):(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
-      }else if(aiPref!=="local"&&sampleFn){
+      /* Auto routing, as for the crew: a merge is heavy (cloud first), everything else is light (Local AI first).
+         An engine that fails hands over to the next one, and the designer is told why. */
+      const cpWeight=!isCasual&&/\b(merge|combine|fold|blend|fuse|unify|synthesi[sz]e)\w*|合并|融合|结合|整合/i.test(text)?"heavy":"light";
+      const cpPlan=autoPlan(cpWeight);let cpDone=false,cpWhy="";
+      for(const eng of cpPlan.order){
+        try{
+          const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
+          const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;
+          const full=await (eng==="studio"?studioChat:apiChat)({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
+          const parsed=parseCopilotBlocks(full),body=parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full);
+          aiMsg.text=isCasual?trimCasual(parsed.text||full):eng==="studio"?tidySmallReply(body):body;aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
+          if(!isCasual&&eng==="studio"){const lc=looseChips(aiMsg.text);aiMsg.text=lc.text;if(!(aiMsg.chips||[]).length&&lc.chips.length)aiMsg.chips=lc.chips}
+          if(!isCasual)aiMsg.route=routeNote(eng,{weight:cpWeight,plan:cpPlan});
+          if(cpWhy)toast(L(`${cpWhy}, so ${eng==="studio"?"Local AI":"Cloud API"} answered instead.`,`${cpWhy}，已改用${eng==="studio"?"本地模型":"云端 API"}。`));
+          cpDone=true;break;
+        }catch(e){
+          // a Stop, or a time-out with part of an answer, ends here and is handled below
+          if(e?.name==="AbortError"||(e?.name==="TimeoutError"&&parseCopilotBlocks(aiMsg.text||"").text?.trim()))throw e;
+          if(!cpWhy)cpWhy=failReason(eng==="studio"?L("Local AI","本地模型"):L("Cloud API","云端 API"),e);
+          aiMsg.text="";
+        }
+      }
+      if(cpDone){}
+      else if(aiPref!=="local"&&sampleFn){
         const prompt=`Conversation so far:\n${chatHist.map(h=>h.role+": "+h.content).join("\n")}\n\nRespond to the designer's latest message.`;
         const r=await viaClaude(()=>sampleFn(`${sys}\n\n${prompt}`,{modelTier:"default",cache:false,onText:({text:t})=>{aiMsg.text=t;streamPaint()}}).then(res=>res.text),()=>copilotLocalReply(text,ctx));
         if(typeof r.v==="string"){const parsed=parseCopilotBlocks(r.v);aiMsg.text=isCasual?trimCasual(parsed.text||r.v):(parsed.text||(parsed.proposals.length||parsed.visuals.length?"":r.v));aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[])}
@@ -12439,6 +12514,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         aiMsg.text=subSteps.length?`${subSteps.map(s=>`**${traceActorInfo(s.to).name}${s.handoff?" (Review)":""}:** ${s.output}`).join("\n\n")}\n\n${loc.text}`:loc.text;
         aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;aiMsg.actions=loc.actions||[];
         if(loc.actionResults)aiMsg.actionResults=loc.actionResults;
+        if(cpWhy)toast(L(`${cpWhy}, so built-in rules answered instead.`,`${cpWhy}，已改用内置规则。`));
       }
       if(!isCasual&&aiMsg.actions&&aiMsg.actions.length&&!aiMsg.actionResults){
         const activeAgent=subSteps.length?(subSteps[subSteps.length-1].to||subSteps[0].to):(aiMsg.agent||"critic");

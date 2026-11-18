@@ -127,7 +127,11 @@ async function open(browser, base) {
   const p = await ctx.newPage();
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2500);
-  if (args.api) await p.evaluate(([baseUrl, model, key]) => { apiCfg = { enabled: true, baseUrl, model, key }; aiPref = 'api'; }, [args.api, args.model, process.env.VELLUM_EVAL_KEY || 'placeholder']);
+  if (args.api && args.auto) {
+    // Auto: Local AI and the Cloud API together, each task routed as the designer would get it
+    const ok = await p.evaluate(async ([baseUrl, model, key]) => { apiCfg = { enabled: true, baseUrl, model, key }; setApiHealth('ok', {}); await checkStudioHealth({ wake: false, quiet: true }); aiPref = 'auto'; return studioState.status === 'ready'; }, [args.api, args.model, process.env.VELLUM_EVAL_KEY || 'placeholder']);
+    if (!ok) throw new Error('--auto needs Studio AI ready at ' + STUDIO + ' as well as --api.');
+  } else if (args.api) await p.evaluate(([baseUrl, model, key]) => { apiCfg = { enabled: true, baseUrl, model, key }; aiPref = 'api'; }, [args.api, args.model, process.env.VELLUM_EVAL_KEY || 'placeholder']);
   else {
     const ok = await p.evaluate(async () => { await checkStudioHealth({ wake: false, quiet: true }); aiPref = 'auto'; apiCfg = { ...apiCfg, enabled: false }; return studioState.status === 'ready'; });
     if (!ok) throw new Error('Studio AI is not ready at ' + STUDIO + '. Start it (Start Studio AI.command) and load a model first.');
@@ -256,14 +260,17 @@ if (args.recheck) {
       const p = await open(browser, base);
       engine = await p.evaluate(() => connSummary().mode);
       let r;
+      await p.evaluate(t => { window.__evalTask = t; }, t);
       try { r = await RUN[t](p); } catch (e) { r = { error: String(e.message || e).split('\n')[0], flags: [] }; }
       r.task = t; r.i = i; r.toasts = await p.evaluate(() => __toasts).catch(() => []); r.pageErrors = p.errors;
+      // which model answered (the island note for a crew move, the reply's note in Copilot)
+      r.route = await p.evaluate(() => (t => t === 'push' || t === 'merge' ? board.copilot.at(-1)?.route : ISL.tasks.filter(x => x.note).at(-1)?.note)(window.__evalTask) || '').catch(() => '');
       if (p.errors.length) r.flags = [...(r.flags || []), 'page error: ' + p.errors[0]];
       // A Copilot reply has no engine tag, so a fallback shows only in the toast. Count it as an error.
       const fell = r.toasts.find(m => /built-in rules answered|answered instead/i.test(m));
       if (fell && !(r.flags || []).some(f => /not the model/.test(f))) r.flags = [...(r.flags || []), 'fell back: ' + fell];
       results.push(r);
-      console.log(`${t} #${i + 1}  ${r.seconds ? r.seconds.toFixed(0) + ' s' : ''}  ${r.error ? 'crashed: ' + r.error : (r.flags.length ? r.flags.join('; ') : 'ok')}`);
+      console.log(`${t} #${i + 1}  ${r.seconds ? r.seconds.toFixed(0) + ' s' : ''}${r.route ? '  [' + r.route + ']' : ''}  ${r.error ? 'crashed: ' + r.error : (r.flags.length ? r.flags.join('; ') : 'ok')}`);
       await p.context().close();
     }
   } finally { await browser.close(); srv.close(); }

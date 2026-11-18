@@ -547,6 +547,76 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.context().close();
     }
 
+    // 5i. the bottom bar is a command bar and search box; chat lives in the panel, and @name hands over to it
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const ph = () => p.evaluate(() => document.getElementById('lineInput').placeholder);
+      check('an empty board still invites the first idea', /Write an idea/.test(await ph()), await ph());
+      await p.evaluate(() => { node('note', { text: 'Founder interviews', status: 'ink', by: 'you' }, { x: 100, y: 100 }); node('note', { text: 'Pricing idea for solo founders', status: 'ink', by: 'you' }, { x: 100, y: 500 }); node('idea', { text: 'Sell an AI back office to one-person companies', status: 'ink', by: 'you' }, { x: 500, y: 100 }); select([]); renderLineCtx(); });
+      check('with cards on the board the bar reads as commands and search, with no chat wording', /\/ for commands/.test(await ph()) && /search your cards/i.test(await ph()) && !/\bask\b|critic|chat/i.test(await ph()), await ph());
+      await p.evaluate(() => { select([board.nodes.find(n => n.type === 'idea').id]); renderLineCtx(); });
+      check('with a claim selected it names the commands that fit', /\/fork/.test(await ph()) && !/\bask\b|critic/i.test(await ph()), await ph());
+      check('the chip shows what Enter will do, not an AI target', await p.evaluate(() => !/Canvas AI/.test(document.getElementById('route').textContent)));
+      await p.evaluate(() => { select([]); renderLineCtx(); });
+
+      // @name in the bar opens the panel with that member preselected, and the conversation goes on there
+      await p.click('#lineInput'); await p.keyboard.type('@critic ');
+      const ho = await p.evaluate(() => ({ open: copilotOpen, target: cpTarget, bar: document.getElementById('lineInput').value, chip: document.getElementById('cpTarget')?.textContent.trim() || '', ph: document.getElementById('cpInput')?.placeholder, mode: lineMode }));
+      check('typing @critic in the bar opens the panel with Critic preselected, and the bar is empty (no chat mode in the bar)', ho.open && ho.target === 'critic' && ho.bar === '' && /Critic/.test(ho.chip) && /Ask Critic/.test(ho.ph) && ho.mode === null, JSON.stringify(ho));
+      queue = [{ id: 'ho1', match: 'Lumen Copilot', text: 'The weakest part is who pays first.' }];
+      await p.click('#cpInput'); await p.keyboard.type('What is weakest here?'); await p.keyboard.press('Enter'); await p.idle();
+      const ho1 = requests.find(x => x.matched === 'ho1'), last = await p.evaluate(() => { const m = board.copilot.filter(x => x.role === 'ai').at(-1), u = board.copilot.filter(x => x.role === 'user').at(-1); return { agent: m?.agent, to: u?.to, text: u?.text }; });
+      check('the message goes to Critic: the model is told so, the reply is Critic\'s, and the history shows who was asked', !!ho1 && /addressing Critic directly/.test(ho1.full) && last.agent === 'critic' && last.to === 'critic' && last.text === 'What is weakest here?', JSON.stringify(last));
+      await p.click('[data-cp-untarget]');
+      check('the preselected member can be dropped to go back to Copilot', await p.evaluate(() => cpTarget === null && !document.getElementById('cpTarget') && /Ask Copilot|Ask about selection/.test(document.getElementById('cpInput').placeholder)));
+      queue = [{ id: 'ho2', match: 'Lumen Copilot', text: 'Scout here.' }];
+      await p.evaluate(() => openCopilot(false));
+      await p.click('#lineInput'); await p.keyboard.type('@scout find who already sells this'); await p.keyboard.press('Enter'); await p.idle();
+      const ho2 = await p.evaluate(() => ({ open: copilotOpen, bar: document.getElementById('lineInput').value, target: cpTarget, users: board.copilot.filter(x => x.role === 'user').map(x => x.text + '>' + x.to), cards: board.nodes.length }));
+      check('@name with the question in one go hands it over and sends it; nothing is added to the canvas', ho2.open && ho2.bar === '' && ho2.target === 'scout' && ho2.users.at(-1) === 'find who already sells this>scout' && ho2.cards === 3, JSON.stringify(ho2));
+      const ex = await p.evaluate(() => { const d = node('proof', { title: 'Draft by Wright', spec: { items: [] }, status: 'sketch', by: 'wright', pid: 'p-wr' }, { x: 900, y: 100 }); select([d.id]); return { own: route('@wright make it shorter')?.kind, other: route('@critic what is weakest?')?.kind }; });
+      check('the exception: on a draft that member made, @name still revises it; for anyone else it hands over', ex.own === 'revise' && ex.other === 'handoff', JSON.stringify(ex));
+      await p.evaluate(() => { board.nodes = board.nodes.filter(n => n.pid !== 'p-wr'); select([]); setCpTarget(null); openCopilot(false); renderLineCtx(); });
+
+      // card search: plain words list matching cards; nothing is picked until ↓, so Enter does what it always did
+      const menu = () => p.evaluate(() => ({ hidden: document.getElementById('menu').hidden, head: [...document.querySelectorAll('#menu .mh')].map(x => x.textContent), rows: [...document.querySelectorAll('#menu [data-mi]')].map(x => x.querySelector('.cmd').textContent), sel: [...document.querySelectorAll('#menu [data-mi]')].findIndex(x => x.getAttribute('aria-selected') === 'true') }));
+      await p.click('#lineInput'); await p.keyboard.type('founder');
+      let m = await menu();
+      check('typing plain words lists the matching cards, with none picked yet', !m.hidden && m.head[0] === 'Cards' && m.rows.some(r => /Founder interviews/.test(r)) && m.rows.some(r => /Pricing idea for solo founders/.test(r)) && m.sel === -1, JSON.stringify(m));
+      await p.keyboard.press('Escape');
+      check('Escape closes the list and keeps what you typed', (await menu()).hidden && await p.evaluate(() => document.getElementById('lineInput').value === 'founder'));
+      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type('pricing');
+      await p.keyboard.press('ArrowDown');
+      m = await menu();
+      check('↓ picks the first card', m.sel === 0, JSON.stringify(m));
+      await p.keyboard.press('Enter'); await p.waitForTimeout(500);
+      const jump = await p.evaluate(() => ({ sel: sel.map(id => (byId(id).text || '').slice(0, 18)), bar: document.getElementById('lineInput').value, cards: board.nodes.length, menuHidden: document.getElementById('menu').hidden }));
+      check('Enter on a picked card selects it and takes you to it, and adds nothing', jump.sel.join() === 'Pricing idea for s' && jump.bar === '' && jump.cards === 3 && jump.menuHidden, JSON.stringify(jump));
+      await p.evaluate(() => { select([]); renderLineCtx(); }); // words about a selected card go to Copilot; with nothing selected they become an idea
+      await p.click('#lineInput'); await p.keyboard.type('a thought about onboarding'); await p.keyboard.press('Enter'); await p.waitForTimeout(600);
+      check('Enter with nothing picked still does what it always did: the words become an idea', await p.evaluate(() => board.nodes.length === 4 && board.nodes.some(n => n.type === 'idea' && /thought about onboarding/.test(n.text))));
+      await p.click('#lineInput'); await p.keyboard.type('kanban');
+      m = await menu();
+      check('a word that names a command lists the command too', m.head.includes('Commands') && m.rows.some(r => /^\/kanban/.test(r)), JSON.stringify(m));
+      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type('/for');
+      m = await menu();
+      check('a slash still opens the command list, not the card search', m.head[0] === 'Moves' && !m.rows.some(r => /Founder/.test(r)), JSON.stringify(m));
+      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.press('Escape');
+
+      // the selection shows once: in the panel while it is open
+      await p.evaluate(() => { openCopilot(false); select([board.nodes.find(n => n.type === 'idea').id]); renderLineCtx(); });
+      const ctxN = () => p.evaluate(() => ({ bar: document.querySelectorAll('#lineCtx .ctx:not(.pending)').length, panel: document.querySelectorAll('#cpCompCards *').length > 0 && !!document.getElementById('cpCompCards').textContent.trim() }));
+      check('with the panel closed the bar shows the selected card', (await ctxN()).bar >= 1);
+      await p.evaluate(() => openCopilot(true)); await p.waitForTimeout(300);
+      let c = await ctxN();
+      check('with the panel open the selection is shown there once, not in the bar too', c.bar === 0 && c.panel, JSON.stringify(c));
+      await p.evaluate(() => openCopilot(false)); await p.waitForTimeout(300);
+      check('closing the panel brings the chips back', (await ctxN()).bar >= 1);
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover
     {
       const p = await page(browser, base);
@@ -1126,8 +1196,11 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('plain words on a crew draft route to a revision, not a generic check', r && r.kind === 'revise' && r.agent === 'muse' && r.arg === ask, JSON.stringify(r));
       r = await routeOf('Why did you pick these three?');
       check('a question about a draft is still answered, not taken as a revision', r && r.kind !== 'revise', JSON.stringify(r));
-      r = await routeOf('@critic does this hold up');
-      check('an @mention of someone else still goes to them', r && r.kind !== 'revise' && r.agent === 'critic', JSON.stringify(r));
+      await p.type('@critic does this hold up', false); await p.waitForTimeout(250);
+      const hand = await p.evaluate(() => ({ open: copilotOpen, target: cpTarget, bar: document.getElementById('lineInput').value, typed: document.getElementById('cpInput')?.value }));
+      check('an @mention of someone else is not a revision: it hands the question to the panel with that member preselected', hand.open && hand.target === 'critic' && hand.bar === '' && /does this hold up/.test(hand.typed), JSON.stringify(hand));
+      await p.evaluate(() => { setCpTarget(null); openCopilot(false); const i = document.getElementById('cpInput'); if (i) i.value = ''; });
+      await p.evaluate(ids => select(ids), await drafts());
       r = await routeOf('@strategist ' + ask);
       check('an @mention of the draft\'s author revises it with the words after the mention', r && r.kind === 'revise' && r.arg === ask, JSON.stringify(r));
       queue = [{ id: 'st2', match: 'tell the creator what a restore will overwrite', text: dirs('Revised') }];

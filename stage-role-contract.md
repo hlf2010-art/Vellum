@@ -43,6 +43,13 @@ The stage comes from what is on the board, not from where cards sit. Only what t
 5. The crew's opinions are Proposal or Illustration, never Observed. Real-world evidence comes from the designer, so the crew prepares the test (outreach, a landing page, the questions) and the designer runs it.
 6. Decisions are logged and survive the change log's cap; every board is backed up (see tests/README.md).
 
+## Where the designer talks to the crew
+
+- **The side panel is the only place for conversation.** Ask a question, discuss a card, get proposals. Select cards, right-click one and choose Ask Copilot, or press ⌘., and the selection is the context.
+- **The bottom bar is a command bar and search box.** `/` runs a command, plain words search the cards on the board (and name matching commands), and words with nothing selected become an idea. A question typed there is handed to the panel.
+- **`@name` hands over to the panel** with that member preselected ("Asking Critic"), until the designer drops it. The one exception: with a draft that member made selected, `@name` in the bar still revises that draft.
+- The crew does not speak unasked unless the designer lets it (Settings: Speaks up). That default is still to be decided; see the notes in the project record.
+
 ## What implements this today
 
 - `boardStage()` / `stageBrief()` in the Copilot summary, the advisor prompt and pin replies; a "three roles" rule in Copilot's prompt.

@@ -990,6 +990,10 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 .menu .cmd{font:600 14px/1 var(--ui);color:var(--label)}
 .menu .d{font:14px/1.3 var(--ui);color:var(--label-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .menu .who{font:500 12px/1 var(--ui);color:var(--label-3)}
+.menu button.omni-row{grid-template-columns:28px minmax(0,1fr) auto}
+.menu button.omni-row .cmd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu button.omni-row .d{font-size:12px;color:var(--label-3)}
+.menu button.omni-row .mk{display:grid;place-items:center}
 .sharpen{padding:11px 13px;border-radius:var(--radius-card);font:450 14px/1.45 var(--ui);color:var(--label);display:grid;gap:8px;background:var(--chrome);-webkit-backdrop-filter:blur(26px) saturate(1.4);backdrop-filter:blur(26px) saturate(1.4);box-shadow:var(--chrome-shadow);animation:rise var(--t-bouncy) var(--bouncy)}
 .sharpen[hidden]{display:none}
 .sh-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -1474,6 +1478,13 @@ th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
 .cp-md-more summary{cursor:pointer;font:600 12px/1.4 var(--ui);color:var(--C);list-style:none;display:flex;align-items:center;gap:6px;user-select:none}
 .cp-md-more summary::-webkit-details-marker{display:none}
 .cp-md-more[open] summary{margin-bottom:8px;padding-bottom:6px;border-bottom:.5px solid var(--hair-2)}
+.cp-target{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:5px 6px 5px 10px;border-radius:var(--radius-sm);background:var(--hover);font:500 12px/1.2 var(--ui);color:var(--label-2)}
+.cp-target .mk{width:18px;height:18px;flex:none}
+.cp-target b{color:var(--label);font-weight:620}
+.cp-target button{margin-left:auto;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--label-3)}
+.cp-target button:hover{background:var(--press);color:var(--label)}
+.cp-target button .ico{width:11px;height:11px;stroke-width:2.2}
+.omni-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c,var(--B))}
 .cp-caret{display:inline-block;width:6px;height:13px;margin-left:3px;vertical-align:-2px;border-radius:2px;background:var(--C-fill);animation:beat .8s ease-in-out infinite}
 /* streaming reveal: each new word fades in and un-blurs, like Gemini */
 .uv{display:inline-block;animation:uv .64s cubic-bezier(.22,.7,.2,1) both}
@@ -2932,10 +2943,10 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
         <div class="line-main">
           <button type="button" class="inplus cmd-only" id="plusBtn" aria-label="Add files, a note or a claim" aria-haspopup="menu" title="Add"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
           <span id="modeChip" class="mode-chip cmd-only" hidden></span>
-          <label for="lineInput" class="sr">Ask the crew</label>
-          <textarea id="lineInput" class="cmd-only" rows="1" spellcheck="false" placeholder="What should we work on?"></textarea>
+          <label for="lineInput" class="sr">Command bar</label>
+          <textarea id="lineInput" class="cmd-only" rows="1" spellcheck="false" placeholder="Type / for commands, or search your cards"></textarea>
           <div class="route-wrap cmd-only" id="routeWrap">
-            <button type="button" id="route" class="route" aria-haspopup="menu" aria-expanded="false" aria-live="polite" title="Copilot (Orchestrator) · Click to switch specialist"></button>
+            <button type="button" id="route" class="route" aria-haspopup="menu" aria-expanded="false" aria-live="polite" title="What ↵ will do · click to ask in the side panel"></button>
             <div class="lc-pop" id="lcPop" role="menu" hidden></div>
           </div>
           <button type="button" class="lbtn enhance-btn cmd-only" id="enhanceBtn" title="Enhance prompt (⌘E or Tab)" aria-label="Enhance prompt" aria-pressed="false" hidden><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l1.6 4 4 1.6-4 1.6L12 14.2l-1.6-4-4-1.6 4-1.6Z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/><path d="M5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6Z"/></svg></button>
@@ -11968,6 +11979,7 @@ function route(text){
     if(dr&&!/[?？]\s*$/.test(t)){const at=t.match(/^@(scout|strategist|muse|wright|critic)\b[\s,:]*([\s\S]*)$/i),who=at?(at[1].toLowerCase()==="strategist"?"muse":at[1].toLowerCase()):null;
       const arg=(at?at[2]:t).trim();if(arg&&(!who||who===dr.agent))return mk("revise",dr.agent,L(`revise ${ctx.length>1?"these":"this"} ${dr.what}`,`修改这份${dr.whatZh}`),{arg,pid:dr.pid})}}
   m=t.match(/^@(scout|strategist|muse|wright|critic)\b[\s,:]*([\s\S]*)$/i);
+  if(m){const hm=m[1].toLowerCase()==="strategist"?"muse":m[1].toLowerCase();if(canHandOff(hm))return mk("handoff",hm,L(`ask ${AGENTS[hm].name} in the panel`,`在面板里问 ${AGENTS[hm].name}`),{member:hm,arg:m[2]})}
   if(m){const raw=m[1].toLowerCase(),a=raw==="strategist"?"muse":raw,rest=m[2];
     if(a==="muse")return f&&["idea","note","notepad"].includes(f.type)?mk("fork","muse","fork into 3",{n:parseInt(rest)||3,arg:rest}):f?mk("reply","muse","reply in notes",{arg:rest}):mk("claim",null,"add a claim first",{arg:rest});
     if(a==="wright"&&/\b(gif|loop)\b/i.test(rest))return mk("gif","wright","generate animated GIF",{arg:rest});
@@ -12030,7 +12042,22 @@ function renderLineCrew(){
     +Object.values(AGENTS).map(a=>`<button type="button" class="lc-btn" role="menuitem" data-lc="${a.key}" aria-pressed="${lineMode===a.key}">${a.mk}<span>${esc(a.name)}</span><span class="lc-role">${roles[a.key]||""}</span></button>`).join("");
   syncLineClearance?.();
 }
-function setLineMode(m){
+/* Chat lives in the panel. In the bar, @critic (typed, picked, or chosen from the chip) opens the panel with that member
+   preselected and the conversation goes on there. The one exception: a draft that member made is selected, where
+   plain words in the bar still revise it. */
+const CP_MEMBERS=["scout","muse","wright","critic"];
+function canHandOff(member){const dr=draftOf(effectiveLineCtx());return !(dr&&dr.agent===member)}
+function setCpTarget(k,{render=true}={}){cpTarget=CP_MEMBERS.includes(k)?k:null;if(render)renderCopilot()}
+function handoffToCopilot(member,rest=""){
+  setCpTarget(member,{render:false});closeMenu?.();
+  if($("lcPop")){$("lcPop").hidden=true;$("route")?.setAttribute("aria-expanded","false")}
+  const t=String(rest||"").trim();
+  openCopilot(true);
+  $("cpInput")?.focus();
+  if(t)sendCopilotMessage(t);else setTimeout(()=>$("cpInput")?.focus(),120);
+}
+function setLineMode(m,{keep=false}={}){
+  if(!keep&&m&&MODES_LINE[m]?.crew){lineIn.value="";lineMode=null;handoffToCopilot(m);return}
   lineMode=m||null;const c=$("modeChip"),M=MODES_LINE[lineMode];
   if(!M){$("line").classList.remove("moded");c.hidden=true;c.innerHTML="";renderLineCtx();lastRouteKey=null;renderRoute();renderLineCrew();autoGrow();return}
   c.innerHTML=`<span class="mk">${AGENTS[M.agent].mk}</span><span class="ml">${M.label}</span><button type="button" class="mx" aria-label="Leave ${M.label.toLowerCase()} mode" title="Leave ${M.label.toLowerCase()} mode">${ic("x")}</button>`;
@@ -12042,7 +12069,8 @@ function setLineMode(m){
 function absorbMode(){const m=lineIn.value.match(/^(?:\/(image|video|gif|search)|@(scout|strategist|muse|wright|critic))(?:\s+|$)/i);if(!m)return;
   if(!/\s/.test(lineIn.value)&&!lineIn._pick)return;
   const key=(m[1]||m[2]).toLowerCase(),mode=key==="strategist"?"muse":key;
-  lineIn._pick=false;lineIn.value=lineIn.value.slice(m[0].length);setLineMode(mode);autoGrow()}
+  if(MODES_LINE[mode]?.crew&&canHandOff(mode)){const rest=lineIn.value.slice(m[0].length);lineIn._pick=false;lineIn.value="";autoGrow();handoffToCopilot(mode,rest);return}
+  lineIn._pick=false;lineIn.value=lineIn.value.slice(m[0].length);setLineMode(mode,{keep:true});autoGrow()}
 function syncLineSend(){
   const b=$("sendBtn");if(!b)return;
   const busy=crewBusy(),hasText=!!(lineIn.value.trim()||MODES_LINE[lineMode]?.crew||linePending.length);
@@ -12067,12 +12095,12 @@ function renderRoute(){
   if(key!==lastRouteKey){
     lastRouteKey=key;
     const chev='<svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
-    if(!r){el.innerHTML=`<span class="mk">${COPILOT_ICO}</span><span class="rt"><b>${L("Canvas AI","画布执行")}</b></span>${chev}`}
+    if(!r){el.innerHTML=`<span class="mk">${COPILOT_ICO}</span><span class="rt"><b>${L("Command","命令")}</b></span>${chev}`}
     else{
       const pl=planOf(r),a=AGENTS[pl?.agent||r.agent];if(pl&&pl.agent&&pl.label)r={...r,label:"draft "+pl.label};
       const cfgIco='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg>';
       const noteIco='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5.5h10a1.5 1.5 0 0 1 1.5 1.5v6.6L13.6 18.5H7A1.5 1.5 0 0 1 5.5 17V7A1.5 1.5 0 0 1 7 5.5z"/><path d="M13.5 18.5v-3.4c0-.8.6-1.4 1.4-1.4h3.6"/></svg>';
-      el.innerHTML=(a?`<span class="mk">${a.mk}</span><span class="rt"><b>${a.name}</b> · ${esc(clip(r.label,22))}</span>`:r.kind==="copilot"?`<span class="mk">${COPILOT_ICO}</span><span class="rt"><b>${L("Canvas AI","画布执行")}</b> · ${esc(clip(r.label.replace(/^ask Copilot\s*/i,"")||"answer",20))}</span>`:`${r.kind==="config"?cfgIco:noteIco}<span class="rt">${esc(clip(r.label[0].toUpperCase()+r.label.slice(1),28))}</span>`)+chev;
+      el.innerHTML=(a?`<span class="mk">${a.mk}</span><span class="rt"><b>${a.name}</b> · ${esc(clip(r.label,22))}</span>`:r.kind==="copilot"?`<span class="mk">${COPILOT_ICO}</span><span class="rt"><b>${L("Command","命令")}</b> · ${esc(clip(r.label.replace(/^ask Copilot\s*/i,"")||"answer",20))}</span>`:`${r.kind==="config"?cfgIco:noteIco}<span class="rt">${esc(clip(r.label[0].toUpperCase()+r.label.slice(1),28))}</span>`)+chev;
       el.classList.remove("swap");void el.offsetWidth;el.classList.add("swap");
     }
   }
@@ -12110,25 +12138,25 @@ function renderLineCtx(){
   const cardChips=ns.slice(0,4).map(n=>{const L=lin(n),lbl=titleOf(n)||kindLabel(n);const thumb=n.type==="frame"||n.type==="image"?`<img src="${mediaSrc(n.media)}" alt="">`:L?`<span class="chip pg-${L}">${L}</span>`:"";
     return `<span class="ctx ${L?"pg-"+L:""}">${thumb}<span>${esc(lbl)}</span><button type="button" data-unctx="${n.id}" aria-label="Remove ${esc(lbl)} from context">${ic("x")}</button></span>`}).join("")+(ns.length>4?`<span class="ctx"><span>+${ns.length-4} more</span></span>`:"");
   const attChips=linePending.slice(0,4).map(a=>`<span class="ctx pending">${a.previewUrl?`<img src="${esc(a.previewUrl)}" alt="">`:""}<span class="ctx-tag">${L("Attached","附件")}</span><span>${esc(a.name)}</span><button type="button" data-unatt="${a.id}" aria-label="Remove ${esc(a.name)} attachment">${ic("x")}</button></span>`).join("")+(linePending.length>4?`<span class="ctx pending"><span>+${linePending.length-4} more</span></span>`:"");
-  $("lineCtx").innerHTML=cardChips+attChips;
+  $("lineCtx").innerHTML=(document.body.classList.contains("copilot-open")?"":cardChips)+attChips; /* with the panel open the selection shows there, once */
   lineIn.placeholder=lineMode?MODES_LINE[lineMode].ph:placeholderFor(ns);autoGrow();renderRoute();renderLineHint();syncCopilotContext?.();
 }
 function placeholderFor(ns){
   if(linePending.length&&!ns.length){
     return innerWidth<=640?L("Describe what to do with this image…","针对附件图片输入指令…"):L("Describe what to do with this attached image, or type /…","输入针对待发送图片的指令（敲 Enter 或点 Send 执行），或输入 /…");
   }
-  if(innerWidth<=640)return ns.length?L("Act on this card…","对选中卡片下指令…"):L("Act on canvas…","给画布下指令…");
+  if(innerWidth<=640)return ns.length?L("/ for commands","/ 命令"):L("Commands or search…","命令或搜索…");
   const f=ns[0];
-  if(!f)return board.nodes.length?L("Write an idea, or / for commands","写下想法，或输入 / 查看命令"):L("Write an idea, or drop anything here","写下你的核心想法，或拖入任何素材开始…");
-  if(ns.some(n=>n.type==="frame"))return L("Ask about this frame or draft a question…","针对这一帧提问或生成问题卡片…");
-  if(ns.length>1)return L("Synthesize selected cards, or ask Critic…","将选中卡片综合为结论，或请 Critic 评审…");
+  if(!f)return board.nodes.length?L("Type / for commands, or search your cards","输入 / 使用命令，或搜索卡片"):L("Write an idea, or drop anything here","写下你的核心想法，或拖入任何素材开始…");
+  if(ns.some(n=>n.type==="frame"))return L("Type / for commands on this frame","输入 / 对这一帧执行命令");
+  if(ns.length>1)return L("Type / for commands on these cards","输入 / 对选中卡片执行命令");
   switch(f.type){
-    case"idea":case"note":return L("Branch into directions, or ask what supports this…","发散验证方向，或追问有哪些证据支撑…");
-    case"notepad":return L("Explore directions from this brief, or /image…","根据简报发散方向，或生成配图…");
-    case"direction":return board.adopted[f.idea]===f.id?L("Ask Wright to build a prototype, or stress-test it…","让 Wright 基于此方向生成原型，或找 Critic 挑刺…"):L("Adopt this direction, or ask how it could fail…","采纳此方向，或请 Critic 评估潜在风险…");
-    case"proof":return L("Iterate on this prototype, or pull a snapshot…","继续优化这个原型，或生成定稿快照…");
-    case"question":return L("Answer this question, or ask @critic…","补充回答，或 @critic 进一步追问…");
-    default:return L(`Act on this ${kindLabel(f).replace(/ [A-D]$/,"").toLowerCase()}, or type /…`,"对当前卡片下指令，或输入 / 查看全部命令…");
+    case"idea":case"note":return L("/fork to branch into directions · /critique to check the evidence","/fork 发散方向 · /critique 检查依据");
+    case"notepad":return L("/fork to explore directions from this brief","/fork 根据简报发散方向");
+    case"direction":return board.adopted[f.idea]===f.id?L("/build to build a prototype · /critique to stress-test it","/build 生成原型 · /critique 找漏洞"):L("/adopt to adopt this direction · /critique to see how it could fail","/adopt 采纳此方向 · /critique 看它可能怎么失败");
+    case"proof":return L("/build for the next version · /print for a snapshot","/build 下一版 · /print 定稿快照");
+    case"question":return L("Type an answer to this question","输入对这个问题的回答");
+    default:return L(`Type / for commands on this ${kindLabel(f).replace(/ [A-D]$/,"").toLowerCase()}`,"输入 / 对当前卡片执行命令");
   }
 }
 async function execLineRequest(text){
@@ -12137,6 +12165,7 @@ async function execLineRequest(text){
   const ctx=ctxNodes(),f=ctx[0],has=t=>ctx.find(n=>n.type===t);
   const body=(r.arg??text).trim();
   switch(r.kind){
+    case"handoff":return handoffToCopilot(r.member,r.arg);
     case"fork":return fork(has("idea")||has("note")||has("notepad")||has("treemap")||f,r.n||3,r.arg||"");
     case"build":return build(has("proof")||has("direction")||has("treemap"),{brief:r.arg||""});
     case"deck":return build(has("direction")||has("proof")||has("treemap"),{mode:"deck"});
@@ -12192,6 +12221,7 @@ async function sendLine(){
     return;
   }
   const text=lineText().trim();const r=route(text);if(!r||r.kind==="none")return toast("Unknown move. Type / to see them all.");
+  if(r.kind==="handoff"){lineIn.value="";autoGrow();closeMenu();closeSharpen();clearPreview();lastRouteKey=null;renderRoute();return handoffToCopilot(r.member,r.arg)}
   {const needsText=new Set(["claim","note","question","image","video","gif","search","ask"]),bare=text.match(/^\/(\w+)$/);
    if(bare&&needsText.has(r.kind)&&!String(r.arg||"").trim()){lineIn.value="/"+bare[1]+" ";autoGrow();renderRoute();lineIn.focus();return toast(L(`Write it after /${bare[1]}`,`请在 /${bare[1]} 后面写上内容`))}}
   if(hasAtt)await commitLineAttachments({triggerAdvisor:false,selectNodes:true});
@@ -12261,21 +12291,46 @@ function syncLineRows(){
 }
 addEventListener("resize",()=>{if($("line")?.classList.contains("multi")){$("line").classList.remove("multi");autoGrow()}});
 
-/* slash and @ menu */
-let menuIdx=0,menuItems=[];
+/* slash and @ menu, and the card search that plain words trigger */
+let menuIdx=0,menuItems=[],menuKind="slash";
+const cmdRowHTML=c=>`<span class="mk" ${c.a?"":'style="opacity:.25"'}>${c.a?AGENTS[c.a].mk:"·"}</span><span class="cmd">${c.c}${c.hint?` <span style="color:var(--faint)">${c.hint}</span>`:""}</span><span class="d">${c.d}</span><span class="who">${c.a?AGENTS[c.a].name:"You"}</span>`;
+/* Plain words in the bar also search the cards on the board (best title match first) and name matching commands.
+   Nothing is picked until you press ↓, so Enter still does what it always did: the words become an idea, a command, a question for the panel. */
+function omniCardHits(q){
+  const s=q.toLowerCase();
+  return visibleNodes().map(n=>{const t=String(titleOf(n)||"").toLowerCase();if(!findSearchParts(n).join(" ").toLowerCase().includes(s))return null;return {n,score:t.startsWith(s)?0:t.includes(s)?1:2}})
+    .filter(Boolean).sort((a,b)=>a.score-b.score||a.n.x-b.n.x||a.n.y-b.n.y).slice(0,6).map(x=>x.n);
+}
+function showOmniResults(v){
+  const q=v.trim();
+  if(q.length<2||/^[/@]/.test(q)||lineMode||linePending.length||findOpen)return false;
+  const hits=omniCardHits(q),word=/\s/.test(q)?"":q.toLowerCase();
+  const cmds=word?CMDS.filter(c=>!c.hidden&&c.c.slice(1).startsWith(word)).slice(0,3):[];
+  if(!hits.length&&!cmds.length)return false;
+  if(menuKind!=="omni")menuIdx=-1;
+  menuKind="omni";
+  menuItems=[...hits.map(n=>({card:n.id,html:`<span class="mk"><i class="omni-dot" style="--c:${lin(n)?`var(--${lin(n)})`:WEIGHTS[n.weight]?.dot||"var(--B)"}"></i></span><span class="cmd">${esc(clip(titleOf(n)||kindLabel(n),52))}</span><span class="d">${esc(kindLabel(n))}</span>`})),...cmds.map(c=>({ins:c.c+" ",html:cmdRowHTML(c)}))];
+  menuIdx=clamp(menuIdx,-1,menuItems.length-1);
+  const el=$("menu");el.hidden=false;
+  el.innerHTML=(hits.length?`<div class="mh">${L("Cards","卡片")}</div>`:"")+menuItems.map((it,i)=>(i===hits.length&&cmds.length?`<div class="mh">${L("Commands","命令")}</div>`:"")+`<button type="button" role="option" data-mi="${i}"${it.card?' class="omni-row"':""} aria-selected="${i===menuIdx}">${it.html}</button>`).join("");
+  syncLineClearance();return true;
+}
 function updateMenu(){
   const v=lineIn.value;const m=v.match(/^([/@])(\w*)$/);
-  if(!m){closeMenu();return}
+  if(!m){if(!showOmniResults(v))closeMenu();return}
+  if(menuKind==="omni"){menuKind="slash";menuIdx=0}
   const q=m[2].toLowerCase();
-  menuItems=m[1]==="/"?CMDS.filter(c=>!c.hidden&&c.c.slice(1).startsWith(q)).map(c=>({ins:c.c+" ",html:`<span class="mk" ${c.a?"":'style="opacity:.25"'}>${c.a?AGENTS[c.a].mk:"·"}</span><span class="cmd">${c.c}${c.hint?` <span style="color:var(--faint)">${c.hint}</span>`:""}</span><span class="d">${c.d}</span><span class="who">${c.a?AGENTS[c.a].name:"You"}</span>`}))
+  menuItems=m[1]==="/"?CMDS.filter(c=>!c.hidden&&c.c.slice(1).startsWith(q)).map(c=>({ins:c.c+" ",html:cmdRowHTML(c)}))
     :Object.values(AGENTS).filter(a=>a.key.startsWith(q)||a.name.toLowerCase().startsWith(q)).map(a=>{const handle=a.name.toLowerCase();return {ins:"@"+handle+" ",html:`<span class="mk">${a.mk}</span><span class="cmd">@${handle}</span><span class="d">${esc(a.craft)}</span><span class="who">${crewState[a.key].busy?"busy":"free"}</span>`}});
   if(!menuItems.length){closeMenu();return}
   menuIdx=clamp(menuIdx,0,menuItems.length-1);
   const el=$("menu");el.hidden=false;el.innerHTML=`<div class="mh">${m[1]==="/"?"Moves":"Crew"}</div>`+menuItems.map((it,i)=>`<button type="button" role="option" data-mi="${i}" aria-selected="${i===menuIdx}">${it.html}</button>`).join("");
   syncLineClearance();
 }
-function closeMenu(){$("menu").hidden=true;menuItems=[];syncLineClearance()}
-function pickMenu(i,{run=false}={}){const it=menuItems[i];if(!it)return;lineIn.value=it.ins;lineIn._pick=true;closeMenu();lineIn.focus();renderRoute();
+function closeMenu(){$("menu").hidden=true;menuItems=[];menuKind="slash";syncLineClearance()}
+function pickMenu(i,{run=false}={}){const it=menuItems[i];if(!it)return;
+  if(it.card){const n=byId(it.card);lineIn.value="";autoGrow();closeMenu();renderRoute();if(n)jumpToFindNode(n);return}
+  lineIn.value=it.ins;lineIn._pick=true;closeMenu();lineIn.focus();renderRoute();
   const cmd=CMDS.find(x=>x.c===String(it.ins||"").trim());if(run&&cmd?.run)sendLine()}
 
 /* sharpen: prompt refiner (presets, board & image context, disambiguation, variations, revert) */
@@ -12761,6 +12816,7 @@ function mcpDialog(startProv="",opts={}){
 }
 
 /* ── Copilot: multi-turn design partner synced with the board & crew ── */
+let cpTarget=null; /* the crew member the designer is addressing in the panel: scout | muse | wright | critic */
 let copilotOpen=false,copilotMode="auto",copilotAbort=null,copilotStreaming=false,cpCloseTimer=0,cpPeekTimer=0;
 const cpKey=id=>"cp-"+id;
 function clearCopilotPeek(){clearTimeout(cpPeekTimer);$("copilotBtn")?.classList.remove("is-peek")}
@@ -12770,6 +12826,7 @@ function openCopilot(open,focusNode=null){
   const p=$("copilotPanel"),btn=$("copilotBtn");if(!p)return;
   clearTimeout(cpCloseTimer);
   document.body.classList.toggle("copilot-open",copilotOpen);
+  renderLineCtx?.();
   if(btn){btn.setAttribute("aria-expanded",String(copilotOpen));btn.title=copilotOpen?"Collapse Copilot (⌘.)":"Copilot (⌘.)"}
   if(copilotOpen){
     $("ledger").hidden=true;$("ledgerBtn")?.classList.remove("on");
@@ -12803,7 +12860,7 @@ function syncCopilotContext(){
   const badge=qs("#copilotPanel .cp-ctx");
   if(badge){badge.title=lbl;const sp=qs("span",badge);if(sp)sp.textContent=lbl}
   const inp=$("cpInput");
-  if(inp)inp.placeholder=ctx.length?L("Ask about selection…","询问选中卡片…"):L("Ask Copilot…","向 Copilot 提问…");
+  if(inp)inp.placeholder=cpTarget?L(`Ask ${AGENTS[cpTarget].name}…`,`向 ${AGENTS[cpTarget].name} 提问…`):ctx.length?L("Ask about selection…","询问选中卡片…"):L("Ask Copilot…","向 Copilot 提问…");
   const cc=$("cpCompCards");
   if(cc)cc.innerHTML=renderCopilotCompCards(ctx);
   if(!(board.copilot||[]).length){
@@ -13052,10 +13109,10 @@ function renderCopilot(){
     </header>
     <div class="cp-msgs" id="cpMsgs">${msgs.length?msgs.map(renderCopilotMsg).join(""):`<div class="cp-empty"><h3>Think across the board</h3><p>Ask about selected cards, images, or pull live context from <b>GitHub</b>, <b>Google Notebook (NotebookLM)</b>, <b>Notion</b>, or <b>Figma</b> via MCP.</p></div>`}</div>
     <div class="cp-chips">${chips.map(c=>`<button type="button" class="cp-chip" data-cp-chip="${esc(c)}">${esc(c)}</button>`).join("")}</div>
-    <footer class="cp-foot">${compCards}${extPills}<div id="cpQueue" class="q-list cp-q" aria-live="polite"></div><form id="cpForm" class="cp-box" autocomplete="off">
+    <footer class="cp-foot">${cpTarget?`<div class="cp-target" id="cpTarget"><span class="mk">${AGENTS[cpTarget].mk}</span><span>${L("Asking","正在问")} <b>${esc(AGENTS[cpTarget].name)}</b></span><button type="button" data-cp-untarget aria-label="${L("Ask Copilot instead","改问 Copilot")}" title="${L("Ask Copilot instead","改问 Copilot")}">${ic("x")}</button></div>`:""}${compCards}${extPills}<div id="cpQueue" class="q-list cp-q" aria-live="polite"></div><form id="cpForm" class="cp-box" autocomplete="off">
       <span class="cp-plus-wrap"><button type="button" class="lbtn" id="cpFileBtn" title="Add" aria-label="Add files or sources" aria-haspopup="menu">${ic("plus")}</button>
         <div class="cp-plus-pop" role="menu" hidden><button type="button" role="menuitem" data-cp-plus="files">${ic("fileImg")}${L("Upload files or images","上传文件或图片")}</button><button type="button" role="menuitem" data-cp-plus="source">${ic("plug")}${L("Add from Notion, GitHub or Figma","从 Notion、GitHub 或 Figma 添加")}</button></div></span>
-      <textarea id="cpInput" rows="1" placeholder="${ctx.length?L("Ask about selection…","询问选中卡片…"):L("Ask Copilot…","向 Copilot 提问…")}"></textarea>
+      <textarea id="cpInput" rows="1" placeholder="${cpTarget?L(`Ask ${AGENTS[cpTarget].name}…`,`向 ${AGENTS[cpTarget].name} 提问…`):ctx.length?L("Ask about selection…","询问选中卡片…"):L("Ask Copilot…","向 Copilot 提问…")}"></textarea>
       <button type="button" class="lbtn" id="cpEnhBtn" title="Polish message" aria-label="Polish message">${ic("sparkles")}</button>
       <button type="button" class="lbtn" id="cpMicBtn" title="Dictate" aria-label="Dictate" aria-pressed="${listening}">${$("micBtn").innerHTML}</button>
       <button type="button" class="stop-mini" id="cpStopBtn" title="Stop response" aria-label="Stop response" hidden></button>
@@ -13471,8 +13528,13 @@ function copilotLocalReply(text,ctx){
   }
   return {text:reply,visuals,proposals,chips:copilotStarterChips().slice(0,3)};
 }
-function planCopilotDelegation(text,ctx,mode){
+function planCopilotDelegation(text,ctx,mode,forced=null){
   const t=String(text||"").trim(),roles=[];
+  /* the designer addressed one member: that member does the work, with no guessing from keywords and no extra reviewer */
+  if(forced&&CP_MEMBERS.includes(forced)){
+    const task={scout:`Gather relevant evidence & source weight for: “${clip(t,90)}”`,muse:`Analyze strategic options, directions & trade-offs for: “${clip(t,90)}”`,wright:`Draft concrete executable structure / next steps for: “${clip(t,90)}”`,critic:`Audit gaps, unverified assumptions & risks around: “${clip(t,90)}”`}[forced];
+    return [{id:"st-"+uid(),from:"copilot",to:forced,handoff:false,status:"pending",ms:0,output:"",contextTag:"",task}];
+  }
   const isInspectQuery=/^(?:what(?:'s|\s+is)?|who|describe|explain|why|how|summarize|tell me about|translate)\b|这是什么|这是谁|解释|说明|翻译|说说/i.test(t);
   if(mode==="ask"&&(!/\b(crew|squad|multi-agent|deep research|deep dive|run all agents)\b|呼叫全员|深度调研/i.test(t)||isInspectQuery))return [];
   if(isInspectQuery&&ctx.length)return [];
@@ -13591,7 +13653,10 @@ async function runCopilotSubStep(step,scoped,aiMsg,signal){
   }
 }
 async function sendCopilotMessage(raw,ctxOverride=null){
-  const text=String(raw||"").trim();if(!text)return;
+  let text=String(raw||"").trim();if(!text)return;
+  {const at=text.match(/^@(scout|strategist|muse|wright|critic)\b[\s,:]*([\s\S]*)$/i);
+   if(at){cpTarget=at[1].toLowerCase()==="strategist"?"muse":at[1].toLowerCase();text=at[2].trim();if(!text){renderCopilot();setTimeout(()=>$("cpInput")?.focus(),60);return}}}
+  const forced=cpTarget;
   if(/^\/mcp$/i.test(text)||/^open mcp sources$/i.test(text)){mcpDialog();return}
   cpQueuePaused=false;
   if(copilotStreaming){
@@ -13601,8 +13666,8 @@ async function sendCopilotMessage(raw,ctxOverride=null){
   }
   const ctx=Array.isArray(ctxOverride)?ctxOverride.map(byId).filter(Boolean):ctxNodes();
   board.copilot=board.copilot||[];
-  const userMsg={id:uid(),role:"user",text,t:NOW(),ctxIds:ctx.slice(0,3).map(n=>n.id),extCtx:mcpActiveItems().map(x=>({provider:x.provider,title:x.title}))};
-  const aiMsg={id:uid(),role:"ai",agent:null,text:"",visuals:[],proposals:[],chips:[],streaming:true,t:NOW()};
+  const userMsg={id:uid(),role:"user",text,t:NOW(),...(forced?{to:forced}:{}),ctxIds:ctx.slice(0,3).map(n=>n.id),extCtx:mcpActiveItems().map(x=>({provider:x.provider,title:x.title}))};
+  const aiMsg={id:uid(),role:"ai",agent:forced||null,text:"",visuals:[],proposals:[],chips:[],streaming:true,t:NOW()};
   board.copilot.push(userMsg,aiMsg);
   if(board.copilot.length>300)board.copilot=board.copilot.slice(-300);
   renderCopilot();
@@ -13646,7 +13711,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
   const isCasual=isCasualCopilotTurn(text);
   const trimCasual=s=>{const p=String(s||"").replace(/^\s*[—–-]\s*Lumen Copilot[^\n]*$/gim,"").trim().split(/\n\s*\n/)[0]?.trim()||"";return p};
   const skipDelegate=(directMem||(directCfg&&!askOnly))&&!/\b(?:also|and\s+(?:critique|fork|build|draw|search|explain)|explain|why)\b/i.test(text);
-  const subSteps=(skipDelegate||isCasual)?[]:planCopilotDelegation(text,ctx,copilotMode);
+  const subSteps=forced?planCopilotDelegation(text,ctx,copilotMode,forced):(skipDelegate||isCasual)?[]:planCopilotDelegation(text,ctx,copilotMode);
   const hist=board.copilot.slice(-8,-1).filter(m=>m.text).map(m=>({role:m.role==="user"?"user":"assistant",content:m.role==="user"?m.text:trimRepetitionLoop(m.text).text})).slice(-4);
   const lastUser=hist.pop()||{role:"user",content:text};
   const chatHist=isCasual?[]:hist.slice(-3);
@@ -13690,7 +13755,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       const digestBlock=isCasual?"":boardDigestForCopilot({query:subSteps.length?"":text,ctx});
       const sys=isCasual
         ?`You are Lumen Copilot, a concise design workspace assistant for board "${board.title||"Untitled"}". The user sent a brief conversational message ("${text.trim()}"). Reply in 1 short, natural sentence (under 18 words). Do NOT roleplay as a human teammate, do NOT mention playtests, synthesis docs, or background work, do NOT output multiple paragraphs, and do NOT add a sign-off.`
-        :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\nCONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Add tasks to a kanban that already exists: {"action":"add_cards","target":"kanban nodeId or title","cards":[{"title":"...","col":0}]}\n- ONE KANBAN PER PROJECT: if a kanban is already on the board, add tasks to it with add_cards and never create a second one. Only when the designer asks for a separate or phased board, create it with "separate":true. A kanban holds tasks to do: a design direction or option is a "direction" card, not a kanban.\n- THREE ROLES, ONE VOICE: when you inspire, offer options the designer can ignore, and never commit anything; when you facilitate, help the designer decide, ask only if you cannot guess, and end with choices; when you execute, act only on what the designer decided or asked for, and add to what exists instead of starting again. The STAGE line in the board summary says which fits now.\n- CHOOSING A DIRECTION IS NOT PLANNING: while nothing is adopted yet ("Adopted: none") and the designer is exploring or asking for options, offer 2-3 options as "direction" cards, each with a one-line test it could fail. Do not use a kanban or list for options. A kanban or list is for tasks, once a direction is adopted or when the designer asks for a plan.\n- Never emit the same card as both an action and a proposal. An action lands on the board directly, so leave it out of the proposals.\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
+        :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\n${forced?`The designer is addressing ${AGENTS[forced].name} directly (${AGENTS[forced].craft}) Answer as ${AGENTS[forced].name}, in first person, and stay in that role.\n\n`:""}CONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Add tasks to a kanban that already exists: {"action":"add_cards","target":"kanban nodeId or title","cards":[{"title":"...","col":0}]}\n- ONE KANBAN PER PROJECT: if a kanban is already on the board, add tasks to it with add_cards and never create a second one. Only when the designer asks for a separate or phased board, create it with "separate":true. A kanban holds tasks to do: a design direction or option is a "direction" card, not a kanban.\n- THREE ROLES, ONE VOICE: when you inspire, offer options the designer can ignore, and never commit anything; when you facilitate, help the designer decide, ask only if you cannot guess, and end with choices; when you execute, act only on what the designer decided or asked for, and add to what exists instead of starting again. The STAGE line in the board summary says which fits now.\n- CHOOSING A DIRECTION IS NOT PLANNING: while nothing is adopted yet ("Adopted: none") and the designer is exploring or asking for options, offer 2-3 options as "direction" cards, each with a one-line test it could fail. Do not use a kanban or list for options. A kanban or list is for tasks, once a direction is adopted or when the designer asks for a plan.\n- Never emit the same card as both an action and a proposal. An action lands on the board directly, so leave it out of the proposals.\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
 
       const maxTok=isCasual?64:3000;
       /* Auto routing, as for the crew: a merge is heavy (cloud first), everything else is light (Local AI first).
@@ -14275,6 +14340,7 @@ function initCopilot(){
     const del=e.target.closest("[data-cpq-del]");if(del){cpQueue=cpQueue.filter(q=>q.id!==del.dataset.cpqDel);renderCopilotQueue();return}
     if(e.target.closest("[data-cpq-clear]")){cpQueue=[];cpQueuePaused=false;renderCopilotQueue();return}
     if(e.target.closest("[data-cpq-run]")){cpQueuePaused=false;if(!copilotStreaming&&cpQueue.length){const next=cpQueue.shift();renderCopilotQueue();sendCopilotMessage(next.text,next.ctxIds)}else renderCopilotQueue();return}
+    if(e.target.closest("[data-cp-untarget]")){setCpTarget(null);return}
     const mb=e.target.closest("[data-cp-mode]");if(mb){copilotMode=mb.dataset.cpMode;renderCopilot();return}
     const ch=e.target.closest("[data-cp-chip]");if(ch){sendCopilotMessage(ch.dataset.cpChip);return}
     const um=e.target.closest("[data-cp-ui-mode]");if(um){const idx=+um.dataset.cpUi,m=(board.copilot||[]).find(x=>x.id===um.dataset.cpMsg),v=m?.visuals?.[idx];if(v){v._mode=um.dataset.cpUiMode;const box=um.closest(".cp-ui");if(box)box.outerHTML=renderCopilotVisual(v,m.id,idx);persist()}return}
@@ -15624,7 +15690,9 @@ $("routeWrap")?.addEventListener("click",e=>{
   const k=b.dataset.lc;
   const pop=$("lcPop");if(pop)pop.hidden=true;
   $("route")?.setAttribute("aria-expanded","false");
-  sfx("tick");setLineMode(k==="auto"||lineMode===k?null:k);
+  sfx("tick");
+  if(k==="auto"||MODES_LINE[k]?.crew){handoffToCopilot(k==="auto"?null:k);return}
+  setLineMode(lineMode===k?null:k);
   lineIn.focus();
 });
 addEventListener("pointerdown",e=>{const pop=$("lcPop");if(pop&&!pop.hidden&&!e.target.closest("#routeWrap")){pop.hidden=true;$("route")?.setAttribute("aria-expanded","false")}},true);
@@ -16741,8 +16809,8 @@ lineIn.addEventListener("focus",()=>{$("line").classList.add("focus");schedulePr
 lineIn.addEventListener("blur",()=>{$("line").classList.remove("focus");setTimeout(()=>{if(document.activeElement!==lineIn)closeMenu()},150);setTimeout(()=>{if(document.activeElement!==lineIn)clearPreview()},200)});
 lineIn.addEventListener("keydown",e=>{
   if(!$("menu").hidden){
-    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();menuIdx=(menuIdx+(e.key==="ArrowDown"?1:-1)+menuItems.length)%menuItems.length;updateMenu();return}
-    if(e.key==="Enter"||e.key==="Tab"){e.preventDefault();pickMenu(menuIdx,{run:e.key==="Enter"});return}
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();const k=menuItems.length,d=e.key==="ArrowDown"?1:-1;menuIdx=menuKind==="omni"&&menuIdx<0?(d>0?0:k-1):(menuIdx+d+k)%k;updateMenu();return}
+    if((e.key==="Enter"||e.key==="Tab")&&!(menuKind==="omni"&&menuIdx<0)){e.preventDefault();pickMenu(menuIdx,{run:e.key==="Enter"});return}
     if(e.key==="Escape"){closeMenu();return}
   }
   if(e.key==="Tab"&&!e.shiftKey&&lineIn.value.trim()){e.preventDefault();if(sharpened)applySharpened(sharpened);else sharpen();return}

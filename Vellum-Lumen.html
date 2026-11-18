@@ -3152,6 +3152,9 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 #line .route:hover,#line .route[aria-expanded="true"]{background:var(--hover)}
 #line .route kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:5px;font:500 12px/1 var(--mono);color:var(--label-2);background:var(--hover);box-shadow:0 0 0 .5px var(--hair-2),inset 0 -1px 0 var(--hair-2)}
 #line .route .rt b{color:var(--label-2)}
+#line .route .rt+kbd{margin-left:8px}
+#line .route{max-width:340px}
+#line .route .rt{flex:none;max-width:200px}
 @media (max-width:640px){#line #sendBtn:not(.is-stop){display:grid}}
 
 
@@ -12131,7 +12134,8 @@ function renderRoute(){
   const eb=$("enhanceBtn");if(eb){const showEnh=!!genKind&&txt.length>=3&&!/^[/@]\w*$/.test(txt);eb.hidden=!showEnh;eb.classList.toggle("on",!!(sharpened&&!$("sharpen").hidden));eb.setAttribute("aria-pressed",String(!$("sharpen").hidden))}
   renderGenOpts(!!genKind,genKind||"image");syncLineSend();
   if(lineMode)lineIn.placeholder=MODES_LINE[lineMode].ph;
-    const key=(r?r.kind+(r.agent||"")+r.label+(r.kind==="search"?searchKindOf(lineText())||searchPref:"")+effectiveLineCtx().map(n=>n.id).join():"idle")+":"+uiLang();
+    const omniCards=menuKind==="omni"&&!$("menu").hidden?menuItems.filter(i=>i.card).length:0,omniPick=omniCards&&menuIdx>=0&&menuItems[menuIdx]?.card?1:0;
+    const key=(r?r.kind+(r.agent||"")+r.label+(r.kind==="search"?searchKindOf(lineText())||searchPref:"")+effectiveLineCtx().map(n=>n.id).join():"idle")+":"+uiLang()+":"+omniCards+omniPick;
   if(key!==lastRouteKey){
     lastRouteKey=key;
     const chev='<svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
@@ -12144,6 +12148,8 @@ function renderRoute(){
       el.innerHTML=key+(a?`<span class="rt"><b>${a.name}</b> · ${esc(clip(r.label,22))}</span>`:r.kind==="handoff"?`<span class="rt">${L("Ask in panel","在面板中提问")}</span>`:r.kind==="copilot"?`<span class="rt">${L("Ask in panel","在面板中提问")}</span>`:`<span class="rt">${esc(clip(r.label[0].toUpperCase()+r.label.slice(1),28))}</span>`);
       el.classList.remove("swap");void el.offsetWidth;el.classList.add("swap");
     }
+    if(omniPick)el.innerHTML=`<kbd>\u21b5</kbd><span class="rt">${L("Open card","打开卡片")}</span>`;
+    else if(omniCards)el.innerHTML=`<kbd>\u2193</kbd><span class="rt">${L("open card","打开卡片")}</span>`+el.innerHTML;
   }
   syncLineClearance?.();
 }
@@ -12368,7 +12374,7 @@ function updateMenu(){
   const el=$("menu");el.hidden=false;el.innerHTML=`<div class="mh">${m[1]==="/"?"Moves":"Crew"}</div>`+menuItems.map((it,i)=>`<button type="button" role="option" data-mi="${i}" aria-selected="${i===menuIdx}">${it.html}</button>`).join("");
   syncLineClearance();
 }
-function closeMenu(){$("menu").hidden=true;menuItems=[];menuKind="slash";syncLineClearance()}
+function closeMenu(){const was=!$("menu").hidden&&menuKind==="omni";$("menu").hidden=true;menuItems=[];menuKind="slash";syncLineClearance();if(was)queueMicrotask(()=>{try{renderRoute()}catch{}})}
 function pickMenu(i,{run=false}={}){const it=menuItems[i];if(!it)return;
   if(it.card){const n=byId(it.card);lineIn.value="";autoGrow();closeMenu();renderRoute();if(n)jumpToFindNode(n);return}
   lineIn.value=it.ins;lineIn._pick=true;closeMenu();lineIn.focus();renderRoute();
@@ -16872,7 +16878,7 @@ lineIn.addEventListener("focus",()=>{$("line").classList.add("focus");schedulePr
 lineIn.addEventListener("blur",()=>{$("line").classList.remove("focus");setTimeout(()=>{if(document.activeElement!==lineIn)closeMenu()},150);setTimeout(()=>{if(document.activeElement!==lineIn)clearPreview()},200)});
 lineIn.addEventListener("keydown",e=>{
   if(!$("menu").hidden){
-    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();const k=menuItems.length,d=e.key==="ArrowDown"?1:-1;menuIdx=menuKind==="omni"&&menuIdx<0?(d>0?0:k-1):(menuIdx+d+k)%k;updateMenu();return}
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();const k=menuItems.length,d=e.key==="ArrowDown"?1:-1;menuIdx=menuKind==="omni"&&menuIdx<0?(d>0?0:k-1):(menuIdx+d+k)%k;updateMenu();renderRoute();return}
     if((e.key==="Enter"||e.key==="Tab")&&!(menuKind==="omni"&&menuIdx<0)){e.preventDefault();pickMenu(menuIdx,{run:e.key==="Enter"});return}
     if(e.key==="Escape"){closeMenu();return}
   }

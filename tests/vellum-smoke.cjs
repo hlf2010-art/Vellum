@@ -715,6 +715,17 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.fill('#lineInput', ''); await p.keyboard.type('/fork'); await p.waitForTimeout(250);
       v = await vis();
       check('a command says what Enter will run', /↵/.test(v.chip) && /fork/i.test(v.chip), v.chip);
+      await p.evaluate(() => { node('note', { text: 'Talk to five founders', status: 'ink', by: 'you' }, { x: 500, y: 100 }); renderAll(); });
+      await p.fill('#lineInput', ''); await p.keyboard.type('Talk'); await p.waitForTimeout(300);
+      const chipText = () => p.evaluate(() => document.getElementById('route').textContent.replace(/\s+/g, ' ').trim());
+      let cc = await chipText();
+      check('with matching cards listed, the key cap says ↓ opens a card and still says what Enter does', /↓\s*open card/.test(cc) && /↵/.test(cc), cc);
+      await p.keyboard.press('ArrowDown'); await p.waitForTimeout(200);
+      cc = await chipText();
+      check('after ↓ the cap says Enter opens the card, and nothing about adding', /^↵\s*Open card$/.test(cc), cc);
+      await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+      cc = await chipText();
+      check('closing the list brings the ordinary hint back', !/open card/i.test(cc) && /↵/.test(cc), cc);
       await p.fill('#lineInput', ''); await p.keyboard.type('Plan the next two weeks'); await p.waitForTimeout(250);
       await p.keyboard.press('Tab'); await p.waitForTimeout(250);
       check('Tab does not rewrite ordinary words; enhancing is for picture prompts only', await p.evaluate(() => lineIn.value === 'Plan the next two weeks' && document.getElementById('sharpen').hidden));

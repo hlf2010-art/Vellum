@@ -617,6 +617,51 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.context().close();
     }
 
+    // 5j. several cards selected: right-click gives a menu for the whole selection, and Ask Copilot works from it and from the selection bar
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const ids = await p.evaluate(() => { const a = node('note', { text: 'Founder interviews', status: 'ink', by: 'you' }, { x: 200, y: 150 }), b = node('note', { text: 'Pricing idea', status: 'ink', by: 'you' }, { x: 640, y: 150 }), c = node('note', { text: 'Landing page copy', status: 'ink', by: 'you' }, { x: 1080, y: 150 }); select([a.id, b.id]); renderAll(); focusNodes(board.nodes, 1, 0); return [a.id, b.id, c.id]; });
+      await p.waitForTimeout(500);
+      const rect = id => p.evaluate(id => { const r = document.querySelector(`[data-id="${id}"]`).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, cx: r.left + r.width / 2, cy: r.top + r.height / 2 }; }, id);
+      const menu = () => p.evaluate(() => ({ open: !document.getElementById('cardMenu').hidden, head: document.querySelector('#cardMenu .cm-head b')?.textContent || '', sm: [...document.querySelectorAll('#cardMenu [data-sm]')].map(x => x.dataset.sm), cm: document.querySelectorAll('#cardMenu [data-cm]').length }));
+      const right = async (x, y) => { await p.mouse.click(x, y, { button: 'right' }); await p.waitForTimeout(250); return menu(); };
+      const r0 = await rect(ids[0]), r1 = await rect(ids[1]), r2 = await rect(ids[2]);
+      let m = await right(r0.cx, r0.cy);
+      check('right-click on one of several selected cards opens a menu for the whole selection (not that one card\'s menu)', m.open && /^2 /.test(m.head) && ['copilot', 'gather', 'list', 'kanban', 'dup', 'group'].every(k => m.sm.includes(k)) && m.cm === 0, JSON.stringify(m));
+      await p.click('#cardMenu [data-sm="copilot"]'); await p.waitForTimeout(400);
+      const cp = await p.evaluate(() => ({ open: copilotOpen, selN: sel.length, focus: document.activeElement?.id, ph: document.getElementById('cpInput')?.placeholder, chips: document.querySelectorAll('#cpCompCards .cp-comp-chip').length, sent: (board.copilot || []).length, menuOpen: !document.getElementById('cardMenu').hidden }));
+      check('Ask Copilot there opens the panel with the selection as context and the cursor in the input, and sends nothing (it used to do nothing at all)', cp.open && cp.selN === 2 && cp.focus === 'cpInput' && /selection/i.test(cp.ph) && cp.chips === 2 && cp.sent === 0 && !cp.menuOpen, JSON.stringify(cp));
+      await p.evaluate(() => openCopilot(false)); await p.waitForTimeout(300);
+
+      const gapX = (r0.r + r1.l) / 2, gapY = r0.t + 24;
+      check('the point used for the gap test is empty canvas', await p.evaluate(([x, y]) => !document.elementFromPoint(x, y)?.closest('.card'), [gapX, gapY]));
+      m = await right(gapX, gapY);
+      check('right-click on the empty gap inside the selection opens the same menu', m.open && /^2 /.test(m.head) && m.sm.includes('copilot'), JSON.stringify(m));
+      await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+      m = await right(r2.cx, Math.min(r2.b + 160, 760));
+      check('right-click on empty canvas away from the selection opens nothing', !m.open, JSON.stringify(m));
+      m = await right(r2.cx, r2.cy);
+      check('right-click on a card outside the selection still selects just it and opens its own menu', m.open && m.cm > 0 && m.sm.length === 0 && await p.evaluate(id => sel.length === 1 && sel[0] === id, ids[2]), JSON.stringify(m));
+      await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+
+      // the selection bar has it first
+      await p.evaluate(ids => { select([ids[0], ids[1]]); renderAll(); }, ids); await p.waitForTimeout(300);
+      const bar = await p.evaluate(() => [...document.querySelectorAll('#selbar [data-s]')].map(b => b.dataset.s));
+      check('the selection bar offers Ask Copilot first', bar[0] === 'copilot' && bar.includes('gather') && bar.includes('kanban'), bar.join());
+      await p.click('#selbar [data-s="copilot"]'); await p.waitForTimeout(400);
+      check('and it opens the panel with both cards in context', await p.evaluate(() => copilotOpen && sel.length === 2 && document.querySelectorAll('#cpCompCards .cp-comp-chip').length === 2 && document.activeElement?.id === 'cpInput'));
+      await p.evaluate(() => openCopilot(false)); await p.waitForTimeout(300);
+
+      // other menu items act on the whole selection
+      const before = await p.evaluate(() => board.nodes.filter(n => !n.tombstone).length);
+      const q0 = await rect(ids[0]);
+      await right(q0.cx, q0.cy); await p.click('#cardMenu [data-sm="dup"]'); await p.waitForTimeout(500);
+      check('Duplicate in the selection menu duplicates every selected card', await p.evaluate(b => board.nodes.filter(n => !n.tombstone).length === b + 2, before));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover
     {
       const p = await page(browser, base);

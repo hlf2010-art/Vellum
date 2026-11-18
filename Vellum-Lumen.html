@@ -7368,7 +7368,7 @@ function renderSelbar(){
   if(ns.length<2||stageOpen){s.hidden=true;return}
   const hasVisual=ns.some(n=>["image","frame","recording"].includes(n.type));
   s.hidden=false;
-  s.innerHTML=`<span>${ns.length} Selected</span><button type="button" data-s="gather">Synthesize</button><button type="button" data-s="list">Action List</button><button type="button" data-s="kanban">Kanban</button><button type="button" data-s="treemap">Tree Map</button>${hasVisual?`<button type="button" data-s="gif" title="Animate selected into a GIF">GIF</button><button type="button" data-s="video" title="Animate selected into a video">Video</button>`:""}<button type="button" data-s="critique">Critique</button><span class="sb-sep" aria-hidden="true"></span><button type="button" class="sb-ic" data-s="align-x" title="Align left edges" aria-label="Align left">${ic("alignL")}</button><button type="button" class="sb-ic" data-s="align-y" title="Align top edges" aria-label="Align top">${ic("alignT")}</button><button type="button" class="sb-ic" data-s="grid" title="Arrange selection neatly" aria-label="Tidy grid">${ic("grid")}</button><button type="button" class="sb-ic" data-s="dup" title="Duplicate (⌘D)" aria-label="Duplicate">${ic("copy")}</button><button type="button" data-s="group" title="Group selected cards">Group</button><button type="button" class="sb-ic" data-s="hide" title="Hide from canvas (keep lineage)" aria-label="Hide from canvas">${ic("eyeOff")}</button><button type="button" class="sb-ic" data-s="archive" title="Archive selected cards" aria-label="Archive">${ic("archive")}</button><button type="button" class="sb-ic" data-s="delete" title="Delete selected" aria-label="Delete">${ic("trash")}</button>`;
+  s.innerHTML=`<span>${ns.length} Selected</span><button type="button" data-s="copilot" title="${L("Ask Copilot about these cards (⌘.)","问问 Copilot 这几张卡片（⌘.）")}">${L("Ask Copilot","问问 Copilot")}</button><button type="button" data-s="gather">Synthesize</button><button type="button" data-s="list">Action List</button><button type="button" data-s="kanban">Kanban</button><button type="button" data-s="treemap">Tree Map</button>${hasVisual?`<button type="button" data-s="gif" title="Animate selected into a GIF">GIF</button><button type="button" data-s="video" title="Animate selected into a video">Video</button>`:""}<button type="button" data-s="critique">Critique</button><span class="sb-sep" aria-hidden="true"></span><button type="button" class="sb-ic" data-s="align-x" title="Align left edges" aria-label="Align left">${ic("alignL")}</button><button type="button" class="sb-ic" data-s="align-y" title="Align top edges" aria-label="Align top">${ic("alignT")}</button><button type="button" class="sb-ic" data-s="grid" title="Arrange selection neatly" aria-label="Tidy grid">${ic("grid")}</button><button type="button" class="sb-ic" data-s="dup" title="Duplicate (⌘D)" aria-label="Duplicate">${ic("copy")}</button><button type="button" data-s="group" title="Group selected cards">Group</button><button type="button" class="sb-ic" data-s="hide" title="Hide from canvas (keep lineage)" aria-label="Hide from canvas">${ic("eyeOff")}</button><button type="button" class="sb-ic" data-s="archive" title="Archive selected cards" aria-label="Archive">${ic("archive")}</button><button type="button" class="sb-ic" data-s="delete" title="Delete selected" aria-label="Delete">${ic("trash")}</button>`;
 }
 function groups(){const g=new Map();for(const n of visibleNodes())if(n.status==="sketch"&&n.pid){if(!g.has(n.pid))g.set(n.pid,[]);g.get(n.pid).push(n)}return g}
 const latestPid=()=>{let best=null,t=-1;for(const [pid,ns] of groups()){const c=Math.max(...ns.map(n=>n.created));if(c>t){t=c;best=pid}}return best};
@@ -10421,6 +10421,26 @@ function openCardMenu(n,x,y){
   cm.style.left=clamp(x,10,innerWidth-cw-12)+"px";
   cm.style.top=clamp(y,10,innerHeight-ch-12)+"px";
 }
+/* Right-click on one of several selected cards (or on the gap inside the selection) opens a menu for the whole selection.
+   It used to open the one card's menu, and every item in it did nothing while several cards were selected. */
+function openSelectionMenu(x,y){
+  const cm=$("cardMenu"),ns=selected();if(!cm||ns.length<2)return;
+  const visual=ns.some(n=>["image","frame","recording"].includes(n.type));
+  const acts=[{k:"copilot",label:L("Ask Copilot","问问 Copilot"),ic:"ask",key:"⌘."},{sep:true},
+    {k:"gather",label:L("Synthesize","综合成结论"),ic:"sparkles"},{k:"list",label:L("Action List","行动清单"),ic:"list"},{k:"kanban",label:"Kanban",ic:"kanban"},{k:"treemap",label:L("Tree Map","思维导图"),ic:"treemap"},{k:"critique",label:L("Critique","评审"),ic:"check"},
+    ...(visual?[{k:"gif",label:"GIF",ic:"video"},{k:"video",label:L("Video","视频"),ic:"video"}]:[]),
+    {sep:true},{k:"group",label:L("Group","编组"),ic:"grid"},{k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"},{k:"hide",label:L("Hide from canvas","从画布隐藏"),ic:"eyeOff"},{k:"archive",label:L("Archive","归档卡片"),ic:"archive"},{k:"delete",label:L("Delete","删除"),ic:"trash"}];
+  const head=`<div class="cm-head"><b>${ns.length} ${L("cards","张卡片")}</b><span class="chip">${L("selected","已选中")}</span></div>`;
+  cm.innerHTML=head+acts.map(a=>a.sep?`<div class="cm-sep"></div>`:`<button type="button" data-sm="${a.k}"><span class="cm-lbl">${ic(a.ic)}<span>${esc(a.label)}</span></span>${a.key?`<kbd>${a.key}</kbd>`:""}</button>`).join("");
+  cm.hidden=false;cardMenuOpen=true;
+  const cw=cm.offsetWidth||210,ch=cm.offsetHeight||260;
+  cm.style.left=clamp(x,10,innerWidth-cw-12)+"px";cm.style.top=clamp(y,10,innerHeight-ch-12)+"px";
+}
+function pointInSelection(e){
+  const rs=[...nodesEl.querySelectorAll(".card.sel")].map(c=>c.getBoundingClientRect());if(rs.length<2)return false;
+  const l=Math.min(...rs.map(r=>r.left))-16,t=Math.min(...rs.map(r=>r.top))-16,r=Math.max(...rs.map(r=>r.right))+16,b=Math.max(...rs.map(r=>r.bottom))+16;
+  return e.clientX>=l&&e.clientX<=r&&e.clientY>=t&&e.clientY<=b;
+}
 function closeCardMenu(){
   const cm=$("cardMenu");if(cm&&!cm.hidden){cm.hidden=true;cardMenuOpen=false}
 }
@@ -10439,6 +10459,8 @@ $("strip").addEventListener("click",e=>{
   act(k,n,b);
 });
 $("cardMenu")?.addEventListener("click",e=>{
+  const sm=e.target.closest("[data-sm]");
+  if(sm){const ns=selected();closeCardMenu();selectionActions(ns)[sm.dataset.sm]?.();return}
   const b=e.target.closest("[data-cm]");if(!b)return;
   const k=b.dataset.cm,n=one();
   closeCardMenu();
@@ -15288,8 +15310,12 @@ $("overlays").addEventListener("click",e=>{const b=e.target.closest("[data-p]");
   if(b.dataset.p==="prev")return nextReview(-1);
   if(b.dataset.p==="next")return nextReview(1);
   if(b.dataset.p==="ink")ink(ids);else if(b.dataset.p==="erase")erase(ids);else redraw(pid)});
+/* what the selection bar and the selection menu (right-click on several selected cards) can do to the whole selection */
+function selectionActions(ns){
+  return {copilot:()=>openCopilot(true),gather:()=>gather(ns),list:()=>makeList(ns),kanban:()=>makeKanban(ns),treemap:()=>makeTreeMap(ns),gif:()=>generateGif("",{sources:ns,from:ns[0]}),video:()=>generateVideo("",{sources:ns,from:ns[0]}),critique:()=>critique(ns[0]),"align-x":()=>alignSelected("x"),"align-y":()=>alignSelected("y"),grid:tidySelectedGrid,dup:duplicateSelection,group:()=>wrapSelectionInGroup(ns),hide:()=>hideFromCanvasNodes(ns.map(n=>n.id)),archive:()=>archiveNodes(ns.map(n=>n.id)),delete:()=>erase(ns.map(n=>n.id))};
+}
 $("selbar").addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(!b)return;const ns=selected();
-  ({gather:()=>gather(ns),list:()=>makeList(ns),kanban:()=>makeKanban(ns),treemap:()=>makeTreeMap(ns),gif:()=>generateGif("",{sources:ns,from:ns[0]}),video:()=>generateVideo("",{sources:ns,from:ns[0]}),critique:()=>critique(ns[0]),"align-x":()=>alignSelected("x"),"align-y":()=>alignSelected("y"),grid:tidySelectedGrid,dup:duplicateSelection,group:()=>wrapSelectionInGroup(ns),hide:()=>hideFromCanvasNodes(ns.map(n=>n.id)),archive:()=>archiveNodes(ns.map(n=>n.id)),delete:()=>erase(ns.map(n=>n.id))})[b.dataset.s]?.()});
+  selectionActions(ns)[b.dataset.s]?.()});
 $("wirePop")?.addEventListener("click",e=>{
   const tog=e.target.closest("[data-wire-dep-toggle]");
   if(tog){
@@ -16722,9 +16748,12 @@ wall.addEventListener("contextmenu",e=>{
     e.preventDefault();
     const id=card.dataset.id,n=byId(id);
     if(n){
+      if(sel.length>1&&sel.includes(id)){openSelectionMenu(e.clientX,e.clientY);return}
       if(!sel.includes(id))select([id]);
       openCardMenu(n,e.clientX,e.clientY);
     }
+  }else if(sel.length>1&&pointInSelection(e)){
+    e.preventDefault();openSelectionMenu(e.clientX,e.clientY);
   }else{
     closeCardMenu();
   }

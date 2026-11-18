@@ -18,6 +18,7 @@ const requests = [];
 const probes = [];
 const probe = { status: 200, delay: 0 };
 const notionPosts = [];
+const backups = [], backupMode = { status: 200 }; // stands in for serve_vellum.py's /backup/board
 const salesCsv = { text: 'Rank,Region,Q1\n1,North,120\n2,South,90' }; // the refresh check changes it
 const launcher = { on: false, posts: [] }; // stands in for serve_vellum.py's /launch/studio-ai
 
@@ -34,6 +35,13 @@ function serve() {
           rsp.writeHead(200, { 'Content-Type': 'application/json' });
           rsp.end(JSON.stringify(b.token !== 'ntn_good' ? { ok: false, error: 'bad_token' } : /aaaaaaaa/.test(b.ref) ? { ok: false, error: 'not_shared' }
             : { ok: true, id: 'db1', title: 'Sprint board', url: 'https://www.notion.so/acme/db1', columns: ['Name', 'Status', 'Points'], rows: [['Ship tables', 'Done', '5'], ['Notion import', 'In progress', '3']], more: true }));
+        }); return;
+      }
+      if (req.method === 'POST' && req.url === '/backup/board') {
+        const chunks = []; req.on('data', c => chunks.push(c)); req.on('end', () => {
+          backups.push({ headers: req.headers, body: Buffer.concat(chunks).toString() });
+          if (backupMode.status !== 200) { rsp.writeHead(backupMode.status); return rsp.end(); }
+          rsp.writeHead(200, { 'Content-Type': 'application/json' }); rsp.end(JSON.stringify({ ok: true, dir: '/tmp/Vellum Backups/x', display: '~/Vellum Backups/x' }));
         }); return;
       }
       if (req.url === '/launch/studio-ai' && launcher.on) {
@@ -446,6 +454,52 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('a dialog opened right after another closed is not closed by the first one\'s stale close event', JSON.stringify(quick) === JSON.stringify({ first: [], stillOpen: true, second: null }), JSON.stringify(quick));
       check('no page errors', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
+    }
+
+    // 5g. the trail is kept: decisions outlast a full log, and the board is backed up automatically
+    {
+      const p = await page(browser, base, { model: false });
+      await p.newBoard();
+      const t = await p.evaluate(() => { board.changes = []; for (let i = 0; i < 600; i++) board.changes.push({ t: i, op: 'edit', id: 'n' + i }); board.changes.splice(100, 0, { t: 1000, op: 'adopt', id: 'd1' }, { t: 1001, op: 'accept-proposal', id: 'p1' }, { t: 1002, op: 'decline-passed-over', id: 'x' }, { t: 1003, op: 'discard', id: 'y' }); trimChanges(); return { len: board.changes.length, keys: board.changes.filter(isKeyChange).map(c => c.op).join(), firstEdit: board.changes.find(c => c.op === 'edit').id }; });
+      check('when the change log is full, the oldest routine edits go first and every decision stays', t.len === 500 && t.keys === 'adopt,accept-proposal,decline-passed-over,discard' && t.firstEdit === 'n104', JSON.stringify(t));
+      const cap = await p.evaluate(() => { board.changes = Array.from({ length: 5200 }, (_, i) => ({ t: i, op: 'adopt', id: 'd' + i })); trimChanges(); return board.changes.length; });
+      check('even decisions stop at 5,000, so a board cannot grow without end', cap === 5000, String(cap));
+      const ad = await p.evaluate(() => { board.changes = []; const idea = node('idea', { title: 'Claim', text: 'x', status: 'ink', by: 'you' }, { x: 100, y: 100 }); const d = node('direction', { idea: idea.id, letter: 'A', title: 'Own it', text: 't', test: 'x', status: 'ink', by: 'muse' }, { x: 500, y: 100 }); adopt(d); const c = board.changes.at(-1); return { op: c?.op, who: c?.who, title: c?.title }; });
+      check('adopting a direction is written to the change log as a decision', ad.op === 'adopt' && ad.who === 'you' && /Own it/.test(ad.title), JSON.stringify(ad));
+
+      // the backup: posted to the local server as the same bundle Export Board writes
+      backups.length = 0; backupMode.status = 200;
+      await p.evaluate(() => { backupState.ok = null; backupState.sig = null; backupState.failedAt = 0; });
+      await p.newBoard();
+      await p.evaluate(() => runBackup());
+      check('an empty board is not backed up', backups.length === 0);
+      await p.evaluate(() => { node('note', { text: 'Why I chose B', status: 'ink', by: 'you' }, { x: 100, y: 100 }); board.title = 'My plan'; });
+      await p.evaluate(() => runBackup());
+      const first = backups[0], parsed = first && JSON.parse(first.body);
+      check('a backup is posted with the custom header, the board id and title, and the whole bundle (format, board, media)',
+        backups.length === 1 && first.headers['x-studio-client'] === 'canvas' && first.headers['x-vellum-board'] && decodeURIComponent(first.headers['x-vellum-title']) === 'My plan'
+        && first.body.slice(0, 80).includes('vellum-board.v1') && parsed.board.nodes.some(n => n.text === 'Why I chose B') && 'blobs' in parsed && Array.isArray(parsed.board.changes), first && first.body.slice(0, 120));
+      check('it says where the backup is, and the System sheet line reads from it', await p.evaluate(() => backupState.ok === true && /Auto backup · last .* · ~\/Vellum Backups\/x/.test(backupLine())));
+      await p.evaluate(() => runBackup());
+      check('an unchanged board is not backed up again', backups.length === 1, String(backups.length));
+      await p.evaluate(() => { cam.x += 120; paintCam(); persistNow(); });
+      await p.evaluate(() => runBackup());
+      check('moving the camera is not a change worth a backup', backups.length === 1, String(backups.length));
+      await p.evaluate(() => { board.nodes.find(n => n.type === 'note').text = 'Why I chose B, and what would change my mind'; });
+      await p.evaluate(() => runBackup());
+      check('a real change is backed up', backups.length === 2 && /what would change my mind/.test(backups[1].body), String(backups.length));
+      const timer = await p.evaluate(() => { clearTimeout(backupState.t); backupState.t = 0; scheduleBackup(); const a = backupState.t; scheduleBackup(); const same = backupState.t === a; clearTimeout(backupState.t); backupState.t = 0; return same && !!a; });
+      check('backups are throttled: a second change does not push the first one back', timer);
+      // no local server to take it (opened from a file, or another server): quiet, and not retried at once
+      backupMode.status = 404; const before = backups.length;
+      await p.evaluate(() => { board.nodes.find(n => n.type === 'note').text = 'Changed again'; });
+      await p.evaluate(() => runBackup());
+      await p.evaluate(() => { board.nodes.find(n => n.type === 'note').text = 'Changed once more'; });
+      await p.evaluate(() => runBackup());
+      check('without a server it turns itself off quietly and does not retry straight away', backups.length === before + 1 && await p.evaluate(() => backupState.ok === false && /off here/i.test(backupLine())), String(backups.length - before));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+      backupMode.status = 200;
     }
 
     // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover

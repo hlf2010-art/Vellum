@@ -20,6 +20,14 @@ Those questions stay about the idea: for an idea with no place or period of its 
 
 Run it before committing a change to `Vellum-Lumen.html`.
 
+## Keeping the trail (local server)
+
+The change log keeps 500 entries, but a decision (adopt, keep, discard, accept or decline a suggestion) is never pushed out by routine edits (up to 5,000), and adopting a direction is written to the log. When Vellum is served by `serve_vellum.py` (the Mac app and `Start Vellum.command`), the board is also posted to `/backup/board` as the same `.vellum.json` that Export Board writes, at most every two minutes and only when its content changed (not the camera). The server keeps the newest 10 plus the last one of each day for 30 days, in `~/Vellum Backups/<board>-<id>/`; to restore, use Import Board on a file from that folder. The smoke test checks the page side against a stand-in endpoint (a real browser against the real server was also run once by hand); the server side, including who may write, path safety and the thinning, is tested with:
+
+```bash
+python3 studio/macos-app/test_serve_backup.py
+```
+
 ## Studio AI launcher (local server)
 
 `serve_vellum.py` can open Studio AI for the Connection panel's Start button. Its endpoint is tested

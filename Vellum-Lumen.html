@@ -3610,6 +3610,7 @@ function persist(){
     putBoardIdb?.(slim).then(ok=>{idbBoardOk=!!ok;if(ok)storageOk=true;if($("saveNote"))$("saveNote").textContent=storageOk?"Saved":"Session only"});
     const list=store.get(".list",[]).filter(b=>b.id!==board.id);list.unshift({id:board.id,title:board.title,updated:board.updated});
     store.set(".list",list);store.set(".active",board.id);syncCopilotContext?.();
+    scheduleBackup?.();
   },250);
 }
 /* ── history: per-author, operation-based undo ─────────────────────────────
@@ -3734,6 +3735,17 @@ function engineOf(author){
 function provFor(n){const author=n.by||"you";return {author,engine:engineOf(author),at:NOW(),basis:null}}
 const ENGINE_LABEL={human:["You","你"],model:["model","模型"],rules:["built-in rules","内置规则"],service:["local service","本地服务"]};
 function shadowOf(b){const m=new Map();for(const n of b.nodes)m.set(n.id,{d:digest(n),st:n.status,ar:!!n.archived,hd:!!n.hidden,by:n.by,type:n.type,title:clip(titleOf(n),60)});return {id:b.id,nodes:m,edges:new Set(b.edges.map(e=>e.a+">"+e.b))}}
+/* The change log keeps the last 500 entries, but a decision is the point of keeping a trail: what you kept,
+   discarded, adopted, accepted or turned down must not be pushed out by a day of routine edits. When the log is
+   full the oldest routine entries go first; decisions are only dropped past 5,000. */
+const KEY_CHANGE_OPS=new Set(["accept","discard","delete","adopt","accept-proposal","reject-proposal"]);
+const isKeyChange=c=>KEY_CHANGE_OPS.has(c?.op)||String(c?.op||"").startsWith("decline-");
+function trimChanges(){
+  const a=board.changes;if(!Array.isArray(a)||a.length<=500)return;
+  let over=a.length-500;
+  board.changes=a.filter(c=>{if(over>0&&!isKeyChange(c)){over--;return false}return true});
+  if(board.changes.length>5000)board.changes.splice(0,board.changes.length-5000);
+}
 function recordChanges(){
   if(!board)return;
   if(!changeShadow||changeShadow.id!==board.id){changeShadow=shadowOf(board);return}
@@ -3751,7 +3763,7 @@ function recordChanges(){
   for(const k of now.edges)if(!changeShadow.edges.has(k)){const [x,y]=k.split(">");entry("link",y,{type:"edge",title:clip(titleOf(byId(x))||"",30)+" → "+clip(titleOf(byId(y))||"",30)},{more:{from:x}})}
   for(const k of changeShadow.edges)if(!now.edges.has(k)){const [x,y]=k.split(">");entry("unlink",y,{type:"edge",title:""},{more:{from:x}})}
   changeShadow=now;
-  if(out.length){board.changes=Array.isArray(board.changes)?board.changes:[];board.changes.push(...out);if(board.changes.length>500)board.changes.splice(0,board.changes.length-500)}
+  if(out.length){board.changes=Array.isArray(board.changes)?board.changes:[];board.changes.push(...out);trimChanges()}
 }
 function asActor(actor,fn){const prev=changeActor;changeActor=actor;recordChanges();try{const r=fn();if(r&&typeof r.then==="function")return r.finally(()=>{recordChanges();changeActor=prev});recordChanges();changeActor=prev;return r}catch(e){changeActor=prev;throw e}}
 /* ── proposals: what an agent wants to change on a card you have kept ─────────
@@ -3871,7 +3883,7 @@ function propose(who,engine,op,n,change){
   noteChange({op:"propose-"+op,id:n.id,type:n.type,title:clip(titleOf(n),60),who,engine});
   return pr;
 }
-function noteChange(c){board.changes=Array.isArray(board.changes)?board.changes:[];board.changes.push({t:NOW(),...c});if(board.changes.length>500)board.changes.splice(0,board.changes.length-500)}
+function noteChange(c){board.changes=Array.isArray(board.changes)?board.changes:[];board.changes.push({t:NOW(),...c});trimChanges()}
 let expandedProps=new Set();
 async function acceptProposal(id,{force=false}={}){
   const pr=(board.proposals||[]).find(p=>p.id===id&&p.status==="open");if(!pr)return;
@@ -4493,7 +4505,7 @@ function ctxResolveBasis(raw,rows){
 function declineRecord(kind,{title="",text="",by="",target=null,reason="",ref=null}={}){
   board.declined=Array.isArray(board.declined)?board.declined:[];
   const d={id:"dc-"+uid(),kind,title:clip(title,120),text:clipDoc(String(text||""),1200),by:by||"",target:target||null,ref:ref||null,reason:clip(reason||"",300),at:NOW()};
-  board.declined.push(d);if(board.declined.length>200)board.declined.shift();
+  board.declined.push(d);if(board.declined.length>1000)board.declined.shift();
   noteChange({op:"decline-"+kind,id:target||ref||d.id,type:kind,title:clip(title||text,60),who:"you",engine:"human",...(d.reason?{reason:clip(d.reason,120)}:{})});
   return d;
 }
@@ -10030,6 +10042,7 @@ function adopt(d){
   if(!d||d.type!=="direction")return toast(L("Select a direction to adopt.","请先选中一个方向再采纳。"));if(d.status==="sketch")return toast("Keep this direction first.");
   if(board.adopted[d.idea]===d.id)return;checkpoint();board.adopted[d.idea]=d.id;
   {const sibs=board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"&&!x.tombstone);board.declined=(board.declined||[]).filter(r=>!(r.kind==="passed-over"&&(r.target===d.idea||r.ref===d.id)));for(const x of sibs)declineRecord("passed-over",{title:`${x.letter} · ${x.title}`,text:[x.text,x.test].filter(Boolean).join(" Test: "),by:x.by,target:d.idea,reason:L(`Adopted ${d.letter} · ${d.title} instead`,`改为采纳 ${d.letter} · ${d.title}`),ref:x.id})}
+  noteChange({op:"adopt",id:d.id,type:"direction",title:clip(`${d.letter} ${d.title}`,60),who:"you",engine:"human"});
   log("you",`Adopted <b>${d.letter} ${esc(d.title)}</b>`,d.id);sfx("keep");renderAll();persist();
   const st=qs(`[data-stamp="${d.id}"]`);if(st&&!calm()){st.classList.add("slam")}
   toast(`Adopted ${d.title}`,{undo:true});
@@ -15467,7 +15480,7 @@ function dataUrlToBlob(dataUrl){
   for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
   return new Blob([arr],{type:mime});
 }
-async function exportCurrentBoard(){
+async function buildBoardBundle(){
   const slim={...board,nodes:board.nodes.map(({_h,...n})=>n)};
   const blobs={};
   for(const n of slim.nodes){
@@ -15480,13 +15493,50 @@ async function exportCurrentBoard(){
       else if(userMedia.has(k)&&String(userMedia.get(k)).startsWith("data:"))blobs[k]=userMedia.get(k);
     }
   }
-  const bundle={format:"vellum-board.v1",exportedAt:NOW(),board:slim,blobs};
+  return {format:"vellum-board.v1",exportedAt:NOW(),board:slim,blobs};
+}
+async function exportCurrentBoard(){
+  const bundle=await buildBoardBundle();
   const name=slugName(board.title||"vellum-board","vellum.json");
   const url=URL.createObjectURL(new Blob([JSON.stringify(bundle,null,2)],{type:"application/json"}));
   const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),4000);
   toast("Exported "+name);
 }
+/* ── automatic backup ──────────────────────────────────────────────────────────────────────────────────────
+   A board lives in this browser's (or the app's) own storage, so clearing site data, or moving between the browser
+   and the Mac app, would lose the whole trail. When Vellum is served by its own local server, the board is also
+   posted there as the same .vellum.json that Export Board downloads (Import Board restores it) and kept as a thinned
+   history in a plain folder. At most one backup every two minutes, only when the board's content changed (not
+   when you only moved the camera), and a failure is quiet: off here, tried again in ten minutes. */
+const BACKUP_EVERY_MS=120000,BACKUP_RETRY_MS=600000;
+const backupState={ok:null,at:0,display:"",sig:null,failedAt:0,busy:false,t:0};
+function backupSig(){const {cam,updated,...core}=board;core.nodes=core.nodes.map(({_h,...n})=>n);return hash32(JSON.stringify(core))}
+function backupLine(){
+  if(backupState.ok===true)return L(`Auto backup · last ${new Date(backupState.at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${backupState.display}`,`自动备份 · 上次 ${new Date(backupState.at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${backupState.display}`);
+  if(backupState.ok===false)return L("Auto backup is off here. Open Vellum from the app or Start Vellum to turn it on.","此处未开启自动备份。请从 Vellum 应用或 Start Vellum 打开。");
+  return L("Auto backup starts after your next change.","下一次改动后开始自动备份。");
+}
+function scheduleBackup(){
+  if(backupState.t||backupState.busy)return; // trailing throttle: the first change starts the clock, later ones do not extend it
+  backupState.t=setTimeout(()=>{backupState.t=0;runBackup()},BACKUP_EVERY_MS);
+}
+async function runBackup(){
+  const b=board;if(!b||backupState.busy)return;
+  if(!b.nodes.length&&!(b.copilot||[]).length)return; // an empty board is nothing to keep
+  if(backupState.ok===false&&Date.now()-backupState.failedAt<BACKUP_RETRY_MS)return;
+  const sig=backupSig();if(sig===backupState.sig)return;
+  backupState.busy=true;
+  try{
+    const bundle=await buildBoardBundle();
+    const r=await fetch("/backup/board",{method:"POST",headers:{"Content-Type":"application/json","X-Studio-Client":"canvas","X-Vellum-Board":b.id,"X-Vellum-Title":encodeURIComponent(b.title||"")},body:JSON.stringify(bundle)});
+    const d=await r.json().catch(()=>({}));
+    if(r.ok&&d.ok){backupState.ok=true;backupState.at=Date.now();backupState.display=d.display||d.dir||"";backupState.sig=sig}
+    else{backupState.ok=false;backupState.failedAt=Date.now()}
+  }catch{backupState.ok=false;backupState.failedAt=Date.now()}
+  finally{backupState.busy=false;const el=qs("[data-backup-note]");if(el)el.textContent=backupLine()}
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")runBackup()});
 async function importBoardFile(file){
   if(!file)return;
   try{
@@ -15684,7 +15734,7 @@ function systemSettingsDialog(){
     </section>
     <section class="sh-sec"><h3>${L("Data & Support","数据与支持")}</h3>
       <div class="sys-group">
-        <div class="sys-row" style="cursor:default"><span class="sys-row-txt"><b>${L("Export Board","导出画板")}</b><small>${L("Download .vellum.json backup","下载 .vellum.json 本地备份文件")}</small></span><button type="button" class="sys-act-btn" data-export>${L("Export","导出")}</button></div>
+        <div class="sys-row" style="cursor:default"><span class="sys-row-txt"><b>${L("Export Board","导出画板")}</b><small>${L("Download .vellum.json backup","下载 .vellum.json 本地备份文件")}</small><small data-backup-note>${esc(backupLine())}</small></span><button type="button" class="sys-act-btn" data-export>${L("Export","导出")}</button></div>
         <button type="button" class="sys-row" data-act2="help"><span class="sys-row-txt"><b>${L("Shortcuts & Tutorial","快捷键与教程")}</b><small>${L("How Lumen works & keyboard shortcuts","核心工作流原则与快捷键列表")}</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>
       </div>
       <p class="sys-note">${L("Auto-saved locally in this browser · Export JSON for backup or desktop transfer.","已在当前浏览器本地自动保存 · 导出 JSON 可用于备份或桌面端迁移。")}</p>

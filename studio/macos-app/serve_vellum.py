@@ -66,6 +66,73 @@ def stop_launched_studio():
             proc.kill()
 
 
+# Automatic board backups. Vellum keeps a board in the browser's (or the app's) own storage, and clearing site data
+# or moving between the browser and the Mac app loses it. The page posts a full .vellum.json bundle here (the same
+# file Export Board downloads, so Import Board restores it) and the server keeps a thinned history of them in a plain
+# folder that is easy to find. It is in the home folder, not Documents, so macOS does not ask for permission.
+BACKUP_MAX_BYTES = 250_000_000
+BACKUP_RECENT = 10        # always keep the newest few
+BACKUP_DAILY_DAYS = 30    # and the last backup of each day for this long
+BACKUP_STAMP = re.compile(r"^(\d{4})-(\d{2})-(\d{2})_(\d{6})\.vellum\.json$")
+
+
+def backup_root():
+    return Path(os.environ.get("VELLUM_BACKUP_DIR") or (Path.home() / "Vellum Backups"))
+
+
+def backup_slug(title):
+    slug = re.sub(r"[^\w\-]+", "-", str(title or ""), flags=re.UNICODE).strip("-_")[:40]
+    return slug or "board"
+
+
+def prune_backups(folder, now=None):
+    """Keep the newest BACKUP_RECENT files, plus the last file of each day for BACKUP_DAILY_DAYS days. Returns how many were removed."""
+    now = now or time.localtime()
+    today = time.mktime(now) // 86400
+    files = sorted((f for f in folder.iterdir() if BACKUP_STAMP.match(f.name)), key=lambda f: f.name, reverse=True)
+    keep = set(files[:BACKUP_RECENT])
+    seen_days = set()
+    for f in files:  # newest first, so the first one seen for a day is that day's last backup
+        m = BACKUP_STAMP.match(f.name)
+        day = m.group(1) + m.group(2) + m.group(3)
+        if day in seen_days:
+            continue
+        seen_days.add(day)
+        try:
+            age = today - time.mktime(time.strptime(day, "%Y%m%d")) // 86400
+        except ValueError:
+            continue
+        if age <= BACKUP_DAILY_DAYS:
+            keep.add(f)
+    removed = 0
+    for f in files:
+        if f not in keep:
+            with contextlib.suppress(OSError):
+                f.unlink()
+                removed += 1
+    return removed
+
+
+def save_backup(board_id, title, body, now=None):
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", board_id or ""):
+        return {"ok": False, "error": "bad_board"}
+    if not body.lstrip().startswith(b"{") or b'"vellum-board.v1"' not in body[:400]:
+        return {"ok": False, "error": "not_a_board"}
+    folder = backup_root() / f"{backup_slug(title)}-{board_id}"
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        name = time.strftime("%Y-%m-%d_%H%M%S", now or time.localtime()) + ".vellum.json"
+        tmp = folder / (name + ".part")
+        tmp.write_bytes(body)
+        tmp.replace(folder / name)  # a half-written backup never has a real name
+        removed = prune_backups(folder, now)
+        home = str(Path.home())
+        shown = str(folder).replace(home, "~", 1) if str(folder).startswith(home + os.sep) else str(folder)
+        return {"ok": True, "file": name, "dir": str(folder), "display": shown, "kept": sum(1 for f in folder.iterdir() if BACKUP_STAMP.match(f.name)), "removed": removed}
+    except OSError:
+        return {"ok": False, "error": "write_failed"}
+
+
 class VellumHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(APP_DIR), **kwargs)
@@ -106,6 +173,18 @@ class VellumHandler(SimpleHTTPRequestHandler):
                 return self.send_json(200, launch_studio())
             except OSError:
                 return self.send_json(503, {"ok": False, "error": "spawn_failed"})
+        if self.path == "/backup/board":
+            # Only this page may write here (custom header + exact same origin), and only into the backup folder.
+            if not self.same_origin() or self.headers.get("X-Studio-Client") != "canvas":
+                return self.send_error(403)
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                return self.send_json(400, {"ok": False, "error": "bad_request"})
+            if not 0 < size <= BACKUP_MAX_BYTES:
+                return self.send_json(413 if size > 0 else 400, {"ok": False, "error": "too_large" if size > 0 else "bad_request"})
+            body = self.rfile.read(size)
+            return self.send_json(200, save_backup(self.headers.get("X-Vellum-Board", ""), unquote(self.headers.get("X-Vellum-Title", "")), body))
         if self.path == "/notion/database":
             # The page's Notion token is posted here, so only this page may call it (custom header + same origin).
             if not self.same_origin() or self.headers.get("X-Studio-Client") != "canvas":

@@ -13097,12 +13097,27 @@ function isValidCopilotChip(c){
   }
   return true;
 }
+/* The suggestions under an empty conversation follow the stage (see stage-role-contract.md): what is useful when you are
+   still gathering is not what is useful once a direction is adopted. Visual and web-search suggestions appear only when a
+   visual card is selected; they used to be offered on every board. Each is a short question or request, sent as your
+   message when clicked, never a hidden action. */
 function copilotStarterChips(){
-  const ctx=ctxNodes(),sketches=groups().size;
-  if(ctx.some(n=>n.type==="image"||n.type==="frame"))return ["Examine this image","Suggest 2 directions from this","Generate sharper variations"];
-  if(ctx.length){const c0=ctx[0],nm=c0.type==="direction"&&c0.letter?c0.letter:clip(titleOf(c0),18);return [`Critique ${nm}`,"Propose 2 directions","Find web references"]}
-  if(sketches)return ["Should we keep waiting sketches?","What evidence is weakest?","Suggest next 3 moves"];
-  return ["Critique weak evidence","Propose 2 directions to test","Generate a visual keyframe","Find real reference photos"];
+  const ctx=ctxNodes(),sketches=groups().size,st=boardStage(),stage=st.stage;
+  if(ctx.some(n=>n.type==="image"||n.type==="frame"))return [L("Examine this image","分析这张图片"),L("Suggest 2 directions from this","据此提出 2 个方向"),L("Generate sharper variations","生成更鲜明的变体")];
+  if(ctx.length){
+    const c0=ctx[0],nm=c0.type==="direction"&&c0.letter?c0.letter:clip(titleOf(c0),18);
+    const crit=L(`Critique ${nm}`,`评审 ${nm}`);
+    return stage==="gather"?[crit,L("What evidence is missing?","还缺哪些依据？"),L("Put this in one sentence","用一句话概括")]
+      :stage==="explore"?[crit,L("What would prove this wrong?","什么会证明这是错的？"),st.dirs.length>1?L("Compare the directions","对比这几个方向"):L("Suggest 2 directions","提出 2 个方向")]
+      :stage==="prototype"?[crit,L("Break this into tasks","拆成任务"),L("What's the cheapest real test?","最便宜的真人测试是什么？")]
+      :[crit,L("What does this not cover?","它没覆盖什么？"),L("What should I decide next?","接下来我该决定什么？")];
+  }
+  if(sketches)return [L("Which drafts are worth keeping?","哪些草稿值得保留？"),L("What evidence is weakest?","哪条依据最弱？"),L("Suggest next 3 moves","建议接下来三步")];
+  return stage==="gather"?[L("Help me put this in one sentence","帮我把它写成一句话"),L("What evidence would I need?","我需要哪些依据？"),L("Who is this for?","这是给谁用的？")]
+    :stage==="explore"?(st.dirs.length>1?[L("Compare the directions","对比这几个方向"),L("Which one would you adopt?","你会采纳哪个？"),L("What would change my mind?","什么会改变我的想法？")]
+      :[L("Propose 2 directions to test","提出 2 个待测方向"),L("What would prove this wrong?","什么会证明这是错的？"),L("Who is this for?","这是给谁用的？")])
+    :stage==="prototype"?[L("What's the cheapest real test?","最便宜的真人测试是什么？"),L("Break it into a two-week plan","拆成两周的计划"),L("Draft questions for 5 real people","为 5 位真人起草访谈问题")]
+    :[L("What does this not cover?","它没覆盖什么？"),L("What should I decide next?","接下来我该决定什么？"),L("What would change my mind?","什么会改变我的想法？")];
 }
 function renderCopilotCompCards(ctx){
   return (ctx||[]).slice(0,4).map(n=>{

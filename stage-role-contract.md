@@ -55,7 +55,8 @@ The stage comes from what is on the board, not from where cards sit. Only what t
 - `boardStage()` / `stageBrief()` in the Copilot summary, the advisor prompt and pin replies; a "three roles" rule in Copilot's prompt.
 - Drafts by default; kanban merge and `add_cards`; proposals reconciled with actions; options that are really directions become direction cards while nothing is adopted.
 - Decisions kept past the log cap; adopting is logged; automatic backups.
-- Checked in `tests/vellum-smoke.cjs` (groups 5d, 5e, 5g, 5h).
+- Copilot's starter suggestions follow the stage and the selection, and are visual only for a selected image or frame.
+- Checked in `tests/vellum-smoke.cjs` (groups 5d, 5e, 5g, 5h, 5k).
 
 ## Not built yet
 

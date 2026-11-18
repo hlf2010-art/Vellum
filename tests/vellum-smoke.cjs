@@ -662,6 +662,43 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.context().close();
     }
 
+    // 5k. the suggestions under an empty Copilot conversation follow the stage; visual ones only for visual cards
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const chips = () => p.evaluate(() => copilotStarterChips());
+      const VISUAL = /visual keyframe|reference photos|web references|Examine this image|variations/i;
+      let c = await chips();
+      check('an empty board gets gathering suggestions, none of them visual or web search', c.length === 3 && /one sentence/.test(c[0]) && !c.some(x => VISUAL.test(x)), c.join(' | '));
+      await p.evaluate(() => { node('idea', { text: 'Sell an AI back office to one-person companies', status: 'ink', by: 'you' }, { x: 100, y: 100 }); select([]); });
+      c = await chips();
+      check('with a claim and no directions: propose directions, test the claim, ask who it is for', /Propose 2 directions/.test(c[0]) && c.some(x => /prove this wrong/.test(x)) && c.some(x => /Who is this for/.test(x)), c.join(' | '));
+      await p.evaluate(() => { const idea = board.nodes.find(n => n.type === 'idea'); ['A', 'B'].forEach((l, i) => node('direction', { idea: idea.id, letter: l, title: 'Option ' + l, text: 't', test: 'x', status: 'ink', by: 'muse' }, { x: 600, y: 100 + i * 400 })); });
+      c = await chips();
+      check('with directions and none adopted: compare them and choose', /Compare the directions/.test(c[0]) && c.some(x => /would you adopt/.test(x)), c.join(' | '));
+      await p.evaluate(() => adopt(board.nodes.find(n => n.type === 'direction' && n.letter === 'B')));
+      c = await chips();
+      check('once a direction is adopted: the cheapest real test, a plan, questions for real people', /cheapest real test/.test(c[0]) && c.some(x => /two-week plan/.test(x)) && c.some(x => /5 real people/.test(x)) && !c.some(x => VISUAL.test(x)), c.join(' | '));
+      await p.evaluate(() => { const d = board.nodes.find(n => n.type === 'direction' && n.letter === 'B'); const pf = node('proof', { dir: d.id, _src: d.id, title: 'Proof B', spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1100, y: 100 }); edge(d.id, pf.id, 'derive', 'live'); node('print', { proof: pf.id, dir: pf.dir, ed: 1, spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1500, y: 100 }); });
+      c = await chips();
+      check('with a frozen proof: what it does not cover, and what to decide next', /does this not cover/.test(c[0]) && c.some(x => /decide next/.test(x)), c.join(' | '));
+      await p.evaluate(() => select([board.nodes.find(n => n.type === 'direction' && n.letter === 'A').id]));
+      c = await chips();
+      check('with a card selected the first suggestion is to critique it, by its letter, then stage-specific ones', c[0] === 'Critique A' && c.length === 3 && !c.some(x => VISUAL.test(x)), c.join(' | '));
+      await p.evaluate(() => { node('image', { title: 'Mood board', status: 'ink', by: 'you' }, { x: 100, y: 800 }); select([board.nodes.find(n => n.type === 'image').id]); });
+      c = await chips();
+      check('only a selected image brings the visual suggestions', c.some(x => /Examine this image/.test(x)), c.join(' | '));
+      check('every suggestion is short enough to read at a glance', await p.evaluate(() => { const all = []; for (const sel0 of [[], [board.nodes.find(n => n.type === 'idea').id]]) { select(sel0); all.push(...copilotStarterChips()); } return all.every(x => x.length <= 36); }));
+      await p.evaluate(() => { select([]); openCopilot(true); renderCopilot(); }); await p.waitForTimeout(300);
+      check('the panel shows them, as buttons that send the text', await p.evaluate(() => { const b = [...document.querySelectorAll('.cp-chip')].map(x => x.textContent.trim()); return b.length === 3 && b.every(x => copilotStarterChips().includes(x)); }));
+      await p.evaluate(() => { store.set('.lang', 'zh'); select([board.nodes.find(n => n.type === 'idea').id]); });
+      const zh = await chips();
+      check('and they come in Chinese when the interface is Chinese, every one of them', zh.length === 3 && zh.every(x => /[\u4e00-\u9fff]/.test(x)), zh.join(' | '));
+      await p.evaluate(() => { store.set('.lang', 'en'); });
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover
     {
       const p = await page(browser, base);

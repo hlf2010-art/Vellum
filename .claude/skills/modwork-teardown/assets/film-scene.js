@@ -1,4 +1,4 @@
-import {sectionMesh,sectionDiagram} from './section-view.js';
+import {sectionMesh,sectionDiagram,sharedSectionDepths} from './section-view.js';
 import {neckMount} from './exhibit.js';
 import {fiberField} from './fiber-field.js';
 import {material,yarnTexture} from './studio-material.js';
@@ -75,7 +75,9 @@ export function makeStage(canvas,diagramCanvas,data,gear){
   const span=Math.max(.001,...piece.bounds.size);
   const center=piece.bounds.center;
   const trim=isHeadband(data,gear);
-  const original=trim&&fitted?mesh(gear.rest,gear.restNormals,gear.indices):piece;
+  // The "before" mesh is the rest geometry for every fitted item, not only headbands; otherwise
+  // the wearing/separation chapters show the fitted mesh and the later switch is invisible.
+  const original=fitted&&gear.rest&&gear.restNormals?mesh(gear.rest,gear.restNormals,gear.indices):piece;
   // The knitted hem follows the actual upper/lower silhouette around each angular sector.
   const edge=new Float32Array(piece.positions.length/3);
   if(trim){
@@ -97,6 +99,8 @@ export function makeStage(canvas,diagramCanvas,data,gear){
   const sliceAxis=[Math.sin(heading),0,Math.cos(heading)];
   const localPin=pin?sub(pin,center):null;
   const sectionPin=localPin?[localPin[0]*sliceAxis[2]-localPin[2]*sliceAxis[0],localPin[1],dot(localPin,sliceAxis)]:null;
+  // Cut depths where the plane crosses both meshes; the cut chapter snaps to these so the readout is never empty by accident.
+  const shared=sharedSectionDepths(skin,piece,center,sliceAxis,span);
   const diagram=sectionDiagram(diagramCanvas,
     sectionMesh(skin.positions,skin.indices,sliceAxis,center),sectionMesh(piece.positions,piece.indices,sliceAxis,center),span,sectionPin);
   function draw(m,kind,lift,isWire=false,opacity=1){
@@ -133,7 +137,7 @@ export function makeStage(canvas,diagramCanvas,data,gear){
     const endCut=pin ? dot(sub(pin,center),sliceAxis)/span : .025;
     // Traverse the interior before settling on the evidenced plane at the pin.
     const sweep=mix(.85,-.12,smooth(10.,14.9,t));
-    const cut=mix(sweep,endCut,smooth(14.9,18.3,t));
+    const cut=shared.snap(mix(sweep,endCut,smooth(14.9,18.3,t)));
     if(lift!==prevShadow||shadowCaster!==displayed){
       gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.viewport(0,0,512,512);gl.clearColor(1,1,1,1);gl.depthMask(true);gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
       gl.useProgram(shadowProgram);gl.bindBuffer(gl.ARRAY_BUFFER,displayed.v);gl.enableVertexAttribArray(sa);gl.vertexAttribPointer(sa,3,gl.FLOAT,false,0,0);
@@ -157,7 +161,7 @@ export function makeStage(canvas,diagramCanvas,data,gear){
     field.draw(sub(target,center).map(v=>v/span),right,up,eye,[sx*span,sy*span],shift,t,lift,dpr,span/depthRange,1.-.76*zoom);
     const hasSection=t>=CUT_START&&diagram(cut*span,lifted,zoom);
     function project(p){const v=sub(p,target);return [(dot(v,right)*sx+shift+1)*width/2,(1-dot(v,up)*sy)*height/2];}
-    return {mark:pin?project(pin):null,origin:project(center),raised:project([center[0],center[1]+lifted,center[2]]),lift,zoom,hasSection};
+    return {mark:pin?project(pin):null,origin:project(center),raised:project([center[0],center[1]+lifted,center[2]]),lift,zoom,hasSection,shared:shared.shared};
   }
   return {render,dispose(){
     field.dispose();gl.deleteFramebuffer(fb);gl.deleteRenderbuffer(rb);gl.deleteTexture(sm);gl.deleteTexture(yarn);gl.deleteShader(shadowVS);gl.deleteShader(shadowFS);gl.deleteProgram(shadowProgram);

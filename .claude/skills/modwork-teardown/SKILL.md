@@ -9,17 +9,29 @@ description: 为 Mod Work 的 NBA 2K 球员与护具制作可交互的 3D 拆解
 
 ## 选择交付方式
 
-- **已有护具网格，要交互页**。在当前 checkout 找到包含 `fit-studio/src/FitViewport.jsx` 的仓库根目录。使用随附生成器打包已有 `/api/viewport/mesh` JSON 响应；示例输入是仓库根的 `hb-viewport3.json`。它包含三种发带，可直接复查。源数据留在本机。
+- **已有护具网格，要交互页**。先确认 Mod Work 仓库（含 `fit-studio/src/FitViewport.jsx` 的目录）在哪里，记为 `MODWORK_REPO`；它可能不是当前所在仓库，找不到时向用户要路径，不要猜。使用随附生成器打包已有 `/api/viewport/mesh` JSON 响应；示例输入是 `MODWORK_REPO` 根目录的 `hb-viewport3.json`。它包含三种发带，可直接复查。源数据留在本机。
 - **只有报告、游戏截图或历史 A/B**。先回答它们能支持的结论。需要 3D 时，查找同件同状态的已保存网格，或从已运行的本地编辑器读取该次预览响应。缺少网格时用已有证据作图文对照，指出还需要哪一份快照；画面示意与资产测量分别标明。
 - **要在工作台中实现或演示头部联动、衣物或动作**。读取 [项目接入与案例](references/modwork.md) 对应部分。沿用现有视口和编辑参数。对于动作，只有在骨架、蒙皮和对应动作可用时才展示资产的动作预览。历史 A/B 观测可单独呈现。
 - **要教学导览、视频或研究上游**。有护具视口响应时优先生成下述可交互导览。其他题材的取景和节奏见 [Teardown 的复用笔记](references/teardown.md)。导览使用同一套状态切换和镜头动作，进入编辑后由用户控制。
 
 ## 生成离线护具复查页
 
-运行处需要 Node 和当前项目已安装的前端开发依赖（React、esbuild 等）。下例从 Mod Work 仓库根执行。若从个人技能目录调用，可将脚本路径换成当前技能的绝对路径。输出目录须已存在，文件名须为新路径。
+### 环境准备
+
+1. **Node 与前端依赖**：需要 Node，以及 `MODWORK_REPO/fit-studio` 里已安装的依赖（React、esbuild 等）。生成器从 `MODWORK_REPO/fit-studio/package.json` 解析依赖，所以先在 `MODWORK_REPO/fit-studio` 运行一次 `npm install`。当前仓库没有 `fit-studio/` 时，这一步无法进行。
+2. **技能脚本位置**：把 `SKILL_DIR` 设为本技能的绝对路径。项目内通常是 `<当前仓库>/.claude/skills/modwork-teardown`，个人安装则是 `~/.claude/skills/modwork-teardown`。早期版本写作 `.agents/skills/...`，现已统一为此路径。
+3. **输入快照**：一份保存好的 `/api/viewport/mesh` JSON 响应，例如 `MODWORK_REPO/hb-viewport3.json`。快照含球员几何，只在本机读取，不要提交到别的仓库。
+4. **输出**：输出目录须已存在，文件名须为新路径，扩展名为 `.html`。
+5. **录制与验收（可选）**：`record-film.mjs`、`check-headband.mjs` 从**当前工作目录**的 `package.json` 解析 Playwright。请在装有 Playwright 的目录（如 `MODWORK_REPO`）运行，或用 `PLAYWRIGHT_MODULE=<绝对路径>` 指定；Chromium 路径用 `CHROMIUM`，ffmpeg 用 `FFMPEG`。
+
+### 生成命令
+
+在任意目录执行，参数依次为 Mod Work 仓库路径、快照、输出文件：
 
 ```sh
-node .agents/skills/modwork-teardown/scripts/build-review.mjs . hb-viewport3.json headband-review.html
+SKILL_DIR=.claude/skills/modwork-teardown          # 按上面第 2 点调整
+MODWORK_REPO=/绝对路径/到/ModWork                   # 含 fit-studio/ 的目录
+node "$SKILL_DIR/scripts/build-review.mjs" "$MODWORK_REPO" "$MODWORK_REPO/hb-viewport3.json" headband-review.html
 ```
 
 用支持 WebGL 的浏览器直接打开 HTML。入口是一段 22 秒的拆解导览。连续播放展示从佩戴、抬起、复位剖切到测量的过程；点击章节则停在能看清结果的一帧。例如「分离」要同时看见原位线框和抬起的护具，「剖切」要看见复位的护具和两个网格的真实截线。分离距离只用于展示。在展台上拖动可暂停并绕模型旋转，滚轮缩放，Shift 拖动或右键拖动平移，双击复位；触屏支持单指旋转、双指缩放和平移。展台获焦后可用方向键、加减号和 Home 操作相机。「纯画面」可隐藏面板并将模型居中，点「显示导览」或按 Esc 返回。时间条负责定位，左右键每次移动一秒。点章节回到导演取景；换款和复查往返保留手动视角。系统要求减少动态效果时，首次打开保持暂停。
@@ -30,7 +42,7 @@ node .agents/skills/modwork-teardown/scripts/build-review.mjs . hb-viewport3.jso
 
 「纤维场」用哑光肤色展示人物，用针织材质展示发带。佩戴和分离读取原始发带网格；剖切和测量读取该件可用的贴合结果，并将截线和定位点对准该结果。已烘焙的发带还会比较原始模型里完全重合的成对边，显示贴合后两侧顶点的最大错位。这个数值与穿入身体的距离分别解读。肤色由展台着色器生成，快照没有球员皮肤贴图。自由复查使用项目 FitViewport。贴合、风险分类与毫米值沿用快照。自由复查里可以核对源文件名和 SHA-256。它适合本机几何复查，材质贴图、服装和游戏动作在此导出路径之外。涉及分享时按用户指定的资产范围导出。生成页面与查看结果均无需写游戏目录。
 
-需要视频时，可用 `node .agents/skills/modwork-teardown/scripts/record-film.mjs headband-review.html headband-review.mp4` 导出 1280×720、24 fps 的无声 MP4。命令末尾添加 `--gallery` 可导出 1920×1080、30 fps 的纯画面影片。录制机需能从当前目录解析 Playwright 并启动 Chromium，且 PATH 中有支持 libx264 的 ffmpeg；可用 PLAYWRIGHT_MODULE、CHROMIUM、FFMPEG 分别指定绝对路径。普通离线浏览无需这些录制工具。
+需要视频时，可用 `node "$SKILL_DIR/scripts/record-film.mjs" headband-review.html headband-review.mp4`（`SKILL_DIR` 与上文相同，需在装有 Playwright 的目录运行） 导出 1280×720、24 fps 的无声 MP4。命令末尾添加 `--gallery` 可导出 1920×1080、30 fps 的纯画面影片。录制机需能从当前目录解析 Playwright 并启动 Chromium，且 PATH 中有支持 libx264 的 ffmpeg；可用 PLAYWRIGHT_MODULE、CHROMIUM、FFMPEG 分别指定绝对路径。普通离线浏览无需这些录制工具。
 
 ## 把观察转成结论
 

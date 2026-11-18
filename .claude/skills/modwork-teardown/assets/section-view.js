@@ -28,6 +28,48 @@ export function sectionMesh(vertices,indices,axis,origin){
   };
 }
 
+// Depths along `axis` (relative to `origin`, in units of `span`) at which the plane crosses both meshes.
+// `snap(c)` returns c when the plane at c crosses both, otherwise the nearest depth that does.
+// `shared` is false when the two meshes have no common section at all.
+export function sharedSectionDepths(a,b,axis,origin,span,steps=96){
+  const none={shared:false,snap:c=>c};
+  const prepare=m=>{
+    const v=m.positions,d=new Float32Array(v.length/3);let lo=Infinity,hi=-Infinity;
+    for(let i=0;i<d.length;i++){
+      d[i]=(v[3*i]-origin[0])*axis[0]+(v[3*i+2]-origin[2])*axis[2];
+      lo=Math.min(lo,d[i]);hi=Math.max(hi,d[i]);
+    }
+    return {d,lo,hi,ix:m.indices};
+  };
+  const A=prepare(a),B=prepare(b),lo=Math.max(A.lo,B.lo),hi=Math.min(A.hi,B.hi);
+  if(!(hi>lo))return none;
+  const step=(hi-lo)/steps;
+  const marks=m=>{
+    const hit=new Uint8Array(steps+1);
+    for(let i=0;i<m.ix.length;i+=3){
+      const x=m.d[m.ix[i]],y=m.d[m.ix[i+1]],z=m.d[m.ix[i+2]];
+      const first=Math.max(0,Math.ceil((Math.min(x,y,z)-lo)/step)),last=Math.min(steps,Math.floor((Math.max(x,y,z)-lo)/step));
+      for(let k=first;k<=last;k++)hit[k]=1;
+    }
+    return hit;
+  };
+  const ha=marks(A),hb=marks(B),ok=ha.map((v,i)=>v&hb[i]);
+  if(!ok.some(Boolean))return none;
+  const near=new Int16Array(steps+1);
+  let last=-1;
+  for(let i=0;i<=steps;i++){if(ok[i])last=i;near[i]=last;}
+  last=-1;
+  for(let i=steps;i>=0;i--){
+    if(ok[i])last=i;
+    const before=near[i];
+    near[i]=before<0||(last>=0&&last-i<i-before)?last:before;
+  }
+  return {shared:true,snap(c){
+    const raw=(c*span-lo)/step,k=Math.max(0,Math.min(steps,Math.round(raw)));
+    return ok[k]&&Math.abs(raw-k)<=.5?c:(lo+near[k]*step)/span;
+  }};
+}
+
 export function sectionDiagram(canvas,bodyTrace,gearTrace,span,anchor){
   const ctx=canvas.getContext('2d');
   let previous='',hasSection=false;

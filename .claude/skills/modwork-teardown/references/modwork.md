@@ -36,4 +36,4 @@
 
 在「自由复查」切换原始与贴合状态，确认原始几何只显示适用的信息。返回导览时，保留所选件、时间和原有播放状态。绑带款只有面边穿入计数，不能画出 28 处位置。普通款上的圆点对应受检顶点，不代表九个面边采样的位置。
 
-要复验本例，可从仓库根运行 `node .agents/skills/modwork-teardown/scripts/check-headband.mjs headband-review.html`，需要 Playwright 和 Chromium，支持与录制脚本相同的 PLAYWRIGHT_MODULE、CHROMIUM 覆盖。脚本断网操作实际页面，核对截线像素、三款报告、换款、复查往返、键盘焦点及小屏布局。末尾可加一个新目录路径保存截图。
+要复验本例，可在装有 Playwright 的目录（如 `MODWORK_REPO`）运行 `node "$SKILL_DIR/scripts/check-headband.mjs" headband-review.html`（`SKILL_DIR` 见 SKILL.md 的环境准备），需要 Playwright 和 Chromium，支持与录制脚本相同的 PLAYWRIGHT_MODULE、CHROMIUM 覆盖。脚本断网操作实际页面，核对截线像素、三款报告、换款、复查往返、键盘焦点及小屏布局。末尾可加一个新目录路径保存截图。

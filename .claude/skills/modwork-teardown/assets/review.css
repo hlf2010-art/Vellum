@@ -49,6 +49,9 @@ main:has(.film){max-width:none;padding:0}
 .section-readout[data-active=true]{display:block}.section-readout figcaption{display:flex;justify-content:space-between;align-items:center;font-size:11px;line-height:1.4;padding:5px 2px;color:#d0d6cf}
 .section-readout:not([data-traced=true]){visibility:hidden}
 .section-readout figcaption span{color:#b3bcb9}.section-readout figcaption i{display:inline-block;width:8px;height:2px;margin:0 4px 3px;background:#bdd2d0}.section-readout figcaption i+i{background:#ff9454}
+.section-readout .section-empty{display:none;margin:0;padding:6px 2px;font-size:11px;line-height:1.4;color:#d0d6cf}
+.section-readout[data-shared=false]{visibility:visible}.section-readout[data-shared=false] canvas{display:none}.section-readout[data-shared=false] .section-empty{display:block}
+.film-copy .result-source{font-size:12px;line-height:1.5;color:#b9c4bf;margin:.45em 0 0}
 .section-readout canvas{display:block;width:100%;height:clamp(68px,13.5vh,120px)}.section-readout[data-active=true]+.film-stat{margin-top:10px;border-top:0}
 @media(max-width:700px){
   .film{min-height:500px}.film-top{min-height:54px;margin:0 14px;gap:6px}
@@ -63,6 +66,7 @@ main:has(.film){max-width:none;padding:0}
   .film-stat span{font-size:11px}.film-stat strong.film-asset{font-size:14px;overflow-wrap:anywhere}
   .film-copy:has(.section-readout[data-active=true]){grid-template-columns:minmax(0,1fr) min(36%,141px)}
   .film-copy .result-reason{grid-column:1;font-size:17px}
+  .film-copy .result-source{grid-column:1/-1;font-size:11px;margin:.3em 0 0}
   .film-copy .result-evidence{grid-column:1/-1;font-size:14px;margin:.35em 0 .55em;max-width:none}
   .result-metrics{grid-column:1/-1;max-width:none;font-size:12px;padding:5px 0;gap:2px 12px}.film-copy .result-note{grid-column:1/-1;font-size:11px;margin:.4em 0 0}
   .section-readout[data-active=true]{grid-column:2;grid-row:1/span 3;align-self:center;width:100%;margin:0}

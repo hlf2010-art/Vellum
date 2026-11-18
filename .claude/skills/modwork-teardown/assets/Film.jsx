@@ -1,6 +1,6 @@
 import {useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {makeStage,DURATION} from './film-scene.js';
-import {CUT_START,gearName,fitResult,hasFittedView,isHeadband} from './fit-result.js';
+import {CUT_START,gearName,fitResult,hasFittedView,isHeadband,sources} from './fit-result.js';
 import {snapshot} from './snapshot-api.js';
 
 // The start follows the edit; the landing shows the finished action on a single click.
@@ -42,7 +42,7 @@ export function Film({gear,onSelect,onInspect,initialPlayback,inspectButton}){
     time.current=Math.max(0,Math.min(DURATION,t));
     const view=stage.current?.render(time.current,camera.current,gallery.current);
     if(view){
-      if(figure.current)figure.current.dataset.traced=String(view.hasSection);
+      if(figure.current){figure.current.dataset.traced=String(view.hasSection);figure.current.dataset.shared=String(view.shared);}
       if(mark.current){const pt=view.mark;mark.current.style.opacity=pt?Math.max(0,Math.min(1,(time.current-15.3)/1.35)):0;
         if(pt)mark.current.setAttribute('transform','translate('+pt[0]+' '+pt[1]+')');}
       if(liftGuide.current){const [x,y]=view.origin,[xx,yy]=view.raised;
@@ -128,6 +128,7 @@ export function Film({gear,onSelect,onInspect,initialPlayback,inspectButton}){
         <div className="film-sub"><span className="phase-dash"/> {measuring?'静态贴合判定':headband?geometryLabel:chapters[step].label} <b>/</b> {snapshot.player||gear.id}</div>
         {measuring?<><h1>{result.title}</h1>
           <h2 className="result-reason">{fit?result.reason:hasFittedView(gear)?'未记录单件贴合结果':'仅有原始几何'}</h2>
+          {fit&&<p className="result-source">数据来源：{sources[fit.heatSource]||'来源未记录'}</p>}
           <p className="result-evidence">{fit?result.surface:'这份快照可查看几何，无法确认贴合风险。'}</p>
           {fit&&<dl className="result-metrics"><dt>嵌入顶点 / 受检</dt><dd>{result.vertices}</dd>
             <dt>顶点最小有向距离</dt><dd>{result.distance}</dd></dl>}
@@ -137,6 +138,7 @@ export function Film({gear,onSelect,onInspect,initialPlayback,inspectButton}){
         <figure ref={figure} className="section-readout" data-active={step>=2}>
           <figcaption>实时截线 <span><i/>身体 <i/>护具</span></figcaption>
           <canvas ref={diagram} aria-label="身体和护具在当前剖切平面上的真实截线"/>
+          <p className="section-empty" role="status">这件护具与身体没有共同截面，无法绘制截线。</p>
         </figure>
         {!measuring&&<div className="film-stat"><span>{step===1?'显示状态':step===2?'剖切对象':'当前配件'}</span>
           <strong className="film-asset">{step===1?'分离示意':step===2?'身体表层':gearName(gear.id)}</strong></div>}

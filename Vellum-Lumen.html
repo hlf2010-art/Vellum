@@ -336,6 +336,10 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .clar{display:grid;gap:18px}.clar-q{display:grid;gap:8px}.clar-q>b{font:600 13px/1.35 var(--ui);color:var(--label)}
 .clar-opts{display:flex;flex-wrap:wrap;gap:6px}.clar-opt{height:auto;min-height:var(--size-md);padding:6px 12px;white-space:normal;text-align:left;line-height:1.3}
 .clar-opt[aria-pressed="true"]{background:var(--act);color:var(--on-act);box-shadow:none}
+.clar-own{width:100%;height:var(--size-md);padding:0 12px;border:0;border-radius:var(--radius-sm);background:var(--hover);color:var(--label);font:450 13px/1 var(--ui);outline:none;transition:box-shadow var(--d-quick)}
+.clar-own::placeholder{color:var(--label-2)}
+.clar-own:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--B) 55%,transparent)}
+.clar-own.has{box-shadow:0 0 0 2px var(--act)}
 .cbtn.pg{background:var(--pg,var(--act));color:#fff;box-shadow:0 0 18px -4px color-mix(in srgb,var(--pg,transparent) 70%,transparent)}
 .cbtn.solid:hover,.cbtn.pg:hover{filter:brightness(1.08)}
 .cbtn .ico{width:14px;height:14px;stroke-width:2}
@@ -2197,6 +2201,8 @@ dialog.sheet:focus{outline:none}
 .sh-id small{font:450 13px/1.2 var(--ui);color:var(--label-3)}
 .sh-x{width:var(--size-md);height:var(--size-md);border-radius:50%;display:grid;place-items:center;background:var(--hover);color:var(--label-3);align-self:start;transition:background var(--d-quick),color var(--d-quick),transform var(--d-press)}
 .sh-x:hover{background:var(--press);color:var(--label)}.sh-x:active{transform:scale(.92)}
+/* the head is a 3-column grid (back, title, close). A head with no back button used to leave the close button in the middle column, short of the right edge; it always takes the last column and lines up with the content edge (the head's 20px padding + 4px = the body's 24px) */
+.sh-head>.sh-x{grid-column:3;justify-self:end;margin-right:4px}
 .sh-x .ico{width:13px;height:13px;stroke-width:2.3}
 .bthumb{position:relative;width:44px;height:30px;border-radius:var(--radius-sm);background:var(--canvas);box-shadow:none;overflow:hidden;flex:none}
 .bthumb.big{width:64px;height:46px;border-radius:var(--radius-md)}
@@ -9278,16 +9284,24 @@ async function clarifyFork(idea,brief){
 }
 function clarifyDialog(items){
   return new Promise(resolve=>{
-    let done=false;const finish=v=>{if(done)return;done=true;delete dlg.dataset.clarify;if(dlg.open)dlg.close();resolve(v)};
+    /* a "close" event is queued when a dialog closes; if another question dialog has opened by the time it arrives,
+       it is stale and must not close the new one, so the listener only acts when the dialog really is closed */
+    let done=false;const onClose=()=>{if(!dlg.open)finish(null)};
+    const finish=v=>{if(done)return;done=true;dlg.removeEventListener("close",onClose);delete dlg.dataset.clarify;if(dlg.open)dlg.close();resolve(v)};
     dlg.className="sheet";dlg.dataset.clarify="1";
-    dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>${L("Before Strategist branches this","在 Strategist 发散之前")}</b><small>${L("Pick what fits. Skip any question you are unsure about.","选出合适的；拿不准的可以不选。")}</small></div><button type="button" class="sh-x" data-clarify-x aria-label="${L("Close","关闭")}">${ic("x")}</button></header>
-    <div class="sh-main clar">${items.map((q,i)=>`<div class="clar-q" role="group" aria-label="${esc(q.q)}" data-clarify-q="${i}"><b>${esc(q.q)}</b><div class="clar-opts">${q.options.map((o,j)=>`<button type="button" class="cbtn clar-opt" data-clarify-opt="${j}" aria-pressed="false">${esc(o)}</button>`).join("")}</div></div>`).join("")}</div>
+    dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>${L("Before Strategist branches this","在 Strategist 发散之前")}</b><small>${L("Pick what fits, or write your own. Skip any question you are unsure about.","选出合适的，或自己写；拿不准的可以不选。")}</small></div><button type="button" class="sh-x" data-clarify-x aria-label="${L("Close","关闭")}">${ic("x")}</button></header>
+    <div class="sh-main clar">${items.map((q,i)=>`<div class="clar-q" role="group" aria-label="${esc(q.q)}" data-clarify-q="${i}"><b>${esc(q.q)}</b><div class="clar-opts">${q.options.map((o,j)=>`<button type="button" class="cbtn clar-opt" data-clarify-opt="${j}" aria-pressed="false">${esc(o)}</button>`).join("")}</div><input type="text" class="clar-own" data-clarify-own maxlength="140" autocomplete="off" spellcheck="false" placeholder="${esc(L("Or write your own…","或者自己写…"))}" aria-label="${esc(q.q)}: ${esc(L("your own answer","你自己的答案"))}"></div>`).join("")}</div>
     <footer class="sh-foot"><button type="button" class="cbtn" data-clarify-skip>${L("Skip, just branch","跳过，直接发散")}</button><span class="sp"></span><button type="button" class="cbtn solid" data-clarify-go>${L("Branch with these","按这些发散")}</button></footer>`;
-    qsa("[data-clarify-opt]",dlg).forEach(b=>b.onclick=()=>{const g=b.closest("[data-clarify-q]");const on=b.getAttribute("aria-pressed")!=="true";qsa("[data-clarify-opt]",g).forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed",String(on))});
-    qs("[data-clarify-go]",dlg).onclick=()=>finish(qsa("[data-clarify-q]",dlg).map((g,i)=>{const b=qs('[data-clarify-opt][aria-pressed="true"]',g);return b?{q:items[i].q,a:items[i].options[+b.dataset.clarifyOpt]}:null}).filter(Boolean));
+    qsa("[data-clarify-opt]",dlg).forEach(b=>b.onclick=()=>{const g=b.closest("[data-clarify-q]");const on=b.getAttribute("aria-pressed")!=="true";qsa("[data-clarify-opt]",g).forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed",String(on));const own=qs("[data-clarify-own]",g);if(own&&on){own.value="";own.classList.remove("has")}});
+    /* the options are suggestions, not the only answers: each question also takes the designer's own words */
+    qsa("[data-clarify-own]",dlg).forEach(inp=>{
+      inp.addEventListener("input",()=>{const typed=!!inp.value.trim();inp.classList.toggle("has",typed);if(typed)qsa("[data-clarify-opt]",inp.closest("[data-clarify-q]")).forEach(x=>x.setAttribute("aria-pressed","false"))});
+      inp.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing&&e.keyCode!==229){e.preventDefault();qs("[data-clarify-go]",dlg).click()}});
+    });
+    qs("[data-clarify-go]",dlg).onclick=()=>finish(qsa("[data-clarify-q]",dlg).map((g,i)=>{const typed=clip(qs("[data-clarify-own]",g)?.value||"",140);if(typed)return {q:items[i].q,a:typed};const b=qs('[data-clarify-opt][aria-pressed="true"]',g);return b?{q:items[i].q,a:items[i].options[+b.dataset.clarifyOpt]}:null}).filter(Boolean));
     qs("[data-clarify-skip]",dlg).onclick=()=>finish([]);
     qs("[data-clarify-x]",dlg).onclick=()=>finish(null);
-    dlg.addEventListener("close",()=>finish(null),{once:true});
+    dlg.addEventListener("close",onClose);
     if(!dlg.open)dlg.showModal();
     qs("[data-clarify-opt]",dlg)?.focus();
   });

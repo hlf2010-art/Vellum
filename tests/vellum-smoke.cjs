@@ -415,6 +415,39 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.context().close();
     }
 
+    // 5f. the questions Strategist asks offer suggestions, not the only answers: each takes the designer's own words too
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const items = [{ q: 'Who is the player?', options: ['An outsider', 'Someone with power', 'An ordinary person'] }, { q: 'When does it happen?', options: ['The past', 'The present', 'The near future'] }, { q: 'How does it play?', options: ['Story', 'Tactics', 'Exploring'] }];
+      const open = async () => { const r = p.evaluate(it => clarifyDialog(it), items); await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify] [data-clarify-own]')); return r; };
+      const own = i => p.locator(`[data-clarify-q="${i}"] [data-clarify-own]`);
+      const chip = (i, j) => p.locator(`[data-clarify-q="${i}"] [data-clarify-opt="${j}"]`);
+      const pressed = i => p.evaluate(i => [...document.querySelectorAll(`[data-clarify-q="${i}"] [data-clarify-opt]`)].map(b => b.getAttribute('aria-pressed') === 'true').join(), i);
+      let res = open();
+      await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify] [data-clarify-own]'));
+      check('every question has a row for your own answer, and the dialog says so', await p.locator('[data-clarify-own]').count() === 3 && /write your own/i.test(await p.locator('dialog[data-clarify] .sh-id small').innerText()));
+      const edges = await p.evaluate(() => { const d = document.querySelector('dialog[open][data-clarify]'), x = d.querySelector('.sh-head .sh-x').getBoundingClientRect(), m = d.querySelector('.sh-main'), mr = m.getBoundingClientRect(); return { x: Math.round(x.right), content: Math.round(mr.right - parseFloat(getComputedStyle(m).paddingRight)) }; });
+      check('the close button is right-aligned with the content below it (a head with no back button left it in the middle column)', Math.abs(edges.x - edges.content) <= 1, JSON.stringify(edges));
+      await chip(0, 1).click(); await own(1).fill('Right now, in a sleeping port city'); await own(2).fill('  ');
+      check('typing clears the chosen chip for that question only; a blank row counts as nothing', await pressed(0) === 'false,true,false' && await pressed(1) === 'false,false,false' && await own(1).evaluate(e => e.classList.contains('has')) && !await own(2).evaluate(e => e.classList.contains('has')));
+      await own(1).press('Enter');
+      const a = await res;
+      check('a typed answer comes back like a chosen one, and Enter submits', JSON.stringify(a) === JSON.stringify([{ q: 'Who is the player?', a: 'Someone with power' }, { q: 'When does it happen?', a: 'Right now, in a sleeping port city' }]), JSON.stringify(a));
+      res = open(); await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify] [data-clarify-own]'));
+      await own(0).fill('A retired smuggler'); await chip(0, 2).click();
+      check('choosing a chip after typing clears what was typed', await own(0).inputValue() === '' && await pressed(0) === 'false,false,true' && !await own(0).evaluate(e => e.classList.contains('has')));
+      await chip(0, 2).click(); await own(0).fill('x'.repeat(300));
+      check('what you type is capped', await own(0).evaluate(e => e.value.length) <= 140);
+      await p.locator('[data-clarify-skip]').click();
+      check('Skip still skips everything', JSON.stringify(await res) === '[]');
+      // closing one dialog and opening the next in the same tick: the first one's queued close event must not close the second
+      const quick = await p.evaluate(async it => { const a = clarifyDialog(it); document.querySelector('[data-clarify-skip]').click(); const b = clarifyDialog(it); await new Promise(r => setTimeout(r, 300)); const stillOpen = !!document.querySelector('dialog[open][data-clarify]'); document.querySelector('[data-clarify-x]').click(); return { first: await a, stillOpen, second: await b }; }, items);
+      check('a dialog opened right after another closed is not closed by the first one\'s stale close event', JSON.stringify(quick) === JSON.stringify({ first: [], stillOpen: true, second: null }), JSON.stringify(quick));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover
     {
       const p = await page(browser, base);

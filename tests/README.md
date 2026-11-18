@@ -14,6 +14,8 @@ It also checks that what you type reaches the model: words typed on a crew draft
 
 Pin threads and Copilot are covered too. A pin reply ends with up to 3 buttons: the `ACTIONS:` line is split off (also when it follows a word such as "interactions:" or sits in a code fence), invalid buttons are dropped, a reply with none leaves the pin's own button, and the buttons go away once you write again. A search started from a card keeps the camera valid (a `NaN` camera once made the canvas impossible to move and every render throw), and a camera that is already bad heals. Copilot puts new tasks on the kanban already on the board (as a suggested edit when that board is kept, directly for a draft or your own request), still makes a separate board when asked, and shows a proposal as placed once the same card is already on the board. Streamed text is revealed word by word with a fade-in, never goes backwards, and finishes before the final render.
 
+The questions Strategist asks before branching an open idea offer suggestions, not the only answers: each has a row for the designer's own words (typing clears the chosen chip, choosing a chip clears the text, Enter submits, the typed answer is returned like a chosen one, Skip still skips).
+
 Run it before committing a change to `Vellum-Lumen.html`.
 
 ## Studio AI launcher (local server)

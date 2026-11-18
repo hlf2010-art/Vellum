@@ -462,6 +462,13 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await wikiRoute(p);
       await p.evaluate(() => sendCopilotMessage('When did the International Settlement end?'));
       check('with no model, a factual question is answered by quoting the sources', /^The Shanghai International Settlement originated from the 1863 merger[^[]*\[1\]/.test(await p.evaluate(() => board.copilot.at(-1).text)), await p.evaluate(() => board.copilot.at(-1).text.slice(0, 200)));
+      {
+        const before = await p.evaluate(() => board.nodes.filter(n => n.type === 'source').length);
+        await p.evaluate(() => { renderCopilot(); const b = [...document.querySelectorAll('[data-cp-chip]')].find(x => x.dataset.cpChip === 'Pin these sources to the board'); b && b.click(); });
+        await p.waitForTimeout(400);
+        const pin = await p.evaluate(n0 => { const s = board.nodes.filter(n => n.type === 'source'); return { added: s.length - n0, titles: s.slice(n0).map(n => n.title).join(), weights: s.slice(n0).map(n => n.weight).join(), asked: board.copilot.filter(m => m.role === 'user' && /Pin these sources/.test(m.text || '')).length }; }, before);
+        check("a fact answer's chip pins the sources it cited as Source cards, without asking Copilot", pin.added === 2 && /Shanghai International Settlement/.test(pin.titles) && pin.weights === 'reported,reported' && pin.asked === 0, JSON.stringify(pin));
+      }
       await p.unroute(/wikipedia\.org\/w\/api\.php/);
       check('no page errors in the customize and lock flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
@@ -654,6 +661,13 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         const r = await p.evaluate(async () => { const t = performance.now(); const v = await apiChat({ prompt: 'ping429' }); return { v, ms: performance.now() - t }; });
         check('a per-minute 429 waits the retryDelay and tries again', r.v === 'pong' && r.ms >= 1000 && requests.length - n0 === 2, JSON.stringify(r));
         check('and leaves room for a thinking model (max_tokens + 4096)', requests.at(-1).max === 2200 + 4096, String(requests.at(-1).max));
+        queue = [{ id: 'short1', match: 'short-check', text: 'ok' }];
+        await p.evaluate(() => apiChat({ prompt: 'short-check', maxTokens: 300 }));
+        check('a short reply keeps its limit as a length cap', requests.at(-1).max === 300, String(requests.at(-1).max));
+        queue = [{ id: 'think1', match: 'think-check', text: '', finish: 'length' }, { id: 'think2', match: 'think-check', text: 'answered' }];
+        const tb = await p.evaluate(async () => apiChat({ prompt: 'think-check', maxTokens: 300 }));
+        check('if thinking spends a short limit before any answer, it asks once more with room', tb === 'answered' && requests.slice(-2).map(x => x.max).join() === '300,4396', JSON.stringify({ tb, max: requests.slice(-2).map(x => x.max) }));
+        check('the daily budget is not keyed by the API key', await p.evaluate(() => Object.keys(cloudBudget.by).length > 0 && Object.keys(cloudBudget.by).every(k => k.split('\u0001').length === 2)));
         queue = [{ id: 'daily', match: 'ping429', status: 429, body: JSON.stringify({ error: { code: 429, message: 'Quota exceeded for metric: generate_content_free_tier_requests, limit: 0, quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier' } }) }, { id: 'nope', match: 'ping429', text: 'should not be asked' }];
         const d = await p.evaluate(async () => { try { await apiChat({ prompt: 'ping429' }); return 'answered'; } catch (e) { return e.reason || e.message; } });
         check('a daily 429 is not retried and says the quota resets tomorrow', d === "Cloud API's daily quota is used up (HTTP 429); it resets tomorrow" && queue.length === 1, d);
@@ -664,6 +678,17 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.evaluate(id => { board.nodes = board.nodes.filter(n => n.type !== 'direction'); board.edges = board.edges.filter(e => e.a !== id); renderAll(); select([id]); }, idea);
       queue = [{ id: 'w', match: '"directions"', text: dirs('W') }];
       await p.type('/fork 3'); await p.idle();
+      {
+        // fresh forks are drafts: adopting or building one is a decision, not a revision request
+        const d0 = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'A').id);
+        const kinds = await p.evaluate(id => { select([id]); const k = s => route(s)?.kind; return { adopt: k('Adopt this direction'), go: k('go with this'), zh: k('采纳'), build: k('Build a prototype of the opening scene'), revise: k('make it darker and more personal'), ask: k('Should we adopt this?') }; }, d0);
+        check('on a fresh draft direction, adopt and build words adopt and build; other words still revise; a question still asks', kinds.adopt === 'adopt' && kinds.go === 'adopt' && kinds.zh === 'adopt' && kinds.build === 'build' && kinds.revise === 'revise' && kinds.ask !== 'adopt' && kinds.ask !== 'revise', JSON.stringify(kinds));
+        await p.evaluate(id => select([id]), d0);
+        await p.type('Adopt this direction'); await p.waitForTimeout(800);
+        const st = await p.evaluate(id => ({ adopted: board.adopted[byId(id).idea] === id, titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(), toast: [...document.querySelectorAll('#toasts > *')].map(x => x.innerText).join(' / ') }), d0);
+        check('typing "Adopt this direction" on a fresh draft asks to keep it first and leaves the drafts as they were (no revision)', !st.adopted && /Keep this direction first/.test(st.toast) && st.titles === 'W A,W B,W C', JSON.stringify(st));
+        await p.evaluate(id => { delete board.adopted[byId(id).idea]; renderAll(); }, d0);
+      }
       await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').forEach(n => { n.status = 'ink'; })); await p.evaluate(() => { renderAll(); persist(); });
       const dirA = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'A').id);
       await p.evaluate(id => select([id]), dirA);
@@ -759,6 +784,12 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         await p.newBoard(); await p.type('An RPG set in Shanghai about rival police forces in the 1930s and the translators caught between them.'); await p.waitForTimeout(800);
         await p.evaluate(() => select([board.nodes.find(n => n.type === 'idea').id])); await p.type('/fork 3'); await p.idle();
       };
+      // an open idea is not quizzed when the cloud drafts the fork: the questions make up for a small model
+      queue = [{ id: 'copen', match: '"directions"', text: dirs('Open') }];
+      await p.newBoard(); await p.type('Shanghai game'); await p.waitForTimeout(800);
+      await p.evaluate(() => select([board.nodes.find(n => n.type === 'idea').id])); await p.type('/fork 3'); await p.idle();
+      const open = await p.evaluate(() => ({ dialog: !!document.querySelector('dialog[open][data-clarify]'), titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join() }));
+      check('an open idea is branched by the cloud without the small-model questions', !open.dialog && open.titles === 'Open A,Open B,Open C', JSON.stringify(open));
       // heavy: the fork goes to the cloud, Local AI is not asked
       let n0 = sgens.length;
       queue = [{ id: 'cfork', match: '"directions"', text: dirs('Cloud') }];
@@ -798,7 +829,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       queue = [{ id: 'nope', match: '"directions"', status: 503 }];
       await forkIdea();
       r = await isl();
-      check("if the cloud can't redo it, the local draft stays (not built-in rules) and the toast says so", /^Beat A,Northern Ledger,Dock Clerk$/.test(r.titles) && r.toasts.some(t => /couldn't redo it, so the draft stays\.$/.test(t)), JSON.stringify(r));
+      check("if the cloud can't redo it, the local draft stays (not built-in rules) and the toast says so", /^Beat A,Northern Ledger,Dock Clerk$/.test(r.titles) && r.toasts.some(t => /^Local AI's draft had problems \(.*\), and Cloud API returned HTTP 503, so the local draft stays\.$/.test(t)), JSON.stringify(r));
       // light work never spends the reserve
       n0 = requests.length;
       await p.evaluate(() => { cloudBudget = { day: '', by: {} }; cloudUse().used = 3; });

@@ -7786,7 +7786,7 @@ async function readChatStream(res,ctrl,{json,onText,timedOut=()=>false,timeoutMs
   if(!loopStopped&&cut!=="time"&&buf.trim())consumeLine(buf);
   // a thinking model's thoughts are not the answer (llama.cpp normally sends them apart, as reasoning_content)
   const clean=trimRepetitionLoop(full).text.replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/^[\s\S]*?<\/think>/i,"").trim();
-  if(!clean)throw finish==="length"?aiFailError(L("The model used its whole token budget before answering","模型在作答前用完了 token 预算")):new Error("Empty model response");
+  if(!clean){if(finish!=="length")throw new Error("Empty model response");const e=aiFailError(L("The model used its whole token budget before answering","模型在作答前用完了 token 预算"));e.budget=true;throw e}
   if(json){try{return parseAIJson(clean)}catch(e){if(cut==="length")throw new Error(L("The model's reply hit its length limit before it finished","模型的回复在写完前达到了长度上限"));throw e}}
   if(!cut)return clean;
   const marked=clean+cutNote(cut,timeoutMs);onText?.({text:marked,delta:""});return marked;
@@ -7809,7 +7809,7 @@ function failReason(who,e){
   return L(`${who} failed (${clip(e?.message||"error",60)})`,`${who}出错（${clip(e?.message||"error",60)}）`);
 }
 const JSON_ONLY="Reply with one JSON object only: no prose before or after it, no code fences.";
-let AI_TIMEOUT_MS=95000; // one model call's time limit (Local AI and Cloud API); the smoke test shortens it
+let AI_TIMEOUT_MS=95000; // a Cloud API call's time limit (Local AI uses LOCAL_AI_MS); the smoke test shortens both
 /* Two stances. "fact": answer only from sources, low temperature, every claim checked against them. "create":
    invent freely, higher temperature, but anything presented as real must agree with the sources. */
 const STANCE_TEMP={fact:{text:.15,json:.15},create:{text:.9,json:.7}};
@@ -7941,8 +7941,12 @@ const isGeminiApi=(cfg=apiCfg)=>/generativelanguage\.googleapis\.com/.test(cfg.b
 function cloudDailyLimit(cfg=apiCfg){const d=cfg.daily;if(d===""||d===null)return null;if(d===undefined)return isGeminiApi(cfg)?20:null;const n=Math.floor(+d);return n>0?n:null}
 // Gemini's daily limits reset at midnight Pacific; other providers are counted by the local day
 function cloudDay(){try{return new Intl.DateTimeFormat("en-CA",{timeZone:isGeminiApi()?"America/Los_Angeles":undefined,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())}catch{return new Date().toISOString().slice(0,10)}}
-let cloudBudget=(()=>{const b=store.get(".cloudBudget",null);return b&&typeof b==="object"&&b.by?b:{day:"",by:{}}})();
-function cloudUse(){const day=cloudDay();if(cloudBudget.day!==day)cloudBudget={day,by:{}};const k=apiCfgSig();return cloudBudget.by[k]||(cloudBudget.by[k]={used:0,until:0})}
+// counted per provider and model (free-tier quotas are per model); never keyed by the API key itself
+const budgetKey=()=>`${apiCfg.baseUrl}\u0001${apiCfg.model}`;
+let cloudBudget=(()=>{const b=store.get(".cloudBudget",null);if(!(b&&typeof b==="object"&&b.by))return {day:"",by:{}};
+  for(const k of Object.keys(b.by))if(k.split("\u0001").length>2)delete b.by[k]; // older entries carried the key
+  return b})();
+function cloudUse(){const day=cloudDay();if(cloudBudget.day!==day)cloudBudget={day,by:{}};const k=budgetKey();return cloudBudget.by[k]||(cloudBudget.by[k]={used:0,until:0})}
 const saveCloudBudget=()=>store.set(".cloudBudget",cloudBudget);
 function countCloudCall(){cloudUse().used++;saveCloudBudget()}
 function cloudLeft(){const b=cloudUse(),lim=cloudDailyLimit();if(b.until>Date.now())return 0;return lim==null?Infinity:Math.max(0,lim-b.used)}
@@ -7983,7 +7987,7 @@ async function viaClaude(remote,local,opts={}){
      designer is told what went wrong and which engine answered instead. `why` goes back to the caller;
      `quiet` keeps background work silent. `weight` ("heavy" | "light") picks the order in Auto. */
   let why="",late=false,draft=null;
-  const note=(who,e)=>{if(!why){why=failReason(who,e);late=e?.name==="TimeoutError"}};
+  const note=(who,e)=>{const r=failReason(who,e);if(!why){why=r;late=e?.name==="TimeoutError"}else if(!why.includes(r))why=L(`${why}, and ${r.replace(/^The /,"the ")}`,`${why}；${r}`)};
   const said=used=>{if(!why||opts.quiet)return;
     toast(late?L(`${why}. ${used[0].toUpperCase()+used.slice(1)} drafted this instead; a faster model or fewer cards helps.`,`${why}。已改由${used}起草；换更快的模型或减少卡片会有帮助。`)
       :L(`${why}, so ${used} answered instead.`,`${why}，已改用${used}。`))};
@@ -7999,7 +8003,7 @@ async function viaClaude(remote,local,opts={}){
     }
   }
   // the cloud couldn't redo a flawed local draft: the draft is still better than built-in rules
-  if(draft!=null){if(!opts.quiet)toast(L(`${why}, and the Cloud API couldn't redo it, so the draft stays.`,`${why}，云端 API 也无法重做，保留该草稿。`));return {v:draft,live:true,engine:"studio",why,route:routeNote("studio",{weight,plan})}}
+  if(draft!=null){if(!opts.quiet)toast(L(`${why}, so the local draft stays.`,`${why}，保留本地草稿。`));return {v:draft,live:true,engine:"studio",why,route:routeNote("studio",{weight,plan})}}
   if(aiPref!=="local"&&sampleFn&&!(opts.apiArgs?.images?.length)){
     try{const v=await Promise.race([remote(),wait(100000).then(()=>{throw {code:"timeout"}})]);if(v==null)throw {code:"empty"};said("Claude");return {v,live:true,engine:"claude",why}}
     catch(e){if(e&&e.code==="not_granted"){sampleFn=null;renderCrew();toast("Claude access was declined. Falling back to local rules.")}
@@ -8020,7 +8024,8 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
     /* Many cloud models think before answering (Gemini 2.5 and later, reasoning models), and the thinking counts
        against max_tokens: Gemini 4 Hydrogen spent ~1,400 of a fork's 2,000 on thoughts and sometimes all of them,
        leaving no answer. The limit is a ceiling, billed by use, so leave thinking room. */
-    const body={model:apiCfg.model,messages:msgs,stream:true,temperature:STANCE_TEMP[stance]?.[json?"json":"text"]??0.45,max_tokens:Math.min(8192,maxTokens+4096)};
+    const room=json||maxTokens>=1200;
+    const body={model:apiCfg.model,messages:msgs,stream:true,temperature:STANCE_TEMP[stance]?.[json?"json":"text"]??0.45,max_tokens:Math.min(8192,maxTokens+(room?4096:0))};
     if(json)body.response_format={type:"json_object"};
     const send=()=>fetch(`${apiCfg.baseUrl.replace(/\/+$/,"")}/chat/completions`,{
       method:"POST",signal:ctrl.signal,
@@ -8049,7 +8054,15 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
     }
     setApiHealth("ok",{cfg:sentCfg,ms:Math.round(performance.now()-t0)});
     countCloudCall();
-    return await readChatStream(res,ctrl,{json,onText,timedOut:()=>timedOut,timeoutMs});
+    try{return await readChatStream(res,ctrl,{json,onText,timedOut:()=>timedOut,timeoutMs})}
+    catch(e){
+      // a short reply's limit doubles as a length cap; only if a thinking model spent it all before answering, ask once more with room
+      if(!e?.budget||room)throw e;
+      body.max_tokens=Math.min(8192,maxTokens+4096);res=await send();
+      if(!res.ok)throw apiStatusError(res.status,classifyApiStatus(res.status));
+      countCloudCall();
+      return await readChatStream(res,ctrl,{json,onText,timedOut:()=>timedOut,timeoutMs});
+    }
   }catch(e){
     if(e instanceof TypeError&&!signal?.aborted)setApiHealth("unreachable",{cfg:sentCfg,detail:"network"});
     else if(e?.name==="AbortError"&&!signal?.aborted&&!gotHeaders)setApiHealth("unreachable",{cfg:sentCfg,detail:"timeout"});
@@ -8952,7 +8965,7 @@ async function groundIdea(idea,brief,picked){
     }
     return {found};
   }});
-  if(keenWhy&&(res?.found||[]).length)toast(L(`${keenWhy}, so Scout used Wikipedia instead.`,`${keenWhy}，Scout 已改用维基百科。`));
+  if(keenWhy&&(res?.found||[]).length)toast((res.found.some(x=>x.via==="Wikipedia")?L(`${keenWhy}, so Scout used Wikipedia instead.`,`${keenWhy}，Scout 已改用维基百科。`):L(`${keenWhy}; Scout kept what it had already found.`,`${keenWhy}；Scout 保留了已找到的资料。`)));
   const found=res?.found||[];
   if(!found.length){if(keenWhy)toast(L(`${keenWhy}.`,`${keenWhy}。`));toast(reached?L("Scout found no background on Wikipedia, so Strategist is working from memory.","Scout 在维基百科没找到相关背景，Strategist 将凭记忆作答。"):L("Scout couldn't reach Wikipedia, so Strategist is working from memory.","Scout 无法连接维基百科，Strategist 将凭记忆作答。"));return []}
   checkpoint();
@@ -9024,7 +9037,20 @@ ${found.map((x,i)=>`[${i+1}] ${x.title}: ${x.text}`).join("\n")}`;
   // no model, or nothing it said held up: quote the sources themselves, which can't be wrong about what they say
   if(!kept.length)kept=found.slice(0,2).map((x,i)=>`${clip(x.text.split(/(?<=[.!?。！？])\s/)[0]||x.text,260)} [${i+1}]`);
   const note=dropped?`\n\n${L(`(Left out ${dropped} statement${dropped>1?"s":""} the sources don't support.)`,`（已删去 ${dropped} 句资料不支持的内容。）`)}`:"";
-  return {text:`${kept.join(" ")}${note}\n\n**${L("Sources","资料来源")}**\n${list}`,sources:found.length,dropped};
+  return {text:`${kept.join(" ")}${note}\n\n**${L("Sources","资料来源")}**\n${list}`,sources:found.length,dropped,found};
+}
+const PIN_SOURCES_CHIP=()=>L("Pin these sources to the board","把这些资料钉到看板上");
+/* Pin the sources a fact answer cited as Source cards (Reported), so they can be wired to the work. */
+function pinFactSources(found){
+  if(!found?.length)return toast(L("No sources to pin.","没有可钉的资料。"));
+  checkpoint();
+  const pid="p-"+uid(),spots=planSources(found.length,null),made=found.map((it,i)=>{
+    const via=it.via==="Keenable"?(hostOf(it.url)||"Keenable"):L("Wikipedia","维基百科");
+    return node("source",{kind:L(`Source · ${via}`,`资料 · ${via}`),title:clip(it.title,64),text:it.text+(it.published?` (${it.published.slice(0,10)})`:""),weight:"reported",path:it.url,src:{url:it.url,source:it.via||"Wikipedia"},by:"scout",status:"sketch",pid},spots[i]);
+  });
+  log("scout",`Pinned ${made.length} source${made.length>1?"s":""} from a fact answer: ${made.map(n=>esc(n.title)).join(", ")}`,made[0].id);
+  sel=made.map(n=>n.id);renderAll();persist();follow(made);
+  toast(L(`Pinned ${made.length} source${made.length>1?"s":""} to the board.`,`已把 ${made.length} 条资料钉到看板上。`));
 }
 async function fork(idea,count=3,brief="",{ask=true}={}){
   if(!idea)return toast("Select a claim, idea or note to fork.");
@@ -9034,7 +9060,8 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
   const free=LETTERS.filter(l=>!existing.some(d=>d.letter===l));
   if(!free.length)return toast("This claim has four directions already. Discard one to explore again.");
   if(count>free.length)toast(free.length===1?`Room for one more direction. Strategist will suggest ${free[0]}.`:`Room for ${free.length} more directions.`);
-  if(ask&&smallModelOn()&&!existing.length&&forkIsOpen(idea,brief,sourcesFor(idea))){
+  // the questions make up for a small model; when Auto sends the fork to the cloud there is nothing to make up for
+  if(ask&&smallModelOn()&&autoPlan("heavy").order[0]==="studio"&&!existing.length&&forkIsOpen(idea,brief,sourcesFor(idea))){
     const picked=await clarifyFork(idea,brief);
     if(picked===null)return;
     if(picked.length){idea.clarified=picked;brief=`${brief?brief+"\n":""}The designer chose: ${picked.map(x=>`${x.q} ${x.a}`).join("; ")}. Keep every direction inside these choices.`}
@@ -11476,6 +11503,13 @@ function route(text){
       case"/memory":{const txt=arg.trim();if(txt)return mk("memory",null,"save to memory",{arg:txt});return mk("config",null,"open memory",{patch:{openDialog:"memory"},explicit:true})}
       case"/settings":case"/config":{const patch=parseConfigIntent(arg,{explicit:true});return mk("config",null,patch?describeConfigPatch(patch):arg?"configure settings":"open settings",{arg,patch,explicit:true})}
     }}
+  /* Adopting or building a direction comes before revising it: fresh forks are drafts, and "Adopt this
+     direction" or "Build a prototype of the opening scene" on one is a decision, not a revision request. A
+     question ("should we adopt this?") still goes to the crew; "make it darker" still revises. */
+  {const q=/[?？]\s*$/.test(t);
+    if(!q&&has("direction")&&(/^(?:(?:ok(?:ay)?|yes|yeah|great|alright|right)[,.!\s]+)?(?:(?:please|let'?s|i(?:'ll| will)?|we(?:'ll| will)?)\s+)?(?:adopt\b|(?:go with|pick|choose)\s+(?:this|that|it)\b)/i.test(t)||/^(?:好的?[，,\s]*)?那?就?(?:采纳|选定|选(?:这个|这条|它))|^(?:好的?[，,\s]*)?那?就用(?:这个|这条)(?:方向)?[。.!！]?$/.test(t)))return mk("adopt",null,`adopt ${clip(titleOf(has("direction")),28)}`);
+    if(!q&&has("direction")&&!has("proof")&&/\b(build|prototype|mock ?up)\b/i.test(t))return mk("build","wright","build a proof",{arg:t});
+  }
   /* a crew draft is selected: plain words revise it (questions still get an answer, and an @mention of
      someone else still goes to them) */
   {const dr=draftOf(ctx);
@@ -11506,9 +11540,6 @@ function route(text){
   const metaPlanRe=/\b(what(?:'s| is| are)?\s+(?:your|our|the)\s+next\s+steps?|what\s+next|how\s+should\s+(?:i|we)\s+proceed|what\s+should\s+(?:i|we)\s+do\s+next|what\s+do\s+you\s+recommend)\b/i;
   if(!ctx.length&&metaPlanRe.test(t))return mk("copilot",null,"ask Copilot",{arg:t});
   if(q&&(has("frame")||has("proof")))return mk("ask","critic","ask on "+titleOf(has("proof")||has("frame")),{arg:t});
-  /* "Adopt this direction" is what the placeholder suggests, so the words have to work, not only /adopt.
-     A question ("should we adopt this?") still goes to the crew. */
-  if(!q&&has("direction")&&(/^(?:(?:ok(?:ay)?|yes|yeah|great|alright|right)[,.!\s]+)?(?:(?:please|let'?s|i(?:'ll| will)?|we(?:'ll| will)?)\s+)?(?:adopt\b|(?:go with|pick|choose)\s+(?:this|that|it)\b)/i.test(t)||/^(?:好的?[，,\s]*)?那?就?(?:采纳|选定|选(?:这个|这条|它))|^(?:好的?[，,\s]*)?那?就用(?:这个|这条)(?:方向)?[。.!！]?$/.test(t)))return mk("adopt",null,`adopt ${clip(titleOf(has("direction")),28)}`);
   if(/\b(fork|branch|directions?|alternatives|options|what if|other ways)\b/i.test(t)&&f&&["idea","note","notepad"].includes(f.type))return mk("fork","muse",`fork into ${parseInt((t.match(/\b([2-4])\b/)||[])[1])||3}`,{n:parseInt((t.match(/\b([2-4])\b/)||[])[1])||3,arg:t});
   if(/\b(build|prototype|proof|mock ?up|make (it|the page))\b/i.test(t)&&(has("direction")||has("proof")||has("treemap")))return mk("build","wright","build a proof",{arg:t});
   if(/\b(deck|slides?)\b/i.test(t)&&(has("direction")||has("treemap")))return mk("deck","wright","build a deck");
@@ -13170,7 +13201,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
   try{
     if(factOn){
       const fa=await factAnswer(text,{signal:copilotAbort.signal});
-      aiMsg.text=fa.text;aiMsg.stance="fact";aiMsg.chips=fa.sources?[L("Pin these sources to the board","把这些资料钉到看板上")]:[];
+      aiMsg.text=fa.text;aiMsg.stance="fact";aiMsg.factSources=fa.found||[];aiMsg.chips=fa.sources?[PIN_SOURCES_CHIP()]:[];
     }else if(skipDelegate){
       const loc=copilotLocalReply(text,ctx);
       aiMsg.text=loc.text;aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;aiMsg.actions=loc.actions||[];
@@ -13677,7 +13708,10 @@ function initCopilot(){
     if(e.target.closest("[data-cpq-clear]")){cpQueue=[];cpQueuePaused=false;renderCopilotQueue();return}
     if(e.target.closest("[data-cpq-run]")){cpQueuePaused=false;if(!copilotStreaming&&cpQueue.length){const next=cpQueue.shift();renderCopilotQueue();sendCopilotMessage(next.text,next.ctxIds)}else renderCopilotQueue();return}
     const mb=e.target.closest("[data-cp-mode]");if(mb){copilotMode=mb.dataset.cpMode;renderCopilot();return}
-    const ch=e.target.closest("[data-cp-chip]");if(ch){sendCopilotMessage(ch.dataset.cpChip);return}
+    const ch=e.target.closest("[data-cp-chip]");if(ch){
+      const lastAi=[...(board.copilot||[])].reverse().find(m=>m.role==="ai");
+      if(ch.dataset.cpChip===PIN_SOURCES_CHIP()&&lastAi?.factSources?.length){pinFactSources(lastAi.factSources);return}
+      sendCopilotMessage(ch.dataset.cpChip);return}
     const um=e.target.closest("[data-cp-ui-mode]");if(um){const idx=+um.dataset.cpUi,m=(board.copilot||[]).find(x=>x.id===um.dataset.cpMsg),v=m?.visuals?.[idx];if(v){v._mode=um.dataset.cpUiMode;const box=um.closest(".cp-ui");if(box)box.outerHTML=renderCopilotVisual(v,m.id,idx);persist()}return}
     const us=e.target.closest("[data-cp-ui-sel]");if(us){const idx=+us.dataset.cpUi,m=(board.copilot||[]).find(x=>x.id===us.dataset.cpMsg),v=m?.visuals?.[idx];if(v){v._sel=+us.dataset.cpUiSel;const box=us.closest(".cp-ui");if(box)box.outerHTML=renderCopilotVisual(v,m.id,idx);persist()}return}
     const up=e.target.closest("[data-cp-pin-ui]");if(up){pinCopilotVisualToBoard(up.dataset.cpMsg,+up.dataset.cpPinUi);return}

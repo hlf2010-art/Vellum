@@ -259,6 +259,9 @@ if (args.recheck) {
       try { r = await RUN[t](p); } catch (e) { r = { error: String(e.message || e).split('\n')[0], flags: [] }; }
       r.task = t; r.i = i; r.toasts = await p.evaluate(() => __toasts).catch(() => []); r.pageErrors = p.errors;
       if (p.errors.length) r.flags = [...(r.flags || []), 'page error: ' + p.errors[0]];
+      // A Copilot reply has no engine tag, so a fallback shows only in the toast. Count it as an error.
+      const fell = r.toasts.find(m => /built-in rules answered|answered instead/i.test(m));
+      if (fell && !(r.flags || []).some(f => /not the model/.test(f))) r.flags = [...(r.flags || []), 'fell back: ' + fell];
       results.push(r);
       console.log(`${t} #${i + 1}  ${r.seconds ? r.seconds.toFixed(0) + ' s' : ''}  ${r.error ? 'crashed: ' + r.error : (r.flags.length ? r.flags.join('; ') : 'ok')}`);
       await p.context().close();

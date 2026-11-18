@@ -45,9 +45,9 @@ function serve() {
           const flat = msgs.map(m => typeof m.content === 'string' ? m.content : (m.content || []).map(p => p.text || '').join(' ')).join('\n');
           const i = queue.findIndex(e => new RegExp(e.match, 's').test(flat));
           const hit = i >= 0 ? queue.splice(i, 1)[0] : null;
-          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200), full: flat, temp: parsed.temperature });
+          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200), full: flat, temp: parsed.temperature, max: parsed.max_tokens });
           if (hit && hit.delay) await new Promise(r => setTimeout(r, hit.delay));
-          if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503); return rsp.end(); }
+          if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503, (hit && hit.headers) || {}); return rsp.end((hit && hit.body) || ''); }
           rsp.writeHead(200, { 'Content-Type': 'text/event-stream' });
           rsp.on('error', () => {});
           const txt = typeof hit.text === 'string' ? hit.text : JSON.stringify(hit.text);
@@ -611,6 +611,18 @@ async function page(browser, base, { model = true } = {}) {
       check('the island says built-in rules answered', broke.note === 'Built-in rules answered', JSON.stringify(broke.note));
       check('the header stops claiming the Cloud API is in use', broke.health === 'credits' && !broke.routable && broke.issue === 'Cloud API out of credits' && broke.label === 'Out of credits', JSON.stringify(broke));
       check('a passing re-check brings the Cloud API back', await p.evaluate(async () => { await testApi({ quiet: true }); return apiRoutable() && apiHealthNow().k === 'ok'; }));
+      // free tiers cap requests per minute: wait as long as the server asks and try again; a daily cap is said plainly
+      {
+        const n0 = requests.length;
+        queue = [{ id: 'busy', match: 'ping429', status: 429, body: JSON.stringify({ error: { code: 429, details: [{ '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '1s' }] } }) }, { id: 'pong', match: 'ping429', text: 'pong' }];
+        const r = await p.evaluate(async () => { const t = performance.now(); const v = await apiChat({ prompt: 'ping429' }); return { v, ms: performance.now() - t }; });
+        check('a per-minute 429 waits the retryDelay and tries again', r.v === 'pong' && r.ms >= 1000 && requests.length - n0 === 2, JSON.stringify(r));
+        check('and leaves room for a thinking model (max_tokens + 4096)', requests.at(-1).max === 2200 + 4096, String(requests.at(-1).max));
+        queue = [{ id: 'daily', match: 'ping429', status: 429, body: JSON.stringify({ error: { code: 429, message: 'Quota exceeded for metric: generate_content_free_tier_requests, limit: 0, quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier' } }) }, { id: 'nope', match: 'ping429', text: 'should not be asked' }];
+        const d = await p.evaluate(async () => { try { await apiChat({ prompt: 'ping429' }); return 'answered'; } catch (e) { return e.reason || e.message; } });
+        check('a daily 429 is not retried and says the quota resets tomorrow', d === "Cloud API's daily quota is used up (HTTP 429); it resets tomorrow" && queue.length === 1, d);
+        queue = [];
+      }
       // drafts from a working model, kept
       await p.evaluate(id => { board.nodes = board.nodes.filter(n => n.type !== 'direction'); board.edges = board.edges.filter(e => e.a !== id); renderAll(); select([id]); }, idea);
       queue = [{ id: 'w', match: '"directions"', text: dirs('W') }];

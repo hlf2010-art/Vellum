@@ -7137,7 +7137,7 @@ async function buildChatMessages({system,prompt,messages,images}){
 async function readChatStream(res,ctrl,{json,onText}){
   const reader=res.body?.getReader();
   if(!reader)throw new Error("No response stream");
-  const dec=new TextDecoder();let buf="",full="",loopStopped=false;
+  const dec=new TextDecoder();let buf="",full="",loopStopped=false,finish="";
   const pushDelta=d=>{
     if(!d)return;
     full+=d;
@@ -7154,7 +7154,7 @@ async function readChatStream(res,ctrl,{json,onText}){
   const consumeLine=ln=>{
     const line=ln.trim();if(!line.startsWith("data:"))return;
     const payload=line.slice(5).trim();if(!payload||payload==="[DONE]")return;
-    try{const j=JSON.parse(payload);pushDelta(j.choices?.[0]?.delta?.content??j.choices?.[0]?.message?.content??"")}catch{}
+    try{const j=JSON.parse(payload);if(j.choices?.[0]?.finish_reason)finish=j.choices[0].finish_reason;pushDelta(j.choices?.[0]?.delta?.content??j.choices?.[0]?.message?.content??"")}catch{}
   };
   try{
     while(!loopStopped){
@@ -7167,7 +7167,7 @@ async function readChatStream(res,ctrl,{json,onText}){
   if(!loopStopped&&buf.trim())consumeLine(buf);
   // a thinking model's thoughts are not the answer (llama.cpp normally sends them apart, as reasoning_content)
   const clean=trimRepetitionLoop(full).text.replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/^[\s\S]*?<\/think>/i,"").trim();
-  if(!clean)throw new Error("Empty model response");
+  if(!clean)throw finish==="length"?aiFailError(L("The model used its whole token budget before answering","模型在作答前用完了 token 预算")):new Error("Empty model response");
   return json?parseAIJson(clean):clean;
 }
 /* Running out of time is not the designer pressing Stop. Only the caller's signal ends in an AbortError;
@@ -7184,7 +7184,8 @@ function apiStatusError(status,k){
   const m={credits:L(`Cloud API is out of credits (HTTP ${status})`,`云端 API 额度用尽（HTTP ${status}）`),
     auth:L(`Cloud API rejected the key (HTTP ${status})`,`云端 API 拒绝了密钥（HTTP ${status}）`),
     notfound:L(`Cloud API doesn't know this model (HTTP ${status})`,`云端 API 找不到该模型（HTTP ${status}）`),
-    ratelimit:L(`Cloud API is rate limited (HTTP ${status})`,`云端 API 被限流（HTTP ${status}）`)}[k];
+    ratelimit:L(`Cloud API is rate limited (HTTP ${status})`,`云端 API 被限流（HTTP ${status}）`),
+    daily:L(`Cloud API's daily quota is used up (HTTP ${status}); it resets tomorrow`,`云端 API 今日额度已用完（HTTP ${status}），明天重置`)}[k];
   return aiFailError(m||L(`Cloud API returned HTTP ${status}`,`云端 API 返回 HTTP ${status}`));
 }
 /* What to tell the designer when an engine could not answer. */
@@ -7348,14 +7349,30 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
   const track=d=>{if(d?.text)partial=d.text;onText?.(d)};
   const sentCfg={...apiCfg},t0=performance.now();let gotHeaders=false;
   try{
-    const body={model:apiCfg.model,messages:msgs,stream:true,temperature:STANCE_TEMP[stance]?.[json?"json":"text"]??0.45,max_tokens:Math.min(4600,maxTokens)};
+    /* Many cloud models think before answering (Gemini 2.5 and later, reasoning models), and the thinking counts
+       against max_tokens: Gemini 4 Hydrogen spent ~1,400 of a fork's 2,000 on thoughts and sometimes all of them,
+       leaving no answer. The limit is a ceiling, billed by use, so leave thinking room. */
+    const body={model:apiCfg.model,messages:msgs,stream:true,temperature:STANCE_TEMP[stance]?.[json?"json":"text"]??0.45,max_tokens:Math.min(8192,maxTokens+4096)};
     if(json)body.response_format={type:"json_object"};
-    const res=await fetch(`${apiCfg.baseUrl.replace(/\/+$/,"")}/chat/completions`,{
+    const send=()=>fetch(`${apiCfg.baseUrl.replace(/\/+$/,"")}/chat/completions`,{
       method:"POST",signal:ctrl.signal,
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiCfg.key},
       body:JSON.stringify(body)
     });
+    let res=await send();
     gotHeaders=true;
+    /* Free tiers (Gemini's especially) cap requests per minute as well as per day. A per-minute 429 clears in
+       seconds, so wait as long as the server asks (up to 30 s, inside the time limit) and try again, twice at
+       most. A daily cap does not clear today: say so instead of waiting. */
+    for(let tries=0;res.status===429&&tries<2;tries++){
+      const txt=await res.text().catch(()=>"");
+      if(/PerDay|per day|daily/i.test(txt))throw apiStatusError(429,"daily");
+      const ra=Number(res.headers.get("retry-after"))||Number((txt.match(/"retryDelay"\s*:\s*"([\d.]+)s"/)||[])[1])||6;
+      const ms=Math.min(30000,Math.ceil(ra*1000)+500);
+      if(performance.now()-t0+ms>timeoutMs-15000)break;
+      await new Promise((ok,no)=>{const h=setTimeout(ok,ms);ctrl.signal.addEventListener("abort",()=>{clearTimeout(h);no(new DOMException("Aborted","AbortError"))},{once:true})});
+      res=await send();
+    }
     if(!res.ok){
       // Only definite setup problems change the connection status; a passing 5xx/429 is the call's own error.
       const k=classifyApiStatus(res.status);

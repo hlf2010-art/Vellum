@@ -345,7 +345,7 @@ async function page(browser, base, { model = true } = {}) {
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="ok"]'), null, { timeout: 4000 }).catch(() => {});
       const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, head: document.querySelector('#studioPop .sp-now')?.className, headTxt: document.querySelector('#studioPop .sp-now')?.textContent, acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.querySelector('#crewSetBtn .conn-dot').className, note: document.querySelector('#studioPop .sp-mode-note')?.textContent, order: [...document.querySelectorAll('#studioPop .sp-svc-top > span:first-child')].map(s => s.textContent) }));
       check('opening Connection tests the Cloud API for real and the header names the engine in use', ok.h === 'Connected' && /Using Cloud API/.test(ok.headTxt) && /ok/.test(ok.head) && probes.length >= 1 && probes.at(-1).auth === 'Bearer smoke' && requests.every(r => !/^ping$/.test(r.full)), JSON.stringify(ok));
-      check('actions match real state (no Start while Studio AI is closed), Auto is explained, media is grouped apart', ok.acts.join() === 'Edit' && /Local AI.*Cloud API/.test(ok.note || '') && ok.order.join() === 'Local AI,Cloud API,Media Studio', JSON.stringify(ok));
+      check('actions match real state (no Start while Studio AI is closed), Auto is explained, media is grouped apart', ok.acts.join() === 'Edit,Set up' && /Local AI.*Cloud API/.test(ok.note || '') && ok.order.join() === 'Local AI,Cloud API,Scout search,Media Studio', JSON.stringify(ok));
       probe.status = 401;
       await p.click('#studioPop [data-sp="refresh"]');
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="auth"]'), null, { timeout: 4000 }).catch(() => {});
@@ -532,6 +532,21 @@ async function page(browser, base, { model = true } = {}) {
         await p.unroute(/wikipedia\.org\/w\/api\.php/);
         r = await forkOn('An RPG set in Shanghai about dock workers and the gangs who run the wharves in the 1920s and 1930s.');
         check("when Wikipedia can't be reached, Strategist still branches and says it worked from memory", r.titles === 'Grounded A,Grounded B,Grounded C' && r.toasts.some(t => /couldn't reach Wikipedia, so Strategist is working from memory/.test(t)), JSON.stringify(r));
+        // Keenable, when set up: searched first with the key, the mode and the idea in plain words; a refused key falls back to Wikipedia
+        const kreq = []; let kstatus = 200; const kcors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+        await p.route('https://api.keenable.ai/**', async rt => { const q = rt.request(); if (q.method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: kcors }); kreq.push({ key: q.headers()['x-api-key'], body: JSON.parse(q.postData() || '{}') }); if (kstatus !== 200) return rt.fulfill({ status: kstatus, contentType: 'application/json', headers: kcors, body: JSON.stringify({ error: 'Authentication failed', code: 'invalid_api_key' }) }); return rt.fulfill({ status: 200, contentType: 'application/json', headers: kcors, body: JSON.stringify({ query: 'q', mode: 'realtime', results: [{ title: 'Policing nuisance in 1930s Shanghai', url: 'https://hpchina.blogs.bristol.ac.uk/2024/11/18/x', snippet: 'At 8 o’clock on 10 July 1936, the Reserve Unit, the riot squad of the **Shanghai Municipal Police**, received orders to clear a [slum](https://x.y) on the edge of the Settlement.', published_at: '2024-11-18T00:00:00Z' }] }) }); });
+        await p.evaluate(() => { openSearchDialog(); });
+        await p.click('dialog[open] [data-sr="keenable"]'); await p.fill('#srKeyIn', 'keen_smoke'); await p.selectOption('#srModeSel', 'realtime'); await p.click('dialog[open] [data-sr-save]'); await p.waitForTimeout(200);
+        check('the Scout search sheet saves a Keenable key and mode in this browser', await p.evaluate(() => keenableOn() && searchCfg.mode === 'realtime' && store.get('.searchCfg', {}).key === 'keen_smoke' && !document.querySelector('dialog[open]')));
+        await wikiRoute(p);
+        r = await forkOn('An RPG set in Shanghai about the riot squad and the people it moved on in the summer of 1936.');
+        const kc = await p.evaluate(() => board.nodes.filter(n => n.type === 'source' && n.by === 'scout').map(n => n.kind + ' | ' + n.title + ' | ' + n.text));
+        check('with Keenable set up, Scout searches it first, with the key, the mode and the idea in plain words', kreq.length >= 1 && kreq[0].key === 'keen_smoke' && kreq[0].body.mode === 'realtime' && /riot squad/.test(kreq[0].body.query) && kc.length === 1 && /^Background · hpchina\.blogs\.bristol\.ac\.uk \| Policing nuisance/.test(kc[0]) && /Shanghai Municipal Police, received orders to clear a slum/.test(kc[0]) && /\(2024-11-18\)$/.test(kc[0]), JSON.stringify({ kreq: kreq.slice(0, 1), kc }));
+        kstatus = 401;
+        r = await forkOn('An RPG set in Shanghai about dock strikes and the families on both sides in the spring of 1927.');
+        check('a refused Keenable key falls back to Wikipedia and says so', r.toasts.some(t => /^Keenable rejected the API key \(HTTP 401\), so Scout used Wikipedia instead\.$/.test(t)) && await p.evaluate(() => board.nodes.filter(n => n.type === 'source' && n.by === 'scout').map(n => n.title).join() === 'Shanghai International Settlement,History of Shanghai'), JSON.stringify(r.toasts));
+        await p.unroute('https://api.keenable.ai/**'); await p.unroute(/wikipedia\.org\/w\/api\.php/);
+        await p.evaluate(() => { searchCfg = { provider: 'wikipedia', key: '', mode: 'pro' }; store.set('.searchCfg', searchCfg); });
         await p.evaluate(() => { SCOUT_GROUNDING = false; });
       }
       // the time limit runs out: built-in rules answer, and the designer is told why
@@ -612,7 +627,7 @@ async function page(browser, base, { model = true } = {}) {
         await wikiRoute(p); await p.evaluate(() => { SCOUT_GROUNDING = true; });
         await p.newBoard(); await p.type('An RPG about smugglers in 1930s Shanghai and the families who hide their goods in lane houses.'); await p.waitForTimeout(800);
         const gi = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
-        queue = [{ id: 'gr', match: 'Background Scout found on Wikipedia', text: dirs('Cloud') }];
+        queue = [{ id: 'gr', match: 'Background Scout found on the web', text: dirs('Cloud') }];
         await p.evaluate(id => select([id]), gi); await p.type('/fork 3'); await p.idle();
         check('with a Cloud API too, Scout looks things up first and the fork reads them', requests.some(x => x.matched === 'gr' && /Shanghai International Settlement/.test(x.full)) && await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.title).join() === 'Cloud A,Cloud B,Cloud C'), JSON.stringify(requests.slice(-1).map(x => x.matched)));
         await p.evaluate(() => { SCOUT_GROUNDING = false; }); await p.unroute(/wikipedia\.org\/w\/api\.php/);

@@ -5843,6 +5843,50 @@ function setAiPref(pref){
   renderCrew();
   renderCopilot?.();
 }
+function openSearchDialog(){
+  let prov=searchCfg.provider==="keenable"?"keenable":"wikipedia";
+  openDialog(L("Scout search","Scout 搜索"),`<div style="display:grid;gap:10px">
+    <div style="font:500 13px/1.45 var(--ui);color:var(--label-2)">${L("Before Strategist branches an idea, Scout looks up its real background and pins what it finds as Source cards. Wikipedia is free. Keenable searches the whole web, built for AI agents, with your own key.","Strategist 发散之前，Scout 会先查找真实背景，并把结果钉成 Source 卡。维基百科免费；Keenable 面向 AI 智能体检索整个网络，需要你自己的密钥。")}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button type="button" class="sh-btn" data-sr="wikipedia">${L("Wikipedia (free)","维基百科（免费）")}</button>
+      <button type="button" class="sh-btn" data-sr="keenable">Keenable</button>
+    </div>
+    <div id="srKeen" style="display:grid;gap:10px">
+      <label style="display:grid;gap:4px;font:550 12px/1 var(--ui);color:var(--label-2)">${L("Keenable API key (stored locally in this browser)","Keenable API 密钥（仅保存在本浏览器）")}
+        <input id="srKeyIn" type="password" class="mem-box" style="min-height:36px;height:36px;padding:7px 10px" value="${esc(searchCfg.key)}" placeholder="keen_...">
+      </label>
+      <label style="display:grid;gap:4px;font:550 12px/1 var(--ui);color:var(--label-2)">${L("Mode","模式")}
+        <select id="srModeSel" class="mem-box" style="min-height:36px;height:36px;padding:6px 10px">
+          <option value="pro"${searchCfg.mode!=="realtime"?" selected":""}>${L("Pro — deeper retrieval","Pro — 检索更深")}</option>
+          <option value="realtime"${searchCfg.mode==="realtime"?" selected":""}>${L("Realtime — fastest","Realtime — 最快")}</option>
+        </select>
+      </label>
+    </div>
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;padding-top:4px">
+      <span id="srTestOut" role="status" aria-live="polite" style="margin-right:auto;font:500 12px/1.3 var(--ui);color:var(--label-3)"></span>
+      <button type="button" class="sh-btn" data-sr-test>${L("Test","测试")}</button>
+      <button type="button" class="sh-btn" style="background:var(--act);color:var(--on-act)" data-sr-save>${L("Save","保存")}</button>
+    </div>
+  </div>`,d=>{
+    const paint=()=>{d.querySelectorAll("[data-sr]").forEach(b=>{const on=b.dataset.sr===prov;b.style.background=on?"var(--act)":"";b.style.color=on?"var(--on-act)":"";b.setAttribute("aria-pressed",String(on))});$("srKeen").style.display=prov==="keenable"?"grid":"none"};
+    d.querySelectorAll("[data-sr]").forEach(b=>b.onclick=()=>{prov=b.dataset.sr;paint()});
+    const form=()=>({provider:prov,key:$("srKeyIn").value.trim(),mode:$("srModeSel").value==="realtime"?"realtime":"pro"});
+    d.querySelector("[data-sr-test]").onclick=async()=>{
+      const out=$("srTestOut"),c=form();
+      if(c.provider!=="keenable"){out.textContent=L("Wikipedia needs no setup.","维基百科无需设置。");return}
+      if(!c.key){out.textContent=L("Enter your Keenable API key first.","请先填写 Keenable API 密钥。");return}
+      out.textContent=L("Testing…","测试中…");const t0=performance.now();
+      try{const got=await keenableSearch("Shanghai International Settlement",{maxResults:1,cfg:c});out.textContent=L(`Connected · ${Math.round(performance.now()-t0)} ms · ${got.length} result`,`已连接 · ${Math.round(performance.now()-t0)} ms · ${got.length} 条结果`)}
+      catch(e){out.textContent=failReason("Keenable",e)}
+    };
+    d.querySelector("[data-sr-save]").onclick=()=>{
+      const c=form();if(c.provider==="keenable"&&!c.key){$("srTestOut").textContent=L("Enter your Keenable API key first.","请先填写 Keenable API 密钥。");return}
+      searchCfg=c;store.set(".searchCfg",searchCfg);toast(c.provider==="keenable"?L(`Scout will search with Keenable (${c.mode}).`,`Scout 将使用 Keenable（${c.mode}）搜索。`):L("Scout will search Wikipedia.","Scout 将使用维基百科搜索。"));
+      if(dlg.open)dlg.close();if(studioPopOpen)renderStudioPop();
+    };
+    paint();
+  });
+}
 function openApiDialog(){
   const presets={
     openai:{url:"https://api.openai.com/v1",models:[
@@ -6067,6 +6111,12 @@ function renderStudioPop(){
     <div class="sp-services${idle?" idle":""}">
       ${row({name:L("Local AI","本地模型"),state:stState,detail:stDetail,acts:stAct,extra:modelsHtml+progHtml})}
       ${row({name:L("Cloud API","云端 API"),state:apiState,detail:apiDetail,acts:apiAct})}
+    </div>
+    <div class="sp-group">
+      <div class="sp-subhdr">${L("Research","资料检索")}</div>
+      <div class="sp-services">
+        ${row({name:L("Scout search","Scout 搜索"),state:st("ok",keenableOn()?"Keenable":L("Wikipedia","维基百科")),detail:keenableOn()?L(`Keenable ${searchCfg.mode} · falls back to Wikipedia`,`Keenable ${searchCfg.mode} · 失败时改用维基百科`):L("Free · set up Keenable for deeper web search","免费 · 可设置 Keenable 进行更深的网络检索"),acts:btn("search",keenableOn()?L("Edit","编辑"):L("Set up","设置"))})}
+      </div>
     </div>
     <div class="sp-group">
       <div class="sp-subhdr">${L("Images & video","图像与视频")}</div>
@@ -8134,6 +8184,25 @@ function clarifyDialog(items){
    from the model: in Vellum's model eval a 4B model asked about the metro and cuisine for a 1930s story.
    Wikipedia is the only search provider for now; wikiLookup is the one place to add another. */
 let SCOUT_GROUNDING=true; // the smoke test turns it off outside the section that tests it
+/* Scout's search provider. Wikipedia is free and needs no setup. Keenable (keenable.ai, web search built for
+   AI agents) searches the whole web semantically and returns long, dated snippets; it needs the designer's own
+   API key, stored only in this browser like the Cloud API key. Keenable answers browsers directly (CORS). */
+let searchCfg=(()=>{const d={provider:"wikipedia",key:"",mode:"pro"};try{return {...d,...(store.get(".searchCfg",{})||{})}}catch{return d}})();
+const keenableOn=()=>searchCfg.provider==="keenable"&&!!String(searchCfg.key||"").trim();
+const cleanSnippet=t=>String(t||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1").replace(/[*_`]+/g,"").replace(/[#>|]+/g," ").replace(/\s+/g," ").trim();
+function keenableError(status,code){
+  const m={401:L(`Keenable rejected the API key (HTTP 401)`,`Keenable 拒绝了 API 密钥（HTTP 401）`),402:L(`Keenable has no credits left (HTTP 402)`,`Keenable 额度用尽（HTTP 402）`),403:L(`Keenable refused the key (HTTP 403)`,`Keenable 拒绝了该密钥（HTTP 403）`),429:L(`Keenable is rate limited (HTTP 429)`,`Keenable 被限流（HTTP 429）`)}[status];
+  return aiFailError(m||L(`Keenable returned HTTP ${status}${code?" ("+code+")":""}`,`Keenable 返回 HTTP ${status}${code?"（"+code+"）":""}`));
+}
+async function keenableSearch(q,{maxResults=3,cfg=searchCfg}={}){
+  let r;
+  try{r=await fetch("https://api.keenable.ai/v1/search",{method:"POST",signal:timeoutSignal(15000),headers:{"Content-Type":"application/json","X-API-Key":String(cfg.key||"").trim()},body:JSON.stringify({query:q,mode:cfg.mode==="realtime"?"realtime":"pro",max_results:maxResults,snippet_max_length:700})})}
+  catch(e){throw aiFailError(L("Keenable is unreachable","无法连接 Keenable"))}
+  if(!r.ok){let code="";try{code=(await r.json()).code||""}catch{};throw keenableError(r.status,code)}
+  const d=await r.json();
+  return (Array.isArray(d.results)?d.results:[]).map(x=>({title:String(x.title||""),text:cleanSnippet(x.snippet),url:String(x.url||""),published:String(x.published_at||"")})).filter(x=>x.title&&x.text.length>80);
+}
+const hostOf=u=>{try{return new URL(u).host.replace(/^www\./,"")}catch{return ""}};
 function groundQueries(ideaText,brief,picked){
   const lang=textLang(ideaText),answers=(picked||[]).map(x=>String(x.a||"").replace(/^(?:an?|the)\s+/i,"").trim()).filter(Boolean);
   if(lang==="zh")return [...new Set([String(ideaText).replace(/我想(?:做|要做)?|一个|游戏|\b(?:RPG|rpg|game)\b|以|为背景|的/g," ").replace(/\s+/g," ").trim().slice(0,30),...answers.slice(0,2)])].filter(Boolean).slice(0,3);
@@ -8161,21 +8230,34 @@ function planSources(count,near){
 async function groundIdea(idea,brief,picked){
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||""),lang=textLang(ideaText);
   const qs=groundQueries(ideaText,brief,picked);if(!qs.length)return [];
-  let reached=false;
-  const res=await runAgent("scout",{read:[idea],places:[],label:L("looking up background","查找背景资料"),task:{kind:"search",title:qs[0]},work:async()=>{
+  let reached=false,keenWhy="";
+  const useKeen=keenableOn(),answers=(picked||[]).map(x=>x.a).filter(Boolean);
+  // Keenable is semantic: the idea in plain words finds context the keyword queries miss
+  const keenQs=[...new Set([`${ideaText} ${answers.join(" ")}`.trim().slice(0,300),...qs])].slice(0,3);
+  const res=await runAgent("scout",{read:[idea],places:[],label:L(useKeen?"looking up background (Keenable)":"looking up background","查找背景资料"),task:{kind:"search",title:qs[0]},work:async()=>{
     const found=[],seen=new Set();
-    for(const q of qs){
-      try{const got=await wikiLookup(q,lang);reached=true;for(const it of got){if(seen.has(it.title))continue;seen.add(it.title);found.push({...it,q});if(found.length>=3)break}}
+    const take=(got,q,via)=>{for(const it of got){const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3)break}};
+    if(useKeen){
+      for(const q of keenQs){
+        try{take(await keenableSearch(q),q,"Keenable");reached=true}
+        catch(e){if(e?.name==="AbortError"&&crewState.scout.cancel)throw e;keenWhy=failReason("Keenable",e);break}
+        if(found.length>=3)break;
+      }
+    }
+    if(!found.length)for(const q of qs){
+      try{take(await wikiLookup(q,lang),q,"Wikipedia");reached=true}
       catch(e){if(e?.name==="AbortError"&&crewState.scout.cancel)throw e}
       if(found.length>=3)break;
     }
     return {found};
   }});
+  if(keenWhy&&(res?.found||[]).length)toast(L(`${keenWhy}, so Scout used Wikipedia instead.`,`${keenWhy}，Scout 已改用维基百科。`));
   const found=res?.found||[];
-  if(!found.length){toast(reached?L("Scout found no background on Wikipedia, so Strategist is working from memory.","Scout 在维基百科没找到相关背景，Strategist 将凭记忆作答。"):L("Scout couldn't reach Wikipedia, so Strategist is working from memory.","Scout 无法连接维基百科，Strategist 将凭记忆作答。"));return []}
+  if(!found.length){if(keenWhy)toast(L(`${keenWhy}.`,`${keenWhy}。`));toast(reached?L("Scout found no background on Wikipedia, so Strategist is working from memory.","Scout 在维基百科没找到相关背景，Strategist 将凭记忆作答。"):L("Scout couldn't reach Wikipedia, so Strategist is working from memory.","Scout 无法连接维基百科，Strategist 将凭记忆作答。"));return []}
   checkpoint();
   const pid="p-"+uid(),spots=planSources(found.length,idea),made=found.map((it,i)=>{
-    const n=node("source",{_src:idea.id,kind:L("Background · Wikipedia","背景 · 维基百科"),title:clip(it.title,64),text:it.text,weight:"reported",path:it.url,src:{query:it.q,url:it.url,source:"Wikipedia"},by:"scout",status:"sketch",pid},spots[i]);
+    const via=it.via==="Keenable"?(hostOf(it.url)||"Keenable"):L("Wikipedia","维基百科");
+    const n=node("source",{_src:idea.id,kind:L(`Background · ${via}`,`背景 · ${via}`),title:clip(it.title,64),text:it.text+(it.published?` (${it.published.slice(0,10)})`:""),weight:"reported",path:it.url,src:{query:it.q,url:it.url,source:it.via||"Wikipedia"},by:"scout",status:"sketch",pid},spots[i]);
     const e=edge(n.id,idea.id,"src","live");if(e)freshEdges.add(e.id);return n;
   });
   setTimeout(()=>freshEdges.clear(),1200);
@@ -8202,7 +8284,7 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
   count=clamp(count,1,free.length);
   const places=planFork(idea,count).places.map(({x,y,w,h})=>({x,y,w,h}));
   const srcs=[...new Map([...sourcesFor(idea),...scoutSrcs()].map(n=>[n.id,n])).values()];
-  const groundNote=srcs.some(n=>n.by==="scout"&&n.type==="source")?"\nBackground Scout found on Wikipedia is on the wall. Draw on it where it helps and never contradict it; it is not a checklist, so do not build a direction around a single fact.\n":"";
+  const groundNote=srcs.some(n=>n.by==="scout"&&n.type==="source")?"\nBackground Scout found on the web is on the wall. Draw on it where it helps and never contradict it; it is not a checklist, so do not build a direction around a single fact.\n":"";
   const imgNodes=[idea,...srcs].filter(n=>n&&(n.type==="image"||n.type==="frame"));
   const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${groundNote}${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${brief?`\nThe designer added: "${brief}"\n`:""}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
@@ -14056,6 +14138,7 @@ $("studioPop")?.addEventListener("click",async e=>{
   if(act==="stop-svc"){await stopModelService(false);return}
   if(act==="img-model"){setImageModel(b.dataset.id);return}
   if(act==="api"){toggleStudioPopover(false);openApiDialog();return}
+  if(act==="search"){toggleStudioPopover(false);openSearchDialog();return}
   if(act==="test-api"){await testApi();return}
   if(act==="launch-studio"){await launchStudio();return}
   if(act==="adv-mode"){toggleAdvisorMode();return}

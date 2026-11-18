@@ -502,6 +502,51 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       backupMode.status = 200;
     }
 
+    // 5h. every agent is told where the project is: stage, what is decided, what is open, what the evidence is
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const st = () => p.evaluate(() => { const s = boardStage(); return { stage: s.stage, adopted: s.adopted.length, evidence: s.evidence, brief: stageBrief() }; });
+      let r = await st();
+      check('an empty board is in Gather, and the brief says not to fork or build yet', r.stage === 'gather' && /^STAGE: Gather\./.test(r.brief) && /Do not fork directions or build anything unless asked/.test(r.brief), r.brief.slice(0, 160));
+      await p.evaluate(() => { node('idea', { text: 'Serve solo founders', status: 'sketch', by: 'muse' }, { x: 100, y: 100 }); });
+      check('a draft is not a decision: a draft claim alone is still Gather', (await st()).stage === 'gather');
+      await p.evaluate(() => { board.nodes.forEach(n => { n.status = 'ink'; }); node('source', { title: 'Founder call 1', text: 'x', weight: 'observed', status: 'ink', by: 'you' }, { x: 100, y: 400 }); node('source', { title: 'Forum thread', text: 'x', weight: 'reported', status: 'ink', by: 'you' }, { x: 100, y: 700 }); node('note', { text: 'my hunch', weight: 'proposed', status: 'ink', by: 'you' }, { x: 100, y: 1000 }); });
+      r = await st();
+      check('a kept claim makes it Explore; with no directions the open item is the directions', r.stage === 'explore' && /Decided: nothing adopted yet/.test(r.brief) && /Open: directions for “Serve solo founders”/.test(r.brief), r.brief.slice(0, 220));
+      check('the evidence is counted by weight, and the brief says proposals are not evidence', r.evidence.observed === 1 && r.evidence.reported === 1 && r.evidence.proposed === 1 && /1 observed, 1 reported, 1 proposal/.test(r.brief) && /not evidence of behaviour/.test(r.brief), JSON.stringify(r.evidence));
+      await p.evaluate(() => { const idea = board.nodes.find(n => n.type === 'idea'); ['A', 'B'].forEach((l, i) => node('direction', { idea: idea.id, letter: l, title: 'Option ' + l, text: 't', test: 'x', status: 'ink', by: 'muse' }, { x: 600, y: 100 + i * 400 })); });
+      r = await st();
+      check('with directions and none adopted it is still Explore, and tells the crew to offer options, not task boards', r.stage === 'explore' && /Open: which direction to adopt/.test(r.brief) && /Do not create task boards, lists or proofs unless asked/.test(r.brief), r.brief.slice(0, 260));
+      await p.evaluate(() => adopt(board.nodes.find(n => n.type === 'direction' && n.letter === 'B')));
+      r = await st();
+      check('adopting a direction moves it to Prototype, names the decision, and says what is open', r.stage === 'prototype' && r.adopted === 1 && /Decided: B · Option B\. Open/.test(r.brief) && /no proof built yet for the adopted direction/.test(r.brief) && /Build and test it/.test(r.brief), r.brief.slice(0, 300));
+      await p.evaluate(() => { const d = board.nodes.find(n => n.type === 'direction' && n.letter === 'B'); const pf = node('proof', { dir: d.id, _src: d.id, title: 'Proof B', spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1100, y: 100 }); edge(d.id, pf.id, 'derive', 'live'); });
+      check('once a proof exists the open item is what it shows', /Open: what the proofs show/.test((await st()).brief));
+      await p.evaluate(() => { const pf = board.nodes.find(n => n.type === 'proof'); node('print', { proof: pf.id, dir: pf.dir, ed: 1, spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1500, y: 100 }); });
+      r = await st();
+      check('a frozen proof makes it Snapshot: review what it does not cover', r.stage === 'snapshot' && /does not yet cover/.test(r.brief), r.brief.slice(0, 200));
+      check('the old "nothing adopted" test now follows the stage', await p.evaluate(() => nothingAdopted() === false));
+
+      // the brief reaches every agent that speaks
+      await p.newBoard();
+      await p.evaluate(() => { setCrewLevel('suggest'); node('idea', { title: 'Serve solo founders', text: 'Selling an AI-run back office to one-person companies', status: 'ink', by: 'you' }, { x: 100, y: 100 }); renderAll(); });
+      queue = [{ id: 'stage-cp', match: 'Lumen Copilot', text: 'Start with who pays first.' }];
+      await p.type('What should we test first?'); await p.idle();
+      const cp = requests.find(x => x.matched === 'stage-cp');
+      check('Copilot is told the stage and the three roles', !!cp && /STAGE: Explore\. Decided: nothing adopted yet/.test(cp.full) && /THREE ROLES, ONE VOICE/.test(cp.full), cp ? cp.full.slice(0, 80) : 'no request');
+      const before = requests.length;
+      await p.evaluate(() => scheduleAdvisor(board.nodes.find(n => n.type === 'idea').id, { force: true })); await p.waitForTimeout(900); await p.idle();
+      const adv = requests.slice(before).find(x => /Include 1 or at most 2 pins/.test(x.full));
+      check('the advisor looking at a card is told the stage', !!adv && /STAGE: Explore\./.test(adv.full), adv ? '' : 'no advisor request');
+      const pid = await p.evaluate(() => { const n = board.nodes.find(x => x.type === 'idea'); board.pins = { [n.id]: [{ id: 'pin-st', agent: 'critic', note: 'Vague.', t: NOW(), seen: true }] }; renderAll(); return n.id; });
+      queue = [{ id: 'stage-pin', match: 'Initial pin you left', text: 'Fine.' }];
+      await p.evaluate(id => replyToAdvPin(id, 'pin-st', 'Founders in the US'), pid); await p.idle();
+      check('a reply in a pin thread is told the stage too', requests.some(x => x.matched === 'stage-pin' && /STAGE: Explore\./.test(x.full)));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover
     {
       const p = await page(browser, base);

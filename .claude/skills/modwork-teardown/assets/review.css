@@ -70,7 +70,7 @@ main:has(.film){max-width:none;padding:0}
   .film-copy .result-evidence{grid-column:1/-1;font-size:14px;margin:.35em 0 .55em;max-width:none}
   .result-metrics{grid-column:1/-1;max-width:none;font-size:12px;padding:5px 0;gap:2px 12px}.film-copy .result-note{grid-column:1/-1;font-size:11px;margin:.4em 0 0}
   .section-readout[data-active=true]{grid-column:2;grid-row:1/span 3;align-self:center;width:100%;margin:0}
-  .section-readout[data-active=true][data-traced=true]+.film-stat{display:none}
+  .section-readout[data-active=true]:is([data-traced=true],[data-shared=false])+.film-stat{display:none}
   .section-readout[data-active=true] canvas{height:50px}.section-readout figcaption{font-size:10px;flex-wrap:wrap;column-gap:2px}
   .film-transport{min-height:66px;margin:0 14px;gap:10px}.film .film-play{width:34px;height:34px}.film-clock{font-size:11px}.film-clock i{display:none}
 }

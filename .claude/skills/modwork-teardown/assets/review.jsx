@@ -32,7 +32,7 @@ function Inspection({gear}) {
         <option value="solid">身体与护具</option><option value="xray">身体半透明</option><option value="off">单独查看护具</option><option value="mesh">线框</option>
       </select></label>
       <h2>{fitted ? result.title : '原始几何'}</h2>
-      {fit && <><p>{result.reason} · {sources[fit.heatSource] || '来源未记录'}</p>
+      {fit && <><p>{result.reason} · {sources[fit.heatSource] || fit.heatSource || '来源未记录'}</p>
         <dl><dt>顶点嵌入 / 检查</dt><dd>{value(fit.embedded)} / {value(fit.checked)}</dd>
         <dt>受检顶点最小有向距离</dt><dd>{value(fit.minSignedMm,' mm')}</dd>
         <dt>面边穿入 / 采样</dt><dd>{value(fit.surface?.inside)} / {value(fit.surface?.checked)}</dd></dl>

@@ -45,7 +45,7 @@ function serve() {
           const flat = msgs.map(m => typeof m.content === 'string' ? m.content : (m.content || []).map(p => p.text || '').join(' ')).join('\n');
           const i = queue.findIndex(e => new RegExp(e.match, 's').test(flat));
           const hit = i >= 0 ? queue.splice(i, 1)[0] : null;
-          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200), full: flat });
+          requests.push({ matched: hit && hit.id, prompt: flat.slice(0, 200), full: flat, temp: parsed.temperature });
           if (hit && hit.delay) await new Promise(r => setTimeout(r, hit.delay));
           if (!hit || hit.status) { rsp.writeHead(hit ? hit.status : 503); return rsp.end(); }
           rsp.writeHead(200, { 'Content-Type': 'text/event-stream' });
@@ -424,6 +424,10 @@ async function page(browser, base, { model = true } = {}) {
       r = await run([{ action: 'edit', target: snap, field: 'text', value: 'changed later' }]);
       check('unlocking the lane lets suggestions through again', r.locked === 0 && r.proposed === 1);
       check('Copilot is told about locks and permissions', await p.evaluate(() => /Locked cards/.test(autonomyPromptLine()) && /deleting cards the designer has kept: it becomes a suggestion/.test(autonomyPromptLine())));
+      await wikiRoute(p);
+      await p.evaluate(() => sendCopilotMessage('When did the International Settlement end?'));
+      check('with no model, a factual question is answered by quoting the sources', /^The Shanghai International Settlement originated from the 1863 merger[^[]*\[1\]/.test(await p.evaluate(() => board.copilot.at(-1).text)), await p.evaluate(() => board.copilot.at(-1).text.slice(0, 200)));
+      await p.unroute(/wikipedia\.org\/w\/api\.php/);
       check('no page errors in the customize and lock flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
@@ -549,6 +553,10 @@ async function page(browser, base, { model = true } = {}) {
         await p.evaluate(() => { searchCfg = { provider: 'wikipedia', key: '', mode: 'pro' }; store.set('.searchCfg', searchCfg); });
         await p.evaluate(() => { SCOUT_GROUNDING = false; });
       }
+      check('Strategist asks Local AI to create', lastFork().stance === 'create');
+      local = b => ({ text: b.kind === 'fork' ? '<think>Plan three directions first.</think>' + JSON.stringify(dirs('Thought')) : JSON.stringify(Q) });
+      r = await forkOn('An RPG set in Shanghai about the Shanghai Race Club and the bets placed on it in the 1930s by clerks.');
+      check("a thinking model's thoughts are not taken as its answer", r.titles === 'Thought A,Thought B,Thought C', JSON.stringify(r));
       // the time limit runs out: built-in rules answer, and the designer is told why
       local = () => ({ text: JSON.stringify(dirs('Slow')), delay: 3000 });
       await p.evaluate(() => { AI_TIMEOUT_MS = 1500; });
@@ -631,6 +639,28 @@ async function page(browser, base, { model = true } = {}) {
         await p.evaluate(id => select([id]), gi); await p.type('/fork 3'); await p.idle();
         check('with a Cloud API too, Scout looks things up first and the fork reads them', requests.some(x => x.matched === 'gr' && /Shanghai International Settlement/.test(x.full)) && await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.title).join() === 'Cloud A,Cloud B,Cloud C'), JSON.stringify(requests.slice(-1).map(x => x.matched)));
         await p.evaluate(() => { SCOUT_GROUNDING = false; }); await p.unroute(/wikipedia\.org\/w\/api\.php/);
+      }
+      // facts come only from sources, checked sentence by sentence; ideas are invented freely
+      check('a factual question takes the fact path; an invitation to invent does not', await p.evaluate(() => [
+        'When was the Shanghai Municipal Police disbanded?', 'Who governed the International Settlement?', '公共租界是什么时候结束的？', 'fact: the Bund',
+        "Isn't a trading-house sim really a strategy game, not an RPG? What would make this one feel like a role-playing game?", 'What if the lane house had a ghost?', 'idea: when the lane floods', 'Could we make the ledger visible?', 'Who is the translator?'
+      ].map(factStance).join()) === 'true,true,true,true,false,false,false,false,false');
+      check('only sentences a source supports survive', await p.evaluate(() => { const src = [{ title: 'Shanghai International Settlement', text: 'It originated from the 1863 merger of the British and American enclaves. Extraterritoriality was abolished in 1943.' }]; const r = factCheck('It was formed in 1863 [1]. Extraterritoriality was abolished in 1943 [1]. It was later run from Nanjing in 1950 [1]. The Shanghai Volunteer Corps guarded it [1]. It was lively. The sources don\'t say who designed the flag.', src); return JSON.stringify(r) === JSON.stringify({ kept: ['It was formed in 1863 [1].', 'Extraterritoriality was abolished in 1943 [1].', "The sources don't say who designed the flag."], dropped: 3 }); }));
+      {
+        await wikiRoute(p);
+        queue = [{ id: 'fact', match: 'using only the numbered sources', text: 'The Settlement was formed in 1863 [1]. Extraterritoriality was abolished in 1943 [1]. It was governed from Nanjing in 1950 [1]. It was very lively.' }];
+        await p.evaluate(() => sendCopilotMessage('When did the International Settlement end?'));
+        const m = await p.evaluate(() => board.copilot.at(-1)), fr = requests.filter(x => x.matched === 'fact').at(-1);
+        check('Copilot answers a factual question only from what Scout found, cites it, and drops what it cannot back', m.stance === 'fact' && /^The Settlement was formed in 1863 \[1\]\. Extraterritoriality was abolished in 1943 \[1\]\./.test(m.text) && !/1950|lively/.test(m.text) && /Left out 2 statements the sources don't support/.test(m.text) && /\*\*Sources\*\*\n1\. \[Shanghai International Settlement\]\(https:\/\/en\.wikipedia\.org\/wiki\/Shanghai_International_Settlement\)/.test(m.text), m.text);
+        check('the fact path runs cold (temperature 0.15)', fr && fr.temp === 0.15, JSON.stringify(fr && fr.temp));
+        await p.unroute(/wikipedia\.org\/w\/api\.php/);
+        await p.evaluate(() => sendCopilotMessage('When was the Shanghai Municipal Police disbanded?'));
+        check('with no sources, Copilot will not answer a factual question from memory', /couldn't find sources for this, so I won't answer from memory/.test(await p.evaluate(() => board.copilot.at(-1).text)));
+        queue = [{ id: 'mk', match: 'Invent freely', text: dirs('Made') }];
+        await p.newBoard(); await p.type('Stance idea'); await p.waitForTimeout(700);
+        await p.evaluate(() => select([board.nodes.find(n => n.type === 'idea').id])); await p.type('/fork 3'); await p.idle();
+        const mk = requests.filter(x => x.matched === 'mk').at(-1);
+        check('Strategist invents freely (temperature 0.7), true to the sources', mk && mk.temp === 0.7 && /surprising beats safe/.test(mk.full) && /must agree with the sources/.test(mk.full), JSON.stringify(mk && mk.temp));
       }
       check('no page errors in these flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();

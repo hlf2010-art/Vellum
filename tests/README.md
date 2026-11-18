@@ -38,3 +38,17 @@ VELLUM_EVAL_KEY=sk-... python3 tests/model-eval-judge.py model-eval-results/*.js
 ```
 
 Judges differ a lot in strictness: in one comparison a free 550B judge gave 4B outputs 2-5 points more than Sonnet did, while both scored Sonnet's own answers alike. Use a strict judge, and note that a judge sharing a model with a run may favour it. Results go to `model-eval-results/` (git-ignored).
+
+### Thinking on vs off
+
+Studio AI offers Qwen3-VL 8B Thinking beside the 8B Instruct model: same size, but it reasons before every answer (its thoughts never reach Vellum). To see whether thinking is worth the time, run the same eval on both with the same, longer time limit, then compare:
+
+```bash
+curl -s -X POST http://127.0.0.1:59631/studio/model -H 'X-Studio-Client: canvas' -H 'Content-Type: application/json' -d '{"id":"qwen3-vl-8b"}'
+node tests/model-eval.cjs --n 3 --timeout 300 --label 8b-think-off
+curl -s -X POST http://127.0.0.1:59631/studio/model -H 'X-Studio-Client: canvas' -H 'Content-Type: application/json' -d '{"id":"qwen3-vl-8b-thinking"}'
+node tests/model-eval.cjs --n 3 --timeout 300 --label 8b-think-on
+node tests/model-eval.cjs --compare model-eval-results/8b-think-off.json model-eval-results/8b-think-on.json --out model-eval-results/thinking.md
+```
+
+Wait for `"status": "ready"` from `curl -s http://127.0.0.1:59631/studio/health` after each switch (the first switch to Thinking downloads 5.8 GB).

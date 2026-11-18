@@ -14,6 +14,8 @@
  *   node tests/model-eval.cjs --api https://openrouter.ai/api/v1 --model anthropic/claude-sonnet-5.5
  *                                                     # key from VELLUM_EVAL_KEY
  *   options: --n 3 (samples per task)  --tasks fork,push,merge,build  --out model-eval-results  --label name
+ *            --timeout 300       (seconds per model call; default Vellum's 95. Use the same value for runs you compare)
+ *            --compare a.json b.json [--out compare.md]   (side by side: time and obvious errors per task)
  *            --search keenable   (Scout searches Keenable before branching; key from KEENABLE_API_KEY. Default: Wikipedia)
  *
  * Exit code is 0 when it ran; the check counts are in the report, not a pass/fail gate. */
@@ -130,6 +132,7 @@ async function open(browser, base) {
     const ok = await p.evaluate(async () => { await checkStudioHealth({ wake: false, quiet: true }); aiPref = 'auto'; apiCfg = { ...apiCfg, enabled: false }; return studioState.status === 'ready'; });
     if (!ok) throw new Error('Studio AI is not ready at ' + STUDIO + '. Start it (Start Studio AI.command) and load a model first.');
   }
+  if (args.timeout) await p.evaluate(ms => { AI_TIMEOUT_MS = ms; }, Math.round(+args.timeout * 1000));
   if (args.search === 'keenable') await p.evaluate(key => { searchCfg = { provider: 'keenable', key, mode: 'pro' }; }, process.env.KEENABLE_API_KEY || 'proxy-injected');
   await p.evaluate(() => { window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
   p.type = async t => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); await p.keyboard.press('Enter'); };
@@ -217,6 +220,20 @@ function md(results, meta) {
   return L.join('\n');
 }
 
+// --compare a.json b.json: time and obvious errors per task, side by side (e.g. thinking off vs on)
+if (args.compare) {
+  const files = [args.compare, process.argv[process.argv.indexOf(args.compare) + 1]].filter(Boolean);
+  const runs = files.map(f => JSON.parse(fs.readFileSync(f, 'utf8')));
+  const tasks = ['fork', 'push', 'merge', 'build'].filter(t => runs.some(r => r.results.some(x => x.task === t)));
+  const avg = (r, t) => { const xs = r.results.filter(x => x.task === t && x.seconds); return xs.length ? xs.reduce((a, x) => a + x.seconds, 0) / xs.length : null; };
+  const bad = (r, t) => { const xs = r.results.filter(x => x.task === t); return `${xs.filter(x => x.error || x.flags.length).length}/${xs.length}`; };
+  const L = [`# ${runs.map(r => r.meta.label).join(' vs ')}`, '', ...runs.map(r => `- **${r.meta.label}:** ${r.meta.engine}, ${r.meta.when}${r.meta.timeout ? `, ${r.meta.timeout} s limit` : ''}`), '',
+    `| Task | ${runs.map(r => r.meta.label + ' · avg s').join(' | ')} | ${runs.map(r => r.meta.label + ' · obvious errors').join(' | ')} |`, `|---|${runs.map(() => '---|').join('')}${runs.map(() => '---|').join('')}`];
+  for (const t of tasks) L.push(`| ${t} | ${runs.map(r => (avg(r, t) ?? NaN).toFixed(0)).join(' | ')} | ${runs.map(r => bad(r, t)).join(' | ')} |`);
+  L.push('', 'Read the outputs in each run\'s .md to judge quality, or blind-score both with tests/model-eval-judge.py.');
+  const out = L.join('\n'); if (args.out && args.out !== true) fs.writeFileSync(args.out, out); console.log(out);
+  process.exit(0);
+}
 // --recheck results.json: apply the current checks to saved outputs and rewrite the report
 if (args.recheck) {
   const d = JSON.parse(fs.readFileSync(args.recheck, 'utf8'));
@@ -247,7 +264,7 @@ if (args.recheck) {
       await p.context().close();
     }
   } finally { await browser.close(); srv.close(); }
-  const meta = { label: LABEL, when: new Date().toISOString().slice(0, 16).replace('T', ' '), engine, commit };
+  const meta = { label: LABEL, when: new Date().toISOString().slice(0, 16).replace('T', ' '), engine, commit, timeout: args.timeout ? +args.timeout : null };
   fs.writeFileSync(path.join(OUT, `${LABEL}.json`), JSON.stringify({ meta, results }, null, 1));
   fs.writeFileSync(path.join(OUT, `${LABEL}.md`), md(results, meta));
   console.log(`\nWrote ${path.join(OUT, LABEL + '.md')}`);

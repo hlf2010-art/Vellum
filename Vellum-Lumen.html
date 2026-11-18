@@ -7165,7 +7165,8 @@ async function readChatStream(res,ctrl,{json,onText}){
     }
   }catch(e){if(!loopStopped)throw e}
   if(!loopStopped&&buf.trim())consumeLine(buf);
-  const clean=trimRepetitionLoop(full).text.trim();
+  // a thinking model's thoughts are not the answer (llama.cpp normally sends them apart, as reasoning_content)
+  const clean=trimRepetitionLoop(full).text.replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/^[\s\S]*?<\/think>/i,"").trim();
   if(!clean)throw new Error("Empty model response");
   return json?parseAIJson(clean):clean;
 }
@@ -7194,7 +7195,11 @@ function failReason(who,e){
 }
 const JSON_ONLY="Reply with one JSON object only: no prose before or after it, no code fences.";
 let AI_TIMEOUT_MS=95000; // one model call's time limit (Local AI and Cloud API); the smoke test shortens it
-async function studioChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal}){
+/* Two stances. "fact": answer only from sources, low temperature, every claim checked against them. "create":
+   invent freely, higher temperature, but anything presented as real must agree with the sources. */
+const STANCE_TEMP={fact:{text:.15,json:.15},create:{text:.9,json:.7}};
+const CREATE_RULE="Invent freely: characters, smaller places, events, rules and mechanics can all be made up, and surprising beats safe. Anything you present as real (an actual institution, person, street, date or event) must agree with the sources on the wall; when you are not sure something real is right, invent a fictional one instead of guessing.";
+async function studioChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal,stance=""}){
   let msgs=await buildChatMessages({system,prompt,messages,images});
   /* No grammar-constrained JSON mode for Local AI: llama.cpp samples it about 16x slower (one Strategist
      fork took 443 s against 27 s as plain text on a 4-core CPU), so crew moves hit the time limit.
@@ -7210,7 +7215,7 @@ async function studioChat({system,prompt,messages,images=[],json=false,maxTokens
     const res=await fetch(`${STUDIO_URL}/studio/generate`,{
       method:"POST",signal:ctrl.signal,
       headers:{"Content-Type":"application/json","X-Studio-Client":"canvas"},
-      body:JSON.stringify({messages:msgs,response_format:{type:"text"},json:!!json,max_tokens:Math.min(4600,maxTokens)})
+      body:JSON.stringify({messages:msgs,response_format:{type:"text"},json:!!json,...(stance?{stance}:{}),max_tokens:Math.min(4600,maxTokens)})
     });
     if(!res.ok){
       if(res.status===503){studioState.status="loading";renderCrew()}
@@ -7333,7 +7338,7 @@ async function viaClaude(remote,local,opts={}){
   said(L("built-in rules","内置规则"));
   return {v:await local(),live:false,engine:"local",why};
 }
-async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal}){
+async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal,stance=""}){
   const msgs=await buildChatMessages({system,prompt,messages,images});
   const ctrl=new AbortController();
   const onAbort=()=>ctrl.abort();
@@ -7343,7 +7348,7 @@ async function apiChat({system,prompt,messages,images=[],json=false,maxTokens=22
   const track=d=>{if(d?.text)partial=d.text;onText?.(d)};
   const sentCfg={...apiCfg},t0=performance.now();let gotHeaders=false;
   try{
-    const body={model:apiCfg.model,messages:msgs,stream:true,temperature:0.45,max_tokens:Math.min(4600,maxTokens)};
+    const body={model:apiCfg.model,messages:msgs,stream:true,temperature:STANCE_TEMP[stance]?.[json?"json":"text"]??0.45,max_tokens:Math.min(4600,maxTokens)};
     if(json)body.response_format={type:"json_object"};
     const res=await fetch(`${apiCfg.baseUrl.replace(/\/+$/,"")}/chat/completions`,{
       method:"POST",signal:ctrl.signal,
@@ -7942,7 +7947,7 @@ const SMALL_EX={
   other:'{"title": "Shed on Every Street", "plan": "Each street gets one shared tool shed run by a volunteer, with a paper sign-out sheet on the door.", "risk": "Neighbours trust each other with things that cost money.", "test": "Run two sheds for three weeks; if fewer than half the tools come back on time, the trust is not there yet.", "mode": "desk"}'
 };
 function smallStrategistSystem(kind){
-  return `You are Strategist on a small creative crew. You turn one idea into distinct directions worth testing.\n${kind==="game"?"This idea is a game. Think like a game designer: each direction is a different game someone could actually play, with a player role and something the player does again and again.":"Work out what kind of thing the idea is (an app, a story, a service, an event) and think like an expert maker of that thing."}\nWrite plainly and concretely: name real places, years, groups, objects, and what the person does. Do not use vague words such as immersive, unique, rich, dynamic, engaging or vibrant.`;
+  return `You are Strategist on a small creative crew. You turn one idea into distinct directions worth testing.\n${CREATE_RULE}\n${kind==="game"?"This idea is a game. Think like a game designer: each direction is a different game someone could actually play, with a player role and something the player does again and again.":"Work out what kind of thing the idea is (an app, a story, a service, an event) and think like an expert maker of that thing."}\nWrite plainly and concretely: name real places, years, groups, objects, and what the person does. Do not use vague words such as immersive, unique, rich, dynamic, engaging or vibrant.`;
 }
 /* The answer should be in the designer's language, with normal spacing. Qwen3-VL 8B switched to Chinese half
    way through an English answer, and ran words together ("in1947", "smugglingcigarettes"). */
@@ -8023,13 +8028,13 @@ function tidySmallReply(text){
   paras.push(qs&&qs.length>1?qs[0].trim():last);
   return paras.join("\n\n").trim();
 }
-async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false,small=null,check=null},local){
+async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false,small=null,check=null,stance=""},local){
   const fullSys=withMemorySystem(system,memoryMode);
   const sSys=small?withMemorySystem(small.system,memoryMode):fullSys,sPrompt=small?small.prompt:prompt;
   /* Local AI: an unreadable answer is asked once more; a readable one with obvious errors gets one targeted
      repair, kept only if it has fewer problems. The caller fills any remaining gap from built-in rules. */
   const studio=async()=>{
-    const ask=msgs=>studioChat({system:sSys,...(msgs?{messages:msgs}:{prompt:sPrompt}),images:msgs?[]:images,json,maxTokens,onText,signal});
+    const ask=msgs=>studioChat({system:sSys,...(msgs?{messages:msgs}:{prompt:sPrompt}),images:msgs?[]:images,json,maxTokens,onText,signal,stance});
     let v;
     try{v=await ask()}catch(e){if(json&&small&&/Invalid JSON|Empty model response/.test(e?.message||""))v=await ask();else throw e}
     const probs=check?check(v):[];
@@ -8042,7 +8047,7 @@ async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,m
   return viaClaude(
     ()=>json?sampleFn.json(`${fullSys}\n\n${prompt}`,{modelTier}):sampleFn(`${fullSys}\n\n${prompt}`,{modelTier,cache:false,onText}).then(r=>r.text),
     local,
-    {studio,apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal},quiet}
+    {studio,apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal,stance},quiet}
   );
 }
 
@@ -8156,7 +8161,7 @@ async function clarifyFork(idea,brief){
   const kind=projectKind(`${ideaText} ${brief}`),home=placesIn(ideaText);
   const fallback=CLARIFY_FALLBACK[kind==="game"?"game":"other"];
   const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}The idea is still open. Ask the designer three quick questions whose answers would most change what this becomes${kind==="game"?" (for example who the player is, when and where it happens, and how it plays)":""}. Each question has 4 short, concrete options under 8 words, as different from each other as possible. Use only real places and periods${home.length?`, and stay in ${home.join(" / ")}`:""}. ${langLine(textLang(ideaText))}\nReturn {"questions": [{"q": "...", "options": ["...", "...", "...", "..."]}, ... 3 items]}`;
-  const res=await runAgent("muse",{read:[idea],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:smallStrategistSystem(kind),prompt,json:true,maxTokens:900,small:{system:smallStrategistSystem(kind),prompt},check:clarifyProblems},()=>({questions:fallback}))});
+  const res=await runAgent("muse",{read:[idea],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:smallStrategistSystem(kind),prompt,json:true,stance:"create",maxTokens:900,small:{system:smallStrategistSystem(kind),prompt},check:clarifyProblems},()=>({questions:fallback}))});
   if(!res)return null;
   const got=(Array.isArray(res.v?.questions)?res.v.questions:[]).map(q=>({q:String(q?.q||"").trim(),options:(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4)})).filter(q=>q.q&&q.options.length>=2).slice(0,3);
   return clarifyDialog(got.length>=2?got:fallback);
@@ -8271,6 +8276,66 @@ async function groundIdea(idea,brief,picked){
   renderAll();persist();
   return made;
 }
+/* Is this a question about the real world (fact) or a request to invent (create)? "fact:" / "事实：" and
+   "idea:" / "创意：" force it; otherwise a factual question word without creative intent means fact. */
+function factStance(text){
+  const t=String(text||"").trim();
+  if(/^(?:fact|facts|事实)\s*[:：]/i.test(t))return true;
+  if(/^(?:idea|ideas|create|创意)\s*[:：]/i.test(t))return false;
+  const asks=/[?？]\s*$/.test(t)||/^(?:when|what|which|who|whom|where|how many|how much|is|are|was|were|did|does|do)\b/i.test(t)||/吗|呢|什么时候|哪一年|多少|谁/.test(t);
+  const factual=/\b(when|what year|which year|who (?:was|were|is|ran|led|founded|governed)|how many|how much|where (?:was|is|were|did)|is it true|did .+ (?:exist|happen)|was there|were there|history of|what (?:was|were) the|founded|disbanded|abolished|population|in what year|real|actually|historically)\b/i.test(t)||/什么时候|哪一年|谁是|是谁|多少|在哪|是真的吗|历史上|真实|是否存在|成立|解散/.test(t);
+  const creative=/\b(what if|ideas?|brainstorm|could we|should we|how (?:might|could|would|do|can) (?:we|i|it)|design|direction|mechanics?|players?|make (?:it|this)|feel like|invent|imagine|pitch|prototype|fork|game)\b/i.test(t)||/如果|点子|创意|怎么设计|玩法|想法|原型/.test(t);
+  // automatic only when it names something in the real world (a proper name past the first word, or a year):
+  // "who is the translator?" is about the board's own fiction, not a fact to look up
+  const anchored=/[\u4e00-\u9fff]/.test(t)||/\b(1[0-9]{3}|20[0-9]{2})s?\b/.test(t)||/\s[A-Z][a-z]{2,}/.test(t.replace(/^\s*\S+/,""));
+  return asks&&factual&&!creative&&anchored;
+}
+async function factSources(q,lang){
+  const found=[],seen=new Set();let why="";
+  const take=(got,via)=>{for(const it of got){const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,via});if(found.length>=4)break}};
+  if(keenableOn()){try{take(await keenableSearch(q,{maxResults:4}),"Keenable")}catch(e){why=failReason("Keenable",e)}}
+  if(!found.length){try{take(await wikiLookup(q.replace(/^(?:fact|facts|事实)\s*[:：]\s*/i,"").replace(/[?？]+$/,""),lang),"Wikipedia")}catch{}}
+  return {found,why};
+}
+/* Keep a sentence only if it cites a source and every number and multi-word name in it appears in what it cites. */
+function factCheck(answer,sources){
+  const sents=String(answer||"").replace(/\s+/g," ").trim().split(/(?<=[.!?。！？])\s+(?=\S)/).map(x=>x.trim()).filter(Boolean);
+  const kept=[];let dropped=0;
+  for(const sentence of sents){
+    if(/sources? (?:don'?t|do not|doesn'?t|does not) say|资料(?:里)?没有(?:说|写)/i.test(sentence)){kept.push(sentence);continue}
+    const cites=[...sentence.matchAll(/\[(\d+)\]/g)].map(m=>+m[1]).filter(n=>n>=1&&n<=sources.length);
+    if(!cites.length){dropped++;continue}
+    const ref=cites.map(n=>`${sources[n-1].title} ${sources[n-1].text}`).join(" ").toLowerCase();
+    const body=sentence.replace(/\[\d+\]/g,"");
+    const nums=body.match(/\b\d{2,}(?:[,.]\d+)?\b/g)||[];
+    // a capitalised sentence opener ("The Settlement") is not part of the name
+    const names=(body.match(/\b[A-Z][a-z]+(?:\s+(?:of\s+|the\s+)?[A-Z][a-z]+)+\b/g)||[]).map(n=>n.replace(/^(?:The|A|An|In|On|At|By|For|From|After|Before|During|Its|It|This|That|These|Those|When|Then)\s+/,""));
+    const ok=nums.every(n=>ref.includes(n.toLowerCase()))&&names.every(n=>ref.includes(n.toLowerCase()));
+    if(ok)kept.push(sentence);else dropped++;
+  }
+  return {kept,dropped};
+}
+async function factAnswer(question,{signal}={}){
+  const q=String(question).replace(/^(?:fact|facts|事实)\s*[:：]\s*/i,"").trim(),lang=textLang(q);
+  const {found,why}=await factSources(q,lang);
+  const list=found.map((x,i)=>`${i+1}. [${x.title}](${x.url})${x.via==="Keenable"&&hostOf(x.url)?` · ${hostOf(x.url)}`:""}`).join("\n");
+  if(!found.length)return {text:L(`Scout couldn't find sources for this${why?` (${why})`:""}, so I won't answer from memory. Try rephrasing, or add a source card.`,`Scout 没找到相关资料${why?`（${why}）`:""}，所以我不会凭记忆回答。可以换个说法，或者添加一张资料卡。`),sources:0};
+  const sys=`You answer factual questions for a designer using only the numbered sources below.
+Rules:
+1. End every sentence that states a fact with the number of its source in brackets, like [2].
+2. Use only what the sources say. If they don't answer part of the question, write "The sources don't say." for that part. Never fill a gap from memory.
+3. Copy names, numbers and dates exactly as the sources give them.
+4. Two to five short sentences. No headings, no ideas, no follow-up question. ${langLine(lang)}
+Sources:
+${found.map((x,i)=>`[${i+1}] ${x.title}: ${x.text}`).join("\n")}`;
+  const res=await askAI({system:sys,prompt:q,maxTokens:700,stance:"fact",signal,memoryMode:"none"},()=>null);
+  let kept=[],dropped=0;
+  if(res?.v){({kept,dropped}=factCheck(String(res.v),found))}
+  // no model, or nothing it said held up: quote the sources themselves, which can't be wrong about what they say
+  if(!kept.length)kept=found.slice(0,2).map((x,i)=>`${clip(x.text.split(/(?<=[.!?。！？])\s/)[0]||x.text,260)} [${i+1}]`);
+  const note=dropped?`\n\n${L(`(Left out ${dropped} statement${dropped>1?"s":""} the sources don't support.)`,`（已删去 ${dropped} 句资料不支持的内容。）`)}`:"";
+  return {text:`${kept.join(" ")}${note}\n\n**${L("Sources","资料来源")}**\n${list}`,sources:found.length,dropped};
+}
 async function fork(idea,count=3,brief="",{ask=true}={}){
   if(!idea)return toast("Select a claim, idea or note to fork.");
   if(idea.type==="treemap"&&!brief)return spawnTreeDirections(idea);
@@ -8296,7 +8361,7 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
   const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,(wallText(srcs)||"")+groundNote):null;
-  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({system:`${ROLE.muse}\n${STYLE}`,prompt,images:imgNodes,json:true,small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
+  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({system:`${ROLE.muse}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count);
   checkpoint();const pid="p-"+uid();
@@ -8345,7 +8410,7 @@ Turn each main branch of the Tree Map into clear, concrete ${mode==="deck"?"slid
 Write the real content for this prototype as the people in the test would see it (not a description of the prototype). Reply with ONLY JSON:
 {"title": short page title, "kicker": one short line of context, "lede": 1-2 sentences, "items": [4 to 6 objects {"title","body" (1-2 sentences),"tag" (one or two words, e.g. a status)${mode==="story"?',"choices" (optional array of 2-4 short options the person can mark)':""}}], "cta": a short button label for the main action}`;
   const fallbackFn=isTm?()=>treeMapToProofSpec(dir,mode):()=>specLocal(dir,mode);
-  const {v,live}=await runAgent("wright",{read:[dir,...srcs.slice(0,3)],places,label:isTm?`building ${mode==="deck"?"deck":"UI"} v${ver}`:`building ${dir.letter} v${ver}`,work:()=>askAI({system:`${ROLE.wright}\n${STYLE}`,prompt,images:imgNodes,json:true,maxTokens:2400,...(smallModelOn()?{small:{system:`${ROLE.wright}\n${STYLE}`,prompt},check:v=>buildProblems(v,isTm?treeMapToMarkdown(treeMapOf(dir)):`${idea?.text||""} ${dir.title} ${dir.text} ${dir.test||""} ${brief}`,isTm)}:{})},fallbackFn)});
+  const {v,live}=await runAgent("wright",{read:[dir,...srcs.slice(0,3)],places,label:isTm?`building ${mode==="deck"?"deck":"UI"} v${ver}`:`building ${dir.letter} v${ver}`,work:()=>askAI({system:`${ROLE.wright}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",maxTokens:2400,...(smallModelOn()?{small:{system:`${ROLE.wright}\n${STYLE}\n${CREATE_RULE}`,prompt},check:v=>buildProblems(v,isTm?treeMapToMarkdown(treeMapOf(dir)):`${idea?.text||""} ${dir.title} ${dir.text} ${dir.test||""} ${brief}`,isTm)}:{})},fallbackFn)});
   const spec={...fallbackFn(),...(v&&typeof v==="object"?v:{})};spec.mode=mode;spec.letter=isTm?"":dir.letter;spec.version=ver;
   spec.items=(spec.items||[]).filter(i=>i&&i.title).slice(0,8);
   checkpoint();
@@ -12299,8 +12364,12 @@ async function sendCopilotMessage(raw,ctxOverride=null){
     const sc=$("cpMsgs");if(sc)sc.scrollTop=sc.scrollHeight;
   };
   let cpTask=null;
+  const factOn=!skipDelegate&&!isCasual&&factStance(text);
   try{
-    if(skipDelegate){
+    if(factOn){
+      const fa=await factAnswer(text,{signal:copilotAbort.signal});
+      aiMsg.text=fa.text;aiMsg.stance="fact";aiMsg.chips=fa.sources?[L("Pin these sources to the board","把这些资料钉到看板上")]:[];
+    }else if(skipDelegate){
       const loc=copilotLocalReply(text,ctx);
       aiMsg.text=loc.text;aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;aiMsg.actions=loc.actions||[];
       if(loc.actionResults)aiMsg.actionResults=loc.actionResults;

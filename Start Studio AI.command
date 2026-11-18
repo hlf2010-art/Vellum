@@ -72,6 +72,20 @@ MODELS = {
             {"name": "mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf", "sha256": "c6ba85508d82f42590e6eb77d5340369ab6fecf107a7561d809523d8aa5f3bfd", "size": 752289728},
         ],
     },
+    # Same size, but it thinks before every answer: slower, for comparing thinking on and off (tests/model-eval.cjs).
+    "qwen3-vl-8b-thinking": {
+        "id": "qwen3-vl-8b-thinking",
+        "label": "Qwen3-VL 8B Thinking",
+        "model": "Qwen3-VL-8B-Thinking",
+        "tier": "Thinking",
+        "vision": True,
+        "thinking": True,
+        "base": "https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF/resolve/bca5838231f8cc1303cf8810afffcfbdc41bc75a/",
+        "files": [
+            {"name": "Qwen3VL-8B-Thinking-Q4_K_M.gguf", "sha256": "9e54ca761ab1eb0e8bf9eddae356fd3535b910b3bf3e38e10c914f42cf8751cb", "size": 5027784704},
+            {"name": "mmproj-Qwen3VL-8B-Thinking-Q8_0.gguf", "sha256": "c6aebeb17ab596dda1976629ea4ed1bdb94d506fd198630eb8567ae11cfb4684", "size": 752289728},
+        ],
+    },
 }
 # The page a double-click opens (and / serves): Vellum. The older Infinite Canvas Studio page is used only
 # when this copy of the launcher has no Vellum beside it (or one folder up, as in the app bundle).
@@ -242,6 +256,8 @@ def model_server(spec, gen):
             opts += ["--presence-penalty", "0.35", "--frequency-penalty", "0.25"]
         if "--dry-multiplier" in help_text:
             opts += ["--dry-multiplier", "0.8", "--dry-allowed-length", "3", "--dry-penalty-last-n", "512"]
+        if spec.get("thinking") and "--reasoning-format" in help_text:
+            opts += ["--reasoning-format", "deepseek"]  # thoughts go to reasoning_content, never into the answer
         if "--sleep-idle-seconds" in help_text:
             opts += ["--sleep-idle-seconds", "300"]
         proc = subprocess.Popen(opts, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -1015,6 +1031,9 @@ class Handler(BaseHTTPRequestHandler):
                 "frequency_penalty": 0.25,
                 "max_tokens": min(4600, int(body.get("max_tokens", 2400))),
             }
+            if active_spec().get("thinking"):
+                # a thinking model spends tokens before it answers; leave room so the answer isn't cut off
+                args["max_tokens"] = min(8192, args["max_tokens"] + 4096)
             if is_json:
                 # No repetition penalties for structured answers: JSON repeats its keys by design, and penalising
                 # common words made Qwen3-VL 8B pick spaceless pieces ("in1947", "smugglingcigarettes").

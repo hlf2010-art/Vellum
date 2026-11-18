@@ -105,3 +105,14 @@ node tests/model-eval.cjs --compare model-eval-results/8b-think-off.json model-e
 ```
 
 Wait for `"status": "ready"` from `curl -s http://127.0.0.1:59631/studio/health` after each switch (the first switch to Thinking downloads 5.8 GB).
+
+## Context and decision-memory proof of concept
+
+`tests/context-poc.cjs` checks the claims in `context-poc.md`: cards keep identity, revisions, links and decision records across edits, moves and a reload; the agent reads cards by link and topic, never by position alone; it names what its thoughts rest on; and ideas you turned down stay on the record and are not offered again. The P0 group (fresh board) covers retrying replies cut off by the token limit, the "built-in rules" tag, held-back repeats in the Crew popover (Show anyway, Dismiss), and the newer rejection signals.
+
+```bash
+node tests/context-poc.cjs                                              # deterministic, scripted model
+node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a real model, via an OpenAI-compatible relay
+```
+
+`--live` sends the synthetic fixture board (no user data) to `LIVE_BASE` (default `https://openrouter.ai/api/v1`, key from `LIVE_KEY` or an injecting proxy). `--json out.json` writes every check; `--shots dir` saves a screenshot of a thought's "Based on" line. Lines marked KNOWN are recorded limitations; PART means a live rate below the bar but above zero.

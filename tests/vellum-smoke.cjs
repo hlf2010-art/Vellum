@@ -69,15 +69,21 @@ function serve() {
 
 const results = []; let failures = 0;
 function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  — ' + detail}`); if (!ok) failures++; }
+const WIKI = { query: { pages: {
+  1: { index: 1, title: 'Shanghai International Settlement', extract: 'The Shanghai International Settlement originated from the 1863 merger of the British and American enclaves in Shanghai. Extraterritoriality was abolished in 1943.', fullurl: 'https://en.wikipedia.org/wiki/Shanghai_International_Settlement' },
+  2: { index: 2, title: 'History of Shanghai', extract: 'The history of Shanghai spans over a thousand years and closely parallels the development of modern China, from fishing village to treaty port.', fullurl: 'https://en.wikipedia.org/wiki/History_of_Shanghai' } } } };
+const wikiRoute = (p, calls = []) => p.route(/wikipedia\.org\/w\/api\.php/, r => { calls.push(new URL(r.request().url()).searchParams.get('gsrsearch')); return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(WIKI) }); });
 const dirs = tag => ({ directions: ['A', 'B', 'C'].map(l => ({ title: `${tag} ${l}`, plan: `Plan ${l}.`, test: `Test ${l}.`, mode: 'story' })) });
 
 async function page(browser, base, { model = true } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' });
   // Studio AI may be running on this machine; the suite must not depend on it (section 9 routes its own)
   await ctx.route('http://127.0.0.1:59631/**', r => r.abort());
+  await ctx.route(/wikipedia\.org/, r => r.abort()); // the suite never reaches the real Wikipedia
   const p = await ctx.newPage();
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2500);
+  await p.evaluate(() => { SCOUT_GROUNDING = false; }); // sections that test Scout's look-up turn it on
   if (model) await p.evaluate(url => { apiCfg = { enabled: true, baseUrl: url + '/v1', model: 'smoke', key: 'smoke' }; }, base);
   p.type = async (t, enter = true) => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); if (enter) await p.keyboard.press('Enter'); };
   p.idle = async () => { await p.waitForTimeout(400); for (let i = 0; i < 100 && await p.evaluate(() => crewBusy()); i++) await p.waitForTimeout(250); await p.waitForTimeout(500); };
@@ -514,6 +520,20 @@ async function page(browser, base, { model = true } = {}) {
       check("Wright's prototype on Local AI is checked for things its era can't hold", await p.evaluate(() => { const ok = [1, 2, 3, 4].map(i => ({ title: 't' + i, body: 'A neighbour waits by the telephone.' })); return buildProblems({ title: 'T', items: [...ok.slice(0, 3), { title: 'x', body: 'Your phone needs charging.' }] }, 'A lilong in 1937 Shanghai').some(x => /does not exist in 1937/.test(x)) && buildProblems({ title: 'T', items: ok }, 'A lilong in 1937 Shanghai').length === 0; }));
       check('an English idea gets English answers: Chinese characters and run-together words are sent back', await p.evaluate(() => { const d = { directions: [{ title: 'A', plan: 'A runner in上海的法租界1947年', test: 'If fewer than two feel watched, it fails.' }, { title: 'B', plan: 'You patrol the Bund in1937.', test: 'If fewer than two feel watched, it fails.' }] }; const p = forkProblems(d, 2, 'An RPG set in Shanghai'); return p.some(x => /direction 1: write everything in English/.test(x)) && p.some(x => /direction 2: words run together \("in1937"\)/.test(x)) && forkProblems(d, 2, '上海 RPG').every(x => !/English/.test(x)) && /Simplified Chinese/.test(smallForkPrompt('上海 RPG', 3, '', [], '').prompt); }));
       check('Copilot on Local AI: placeholder labels go, a loose chips line becomes chips', await p.evaluate(() => tidySmallReply('Yes.\n\n**Label: Story**\n- a\n\n**Label:** Anchor\n- b\n\nWhich one?') === 'Yes.\n\n**Story**\n- a\n\n**Anchor**\n- b\n\nWhich one?' && JSON.stringify(looseChips('Which one?\n\nchips ["Tie it", "Drop it"]')) === JSON.stringify({ text: 'Which one?', chips: ['Tie it', 'Drop it'] })));
+      {
+        const wq = []; await wikiRoute(p, wq); await p.evaluate(() => { SCOUT_GROUNDING = true; });
+        local = b => ({ text: JSON.stringify(dirs('Grounded')) });
+        r = await forkOn('An RPG set in Shanghai about rival police forces in the 1930s and the translators caught between them.');
+        const g = await p.evaluate(() => { const idea = board.nodes.find(n => n.type === 'idea'); const ss = board.nodes.filter(n => n.type === 'source' && n.by === 'scout'); return { titles: ss.map(n => n.title), weights: ss.map(n => n.weight + ':' + n.status), linked: ss.every(n => board.edges.some(e => e.a === n.id && e.b === idea.id)), url: ss[0]?.src?.url }; });
+        const fk = userText(lastFork());
+        check('before branching, Scout looks the idea up on Wikipedia with queries built from its place and period', JSON.stringify(wq) === JSON.stringify(['History of Shanghai', 'Shanghai in the 1930s']), JSON.stringify(wq));
+        check('what Scout finds lands as Source drafts (Reported), linked to the idea, with the link kept', g.titles.join() === 'Shanghai International Settlement,History of Shanghai' && g.weights.every(w => w === 'reported:sketch') && g.linked && /wiki\/Shanghai_International_Settlement/.test(g.url || ''), JSON.stringify(g));
+        check('the fork reads them as background it must not contradict', /Extraterritoriality was abolished in 1943/.test(fk) && /never contradict it; it is not a checklist/.test(fk) && r.titles === 'Grounded A,Grounded B,Grounded C', fk.slice(0, 300));
+        await p.unroute(/wikipedia\.org\/w\/api\.php/);
+        r = await forkOn('An RPG set in Shanghai about dock workers and the gangs who run the wharves in the 1920s and 1930s.');
+        check("when Wikipedia can't be reached, Strategist still branches and says it worked from memory", r.titles === 'Grounded A,Grounded B,Grounded C' && r.toasts.some(t => /couldn't reach Wikipedia, so Strategist is working from memory/.test(t)), JSON.stringify(r));
+        await p.evaluate(() => { SCOUT_GROUNDING = false; });
+      }
       // the time limit runs out: built-in rules answer, and the designer is told why
       local = () => ({ text: JSON.stringify(dirs('Slow')), delay: 3000 });
       await p.evaluate(() => { AI_TIMEOUT_MS = 1500; });
@@ -588,6 +608,15 @@ async function page(browser, base, { model = true } = {}) {
       await p.type('Build a prototype of the opening interrogation scene'); await p.idle();
       const proof = await p.evaluate(() => board.nodes.find(n => n.type === 'proof')?.spec?.title);
       check("Wright builds what the designer asked for, in the designer's words", proof === 'Interrogation at Louza', JSON.stringify({ proof, last: requests.at(-1)?.matched }));
+      {
+        await wikiRoute(p); await p.evaluate(() => { SCOUT_GROUNDING = true; });
+        await p.newBoard(); await p.type('An RPG about smugglers in 1930s Shanghai and the families who hide their goods in lane houses.'); await p.waitForTimeout(800);
+        const gi = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
+        queue = [{ id: 'gr', match: 'Background Scout found on Wikipedia', text: dirs('Cloud') }];
+        await p.evaluate(id => select([id]), gi); await p.type('/fork 3'); await p.idle();
+        check('with a Cloud API too, Scout looks things up first and the fork reads them', requests.some(x => x.matched === 'gr' && /Shanghai International Settlement/.test(x.full)) && await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.title).join() === 'Cloud A,Cloud B,Cloud C'), JSON.stringify(requests.slice(-1).map(x => x.matched)));
+        await p.evaluate(() => { SCOUT_GROUNDING = false; }); await p.unroute(/wikipedia\.org\/w\/api\.php/);
+      }
       check('no page errors in these flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }

@@ -8127,6 +8127,62 @@ function clarifyDialog(items){
     qs("[data-clarify-opt]",dlg)?.focus();
   });
 }
+/* Before Strategist branches an idea that has nothing on the wall, Scout looks up its real background on
+   Wikipedia and pins what it finds as Source drafts linked to the idea (weight: Reported). The fork reads
+   them, so directions rest on facts rather than on what a model half-remembers, and the designer can open
+   each source or discard a wrong one. The queries come from the idea's own place, period and choices, not
+   from the model: in Vellum's model eval a 4B model asked about the metro and cuisine for a 1930s story.
+   Wikipedia is the only search provider for now; wikiLookup is the one place to add another. */
+let SCOUT_GROUNDING=true; // the smoke test turns it off outside the section that tests it
+function groundQueries(ideaText,brief,picked){
+  const lang=textLang(ideaText),answers=(picked||[]).map(x=>String(x.a||"").replace(/^(?:an?|the)\s+/i,"").trim()).filter(Boolean);
+  if(lang==="zh")return [...new Set([String(ideaText).replace(/我想(?:做|要做)?|一个|游戏|\b(?:RPG|rpg|game)\b|以|为背景|的/g," ").replace(/\s+/g," ").trim().slice(0,30),...answers.slice(0,2)])].filter(Boolean).slice(0,3);
+  const all=`${ideaText} ${brief} ${answers.join(" ")}`,place=placesIn(ideaText)[0]||placesIn(all)[0]||"";
+  const y=(all.match(/\b(1[5-9]\d\d|20[0-4]\d)s?\b/)||[])[0],decade=y?y.replace(/^(\d{3})\d(s?)$/,"$10s"):"";
+  const core=String(ideaText).replace(/\b(i|we|want|wants|to|make|build|create|an?|the|set|in|on|about|of|for|with|where|you|play|game|games|rpg|video|story|idea|app)\b/gi," ").replace(/[^\w\s'-]/g," ").replace(/\s+/g," ").trim();
+  const qs=[];
+  if(place){qs.push(`History of ${place}`);if(decade)qs.push(`${place} in the ${decade}`);answers.slice(0,1).forEach(a=>qs.push(`${place} ${a.replace(new RegExp(place,"i"),"").trim()}`))}
+  else if(core)qs.push(core);
+  return [...new Set(qs.map(q=>q.trim()).filter(q=>q.length>2))].slice(0,3);
+}
+async function wikiLookup(q,lang){
+  const host=lang==="zh"?"zh.wikipedia.org":"en.wikipedia.org";
+  const u=`https://${host}/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=2&prop=extracts|info&exintro=1&explaintext=1&exchars=700&inprop=url&format=json&origin=*`;
+  const r=await fetch(u,{signal:timeoutSignal(6500)});
+  if(!r.ok)throw new Error("Wikipedia HTTP "+r.status);
+  const d=await r.json();
+  return Object.values(d.query?.pages||{}).sort((a,b)=>(a.index||0)-(b.index||0)).map(p=>({title:String(p.title||""),text:String(p.extract||"").replace(/\s+/g," ").trim(),url:String(p.fullurl||"")})).filter(x=>x.title&&x.text.length>80);
+}
+function planSources(count,near){
+  const inBay=board.nodes.filter(n=>bayOf(n)===0),y0=near?Math.max(80,near.y-60):(inBay.length?Math.max(...inBay.map(n=>n.y+(n._h||HGUESS[n.type]||200)))+80:240),places=[];
+  for(let i=0;i<count;i++){const s=freeSpot(80+(i%2)*(W.source+28),y0+Math.floor(i/2)*260,W.source,230);places.push({x:s.x,y:s.y,w:W.source,h:230})}
+  return places;
+}
+async function groundIdea(idea,brief,picked){
+  const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||""),lang=textLang(ideaText);
+  const qs=groundQueries(ideaText,brief,picked);if(!qs.length)return [];
+  let reached=false;
+  const res=await runAgent("scout",{read:[idea],places:[],label:L("looking up background","查找背景资料"),task:{kind:"search",title:qs[0]},work:async()=>{
+    const found=[],seen=new Set();
+    for(const q of qs){
+      try{const got=await wikiLookup(q,lang);reached=true;for(const it of got){if(seen.has(it.title))continue;seen.add(it.title);found.push({...it,q});if(found.length>=3)break}}
+      catch(e){if(e?.name==="AbortError"&&crewState.scout.cancel)throw e}
+      if(found.length>=3)break;
+    }
+    return {found};
+  }});
+  const found=res?.found||[];
+  if(!found.length){toast(reached?L("Scout found no background on Wikipedia, so Strategist is working from memory.","Scout 在维基百科没找到相关背景，Strategist 将凭记忆作答。"):L("Scout couldn't reach Wikipedia, so Strategist is working from memory.","Scout 无法连接维基百科，Strategist 将凭记忆作答。"));return []}
+  checkpoint();
+  const pid="p-"+uid(),spots=planSources(found.length,idea),made=found.map((it,i)=>{
+    const n=node("source",{_src:idea.id,kind:L("Background · Wikipedia","背景 · 维基百科"),title:clip(it.title,64),text:it.text,weight:"reported",path:it.url,src:{query:it.q,url:it.url,source:"Wikipedia"},by:"scout",status:"sketch",pid},spots[i]);
+    const e=edge(n.id,idea.id,"src","live");if(e)freshEdges.add(e.id);return n;
+  });
+  setTimeout(()=>freshEdges.clear(),1200);
+  log("scout",`Found ${made.length} background source${made.length>1?"s":""} for <b>${esc(clip(titleOf(idea),50))}</b>: ${made.map(n=>esc(n.title)).join(", ")}`,made[0].id);
+  renderAll();persist();
+  return made;
+}
 async function fork(idea,count=3,brief="",{ask=true}={}){
   if(!idea)return toast("Select a claim, idea or note to fork.");
   if(idea.type==="treemap"&&!brief)return spawnTreeDirections(idea);
@@ -8140,14 +8196,18 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
     if(picked===null)return;
     if(picked.length){idea.clarified=picked;brief=`${brief?brief+"\n":""}The designer chose: ${picked.map(x=>`${x.q} ${x.a}`).join("; ")}. Keep every direction inside these choices.`}
   }
+  // Scout looks up the real background first (any model; built-in rules couldn't use it), once per idea
+  const scoutSrcs=()=>inputsOf(idea.id).filter(n=>n.type==="source"&&n.by==="scout"&&!n.archived&&!n.hidden);
+  if(SCOUT_GROUNDING&&connSummary().engine!=="rules"&&!sourcesFor(idea).length&&!scoutSrcs().length)await groundIdea(idea,brief,idea.clarified||null);
   count=clamp(count,1,free.length);
   const places=planFork(idea,count).places.map(({x,y,w,h})=>({x,y,w,h}));
-  const srcs=sourcesFor(idea);
+  const srcs=[...new Map([...sourcesFor(idea),...scoutSrcs()].map(n=>[n.id,n])).values()];
+  const groundNote=srcs.some(n=>n.by==="scout"&&n.type==="source")?"\nBackground Scout found on Wikipedia is on the wall. Draw on it where it helps and never contradict it; it is not a checklist, so do not build a direction around a single fact.\n":"";
   const imgNodes=[idea,...srcs].filter(n=>n&&(n.type==="image"||n.type==="frame"));
-  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${brief?`\nThe designer added: "${brief}"\n`:""}
+  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${groundNote}${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${brief?`\nThe designer added: "${brief}"\n`:""}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
-  const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,wallText(srcs)):null;
+  const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,(wallText(srcs)||"")+groundNote):null;
   const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({system:`${ROLE.muse}\n${STYLE}`,prompt,images:imgNodes,json:true,small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count);

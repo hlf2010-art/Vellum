@@ -9259,9 +9259,24 @@ function forkIsOpen(idea,brief,srcs){
 }
 const CLARIFY_FALLBACK={
   game:[{q:"Who is the player?",options:["An outsider who just arrived","Someone with power to lose","An ordinary person caught up in events","A criminal or rule-breaker"]},{q:"When does it happen?",options:["The past","The present day","The near future","Across several eras"]},{q:"How does it play?",options:["Story and conversations","Tactics and fights","Running a place or a business","Exploring and investigating"]}],
+  business:[{q:"Who is it for?",options:["Individual consumers","Small businesses","Larger companies","Creators and freelancers"]},{q:"How would it make money?",options:["A subscription","Pay per project or per use","A commission on a marketplace","Services built on top of the tool"]},{q:"What is the first version?",options:["A landing page and a waitlist","A service I deliver by hand first","A small paid pilot","A working prototype"]}],
+  business_zh:[{q:"它是为谁做的？",options:["个人消费者","小型企业","大型公司","创作者和自由职业者"]},{q:"它靠什么赚钱？",options:["订阅","按项目或按次收费","平台抽成","围绕工具提供服务"]},{q:"第一个版本是什么？",options:["落地页和候补名单","先由我手动交付的服务","小规模付费试点","可运行的原型"]}],
   other:[{q:"Who is it for?",options:["Just me","A small team","Customers or the public","A specific community"]},{q:"What form should it take?",options:["An app or tool","A story or piece of media","A service or event","A physical object or place"]},{q:"How big is the first version?",options:["A one-day test","A week-long pilot","A small launch","A long-term project"]}]
 };
-function clarifyProblems(v){
+/* The questions are about the idea itself. A model told to "name real places and years" invents them for an idea
+   that has none: for a business idea it asked "Which city hosts your first pilot?" with Berlin 2025, Tokyo 2024 and
+   "Who funds the AI training data?" with Siemens Germany, Oracle USA. A place, country or year that the idea and the
+   designer's words never mention is a sign the options have nothing to do with the idea. Games and ideas set in a
+   place keep their real places and periods. */
+const GEO_MORE=["Gulf of Mexico","Silicon Valley","United States","United Kingdom","Germany","France","Japan","China","India","Brazil","Mexico","Canada","Australia","Netherlands","Sweden","Norway","Denmark","Finland","Spain","Italy","Russia","Korea","Africa","Europe","Asia","Latin America","Middle East","Dubai","Bangalore","Brooklyn","Texas","California","Berlin","German","Swedish","Brazilian","Japanese","French","Chinese","American","British","Indian","Mexican","Dutch","Korean","Spanish","Italian","Russian","Canadian","Australian","European","Asian","African","Nordic","Scandinavian"];
+const GEO_RE=new RegExp("\\b(?:"+[...new Set([...PLACES,...GEO_MORE])].map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")+")\\b","gi");
+function inventedSpecifics(text,ctx){
+  const t=String(text||""),c=String(ctx||"").toLowerCase();
+  const hits=[...(t.match(/\b(?:1[0-9]{3}|20[0-9]{2})s?\b/g)||[]),...(t.match(GEO_RE)||[]),...(t.match(/\b(?:US|USA|UK|UAE|EU)\b/g)||[])];
+  return hits.find(h=>!c.includes(h.toLowerCase()))||"";
+}
+const clarifyInvented=(q,ctx)=>inventedSpecifics([q.q,...(q.options||[])].join(" | "),ctx);
+function clarifyProblems(v,ctx=null){
   const qs=Array.isArray(v?.questions)?v.questions:null;
   if(!qs)return ['reply with {"questions": [...]}'];
   const out=[];if(qs.length!==3)out.push("ask exactly 3 questions");
@@ -9269,18 +9284,29 @@ function clarifyProblems(v){
     if(!String(q?.q||"").trim())out.push(`question ${i+1} needs "q"`);
     if(o.length<3||o.length>4)out.push(`question ${i+1} needs 4 options`);
     if(o.some(x=>x.length>70))out.push(`question ${i+1}: keep options under 8 words`);
-    if(new Set(o.map(x=>x.toLowerCase())).size<o.length)out.push(`question ${i+1} repeats an option`)});
+    if(new Set(o.map(x=>x.toLowerCase())).size<o.length)out.push(`question ${i+1} repeats an option`);
+    const bad=ctx!==null?clarifyInvented({q:String(q?.q||""),options:o},ctx):"";
+    if(bad)out.push(`question ${i+1} brings in "${bad}", which the idea never mentioned: ask about the idea itself`)});
   return out;
 }
 async function clarifyFork(idea,brief){
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
-  const kind=projectKind(`${ideaText} ${brief}`),home=placesIn(ideaText);
-  const fallback=CLARIFY_FALLBACK[kind==="game"?"game":"other"];
-  const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}The idea is still open. Ask the designer three quick questions whose answers would most change what this becomes${kind==="game"?" (for example who the player is, when and where it happens, and how it plays)":""}. Each question has 4 short, concrete options under 8 words, as different from each other as possible. Use only real places and periods${home.length?`, and stay in ${home.join(" / ")}`:""}. ${langLine(textLang(ideaText))}\nReturn {"questions": [{"q": "...", "options": ["...", "...", "...", "..."]}, ... 3 items]}`;
-  const res=await runAgent("muse",{read:[idea],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:smallStrategistSystem(kind),prompt,json:true,stance:"create",maxTokens:900,small:{system:smallStrategistSystem(kind),prompt},check:clarifyProblems},()=>({questions:fallback}))});
+  const kind=projectKind(`${ideaText} ${brief}`),home=placesIn(ideaText),ctx=`${ideaText} ${brief}`;
+  const strict=kind!=="game"&&!home.length; // an idea with no place or period of its own gets questions about the idea, not invented settings
+  const biz=/\b(business|startup|start-up|company|saas|customers?|clients?|revenue|agency|freelanc\w*|one[- ]person|solo founder|opc|monetiz\w*|monetis\w*)\b|创业|公司|生意|商业|客户|副业|一人公司/i.test(ctx);
+  const zh=textLang(ideaText)==="zh";
+  const fallback=CLARIFY_FALLBACK[kind==="game"?"game":biz?(zh?"business_zh":"business"):"other"];
+  const aboutIdea=`Ask about the idea itself, in its own terms: who it is for, what it does, how it would be used or paid for, how big the first version is. Every option must be a plausible answer to its question for THIS idea. Do not mention any city, country, year, company or person that the idea did not mention.`;
+  const sys=strict?`You are Strategist on a small creative crew, about to ask the designer three quick questions before you suggest directions.\n${aboutIdea}\nWrite plainly and concretely. Do not use vague words such as immersive, unique, rich, dynamic, engaging or vibrant.`:smallStrategistSystem(kind);
+  const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}The idea is still open. Ask the designer three quick questions whose answers would most change what this becomes${kind==="game"?" (for example who the player is, when and where it happens, and how it plays)":""}. Each question has 4 short, concrete options under 8 words, as different from each other as possible. ${strict?aboutIdea:`Use only real places and periods${home.length?`, and stay in ${home.join(" / ")}`:""}.`} ${langLine(textLang(ideaText))}\nReturn {"questions": [{"q": "...", "options": ["...", "...", "...", "..."]}, ... 3 items]}`;
+  const res=await runAgent("muse",{read:[idea],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:sys,prompt,json:true,stance:"create",maxTokens:900,small:{system:sys,prompt},check:v=>clarifyProblems(v,strict?ctx:null)},()=>({questions:fallback}))});
   if(!res)return null;
   const got=(Array.isArray(res.v?.questions)?res.v.questions:[]).map(q=>({q:String(q?.q||"").trim(),options:(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4)})).filter(q=>q.q&&q.options.length>=2).slice(0,3);
-  return clarifyDialog(got.length>=2?got:fallback);
+  /* whichever engine answered, a question whose options bring in places, years or companies the idea never mentioned is dropped */
+  const kept=strict?got.filter(q=>!clarifyInvented(q,ctx)):got;
+  if(kept.length<2)return clarifyDialog(fallback);
+  const items=[...kept];for(const f of fallback){if(items.length>=3)break;if(!items.some(x=>x.q.toLowerCase()===f.q.toLowerCase()))items.push(f)}
+  return clarifyDialog(items);
 }
 function clarifyDialog(items){
   return new Promise(resolve=>{

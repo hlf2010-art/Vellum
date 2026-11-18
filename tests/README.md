@@ -16,6 +16,8 @@ Pin threads and Copilot are covered too. A pin reply ends with up to 3 buttons: 
 
 The questions Strategist asks before branching an open idea offer suggestions, not the only answers: each has a row for the designer's own words (typing clears the chosen chip, choosing a chip clears the text, Enter submits, the typed answer is returned like a chosen one, Skip still skips).
 
+Those questions stay about the idea: for an idea with no place or period of its own, a question whose options bring in a city, country, year or company the idea never mentioned ("Berlin 2025", "Siemens Germany") is dropped whichever engine answered and replaced by a relevant one (a business idea gets who it is for, how it makes money, what the first version is); games and ideas set somewhere keep their real places and periods.
+
 Run it before committing a change to `Vellum-Lumen.html`.
 
 ## Studio AI launcher (local server)

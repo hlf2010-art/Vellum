@@ -671,7 +671,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       // an open idea: Strategist asks three questions first; the answers go into the fork; a small model
       // answering in prose around fenced JSON still gives directions
       local = b => ({ text: b.kind === 'ask' ? JSON.stringify(Q) : 'Here are three:\n```json\n' + JSON.stringify(dirs('Loc')) + '\n```' });
-      let r = await forkOn('Local idea', true);
+      let r = await forkOn('A local game set in Shanghai', true);
       check('on Local AI, an open idea gets three one-click questions first', JSON.stringify(r.asked) === JSON.stringify(Q.questions.map(q => q.q)), JSON.stringify(r));
       check("the designer's choices go into the fork and stay on the idea", /The designer chose: Who do you play\? A translator in 1930s Shanghai; When is it\? 1937; How does it play\? Conversations/.test(userText(lastFork())) && r.clarified?.length === 3, userText(lastFork()).slice(0, 400));
       const g = lastFork();
@@ -683,6 +683,22 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       r = await forkOn('Shanghai game', false);
       check("when the model's questions can't be read, Strategist asks its own", r.asked?.[0] === 'Who is the player?' && r.asked.length === 3, JSON.stringify(r));
       check('Skip branches without choices', !r.clarified && !/designer chose/i.test(userText(lastFork())) && r.titles === 'Own A,Own B,Own C', JSON.stringify(r));
+      // questions are about the idea itself: a business idea never gets invented cities, years or companies
+      const BIZ = 'I want to build an AI-native OPC business';
+      const SCREENSHOT = { questions: [{ q: 'Which city hosts your first pilot?', options: ['Berlin 2025', 'Tokyo 2024', 'Austin 2026', 'Lima 2023'] }, { q: 'What industry uses OPC most now?', options: ['Oil rigs Gulf of Mexico', 'German factories 1987', 'Swedish hospitals 2010', 'Brazilian ports 2015'] }, { q: 'Who funds the AI training data?', options: ['Siemens Germany', 'Oracle USA', 'BASF Netherlands', 'Coca-Cola Brazil'] }] };
+      local = b => ({ text: b.kind === 'ask' || b.kind === 'fix' ? JSON.stringify(SCREENSHOT) : JSON.stringify(dirs('Biz')) });
+      r = await forkOn(BIZ, false);
+      check('questions with invented cities, years and companies never reach the designer; a business idea gets relevant ones', JSON.stringify(r.asked) === JSON.stringify(['Who is it for?', 'How would it make money?', 'What is the first version?']), JSON.stringify(r.asked));
+      const askG = gens.filter(x => x.kind === 'ask').at(-1) || {}, askT = JSON.stringify(askG.messages || []);
+      check('the question prompt asks about the idea itself and no longer demands real places and years', /Ask about the idea itself/.test(askT) && !/real places and periods/.test(askT) && !/name real places, years/.test(askT), askT.slice(0, 300));
+      local = b => ({ text: b.kind === 'ask' || b.kind === 'fix' ? JSON.stringify({ questions: [{ q: 'Who is the first customer?', options: ['A solo founder', 'A small agency', 'A freelancer', 'A student'] }, { q: 'Where would it run?', options: ['Berlin 2025', 'Tokyo 2024', 'Austin 2026', 'Lima 2023'] }, { q: 'What does it do first?', options: ['Writes replies', 'Books meetings', 'Sends invoices', 'Tracks leads'] }] }) : JSON.stringify(dirs('Biz2')) });
+      r = await forkOn(BIZ, false);
+      check('a good question stays, the bad one is replaced by a relevant one', r.asked?.length === 3 && r.asked[0] === 'Who is the first customer?' && r.asked[1] === 'What does it do first?' && !r.asked.some(x => /Where would it run/.test(x)) && r.asked[2] === 'Who is it for?', JSON.stringify(r.asked));
+      local = b => ({ text: b.kind === 'ask' ? 'not json at all' : JSON.stringify(dirs('Own2')) });
+      r = await forkOn(BIZ, false);
+      check('when the model gives nothing usable, a business idea still gets business questions', r.asked?.[0] === 'Who is it for?' && r.asked.length === 3, JSON.stringify(r.asked));
+      const unit = await p.evaluate(() => { const ctx = 'I want to build an AI-native OPC business'; return { bad: ['Berlin 2025', 'Oil rigs Gulf of Mexico', 'Siemens Germany', 'Oracle USA', 'Coca-Cola Brazil', 'Swedish hospitals 2010', 'Tokyo 2024'].map(t => inventedSpecifics(t, ctx)), ok: ['Individual consumers', 'A subscription', 'A small paid pilot', 'B2B or B2C', 'Sell on Shopify', 'A 2-week pilot', 'OPC and AI'].map(t => inventedSpecifics(t, ctx)), mentioned: inventedSpecifics('Shanghai 1937', 'a game in Shanghai in 1937') }; });
+      check('invented specifics are recognised, and plain answers (and things the idea mentioned) are not', unit.bad.every(x => x) && unit.ok.every(x => !x) && unit.mentioned === '', JSON.stringify(unit));
       // a full idea: no questions; the small-model prompt; one targeted repair of an obvious error
       const bad = { directions: [{ title: 'Settlement Beat', plan: 'You patrol the Settlement in 1935.', test: 'Five players play two shifts; if fewer than three feel watched, it fails.', mode: 'story' }, { title: 'Northern Ledger', plan: 'You smuggle tea in Beijing.', test: 'Six players run three nights; if fewer than one lies, it fails.', mode: 'desk' }, { title: 'Wharf Rats', plan: 'You unload ships on the Huangpu.', test: 'Four players play one night; if fewer than two talk to a foreman, it fails.', mode: 'story' }] };
       local = b => ({ text: JSON.stringify(b.kind === 'fix' ? dirs('Fixed') : bad) });

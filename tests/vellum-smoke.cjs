@@ -732,6 +732,15 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         }, base);
         check('a table from an address: the CSV becomes a drawn, selected table card that remembers its address and gets a readable title; bare numbers display grouped (years stay as written); ordinary links stay links; Sheets and GitHub links become data links; rank is not a quantity',
           url.type === 'table' && url.drawn && url.grouped && url.title === '2014 USA States' && url.cols === 'Rank|Region|Q1' && url.src === 'url:/data/sales.csv' && !url.rankIsQuantity && url.link === 'link' && url.sheet === 'https://docs.google.com/spreadsheets/d/AbC/export?format=csv&gid=7' && url.gh === 'https://raw.githubusercontent.com/a/b/main/x.csv' && !url.blog, JSON.stringify(url));
+        const order = await p.evaluate(() => {
+          const keep = board.nodes.slice(), mk = (id, t) => ({ id, type: 'note', x: 0, y: 0, created: NOW(), by: 'you', status: 'ink', rev: 1, text: t, title: t });
+          board.nodes = [mk('z1', 'Before'), mk('cafe0001', 'A'), mk('20000002', 'B'), mk('dead0003', 'C'), mk('z2', 'After')]; closeTx(); undoStack.length = 0;
+          const names = () => board.nodes.map(n => n.title).join(',');
+          checkpoint(); board.nodes = [board.nodes[0], board.nodes[4], mk('30000004', 'A2'), mk('beef0005', 'B2'), mk('40000006', 'C2')]; closeTx(); // like Try again: old out, new appended
+          undo(); const undone = names(); redo(); const redone = names();
+          board.nodes = keep; undoStack.length = 0; redoStack.length = 0; renderAll(); return { undone, redone };
+        });
+        check('undo and redo put replaced cards back in their exact order, even when ids look like numbers', order.undone === 'Before,A,B,C,After' && order.redone === 'Before,After,A2,B2,C2', JSON.stringify(order));
         const rf = {};
         const mk = await p.evaluate(async base => { const n = await tableFromUrl(base + '/data/sales.csv'); return { id: n.id, btn: !!document.querySelector(`.card[data-id="${n.id}"] [data-tbl-refresh] svg path`), local: canRefresh({ type: 'table', data: { source: { kind: 'paste' } } }) }; }, base);
         const step = async fn => p.evaluate(fn, mk.id);

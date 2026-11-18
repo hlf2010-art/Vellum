@@ -2345,6 +2345,8 @@ dialog.sheet:focus{outline:none}
 .adv-lift{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 11px;border-radius:var(--radius-sm);font:580 12px/1 var(--ui);color:var(--B);background:color-mix(in srgb,var(--B) 14%,transparent);margin-left:auto;transition:background var(--d-quick),transform var(--d-press)}
 .adv-lift:hover{background:color-mix(in srgb,var(--B) 22%,transparent)}
 .adv-lift:active{transform:scale(.96)}
+.adv-picks{display:flex;flex-wrap:wrap;gap:6px}
+.adv-picks .adv-lift{margin-left:0}
 .adv-lift .ico{width:12px;height:12px;stroke-width:2}
 .adv-ign{height:28px;padding:0 9px;border-radius:var(--radius-sm);font:500 12px/1 var(--ui);color:var(--label-3);transition:background var(--d-quick),color var(--d-quick)}
 .adv-ign:hover{background:var(--hover);color:var(--label)}
@@ -7169,10 +7171,46 @@ function renderAdvPop(){
   const tools=`<button type="button" class="ib" data-adv-reroll title="${esc(L("Ask crew for a fresh angle","重新生成一条建议"))}" aria-label="Ask crew for a fresh angle">${ic("redo")}</button><button type="button" class="ib" data-adv-close title="${esc(L("Close","关闭"))}" aria-label="Close">${ic("x")}</button>`;
   const reps=Array.isArray(p.replies)?p.replies:[];
   const repsHTML=reps.length?`<div class="adv-replies">${reps.map(r=>{const isYou=r.who==="you",ra=isYou?null:(AGENTS[r.who]||a),tm=exactTime(r.t);return `<div class="adv-rep${isYou?" you":""}" data-adv-rep="${esc(r.id||"")}"><div class="adv-rep-h"><span>${esc(isYou?L("You","我"):ra.name)}</span>${tm?`<time>${esc(tm)}</time>`:""}</div><div class="adv-rep-tx${r.typing?" typing":""}">${mdLite(r.text||"")}</div></div>`}).join("")}</div>`:"";
-  pop.innerHTML=`<span class="adv-pop-tail" aria-hidden="true"></span><div class="adv-head"><span class="mk">${a.mk}</span><b>${esc(a.name)}</b>${tools}</div>${tabsHTML}<div class="adv-scroll">${body?`<p class="adv-note">${renderAdvNote(body,kws)}</p>`:""}${repsHTML}</div><div class="adv-dock"><div class="adv-reply"><input type="text" class="adv-reply-in" data-adv-in data-pin-id="${esc(p.id)}" placeholder="${esc(L(`Reply to ${a.name}…`,`回复 ${a.name}…`))}" value="${esc(keepDraft)}" autocomplete="off" spellcheck="false"><button type="button" class="adv-send" data-adv-send="${esc(p.id)}"${keepDraft.trim()?"":" disabled"} aria-label="${esc(L("Send reply","发送回复"))}" title="${esc(L("Send (Enter)","发送 (Enter)"))}">${UP_SVG}</button></div><div class="adv-acts"><button type="button" class="adv-ign" data-adv-del="${esc(p.id)}">${L("Ignore","忽略")}</button>${lift}</div></div>`;
+  /* the buttons under the latest reply; gone once you write again or the reply is still typing */
+  const lastR=reps[reps.length-1],picks=lastR&&lastR.who!=="you"&&!lastR.typing&&Array.isArray(lastR.actions)?lastR.actions:[];
+  const picksHTML=picks.length?`<div class="adv-picks">${picks.map((x,i)=>`<button type="button" class="adv-lift" data-adv-act="${i}" data-adv-pickpin="${esc(p.id)}">${ic("arrow")}${esc(x.label)}</button>`).join("")}</div>`:"";
+  pop.innerHTML=`<span class="adv-pop-tail" aria-hidden="true"></span><div class="adv-head"><span class="mk">${a.mk}</span><b>${esc(a.name)}</b>${tools}</div>${tabsHTML}<div class="adv-scroll">${body?`<p class="adv-note">${renderAdvNote(body,kws)}</p>`:""}${repsHTML}${picksHTML}</div><div class="adv-dock"><div class="adv-reply"><input type="text" class="adv-reply-in" data-adv-in data-pin-id="${esc(p.id)}" placeholder="${esc(L(`Reply to ${a.name}…`,`回复 ${a.name}…`))}" value="${esc(keepDraft)}" autocomplete="off" spellcheck="false"><button type="button" class="adv-send" data-adv-send="${esc(p.id)}"${keepDraft.trim()?"":" disabled"} aria-label="${esc(L("Send reply","发送回复"))}" title="${esc(L("Send (Enter)","发送 (Enter)"))}">${UP_SVG}</button></div><div class="adv-acts"><button type="button" class="adv-ign" data-adv-del="${esc(p.id)}">${L("Ignore","忽略")}</button>${lift}</div></div>`;
   placeAdvPop();
   const scrollEl=qs(".adv-scroll",pop);if(scrollEl&&reps.length)scrollEl.scrollTop=scrollEl.scrollHeight;
   if(wasFocused){const ni=qs("[data-adv-in]",pop);if(ni){ni.focus();ni.setSelectionRange(ni.value.length,ni.value.length)}}
+}
+/* Replies in a pin thread end with up to 3 buttons the designer can tap. The model writes them on a last
+   "ACTIONS: [...]" line; they are split off here so the thread shows clean text and real buttons. */
+const PIN_REPLY_RULES=allowed=>`1. Answer what the designer just said first and use everything they gave you. Treat anything they have already answered as settled and never ask it again.
+2. Say your best guess about what is still open. Ask a question only if you truly cannot guess, and then only one.
+3. If you know something useful that bears on it (from the board or your own knowledge), add it in one short sentence. Never invent a source, metric or test.
+4. Your earlier ideas are only suggestions the designer has not agreed to. Do not treat them as decided.
+5. Stay on this card's subject. No filler openings, no "You're right", no emoji, no labels such as "Test:".
+6. Finish with ONE last line, exactly in this form, offering 2-3 things you could do next for the designer to pick from:
+ACTIONS: [{"act":"note","label":"Draft refined note","text":"the note, max 25 words"},{"act":"visuals","label":"Find references","query":"2-5 word image search"}]
+"act" is one of ${allowed.join(", ")}. "label" is 2-4 words. "note" needs "text"; "visuals" needs "query". Offer only things that follow from this conversation.`;
+function splitAdvActions(raw,allowed){
+  const s=String(raw||"");
+  const m=/\n?[ \t]*ACTIONS:[ \t]*([\s\S]*)$/i.exec(s);
+  if(!m)return {text:s.trim(),actions:[]};
+  const text=s.slice(0,m.index).trim();let list=[];
+  try{const j=m[1].trim(),a=JSON.parse(j.slice(j.indexOf("["),j.lastIndexOf("]")+1));if(Array.isArray(a))list=a}catch{}
+  const actions=[];
+  for(const a of list){
+    if(!a||!allowed.includes(a.act))continue;
+    const label=clip(String(a.label||"").trim(),28);if(!label)continue;
+    const o={act:a.act,label};
+    if(a.act==="note"){o.text=clip(String(a.text||"").trim(),200);if(!o.text)continue}
+    if(a.act==="visuals"){o.query=clip(String(a.query||"").trim(),60);if(!o.query)continue}
+    actions.push(o);if(actions.length>=3)break;
+  }
+  return {text,actions};
+}
+function advActionsFor(n,linked){
+  const ok=["note","visuals","list","critique"];
+  if(["idea","note","notepad"].includes(n.type))ok.push("fork");
+  if(linked.length)ok.push("gather");
+  return ok;
 }
 async function replyToAdvPin(nodeId,pinId,rawText){
   const n=byId(nodeId),pins=board.pins?.[nodeId],p=pins?.find(x=>x.id===pinId);
@@ -7188,6 +7226,7 @@ async function replyToAdvPin(nodeId,pinId,rawText){
   const linked=[...inputsOf(n.id),...outputsOf(n.id)].filter((x,i,arr)=>x&&!x.archived&&!x.hidden&&!x.tombstone&&x.id!==n.id&&arr.findIndex(y=>y&&y.id===x.id)===i);
   const peers=rank(visibleNodes().filter(x=>x.id!==n.id&&x.type!=="group"&&x.status==="ink"&&!linked.some(l=>l.id===x.id)),`${titleOf(n)} ${text}`).slice(0,3);
   const directCtx=[n,...linked.slice(0,4)];
+  const allowedActs=advActionsFor(n,linked);
   const imgNodes=directCtx.filter(x=>x&&(x.type==="image"||x.type==="frame"));
   const peerText=peers.length?`\n\nOther relevant board cards (cross-reference by exact title only if genuinely helpful):\n${wallText(peers,{compactDocs:true,docCap:260,shortCap:160,totalCap:600})}`:"";
   const prompt=`Initial pin you left on “${titleOf(n)}”. It is your own suggestion and the designer has not agreed to anything in it. They can already see it, so do not repeat or re-summarize it:
@@ -7200,13 +7239,16 @@ Thread so far:
 ${hist}
 
 Reply to the designer's last message in 1-3 plain sentences, in their language:
-${TALK_RULES}`;
+${PIN_REPLY_RULES(allowedActs)}`;
   const {v}=await runAgent(k,{read:directCtx.slice(0,3),places:[],label:`replying to comment`,work:()=>askAI({system:`${TALK(k)}\n${STYLE}`,prompt,images:imgNodes,onText:({text:t})=>{
-    aiMsg.text=t;
+    /* show the sentences as they stream, but never the ACTIONS line (or the start of it) */
+    aiMsg.text=t.replace(/\n?[ \t]*ACTIONS:[\s\S]*$/i,"").replace(/\n[ \t]*A(?:C(?:T(?:I(?:O(?:N(?:S:?)?)?)?)?)?)?$/,"").trim();
     const tx=qs(`[data-adv-rep="${aiId}"] .adv-rep-tx`,$("advPop"));
-    if(tx&&openAdvNodeId===nodeId){tx.innerHTML=mdLite(t);const ls=qs(".adv-scroll",$("advPop"));if(ls)ls.scrollTop=ls.scrollHeight}
+    if(tx&&openAdvNodeId===nodeId){tx.innerHTML=mdLite(aiMsg.text);const ls=qs(".adv-scroll",$("advPop"));if(ls)ls.scrollTop=ls.scrollHeight}
   }},()=>replyLocal(n,text,k,orig))});
-  aiMsg.text=v||replyLocal(n,text,k,orig);
+  const done=splitAdvActions(v||replyLocal(n,text,k,orig),allowedActs);
+  aiMsg.text=done.text||replyLocal(n,text,k,orig);
+  if(done.actions.length)aiMsg.actions=done.actions;
   delete aiMsg.typing;
   log(k,`Replied in comment bubble on <b>${esc(titleOf(n))}</b>`,n.id);
   renderAll();persist();
@@ -7451,7 +7493,7 @@ Return ONLY compact JSON with keys in this EXACT order (keywords and thoughts st
   "pins": [
     {
       "agent": one of ${JSON.stringify(roles)},
-      "note": "One natural, conversational 1-2 sentence teammate note (max 42 words). Wrap 1-3 key concepts/clues in **bold** so the boss can skim fast. Weave what caught your eye AND one helpful angle/question smoothly — never split into stiff template halves.",
+      "note": "One natural, conversational 1-2 sentence teammate note (max 42 words). Wrap 1-3 key concepts/clues in **bold** so the boss can skim fast. Weave what caught your eye AND your best-guess suggestion smoothly (a question only if you truly cannot guess) — never split into stiff template halves.",
       "liftAct": one of [${forkRule}],
       "liftLabel": "short 3-5 word action button label",
       "liftQuery": "optional 2-5 word image search query when liftAct is visuals"
@@ -7595,19 +7637,21 @@ function dismissAdvPin(nodeId,pinId){
 async function execAdvisorLift(nodeId,pinId,opts={}){
   const n=byId(nodeId),pin=board.pins?.[nodeId]?.find(p=>p.id===pinId);
   if(!n||!pin)return;
-  if(pin.liftAct==="open-ai"){closeAdvPop();toggleStudioPopover(true);return}
-  if(pin.liftAct==="visuals"){
+  /* a button in the thread passes its own act / query / text; the first pin's button uses the pin's */
+  const act=opts.act||pin.liftAct,query=opts.query!==undefined?opts.query:pin.liftQuery;
+  if(act==="open-ai"){closeAdvPop();toggleStudioPopover(true);return}
+  if(act==="visuals"){
     if(opts.auto)return;
     dismissAdvPin(nodeId,pinId);closeAdvPop();select([n.id],{menus:false});
-    const rawQ=String(pin.liftQuery||(n.type==="link"?linkTitleFromUrl(n.url):"")||titleOf(n)||"").replace(/\b(com|org|net|html?)\b/gi," ").replace(/\s+/g," ").trim();
+    const rawQ=String(query||(n.type==="link"?linkTitleFromUrl(n.url):"")||titleOf(n)||"").replace(/\b(com|org|net|html?)\b/gi," ").replace(/\s+/g," ").trim();
     if(rawQ){await searchWeb(rawQ,{from:n});return}
     return;
   }
   dismissAdvPin(nodeId,pinId);if(!opts.auto){closeAdvPop();select([n.id],{menus:false})}
-  if(pin.liftAct==="fork"&&["idea","note","notepad"].includes(n.type)){await fork(n,2);return}
-  if(pin.liftAct==="critique"){await critique(n,{quiet:!!opts.auto});return}
-  if(pin.liftAct==="list"){await makeList([n]);return}
-  if(pin.liftAct==="gather"){
+  if(act==="fork"&&["idea","note","notepad"].includes(n.type)){await fork(n,2);return}
+  if(act==="critique"){await critique(n,{quiet:!!opts.auto});return}
+  if(act==="list"){await makeList([n]);return}
+  if(act==="gather"){
     const direct=[...inputsOf(n.id),...outputsOf(n.id)].filter((x,i,a)=>x&&!x.archived&&!x.hidden&&!x.tombstone&&x.id!==n.id&&a.findIndex(y=>y&&y.id===x.id)===i);
     const targets=direct.length?[n,...direct.slice(0,3)]:[n];
     await gather(targets);return;
@@ -7615,7 +7659,7 @@ async function execAdvisorLift(nodeId,pinId,opts={}){
   // Default: turn the suggestion into a translucent Sketch Note linked cleanly to .pbar
   const pid="p-"+uid(),spot=freeSpot(n.x+nodeW(n)+42,n.y,W.note,160,[n.id]);
   checkpoint();
-  const noteTxt=String(pin.note||pin.edge||pin.take||"").replace(/\*\*([^*\n]+?)\*\*/g,"$1");
+  const noteTxt=String(opts.text||pin.note||pin.edge||pin.take||"").replace(/\*\*([^*\n]+?)\*\*/g,"$1");
   const sk=node("note",{by:pin.agent||"critic",status:"sketch",pid,text:noteTxt},spot);
   edge(n.id,sk.id,"derive");
   log(pin.agent||"critic",`Drafted a suggestion note from <b>${esc(titleOf(n))}</b>`,sk.id);
@@ -15032,6 +15076,9 @@ $("advPop")?.addEventListener("click",e=>{
   if(e.target.closest("[data-adv-reroll]")){const id=openAdvNodeId;closeAdvPop();if(id)scheduleAdvisor(id,{force:true});return}
   const del=e.target.closest("[data-adv-del]");if(del){if(openAdvNodeId)dismissAdvPin(openAdvNodeId,del.dataset.advDel);return}
   const lift=e.target.closest("[data-adv-lift]");if(lift&&openAdvNodeId){execAdvisorLift(openAdvNodeId,lift.dataset.advLift);return}
+  const pick=e.target.closest("[data-adv-act]");if(pick&&openAdvNodeId){
+    const pin=board.pins?.[openAdvNodeId]?.find(x=>x.id===pick.dataset.advPickpin),reps=pin?.replies||[],last=reps[reps.length-1],a=last?.actions?.[+pick.dataset.advAct];
+    if(a)execAdvisorLift(openAdvNodeId,pin.id,{act:a.act,query:a.query,text:a.text});return}
   const snd=e.target.closest("[data-adv-send]");if(snd&&openAdvNodeId){const inp=qs("[data-adv-in]",$("advPop"));if(inp&&inp.value.trim()){const v=inp.value;inp.value="";replyToAdvPin(openAdvNodeId,snd.dataset.advSend,v)}return}
 });
 $("advPop")?.addEventListener("input",e=>{

@@ -1306,6 +1306,24 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .mem-status i{width:6px;height:6px;border-radius:50%;background:var(--label-4);flex:none;transition:background var(--d-quick),box-shadow var(--d-quick)}
 .mem-status.on{color:var(--label-2)}
 .mem-status.on i{background:var(--B-fill);box-shadow:0 0 8px var(--B)}
+.tpl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tpl-card{display:flex;align-items:flex-start;gap:10px;text-align:left;padding:12px;border-radius:var(--radius-media);background:var(--card-2);color:var(--label);box-shadow:inset 0 0 0 1px transparent;transition:background var(--d-quick),box-shadow var(--d-quick),transform var(--d-press)}
+.tpl-card:hover{background:color-mix(in srgb,var(--card-2) 70%,var(--hover))}
+.tpl-card:active{transform:scale(.985)}
+.tpl-card[aria-checked="true"]{background:var(--card);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--focus) 60%,transparent)}
+.tpl-ico{width:30px;height:30px;flex:none;border-radius:var(--radius-sm);display:grid;place-items:center;background:var(--well);color:var(--label-2)}
+.tpl-card[aria-checked="true"] .tpl-ico{color:var(--label)}
+.tpl-ico .ico{width:16px;height:16px}
+.tpl-txt{display:grid;gap:4px;min-width:0}
+.tpl-txt b{font:600 14px/1.2 var(--ui);letter-spacing:-.01em}
+.tpl-txt small{font:450 12px/1.4 var(--ui);color:var(--label-3)}
+.tpl-variant .sh-seg{display:inline-flex}
+.tpl-variant[hidden],.tpl-sheet [hidden]{display:none}
+.tpl-sheet .mem-box{min-height:64px}
+.tpl-sheet .sh-foot{display:flex;align-items:center;gap:8px}
+.mem-tpl{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px 10px 14px;border-radius:var(--radius-media);background:var(--card-2);font:500 13px/1.3 var(--ui);color:var(--label-2)}
+.mem-tpl b{color:var(--label);font-weight:600}
+@media (max-width:520px){.tpl-grid{grid-template-columns:1fr}}
 .cp-sub{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 14px;border-bottom:0;background:color-mix(in srgb,var(--card-2) 55%,transparent)}
 .cp-ctx{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:58%;height:26px;padding:0 9px;border-radius:var(--radius-pill);background:var(--hover);font:550 12px/1 var(--ui);color:var(--label-2)}
 .cp-ctx .ico{width:12px;height:12px;flex:none;color:var(--C)}
@@ -8975,6 +8993,7 @@ function memoryPromptBlock(mode="full"){
   const g=compact?"":dedupeMemLines(studioMemory(),900,seen),b=dedupeMemLines(boardMemory(),compact?500:1200,seen);
   if(g)parts.push(`Studio Rules (apply across all boards):\n${g}`);
   if(b)parts.push(`Project Memory for "${board?.title||"Untitled board"}":\n${b}`);
+  const c=constraintsPromptBlock();if(c)parts.push(c);
   return parts.join("\n\n");
 }
 const withMemorySystem=(sys,mode="full")=>{const m=memoryPromptBlock(mode);return m?`${sys}\n\n${m}`:sys};
@@ -9038,6 +9057,11 @@ function memoryDialog(opts={}){
     <div class="sh-id"><h2>Memory &amp; Brief</h2><small>Project memory is isolated per board · Studio rules apply to all</small></div>
     <button type="button" class="sh-x" data-d="close" aria-label="Close">${ic("x")}</button></header>
   <div class="sh-main">
+    <div class="mem-tpl"><span>${L("Template","模板")}: <b>${esc(boardTpl()?.name||L("Blank","空白画板"))}</b></span><button type="button" class="mem-mini" data-mem="template">${L("Change","更换")}</button></div>
+    <div class="mem-field">
+      <div class="mem-field-top"><span class="mem-label"><label for="memCons">${L("Constraints","约束")}</label><span class="mem-scope">${L("This board · every agent must respect these","当前画板 · 所有助手都必须遵守")}</span></span></div>
+      <textarea id="memCons" class="mem-box" style="min-height:72px" placeholder="${esc(L("Hard limits, one per line: weight, cost, platform, error rate…","硬性限制，每行一条：重量、成本、平台、错误率…"))}">${esc(board.constraints||"")}</textarea>
+    </div>
     <div class="mem-field">
       <div class="mem-field-top"><span class="mem-label"><label for="memBoard">Project Memory</label></span><span class="mem-meta"><button type="button" class="mem-mini" data-mem="seed">Seed from board</button><button type="button" class="mem-mini" data-mem="clear-board">Clear</button></span></div>
       <div class="mem-proj-sel" data-mem-proj><button type="button" class="mem-proj-btn" aria-haspopup="listbox" aria-expanded="false" title="${esc(board.title||"Untitled board")}"><span>${esc(board.title||"Untitled board")}</span>${ic("chev")}</button><div class="v-sel-pop" role="listbox" hidden>${projList.map(pr=>`<button type="button" class="v-sel-opt" role="option" data-mproj="${esc(pr.id)}" aria-selected="${pr.id===targetId}"><span>${esc(pr.title)}${pr.cur?" · Current":""}</span>${ic("check")}</button>`).join("")}</div></div>
@@ -9081,6 +9105,8 @@ function memoryDialog(opts={}){
   });
   d.addEventListener("click",e=>{if(!e.target.closest("[data-mem-proj]"))closeProjPop()});
   bIn.oninput=syncMem;sIn.oninput=syncMem;
+  const consIn=qs("#memCons",d);if(consIn)consIn.oninput=()=>{board.constraints=consIn.value;board.updated=NOW();persist();fitBox(consIn,72,180)};
+  qs('[data-mem="template"]',d)?.addEventListener("click",()=>newBoardDialog({apply:true}));
   [bIn,sIn].forEach(el=>el.onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){e.preventDefault();d.close()}});
   seedBtn.onclick=()=>{
     if(targetId!==board.id)return;
@@ -9582,7 +9608,7 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
   const groundNote=srcs.some(n=>n.by==="scout"&&n.type==="source")?"\nBackground Scout found on the web is on the wall. Draw on it where it helps and never contradict it; it is not a checklist, so do not build a direction around a single fact.\n":"";
   const imgNodes=[idea,...srcs].filter(n=>n&&(n.type==="image"||n.type==="frame"));
   const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${groundNote}${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${declinedPromptBlock(declinedFor(idea,{limit:4,kinds:["draft","passed-over","retried"]}))}
-${brief?`\nThe designer added: "${brief}"\n`:""}
+${brief?`\nThe designer added: "${brief}"\n`:""}${templateForkNote()}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
   const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,(wallText(srcs)||"")+groundNote):null;
@@ -9606,6 +9632,7 @@ function topicOf(text){
   return "the idea";
 }
 function forkLocal(idea,count){
+  const td=templateDirections(idea,count);if(td)return td;
   const tp=topicOf(idea.text);
   const L=[
     {mode:"story",title:"Walk it through",plan:`Turn ${tp} into a guided path: one decision per step, and ask people what they expect before each one.`,test:"Give it to three people cold. Note the first step where anyone pauses for more than five seconds."},
@@ -9634,7 +9661,7 @@ async function build(dir,{mode,from,brief="",steer=""}={}){
     ?`Hierarchical Tree Map:\n${treeMapToMarkdown(treeMapOf(dir))}\n\nOutput type: ${MODES[mode]||"Interactive UI"} (${modeDesc}).\nConnected sources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any updated branches.\n`:""}${brief?`\nThe designer asked for: "${brief}". Build that.\n`:""}
 Turn each main branch of the Tree Map into clear, concrete ${mode==="deck"?"slides":"UI modules / interactive items"} populated with its sub-topics. Write like a person: short sentences, plain words, no em dashes, no buzzwords. Reply with ONLY JSON:
 {"title": short ${mode==="deck"?"deck":"UI"} title, "kicker": one short context subtitle, "lede": 1-2 sentences, "items": [3 to 7 objects {"title","body" (1-2 sentences synthesizing its sub-topics),"tag" (1-2 word category or count)${mode==="story"?',"choices" (optional array of 2-4 sub-topic options)':""}}], "cta": a short action button label}`
-    :`The claim: "${idea?.text||""}"\nThe adopted direction ${dir.letter}, "${dir.title}": ${dir.text}\nIts test: ${dir.test}\nPage type: ${MODES[mode]} (${modeDesc}).\nSources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any changed sources.${proofResults(from)?.failedTitles?.length?` Fix what failed in v${from.ver} first: ${proofResults(from).failedTitles.join("; ")}.`:""}\n`:""}${brief?`\nThe designer asked for: "${brief}". Build exactly that, within this direction.\n`:""}
+    :`The claim: "${idea?.text||""}"\nThe adopted direction ${dir.letter}, "${dir.title}": ${dir.text}\nIts test: ${dir.test}\nPage type: ${MODES[mode]} (${modeDesc}).\nSources on the wall:\n${wallText(srcs)||"(none)"}\n${from?`\nThis replaces version ${from.ver}. Keep what worked; reflect any changed sources.${proofResults(from)?.failedTitles?.length?` Fix what failed in v${from.ver} first: ${proofResults(from).failedTitles.join("; ")}.`:""}\n`:""}${brief?`\nThe designer asked for: "${brief}". Build exactly that, within this direction.\n`:""}${templateBuildNote()}
 Write the real content for this prototype as the people in the test would see it (not a description of the prototype). Write like a person, for the people in the test: short sentences, plain words, no em dashes, no buzzwords, no stacked jargon. Reply with ONLY JSON:
 {"title": short page title, "kicker": one short line of context, "lede": 1-2 sentences, "items": [4 to 6 objects {"title","body" (1-2 sentences),"tag" (one or two words, e.g. a status)${mode==="story"?',"choices" (optional array of 2-4 short options the person can mark)':""}}], "cta": a short button label for the main action}`;
   const fallbackFn=isTm?()=>treeMapToProofSpec(dir,mode):()=>specLocal(dir,mode);
@@ -9655,6 +9682,7 @@ function frameRects(rs){if(!rs.length)return;const v=viewRect();let x0=1e9,y0=1e
   flyTo(camFor({x0:x0-40,y0:y0-40,x1:x1+40,y1:y1+60},cam.s),480)}
 function visible(n){const p=toScreen(n.x,n.y);return p.x>0&&p.y>60&&p.x<innerWidth-100&&p.y<innerHeight-160}
 function specLocal(dir,mode=dir.mode){
+  const tp=dir.type==="direction"&&templateProof(dir,mode);if(tp)return tp;
   const idea=byId(dir.idea),srcs=sourcesFor(dir);
   const ev=srcs.slice(0,4).map(s=>{const b=fullTextOf(s);return {title:s.title||clip(b,40),body:clip(b,220),tag:WEIGHTS[s.weight]?.label||"Unweighed"}});
   if(mode==="story")return {title:dir.title,kicker:"A guided test · "+(PIG[dir.letter]||""),lede:dir.text,cta:"Finish and record",
@@ -9895,7 +9923,7 @@ async function critique(n,{quiet=false,ask=""}={}){
   const extra=n.type==="question"?[byId(n.on),byId(n.frame)].filter(Boolean):[];
   const imgNodes=[n,...extra,...srcs].filter(x=>x&&(x.type==="image"||x.type==="frame"));
   const {v,live}=await runAgent("critic",{read:[n,...extra,...srcs.slice(0,4)],places:[],label:"checking sources",work:()=>askAI({weight:"heavy",system:`${ROLE.critic}\n${STYLE}`,prompt:`Check this ${kindLabel(n).toLowerCase()} against what it rests on.\nThe card:\n${wallText([n])}\n${extra.length?"It points at:\n"+wallText(extra)+"\n":""}\nIts sources:\n${wallText(srcs)||"(no sources are wired to it)"}\n${n.type==="proof"&&driftOf(n).moved.length?"Note: some sources changed after this proof was built.\n":""}
-${ask?`\nThe designer asks: "${ask}"\nAnswer that first, then check the card against its sources.\n`:""}Reply in 2-4 sentences of plain prose. Name sources by title. End with one question for the team.`,images:imgNodes,memoryMode:(!srcs.length&&!extra.length&&isStandaloneMediaOrLink([n]))?"none":"full",onText:({text})=>{msg.text=text;const tx=qs("#mThread .msg:last-child .tx");if(tx&&marginFor===n.id)tx.innerHTML=mdLite(text)}},()=>critiqueLocal(n))});
+${ask?`\nThe designer asks: "${ask}"\nAnswer that first, then check the card against its sources.\n`:""}${templateCriticNote()}Reply in 2-4 sentences of plain prose. Name sources by title. End with one question for the team.`,images:imgNodes,memoryMode:(!srcs.length&&!extra.length&&isStandaloneMediaOrLink([n]))?"none":"full",onText:({text})=>{msg.text=text;const tx=qs("#mThread .msg:last-child .tx");if(tx&&marginFor===n.id)tx.innerHTML=mdLite(text)}},()=>critiqueLocal(n))});
   msg.text=v||critiqueLocal(n);delete msg.typing;msg.live=live;
   log("critic",`Checked <b>${esc(titleOf(n))}</b> against ${srcs.length} sources`,n.id);
   renderAll();persist();
@@ -11784,6 +11812,8 @@ const CMDS=[
   {c:"/find",a:null,d:"Search cards & notes on the canvas"},
   {c:"/copilot",a:null,d:"Discuss the board or plan moves with Copilot"},
   {c:"/memory",a:null,d:"View or edit Project Memory and Studio Rules"},
+  {c:"/constraint",a:null,d:"Add a hard constraint every agent must respect"},
+  {c:"/template",a:null,d:"Choose this board's workflow template",run:true},
   {c:"/settings",a:null,d:"Change theme, image defaults, AI, or workspace settings"},
 ];
 let lastConfigSnap=null;
@@ -12040,6 +12070,8 @@ function route(text){
       case"/search":return mk("search","scout","search the web",{arg});
       case"/find":return mk("find",null,"search canvas",{arg});
       case"/copilot":return mk("copilot",null,"open Copilot",{arg});
+      case"/constraint":{const txt=arg.trim();if(txt)return mk("constraint",null,"add a constraint",{arg:txt});return mk("config",null,"open memory",{patch:{openDialog:"memory"},explicit:true})}
+      case"/template":return mk("template",null,"choose a template");
       case"/memory":{const txt=arg.trim();if(txt)return mk("memory",null,"save to memory",{arg:txt});return mk("config",null,"open memory",{patch:{openDialog:"memory"},explicit:true})}
       case"/settings":case"/config":{const patch=parseConfigIntent(arg,{explicit:true});return mk("config",null,patch?describeConfigPatch(patch):arg?"configure settings":"open settings",{arg,patch,explicit:true})}
     }}
@@ -12278,6 +12310,8 @@ async function execLineRequest(text){
       return kind==="image"?searchWeb(q):searchLinks(q,kind)}
     case"find":if(body){findQuery=body;findIdx=0}toggleFindBar(true);return;
     case"copilot":openCopilot(true);if(body)sendCopilotMessage(body);return;
+    case"constraint":return addConstraint(body);
+    case"template":return newBoardDialog({apply:true});
     case"memory":rememberFact(body,{scope:/\b(studio|all\s+boards|always|global)\b/i.test(body)?"studio":"board"});return;
     case"config":return configureSystem(r);
   }
@@ -13169,6 +13203,14 @@ function copilotStarterChips(){
       :[crit,L("What does this not cover?","它没覆盖什么？"),L("What should I decide next?","接下来我该决定什么？")];
   }
   if(sketches)return [L("Which drafts are worth keeping?","哪些草稿值得保留？"),L("What evidence is weakest?","哪条依据最弱？"),L("Suggest next 3 moves","建议接下来三步")];
+  // a template keeps the first (stage) suggestion and swaps the generic ones for what this kind of project needs
+  const gen=starterChipsFor(st),tc=templateChips(stage).filter(c=>!gen.includes(c));
+  if(!tc.length)return gen;
+  const keep=stage==="explore"?2:1;
+  return [...gen.slice(0,keep),...tc,...gen.slice(keep)].slice(0,3);
+}
+function starterChipsFor(st){
+  const stage=st.stage;
   return stage==="gather"?[L("Help me put this in one sentence","帮我把它写成一句话"),L("What evidence would I need?","我需要哪些依据？"),L("Who is this for?","这是给谁用的？")]
     :stage==="explore"?(st.dirs.length>1?[L("Compare the directions","对比这几个方向"),L("Which one would you adopt?","你会采纳哪个？"),L("What would change my mind?","什么会改变我的想法？")]
       :[L("Propose 2 directions to test","提出 2 个待测方向"),L("What would prove this wrong?","什么会证明这是错的？"),L("Who is this for?","这是给谁用的？")])
@@ -14081,7 +14123,224 @@ function stageBrief(){
     :st.stage==="prototype"?(st.adopted.some(d=>outputsOf(d.id).some(o=>o.type==="proof"))?"what the proofs show":"no proof built yet for the adopted direction")
     :"what the snapshot does not cover";
   const ev=WEIGHT_ORDER.filter(w=>st.evidence[w]).map(w=>`${st.evidence[w]} ${WEIGHTS[w].label.toLowerCase()}`).join(", ")||"none yet";
-  return `STAGE: ${name}. Decided: ${decided}. Open: ${open}. Evidence on the wall: ${ev} (proposals and illustrations are not evidence of behaviour).\n${STAGE_HERE[st.stage]} Anything you create is a draft the designer keeps or discards; add to what exists instead of starting again.`;
+  const tb=templateBrief(st.stage);
+  return `STAGE: ${name}. Decided: ${decided}. Open: ${open}. Evidence on the wall: ${ev} (proposals and illustrations are not evidence of behaviour).\n${STAGE_HERE[st.stage]} Anything you create is a draft the designer keeps or discards; add to what exists instead of starting again.${tb?"\n"+tb:""}`;
+}
+/* ── workflow templates ──────────────────────────────────────────────────
+   A template is the seven-step skeleton (brief, evidence, diverge, critique, converge, build, freeze) plus what a
+   kind of project knows: the question to start from, the hard constraints to write down, which evidence counts, what
+   a direction's test should look like, what the deliverable is, and what Copilot should offer at each stage. It is
+   chosen when a board is made (newBoardDialog) and lives on the board as board.template; the board's constraints live
+   in board.constraints and go into every agent's prompt. Nothing here needs a model: with no model, forks and builds
+   use the template's own rule-made drafts instead of generic ones. See the roadmap doc, sections 2 to 4b. */
+const WORKFLOW_TEMPLATES={
+  blank:{id:"blank",name:["Blank","空白画板"],blurb:["Start from nothing. No preset questions.","从零开始，不预置任何问题。"],icon:"plus"},
+  product:{id:"product",name:["Product design","产品设计"],icon:"grid",
+    blurb:["A physical or digital product, from a one-line brief to a tested proof.","实体或数字产品，从一句话 brief 到经过真人测试的原型。"],
+    variants:{physical:["Physical","实体"],digital:["Digital","数字"]},
+    brief:{physical:["A palm-sized camping lantern for solo hikers that hangs, stands and clips","给独自徒步者的掌心露营灯，能挂、能立、能夹"],digital:["A booking flow that lets a first-time patient book a dentist in under a minute","让第一次就诊的人一分钟内约到牙医的预约流程"]},
+    constraints:{physical:["Weight, size, cost, materials, regulations. One per line.","重量、尺寸、成本、材料、法规。每行一条。"],digital:["Platform, the one metric that matters, technical limits. One per line.","平台、最关键的指标、技术限制。每行一条。"]},
+    evidence:{physical:"how people actually use similar products (observed), teardowns of competitors, ergonomic sizes, complaints in reviews and forums",digital:"interviews, usage data and analytics, screenshots of competitor flows, support tickets"},
+    test:{physical:"Each direction's test is a task real people do with a rough model, with a number that counts as failure (for example: eight hikers set up camp in the dark; it fails if more than two drop it).",digital:"Each direction's test is a task real people try on a rough prototype, with a number that counts as failure (for example: five people book a slot; it fails if two need help)."},
+    deliverable:{physical:"a test kit: the tasks people do on test night and what to record (weight, size, time, drops), plus the one sketch or model the test needs",digital:"a clickable prototype page: the screens people move through, in order, and the one task they must finish"},
+    critic:"Separate what was observed from what the team only proposed, and say when a direction rests only on proposals. Check every direction against the hard constraints.",
+    chips:{gather:[["What hard constraints apply?","有哪些硬约束？"],["What have people actually been seen doing?","真人实际是怎么用的？"]],explore:[["Which direction breaks a constraint?","哪个方向违反了约束？"]],prototype:[["Plan a test with 8 real people","安排一次 8 人真人测试"],["What does the prototype not need yet?","原型暂时可以不做什么？"]],snapshot:[["What should the hand-off include?","交付时要带上什么？"]]},
+    dirs:{
+      physical:[
+        {mode:"desk",title:"One-gesture form",plan:"Shape {tp} so the main use takes a single movement with one hand.",test:"Eight people use a rough model in the real setting. It fails if more than two need a second try."},
+        {mode:"desk",title:"Modular parts",plan:"Split {tp} into a core and two swappable parts for the situations people mentioned.",test:"Give people the parts without instructions. It fails if half cannot assemble it in a minute."},
+        {mode:"desk",title:"Borrow a familiar object",plan:"Base {tp} on an object people already handle every day, so nobody has to learn it.",test:"Show the model to five people and ask what it is for. It fails if fewer than three guess right."},
+        {mode:"desk",title:"Strip to one job",plan:"Cut {tp} down to the one job the evidence says matters and drop everything else.",test:"Ask eight people to name what they miss after a day with it. It fails if more than three name the same thing."},
+      ],
+      digital:[
+        {mode:"story",title:"Guided path",plan:"Turn {tp} into one decision per screen, with the next step always obvious.",test:"Five people try it cold. It fails if two pause for more than five seconds on the same screen."},
+        {mode:"desk",title:"Everything on one screen",plan:"Put all of {tp} on one screen so people can compare and pick without going back.",test:"Ask people to find one specific thing. It fails if the median time is over twenty seconds."},
+        {mode:"story",title:"Cut to one moment",plan:"Prototype only the single moment of {tp} that has to work.",test:"Run that moment with five people. It fails if more than one needs help."},
+        {mode:"deck",title:"Defaults do the work",plan:"Pre-fill {tp} from what we already know, so most people only confirm.",test:"Count changes per person in a test with five. It fails if most change more than two fields."},
+      ]},
+    proof(dir,idea,variant,cons){
+      const c=cons.length?cons.slice(0,3).join("; "):"none written yet";
+      return variant==="digital"
+        ?{title:dir.title+" · prototype",kicker:"Direction "+dir.letter+", clickable test",lede:dir.text,cta:"Record results",items:[
+          {title:"Start here",body:"The person arrives with one goal: "+clip(idea?.text||dir.text,140),tag:"Screen 1"},
+          {title:"Decide",body:dir.text,tag:"Screen 2"},
+          {title:"Confirm",body:"Show what will happen before it happens, and let people go back.",tag:"Screen 3"},
+          {title:"Limits",body:c,tag:"Constraints"},
+          {title:"It fails if",body:dir.test,tag:"Test"}]}
+        :{title:dir.title+" · test kit",kicker:"Direction "+dir.letter+", test night",lede:dir.text,cta:"Record results",items:[
+          {title:"Set it up",body:"Each person sets it up in the real setting, without instructions.",tag:"Task 1"},
+          {title:"Use it",body:dir.text,tag:"Task 2"},
+          {title:"Measure",body:"Record weight, size, time to set up and every drop or mistake.",tag:"Record"},
+          {title:"Limits",body:c,tag:"Constraints"},
+          {title:"It fails if",body:dir.test,tag:"Test"}]};
+    }},
+  video:{id:"video",name:["Short video","短视频"],icon:"video",
+    blurb:["A 10 to 20 second video. Choose the hook before paying for any render.","10 到 20 秒的视频。先选好开头，再花钱生成。"],
+    brief:["A 15 second vertical video that makes people feel how quiet the new desk fan is","一条 15 秒竖版视频，让人感受到新台扇有多安静"],
+    constraints:["Length, aspect ratio, platform, muted or with sound, budget per render. One per line.","时长、画幅、平台、是否静音播放、每次生成的预算。每行一条。"],
+    evidence:"videos in the same category that worked, brand assets, product facts (numbers people can feel), where and how it will be watched",
+    test:"Each hook's test is a quick viewer check with a failure number (for example: ten viewers say what it was about after one watch; it fails if fewer than seven say the message). Never render video while choosing a hook.",
+    deliverable:"a timed beat-by-beat script: a hook in the first two seconds, the proof, the reveal and an end card, each beat with the shot to generate",
+    critic:"Check whether the hook lands in the first two seconds and still works with the sound off. Flag anything that needs on-screen text to make sense.",
+    chips:{gather:[["Who watches, and where?","谁在看，在哪里看？"],["Will it be watched muted?","会静音播放吗？"]],explore:[["Which hook works with the sound off?","关掉声音哪个开头还成立？"]],prototype:[["Write timed beats for 15 seconds","写一份 15 秒的分镜节拍"],["Which beat needs a keyframe first?","哪个镜头要先出关键帧？"]],snapshot:[["Which platform versions do we need?","需要哪些平台版本？"]]},
+    dirs:[
+      {mode:"story",title:"Show the proof",plan:"Open on {tp} doing the one thing that proves the claim, with no explanation.",test:"Ten viewers watch once. It fails if fewer than seven can say the message."},
+      {mode:"story",title:"Before and after",plan:"Cut from life without {tp} to life with it in the first two seconds.",test:"Show it muted in a feed. It fails if fewer than half watch past three seconds."},
+      {mode:"story",title:"Unexpected comparison",plan:"Put {tp} next to something nobody expects, so the difference is felt, not told.",test:"Ten viewers recall the product a day later. It fails if fewer than five do."},
+      {mode:"story",title:"Someone reacts",plan:"Film a real person's first reaction to {tp}; the reaction is the hook.",test:"Ask ten viewers if it felt staged. It fails if more than three say yes."},
+    ],
+    proof(dir){return {title:dir.title+" · beats",kicker:"15 s, 9:16",lede:"Hook in the first two seconds, proof by the middle, product name at the end.",cta:"Approve script",items:[
+      {title:"0–2 s hook",body:dir.text,tag:"Shot 1"},
+      {title:"2–9 s proof",body:"Show the claim working, close up, with captions that carry any words.",tag:"Shot 2"},
+      {title:"9–13 s reveal",body:"Pull back to show the whole product in its setting.",tag:"Shot 3"},
+      {title:"13–15 s end card",body:"Product name and one line people can repeat.",tag:"Shot 4"}]}}},
+  aiproduct:{id:"aiproduct",name:["AI product design","AI 产品设计"],icon:"sparkles",
+    blurb:["An AI feature. Failure cases are the evidence, evals are the tests, and Copilot helps at each step.","AI 功能。失败案例就是证据，评测就是测试，Copilot 每一步都在旁边。"],
+    brief:["An AI assistant that drafts replies to client emails for freelance designers, never sends a price on its own","帮自由设计师起草客户邮件回复的 AI 助手，绝不自己报价"],
+    constraints:["Acceptable error rate, what it must never do on its own, cost and speed limits. One per line.","可接受的错误率、绝不能自动做的事、成本和延迟上限。每行一条。"],
+    evidence:"real inputs (emails, documents, requests) and failure cases: where a model was wrong, what it cost, and how people noticed",
+    test:"Each direction's test is a small eval: run it on a fixed set of real cases, with a number that counts as failure (for example: on 20 real emails it fails if more than 2 drafts need a rewrite).",
+    deliverable:"a prototype that designs four states: normal, wrong (how a person corrects it), unsure (what it does instead of guessing) and no model (says plainly that no AI is connected); plus the eval set it must pass",
+    critic:"Focus on what happens when the model is wrong: can people notice, can they undo it, will they trust it too much. Treat failure cases as the strongest evidence.",
+    chips:{gather:[["What must it never do on its own?","它绝不能自己做什么？"],["Turn the failure cases into an eval set","把失败案例变成评测集"]],explore:[["What happens when it is wrong?","它出错了会怎样？"]],prototype:[["Design the four states","设计四种状态"],["Draft a 20-case eval set","起草一份 20 条的评测集"]],snapshot:[["What does the eval set not cover?","评测集没覆盖什么？"]]},
+    dirs:[
+      {mode:"story",title:"It acts on its own",plan:"{tp} acts without asking when it is confident, and says what it did.",test:"Run it on 20 real cases. It fails if more than 1 result would need an apology."},
+      {mode:"story",title:"Drafts, you confirm",plan:"{tp} prepares a draft every time; a person reads, edits and sends it.",test:"Run it on 20 real cases. It fails if more than 2 drafts need a rewrite."},
+      {mode:"story",title:"Sorts and reminds",plan:"{tp} does no drafting: it labels what is urgent, risky or about money, and reminds.",test:"Five people use it for a week. It fails if fewer than 3 say it saved time."},
+      {mode:"story",title:"Asks before it guesses",plan:"When {tp} is unsure it asks one short question instead of guessing.",test:"Run it on 20 real cases. It fails if it asks on more than 5 or guesses wrong on any."},
+    ],
+    proof(dir){return {title:dir.title+" · four states",kicker:"Direction "+dir.letter+", eval-ready",lede:dir.text,cta:"Run the eval set",items:[
+      {title:"Normal",body:"A ready result with what it was based on shown beside it.",tag:"State"},
+      {title:"Wrong",body:"The person marks what was wrong; the case goes into the eval set.",tag:"State"},
+      {title:"Unsure",body:"No guess: a short note on why, and what the person should check.",tag:"State"},
+      {title:"No model",body:"Says plainly that no AI is connected and leaves the work untouched.",tag:"State"},
+      {title:"Eval",body:dir.test,tag:"Test"}]}}},
+};
+const TPL_ORDER=["product","video","aiproduct","blank"];
+/* the board's template, with its variant resolved; null for a blank or older board */
+function boardTpl(b=board){
+  const t=b?.template,def=t&&WORKFLOW_TEMPLATES[t.id];
+  if(!def||def.id==="blank")return null;
+  const variant=def.variants?(def.variants[t.variant]?t.variant:Object.keys(def.variants)[0]):"";
+  const pick=v=>v&&typeof v==="object"&&!Array.isArray(v)&&variant&&v[variant]!==undefined?v[variant]:v;
+  return {def,id:def.id,variant,pick,name:L(def.name[0],def.name[1])+(variant?` · ${L(...def.variants[variant])}`:""),nameEn:def.name[0]+(variant?` (${def.variants[variant][0].toLowerCase()})`:"")};
+}
+function boardConstraints(b=board){return String(b?.constraints||"").split(/\r?\n/).map(s=>s.replace(/^[-*•]\s*/,"").trim()).filter(Boolean)}
+/* what every agent is told about the template, at this stage */
+function templateBrief(stage){
+  const t=boardTpl();if(!t)return "";
+  const d=t.def,lines=[`WORKFLOW: ${t.nameEn}.`];
+  if(stage==="gather")lines.push(`Evidence that counts here: ${t.pick(d.evidence)}.`);
+  if(stage==="explore")lines.push(t.pick(d.test),d.critic);
+  if(stage==="prototype")lines.push(`The deliverable is ${t.pick(d.deliverable)}.`);
+  if(stage==="snapshot")lines.push(`Check the frozen version against the deliverable: ${t.pick(d.deliverable)}.`);
+  return lines.join(" ");
+}
+/* hard constraints, for the system prompt of every agent (see memoryPromptBlock) */
+function constraintsPromptBlock(){
+  const c=boardConstraints();if(!c.length)return "";
+  return `Hard constraints for this project (every direction, proof and suggestion must respect them; say so plainly when something breaks one):\n${c.map(x=>"- "+x).join("\n")}`;
+}
+/* the template's offline directions, about this topic, skipping titles already on the board */
+function templateDirections(idea,count){
+  const t=boardTpl();if(!t)return null;
+  const list=t.pick(t.def.dirs);if(!Array.isArray(list))return null;
+  const tp=topicOf(idea?.text||titleOf(idea||{})),used=new Set(board.nodes.filter(n=>n.type==="direction"&&n.idea===idea?.id).map(n=>n.title));
+  const fill=d=>({...d,plan:d.plan.replace(/\{tp\}/g,tp)});
+  return list.filter(d=>!used.has(d.title)).concat(list).slice(0,count).map(fill);
+}
+function templateProof(dir,mode){
+  const t=boardTpl();if(!t||typeof t.def.proof!=="function")return null;
+  const spec=t.def.proof(dir,byId(dir.idea),t.variant,boardConstraints());
+  return spec&&{...spec,mode};
+}
+/* the template's own Copilot suggestions for this stage, mixed into the general ones */
+function templateChips(stage){
+  const t=boardTpl();if(!t)return [];
+  return (t.def.chips?.[stage]||[]).map(([en,zh])=>L(en,zh));
+}
+/* the template's line for the deliverable, given to Wright when it builds */
+function templateBuildNote(){
+  const t=boardTpl();if(!t)return "";
+  const c=boardConstraints();
+  return `\nThis is a ${t.nameEn} project. Make the page ${t.pick(t.def.deliverable)}.${t.id==="video"?" Write each item as a timed beat (\"0–2 s hook\", ...) whose body is the shot to generate.":""}${t.id==="aiproduct"?" Items must include the states Normal, Wrong, Unsure and No model.":""}${c.length?` Respect these constraints: ${c.join("; ")}.`:""}\n`;
+}
+function templateForkNote(){
+  const t=boardTpl();if(!t)return "";
+  return `\nThis is a ${t.nameEn} project. ${t.pick(t.def.test)}\n`;
+}
+function templateCriticNote(){const t=boardTpl();return t?`\n${t.def.critic}\n`:""}
+
+/* Make a board from a template. The brief, if given, becomes the kept claim, so the board starts in Explore.
+   Used by the "New board" picker and by any first-run screen; returns the new board. */
+function createBoardFromTemplate(id="blank",{brief="",constraints="",variant="",title=""}={}){
+  const def=WORKFLOW_TEMPLATES[id]||WORKFLOW_TEMPLATES.blank;
+  persistNow?.();
+  const b=blank(String(title||"").trim()||(brief?clip(brief.replace(/\s+/g," "),48):def.id==="blank"?"":L(def.name[0],def.name[1])));
+  if(def.id!=="blank")b.template={id:def.id,...(def.variants?{variant:def.variants[variant]?variant:Object.keys(def.variants)[0]}:{})};
+  b.constraints=String(constraints||"").trim();
+  board=b;sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();
+  renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY*1.6,y1:820},.85),0);
+  if(String(brief||"").trim())pinCard("idea",String(brief).trim(),{kind:"Claim"});
+  persist();renderCopilot?.();
+  if(def.id!=="blank")log("you",`Started a <b>${esc(L(def.name[0],def.name[1]))}</b> board`);
+  return board;
+}
+/* Change the template of the board you are on (/template). Cards stay; only what the crew is told changes. */
+function applyTemplateToBoard(id,{variant="",constraints}={}){
+  const def=WORKFLOW_TEMPLATES[id]||WORKFLOW_TEMPLATES.blank;
+  checkpoint();
+  if(def.id==="blank")delete board.template;
+  else board.template={id:def.id,...(def.variants?{variant:def.variants[variant]?variant:Object.keys(def.variants)[0]}:{})};
+  if(constraints!==undefined)board.constraints=String(constraints||"").trim();
+  board.updated=NOW();renderAll();renderCopilot?.();persist();
+  toast(def.id==="blank"?L("This board no longer follows a template","此画板不再使用模板"):L(`This board now follows ${def.name[0]}`,`此画板已改用「${def.name[1]}」模板`));
+}
+function addConstraint(text){
+  const t=String(text||"").trim().replace(/^[-*•]\s*/,"");if(!t)return;
+  const have=boardConstraints();if(have.some(x=>x.toLowerCase()===t.toLowerCase()))return toast(L("That constraint is already there","这条约束已经有了"));
+  checkpoint();board.constraints=[...have,t].join("\n");board.updated=NOW();persist();renderCopilot?.();
+  log("you",`Added a constraint: <b>${esc(clip(t,64))}</b>`);
+  toast(L("Constraint added. Every agent will respect it.","已添加约束，所有助手都会遵守。"));
+}
+/* The picker: template cards, then an optional one-line brief and the constraints. apply:true changes the current
+   board instead of making a new one. */
+function newBoardDialog({apply=false}={}){
+  const cur=apply?(board.template||{id:"blank"}):{id:"product",variant:"physical"};
+  let pick=WORKFLOW_TEMPLATES[cur.id]?cur.id:"product",variant=cur.variant||"physical";
+  dlg.className="sheet mem-sheet tpl-sheet";
+  const card=id=>{const d=WORKFLOW_TEMPLATES[id];return `<button type="button" class="tpl-card" role="radio" data-tpl="${id}" aria-checked="${id===pick}"><span class="tpl-ico">${ic(d.icon)}</span><span class="tpl-txt"><b>${esc(L(d.name[0],d.name[1]))}</b><small>${esc(L(d.blurb[0],d.blurb[1]))}</small></span></button>`};
+  dlg.innerHTML=`<header class="sh-head"><span class="mem-badge">${ic("grid")}</span>
+    <div class="sh-id"><h2>${apply?L("Board template","画板模板"):L("Start a board","新建画板")}</h2><small>${apply?L("Cards stay as they are. Only what the crew is told changes.","卡片保持不变，只改变助手收到的提示。"):L("A template presets the questions, evidence, tests and deliverable.","模板会预置问题、证据类型、测试标准和交付物。")}</small></div>
+    <button type="button" class="sh-x" data-d="close" aria-label="Close">${ic("x")}</button></header>
+  <div class="sh-main">
+    <div class="tpl-grid" role="radiogroup" aria-label="${L("Template","模板")}">${TPL_ORDER.map(card).join("")}</div>
+    <div class="tpl-variant" data-tpl-variant><div class="sh-seg" role="group" aria-label="${L("Product type","产品类型")}">${Object.entries(WORKFLOW_TEMPLATES.product.variants).map(([k,v])=>`<button type="button" data-var="${k}" aria-pressed="${k===variant}">${esc(L(v[0],v[1]))}</button>`).join("")}</div></div>
+    ${apply?"":`<div class="mem-field" data-tpl-brief><div class="mem-field-top"><span class="mem-label"><label for="tplBrief">${L("Brief","Brief")}</label><span class="mem-scope">${L("One sentence. Optional; it becomes your first kept claim.","一句话，可留空；会成为第一条保留的主张。")}</span></span></div>
+      <textarea id="tplBrief" class="mem-box tpl-brief" rows="2"></textarea></div>`}
+    <div class="mem-field" data-tpl-cons><div class="mem-field-top"><span class="mem-label"><label for="tplCons">${L("Constraints","约束")}</label><span class="mem-scope">${L("Every agent must respect these.","所有助手都必须遵守。")}</span></span></div>
+      <textarea id="tplCons" class="mem-box tpl-cons" rows="3">${apply?esc(board.constraints||""):""}</textarea></div>
+  </div>
+  <footer class="sh-foot"><span class="sp"></span><button type="button" class="cbtn" data-d="close" style="height:32px;padding:0 14px;font-size:13px">${L("Cancel","取消")}</button><button type="button" class="cbtn solid" data-tpl-go style="height:32px;padding:0 16px;font-size:13px">${apply?L("Apply","应用"):L("Create board","创建画板")}</button></footer>`;
+  if(!dlg.open)dlg.showModal();const d=dlg;
+  const bIn=qs("#tplBrief",d),cIn=qs("#tplCons",d);
+  const sync=()=>{
+    const def=WORKFLOW_TEMPLATES[pick],v=def.variants?variant:"",at=x=>x&&!Array.isArray(x)&&v?x[v]:x;
+    qsa("[data-tpl]",d).forEach(b=>b.setAttribute("aria-checked",String(b.dataset.tpl===pick)));
+    qsa("[data-var]",d).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.var===variant)));
+    qs("[data-tpl-variant]",d).hidden=!def.variants;
+    qs("[data-tpl-cons]",d).hidden=pick==="blank"&&!cIn.value.trim();
+    const bp=at(def.brief),cp=at(def.constraints);
+    if(bIn)bIn.placeholder=bp?L("e.g. ","例如：")+L(bp[0],bp[1]):L("What are you making, and for whom?","你要做什么，给谁用？");
+    cIn.placeholder=cp?L(cp[0],cp[1]):L("One per line.","每行一条。");
+  };
+  qsa("[data-tpl]",d).forEach(b=>b.onclick=()=>{pick=b.dataset.tpl;sync()});
+  qsa("[data-var]",d).forEach(b=>b.onclick=()=>{variant=b.dataset.var;sync()});
+  qs(".tpl-grid",d).onkeydown=e=>{const i=TPL_ORDER.indexOf(pick),k=e.key==="ArrowRight"||e.key==="ArrowDown"?1:e.key==="ArrowLeft"||e.key==="ArrowUp"?-1:0;if(!k)return;e.preventDefault();pick=TPL_ORDER[(i+k+TPL_ORDER.length)%TPL_ORDER.length];sync();qs(`[data-tpl="${pick}"]`,d)?.focus()};
+  const go=()=>{d.close();if(apply)applyTemplateToBoard(pick,{variant,constraints:cIn.value});else{createBoardFromTemplate(pick,{brief:bIn?.value||"",constraints:cIn.value,variant});toggleBoardsPop?.(false);setTimeout(()=>lineIn.focus(),100)}};
+  qs("[data-tpl-go]",d).onclick=go;
+  [bIn,cIn].filter(Boolean).forEach(el=>el.onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){e.preventDefault();go()}else if(el===bIn&&e.key==="Enter"&&!e.shiftKey){e.preventDefault();go()}});
+  sync();setTimeout(()=>(bIn||qs(`[data-tpl="${pick}"]`,d))?.focus(),30);
 }
 const nothingAdopted=()=>!boardStage().adopted.length;
 const looksLikeDirection=title=>nothingAdopted()&&DIRECTION_TITLE.test(String(title||""));
@@ -15901,7 +16160,7 @@ function renderBoardsPop(){
   });
   qs("[data-bp-close]",pop)?.addEventListener("click",()=>toggleBoardsPop(false));
   qsa("[data-open]",pop).forEach(b=>b.onclick=()=>{switchBoard(b.dataset.open);toggleBoardsPop(false)});
-  qs("[data-new]",pop).onclick=()=>{persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY*1.6,y1:820},.85),0);persist();toggleBoardsPop(false);setTimeout(()=>lineIn.focus(),100)};
+  qs("[data-new]",pop).onclick=()=>{toggleBoardsPop(false);newBoardDialog()};
   qs("[data-import]",pop).onclick=()=>{toggleBoardsPop(false);$("boardImportIn").click()};
   qs("[data-seed]",pop)?.addEventListener("click",()=>{persistNow();const ex=store.get(".board.modwork",null);if(ex&&ex.nodes)board=ex;else board=seed();sel=[];undoStack=[];redoStack=[];clearLineAttachments();syncHistoryBtns();renderAll();openingShot(false);persist();toggleBoardsPop(false)});
   qs("[data-showcase]",pop)?.addEventListener("click",()=>{const reset=board.id==="showcase";persistNow();const ex=!reset&&store.get(".board.showcase",null);if(ex&&ex.nodes)board=ex;else board=sampleShowcase();sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();ensureShowcaseAssets();restoreMedia();renderCopilot?.();openingShot(false);persist();toggleBoardsPop(false);if(reset)toast("Showcase board restored")});

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Mod Work 贴合拆解"
+  short_description: "把真实护具网格做成可回放的三维剖切导览，联动截线、测量与离线复查"

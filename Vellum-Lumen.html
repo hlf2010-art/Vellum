@@ -4439,7 +4439,7 @@ function ctxCoAttention(id,windowMs=300000){
    until its content changes. With no embedding model, or after a failure, the term layer works alone. */
 const CTX_MEANING_K=3,ctxVec=new Map();let ctxEmbedFailSig=null,ctxEmbedCalls=0;
 function embedModel(){
-  if(!hasApi()||aiPref==="local")return "";
+  if(!apiRoutable()||aiPref==="local")return "";
   if(apiCfg.embedModel)return apiCfg.embedModel;
   const b=String(apiCfg.baseUrl||"");
   /* on the PoC board gemini-embedding-2 separated related from unrelated cards best of six models; OpenAI's small model ranked the paraphrase below a hiring plan */
@@ -4449,11 +4449,11 @@ async function ctxEnsureEmbeddings(nodes,{signal}={}){
   const model=embedModel();if(!model||ctxEmbedFailSig===apiCfgSig()+model)return false;
   const need=(nodes||[]).filter(n=>n&&!n.tombstone&&n.type!=="group"&&ctxVec.get(n.id)?.d!==digest(n)).slice(0,96);
   if(!need.length)return true;
-  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000),onAbort=()=>ctrl.abort();signal?.addEventListener("abort",onAbort,{once:true});
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000),onAbort=()=>ctrl.abort(),sentCfg={...apiCfg};signal?.addEventListener("abort",onAbort,{once:true});
   try{
     ctxEmbedCalls++;
     const res=await fetch(`${apiCfg.baseUrl.replace(/\/+$/,"")}/embeddings`,{method:"POST",signal:ctrl.signal,headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiCfg.key},body:JSON.stringify({model,input:need.map(n=>clip(ctxTextOf(n),2000)||" ")})});
-    if(!res.ok)throw new Error("embeddings HTTP "+res.status);
+    if(!res.ok){const k=classifyApiStatus(res.status);if(k==="auth"||k==="credits")setApiHealth(k,{cfg:sentCfg,detail:"HTTP "+res.status});throw new Error("embeddings HTTP "+res.status)}
     const j=await res.json(),rows=Array.isArray(j?.data)?j.data:[];
     if(rows.length!==need.length)throw new Error("embeddings: wrong count");
     rows.forEach((r,i)=>{const v=r?.embedding;if(Array.isArray(v)&&v.length)ctxVec.set(need[i].id,{d:digest(need[i]),v:Float32Array.from(v)})});
@@ -7565,7 +7565,7 @@ function renderAdvPop(){
   const relWord={conflicts:L("Conflicts","相矛盾"),supports:L("Supports","支持"),extends:L("Builds on","延伸")};
   const basisList=(p.basis||[]).filter(b=>byId(b.id)&&!isNodeHidden(byId(b.id)));
   const basisHTML=basisList.length?`<div class="adv-basis"><b>${L("Based on","依据")}</b>${basisList.map(b=>`<p>${relWord[b.relation]?`<span class="adv-rel ${esc(b.relation)}">${esc(relWord[b.relation])}</span> · `:""}<a href="#" data-adv-basis="${esc(b.id)}" title="${esc(b.why||"")}">${esc(ctxLabel(byId(b.id)))}</a></p>`).join("")}</div>`:"";
-  const engTag=p.engine==="rules"?`<span class="adv-eng" title="${esc(L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
+  const engTag=p.engine==="rules"?`<span class="adv-eng" title="${esc(p.engineWhy?L(`${p.engineWhy}, so this thought came from built-in rules`,`${p.engineWhy}，这条建议来自内置规则`):L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
   /* the buttons under the latest reply; gone once you write again or the reply is still typing */
   const lastR=reps[reps.length-1],picks=lastR&&lastR.who!=="you"&&!lastR.typing&&Array.isArray(lastR.actions)?lastR.actions:[];
   const waiting=!!lastR&&(lastR.who==="you"||!!lastR.typing);
@@ -7875,7 +7875,7 @@ function advisorLiveReady(n){
 async function askAdvisorForNode(n,onProgress,signal,{allowOffline=true}={}){
   const local=()=>allowOffline?localAdvisorForNode(n):{aborted:true};
   const imgNodes=isVisualNode(n)?[n]:[];
-  if(!advisorLiveReady(n))return local();
+  if(!advisorLiveReady(n)){const r=local(),w=apiSkipWhy();if(w&&Array.isArray(r?.pins))r.pins.forEach(p=>{p.engine="rules";p.engineWhy=w});return r}
   const rel=[...inputsOf(n.id),...outputsOf(n.id)].filter((x,i,a)=>x&&!x.archived&&!x.hidden&&!x.tombstone&&x.id!==n.id&&a.findIndex(y=>y&&y.id===x.id)===i).slice(0,3);
   const burst=advBurstCtx&&advBurstCtx.target===n.id?advBurstCtx.others.map(byId).filter(Boolean):[];advBurstCtx=null;
   await ctxEnsureEmbeddings(visibleNodes().filter(x=>x.status==="ink"),{signal});
@@ -7917,7 +7917,7 @@ Include 1 or at most 2 pins.`;
     if(ks!==lastK||ts!==lastT){lastK=ks;lastT=ts;onProgress({keywords:kws,thoughts:th})}
   }:undefined;
   try{
-    const {v,live}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:1600,signal,memoryMode:cand.cx.picks.length?"compact":"none",onText:handleText,quiet:true},local);
+    const {v,live,why}=await askAI({system:`${ROLE.critic}\nSound like a thoughtful, approachable senior teammate — natural conversational cadence, concrete to this exact card/image, no emoji, never bossy. No markdown headings.`,prompt,images:imgNodes,json:true,maxTokens:1600,signal,memoryMode:cand.cx.picks.length?"compact":"none",onText:handleText,quiet:true},local);
     if(!v||!Array.isArray(v.pins)||!v.pins.length)return local();
     const {basis,dropped}=ctxResolveBasis(v.basis,cand.rows);
     if(Array.isArray(v.related)&&live){const rel=ctxResolveBasis(v.related,cand.rows).basis;for(const b of basis)if(!rel.some(r=>r.id===b.id))rel.push(b);board.related=board.related||{};board.related[n.id]={at:NOW(),rev:n.rev||1,items:rel}}
@@ -7935,7 +7935,7 @@ Include 1 or at most 2 pins.`;
         liftAct:["fork","critique","list","gather","visuals","note"].includes(p.liftAct)?p.liftAct:"note",
         liftLabel:String(p.liftLabel||"Try as draft card"),
         liftQuery:p.liftQuery?String(p.liftQuery):"",
-        ...(Array.isArray(v.basis)?{basis}:{}),...(dropped.length?{basisDropped:dropped}:{}),engine:live?"model":"rules",
+        ...(Array.isArray(v.basis)?{basis}:{}),...(dropped.length?{basisDropped:dropped}:{}),engine:live?"model":"rules",...(!live&&why?{engineWhy:String(why)}:{}),
         t:NOW()
       }))
     };
@@ -8444,6 +8444,12 @@ function routeNote(eng,{weight,plan,rescued}){
   else if(eng==="studio"&&weight==="heavy"&&plan?.why==="nocloud"&&hasApi()&&cloudState()==="out")parts.push(L("cloud quota used up","云端额度已用完"));
   return parts.join(" · ");
 }
+/* Why the Cloud API is being skipped, when it is known to be broken (no credits, refused key, unknown model). */
+function apiSkipWhy(){
+  if(aiPref==="local"||!hasApi())return "";
+  const h=apiHealthNow();if(h.k!=="credits"&&h.k!=="auth"&&h.k!=="notfound")return "";
+  return apiStatusError(+((String(h.detail||"").match(/\d{3}/)||[])[0])||0,h.k).reason;
+}
 async function viaClaude(remote,local,opts={}){
   /* A Stop (AbortError) ends the move. Any other failure (time limit, no credits, refused key, an answer
      that can't be read, a local draft that failed its checks) falls through to the next engine, and the
@@ -8465,6 +8471,9 @@ async function viaClaude(remote,local,opts={}){
       catch(e){if(e?.name==="AbortError")throw e;note(L("Cloud API","云端 API"),e)}
     }
   }
+  /* Nothing was tried because the Cloud API is known to be broken (no credits, refused key, unknown model):
+     say why, so built-in rules never look like a model's answer. */
+  if(!why&&!order.length){const w=apiSkipWhy();if(w)why=w}
   // the cloud couldn't redo a flawed local draft: the draft is still better than built-in rules
   if(draft!=null){if(!opts.quiet)toast(L(`${why}, so the local draft stays.`,`${why}，保留本地草稿。`));return {v:draft,live:true,engine:"studio",why,route:routeNote("studio",{weight,plan})}}
   if(aiPref!=="local"&&sampleFn&&!(opts.apiArgs?.images?.length)){

@@ -5348,8 +5348,8 @@ function cardBody(n){
   case"image":{const g=n.gen,sr=n.src,isGif=g?.format==="gif",pv=(g&&g.preview&&!isGif)||(sr&&sr.placeholder);
     const ar=g?(RATIOS[g.ratio]||[4,3]).join("/"):sr?"3/2":"";
     const info=g?(isGif?`<span title="${esc(`GIF · ${g.dur||2}s${g.model?` · ${g.model}`:""}`)}">${g.dur||2}s</span>`:""):sr?`<span title="${esc(`${sr.source||"Unknown source"} · ${sr.license||"Licence unknown"}`)}">${esc(sr.source||"Web")}</span>`:"";
-    const badge=isGif?`<span class="badge">${ic("gif")}GIF</span>`:pv?`<span class="badge">Preview</span>`:thumbBadge(fmt);
-    const kindTxt=isGif?`${byline(n)}<span class="card-k-src" title="${esc(`${g.model||""}${g.dur?` · ${g.dur}s`:""}`)}">Animated GIF${g.model?` · ${esc(g.model)}`:""}</span>`:`${badge?"":fmtBadgeHTML(fmt)}${g?`<span class="card-k-src" title="${esc(`${g.model||""}${g.seed?` · seed ${g.seed}`:""}`)}">Generated image${g.model?` · ${esc(g.model)}`:""}</span>`:`<span>${esc(sr?"Web image":"Uploaded image")}</span>`}`;
+    const badge=isGif?`<span class="badge">${ic("gif")}GIF</span>`:pv?`<span class="badge">${g?Lang("Not generated","尚未生成"):Lang("Placeholder","占位")}</span>`:thumbBadge(fmt);
+    const kindTxt=isGif?`${byline(n)}<span class="card-k-src" title="${esc(`${g.model||""}${g.dur?` · ${g.dur}s`:""}`)}">Animated GIF${g.model?` · ${esc(g.model)}`:""}</span>`:`${badge?"":fmtBadgeHTML(fmt)}${g?(pv?`<span class="card-k-src" title="${esc(Lang("No image service was available, so this is an empty frame that keeps the prompt","没有可用的图像服务，这是保留提示词的空白框"))}">${Lang("Image prompt · not generated","图像提示词 · 尚未生成")}</span>`:`<span class="card-k-src" title="${esc(`${g.model||""}${g.seed?` · seed ${g.seed}`:""}`)}">Generated image${g.model?` · ${esc(g.model)}`:""}</span>`):`<span>${esc(sr?"Web image":"Uploaded image")}</span>`}`;
     const plChip=plBusyNodes.has(n.id)?`<span class="foot-pl busy">Reversing…</span>`:n.plPack?.positive?`<button type="button" class="foot-pl" data-a="reverse-prompt" title="${esc(uiLang()==="zh"?"查看反推提示词包":"View extracted Prompt Pack")}">${ic("sparkles")}Prompt</button>`:"";
     return `<div class="media${pv?" pv":""}" ${ar?`style="aspect-ratio:${ar}"`:""}><img src="${mediaSrc(n.media)}" alt="${esc(n.title)}" draggable="false">${badge}</div><div class="in">${head(kindTxt)}
     <h4 data-edit="title">${esc(n.title)}</h4>${n.text?`<p data-edit="text">${esc(n.text)}</p>`:""}
@@ -6643,6 +6643,8 @@ function connSummary(){
 }
 function uiLang(){return store.get(".lang","en")==="zh"?"zh":"en"}
 function L(en,zh){return uiLang()==="zh"?zh:en}
+/* the same, for code where a local L (a card's lineage letter) hides it */
+function Lang(en,zh){return L(en,zh)}
 function aiSource(){
   /* Built on connSummary so the trigger, Copilot and the Connection header can never disagree. */
   const c=connSummary(),tip=c.mode+(c.issue?" · "+c.issue:"");
@@ -7454,13 +7456,14 @@ function placeBars(){
 /* ── toasts ─────────────────────────────────────────────────────────── */
 function toast(text,opts={}){
   const t=document.createElement("div");const hasAct=opts.undo||opts.onAct;
-  t.className="toast"+(hasAct?" timed":"");t.style.setProperty("--life",(hasAct?6000:3400)+"ms");
+  const life=opts.ms||(hasAct?6000:3400);
+  t.className="toast"+(hasAct?" timed":"");t.style.setProperty("--life",life+"ms");
   const lbl=opts.actLabel||(opts.undo?"Undo":"");
   t.innerHTML=`<span>${opts.html?text:esc(text)}</span>${hasAct?`<button type="button">${esc(lbl)}</button>`:""}`;
   const undoTarget=opts.undo&&!opts.onAct?(opts.undoTx||lastTxId()):null;
   if(hasAct)t.querySelector("button").onclick=()=>{if(opts.onAct)opts.onAct();else undo(undoTarget||undefined);t.remove()};
   $("toasts").appendChild(t);while($("toasts").children.length>3)$("toasts").firstChild.remove();
-  setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),320)},hasAct?6000:3400);
+  setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),320)},life);
 }
 
 /* ── ledger ─────────────────────────────────────────────────────────── */
@@ -9748,8 +9751,8 @@ async function makeList(ns){
 }
 function listLocal(ns){
   const d=ns.find(n=>n.type==="direction"),p=ns.find(n=>n.type==="proof");
-  if(p){const bad=(p.spec?.items||[]).filter(i=>/fail|wait|skip|block/i.test(i.tag||""));return {title:"Before the next session",items:[...bad.map(i=>`Resolve “${i.title}”: ${clip(firstSentence(i.body),60)}`),"Run the proof with two creators and record both sessions","Lift the frames where anyone hesitates","Write what happened as an observed note in bay I"]}}
-  if(d)return {title:"Run test "+d.letter,items:["Recruit three creators who restored a backup this month","Prepare: "+clip(d.test,70),"Record each session with consent","Lift the frames where people hesitate","Pin the result in bay I as observed evidence"]};
+  if(p){const bad=(p.spec?.items||[]).filter(i=>/fail|wait|skip|block/i.test(i.tag||""));return {title:"Before the next session",items:[...bad.map(i=>`Resolve “${i.title}”: ${clip(firstSentence(i.body),60)}`),"Run the proof with two people and record both sessions","Note the moments where anyone hesitates","Add what happened to Gather as an observed note"]}}
+  if(d)return {title:"Run test "+d.letter,items:["Recruit three people who match who this is for","Prepare: "+clip(d.test,70),"Record each session with consent","Note the moments where people hesitate","Add the result to Gather as observed evidence"]};
   return {title:"Follow up",items:ns.slice(0,5).map(n=>`Find out what would confirm “${clip(titleOf(n),40)}”`)};
 }
 function normalizeKanbanSpec(raw,fallbackTitle="Kanban board"){
@@ -9929,9 +9932,9 @@ function answerLocal(q){
   if(on&&on.type==="proof"){const items=on.spec?.items||[];const bad=items.filter(i=>/fail/i.test(i.tag||"")),wait_=items.filter(i=>/wait|skip/i.test(i.tag||""));
     if(bad.length)out.push(`Going by Proof ${lin(on)||""} v${on.ver}: ${bad.map(i=>i.title.toLowerCase()).join(" and ")} ${bad.length>1?"are":"is"} the only failed change${wait_.length?`, and ${wait_.map(i=>i.title.toLowerCase()).join(", ")} waits on it`:""}. So the receipt says yes.`);
     const passed=items.find(i=>/fit/i.test(i.title)&&/written|pass/i.test(i.tag+" "+i.body));
-    if(fr&&passed)out.push(`But the frame at ${tc(fr.t)} shows the headband cutting through the body surface, while the receipt reports “${passed.title}” as passed. Either they describe different states, or the fit check samples too sparsely.`);
+    if(fr&&passed)out.push(`But there is a frame at ${tc(fr.t)} on this question while the receipt reports “${passed.title}” as passed. Check that they describe the same state.`);
     else if(fr)out.push(`The frame at ${tc(fr.t)} comes from “${rec?.title||"a recording"}”, which is ${WEIGHTS[rec?.weight]?.label?.toLowerCase()||"unweighed"}: it can show where something breaks, not how a creator decides.`);
-    out.push("Before telling anyone a single retry is enough: can we show the receipt and that frame to one creator and watch what they retry?");
+    out.push("Before deciding: can we show this proof to one person and watch what they do?");
   }else out.push(...[critiqueLocal({...q,type:"note"})]);
   return out.join(" ");
 }
@@ -10058,6 +10061,20 @@ function mergeRunTx(from,ids,lifted,liftedEdges){
   undoStack.splice(at<0?undoStack.length:Math.min(at,undoStack.length),0,tx);
   redoStack=[];return tx.id;
 }
+/* Why no model can answer right now, in words for the designer. */
+function noModelWhy(){
+  if(aiPref==="local")return L("AI models are off","AI 模型已关闭");
+  return apiSkipWhy()||(hasApi()&&apiCfg.enabled?L("No AI model answered","没有 AI 模型响应"):L("No AI model is connected","尚未连接 AI 模型"));
+}
+/* What a set of drafts says, ignoring ids, places and times: equal means a re-run changed nothing. */
+const draftsSig=ns=>JSON.stringify(ns.map(n=>[n.type,n.title||"",fullTextOf(n),n.test||"",n.mode||""]).sort((a,b)=>a.join("|").localeCompare(b.join("|"))));
+/* Keep words typed on a draft that could not be applied, on the draft's card, so they are not lost. */
+function keepSteerNote(t,steer){
+  if(!t||!steer)return;
+  board.threads=board.threads||{};const th=board.threads[t.id]=board.threads[t.id]||[];
+  if(!th.some(m=>m.who==="you"&&m.text===steer))th.push({who:"you",t:NOW(),text:steer});
+  renderAll();persist();
+}
 /* What the designer typed on a draft, and the draft itself, so a re-run revises it instead of starting over. */
 const steerText=(steer,ns)=>steer?`${steer}\n\nThe draft being revised:\n${wallText(ns,{shortCap:600,totalCap:2400})}`:"";
 const withSteer=(prompt,steer)=>steer?`${prompt}\n\nThe designer asked for this revision of the previous draft. Follow it, and keep the reply format asked for above:\n${steer}`:prompt;
@@ -10065,6 +10082,13 @@ async function redraw(pid,{steer=""}={}){
   const ns=board.nodes.filter(n=>n.pid===pid);if(!ns.length)return;
   const t=ns[0],agent=t.by,t0=NOW();
   if(agent&&crewState[agent]?.busy)return toast(L(`${AGENTS[agent]?.name||"The agent"} is still working. Try again when it's done.`,`${AGENTS[agent]?.name||"该成员"}仍在工作，完成后再重试。`));
+  /* With no model to read them, your words can't change the draft: built-in rules ignore them. Keep the draft,
+     keep your words on it, and say why, instead of re-running the rules and calling the same text a new version. */
+  const steerOn=ns.find(n=>sel.includes(n.id))||t;
+  if(steer&&!modelExpected()){
+    keepSteerNote(steerOn,steer);
+    return toast(L(`${noModelWhy()}, so your note couldn't be applied. The draft is unchanged and your note is saved on it.`,`${noModelWhy()}，所以无法按你的意见修改。草稿未变，你的意见已保存在卡片上。`),{ms:7000});
+  }
   /* The old drafts stay the truth until a real replacement exists. They are lifted out only so the move sees a clean slate
      (letters, versions, placement). History records the whole Try again as one transaction of yours: old drafts out, new in.
      Nothing outside this run's own nodes is touched, so anything you or other agents do meanwhile keeps its own history. */
@@ -10081,14 +10105,25 @@ async function redraw(pid,{steer=""}={}){
   const putBack=o=>{if(o.nodes.some(n=>oldIds.has(n.id)))return o;for(const {i,n} of lifted)o.nodes.splice(Math.min(i,o.nodes.length),0,JSON.parse(JSON.stringify(n)));const have=new Set(o.nodes.map(n=>n.id));o.edges=[...(o.edges||[]),...liftedEdges.filter(e=>have.has(e.a)&&have.has(e.b)&&!(o.edges||[]).some(x=>x.id===e.id))];return o};
   const made=board.nodes.filter(n=>!known.has(n.id)&&n.status==="sketch"&&n.type===t.type&&n.by===t.by);
   const lr=agent?crewState[agent]?.lastRun:null;
-  const fellBack=modelExpected()&&!!lr&&lr.t>=t0&&lr.live===false;
-  const standIns=made.length>0&&made.every(isStandIn)&&!ns.every(isStandIn);
-  if(failed||!made.length||fellBack||standIns){
+  const rulesAnswered=!!lr&&lr.t>=t0&&lr.live===false;
+  const fellBack=modelExpected()&&rulesAnswered;
+  const standIns=made.length>0&&made.every(isStandIn);
+  /* built-in rules gave back the drafts you already had: that is not a new version */
+  const sameAgain=made.length>0&&draftsSig(made)===draftsSig(lifted.map(o=>o.n));
+  if(failed||!made.length||fellBack||standIns||sameAgain){
     const madeIds=new Set(made.map(n=>n.id));
     closeTx();dropRunTx(undoAt,madeIds);board.declined=(board.declined||[]).filter(d=>!redo.includes(d.id));
     board.nodes=board.nodes.filter(n=>!madeIds.has(n.id));board.edges=board.edges.filter(e=>!madeIds.has(e.a)&&!madeIds.has(e.b));
     putBack(board);
     syncHistoryBtns();renderAll();persist();
+    if(steer&&rulesAnswered)keepSteerNote(steerOn,steer);
+    /* the image move already said why nothing was generated */
+    if(standIns&&!failed&&made.every(n=>n.type==="image"||n.type==="recording"))return;
+    if(sameAgain&&!failed&&!fellBack&&!standIns){
+      toast(steer?L(`${noModelWhy()}, so your note couldn't be applied. The draft is unchanged and your note is saved on it.`,`${noModelWhy()}，所以无法按你的意见修改。草稿未变，你的意见已保存在卡片上。`)
+        :L(`${noModelWhy()}, and the built-in rules give the same drafts again. Nothing was replaced.`,`${noModelWhy()}，内置规则给出的草稿与原来相同，未做替换。`),{ms:7000});
+      return;
+    }
     toast(failed||!made.length?L("Couldn't make a new version. The previous one is kept.","没能生成新版本，已保留原来的版本。"):L("The model didn't answer, so nothing was replaced. The previous version is kept.","模型没有响应，未做替换，已保留原来的版本。"));
     return;
   }
@@ -11106,6 +11141,20 @@ function previewImage(prompt,seed,ratio){
   const d=g.getImageData(0,0,W0,H0);for(let i=0;i<d.data.length;i+=4){const n=(r()-.5)*12;d.data[i]+=n;d.data[i+1]+=n;d.data[i+2]+=n}g.putImageData(d,0,0);
   return c.toDataURL("image/jpeg",.82);
 }
+/* stand-in for an image that could not be generated: an empty frame that says so, never a picture that could pass for a result */
+function standInImage(ratio){
+  const [W,H]=ratioSize(ratio),c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d"),u=Math.min(W,H)/320;
+  g.fillStyle="rgb(236,237,240)";g.fillRect(0,0,W,H);
+  g.strokeStyle="rgba(20,22,26,.28)";g.lineWidth=3*u;g.setLineDash([10*u,8*u]);g.strokeRect(14*u,14*u,W-28*u,H-28*u);g.setLineDash([]);
+  const cx=W/2,cy=H/2-18*u;g.strokeStyle="rgba(20,22,26,.32)";g.lineWidth=3*u;g.lineJoin="round";g.lineCap="round";
+  g.beginPath();g.roundRect?g.roundRect(cx-40*u,cy-32*u,80*u,64*u,8*u):g.rect(cx-40*u,cy-32*u,80*u,64*u);g.stroke();
+  g.beginPath();g.moveTo(cx-34*u,cy+24*u);g.lineTo(cx-10*u,cy-4*u);g.lineTo(cx+6*u,cy+10*u);g.lineTo(cx+16*u,cy);g.lineTo(cx+34*u,cy+24*u);g.stroke();
+  g.fillStyle="rgba(20,22,26,.62)";g.font=`600 ${Math.round(17*u)}px -apple-system,system-ui,sans-serif`;g.textAlign="center";
+  g.fillText(L("Not generated","尚未生成"),cx,cy+64*u);
+  g.fillStyle="rgba(20,22,26,.45)";g.font=`500 ${Math.round(13*u)}px -apple-system,system-ui,sans-serif`;
+  g.fillText(L("No image service was available","没有可用的图像服务"),cx,cy+86*u);
+  return c.toDataURL("image/png");
+}
 /* stand-in search result: an honest blank frame, never a fake photo */
 function placeholderThumb(q,i){
   const c=document.createElement("canvas");c.width=480;c.height=320;const g=c.getContext("2d"),r=rng(hash32(q)+i*977);
@@ -11131,7 +11180,7 @@ function planSearch(count){
 }
 
 async function generateImages(prompt,{from=null}={}){
-  prompt=String(prompt||"").trim();if(!prompt)return toast("Describe the image, for example: /image a headband fitting on a sculpted head");
+  prompt=String(prompt||"").trim();if(!prompt)return toast("Describe the image, for example: /image a product shot on a plain background");
   const count=clamp(genOpts.count,1,4),ratio=genOpts.ratio,places=planImages(count,ratio,from);
   const seeds=Array.from({length:count},()=>Math.floor(Math.random()*1e9));
   let fellBack=false,imgErr="",tk=null;
@@ -11147,11 +11196,16 @@ async function generateImages(prompt,{from=null}={}){
       }});
       if(Array.isArray(out)&&out.length)return out;
     }catch(e){fellBack=true;imgErr=e?.message||"";console.warn("Image generation error:",e)}
-    await wait(350);return seeds.map(s=>({url:previewImage(prompt,s,ratio),seed:s,model:"Preview",live:false}))
+    /* one empty frame that keeps the prompt, not several pictures that look like results */
+    await wait(150);return [{url:standInImage(ratio),seed:seeds[0],model:"Preview",live:false}]
   }});
   const liveCount=res.filter(r=>r.live).length;
   // the island says so on the task itself, so no separate toast
-  if(!liveCount)tk?.done({tone:"warn",note:fellBack?(imgErr?L(`Image service: ${clip(imgErr,56)} — previews drawn`,`图像服务：${clip(imgErr,40)}，已绘制预览`):L("Image service failed — previews drawn","图像服务出错，已绘制预览")):L("Image service offline (127.0.0.1:59639) — previews drawn","图像服务离线 (127.0.0.1:59639)，已绘制预览")});
+  if(!liveCount){
+    const why=fellBack?(imgErr?L(`The image service failed (${clip(imgErr,56)})`,`图像服务出错（${clip(imgErr,40)}）`):L("The image service failed","图像服务出错")):L("Media Studio isn't running","Media Studio 未运行");
+    tk?.done({tone:"warn",label:L("No image made","未生成图像"),note:why});
+    toast(L(`${why}, so no image was made. The empty card keeps your prompt: start the image service, then press Retry.`,`${why}，未生成图像。空白卡片保留了你的提示词：启动图像服务后点“重试”。`),{ms:7000});
+  }
   checkpoint();const pid="p-"+uid();
   const made=[];
   for(let i=0;i<Math.min(count,res.length);i++){
@@ -11159,7 +11213,7 @@ async function generateImages(prompt,{from=null}={}){
     made.push(node("image",{_src:from?.id,title:clip(prompt,56),text:"",media:key,data:saved.stored?"":(im.url||saved.url),weight:"illustrative",gen:{prompt,ratio,seed:im.seed??seeds[i],model:im.model||"Preview",preview:!im.live},by:"wright",status:"sketch",pid},places[i]));
   }
   if(from)made.forEach(m=>{const e=edge(from.id,m.id,"src");if(e)freshEdges.add(e.id)});setTimeout(()=>freshEdges.clear(),1200);
-  log("wright",`Suggested ${made.length} image${made.length>1?"s":""} for <b>${esc(clip(prompt,50))}</b>${liveCount?"":" (preview)"}`,made[0].id);
+  log("wright",liveCount?`Suggested ${made.length} image${made.length>1?"s":""} for <b>${esc(clip(prompt,50))}</b>`:`Could not generate an image for <b>${esc(clip(prompt,50))}</b>: no image service`,made[0].id);
   sel=[];renderAll();restack(made);persist();typeIn(made.map(m=>m.id));follow(made);
 }
 
@@ -11595,7 +11649,7 @@ async function generateVideo(prompt,{from=null,sources=[]}={}){
 }
 
 async function searchWeb(query,{nextPage=false,from=null}={}){
-  query=String(query||"").trim();if(!query)return toast("Say what to look for, for example: /search headband fitting reference");
+  query=String(query||"").trim();if(!query)return toast("Say what to look for, for example: /search calm checkout screen");
   const count=4,places=from?Array.from({length:count},(_,i)=>{const col=i%2,row=Math.floor(i/2);const s=freeSpot(from.x+nodeW(from)+56+col*(W.image+22),from.y+row*280,W.image,260);return {x:s.x,y:s.y,w:W.image,h:260}}):planSearch(count),qk=query.toLowerCase();
   const page=nextPage?(searchPages.get(qk)||1):0;searchPages.set(qk,page+1);
   let offline=false,tk=null;
@@ -11691,7 +11745,7 @@ function renderGenOpts(show,kind=(lineMode||route?.(lineText())?.kind||"image"))
       <span class="gm-meta">${m.edit?'<span class="gm-tag">Edit</span>':""}${chosen?.id===m.id?ic("check","ico gm-ck"):""}</span>
     </button>`).join("")
   }):"";
-  const noteBtn=avail.length?"":`<button type="button" class="go-note" data-refresh-img="1" title="Check image service (127.0.0.1:59639)">${esc(imgSvc.connected?"No models available · Retry":"Preview · offline · Retry")}</button>`;
+  const noteBtn=avail.length?"":`<button type="button" class="go-note" data-refresh-img="1" title="Check image service (127.0.0.1:59639)">${esc(imgSvc.connected?L("No models available · Check again","没有可用模型 · 重新检查"):L("No image service · Check again","没有图像服务 · 重新检查"))}</button>`;
   el.innerHTML=`${ratioSel}<div class="go-seg" role="group" aria-label="Number of images">${[1,2,4].map(n=>`<button type="button" data-count="${n}" aria-pressed="${genOpts.count===n}">${n}</button>`).join("")}</div>${modelSel}${noteBtn}`;
   el.hidden=false;
   if(genPop){const pop=$(genPop==="ratio"?"genRatioMenu":"genModelMenu");
@@ -13525,6 +13579,21 @@ function isCasualCopilotTurn(raw){
   if(!t||t.split(/\s+/).length>7)return false;
   return /^(?:hey|hi|hello|yo|sup|what'?s?\s*up|whats?\s*up|how\s+are\s+you|good\s+(?:morning|afternoon|evening)|thanks|thank\s+you|thx|ok|okay|k|kk|cool|nice|great|awesome|no|nope|nah|not\s+yet|nothing|never\s*mind|nvm|yes|yep|yeah|yup|sure|got\s+it|gotcha|all\s+good|sounds\s+good|嗨|你好|哈喽|早|谢谢|好的|好|行|嗯|不用|没有|没|不)\b[\s!,.?manbrobuddythere]*$/i.test(t);
 }
+const cardCount=n=>L(`${n} kept card${n===1?"":"s"}`,`${n} 张已保留的卡片`);
+/* Next moves read off the board's own state, for answers given without a model. */
+function boardNextMoves(f){
+  const out=[],vis=visibleNodes(),ink=vis.filter(n=>n.status==="ink");
+  const sk=vis.filter(n=>n.status==="sketch");
+  if(sk.length)out.push(`Keep or discard the ${sk.length} draft${sk.length===1?"":"s"} waiting for you.`);
+  const idea=f&&f.type==="idea"?f:ink.find(n=>n.type==="idea");
+  if(idea&&!vis.some(n=>n.type==="direction"&&n.idea===idea.id))out.push(`Select “${clip(titleOf(idea),40)}” and type /fork to branch it into directions.`);
+  const adopted=ink.find(n=>n.type==="direction"&&board.adopted?.[n.idea]===n.id&&!vis.some(p=>p.type==="proof"&&p.dir===n.id));
+  if(adopted)out.push(`Select “${clip(titleOf(adopted),40)}” and type /build to make a proof.`);
+  const bare=ink.find(n=>["idea","direction","claim","synthesis"].includes(n.type)&&!sourcesFor(n).length);
+  if(bare)out.push(`Add a source to “${clip(titleOf(bare),40)}”: nothing on the board supports it yet.`);
+  if(!vis.some(n=>["source","image","recording","note","link","table"].includes(n.type)))out.push("Drop evidence into Gather: recordings, screenshots, notes or links.");
+  return out.slice(0,3);
+}
 function copilotLocalReply(text,ctx){
   const q=text.toLowerCase(),f=ctx[0],all=board.nodes.filter(n=>n.status==="ink"),t=tally(all);
   const proposals=[];let reply="",visuals=[];
@@ -13604,19 +13673,20 @@ function copilotLocalReply(text,ctx){
     reply=`I prepared a looping GIF proposal anchored to ${f?`“${clip(titleOf(f),36)}”`:"the board"}.`;
     proposals.push({kind:"gif",title:"Looping GIF Study",prompt:`Clean seamless animated GIF loop highlighting ${subj}`});
   }else if(/\b(image|render|visual|keyframe|illustrat)\b/.test(q)&&!/\b(data|chart|diagram|ui)\b/.test(q)){
-    const subj=f?titleOf(f):"headband fit and hair sync inspection";
-    reply=`We can test this visually right on the board. I drafted an image generation prompt anchored to ${f?`“${clip(titleOf(f),36)}”`:"the active study"}.`;
-    proposals.push({kind:"image",title:"Visual study",prompt:`Studio lighting still of ${subj}, clear surface clearances, tactile neutral materials`});
+    const asked=String(text||"").replace(/^\s*(?:please\s+)?(?:draw|make|generate|create|render|show)\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|render|visual|illustration)\s+(?:of\s+)?/i,"").trim();
+    const described=asked&&asked!==String(text||"").trim()?asked:"";
+    const subj=described||(f?titleOf(f):(board.title||"this board"));
+    reply=`I drafted an image prompt from ${described?"your description":f?`“${clip(titleOf(f),36)}”`:`“${clip(board.title||"this board",36)}”`}. Check it, then generate it on the board.`;
+    proposals.push({kind:"image",title:"Visual study",prompt:clip(subj,220)});
   }else if(/\b(search|reference|photo|web|wikimedia)\b/.test(q)){
     const kw=searchQuery(text)||topicOf(f?.text||board.title||"design reference");
     reply=`Scout can pull public reference imagery so our discussion is anchored in real examples rather than memory.`;
     proposals.push({kind:"search",title:"Web reference search",query:kw});
   }else if(/\b(direction|fork|option|plan|next|suggest|idea|compare|tradeoff|versus|vs)\b/.test(q)||copilotMode==="plan"){
-    const target=f||(board.nodes.find(n=>n.type==="idea"&&n.status==="ink"));
-    reply=`Currently the board holds ${all.length} inked cards (${t.observed} observed, ${t.reported} reported, ${t.proposed} proposed). Here is the trade-off view and two concrete moves to test instead of debating abstractly:`;
+    /* Without a model, only say what the board itself shows: no invented directions. */
+    const moves=boardNextMoves(f);
+    reply=`${cardCount(all.length)} on the board (${t.observed} observed, ${t.reported} reported, ${t.proposed} proposed).${moves.length?` From what is on it, the next moves are:\n\n${moves.map((m,i)=>`${i+1}. ${m}`).join("\n")}`:""}`;
     visuals=buildCopilotBoardVisuals(all,t,f,q);
-    if(target)proposals.push({kind:"direction",title:"Isolate one retry",text:"Retry the failed check alone first, then measure if creators predict it succeeds.",test:"Run with 3 creators; pass if 2 identify why hair sync failed on first glance.",mode:"story",letter:"C"});
-    proposals.push({kind:"list",title:"Next check steps",items:["Compare fit-check pass metrics against actual lifted frame clearance","Tag unweighed claims with source weights before building next proof","Test single-step retry wording with one creator"]});
   }else if(f){
     reply=`Looking at **${titleOf(f)}**: ${critiqueLocal(f)}\n\nWould you like to fork a new direction from this card, or draft a quick verification check for it?`;
     visuals=buildCopilotBoardVisuals(all,t,f,q);
@@ -13624,11 +13694,16 @@ function copilotLocalReply(text,ctx){
   }else{
     const sk=board.nodes.filter(n=>n.status==="sketch");
     const drifted=board.nodes.filter(n=>n.type==="proof"&&driftOf(n).moved.length);
-    reply=`On **${board.title||"this board"}**: there are ${all.length} inked cards (${t.observed} observed vs ${t.reported} reported) and ${sk.length} unkept sketches.${drifted.length?` Notice **${titleOf(drifted[0])}** drifted from an updated source.`:""}\n\nWhat should we pressure-test next: a direction, a visual check, or source weights?`;
+    reply=`On **${board.title||"this board"}**: ${cardCount(all.length)} (${t.observed} observed vs ${t.reported} reported) and ${sk.length} unkept draft${sk.length===1?"":"s"}.${drifted.length?` Notice **${titleOf(drifted[0])}** drifted from an updated source.`:""}\n\nWhat should we pressure-test next: a direction, a visual check, or source weights?`;
     visuals=buildCopilotBoardVisuals(all,t,f,q);
     proposals.push({kind:"note",title:"Board check takeaway",text:`Observed cards: ${t.observed}. Prioritize checking unweighed assumptions before building the next proof.`});
   }
   return {text:reply,visuals,proposals,chips:copilotStarterChips().slice(0,3)};
+}
+/* The first line of an answer no model gave: say so, and why, before anything else. */
+function offlineLead(why){
+  const w=why||noModelWhy();
+  return L(`**No AI model answered.** ${w}. Here is only what Vellum can read off the board itself:\n\n`,`**没有 AI 模型作答。**${w}。以下只是 Vellum 能从白板上直接读出的内容：\n\n`);
 }
 function planCopilotDelegation(text,ctx,mode,forced=null){
   const t=String(text||"").trim(),roles=[];
@@ -13813,7 +13888,8 @@ async function sendCopilotMessage(raw,ctxOverride=null){
   const isCasual=isCasualCopilotTurn(text);
   const trimCasual=s=>{const p=String(s||"").replace(/^\s*[—–-]\s*Lumen Copilot[^\n]*$/gim,"").trim().split(/\n\s*\n/)[0]?.trim()||"";return p};
   const skipDelegate=(directMem||(directCfg&&!askOnly))&&!/\b(?:also|and\s+(?:critique|fork|build|draw|search|explain)|explain|why)\b/i.test(text);
-  const subSteps=forced?planCopilotDelegation(text,ctx,copilotMode,forced):(skipDelegate||isCasual)?[]:planCopilotDelegation(text,ctx,copilotMode);
+  const noModel=!modelExpected();
+  const subSteps=noModel?[]:forced?planCopilotDelegation(text,ctx,copilotMode,forced):(skipDelegate||isCasual)?[]:planCopilotDelegation(text,ctx,copilotMode);
   const hist=board.copilot.slice(-8,-1).filter(m=>m.text).map(m=>({role:m.role==="user"?"user":"assistant",content:m.role==="user"?m.text:trimRepetitionLoop(m.text).text})).slice(-4);
   const lastUser=hist.pop()||{role:"user",content:text};
   const chatHist=isCasual?[]:hist.slice(-3);
@@ -13890,10 +13966,10 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         else{aiMsg.text=r.v.text;aiMsg.visuals=r.v.visuals||[];aiMsg.proposals=r.v.proposals;aiMsg.chips=r.v.chips;aiMsg.actions=isCasual?[]:(r.v.actions||[])}
       }else{
         const loc=copilotLocalReply(text,ctx);
-        aiMsg.text=subSteps.length?`${subSteps.map(s=>`**${traceActorInfo(s.to).name}${s.handoff?" (Review)":""}:** ${s.output}`).join("\n\n")}\n\n${loc.text}`:loc.text;
+        aiMsg.text=offlineLead(cpWhy)+(subSteps.length?`${subSteps.map(s=>`**${traceActorInfo(s.to).name}${s.handoff?" (Review)":""}:** ${s.output}`).join("\n\n")}\n\n${loc.text}`:loc.text);
         aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;aiMsg.actions=loc.actions||[];
         if(loc.actionResults)aiMsg.actionResults=loc.actionResults;
-        if(cpWhy)toast(L(`${cpWhy}, so built-in rules answered instead.`,`${cpWhy}，已改用内置规则。`));
+        aiMsg.route=L("Built-in rules","内置规则");
       }
       if(!isCasual&&aiMsg.actions&&aiMsg.actions.length&&!aiMsg.actionResults){
         const activeAgent=subSteps.length?(subSteps[subSteps.length-1].to||subSteps[0].to):(aiMsg.agent||"critic");
@@ -13908,8 +13984,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       aiMsg.text=parseCopilotBlocks(aiMsg.text).text||"Stopped.";
     }else{
       const r=failReason(aiPref==="auto"&&studioState.status==="ready"?L("Local AI","本地模型"):L("Cloud API","云端 API"),e);
-      toast(L(`${r}, so built-in rules answered instead.`,`${r}，已改用内置规则。`));
-      const loc=copilotLocalReply(text,ctx);aiMsg.text=loc.text;aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;
+      const loc=copilotLocalReply(text,ctx);aiMsg.text=offlineLead(r)+loc.text;aiMsg.route=L("Built-in rules","内置规则");aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;
     }
   }finally{
     if(!copilotAbort?.signal?.aborted)await unveilDrain(qs(`[data-cp-msg-id="${aiMsg.id}"] .cp-bubble`));
@@ -14624,7 +14699,7 @@ function roomImage(n,fr){
   if(n.gen?.model)parts.push(`<span><b>Model:</b> ${esc(n.gen.model)}${n.gen.seed!=null?` · seed ${n.gen.seed}`:""}</span>`);
   if(n.src?.source)parts.push(`<span><b>Source:</b> ${n.src.url?`<a href="${esc(n.src.url)}" target="_blank" rel="noopener">${esc(n.src.source)}</a>`:esc(n.src.source)}${n.src.license?` · ${esc(n.src.license)}`:""}${n.src.author?` · ${esc(n.src.author)}`:""}</span>`);
   if(!parts.length&&n.text)parts.push(`<span>${esc(clip(n.text,160))}</span>`);
-  const sub=n.type==="frame"?`Frame at ${tc(n.t||0)}`:n.gen?`${n.gen.ratio||"Image"}${n.gen.preview?" · Preview":""}`:n.src?.source||"Reference image";
+  const sub=n.type==="frame"?`Frame at ${tc(n.t||0)}`:n.gen?`${n.gen.ratio||"Image"}${n.gen.preview?Lang(" · Not generated"," · 尚未生成"):""}`:n.src?.source||"Reference image";
   const acts=sk?`<button type="button" class="s-btn" data-s="erase">Discard</button><button type="button" class="s-btn solid" data-s="ink">Keep</button>`
     :`<button type="button" class="s-btn" data-s="download-attach">${ic("down")}Download</button><button type="button" class="s-btn" data-s="reverse-prompt">${ic("sparkles")}${n.plPack?"Re-reverse":"Reverse Prompt"}</button>${n.gen?.format==="gif"?`<button type="button" class="s-btn" data-s="to-video">${ic("video")}Make Video</button>`:`<button type="button" class="s-btn" data-s="to-gif">${ic("gif")}Make GIF</button><button type="button" class="s-btn" data-s="to-video">${ic("video")}Make Video</button>`}<button type="button" class="s-btn" data-s="variations">${ic("redo")}Variations</button><button type="button" class="s-btn" data-s="ref">${ic("sparkles")}Use as ref</button><button type="button" class="s-btn solid" data-s="copilot">${ic("ask")}Ask Copilot</button>`;
   const plStageHTML=plPackPanelHTML(n,"stage");

@@ -1100,6 +1100,37 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('and says so in a toast', broke.toasts.includes('Cloud API is out of credits (HTTP 402), so built-in rules answered instead.'), JSON.stringify(broke.toasts));
       check('the island says built-in rules answered', broke.note === 'Built-in rules answered', JSON.stringify(broke.note));
       check('the header stops claiming the Cloud API is in use', broke.health === 'credits' && !broke.routable && broke.issue === 'Cloud API out of credits' && broke.label === 'Out of credits', JSON.stringify(broke));
+      // with no model to answer, Try again and typed revisions do not pretend: nothing is replaced, your words are kept
+      {
+        const n0 = requests.length;
+        const ids = () => p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.id).join());
+        const before = await ids();
+        await p.evaluate(() => { __toasts.splice(0); return redraw(board.nodes.find(n => n.type === 'direction').pid); });
+        const rt = await p.evaluate(() => __toasts.splice(0));
+        check('Try again with no model and the same rules output replaces nothing and says so', (await ids()) === before && rt.some(t => /built-in rules give the same drafts again\. Nothing was replaced/.test(t)) && !rt.some(t => /New version/.test(t)), JSON.stringify(rt));
+        const b = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'B').id);
+        await p.evaluate(id => select([id]), b);
+        const words = 'Make it about guest checkout and Apple Pay';
+        await p.type(words); await p.idle();
+        const rv = await p.evaluate(([id, w]) => ({ toasts: __toasts.splice(0), kept: (board.threads[id] || []).some(m => m.who === 'you' && m.text === w) }), [b, words]);
+        check('a typed revision with no model leaves the drafts, says why, and keeps your words on the draft you picked', (await ids()) === before && rv.kept && rv.toasts.some(t => /^Cloud API is out of credits \(HTTP 402\), so your note couldn't be applied/.test(t)) && !rv.toasts.some(t => /New version/.test(t)), JSON.stringify(rv));
+        check('and neither one sends a request to the broken Cloud API', requests.length === n0, `${requests.length - n0} requests`);
+        // Copilot with no model says so first, and only says what the board shows (no leftovers from another project)
+        await p.evaluate(() => sendCopilotMessage('Suggest the next 3 moves for this idea'));
+        const cm = await p.evaluate(() => { const m = board.copilot.at(-1); return { text: m.text, route: m.route, kinds: (m.proposals || []).map(x => x.kind), trace: !!m.trace }; });
+        check('Copilot with no model opens by saying no model answered, and why', /^\*\*No AI model answered\.\*\* Cloud API is out of credits \(HTTP 402\)\./.test(cm.text) && cm.route === 'Built-in rules', JSON.stringify(cm).slice(0, 300));
+        check('it invents no directions and nothing from another project, and does not pretend to delegate', !cm.kinds.includes('direction') && !/hair sync|creators|fit-check|headband/i.test(cm.text + JSON.stringify(cm.kinds)) && !cm.trace, JSON.stringify(cm).slice(0, 400));
+        await p.evaluate(() => sendCopilotMessage('Draw an image of a quiet street at dusk'));
+        const ci = await p.evaluate(() => board.copilot.at(-1).proposals?.find(x => x.kind === 'image')?.prompt || '');
+        check('an image prompt Copilot drafts without a model uses what you described', /quiet street at dusk/.test(ci) && !/headband|hair sync/.test(ci), ci);
+        await p.evaluate(() => { const c = document.querySelector('[data-cp=close]'); c && c.click(); });
+        // with no image service, /image makes one empty frame that says so, not pictures that could pass for results
+        const im0 = await p.evaluate(() => board.nodes.filter(n => n.type === 'image').length);
+        await p.evaluate(() => { __toasts.splice(0); return generateImages('a quiet street at dusk'); });
+        const im = await p.evaluate(n0 => { const made = board.nodes.filter(n => n.type === 'image').slice(n0); const el = made[0] && document.querySelector(`[data-id="${made[0].id}"]`); return { n: made.length, standIn: made.every(n => n.gen?.preview), badge: el ? el.innerText : '', toasts: __toasts.splice(0) }; }, im0);
+        check('/image with no image service makes one empty frame, labelled Not generated, and says no image was made', im.n === 1 && im.standIn && /Not generated/.test(im.badge) && im.toasts.some(t => /so no image was made/.test(t)), JSON.stringify(im));
+        await p.evaluate(n0 => { const ids = new Set(board.nodes.filter(n => n.type === 'image').slice(n0).map(n => n.id)); board.nodes = board.nodes.filter(n => !ids.has(n.id)); renderAll(); }, im0);
+      }
       check('a passing re-check brings the Cloud API back', await p.evaluate(async () => { await testApi({ quiet: true }); return apiRoutable() && apiHealthNow().k === 'ok'; }));
       // free tiers cap requests per minute: wait as long as the server asks and try again; a daily cap is said plainly
       {

@@ -151,3 +151,16 @@ node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a
 ```
 
 `--live` sends the synthetic fixture board (no user data) to `LIVE_BASE` (default `https://openrouter.ai/api/v1`, key from `LIVE_KEY` or an injecting proxy). `--json out.json` writes every check; `--shots dir` saves a screenshot of a thought's "Based on" line. Lines marked KNOWN are recorded limitations; PART means a live rate below the bar but above zero.
+
+## Workflow templates (the ideal designer workflows, end to end)
+
+`tests/workflow-templates.cjs` walks the two lead workflows from a brief to something a designer can hand on, in the real page, through the stages Vellum is built around (Gather → Explore → Prototype → Snapshot). They are the first candidates for workflow templates.
+
+- **A. Product design (a physical product):** brief → evidence by weight → fork three directions → keep two, discard one with a reason → Critic answers the designer's question against the sources → adopt (the other is recorded as passed over) → Wright's proof (a test kit) → task board → Snapshot → the exported file carries the decision trail and a reload keeps it.
+- **B. Short video (10–20 s):** brief → fork three hooks (nothing is rendered while choosing) → Critic → adopt → the hook becomes a timed beat-by-beat script page → one beat is sent to the video provider (MiniMax H3 through Media Studio, mocked at `127.0.0.1:59639`) with its own words → the approved script is frozen.
+
+```bash
+node tests/workflow-templates.cjs            # from the repo root
+```
+
+Each template runs with a scripted model and with no model at all. Nothing calls a real model or generator. Lines marked `KNOWN` are recorded gaps (generic rule-made directions, a stand-in clip not marked as a preview, no Figma export, one hard-wired video provider); they print but do not fail the run, and turn into `PASS … (gap closed)` once fixed.

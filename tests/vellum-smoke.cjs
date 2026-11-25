@@ -18,6 +18,7 @@ const requests = [];
 const probes = [];
 const probe = { status: 200, delay: 0 };
 const notionPosts = [];
+const backups = [], backupMode = { status: 200 }; // stands in for serve_vellum.py's /backup/board
 const salesCsv = { text: 'Rank,Region,Q1\n1,North,120\n2,South,90' }; // the refresh check changes it
 const launcher = { on: false, posts: [] }; // stands in for serve_vellum.py's /launch/studio-ai
 
@@ -34,6 +35,13 @@ function serve() {
           rsp.writeHead(200, { 'Content-Type': 'application/json' });
           rsp.end(JSON.stringify(b.token !== 'ntn_good' ? { ok: false, error: 'bad_token' } : /aaaaaaaa/.test(b.ref) ? { ok: false, error: 'not_shared' }
             : { ok: true, id: 'db1', title: 'Sprint board', url: 'https://www.notion.so/acme/db1', columns: ['Name', 'Status', 'Points'], rows: [['Ship tables', 'Done', '5'], ['Notion import', 'In progress', '3']], more: true }));
+        }); return;
+      }
+      if (req.method === 'POST' && req.url === '/backup/board') {
+        const chunks = []; req.on('data', c => chunks.push(c)); req.on('end', () => {
+          backups.push({ headers: req.headers, body: Buffer.concat(chunks).toString() });
+          if (backupMode.status !== 200) { rsp.writeHead(backupMode.status); return rsp.end(); }
+          rsp.writeHead(200, { 'Content-Type': 'application/json' }); rsp.end(JSON.stringify({ ok: true, dir: '/tmp/Vellum Backups/x', display: '~/Vellum Backups/x' }));
         }); return;
       }
       if (req.url === '/launch/studio-ai' && launcher.on) {
@@ -340,6 +348,399 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.context().close();
     }
 
+    // 5c. real-world replies keep their buttons, and a search started from a card never breaks the camera
+    {
+      const p = await page(browser, base);
+      await p.route(/(commons\.wikimedia|api\.openverse|wikipedia)\.org/, r => r.abort()); // search falls back to placeholders, deterministically
+      await p.newBoard();
+      await p.evaluate(() => { setCrewLevel('asked'); board.pins = {}; });
+      await p.type('note: I want to build an AI-native OPC business'); await p.idle();
+      const id = await p.evaluate(() => { const n = board.nodes.find(x => x.type === 'note'); board.pins = { [n.id]: [{ id: 'pin-c', agent: 'critic', note: 'Vague.', liftAct: 'note', liftLabel: 'Try as draft card', t: NOW(), seen: true }] }; renderAll(); openAdvNodeId = n.id; openAdvIdx = 0; renderAdvPop(); return n.id; });
+      queue.push({ id: 'pin-c1', match: 'Initial pin you left', text: 'Two interactions: pricing and onboarding.\n```json\nACTIONS: ' + JSON.stringify([{ act: 'list', label: 'Break into steps' }]) + '\n```' }, { id: 'pin-c2', match: 'Initial pin you left', text: 'Just words, no buttons.' });
+      const reply = async t => { await p.evaluate(([id, t]) => replyToAdvPin(id, 'pin-c', t), [id, t]); await p.idle(); };
+      const ui = () => p.evaluate(() => ({ txt: [...document.querySelectorAll('#advPop .adv-rep-tx')].map(e => e.textContent).at(-1), picks: [...document.querySelectorAll('#advPop .adv-picks .adv-lift')].map(b => b.textContent.trim()), lift: document.querySelectorAll('#advPop [data-adv-lift]').length }));
+      await reply('Go on');
+      const a = await ui();
+      check('a word like "interactions:" does not cut the reply, and a code fence around the ACTIONS line is not shown', a.txt === 'Two interactions: pricing and onboarding.' && a.picks.join('|') === 'Break into steps', JSON.stringify(a));
+      await reply('And?');
+      const b = await ui();
+      check('when a reply has no buttons, the pin keeps its own action button', b.picks.length === 0 && b.lift === 1, JSON.stringify(b));
+      check('the prompt keeps image search for things you can see, and not for abstract plans', requests.some(r => r.matched === 'pin-c1' && /never for a plan, strategy, business idea/.test(r.full) && !/"label":"Find references"/.test(r.full)));
+      // the camera: a search started from a card (the pin's "visuals" action) used to set it to NaN
+      await p.evaluate(id => { openAdvNodeId = null; closeAdvPop(); return searchWeb('ai native opc business', { from: byId(id) }); }, id); await p.idle();
+      check('a search started from a card keeps the camera valid and the page error-free', await p.evaluate(() => camOk(cam)) && p.errors.length === 0, JSON.stringify(await p.evaluate(() => cam)) + ' ' + p.errors.join(' | '));
+      const before = await p.evaluate(() => ({ ...cam }));
+      await p.evaluate(() => document.activeElement?.blur());
+      const empty = await p.evaluate(() => { for (let y = 120; y < 700; y += 40) for (let x = 120; x < 1200; x += 40) { const e = document.elementFromPoint(x, y); if (e && e.id === 'wall') return { x, y }; } return null; }); // a drag that starts on a card moves the card, so start on empty canvas
+      await p.mouse.move(empty.x, empty.y); await p.mouse.down(); await p.mouse.move(empty.x - 120, empty.y - 80, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(250);
+      check('and the canvas still pans afterwards', await p.evaluate(b => cam.x !== b.x && camOk(cam), before));
+      await p.evaluate(() => flyTo({ x: NaN, y: 0, s: 1 }));
+      check('a bad camera target is ignored', await p.evaluate(() => camOk(cam)));
+      await p.evaluate(() => { cam = { x: NaN, y: NaN, s: NaN }; board.cam = { x: null, y: null, s: null }; paintCam(); });
+      check('a camera that is already bad heals to a usable view', await p.evaluate(() => camOk(cam) && camOk(board.cam)));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5d. one kanban per project: the crew adds tasks to the board that is there, and never offers a card it already placed
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const kanbans = () => p.evaluate(() => board.nodes.filter(n => n.type === 'kanban' && !n.tombstone).map(n => ({ id: n.id, title: n.title, status: n.status, cards: (n.cards || []).map(c => c.title + '@' + c.col) })));
+      await p.evaluate(() => { node('kanban', { title: 'Prototype Layout', cols: [{ id: 'todo', title: 'To Do' }, { id: 'doing', title: 'In Progress' }, { id: 'done', title: 'Done' }], cards: [{ id: 'k1', title: 'Map key points', col: 'todo' }], by: 'wright', status: 'ink', pid: 'p-t' }, { x: 120, y: 120 }); renderAll(); });
+      const r1 = await p.evaluate(() => { const r = dispatchCanvasActions([{ action: 'create', cardType: 'kanban', title: 'More prototype tasks', cards: [{ title: 'Rooftop traversal', col: 0 }, { title: 'Map key points', col: 0 }] }], { by: 'critic' }); return { proposed: r.proposed.length, created: r.createdNodes.length, open: (board.proposals || []).filter(x => x.status === 'open').length }; });
+      check('a create-kanban action with a board already there makes no second board; for a kept board it becomes a suggested edit', (await kanbans()).length === 1 && r1.created === 0 && r1.proposed === 1 && r1.open === 1, JSON.stringify(r1));
+      await p.evaluate(() => acceptProposal(board.proposals.find(x => x.status === 'open').id, { force: true })); await p.waitForTimeout(200);
+      const k1 = (await kanbans())[0];
+      check('accepting adds only the new task (the one already there is skipped)', k1.cards.join('|') === 'Map key points@todo|Rooftop traversal@todo', k1.cards.join('|'));
+      await p.evaluate(() => dispatchCanvasActions([{ action: 'add_cards', target: 'Prototype Layout', cards: [{ title: 'Neon alley route', col: 1 }] }], { userIntent: true }));
+      check('add_cards puts a task in the column asked for', (await kanbans())[0].cards.includes('Neon alley route@doing'));
+      const r3 = await p.evaluate(() => { const r = dispatchCanvasActions([{ action: 'create', cardType: 'kanban', title: 'Phase 2', separate: true, cards: [{ title: 'Ship it', col: 0 }] }], { userIntent: true }); return { made: r.createdNodes.length, applied: r.applied }; });
+      check('a separate or phased board is still possible when asked for', (await kanbans()).length === 2 && r3.made === 1);
+      const rec = await p.evaluate(() => { const m = { proposals: [{ kind: 'kanban', title: 'Phase 2' }, { kind: 'kanban', title: 'Unrelated board' }, { kind: 'note', title: 'Phase 2' }], actionResults: { applied: [{ action: 'create', cardType: 'kanban', title: 'Phase 2', id: 'x' }] } }; reconcileProposalsWithActions(m); return m.proposals.map(x => !!x.placed); });
+      check('a proposal for something already put on the board shows as placed, others stay offered', rec.join() === 'true,false,false', rec.join());
+      await p.evaluate(() => { board.copilot = [{ id: 'cm1', role: 'ai', text: 'x', proposals: [{ kind: 'kanban', title: 'More tasks', cards: [{ title: 'Check the sniper nests', col: 0 }] }] }]; });
+      await p.evaluate(() => applyCopilotProposal('cm1', 0)); await p.waitForTimeout(300);
+      const after = await kanbans();
+      check('Place on Board with a kanban already there adds to it, and the proposal is then placed', after.length === 2 && after.some(k => k.cards.some(c => c.startsWith('Check the sniper nests'))) && await p.evaluate(() => board.copilot[0].proposals[0].placed === true), JSON.stringify(after));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5e. choosing a direction is not planning: options are direction cards, tasks are a kanban, and only after a direction is adopted
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const kinds = () => p.evaluate(() => board.nodes.filter(n => !n.tombstone).map(n => n.type));
+      const r1 = await p.evaluate(() => { const idea = node('idea', { title: 'An open-world game in Shanghai', text: 'x', by: 'you', status: 'ink', pid: 'p-i' }, { x: 100, y: 100 }); const r = dispatchCanvasActions([{ action: 'create', cardType: 'kanban', title: 'Direction: Vertical Heist District', text: 'Rooftop traversal and dockside heists', from: idea.id }], { by: 'critic', userIntent: true }); const n = r.createdNodes[0]; return { type: n.type, letter: n.letter, idea: n.idea === idea.id, hasText: /Rooftop/.test(n.text) }; });
+      check('with nothing adopted, a "Direction: ..." kanban action becomes a direction card (letter, linked to its claim, text kept)', r1.type === 'direction' && !!r1.letter && r1.idea && r1.hasText, JSON.stringify(r1));
+      const r2 = await p.evaluate(() => ({ prop: proposalKind({ kind: 'kanban', title: 'Option B: Underground economy' }), list: proposalKind({ kind: 'list', title: 'Direction A' }), zh: proposalKind({ kind: 'kanban', title: '方向一：垂直潜入' }), plan: proposalKind({ kind: 'kanban', title: 'Prototype layout tasks' }), note: proposalKind({ kind: 'note', title: 'Direction: x' }) }));
+      check('a proposal that is really an option is shown as a direction, a real task board stays a kanban', r2.prop === 'direction' && r2.list === 'direction' && r2.zh === 'direction' && r2.plan === 'kanban' && r2.note === 'note', JSON.stringify(r2));
+      const r3 = await p.evaluate(() => { const idea = board.nodes.find(n => n.type === 'idea'), d = board.nodes.find(n => n.type === 'direction'); board.adopted = { [idea.id]: d.id }; const k = proposalKind({ kind: 'kanban', title: 'Direction: Vertical Heist District' }); const r = dispatchCanvasActions([{ action: 'create', cardType: 'kanban', title: 'Direction: next steps', cards: [{ title: 'Build the rooftop route', col: 0 }] }], { by: 'critic', userIntent: true }); return { k, made: r.createdNodes.map(n => n.type) }; });
+      check('once a direction is adopted, the same title is a plan and stays a kanban', r3.k === 'kanban' && r3.made.join() === 'kanban', JSON.stringify(r3));
+      check('the prompt tells Copilot to offer options as direction cards, and tasks only after one is adopted', await p.evaluate(() => true) && fs.readFileSync(FILE, 'utf8').includes('CHOOSING A DIRECTION IS NOT PLANNING'));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5f. the questions Strategist asks offer suggestions, not the only answers: each takes the designer's own words too
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const items = [{ q: 'Who is the player?', options: ['An outsider', 'Someone with power', 'An ordinary person'] }, { q: 'When does it happen?', options: ['The past', 'The present', 'The near future'] }, { q: 'How does it play?', options: ['Story', 'Tactics', 'Exploring'] }];
+      const open = async () => { const r = p.evaluate(it => clarifyDialog(it), items); await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify] [data-clarify-own]')); return r; };
+      const own = i => p.locator(`[data-clarify-q="${i}"] [data-clarify-own]`);
+      const chip = (i, j) => p.locator(`[data-clarify-q="${i}"] [data-clarify-opt="${j}"]`);
+      const pressed = i => p.evaluate(i => [...document.querySelectorAll(`[data-clarify-q="${i}"] [data-clarify-opt]`)].map(b => b.getAttribute('aria-pressed') === 'true').join(), i);
+      let res = open();
+      await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify] [data-clarify-own]'));
+      check('every question has a row for your own answer, and the dialog says so', await p.locator('[data-clarify-own]').count() === 3 && /write your own/i.test(await p.locator('dialog[data-clarify] .sh-id small').innerText()));
+      const edges = await p.evaluate(() => { const d = document.querySelector('dialog[open][data-clarify]'), x = d.querySelector('.sh-head .sh-x').getBoundingClientRect(), m = d.querySelector('.sh-main'), mr = m.getBoundingClientRect(); return { x: Math.round(x.right), content: Math.round(mr.right - parseFloat(getComputedStyle(m).paddingRight)) }; });
+      check('the close button is right-aligned with the content below it (a head with no back button left it in the middle column)', Math.abs(edges.x - edges.content) <= 1, JSON.stringify(edges));
+      await chip(0, 1).click(); await own(1).fill('Right now, in a sleeping port city'); await own(2).fill('  ');
+      check('typing clears the chosen chip for that question only; a blank row counts as nothing', await pressed(0) === 'false,true,false' && await pressed(1) === 'false,false,false' && await own(1).evaluate(e => e.classList.contains('has')) && !await own(2).evaluate(e => e.classList.contains('has')));
+      await own(1).press('Enter');
+      const a = await res;
+      check('a typed answer comes back like a chosen one, and Enter submits', JSON.stringify(a) === JSON.stringify([{ q: 'Who is the player?', a: 'Someone with power' }, { q: 'When does it happen?', a: 'Right now, in a sleeping port city' }]), JSON.stringify(a));
+      res = open(); await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify] [data-clarify-own]'));
+      await own(0).fill('A retired smuggler'); await chip(0, 2).click();
+      check('choosing a chip after typing clears what was typed', await own(0).inputValue() === '' && await pressed(0) === 'false,false,true' && !await own(0).evaluate(e => e.classList.contains('has')));
+      await chip(0, 2).click(); await own(0).fill('x'.repeat(300));
+      check('what you type is capped', await own(0).evaluate(e => e.value.length) <= 140);
+      await p.locator('[data-clarify-skip]').click();
+      check('Skip still skips everything', JSON.stringify(await res) === '[]');
+      // closing one dialog and opening the next in the same tick: the first one's queued close event must not close the second
+      const quick = await p.evaluate(async it => { const a = clarifyDialog(it); document.querySelector('[data-clarify-skip]').click(); const b = clarifyDialog(it); await new Promise(r => setTimeout(r, 300)); const stillOpen = !!document.querySelector('dialog[open][data-clarify]'); document.querySelector('[data-clarify-x]').click(); return { first: await a, stillOpen, second: await b }; }, items);
+      check('a dialog opened right after another closed is not closed by the first one\'s stale close event', JSON.stringify(quick) === JSON.stringify({ first: [], stillOpen: true, second: null }), JSON.stringify(quick));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5g. the trail is kept: decisions outlast a full log, and the board is backed up automatically
+    {
+      const p = await page(browser, base, { model: false });
+      await p.newBoard();
+      const t = await p.evaluate(() => { board.changes = []; for (let i = 0; i < 600; i++) board.changes.push({ t: i, op: 'edit', id: 'n' + i }); board.changes.splice(100, 0, { t: 1000, op: 'adopt', id: 'd1' }, { t: 1001, op: 'accept-proposal', id: 'p1' }, { t: 1002, op: 'decline-passed-over', id: 'x' }, { t: 1003, op: 'discard', id: 'y' }); trimChanges(); return { len: board.changes.length, keys: board.changes.filter(isKeyChange).map(c => c.op).join(), firstEdit: board.changes.find(c => c.op === 'edit').id }; });
+      check('when the change log is full, the oldest routine edits go first and every decision stays', t.len === 500 && t.keys === 'adopt,accept-proposal,decline-passed-over,discard' && t.firstEdit === 'n104', JSON.stringify(t));
+      const cap = await p.evaluate(() => { board.changes = Array.from({ length: 5200 }, (_, i) => ({ t: i, op: 'adopt', id: 'd' + i })); trimChanges(); return board.changes.length; });
+      check('even decisions stop at 5,000, so a board cannot grow without end', cap === 5000, String(cap));
+      const ad = await p.evaluate(() => { board.changes = []; const idea = node('idea', { title: 'Claim', text: 'x', status: 'ink', by: 'you' }, { x: 100, y: 100 }); const d = node('direction', { idea: idea.id, letter: 'A', title: 'Own it', text: 't', test: 'x', status: 'ink', by: 'muse' }, { x: 500, y: 100 }); adopt(d); const c = board.changes.at(-1); return { op: c?.op, who: c?.who, title: c?.title }; });
+      check('adopting a direction is written to the change log as a decision', ad.op === 'adopt' && ad.who === 'you' && /Own it/.test(ad.title), JSON.stringify(ad));
+
+      // the backup: posted to the local server as the same bundle Export Board writes
+      backups.length = 0; backupMode.status = 200;
+      await p.evaluate(() => { backupState.ok = null; backupState.sig = null; backupState.failedAt = 0; });
+      await p.newBoard();
+      await p.evaluate(() => runBackup());
+      check('an empty board is not backed up', backups.length === 0);
+      await p.evaluate(() => { node('note', { text: 'Why I chose B', status: 'ink', by: 'you' }, { x: 100, y: 100 }); board.title = 'My plan'; });
+      await p.evaluate(() => runBackup());
+      const first = backups[0], parsed = first && JSON.parse(first.body);
+      check('a backup is posted with the custom header, the board id and title, and the whole bundle (format, board, media)',
+        backups.length === 1 && first.headers['x-studio-client'] === 'canvas' && first.headers['x-vellum-board'] && decodeURIComponent(first.headers['x-vellum-title']) === 'My plan'
+        && first.body.slice(0, 80).includes('vellum-board.v1') && parsed.board.nodes.some(n => n.text === 'Why I chose B') && 'blobs' in parsed && Array.isArray(parsed.board.changes), first && first.body.slice(0, 120));
+      check('it says where the backup is, and the System sheet line reads from it', await p.evaluate(() => backupState.ok === true && /Auto backup · last .* · ~\/Vellum Backups\/x/.test(backupLine())));
+      await p.evaluate(() => runBackup());
+      check('an unchanged board is not backed up again', backups.length === 1, String(backups.length));
+      await p.evaluate(() => { cam.x += 120; paintCam(); persistNow(); });
+      await p.evaluate(() => runBackup());
+      check('moving the camera is not a change worth a backup', backups.length === 1, String(backups.length));
+      await p.evaluate(() => { board.nodes.find(n => n.type === 'note').text = 'Why I chose B, and what would change my mind'; });
+      await p.evaluate(() => runBackup());
+      check('a real change is backed up', backups.length === 2 && /what would change my mind/.test(backups[1].body), String(backups.length));
+      const timer = await p.evaluate(() => { clearTimeout(backupState.t); backupState.t = 0; scheduleBackup(); const a = backupState.t; scheduleBackup(); const same = backupState.t === a; clearTimeout(backupState.t); backupState.t = 0; return same && !!a; });
+      check('backups are throttled: a second change does not push the first one back', timer);
+      // no local server to take it (opened from a file, or another server): quiet, and not retried at once
+      backupMode.status = 404; const before = backups.length;
+      await p.evaluate(() => { board.nodes.find(n => n.type === 'note').text = 'Changed again'; });
+      await p.evaluate(() => runBackup());
+      await p.evaluate(() => { board.nodes.find(n => n.type === 'note').text = 'Changed once more'; });
+      await p.evaluate(() => runBackup());
+      check('without a server it turns itself off quietly and does not retry straight away', backups.length === before + 1 && await p.evaluate(() => backupState.ok === false && /off here/i.test(backupLine())), String(backups.length - before));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+      backupMode.status = 200;
+    }
+
+    // 5h. every agent is told where the project is: stage, what is decided, what is open, what the evidence is
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const st = () => p.evaluate(() => { const s = boardStage(); return { stage: s.stage, adopted: s.adopted.length, evidence: s.evidence, brief: stageBrief() }; });
+      let r = await st();
+      check('an empty board is in Gather, and the brief says not to fork or build yet', r.stage === 'gather' && /^STAGE: Gather\./.test(r.brief) && /Do not fork directions or build anything unless asked/.test(r.brief), r.brief.slice(0, 160));
+      await p.evaluate(() => { node('idea', { text: 'Serve solo founders', status: 'sketch', by: 'muse' }, { x: 100, y: 100 }); });
+      check('a draft is not a decision: a draft claim alone is still Gather', (await st()).stage === 'gather');
+      await p.evaluate(() => { board.nodes.forEach(n => { n.status = 'ink'; }); node('source', { title: 'Founder call 1', text: 'x', weight: 'observed', status: 'ink', by: 'you' }, { x: 100, y: 400 }); node('source', { title: 'Forum thread', text: 'x', weight: 'reported', status: 'ink', by: 'you' }, { x: 100, y: 700 }); node('note', { text: 'my hunch', weight: 'proposed', status: 'ink', by: 'you' }, { x: 100, y: 1000 }); });
+      r = await st();
+      check('a kept claim makes it Explore; with no directions the open item is the directions', r.stage === 'explore' && /Decided: nothing adopted yet/.test(r.brief) && /Open: directions for “Serve solo founders”/.test(r.brief), r.brief.slice(0, 220));
+      check('the evidence is counted by weight, and the brief says proposals are not evidence', r.evidence.observed === 1 && r.evidence.reported === 1 && r.evidence.proposed === 1 && /1 observed, 1 reported, 1 proposal/.test(r.brief) && /not evidence of behaviour/.test(r.brief), JSON.stringify(r.evidence));
+      await p.evaluate(() => { const idea = board.nodes.find(n => n.type === 'idea'); ['A', 'B'].forEach((l, i) => node('direction', { idea: idea.id, letter: l, title: 'Option ' + l, text: 't', test: 'x', status: 'ink', by: 'muse' }, { x: 600, y: 100 + i * 400 })); });
+      r = await st();
+      check('with directions and none adopted it is still Explore, and tells the crew to offer options, not task boards', r.stage === 'explore' && /Open: which direction to adopt/.test(r.brief) && /Do not create task boards, lists or proofs unless asked/.test(r.brief), r.brief.slice(0, 260));
+      await p.evaluate(() => adopt(board.nodes.find(n => n.type === 'direction' && n.letter === 'B')));
+      r = await st();
+      check('adopting a direction moves it to Prototype, names the decision, and says what is open', r.stage === 'prototype' && r.adopted === 1 && /Decided: B · Option B\. Open/.test(r.brief) && /no proof built yet for the adopted direction/.test(r.brief) && /Build and test it/.test(r.brief), r.brief.slice(0, 300));
+      await p.evaluate(() => { const d = board.nodes.find(n => n.type === 'direction' && n.letter === 'B'); const pf = node('proof', { dir: d.id, _src: d.id, title: 'Proof B', spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1100, y: 100 }); edge(d.id, pf.id, 'derive', 'live'); });
+      check('once a proof exists the open item is what it shows', /Open: what the proofs show/.test((await st()).brief));
+      await p.evaluate(() => { const pf = board.nodes.find(n => n.type === 'proof'); node('print', { proof: pf.id, dir: pf.dir, ed: 1, spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1500, y: 100 }); });
+      r = await st();
+      check('a frozen proof makes it Snapshot: review what it does not cover', r.stage === 'snapshot' && /does not yet cover/.test(r.brief), r.brief.slice(0, 200));
+      check('the old "nothing adopted" test now follows the stage', await p.evaluate(() => nothingAdopted() === false));
+
+      // the brief reaches every agent that speaks
+      await p.newBoard();
+      await p.evaluate(() => { setCrewLevel('suggest'); node('idea', { title: 'Serve solo founders', text: 'Selling an AI-run back office to one-person companies', status: 'ink', by: 'you' }, { x: 100, y: 100 }); renderAll(); });
+      queue = [{ id: 'stage-cp', match: 'Lumen Copilot', text: 'Start with who pays first.' }];
+      await p.type('What should we test first?'); await p.idle();
+      const cp = requests.find(x => x.matched === 'stage-cp');
+      check('Copilot is told the stage and the three roles', !!cp && /STAGE: Explore\. Decided: nothing adopted yet/.test(cp.full) && /THREE ROLES, ONE VOICE/.test(cp.full), cp ? cp.full.slice(0, 80) : 'no request');
+      const before = requests.length;
+      await p.evaluate(() => scheduleAdvisor(board.nodes.find(n => n.type === 'idea').id, { force: true })); await p.waitForTimeout(900); await p.idle();
+      const adv = requests.slice(before).find(x => /Include 1 or at most 2 pins/.test(x.full));
+      check('the advisor looking at a card is told the stage', !!adv && /STAGE: Explore\./.test(adv.full), adv ? '' : 'no advisor request');
+      const pid = await p.evaluate(() => { const n = board.nodes.find(x => x.type === 'idea'); board.pins = { [n.id]: [{ id: 'pin-st', agent: 'critic', note: 'Vague.', t: NOW(), seen: true }] }; renderAll(); return n.id; });
+      queue = [{ id: 'stage-pin', match: 'Initial pin you left', text: 'Fine.' }];
+      await p.evaluate(id => replyToAdvPin(id, 'pin-st', 'Founders in the US'), pid); await p.idle();
+      check('a reply in a pin thread is told the stage too', requests.some(x => x.matched === 'stage-pin' && /STAGE: Explore\./.test(x.full)));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5i. the bottom bar is a command bar and search box; chat lives in the panel, and @name hands over to it
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const ph = () => p.evaluate(() => document.getElementById('lineInput').placeholder);
+      check('an empty board still invites the first idea, in command-bar words', /write an idea/i.test(await ph()) && /^Type \//.test(await ph()), await ph());
+      await p.evaluate(() => { node('note', { text: 'Founder interviews', status: 'ink', by: 'you' }, { x: 100, y: 100 }); node('note', { text: 'Pricing idea for solo founders', status: 'ink', by: 'you' }, { x: 100, y: 500 }); node('idea', { text: 'Sell an AI back office to one-person companies', status: 'ink', by: 'you' }, { x: 500, y: 100 }); select([]); renderLineCtx(); });
+      check('with cards on the board the bar reads as commands and search, with no chat wording', /\/ for commands/.test(await ph()) && /search your cards/i.test(await ph()) && !/\bask\b|critic|chat/i.test(await ph()), await ph());
+      await p.evaluate(() => { select([board.nodes.find(n => n.type === 'idea').id]); renderLineCtx(); });
+      check('with a claim selected it names the commands that fit', /\/fork/.test(await ph()) && !/\bask\b|critic/i.test(await ph()), await ph());
+      check('the chip shows what Enter will do, not an AI target', await p.evaluate(() => !/Canvas AI/.test(document.getElementById('route').textContent)));
+      await p.evaluate(() => { select([]); renderLineCtx(); });
+
+      // @name in the bar opens the panel with that member preselected, and the conversation goes on there
+      await p.click('#lineInput'); await p.keyboard.type('@critic ');
+      const ho = await p.evaluate(() => ({ open: copilotOpen, target: cpTarget, bar: document.getElementById('lineInput').value, chip: document.getElementById('cpTarget')?.textContent.trim() || '', ph: document.getElementById('cpInput')?.placeholder, mode: lineMode }));
+      check('typing @critic in the bar opens the panel with Critic preselected, and the bar is empty (no chat mode in the bar)', ho.open && ho.target === 'critic' && ho.bar === '' && /Critic/.test(ho.chip) && /Ask Critic/.test(ho.ph) && ho.mode === null, JSON.stringify(ho));
+      queue = [{ id: 'ho1', match: 'Lumen Copilot', text: 'The weakest part is who pays first.' }];
+      await p.click('#cpInput'); await p.keyboard.type('What is weakest here?'); await p.keyboard.press('Enter'); await p.idle();
+      const ho1 = requests.find(x => x.matched === 'ho1'), last = await p.evaluate(() => { const m = board.copilot.filter(x => x.role === 'ai').at(-1), u = board.copilot.filter(x => x.role === 'user').at(-1); return { agent: m?.agent, to: u?.to, text: u?.text }; });
+      check('the message goes to Critic: the model is told so, the reply is Critic\'s, and the history shows who was asked', !!ho1 && /addressing Critic directly/.test(ho1.full) && last.agent === 'critic' && last.to === 'critic' && last.text === 'What is weakest here?', JSON.stringify(last));
+      await p.click('[data-cp-untarget]');
+      check('the preselected member can be dropped to go back to Copilot', await p.evaluate(() => cpTarget === null && !document.getElementById('cpTarget') && /Ask Copilot|Ask about selection/.test(document.getElementById('cpInput').placeholder)));
+      queue = [{ id: 'ho2', match: 'Lumen Copilot', text: 'Scout here.' }];
+      await p.evaluate(() => openCopilot(false));
+      await p.click('#lineInput'); await p.keyboard.type('@scout find who already sells this'); await p.keyboard.press('Enter'); await p.idle();
+      const ho2 = await p.evaluate(() => ({ open: copilotOpen, bar: document.getElementById('lineInput').value, target: cpTarget, users: board.copilot.filter(x => x.role === 'user').map(x => x.text + '>' + x.to), cards: board.nodes.length }));
+      check('@name with the question in one go hands it over and sends it; nothing is added to the canvas', ho2.open && ho2.bar === '' && ho2.target === 'scout' && ho2.users.at(-1) === 'find who already sells this>scout' && ho2.cards === 3, JSON.stringify(ho2));
+      const ex = await p.evaluate(() => { const d = node('proof', { title: 'Draft by Wright', spec: { items: [] }, status: 'sketch', by: 'wright', pid: 'p-wr' }, { x: 900, y: 100 }); select([d.id]); return { own: route('@wright make it shorter')?.kind, other: route('@critic what is weakest?')?.kind }; });
+      check('the exception: on a draft that member made, @name still revises it; for anyone else it hands over', ex.own === 'revise' && ex.other === 'handoff', JSON.stringify(ex));
+      await p.evaluate(() => { board.nodes = board.nodes.filter(n => n.pid !== 'p-wr'); select([]); setCpTarget(null); openCopilot(false); renderLineCtx(); });
+
+      // card search: plain words list matching cards; nothing is picked until ↓, so Enter does what it always did
+      const menu = () => p.evaluate(() => ({ hidden: document.getElementById('menu').hidden, head: [...document.querySelectorAll('#menu .mh')].map(x => x.textContent), rows: [...document.querySelectorAll('#menu [data-mi]')].map(x => x.querySelector('.cmd').textContent), sel: [...document.querySelectorAll('#menu [data-mi]')].findIndex(x => x.getAttribute('aria-selected') === 'true') }));
+      await p.click('#lineInput'); await p.keyboard.type('founder');
+      let m = await menu();
+      check('typing plain words lists the matching cards, with none picked yet', !m.hidden && m.head[0] === 'Cards' && m.rows.some(r => /Founder interviews/.test(r)) && m.rows.some(r => /Pricing idea for solo founders/.test(r)) && m.sel === -1, JSON.stringify(m));
+      await p.keyboard.press('Escape');
+      check('Escape closes the list and keeps what you typed', (await menu()).hidden && await p.evaluate(() => document.getElementById('lineInput').value === 'founder'));
+      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type('pricing');
+      await p.keyboard.press('ArrowDown');
+      m = await menu();
+      check('↓ picks the first card', m.sel === 0, JSON.stringify(m));
+      await p.keyboard.press('Enter'); await p.waitForTimeout(500);
+      const jump = await p.evaluate(() => ({ sel: sel.map(id => (byId(id).text || '').slice(0, 18)), bar: document.getElementById('lineInput').value, cards: board.nodes.length, menuHidden: document.getElementById('menu').hidden }));
+      check('Enter on a picked card selects it and takes you to it, and adds nothing', jump.sel.join() === 'Pricing idea for s' && jump.bar === '' && jump.cards === 3 && jump.menuHidden, JSON.stringify(jump));
+      await p.evaluate(() => { select([]); renderLineCtx(); }); // words about a selected card go to Copilot; with nothing selected they become an idea
+      await p.click('#lineInput'); await p.keyboard.type('a thought about onboarding'); await p.keyboard.press('Enter'); await p.waitForTimeout(600);
+      check('Enter with nothing picked still does what it always did: the words become an idea', await p.evaluate(() => board.nodes.length === 4 && board.nodes.some(n => n.type === 'idea' && /thought about onboarding/.test(n.text))));
+      await p.click('#lineInput'); await p.keyboard.type('kanban');
+      m = await menu();
+      check('a word that names a command lists the command too', m.head.includes('Commands') && m.rows.some(r => /^\/kanban/.test(r)), JSON.stringify(m));
+      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type('/for');
+      m = await menu();
+      check('a slash still opens the command list, not the card search', m.head[0] === 'Moves' && !m.rows.some(r => /Founder/.test(r)), JSON.stringify(m));
+      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.press('Escape');
+
+      // the selection shows once: in the panel while it is open
+      await p.evaluate(() => { openCopilot(false); select([board.nodes.find(n => n.type === 'idea').id]); renderLineCtx(); });
+      const ctxN = () => p.evaluate(() => ({ bar: document.querySelectorAll('#lineCtx .ctx:not(.pending)').length, panel: document.querySelectorAll('#cpCompCards *').length > 0 && !!document.getElementById('cpCompCards').textContent.trim() }));
+      check('with the panel closed the bar shows the selected card', (await ctxN()).bar >= 1);
+      await p.evaluate(() => openCopilot(true)); await p.waitForTimeout(300);
+      let c = await ctxN();
+      check('with the panel open the selection is shown there once, not in the bar too', c.bar === 0 && c.panel, JSON.stringify(c));
+      await p.evaluate(() => openCopilot(false)); await p.waitForTimeout(300);
+      check('closing the panel brings the chips back', (await ctxN()).bar >= 1);
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5j. several cards selected: right-click gives a menu for the whole selection, and Ask Copilot works from it and from the selection bar
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const ids = await p.evaluate(() => { const a = node('note', { text: 'Founder interviews', status: 'ink', by: 'you' }, { x: 200, y: 150 }), b = node('note', { text: 'Pricing idea', status: 'ink', by: 'you' }, { x: 640, y: 150 }), c = node('note', { text: 'Landing page copy', status: 'ink', by: 'you' }, { x: 1080, y: 150 }); select([a.id, b.id]); renderAll(); focusNodes(board.nodes, 1, 0); return [a.id, b.id, c.id]; });
+      await p.waitForTimeout(500);
+      const rect = id => p.evaluate(id => { const r = document.querySelector(`[data-id="${id}"]`).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, cx: r.left + r.width / 2, cy: r.top + r.height / 2 }; }, id);
+      const menu = () => p.evaluate(() => ({ open: !document.getElementById('cardMenu').hidden, head: document.querySelector('#cardMenu .cm-head b')?.textContent || '', sm: [...document.querySelectorAll('#cardMenu [data-sm]')].map(x => x.dataset.sm), cm: document.querySelectorAll('#cardMenu [data-cm]').length }));
+      const right = async (x, y) => { await p.mouse.click(x, y, { button: 'right' }); await p.waitForTimeout(250); return menu(); };
+      const r0 = await rect(ids[0]), r1 = await rect(ids[1]), r2 = await rect(ids[2]);
+      let m = await right(r0.cx, r0.cy);
+      check('right-click on one of several selected cards opens a menu for the whole selection (not that one card\'s menu)', m.open && /^2 /.test(m.head) && ['copilot', 'gather', 'list', 'kanban', 'dup', 'group'].every(k => m.sm.includes(k)) && m.cm === 0, JSON.stringify(m));
+      await p.click('#cardMenu [data-sm="copilot"]'); await p.waitForTimeout(400);
+      const cp = await p.evaluate(() => ({ open: copilotOpen, selN: sel.length, focus: document.activeElement?.id, ph: document.getElementById('cpInput')?.placeholder, chips: document.querySelectorAll('#cpCompCards .cp-comp-chip').length, sent: (board.copilot || []).length, menuOpen: !document.getElementById('cardMenu').hidden }));
+      check('Ask Copilot there opens the panel with the selection as context and the cursor in the input, and sends nothing (it used to do nothing at all)', cp.open && cp.selN === 2 && cp.focus === 'cpInput' && /selection/i.test(cp.ph) && cp.chips === 2 && cp.sent === 0 && !cp.menuOpen, JSON.stringify(cp));
+      await p.evaluate(() => openCopilot(false)); await p.waitForTimeout(300);
+
+      const gapX = (r0.r + r1.l) / 2, gapY = r0.t + 24;
+      check('the point used for the gap test is empty canvas', await p.evaluate(([x, y]) => !document.elementFromPoint(x, y)?.closest('.card'), [gapX, gapY]));
+      m = await right(gapX, gapY);
+      check('right-click on the empty gap inside the selection opens the same menu', m.open && /^2 /.test(m.head) && m.sm.includes('copilot'), JSON.stringify(m));
+      await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+      m = await right(r2.cx, Math.min(r2.b + 160, 760));
+      check('right-click on empty canvas away from the selection opens nothing', !m.open, JSON.stringify(m));
+      m = await right(r2.cx, r2.cy);
+      check('right-click on a card outside the selection still selects just it and opens its own menu', m.open && m.cm > 0 && m.sm.length === 0 && await p.evaluate(id => sel.length === 1 && sel[0] === id, ids[2]), JSON.stringify(m));
+      await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+
+      // the selection bar has it first
+      await p.evaluate(ids => { select([ids[0], ids[1]]); renderAll(); }, ids); await p.waitForTimeout(300);
+      const bar = await p.evaluate(() => [...document.querySelectorAll('#selbar [data-s]')].map(b => b.dataset.s));
+      check('the selection bar offers Ask Copilot first', bar[0] === 'copilot' && bar.includes('gather') && bar.includes('kanban'), bar.join());
+      await p.click('#selbar [data-s="copilot"]'); await p.waitForTimeout(400);
+      check('and it opens the panel with both cards in context', await p.evaluate(() => copilotOpen && sel.length === 2 && document.querySelectorAll('#cpCompCards .cp-comp-chip').length === 2 && document.activeElement?.id === 'cpInput'));
+      await p.evaluate(() => openCopilot(false)); await p.waitForTimeout(300);
+
+      // other menu items act on the whole selection
+      const before = await p.evaluate(() => board.nodes.filter(n => !n.tombstone).length);
+      const q0 = await rect(ids[0]);
+      await right(q0.cx, q0.cy); await p.click('#cardMenu [data-sm="dup"]'); await p.waitForTimeout(500);
+      check('Duplicate in the selection menu duplicates every selected card', await p.evaluate(b => board.nodes.filter(n => !n.tombstone).length === b + 2, before));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5k. the suggestions under an empty Copilot conversation follow the stage; visual ones only for visual cards
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const chips = () => p.evaluate(() => copilotStarterChips());
+      const VISUAL = /visual keyframe|reference photos|web references|Examine this image|variations/i;
+      let c = await chips();
+      check('an empty board gets gathering suggestions, none of them visual or web search', c.length === 3 && /one sentence/.test(c[0]) && !c.some(x => VISUAL.test(x)), c.join(' | '));
+      await p.evaluate(() => { node('idea', { text: 'Sell an AI back office to one-person companies', status: 'ink', by: 'you' }, { x: 100, y: 100 }); select([]); });
+      c = await chips();
+      check('with a claim and no directions: propose directions, test the claim, ask who it is for', /Propose 2 directions/.test(c[0]) && c.some(x => /prove this wrong/.test(x)) && c.some(x => /Who is this for/.test(x)), c.join(' | '));
+      await p.evaluate(() => { const idea = board.nodes.find(n => n.type === 'idea'); ['A', 'B'].forEach((l, i) => node('direction', { idea: idea.id, letter: l, title: 'Option ' + l, text: 't', test: 'x', status: 'ink', by: 'muse' }, { x: 600, y: 100 + i * 400 })); });
+      c = await chips();
+      check('with directions and none adopted: compare them and choose', /Compare the directions/.test(c[0]) && c.some(x => /would you adopt/.test(x)), c.join(' | '));
+      await p.evaluate(() => adopt(board.nodes.find(n => n.type === 'direction' && n.letter === 'B')));
+      c = await chips();
+      check('once a direction is adopted: the cheapest real test, a plan, questions for real people', /cheapest real test/.test(c[0]) && c.some(x => /two-week plan/.test(x)) && c.some(x => /5 real people/.test(x)) && !c.some(x => VISUAL.test(x)), c.join(' | '));
+      await p.evaluate(() => { const d = board.nodes.find(n => n.type === 'direction' && n.letter === 'B'); const pf = node('proof', { dir: d.id, _src: d.id, title: 'Proof B', spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1100, y: 100 }); edge(d.id, pf.id, 'derive', 'live'); node('print', { proof: pf.id, dir: pf.dir, ed: 1, spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1500, y: 100 }); });
+      c = await chips();
+      check('with a frozen proof: what it does not cover, and what to decide next', /does this not cover/.test(c[0]) && c.some(x => /decide next/.test(x)), c.join(' | '));
+      await p.evaluate(() => select([board.nodes.find(n => n.type === 'direction' && n.letter === 'A').id]));
+      c = await chips();
+      check('with a card selected the first suggestion is to critique it, by its letter, then stage-specific ones', c[0] === 'Critique A' && c.length === 3 && !c.some(x => VISUAL.test(x)), c.join(' | '));
+      await p.evaluate(() => { node('image', { title: 'Mood board', status: 'ink', by: 'you' }, { x: 100, y: 800 }); select([board.nodes.find(n => n.type === 'image').id]); });
+      c = await chips();
+      check('only a selected image brings the visual suggestions', c.some(x => /Examine this image/.test(x)), c.join(' | '));
+      check('every suggestion is short enough to read at a glance', await p.evaluate(() => { const all = []; for (const sel0 of [[], [board.nodes.find(n => n.type === 'idea').id]]) { select(sel0); all.push(...copilotStarterChips()); } return all.every(x => x.length <= 36); }));
+      await p.evaluate(() => { select([]); openCopilot(true); renderCopilot(); }); await p.waitForTimeout(300);
+      check('the panel shows them, as buttons that send the text', await p.evaluate(() => { const b = [...document.querySelectorAll('.cp-chip')].map(x => x.textContent.trim()); return b.length === 3 && b.every(x => copilotStarterChips().includes(x)); }));
+      await p.evaluate(() => { store.set('.lang', 'zh'); select([board.nodes.find(n => n.type === 'idea').id]); });
+      const zh = await chips();
+      check('and they come in Chinese when the interface is Chinese, every one of them', zh.length === 3 && zh.every(x => /[\u4e00-\u9fff]/.test(x)), zh.join(' | '));
+      await p.evaluate(() => { store.set('.lang', 'en'); });
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5l. the bottom bar looks and reads like a command bar: a prompt, keys, no chat controls
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const vis = () => p.evaluate(() => { const v = id => { const e = document.getElementById(id); return !!e && e.offsetParent !== null && e.getBoundingClientRect().width > 0 }; return { send: v('sendBtn'), mic: v('micBtn'), enh: v('enhanceBtn'), route: v('route'), plus: v('plusBtn'), prompt: !!document.querySelector('#line .prompt') && document.querySelector('#line .prompt').offsetParent !== null, ph: lineIn.placeholder, chip: (document.getElementById('route').textContent || '').trim() }; });
+      let v = await vis();
+      check('an empty board still reads as a command bar, not "write an idea"', /\/ for commands/.test(v.ph) && !/drop anything/.test(v.ph), v.ph);
+      check('the bar shows a prompt glyph and no send button, microphone or enhance star', v.prompt && !v.send && !v.mic && !v.enh, JSON.stringify(v));
+      await p.evaluate(() => { node('idea', { title: 'Solo back office', text: 'An AI-run back office for one-person companies', status: 'ink', by: 'you' }, { x: 100, y: 100 }); select([]); renderAll(); });
+      await p.click('#lineInput'); await p.keyboard.type('what should I test first?'); await p.waitForTimeout(250);
+      v = await vis();
+      check('typing a question says Enter asks in the panel, with a key cap, and no send button, microphone or enhance star', /↵/.test(v.chip) && /Ask in panel/.test(v.chip) && !v.send && !v.mic && !v.enh, JSON.stringify(v));
+      check('the Command chip with the AI mark is gone', !/Command/.test(v.chip) && await p.evaluate(() => !document.querySelector('#route .mk')));
+      await p.fill('#lineInput', ''); await p.keyboard.type('/fork'); await p.waitForTimeout(250);
+      v = await vis();
+      check('a command says what Enter will run', /↵/.test(v.chip) && /fork/i.test(v.chip), v.chip);
+      await p.evaluate(() => { node('note', { text: 'Talk to five founders', status: 'ink', by: 'you' }, { x: 500, y: 100 }); renderAll(); });
+      await p.fill('#lineInput', ''); await p.keyboard.type('Talk'); await p.waitForTimeout(300);
+      const chipText = () => p.evaluate(() => document.getElementById('route').textContent.replace(/\s+/g, ' ').trim());
+      let cc = await chipText();
+      check('with matching cards listed, the key cap says ↓ opens a card and still says what Enter does', /↓\s*open card/.test(cc) && /↵/.test(cc), cc);
+      await p.keyboard.press('ArrowDown'); await p.waitForTimeout(200);
+      cc = await chipText();
+      check('after ↓ the cap says Enter opens the card, and nothing about adding', /^↵\s*Open card$/.test(cc), cc);
+      await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+      cc = await chipText();
+      check('closing the list brings the ordinary hint back', !/open card/i.test(cc) && /↵/.test(cc), cc);
+      await p.fill('#lineInput', ''); await p.keyboard.type('Plan the next two weeks'); await p.waitForTimeout(250);
+      await p.keyboard.press('Tab'); await p.waitForTimeout(250);
+      check('Tab does not rewrite ordinary words; enhancing is for picture prompts only', await p.evaluate(() => lineIn.value === 'Plan the next two weeks' && document.getElementById('sharpen').hidden));
+      await p.fill('#lineInput', ''); await p.keyboard.type('/image a quiet street at dusk'); await p.waitForTimeout(300);
+      check('an image command still offers to enhance its prompt', (await vis()).enh);
+      await p.fill('#lineInput', ''); await p.waitForTimeout(150);
+      check('the corner radius is that of a bar, not a pill', await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.line-field')).borderTopLeftRadius) <= 16));
+      await p.keyboard.type('hello'); await p.keyboard.press('Enter'); await p.waitForTimeout(400);
+      check('Enter still works with no send button', await p.evaluate(() => lineIn.value === ''));
+      await p.setViewportSize({ width: 560, height: 820 }); await p.click('#lineInput'); await p.keyboard.type('hello there'); await p.waitForTimeout(250);
+      check('on a phone the send button comes back, since there is no hardware Enter', await p.evaluate(() => { const e = document.getElementById('sendBtn'); return e.offsetParent !== null && e.getBoundingClientRect().width > 0; }));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 6. two crew axes (speaks up, acts on the board): pacing by what you have read, a hidden ceiling, the crew entry and popover
     {
       const p = await page(browser, base);
@@ -570,7 +971,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       // an open idea: Strategist asks three questions first; the answers go into the fork; a small model
       // answering in prose around fenced JSON still gives directions
       local = b => ({ text: b.kind === 'ask' ? JSON.stringify(Q) : 'Here are three:\n```json\n' + JSON.stringify(dirs('Loc')) + '\n```' });
-      let r = await forkOn('Local idea', true);
+      let r = await forkOn('A local game set in Shanghai', true);
       check('on Local AI, an open idea gets three one-click questions first', JSON.stringify(r.asked) === JSON.stringify(Q.questions.map(q => q.q)), JSON.stringify(r));
       check("the designer's choices go into the fork and stay on the idea", /The designer chose: Who do you play\? A translator in 1930s Shanghai; When is it\? 1937; How does it play\? Conversations/.test(userText(lastFork())) && r.clarified?.length === 3, userText(lastFork()).slice(0, 400));
       const g = lastFork();
@@ -582,6 +983,22 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       r = await forkOn('Shanghai game', false);
       check("when the model's questions can't be read, Strategist asks its own", r.asked?.[0] === 'Who is the player?' && r.asked.length === 3, JSON.stringify(r));
       check('Skip branches without choices', !r.clarified && !/designer chose/i.test(userText(lastFork())) && r.titles === 'Own A,Own B,Own C', JSON.stringify(r));
+      // questions are about the idea itself: a business idea never gets invented cities, years or companies
+      const BIZ = 'I want to build an AI-native OPC business';
+      const SCREENSHOT = { questions: [{ q: 'Which city hosts your first pilot?', options: ['Berlin 2025', 'Tokyo 2024', 'Austin 2026', 'Lima 2023'] }, { q: 'What industry uses OPC most now?', options: ['Oil rigs Gulf of Mexico', 'German factories 1987', 'Swedish hospitals 2010', 'Brazilian ports 2015'] }, { q: 'Who funds the AI training data?', options: ['Siemens Germany', 'Oracle USA', 'BASF Netherlands', 'Coca-Cola Brazil'] }] };
+      local = b => ({ text: b.kind === 'ask' || b.kind === 'fix' ? JSON.stringify(SCREENSHOT) : JSON.stringify(dirs('Biz')) });
+      r = await forkOn(BIZ, false);
+      check('questions with invented cities, years and companies never reach the designer; a business idea gets relevant ones', JSON.stringify(r.asked) === JSON.stringify(['Who is it for?', 'How would it make money?', 'What is the first version?']), JSON.stringify(r.asked));
+      const askG = gens.filter(x => x.kind === 'ask').at(-1) || {}, askT = JSON.stringify(askG.messages || []);
+      check('the question prompt asks about the idea itself and no longer demands real places and years', /Ask about the idea itself/.test(askT) && !/real places and periods/.test(askT) && !/name real places, years/.test(askT), askT.slice(0, 300));
+      local = b => ({ text: b.kind === 'ask' || b.kind === 'fix' ? JSON.stringify({ questions: [{ q: 'Who is the first customer?', options: ['A solo founder', 'A small agency', 'A freelancer', 'A student'] }, { q: 'Where would it run?', options: ['Berlin 2025', 'Tokyo 2024', 'Austin 2026', 'Lima 2023'] }, { q: 'What does it do first?', options: ['Writes replies', 'Books meetings', 'Sends invoices', 'Tracks leads'] }] }) : JSON.stringify(dirs('Biz2')) });
+      r = await forkOn(BIZ, false);
+      check('a good question stays, the bad one is replaced by a relevant one', r.asked?.length === 3 && r.asked[0] === 'Who is the first customer?' && r.asked[1] === 'What does it do first?' && !r.asked.some(x => /Where would it run/.test(x)) && r.asked[2] === 'Who is it for?', JSON.stringify(r.asked));
+      local = b => ({ text: b.kind === 'ask' ? 'not json at all' : JSON.stringify(dirs('Own2')) });
+      r = await forkOn(BIZ, false);
+      check('when the model gives nothing usable, a business idea still gets business questions', r.asked?.[0] === 'Who is it for?' && r.asked.length === 3, JSON.stringify(r.asked));
+      const unit = await p.evaluate(() => { const ctx = 'I want to build an AI-native OPC business'; return { bad: ['Berlin 2025', 'Oil rigs Gulf of Mexico', 'Siemens Germany', 'Oracle USA', 'Coca-Cola Brazil', 'Swedish hospitals 2010', 'Tokyo 2024'].map(t => inventedSpecifics(t, ctx)), ok: ['Individual consumers', 'A subscription', 'A small paid pilot', 'B2B or B2C', 'Sell on Shopify', 'A 2-week pilot', 'OPC and AI'].map(t => inventedSpecifics(t, ctx)), mentioned: inventedSpecifics('Shanghai 1937', 'a game in Shanghai in 1937') }; });
+      check('invented specifics are recognised, and plain answers (and things the idea mentioned) are not', unit.bad.every(x => x) && unit.ok.every(x => !x) && unit.mentioned === '', JSON.stringify(unit));
       // a full idea: no questions; the small-model prompt; one targeted repair of an obvious error
       const bad = { directions: [{ title: 'Settlement Beat', plan: 'You patrol the Settlement in 1935.', test: 'Five players play two shifts; if fewer than three feel watched, it fails.', mode: 'story' }, { title: 'Northern Ledger', plan: 'You smuggle tea in Beijing.', test: 'Six players run three nights; if fewer than one lies, it fails.', mode: 'desk' }, { title: 'Wharf Rats', plan: 'You unload ships on the Huangpu.', test: 'Four players play one night; if fewer than two talk to a foreman, it fails.', mode: 'story' }] };
       local = b => ({ text: JSON.stringify(b.kind === 'fix' ? dirs('Fixed') : bad) });
@@ -876,10 +1293,36 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('no page errors in the Auto routing flows', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+    // 12b. streaming reads as a steady unveil: words arrive one by one and fade in, and the last ones finish before the final render
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const WORDS = 70, LONG = Array.from({ length: WORDS }, (_, i) => 'word' + i).join(' ') + '.';
+      queue = [{ id: 'unveil1', match: 'Lumen Copilot', text: LONG, slow: 60 }];
+      const t0 = Date.now();
+      await p.type('What should we test first?');
+      const samples = [];
+      for (let i = 0; i < 120; i++) {
+        samples.push(await p.evaluate(() => { const b = [...document.querySelectorAll('[data-cp-msg-id] .cp-bubble')].at(-1); return { n: b ? (b.textContent.match(/word\d+/g) || []).length : -1, uv: b ? b.querySelectorAll('.uv').length : 0, streaming: copilotStreaming }; }));
+        if (samples.length > 3 && !samples.at(-1).streaming) break;
+        await p.waitForTimeout(80);
+      }
+      await p.idle();
+      const counts = samples.map(x => x.n).filter(n => n >= 0);
+      check('words appear steadily, never going backwards', counts.length > 8 && counts.every((n, i) => i === 0 || n >= counts[i - 1]) && counts.some(n => n > 0 && n < WORDS), counts.join(','));
+      check('each new word fades in (an animating span while text is arriving)', samples.some(x => x.uv > 0), JSON.stringify(samples.slice(0, 6)));
+      check('it is paced, not dumped: most of the reply was still being revealed after the model finished sending', samples.filter(x => x.n > 0 && x.n < WORDS).length >= 6, counts.join(','));
+      const final = await p.evaluate(() => (board.copilot || []).filter(m => m.role === 'ai').map(m => m.text).at(-1) || '');
+      const bubble = await p.evaluate(() => [...document.querySelectorAll('[data-cp-msg-id] .cp-bubble')].at(-1)?.textContent || '');
+      check('the final message has every word, is no longer animating, and the wait for the reveal is bounded', final.includes('word' + (WORDS - 1)) && (bubble.match(/word\d+/g) || []).length === WORDS && await p.evaluate(() => !document.querySelector('[data-cp-msg-id] .cp-bubble .uv')) && Date.now() - t0 < 12000, `${(bubble.match(/word\d+/g) || []).length} words, ${Date.now() - t0}ms`);
+      check('no page errors while streaming', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
     // 9. composer: one row for one line; two rows (text full width, controls below) once the text wraps
     {
       const p = await page(browser, base, { model: false });
-      const rows = () => p.evaluate(() => { const f = document.querySelector('.line-field').getBoundingClientRect(), i = lineIn.getBoundingClientRect(), s = document.getElementById('sendBtn').getBoundingClientRect();
+      const rows = () => p.evaluate(() => { const f = document.querySelector('.line-field').getBoundingClientRect(), i = lineIn.getBoundingClientRect(), s = document.getElementById('routeWrap').getBoundingClientRect();
         return { multi: document.getElementById('line').classList.contains('multi'), share: i.width / f.width, sendRight: f.right - s.right < 16, sendBelow: s.top >= i.bottom - 2 }; });
       await p.click('#lineInput'); await p.keyboard.type('A short line'); await p.waitForTimeout(200);
       const one = await rows();
@@ -908,8 +1351,11 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('plain words on a crew draft route to a revision, not a generic check', r && r.kind === 'revise' && r.agent === 'muse' && r.arg === ask, JSON.stringify(r));
       r = await routeOf('Why did you pick these three?');
       check('a question about a draft is still answered, not taken as a revision', r && r.kind !== 'revise', JSON.stringify(r));
-      r = await routeOf('@critic does this hold up');
-      check('an @mention of someone else still goes to them', r && r.kind !== 'revise' && r.agent === 'critic', JSON.stringify(r));
+      await p.type('@critic does this hold up', false); await p.waitForTimeout(250);
+      const hand = await p.evaluate(() => ({ open: copilotOpen, target: cpTarget, bar: document.getElementById('lineInput').value, typed: document.getElementById('cpInput')?.value }));
+      check('an @mention of someone else is not a revision: it hands the question to the panel with that member preselected', hand.open && hand.target === 'critic' && hand.bar === '' && /does this hold up/.test(hand.typed), JSON.stringify(hand));
+      await p.evaluate(() => { setCpTarget(null); openCopilot(false); const i = document.getElementById('cpInput'); if (i) i.value = ''; });
+      await p.evaluate(ids => select(ids), await drafts());
       r = await routeOf('@strategist ' + ask);
       check('an @mention of the draft\'s author revises it with the words after the mention', r && r.kind === 'revise' && r.arg === ask, JSON.stringify(r));
       queue = [{ id: 'st2', match: 'tell the creator what a restore will overwrite', text: dirs('Revised') }];
@@ -1102,6 +1548,15 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         }, base);
         check('a table from an address: the CSV becomes a drawn, selected table card that remembers its address and gets a readable title; bare numbers display grouped (years stay as written); ordinary links stay links; Sheets and GitHub links become data links; rank is not a quantity',
           url.type === 'table' && url.drawn && url.grouped && url.title === '2014 USA States' && url.cols === 'Rank|Region|Q1' && url.src === 'url:/data/sales.csv' && !url.rankIsQuantity && url.link === 'link' && url.sheet === 'https://docs.google.com/spreadsheets/d/AbC/export?format=csv&gid=7' && url.gh === 'https://raw.githubusercontent.com/a/b/main/x.csv' && !url.blog, JSON.stringify(url));
+        const order = await p.evaluate(() => {
+          const keep = board.nodes.slice(), mk = (id, t) => ({ id, type: 'note', x: 0, y: 0, created: NOW(), by: 'you', status: 'ink', rev: 1, text: t, title: t });
+          board.nodes = [mk('z1', 'Before'), mk('cafe0001', 'A'), mk('20000002', 'B'), mk('dead0003', 'C'), mk('z2', 'After')]; closeTx(); undoStack.length = 0;
+          const names = () => board.nodes.map(n => n.title).join(',');
+          checkpoint(); board.nodes = [board.nodes[0], board.nodes[4], mk('30000004', 'A2'), mk('beef0005', 'B2'), mk('40000006', 'C2')]; closeTx(); // like Try again: old out, new appended
+          undo(); const undone = names(); redo(); const redone = names();
+          board.nodes = keep; undoStack.length = 0; redoStack.length = 0; renderAll(); return { undone, redone };
+        });
+        check('undo and redo put replaced cards back in their exact order, even when ids look like numbers', order.undone === 'Before,A,B,C,After' && order.redone === 'Before,After,A2,B2,C2', JSON.stringify(order));
         const rf = {};
         const mk = await p.evaluate(async base => { const n = await tableFromUrl(base + '/data/sales.csv'); return { id: n.id, btn: !!document.querySelector(`.card[data-id="${n.id}"] [data-tbl-refresh] svg path`), local: canRefresh({ type: 'table', data: { source: { kind: 'paste' } } }) }; }, base);
         const step = async fn => p.evaluate(fn, mk.id);

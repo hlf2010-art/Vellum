@@ -12,7 +12,36 @@ It checks that every inline script parses, the sample board loads and every card
 
 It also checks that what you type reaches the model: words typed on a crew draft revise it (the request carries your words and the draft), Critic answers the question you typed, and a question or an @mention of someone else is not taken as a revision. A source you add can be rated on its card (an Unrated pill) and in its sheet. A reply that hits its length limit or time limit says it was cut off, a timeout is never mistaken for Stop, and a timed-out crew move falls back to built-in rules with a message saying why. The scripted endpoint can send `finish_reason` (`finish`) and stream slowly (`slow`, ms per chunk) for these.
 
+Pin threads and Copilot are covered too. A pin reply ends with up to 3 buttons: the `ACTIONS:` line is split off (also when it follows a word such as "interactions:" or sits in a code fence), invalid buttons are dropped, a reply with none leaves the pin's own button, and the buttons go away once you write again. A search started from a card keeps the camera valid (a `NaN` camera once made the canvas impossible to move and every render throw), and a camera that is already bad heals. Copilot puts new tasks on the kanban already on the board (as a suggested edit when that board is kept, directly for a draft or your own request), still makes a separate board when asked, and shows a proposal as placed once the same card is already on the board. Streamed text is revealed word by word with a fade-in, never goes backwards, and finishes before the final render.
+
+The questions Strategist asks before branching an open idea offer suggestions, not the only answers: each has a row for the designer's own words (typing clears the chosen chip, choosing a chip clears the text, Enter submits, the typed answer is returned like a chosen one, Skip still skips).
+
+Those questions stay about the idea: for an idea with no place or period of its own, a question whose options bring in a city, country, year or company the idea never mentioned ("Berlin 2025", "Siemens Germany") is dropped whichever engine answered and replaced by a relevant one (a business idea gets who it is for, how it makes money, what the first version is); games and ideas set somewhere keep their real places and periods.
+
 Run it before committing a change to `Vellum-Lumen.html`.
+
+## Stage and roles
+
+`stage-role-contract.md` says who does what at each stage. Group 5h checks that the stage is derived from what the designer kept (drafts do not count; adopting moves Explore to Prototype; a frozen proof makes it Snapshot), that the brief counts evidence by weight and names what is decided and open, and that Copilot, the advisor and a pin reply are each told it.
+
+## The bar and the panel
+
+The bottom bar is a command bar and search box, and the conversation lives in the side panel (group 5i). Plain words in the bar also list matching cards (and name matching commands); nothing is picked until ↓, so Enter still does what it did (the words become an idea, a command, or a question for the panel). `@scout`, `@strategist`, `@wright` or `@critic` in the bar (typed, or chosen from the chip) opens the panel with that member preselected ("Asking Critic", dropped with the ×), and the message goes to them; the exception is a draft that member made, where `@name` in the bar still revises it. With the panel open, the selected cards are shown there once and not in the bar too.
+
+It also looks like one (group 5l): a prompt glyph (`›`) on the left, a quiet `+` for adding things, and on the right a key cap that says what Enter will do (`↵ Ask in panel`, `↵ Strategist · fork into 3`, `↵ Add to canvas`). There is no send button, microphone, enhance star or "Command" chip with the AI mark. The send button comes back only on phone width (no hardware Enter) and as the stop button while the crew is working. Enhance (Tab or ⌘E) works only on picture, video and GIF prompts; for ordinary words Tab does nothing special. The bar's corners are those of a bar, not a pill.
+When the words match cards, the key cap says `↓ open card` next to what Enter does; after ↓ it says `↵ Open card`, and closing the list brings the ordinary hint back.
+
+With several cards selected (group 5j), right-click on one of them, or on the gap inside the selection, opens a menu for the whole selection (it used to open one card's menu whose items did nothing). Ask Copilot there, and as the first button of the selection bar, opens the panel with the selection as context and the cursor in the input, and sends nothing; the menu and the bar share one set of actions.
+
+The suggestions under an empty Copilot conversation follow the stage (group 5k): three at most, each short enough to read at a glance. An empty board gets help putting the idea in one sentence, what evidence is needed, who it is for; a kept claim with no directions gets "propose 2 directions to test"; with directions, compare them and choose; once one is adopted, the cheapest real test, a two-week plan and questions for five real people; with a frozen proof, what it does not cover and what to decide next. With a card selected the first one is "Critique" that card (by its letter for a direction). Suggestions about images, keyframes, reference photos or web references appear only when an image or frame is selected, so an idea that is not visual is never nudged toward pictures. They follow the interface language.
+
+## Keeping the trail (local server)
+
+The change log keeps 500 entries, but a decision (adopt, keep, discard, accept or decline a suggestion) is never pushed out by routine edits (up to 5,000), and adopting a direction is written to the log. When Vellum is served by `serve_vellum.py` (the Mac app and `Start Vellum.command`), the board is also posted to `/backup/board` as the same `.vellum.json` that Export Board writes, at most every two minutes and only when its content changed (not the camera). The server keeps the newest 10 plus the last one of each day for 30 days, in `~/Vellum Backups/<board>-<id>/`; to restore, use Import Board on a file from that folder. The smoke test checks the page side against a stand-in endpoint (a real browser against the real server was also run once by hand); the server side, including who may write, path safety and the thinning, is tested with:
+
+```bash
+python3 studio/macos-app/test_serve_backup.py
+```
 
 ## Studio AI launcher (local server)
 
@@ -111,3 +140,14 @@ node tests/model-eval.cjs --compare model-eval-results/8b-think-off.json model-e
 ```
 
 Wait for `"status": "ready"` from `curl -s http://127.0.0.1:59631/studio/health` after each switch (the first switch to Thinking downloads 5.8 GB).
+
+## Context and decision-memory proof of concept
+
+`tests/context-poc.cjs` checks the claims in `context-poc.md`: cards keep identity, revisions, links and decision records across edits, moves and a reload; the agent reads cards by link and topic, never by position alone; it names what its thoughts rest on; and ideas you turned down stay on the record and are not offered again. The P0 group (fresh board) covers retrying replies cut off by the token limit, the "built-in rules" tag, held-back repeats in the Crew popover (Show anyway, Dismiss), and the newer rejection signals.
+
+```bash
+node tests/context-poc.cjs                                              # deterministic, scripted model
+node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a real model, via an OpenAI-compatible relay
+```
+
+`--live` sends the synthetic fixture board (no user data) to `LIVE_BASE` (default `https://openrouter.ai/api/v1`, key from `LIVE_KEY` or an injecting proxy). `--json out.json` writes every check; `--shots dir` saves a screenshot of a thought's "Based on" line. Lines marked KNOWN are recorded limitations; PART means a live rate below the bar but above zero.

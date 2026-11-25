@@ -756,6 +756,7 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .crew-mode.claude b{background:var(--B-fill);box-shadow:0 0 8px var(--B)}
 .crew-mode.busy b{background:var(--B-fill);box-shadow:0 0 8px var(--B);animation:beat 1.2s ease-in-out infinite}
 .crew-mode.paused b{background:transparent;box-shadow:inset 0 0 0 1.5px var(--C)}
+.crew-mode.err b{background:var(--D-fill);box-shadow:0 0 6px var(--D)}
 .crew-mode .cm-chev{width:12px;height:12px;color:var(--label-3);transition:transform var(--d-quick) var(--snappy),color var(--d-quick)}
 .crew-mode[aria-expanded="true"] .cm-chev{transform:rotate(180deg);color:var(--label)}
 
@@ -2874,7 +2875,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 
   <header class="top">
     <div class="brand">
-      <button type="button" class="project" id="projectBtn" aria-haspopup="dialog" title="Click to switch boards · Double-click to rename">
+      <button type="button" class="project" id="projectBtn" aria-haspopup="dialog" title="Switch boards · Double-click to rename">
         <span class="app" aria-hidden="true"></span>
         <span class="nm"><b id="projectName">Untitled</b></span>
         <svg class="ico" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
@@ -2945,7 +2946,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
           <span id="modeChip" class="mode-chip cmd-only" hidden></span>
           <label for="lineInput" class="sr">Command bar</label>
           <textarea id="lineInput" class="cmd-only" rows="1" spellcheck="false" placeholder="Type / for commands, or search your cards"></textarea>
-          <button type="button" class="inplus cmd-only" id="plusBtn" aria-label="Add files, a note or a claim" aria-haspopup="menu" title="Add"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button type="button" class="inplus cmd-only" id="plusBtn" aria-label="Add files, a note or an idea" aria-haspopup="menu" title="Add"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
           <div class="route-wrap cmd-only" id="routeWrap">
             <button type="button" id="route" class="route" aria-haspopup="menu" aria-expanded="false" aria-live="polite" title="What ↵ will do · click to ask in the side panel"></button>
             <div class="lc-pop" id="lcPop" role="menu" hidden></div>
@@ -3250,7 +3251,7 @@ const ic=(n,c="ico")=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">
 const BAY=1000;
 const BAYS=[
   {n:"01",name:"Gather",zh:"收集素材",sub:"Evidence, recordings & notes",zhSub:"实测记录、文档、截图与笔记",icon:'<path d="M4 7.5 6 4h12l2 3.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 8h16M10 12h4"/>',empty:["No evidence yet","Drag recordings, screenshots, notes or text files here, then rate how strong each source is."],zhEmpty:["还没有素材","将文档、录屏、截图或便签拖到这里，并标注每份素材的证据可信度。"]},
-  {n:"02",name:"Explore",zh:"探索方向",sub:"Claims & test directions",zhSub:"核心论点与待验证方案",icon:'<path d="M12 20V11M12 11 6 4M12 11l6-7"/><circle cx="12" cy="20" r="1.5"/>',empty:["No claim yet","Write what you believe in the bar below. Strategist can branch it into directions worth testing."],zhEmpty:["还没有核心论点","在下方输入框写下你的核心假设，Strategist 会帮你拆出多个待验证方向。"]},
+  {n:"02",name:"Explore",zh:"探索方向",sub:"Ideas & directions to test",zhSub:"想法与待验证方向",icon:'<path d="M12 20V11M12 11 6 4M12 11l6-7"/><circle cx="12" cy="20" r="1.5"/>',empty:["No idea yet","Write your idea in the bar below. Strategist can branch it into directions worth testing."],zhEmpty:["还没有想法","在下方输入框写下你的想法，Strategist 会帮你拆出多个待验证方向。"]},
   {n:"03",name:"Prototype",zh:"制作原型",sub:"Interactive builds & proofs",zhSub:"根据选定方向生成的交互原型",icon:'<rect x="3.5" y="5" width="17" height="13" rx="3"/><path d="M8 21h8M3.5 9h17"/>',empty:["No prototypes yet","Adopt a direction and Wright will build a working prototype from the sources it rests on."],zhEmpty:["还没有原型","采纳一个方向后，Wright 会基于上游素材直接生成可交互原型。"]},
   {n:"04",name:"Snapshot",zh:"定稿分享",sub:"Frozen editions to share",zhSub:"锁定版本的离线快照与分享包",icon:'<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',empty:["No snapshots yet","A snapshot is a frozen standalone HTML edition of a prototype. Open any prototype and choose Snapshot."],zhEmpty:["还没有定稿快照","定稿快照是锁定某版原型的独立 HTML，打开任意原型点击 Snapshot 即可生成。"]},
 ];
@@ -3275,7 +3276,7 @@ const MARK=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id
 <path d="M12 5.4 16.6 15.4H7.4Z" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.85)" stroke-width="1.15" stroke-linejoin="round"/></svg>`;
 const AGENTS={
   scout:{key:"scout",name:"Scout",mk:AV.scout,craft:"Reads sources and recordings, pulls quotes, weighs how much the evidence can carry."},
-  muse:{key:"muse",name:"Strategist",mk:AV.muse,craft:"Forks a claim into directions worth testing, each with a test it could fail."},
+  muse:{key:"muse",name:"Strategist",mk:AV.muse,craft:"Forks an idea into directions worth testing, each with a test it could fail."},
   wright:{key:"wright",name:"Wright",mk:AV.wright,craft:"Builds proofs: working pages, decks and action lists from an adopted direction."},
   critic:{key:"critic",name:"Critic",mk:AV.critic,craft:"Checks work against its sources and asks the question nobody wants to."},
 };
@@ -4878,9 +4879,9 @@ function sampleShowcase(){
   const at=(n,ago)=>{n.created=T-ago*min;return n};
   // Bay Groups framing the 4-stage workflow
   at(node("group",{title:"01 · Gather · Telemetry, Concept & Brief",gw:936,gh:1340},{x:32,y:16}),260);
-  at(node("group",{title:"02 · Diverge · Synthesis, Thesis & Forks",gw:936,gh:1340},{x:1032,y:16}),200);
-  at(node("group",{title:"03 · Make · Interactive HUD & Proof",gw:936,gh:1340},{x:2032,y:16}),120);
-  at(node("group",{title:"04 · Release · Snapshot, Spec & Sprint",gw:936,gh:1340},{x:3032,y:16}),45);
+  at(node("group",{title:"02 · Explore · Synthesis, Thesis & Forks",gw:936,gh:1340},{x:1032,y:16}),200);
+  at(node("group",{title:"03 · Prototype · Interactive HUD & Proof",gw:936,gh:1340},{x:2032,y:16}),120);
+  at(node("group",{title:"04 · Snapshot · Spec & Sprint",gw:936,gh:1340},{x:3032,y:16}),45);
 
   // 01 · GATHER
   const padBrief=at(node("notepad",{title:"Project Brief · Ashen Crown HUD",weight:"observed",text:"Design Pillar: Zero pause-screen menu fatigue during Kowloon street infiltration.\n\nTarget Outcome: Player reads syndicate trust shifts and ambush risk in under 1.2s without breaking stealth camera lock.\n\nHard Non-Goals:\n- No full-screen radial wheel slowdowns\n- No top-right toast spam during rooftops\n- Colorblind legibility required in neon rain"},{x:60,y:100}),255);
@@ -5060,6 +5061,11 @@ function seedShowcasePins(b){
     ];
   }
 }
+/* The sample once named its groups Diverge / Make / Release while the lanes said Explore / Prototype / Snapshot. */
+function migrateStageNames(){
+  const map={Diverge:"Explore",Make:"Prototype",Release:"Snapshot"};
+  for(const n of board.nodes||[])if(n.type==="group"&&typeof n.title==="string")n.title=n.title.replace(/^(\d\d · )(Diverge|Make|Release)( · )/,(m,a,w,c)=>a+map[w]+c).replace(/^04 · Snapshot · Snapshot, /,"04 · Snapshot · ");
+}
 function loadBoard(){
   let req="";try{req=new URLSearchParams(location.search).get("board")||new URLSearchParams(location.search).get("sample")||""}catch{}
   const normPins=()=>{board.pins=board.pins||{};if(board.id==="showcase"&&!Object.keys(board.pins).length)seedShowcasePins(board)};
@@ -5067,10 +5073,10 @@ function loadBoard(){
     const ex=store.get(".board.showcase",null);
     board=ex&&Array.isArray(ex.nodes)&&ex.rev===2?ex:sampleShowcase();
     board.memory=typeof board.memory==="string"?board.memory:"";board.mcpContext=Array.isArray(board.mcpContext)?board.mcpContext:[];board.threads=board.threads||{};board.copilot=Array.isArray(board.copilot)?board.copilot:[];board.log=board.log||[];board.adopted=board.adopted||{};
-    normPins();ensureShowcaseAssets();persist();return;
+    normPins();migrateStageNames();ensureShowcaseAssets();persist();return;
   }
   const id=store.get(".active",null);const b=id&&store.get(".board."+id,null);
-  if(b&&Array.isArray(b.nodes)){board=b;board.memory=typeof b.memory==="string"?b.memory:"";board.mcpContext=Array.isArray(b.mcpContext)?b.mcpContext:[];board.threads=board.threads||{};board.copilot=Array.isArray(board.copilot)?board.copilot:[];board.log=b.log||[];board.adopted=board.adopted||{};normPins();if(board.id==="showcase")ensureShowcaseAssets();return}
+  if(b&&Array.isArray(b.nodes)){board=b;board.memory=typeof b.memory==="string"?b.memory:"";board.mcpContext=Array.isArray(b.mcpContext)?b.mcpContext:[];board.threads=board.threads||{};board.copilot=Array.isArray(board.copilot)?board.copilot:[];board.log=b.log||[];board.adopted=board.adopted||{};normPins();if(board.id==="showcase"){migrateStageNames();ensureShowcaseAssets()}return}
   board=sampleShowcase();ensureShowcaseAssets();persist();
 }
 
@@ -6550,7 +6556,8 @@ const hasApi=()=>!!(apiCfg.enabled&&apiCfg.key.trim()&&apiCfg.baseUrl.trim()&&ap
 /* Cloud API health: what we actually observed, not what is configured.
    k: unknown | checking | ok | auth | notfound | ratelimit | unreachable | error */
 const apiCfgSig=(c=apiCfg)=>[c.baseUrl,c.model,c.key].join("\u0001");
-let apiHealth={k:"unknown",sig:"",at:0,ms:null,detail:""};
+function apiSigHash(c=apiCfg){let h=5381;for(const ch of apiCfgSig(c))h=(h*33^ch.charCodeAt(0))>>>0;return h.toString(36)}
+let apiHealth=(()=>{try{const r=store.get(".apiHealth",null);if(r&&r.h===apiSigHash()&&Date.now()-r.at<6*3600e3&&r.k!=="unreachable")return {k:r.k,sig:apiCfgSig(),at:r.at,ms:null,detail:r.detail||""}}catch{}return {k:"unknown",sig:"",at:0,ms:null,detail:""}})();
 const API_BAD=new Set(["auth","notfound","credits","unreachable","error"]);
 const apiHostOf=u=>{try{return new URL(u).host}catch{return String(u||"").replace(/^https?:\/\//,"").split("/")[0]||"server"}};
 function apiHealthNow(){return apiHealth.sig===apiCfgSig()?apiHealth:{k:"unknown",sig:"",at:0,ms:null,detail:""}}
@@ -6577,6 +6584,8 @@ function setApiHealth(k,{cfg=apiCfg,ms=null,detail=""}={}){
   if(apiCfgSig(cfg)!==apiCfgSig())return; // a result for settings that are no longer current
   const prev=apiHealth.k;
   apiHealth={k,sig:apiCfgSig(cfg),at:Date.now(),ms,detail};
+  // remembered across reloads (by a hash of the settings, never the key itself) so the pill doesn't look healthy again after a 402
+  if(k!=="checking")try{store.set(".apiHealth",{k,h:apiSigHash(cfg),at:apiHealth.at,detail})}catch{}
   if(prev!==k){try{renderCrew()}catch{}}
   // apiRoutable() lets an unreachable host back in after a minute; re-render at that moment so the header flips with routing
   clearTimeout(setApiHealth.t);
@@ -6637,7 +6646,7 @@ function connSummary(){
   else if(aiPref==="auto"&&starting){issue=L("Local AI starting…","本地模型启动中…");tone="busy"}
   else if(engine==="api"&&h.k==="checking"){issue=L("Checking Cloud API…","正在检测云端 API…");tone="busy"}
   else if(engine==="api"&&h.k==="ratelimit"){issue=L("Cloud API rate limited","云端 API 被限流");tone="warn"}
-  else if(engine==="rules"){issue=L("No model connected","未连接模型");tone="warn"}
+  else if(engine==="rules"){issue=L("No AI connected","未连接 AI");tone="warn"}
   const dot=engine==="rules"?"warn":"ok"; // the dot describes the mode; the issue line carries its own color
   return {engine,dot,mode:L(`Using ${name}`,`正在使用${name}`)+(model?` · ${model}`:""),issue,tone};
 }
@@ -6649,11 +6658,17 @@ function aiSource(){
   /* Built on connSummary so the trigger, Copilot and the Connection header can never disagree. */
   const c=connSummary(),tip=c.mode+(c.issue?" · "+c.issue:"");
   if(c.engine==="local")return {live:true,kind:"studio",cls:"live",label:L("Local AI","本地模型"),title:tip};
-  if(c.engine==="api")return {live:true,kind:"api",cls:"claude",label:apiCfg.model.split("/").pop()||"Cloud API",title:tip};
+  if(c.engine==="api")return {live:true,kind:"api",cls:apiHealthNow().k==="ok"?"claude":"",label:apiModelName(),title:tip};
   if(c.engine==="claude")return {live:true,kind:"claude",cls:"claude",label:"Claude",title:tip};
   if(aiPref==="local"){const p=studioState.status==="ready";return {live:false,kind:p?"paused":"local",cls:p?"paused":"",label:L("Rules only","仅规则"),title:tip}}
   if(aiPref==="auto"&&studioState.status==="loading")return {live:false,busy:true,kind:"loading",cls:"busy",label:L("Starting AI…","启动中…"),title:tip};
-  return {live:false,kind:"local",cls:"",label:hasApi()?L("API error","API 出错"):aiPref==="api"?L("API unset","API 未配置"):L("Offline","离线"),title:tip};
+  /* One vocabulary on the pill and in the popover: say what is wrong, not "API error" or "Offline" (which reads as no internet). */
+  if(hasApi()){
+    const k=apiHealthNow().k;
+    const lab={credits:L("Out of credits","额度用尽"),auth:L("Key rejected","密钥被拒绝"),notfound:L("Model not found","找不到模型"),unreachable:L("Can't reach Cloud API","无法连接云端 API")}[k]||L("Cloud API error","云端 API 出错");
+    return {live:false,kind:"local",cls:"err",label:lab,title:tip};
+  }
+  return {live:false,kind:"local",cls:"",label:L("No AI connected","未连接 AI"),title:tip};
 }
 function renderCrew(){
   const mode=aiSource();
@@ -6720,31 +6735,53 @@ function openSearchDialog(){
     paint();
   });
 }
+/* What Test connection says for each status classifyApiStatus() (or probeApi) can return. Every key must be here:
+   a missing one used to leave the line blank (a 402 said nothing at all). */
+const API_BILLING={"openrouter.ai":"https://openrouter.ai/settings/credits","api.openai.com":"https://platform.openai.com/settings/organization/billing","generativelanguage.googleapis.com":"https://aistudio.google.com/"};
+function apiTestMessage(r,cfg){
+  const host=apiHostOf(cfg.baseUrl),bill=API_BILLING[host]||"";
+  const m={
+    ok:{txt:L(`Connected · ${r.ms} ms`,`已连接 · ${r.ms} ms`)},
+    auth:{txt:L("Key rejected. Check that you pasted the whole key.","密钥被拒绝，请确认粘贴了完整的密钥。")},
+    credits:{txt:L(`Key works, but the account is out of credits. Add credits on ${host}, then test again.`,`密钥有效，但账户额度已用尽。请在 ${host} 充值后再检测。`),href:bill,link:L("Add credits","去充值")},
+    notfound:{txt:L(`Model not found on ${host}`,`${host} 上找不到这个模型`)},
+    ratelimit:{txt:L("Reachable, but rate limited. Try again in a minute.","可以连通，但被限流，请稍后再试。")},
+    unreachable:{txt:r.detail==="timeout"?L(`${host} didn't answer`,`${host} 没有响应`):L(`Can't reach ${host}`,`无法连接 ${host}`)},
+    error:{txt:L(`${host} returned ${r.detail||"an error"}`,`${host} 返回 ${r.detail||"错误"}`)}
+  }[r.k];
+  return m||{txt:L(`${host} returned ${r.detail||r.k}`,`${host} 返回 ${r.detail||r.k}`)};
+}
+const API_PRESETS={
+  openai:{url:"https://api.openai.com/v1",models:[
+    {id:"gpt-6.1-sol",label:"GPT-6.1 Sol (Balanced)"},
+    {id:"gpt-6-astra",label:"GPT-6 Astra (Flagship)"},
+    {id:"gpt-6.1-terra",label:"GPT-6.1 Terra (Visual & Writing)"},
+    {id:"gpt-6-luna",label:"GPT-6 Luna (Fast)"}
+  ]},
+  openrouter:{url:"https://openrouter.ai/api/v1",models:[
+    {id:"openrouter/auto",label:"OpenRouter Auto"},
+    {id:"anthropic/claude-sonnet-5.5",label:"Claude Sonnet 5.5"},
+    {id:"anthropic/claude-fable-5.2",label:"Claude Fable 5.2"},
+    {id:"openai/gpt-6-astra",label:"GPT-6 Astra"},
+    {id:"openai/gpt-6.1-sol",label:"GPT-6.1 Sol"},
+    {id:"google/gemini-4-hydrogen",label:"Gemini 4 Hydrogen"},
+    {id:"google/gemini-3.8-flash",label:"Gemini 3.8 Flash"}
+  ]},
+  gemini:{url:"https://generativelanguage.googleapis.com/v1beta/openai",models:[
+    {id:"gemini-4-hydrogen",label:"Gemini 4 Hydrogen (Fast Agentic)"},
+    {id:"gemini-4-argon",label:"Gemini 4 Argon (Efficient Reasoning)"},
+    {id:"gemini-4-carbon",label:"Gemini 4 Carbon (Flagship)"},
+    {id:"gemini-3.8-flash",label:"Gemini 3.8 Flash (High-Speed)"}
+  ]},
+  custom:{url:"",models:[]}
+};
+/* The name people know a model by ("OpenRouter Auto", not "auto"). */
+function apiModelName(id=apiCfg.model){
+  for(const p of Object.values(API_PRESETS)){const m=p.models.find(x=>x.id===id);if(m)return m.label.replace(/\s*\(.*\)$/,"")}
+  return String(id||"").split("/").pop()||L("Cloud API","云端 API");
+}
 function openApiDialog(){
-  const presets={
-    openai:{url:"https://api.openai.com/v1",models:[
-      {id:"gpt-6.1-sol",label:"GPT-6.1 Sol (Balanced)"},
-      {id:"gpt-6-astra",label:"GPT-6 Astra (Flagship)"},
-      {id:"gpt-6.1-terra",label:"GPT-6.1 Terra (Visual & Writing)"},
-      {id:"gpt-6-luna",label:"GPT-6 Luna (Fast)"}
-    ]},
-    openrouter:{url:"https://openrouter.ai/api/v1",models:[
-      {id:"openrouter/auto",label:"OpenRouter Auto"},
-      {id:"anthropic/claude-sonnet-5.5",label:"Claude Sonnet 5.5"},
-      {id:"anthropic/claude-fable-5.2",label:"Claude Fable 5.2"},
-      {id:"openai/gpt-6-astra",label:"GPT-6 Astra"},
-      {id:"openai/gpt-6.1-sol",label:"GPT-6.1 Sol"},
-      {id:"google/gemini-4-hydrogen",label:"Gemini 4 Hydrogen"},
-      {id:"google/gemini-3.8-flash",label:"Gemini 3.8 Flash"}
-    ]},
-    gemini:{url:"https://generativelanguage.googleapis.com/v1beta/openai",models:[
-      {id:"gemini-4-hydrogen",label:"Gemini 4 Hydrogen (Fast Agentic)"},
-      {id:"gemini-4-argon",label:"Gemini 4 Argon (Efficient Reasoning)"},
-      {id:"gemini-4-carbon",label:"Gemini 4 Carbon (Flagship)"},
-      {id:"gemini-3.8-flash",label:"Gemini 3.8 Flash (High-Speed)"}
-    ]},
-    custom:{url:"",models:[]}
-  };
+  const presets=API_PRESETS;
   const detectProv=u=>Object.keys(presets).find(k=>k!=="custom"&&u.replace(/\/+$/,"")===presets[k].url)||"custom";
   let curProv=detectProv(apiCfg.baseUrl||"");
   openDialog("Cloud API",`<div style="display:grid;gap:10px">
@@ -6765,7 +6802,7 @@ function openApiDialog(){
       <input id="apiKeyIn" type="password" class="mem-box" style="min-height:36px;height:36px;padding:7px 10px" value="${esc(apiCfg.key)}" placeholder="sk-...">
     </label>
     <label style="display:grid;gap:4px;font:550 12px/1 var(--ui);color:var(--label-2)">${L("Daily call limit","每日调用上限")}
-      <input id="apiDailyIn" type="number" min="1" step="1" inputmode="numeric" class="mem-box" style="min-height:36px;height:36px;padding:7px 10px" value="${apiCfg.daily>0?esc(String(apiCfg.daily)):""}" placeholder="${esc(L("Empty: free-tier preset (Gemini 20, others none)","留空：免费档预设（Gemini 20，其他不限）"))}">
+      <input id="apiDailyIn" type="number" min="1" step="1" inputmode="numeric" class="mem-box" style="min-height:36px;height:36px;padding:7px 10px" value="${apiCfg.daily>0?esc(String(apiCfg.daily)):""}" placeholder="${esc(L("Empty: 20 a day on Gemini (free tier), no limit elsewhere","留空：Gemini 每天 20 次（免费档），其他不限"))}">
       <span style="font:500 11px/1.35 var(--ui);color:var(--label-3)">${L("Auto keeps the last quarter for heavy work. On a paid plan, enter its limit.","自动模式会把最后四分之一留给重任务。付费方案请填其上限。")}</span>
     </label>
     <label style="display:flex;align-items:center;gap:8px;font:500 13px/1 var(--ui);color:var(--label)">
@@ -6773,7 +6810,7 @@ function openApiDialog(){
     </label>
     <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;padding-top:4px">
       <span id="apiTestOut" role="status" aria-live="polite" style="margin-right:auto;font:500 12px/1.3 var(--ui);color:var(--label-3)"></span>
-      <button type="button" class="sh-btn" data-api-test>Test connection</button>
+      <button type="button" class="sh-btn" data-api-test>${L("Test connection","检测连接")}</button>
       <button type="button" class="sh-btn" data-api-clear>Clear</button>
       <button type="button" class="sh-btn" style="background:var(--act);color:var(--on-act)" data-api-save>Save</button>
     </div>
@@ -6819,12 +6856,14 @@ function openApiDialog(){
     let lastTest=null;
     qs("[data-api-test]",d).onclick=async()=>{
       const cfg=formCfg(),out=$("apiTestOut"),btn=qs("[data-api-test]",d);
-      if(!cfg.baseUrl||!cfg.model||!cfg.key){out.textContent="Fill in URL, model and key first";out.style.color="var(--D)";return}
-      btn.disabled=true;out.style.color="var(--label-3)";out.textContent="Testing…";
+      if(!cfg.baseUrl||!cfg.model||!cfg.key){out.textContent=L("Fill in URL, model and key first","请先填写地址、模型和密钥");out.style.color="var(--D)";return}
+      btn.disabled=true;out.style.color="var(--label-3)";out.textContent=L("Testing…","检测中…");
       const r=await probeApi(cfg);btn.disabled=false;
       lastTest={sig:apiCfgSig(cfg),r};
       const host=apiHostOf(cfg.baseUrl);
-      out.textContent={ok:`Connected · ${r.ms} ms`,auth:"Key rejected",notfound:`Model not found on ${host}`,ratelimit:"Reachable, but rate limited",unreachable:r.detail==="timeout"?`${host} didn't answer`:`Can't reach ${host}`,error:`${host} returned ${r.detail}`}[r.k];
+      const msg=apiTestMessage(r,cfg);
+      out.textContent=msg.txt;
+      if(msg.href){out.append(" ");const a=document.createElement("a");a.href=msg.href;a.target="_blank";a.rel="noopener";a.textContent=msg.link;a.style.color="inherit";a.style.textDecoration="underline";out.append(a)}
       out.style.color=r.k==="ok"?"var(--C)":r.k==="ratelimit"?"var(--B)":"var(--D)";
     };
     qs("[data-api-save]",d).onclick=()=>{
@@ -6848,6 +6887,13 @@ async function stopLocalStudio(){
   }catch(e){
     toast(L("Stop failed: ","停止失败：")+(e?.message||L("Check Studio AI service","请检查 Studio AI 服务")));
   }
+}
+/* Media Studio is ComfyUI on a computer with an NVIDIA GPU, reached through the image service on this one.
+   Say that on every platform instead of telling a Mac user to start it on "your Windows PC". */
+function mediaStudioHint(){
+  const win=/Windows/i.test(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent||"");
+  return win?{txt:L("Optional, for images and video","可选，用于图像和视频"),tip:L("Start ComfyUI and the image service on this PC. Everything else works without it.","在本机启动 ComfyUI 和图像服务。其他功能不依赖它。")}
+    :{txt:L("Optional, for images and video · needs a GPU PC","可选，用于图像和视频 · 需要 GPU 电脑"),tip:L("Media Studio runs ComfyUI on a PC with an NVIDIA GPU. Start it there, then open Start MOD WORK Image Service on this Mac. Everything else works without it.","媒体工作室在装有 NVIDIA 显卡的电脑上运行 ComfyUI。先在那台电脑上启动，再在本机打开 Start MOD WORK Image Service。其他功能不依赖它。")};
 }
 function renderStudioPop(){
   const pop=$("studioPop");if(!pop)return;
@@ -6903,7 +6949,7 @@ function renderStudioPop(){
     :apiCase==="checking"?st("busy",L("Checking…","检测中…"),"",` data-api-health="checking"`)
     :apiH.k==="ok"&&sum.engine==="api"?st("ok",L("In use","使用中"),apiLab.tip,` data-api-health="ok"`)
     :st(apiLab.cls,apiLab.txt,apiLab.tip,` data-api-health="${apiH.k}"`);
-  const apiDetail=hasApi()?(apiCfg.model||"").split("/").pop()+(cloudDailyLimit()?` · ${cloudBudgetLine()}`:""):"";
+  const apiDetail=hasApi()?apiModelName()+(cloudDailyLimit()?` · ${cloudBudgetLine()}`:""):"";
   const apiNext=sum.engine==="rules"&&aiPref!=="local";
   const apiAct=apiCase==="unset"?btn("api",L("Set up","设置"),{kind:apiNext?"primary":""})
     :apiCase==="off"?btn("api",L("Turn on","开启"),{kind:apiNext?"primary":""})
@@ -6931,9 +6977,9 @@ function renderStudioPop(){
   const vidName=m=>String(m.name||m.id).replace(/\s*\(T2V\)\s*/i,"").trim();
   const imDetail=imCase==="checking"||imCase==="starting"?""
     :mediaUp?[avImgs.length===1?(avImgs[0].name||avImgs[0].id):"",allVids.length===1?(allVids[0].available?vidName(allVids[0]):vidName(allVids[0])+" "+L("unavailable","不可用")):""].filter(Boolean).join(" · ")
-    :svcStopped?L("Stopped · start it on your Windows PC","已停止 · 请在 Windows 电脑上启动")
-    :imgSvc.connected?(imReason||L("Connected, but no models are available","已连接，但没有可用模型")):L("Start it on your Windows PC","请在 Windows 电脑上启动");
-  const imAct=(imgSvc.connected&&!svcStopped)?btn("stop-svc",L("Stop","停止"),{tip:L("Stop Windows ComfyUI (image & video) and free VRAM","停止 Windows ComfyUI（同时停止出图和出视频）并释放显存")}):"";
+    :svcStopped?L("Stopped. Start ComfyUI on the GPU computer, then refresh","已停止。请在 GPU 电脑上启动 ComfyUI 后刷新")
+    :imgSvc.connected?(imReason||L("Connected, but no models are available","已连接，但没有可用模型")):mediaStudioHint().txt;
+  const imAct=(imgSvc.connected&&!svcStopped)?btn("stop-svc",L("Stop","停止"),{tip:L("Stop ComfyUI (image & video) on the GPU computer and free its memory","停止 GPU 电脑上的 ComfyUI（出图和出视频都会停止）并释放显存")}):"";
   const idle=aiPref==="local";
   pop.innerHTML=`<div class="sp-head">
       <div class="sp-htxt"><b>${esc(headTitle)}</b></div>
@@ -6957,7 +7003,7 @@ function renderStudioPop(){
     <div class="sp-group">
       <div class="sp-subhdr">${L("Images & video","图像与视频")}</div>
       <div class="sp-services">
-        ${row({name:L("Media Studio","媒体工作室"),state:imState,detail:imDetail,acts:imAct,extra:imgModelsHtml+vidModelsHtml})}
+        ${row({name:L("Media Studio","媒体工作室"),state:imState,detail:imDetail,detailTip:imCase==="off"&&!imgSvc.connected?mediaStudioHint().tip:"",acts:imAct,extra:imgModelsHtml+vidModelsHtml})}
       </div>
     </div>
     ${stReady&&!models.length?`<div class="sp-hint">${L("Relaunch","重新启动")} <code>Start Studio AI.command</code> ${L("to switch models.","以切换本地模型。")}</div>`:""}
@@ -7462,6 +7508,8 @@ function toast(text,opts={}){
   t.innerHTML=`<span>${opts.html?text:esc(text)}</span>${hasAct?`<button type="button">${esc(lbl)}</button>`:""}`;
   const undoTarget=opts.undo&&!opts.onAct?(opts.undoTx||lastTxId()):null;
   if(hasAct)t.querySelector("button").onclick=()=>{if(opts.onAct)opts.onAct();else undo(undoTarget||undefined);t.remove()};
+  // the same message twice in a row (two code paths reporting one event) shows once, with the newer timer and action
+  const same=t.querySelector("span").textContent;[...$("toasts").children].forEach(o=>{if(!o.classList.contains("out")&&o.querySelector("span")?.textContent===same)o.remove()});
   $("toasts").appendChild(t);while($("toasts").children.length>3)$("toasts").firstChild.remove();
   setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),320)},life);
 }
@@ -9572,7 +9620,7 @@ function pinFactSources(found){
   toast(L(`Pinned ${made.length} source${made.length>1?"s":""} to the board.`,`已把 ${made.length} 条资料钉到看板上。`));
 }
 async function fork(idea,count=3,brief="",{ask=true}={}){
-  if(!idea)return toast("Select a claim, idea or note to fork.");
+  if(!idea)return toast(L("Select an idea or note to fork.","请先选中一个想法或便签再发散。"));
   if(idea.type==="treemap"&&!brief)return spawnTreeDirections(idea);
   if(!["idea","note","notepad","treemap"].includes(idea.type))return toast("Strategist forks claims, ideas, notes, notepads and tree maps.");
   const existing=board.nodes.filter(n=>n.type==="direction"&&n.idea===idea.id);
@@ -9993,7 +10041,7 @@ function rank(ns,text){
 }
 
 /* ── human acts: ink, erase, adopt, print ──────────────────────────────── */
-function ink(ids){
+function ink(ids,{quiet=false}={}){
   const ns=ids.map(byId).filter(n=>n&&n.status==="sketch");if(!ns.length)return;
   checkpoint();
   ns.forEach(n=>{n.status="ink";delete n.pid;n.inked=NOW();ensureRevision(n);if(n.type==="proof")n.fixed=(n.fixed||[]).map(f=>{const s=byId(f.id);return s?{...f,d:digest(s),rev:s.rev||1}:f});captureDepSnapshot(n,inputsOf(n.id))});
@@ -10003,7 +10051,7 @@ function ink(ids){
   sfx("keep");renderAll();persist();
   ns.forEach((n,i)=>{const el=nodeEl(n.id);if(el){el.classList.remove("inking");el.style.animationDelay=calm()?"":(i*70)+"ms";void el.offsetWidth;el.classList.add("inking");setTimeout(()=>{el.classList.remove("inking");el.style.animationDelay=""},950+i*70)}});
   [...new Set(ns.map(n=>n.by))].forEach(k=>{const s=qs(`[data-agent="${k}"]`);if(s&&!calm()){s.classList.add("thanks");setTimeout(()=>s.classList.remove("thanks"),750)}});
-  toast(`Kept ${ns.length>1?ns.length+" suggestions":titleOf(ns[0])}`,{undo:true});
+  if(!quiet)toast(`Kept ${ns.length>1?ns.length+" suggestions":titleOf(ns[0])}`,{undo:true});
 }
 async function erase(ids,opts={}){
   const ns=ids.map(byId).filter(n=>n&&!n.tombstone);if(!ns.length)return;
@@ -10145,13 +10193,15 @@ async function redrawMove(t,ns,ins,steer=""){
   if(t.type==="image"&&t.src)return searchWeb(t.src.query,{nextPage:true});
 }
 function adopt(d){
-  if(!d||d.type!=="direction")return toast(L("Select a direction to adopt.","请先选中一个方向再采纳。"));if(d.status==="sketch")return toast("Keep this direction first.");
+  if(!d||d.type!=="direction")return toast(L("Select a direction to adopt.","请先选中一个方向再采纳。"));const wasDraft=d.status==="sketch";
+  // Adopting a draft keeps it too: the intent is clear, and "Keep this direction first" was a dead end
+  if(wasDraft){ink([d.id],{quiet:true});if(d.status==="sketch")return}
   if(board.adopted[d.idea]===d.id)return;checkpoint();board.adopted[d.idea]=d.id;
   {const sibs=board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"&&!x.tombstone);board.declined=(board.declined||[]).filter(r=>!(r.kind==="passed-over"&&(r.target===d.idea||r.ref===d.id)));for(const x of sibs)declineRecord("passed-over",{title:`${x.letter} · ${x.title}`,text:[x.text,x.test].filter(Boolean).join(" Test: "),by:x.by,target:d.idea,reason:L(`Adopted ${d.letter} · ${d.title} instead`,`改为采纳 ${d.letter} · ${d.title}`),ref:x.id})}
   noteChange({op:"adopt",id:d.id,type:"direction",title:clip(`${d.letter} ${d.title}`,60),who:"you",engine:"human"});
   log("you",`Adopted <b>${d.letter} ${esc(d.title)}</b>`,d.id);sfx("keep");renderAll();persist();
   const st=qs(`[data-stamp="${d.id}"]`);if(st&&!calm()){st.classList.add("slam")}
-  toast(`Adopted ${d.title}`,{undo:true});
+  toast(wasDraft?L(`Kept and adopted ${d.title}`,`已保留并采纳 ${d.title}`):L(`Adopted ${d.title}`,`已采纳 ${d.title}`),{undo:true});
 }
 function pullPrint(p){
   if(!p||p.type!=="proof")return toast(L("Select a proof to snapshot.","请先选中一个原型再生成快照。"));if(p.status==="sketch")return toast("Keep the proof before taking a snapshot.");
@@ -10914,7 +10964,7 @@ async function refreshImageService({quiet=true}={}){
     imgSvc={connected:false,models:[],videoModels:[],serviceStatus:prevStatus==="stopped"?"stopped":"offline",sharedInstance:true,checked:NOW(),busy:false};
   }
   if(!quiet){
-    if(imgSvc.serviceStatus==="stopped"){toast("模型服务已停止，请先在 Windows 手动启动。")}
+    if(imgSvc.serviceStatus==="stopped"){toast(L("Media Studio is stopped. Start ComfyUI on the GPU computer first.","媒体工作室已停止，请先在 GPU 电脑上启动 ComfyUI。"))}
     else{
       const av=imgSvc.models.filter(m=>m.available);
       toast(av.length?`Image service connected (${av.map(m=>m.name||m.id).join(", ")})`:imgSvc.connected?"Image service reachable, but no models are ready yet.":"Image service offline at 127.0.0.1:59639 — using previews.");
@@ -10936,7 +10986,7 @@ async function stopModelService(confirmInterrupt=false){
     if(r.status===409&&d.busy&&!confirmInterrupt){
       toggleStudioPopover(false);
       openDialog(L("Stop Model Service?","确认停止模型服务"),`<div style="display:grid;gap:12px;font:14px/1.55 var(--ui);color:var(--label-2)">
-        <p style="margin:0">${esc(d.message||L("A generation job is currently running. Image and video share the same Windows ComfyUI instance — stopping will interrupt the active job and halt both image and video generation.","当前有生成任务正在运行。图片与视频共用同一个 Windows ComfyUI 实例，停止将会中断当前任务，且出图和出视频都会停止。"))}</p>
+        <p style="margin:0">${esc(d.message||L("A generation job is currently running. Image and video share one ComfyUI on the GPU computer, so stopping interrupts the job and halts both image and video generation.","当前有生成任务正在运行。图片与视频共用 GPU 电脑上的同一个 ComfyUI 实例，停止将会中断当前任务，且出图和出视频都会停止。"))}</p>
         <p style="margin:0;color:var(--label-3);font-size:13px">${L("Once stopped, the status will show Stopped and new requests will not auto-start the service.","停止后页面将显示「已停止」，新请求不会自动拉起服务。")}</p>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
           <button type="button" class="cbtn" data-d="close">${L("Keep Running","继续运行")}</button>
@@ -10951,9 +11001,9 @@ async function stopModelService(confirmInterrupt=false){
     if(!r.ok)throw new Error(d.error||("HTTP "+r.status));
     imgSvc={...imgSvc,connected:false,serviceStatus:"stopped",busy:false,checked:NOW()};
     renderStudioPop();
-    toast(L("Model service stopped; Windows VRAM & RAM freed","模型服务已停止，已释放 Windows 显存与内存"));
+    toast(L("Media Studio stopped; GPU memory freed","媒体工作室已停止，已释放显存与内存"));
   }catch(e){
-    toast(L("Stop failed: ","停止失败：")+(e?.message||L("Check Windows control service","请检查 Windows 控制服务")));
+    toast(L("Stop failed: ","停止失败：")+(e?.message||L("Check the image service on the GPU computer","请检查 GPU 电脑上的图像服务")));
   }
 }
 function pickImageModel({hasRef=false}={}){
@@ -11039,7 +11089,7 @@ const SERVICES={
   },
   video:async (prompt,{seed,requestId}={})=>{
     const svc=imgSvc.checked?imgSvc:await refreshImageService();
-    if(svc.serviceStatus==="stopped")throw new Error("模型服务已停止，请先在 Windows 手动启动后重试");
+    if(svc.serviceStatus==="stopped")throw new Error(L("Media Studio is stopped. Start ComfyUI on the GPU computer, then try again","媒体工作室已停止，请在 GPU 电脑上启动 ComfyUI 后重试"));
     const h3=(svc.videoModels||[]).find(m=>m.id==="h3"&&m.available);
     if(!svc.connected||!h3)return null;
     const rid=requestId||(crypto.randomUUID?crypto.randomUUID():uid()+"-"+uid());
@@ -11589,7 +11639,7 @@ async function generateVideo(prompt,{from=null,sources=[]}={}){
   if(!prompt&&!srcs.length)return toast("Describe the video, for example: /video glowing studio prototype reveal");
   const svc=imgSvc.checked?imgSvc:await refreshImageService();
   if(svc.serviceStatus==="stopped"){
-    return toast("模型服务已停止，请先在 Windows 手动启动后重试");
+    return toast(L("Media Studio is stopped. Start ComfyUI on the GPU computer, then try again","媒体工作室已停止，请在 GPU 电脑上启动 ComfyUI 后重试"));
   }
   const hasH3=svc.connected&&(svc.videoModels||[]).some(m=>m.id==="h3"&&m.available);
   if(hasH3){
@@ -11728,7 +11778,7 @@ function renderGenOpts(show,kind=(lineMode||route?.(lineText())?.kind||"image"))
     if(kind==="video"){
       const h3=(imgSvc.videoModels||[]).find(m=>m.id==="h3");
       const vNote=imgSvc.serviceStatus==="stopped"?L("Model service stopped","模型服务已停止"):(imgSvc.connected&&h3?.available?L("MiniMax H3 · 864×480 · 24fps · 5s · Turbo 8-step","MiniMax H3 · 864×480 · 24fps · 5s · Turbo 8步"):(h3?.reason?`${L("H3 not ready","H3 未就绪")} · ${h3.reason}`:"Motion Video · Local"));
-      const actNote=imgSvc.connected&&h3?.available?`<span class="go-note" style="cursor:default" title="Windows MiniMax H3 Text-to-Video">${esc(vNote)}</span>`:`<button type="button" class="go-note" data-refresh-img="1" title="Check Windows H3 service">${esc(vNote)}</button>`;
+      const actNote=imgSvc.connected&&h3?.available?`<span class="go-note" style="cursor:default" title="MiniMax H3 Text-to-Video">${esc(vNote)}</span>`:`<button type="button" class="go-note" data-refresh-img="1" title="Check the H3 video service">${esc(vNote)}</button>`;
       el.innerHTML=actNote;
       el.hidden=false;syncLineClearance?.();return;
     }
@@ -11830,7 +11880,7 @@ const CMDS=[
   {c:"/adopt",a:null,d:"Adopt the selected direction",run:true},
   {c:"/snapshot",a:null,d:"Freeze the selected proof as a numbered snapshot",run:true},
   {c:"/print",a:null,d:"Old name for /snapshot",run:true,hidden:true},
-  {c:"/claim",a:null,d:"Add a claim to Diverge"},
+  {c:"/claim",a:null,d:"Add an idea to Explore"},
   {c:"/note",a:null,d:"Add a note where you’re looking"},
   {c:"/notepad",a:null,d:"Add a structured notepad document"},
   {c:"/question",a:null,d:"Pin an open question on the canvas"},
@@ -11969,7 +12019,7 @@ function describeConfigPatch(p){
   if(p.boardTitle)parts.push(`rename "${clip(p.boardTitle,18)}"`);
   if(p.zoom)parts.push(p.zoom==="fit"?"fit board":p.zoom==="100"?"100% zoom":`zoom ${p.zoom}`);
   if(p.tidy)parts.push("tidy cards");
-  if(p.bay>=0)parts.push(["Gather","Diverge","Make","Release"][p.bay]);
+  if(p.bay>=0)parts.push(bayName(BAYS[p.bay]));
   if(p.refreshAI)parts.push("refresh Studio AI");
   if(p.refreshImg)parts.push("refresh image service");
   if(p.openDialog)parts.push(`open ${p.openDialog}`);
@@ -12022,7 +12072,7 @@ function applyConfigPatch(rawPatch,{source="line",silent=false}={}){
   else if(p.zoom==="in"){const r=wall.getBoundingClientRect();zoomAt(1.25,r.width/2,r.height/2);applied.push("Zoomed in")}
   else if(p.zoom==="out"){const r=wall.getBoundingClientRect();zoomAt(.8,r.width/2,r.height/2);applied.push("Zoomed out")}
   if(p.tidy){tidy();applied.push("Tidied cards")}
-  if(typeof p.bay==="number"&&p.bay>=0&&p.bay<=3){flyToBay(p.bay);applied.push(`Moved to ${["Gather","Diverge","Make","Release"][p.bay]}`)}
+  if(typeof p.bay==="number"&&p.bay>=0&&p.bay<=3){flyToBay(p.bay);applied.push(`Moved to ${bayName(BAYS[p.bay])}`)}
   if(p.refreshAI){checkStudioHealth({wake:true,quiet:false});applied.push("Checking Studio AI")}
   if(p.refreshImg){refreshImageService({quiet:false});applied.push("Checking image service")}
   if(p.openDialog==="memory"){memoryDialog();applied.push("Opened memory")}
@@ -12087,7 +12137,7 @@ function route(text){
       case"/ask":return mk("ask","critic",has("proof")||has("frame")?"ask on "+titleOf(has("proof")||has("frame")):"ask",{arg});
       case"/adopt":return mk("adopt",null,"adopt");
       case"/print":case"/snapshot":return mk("print",null,"snapshot");
-      case"/claim":return mk("claim",null,"add a claim",{arg});
+      case"/claim":return mk("claim",null,"add an idea",{arg});
       case"/note":return mk("note",null,"add a note",{arg});
       case"/notepad":return (!arg&&has("treemap"))?mk("tm-brief",null,"Notepad Brief"):mk("notepad",null,"add a notepad",{arg});
       case"/question":return mk("question",null,"pin a question",{arg});
@@ -12121,7 +12171,7 @@ function route(text){
   m=t.match(/^@(scout|strategist|muse|wright|critic)\b[\s,:]*([\s\S]*)$/i);
   if(m){const hm=m[1].toLowerCase()==="strategist"?"muse":m[1].toLowerCase();if(canHandOff(hm))return mk("handoff",hm,L(`ask ${AGENTS[hm].name} in the panel`,`在面板里问 ${AGENTS[hm].name}`),{member:hm,arg:m[2]})}
   if(m){const raw=m[1].toLowerCase(),a=raw==="strategist"?"muse":raw,rest=m[2];
-    if(a==="muse")return f&&["idea","note","notepad"].includes(f.type)?mk("fork","muse","fork into 3",{n:parseInt(rest)||3,arg:rest}):f?mk("reply","muse","reply in notes",{arg:rest}):mk("claim",null,"add a claim first",{arg:rest});
+    if(a==="muse")return f&&["idea","note","notepad"].includes(f.type)?mk("fork","muse","fork into 3",{n:parseInt(rest)||3,arg:rest}):f?mk("reply","muse","reply in notes",{arg:rest}):mk("claim",null,"add an idea first",{arg:rest});
     if(a==="wright"&&/\b(gif|loop)\b/i.test(rest))return mk("gif","wright","generate animated GIF",{arg:rest});
     if(a==="wright"&&/\b(video|clip|animation|animate|movie|reel|motion)s?\b/i.test(rest))return mk("video","wright","generate video",{arg:rest});
     if(a==="wright"&&/\b(image|picture|illustration|render|draw|paint|poster|photo)s?\b/i.test(rest))return mk("image","wright",`render ${genOpts.count} image${genOpts.count>1?"s":""}`,{arg:rest});
@@ -12139,7 +12189,7 @@ function route(text){
   const noteCmd=t.match(/^(?:note|memo|jot|pin(?:\s+a)?\s+note|make(?:\s+a)?\s+note|add(?:\s+a)?\s+note|create(?:\s+a)?\s+note)[:：\s]+([\s\S]+)$/i)||t.match(/^(?:记一下|记一条|写个?便签|建个?便签|贴个?便签)[:：\s]+([\s\S]+)$/);
   if(noteCmd&&noteCmd[1].trim())return mk("note",null,"add a note",{arg:noteCmd[1].trim()});
   const claimCmd=t.match(/^(?:claim|hypothesis|add(?:\s+a)?\s+claim)[:：\s]+([\s\S]+)$/i);
-  if(claimCmd&&claimCmd[1].trim())return mk("claim",null,"add a claim",{arg:claimCmd[1].trim()});
+  if(claimCmd&&claimCmd[1].trim())return mk("claim",null,"add an idea",{arg:claimCmd[1].trim()});
   const q=/[?？]\s*$/.test(t);
   const metaPlanRe=/\b(what(?:'s| is| are)?\s+(?:your|our|the)\s+next\s+steps?|what\s+next|how\s+should\s+(?:i|we)\s+proceed|what\s+should\s+(?:i|we)\s+do\s+next|what\s+do\s+you\s+recommend)\b/i;
   if(!ctx.length&&metaPlanRe.test(t))return mk("copilot",null,"ask Copilot",{arg:t});
@@ -12294,7 +12344,7 @@ function placeholderFor(ns){
   switch(f.type){
     case"idea":case"note":return L("/fork to branch into directions · /critique to check the evidence","/fork 发散方向 · /critique 检查依据");
     case"notepad":return L("/fork to explore directions from this brief","/fork 根据简报发散方向");
-    case"direction":return board.adopted[f.idea]===f.id?L("/build to build a prototype · /critique to stress-test it","/build 生成原型 · /critique 找漏洞"):L("/adopt to adopt this direction · /critique to see how it could fail","/adopt 采纳此方向 · /critique 看它可能怎么失败");
+    case"direction":return board.adopted[f.idea]===f.id?L("/build to build a prototype · /critique to stress-test it","/build 生成原型 · /critique 找漏洞"):(f.status==="sketch"?L("/adopt to keep and adopt this direction · /critique to see how it could fail","/adopt 保留并采纳此方向 · /critique 看它可能怎么失败"):L("/adopt to adopt this direction · /critique to see how it could fail","/adopt 采纳此方向 · /critique 看它可能怎么失败"));
     case"proof":return L("/build for the next version · /print for a snapshot","/build 下一版 · /print 定稿快照");
     case"question":return L("Type an answer to this question","输入对这个问题的回答");
     default:return L(`Type / for commands on this ${kindLabel(f).replace(/ [A-D]$/,"").toLowerCase()}`,"输入 / 对当前卡片执行命令");
@@ -12393,7 +12443,7 @@ function pinCard(type,text,props={}){
   if(!text)return toast(type==="idea"?"Write the claim after /claim":"Write the note after /note");
   checkpoint();let spot;
   if(type==="idea"){spot=freeSpot(BAY+80,300,W.idea,220)}else{const v=viewRect(),c=toWorld(v.w/2,v.h/2-40);spot=freeSpot(c.x-W.note/2,c.y-60,W.note,150)}
-  const n=node(type,{text,...props},spot);log("you",type==="idea"?(props.kind==="Idea"?`Wrote an idea`:`Wrote a claim`):`Pinned a note`,n.id);sfx("create");select([n.id],{menus:false});renderAll();persist();
+  const n=node(type,{text,...props},spot);log("you",type==="idea"?`Wrote an idea`:`Pinned a note`,n.id);sfx("create");select([n.id],{menus:false});renderAll();persist();
   const el=nodeEl(n.id);el?.classList.add("born");if(!visible(n))focusNodes([n],.9);
   scheduleAdvisor(n.id,{delay:1100});
   return n;
@@ -13539,7 +13589,7 @@ function buildCopilotBoardVisuals(all,t,f,q){
   const dirs=all.filter(n=>n.type==="direction"),sk=board.nodes.filter(n=>n.status==="sketch").length;
   const drifted=board.nodes.filter(n=>n.type==="proof"&&driftOf(n).moved.length);
   if(/\b(data|chart|stat|metric|breakdown|evidence|provenance|summary|overview|status|how many|count)\b/.test(q)||(!/\b(video|gif|image|render|search|reference)\b/.test(q)&&all.length>=3&&!/\b(direction|fork|option|compare|vs|versus|tradeoff|theory|framework|model|loop|system|matrix|priority)\b/.test(q))){
-    const v=normUiVisual({kind:"chart",title:"Board Evidence & Coverage",subtitle:`${all.length} inked cards${sk?` · ${sk} sketches`:""}`,unit:"cards",mode:"bar",items:[
+    const v=normUiVisual({kind:"chart",title:"Board Evidence & Coverage",subtitle:`${all.length} kept card${all.length===1?"":"s"}${sk?` · ${sk} draft${sk===1?"":"s"}`:""}`,unit:"cards",mode:"bar",items:[
       {label:"Observed",value:t.observed,tone:"B",note:`Direct captures, tests, or verified ground truth (${obsPct}% of board).`},
       {label:"Reported",value:t.reported,tone:"C",note:"Secondary references, docs, and external sources."},
       {label:"Proposed",value:t.proposed,tone:"A",note:"Unverified hypotheses or AI-proposed moves needing a live check."},
@@ -13790,7 +13840,7 @@ function localSubAgentReply(role,query,ctx,scoped,handoffFrom){
   if(role==="scout"){
     const matches=rank(all,query);
     if(matches.length)return `Matched ${matches.length} wall card(s): ${matches.slice(0,2).map(n=>`“${titleOf(n)}” (${WEIGHTS[n.weight]?.label||"unweighed"})`).join(", ")}.`;
-    return `Wall balance: ${t.observed} observed vs ${t.reported} reported (${all.length} inked cards).`;
+    return `Wall balance: ${t.observed} observed vs ${t.reported} reported (${all.length} kept card${all.length===1?"":"s"}).`;
   }
   if(role==="muse"){
     const adopted=Object.values(board.adopted||{}).map(byId).filter(Boolean);
@@ -14859,6 +14909,8 @@ async function restoreMedia(){
 async function addFiles(files,at,onto,{autoAdvisor=true,quiet=false,selectNodes=true,mergeSel=false}={}){
   files=[...files];if(!files.length)return [];checkpoint();
   const v=viewRect();const base=at||toWorld(v.w/2,v.h/2);let x=base.x-150,y=base.y-100;const made=[];
+  // a plain upload (no drop point, nothing to feed) is evidence: it goes in Gather, not wherever the screen centre falls
+  if(!at&&!onto&&!quiet)x=clamp(x,40,BAY-380);
   for(const f of files){
     const key="u:"+uid();let n;
     const fmt=fileFormatOf({path:f.name,mime:f.type});
@@ -14881,7 +14933,7 @@ async function addFiles(files,at,onto,{autoAdvisor=true,quiet=false,selectNodes=
   if(selectNodes)select(mergeSel?[...sel,...made.map(m=>m.id)]:made.map(m=>m.id),{menus:false});
   renderAll();persist();made.forEach(m=>nodeEl(m.id)?.classList.add("born"));if(!quiet)follow(made);
   if(autoAdvisor&&made[0])scheduleAdvisor(made[0].id,{delay:1200});
-  if(!quiet)toast(made.length>1?`Pinned ${made.length} files. Mark how much each can carry.`:`Pinned ${made[0].title}. Mark how much it can carry in its margin.`);
+  if(!quiet)toast(made.length>1?L(`Added ${made.length} files. Rate how reliable each source is.`,`已添加 ${made.length} 个文件，请为每份素材标注可信度。`):L(`Added ${made[0].title}. Rate how reliable this source is.`,`已添加 ${made[0].title}，请标注这份素材的可信度。`));
   return made;
 }
 function posterOf(url){return new Promise(res=>{const v=document.createElement("video");v.muted=true;v.preload="auto";v.src=url;let done=false;const fin=r=>{if(!done){done=true;res(r)}};
@@ -15966,7 +16018,7 @@ function renderBoardsPop(){
   const count=b=>Array.isArray(b.nodes)?b.nodes.filter(n=>n.status==="ink").length:"";
   const curRow=`<button type="button" class="bp-row cur" data-bp-close><span class="bp-chk">${ic("check")}</span><b>${esc(board.title||"Untitled board")}</b><small>${count(board)}</small></button>`;
   const row=b=>`<button type="button" class="bp-row" data-open="${esc(b.id)}"><span class="bp-chk"></span><b>${esc(b.title||"Untitled board")}</b><small>${count(b)}</small></button>`;
-  const showcaseRow=`<button type="button" class="bp-row" data-showcase><span class="bp-chk"></span><b>${board.id==="showcase"?L("Reset Showcase","重置示例画板"):"ASHEN CROWN Showcase"}</b><small></small></button>`;
+  const showcaseRow=board.id==="showcase"?`<button type="button" class="bp-row bp-sample" data-showcase title="${esc(L("Put the sample back the way it shipped","把示例画板恢复成初始状态"))}"><span class="bp-chk">${ic("redo")}</span><b>${L("Reset the sample","重置示例画板")}</b><small>${L("Sample","示例")}</small></button>`:`<button type="button" class="bp-row bp-sample" data-showcase><span class="bp-chk"></span><b>ASHEN CROWN</b><small>${L("Sample","示例")}</small></button>`;
   const seedRow=board.id==="modwork"||others.some(b=>b.id==="modwork")?"":`<button type="button" class="bp-row" data-seed><span class="bp-chk"></span><b>MOD WORK study</b><small></small></button>`;
   pop.innerHTML=`<div class="bp-list">${curRow}${others.filter(b=>b.id!=="showcase").map(row).join("")}${showcaseRow}${seedRow}</div>
     <div class="bp-sep"></div>
@@ -15988,7 +16040,7 @@ function renderBoardsPop(){
   qs("[data-new]",pop).onclick=()=>{persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY*1.6,y1:820},.85),0);persist();toggleBoardsPop(false);setTimeout(()=>lineIn.focus(),100)};
   qs("[data-import]",pop).onclick=()=>{toggleBoardsPop(false);$("boardImportIn").click()};
   qs("[data-seed]",pop)?.addEventListener("click",()=>{persistNow();const ex=store.get(".board.modwork",null);if(ex&&ex.nodes)board=ex;else board=seed();sel=[];undoStack=[];redoStack=[];clearLineAttachments();syncHistoryBtns();renderAll();openingShot(false);persist();toggleBoardsPop(false)});
-  qs("[data-showcase]",pop)?.addEventListener("click",()=>{const reset=board.id==="showcase";persistNow();const ex=!reset&&store.get(".board.showcase",null);if(ex&&ex.nodes)board=ex;else board=sampleShowcase();sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();ensureShowcaseAssets();restoreMedia();renderCopilot?.();openingShot(false);persist();toggleBoardsPop(false);if(reset)toast("Showcase board restored")});
+  qs("[data-showcase]",pop)?.addEventListener("click",()=>{const reset=board.id==="showcase";persistNow();const ex=!reset&&store.get(".board.showcase",null);if(ex&&ex.nodes){board=ex;migrateStageNames()}else board=sampleShowcase();sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();ensureShowcaseAssets();restoreMedia();renderCopilot?.();openingShot(false);persist();toggleBoardsPop(false);if(reset)toast(L("Sample board restored","示例画板已恢复"))});
   const del=qs("[data-del]",pop);del.onclick=()=>{if(del.dataset.sure){store.del(".board."+board.id);delBoardIdb(board.id);store.set(".list",store.get(".list",[]).filter(b=>b.id!==board.id));const nxt=store.get(".list",[])[0];if(nxt)switchBoard(nxt.id);else{board=seed();renderAll();openingShot(false);persist()}toggleBoardsPop(false);toast(L("Board deleted","画板已删除"))}
     else{del.dataset.sure=1;del.classList.add("sure");qs("span",del).textContent=L("Delete this board?","确认删除当前画板?");setTimeout(()=>{if(del.isConnected){delete del.dataset.sure;del.classList.remove("sure");qs("span",del).textContent=L("Delete board","删除当前画板")}},4000)}};
 }
@@ -17064,7 +17116,10 @@ function openingShot(animate=true){
   const phone=innerWidth<=640;
   const ns=board.id==="modwork"?vis.filter(n=>(phone?["idea","direction"]:["idea","direction","proof","question","frame"]).includes(n.type)):vis;
   if(!ns.length){cam={x:0,y:0,s:.85};flyTo(camFor({x0:0,y0:-160,x1:BAY*1.6,y1:820},.85),0);return}
-  const b=bbox(ns),target=camFor({x0:b.x0-30,y0:phone?b.y0-30:Math.min(b.y0-30,-170),x1:b.x1+30,y1:b.y1+30},.95);
+  // The sample opens on its first lane at a zoom you can read (the whole board was 34%, below the label-only zoom),
+  // which also keeps its waiting draft tray off screen until you get there.
+  const sample=board.id==="showcase"&&!phone;
+  const b=bbox(ns),target=sample?camFor({x0:0,y0:-140,x1:BAY,y1:880},.8):camFor({x0:b.x0-30,y0:phone?b.y0-30:Math.min(b.y0-30,-170),x1:b.x1+30,y1:b.y1+30},.95);
   if(!animate||calm()){cam=target;paintCam();return}
   const all=bbox(vis);cam=camFor({x0:all.x0-200,y0:all.y0-300,x1:all.x1+800,y1:all.y1+200},.6);paintCam();
   setTimeout(()=>flyTo(target,1600).then(()=>{
@@ -17097,6 +17152,27 @@ function initGlass(){
   new MutationObserver(()=>{watch()}).observe($("margin"),{attributes:true,attributeFilter:["hidden"]});
   document.addEventListener("pointermove",e=>{const g=e.target.closest?.(".glass");if(!g)return;const r=g.getBoundingClientRect();g.style.setProperty("--mx",(e.clientX-r.left)+"px");g.style.setProperty("--my",(e.clientY-r.top)+"px")},{passive:true});
 }
+/* First run: say what Vellum is and offer the two ways in, instead of dropping people on a sample board.
+   Kept small on purpose: "Start a board" hands over to the board picker when there is one. Automated browsers
+   skip it (the test suites drive the first-run page) unless the address has ?welcome=1. */
+function showWelcome(){
+  let force=false;try{force=new URLSearchParams(location.search).get("welcome")==="1"}catch{}
+  if((navigator.webdriver&&!force)||dlg.open)return;
+  openDialog(L("Welcome to Vellum","欢迎使用 Vellum"),`<div class="welcome" style="display:grid;gap:12px;max-width:440px">
+    <p style="margin:0;font:500 14px/1.5 var(--ui);color:var(--label)">${L("Turn an idea into directions you can test, a working prototype, and a snapshot to share. Four stages run left to right: Gather, Explore, Prototype, Snapshot.","把一个想法变成可验证的方向、可交互的原型和可分享的定稿快照。四个阶段从左到右：收集素材、探索方向、制作原型、定稿分享。")}</p>
+    <p style="margin:0;font:500 13px/1.45 var(--ui);color:var(--label-2)">${L("A crew helps at each step: Scout finds sources, Strategist branches ideas, Wright builds, Critic tests. Without an AI model they fall back to simple built-in rules and say so. Connect one any time from the pill at the top right.","每一步都有成员协助：Scout 查资料，Strategist 发散想法，Wright 动手制作，Critic 负责检验。没有连接 AI 模型时，它们只能使用简单的内置规则，并会明确告诉你。随时可以从右上角的状态按钮连接模型。")}</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px">
+      <button type="button" class="sh-btn" data-welcome="sample">${L("Explore the sample","先看看示例")}</button>
+      <button type="button" class="sh-btn" style="background:var(--act);color:var(--on-act)" data-welcome="start">${L("Start a board","新建画板")}</button>
+    </div>
+  </div>`,d=>{
+    qs('[data-welcome="start"]',d).onclick=()=>{d.close();
+      if(typeof newBoardDialog==="function")return newBoardDialog();
+      persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY*1.6,y1:820},.85),0);persist();setTimeout(()=>lineIn.focus(),100)};
+    qs('[data-welcome="sample"]',d).onclick=()=>d.close();
+    setTimeout(()=>qs('[data-welcome="start"]',d)?.focus(),0);
+  });
+}
 function boot(){
   // the board never scrolls; focus moving to an off-screen control must not shift it under the floating UI
   for(const el of [wall,$("app")])el.addEventListener("scroll",()=>{if(el.scrollLeft||el.scrollTop){el.scrollLeft=0;el.scrollTop=0}});
@@ -17107,9 +17183,11 @@ document.addEventListener("scroll",e=>{if(e.target&&e.target.classList&&e.target
 try{new MutationObserver(()=>requestAnimationFrame(syncMarginEdges)).observe(document.getElementById("margin"),{childList:true,subtree:true})}catch(e){}
 applyTheme();document.documentElement.lang=uiLang()==="zh"?"zh-CN":"en";loadBoard();renderAll();syncHistoryBtns();
   document.fonts?.ready?.then(()=>{renderNodes();drawWires();placeBars();placeMargin()});
-  if(board.cam&&store.get(".seen",false)){cam={...board.cam};paintCam()}else{openingShot(true);store.set(".seen",true)}
+  const firstRun=!store.get(".seen",false);
+  if(board.cam&&!firstRun){cam={...board.cam};paintCam()}else{openingShot(true);store.set(".seen",true)}
+  if(firstRun)setTimeout(showWelcome,900);
   addEventListener("resize",()=>{paintCam();renderBars();placeStrip();autoGrow();syncLineClearance()});
-  restoreMedia();hydrateBoardFromIdb();initIsland();resumePendingVideoJobs();initClaude();refreshImageService();setupVoice();renderStages();syncStaticLang();paintMap();initCopilot?.();
+  restoreMedia();hydrateBoardFromIdb();initIsland();resumePendingVideoJobs();initClaude();refreshImageService();if(hasApi()&&apiHealthNow().k==="unknown"&&!cloudDailyLimit())setTimeout(()=>testApi({quiet:true}),1500);setupVoice();renderStages();syncStaticLang();paintMap();initCopilot?.();
   setInterval(()=>{if(!gesture&&!stageOpen)qsa(".card time").length&&renderNodes()},60000);
 }
 boot();

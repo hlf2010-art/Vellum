@@ -1163,9 +1163,9 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         check('on a fresh draft direction, adopt and build words adopt and build; other words still revise; a question still asks', kinds.adopt === 'adopt' && kinds.go === 'adopt' && kinds.zh === 'adopt' && kinds.build === 'build' && kinds.revise === 'revise' && kinds.ask !== 'adopt' && kinds.ask !== 'revise', JSON.stringify(kinds));
         await p.evaluate(id => select([id]), d0);
         await p.type('Adopt this direction'); await p.waitForTimeout(800);
-        const st = await p.evaluate(id => ({ adopted: board.adopted[byId(id).idea] === id, titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(), toast: [...document.querySelectorAll('#toasts > *')].map(x => x.innerText).join(' / ') }), d0);
-        check('typing "Adopt this direction" on a fresh draft asks to keep it first and leaves the drafts as they were (no revision)', !st.adopted && /Keep this direction first/.test(st.toast) && st.titles === 'W A,W B,W C', JSON.stringify(st));
-        await p.evaluate(id => { delete board.adopted[byId(id).idea]; renderAll(); }, d0);
+        const st = await p.evaluate(id => ({ adopted: board.adopted[byId(id).idea] === id, kept: byId(id).status === 'ink', titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(), toast: [...document.querySelectorAll('#toasts > *')].map(x => x.innerText).join(' / ') }), d0);
+        check('typing "Adopt this direction" on a fresh draft keeps and adopts it in one step, and revises nothing', st.adopted && st.kept && /Kept and adopted W A/.test(st.toast) && st.titles === 'W A,W B,W C', JSON.stringify(st));
+        await p.evaluate(id => { delete board.adopted[byId(id).idea]; byId(id).status = 'sketch'; renderAll(); }, d0);
       }
       await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').forEach(n => { n.status = 'ink'; })); await p.evaluate(() => { renderAll(); persist(); });
       const dirA = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'A').id);
@@ -1471,6 +1471,48 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('local models get the longer time limit', await p.evaluate(() => isLocalBase('http://127.0.0.1:59700/v1') && isLocalBase('http://localhost:11434/v1') && !isLocalBase('https://openrouter.ai/api/v1')));
       check('no page errors around cut-off and timed-out replies', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
+    }
+    // 13. first run and the no-credit state, as a first-time user with an OpenRouter key and $0 credit meets them
+    {
+      const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' };
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      await ctx.route('http://127.0.0.1:59631/**', r => r.abort()); await ctx.route('http://127.0.0.1:59639/**', r => r.abort()); await ctx.route(/wikipedia\.org/, r => r.abort());
+      await ctx.route(/openrouter\.ai/, r => r.request().method() === 'OPTIONS' ? r.fulfill({ status: 204, headers: cors }) : r.fulfill({ status: 402, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: { message: 'Insufficient credits', code: 402 } }) }));
+      const p = await ctx.newPage(); p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
+      await p.goto(base + '/Vellum-Lumen.html?welcome=1'); await p.waitForTimeout(2600);
+      const w = await p.evaluate(() => ({ open: dlg.open, txt: dlg.innerText, s: cam.s, far: world.classList.contains('far'), tray: [...document.querySelectorAll('.pbar')].filter(e => e.style.visibility !== 'hidden').length }));
+      check('first run: a welcome says what Vellum is and offers Start a board or Explore the sample', w.open && /Start a board/.test(w.txt) && /Explore the sample/.test(w.txt) && /Gather, Explore, Prototype, Snapshot/.test(w.txt), w.txt.slice(0, 160));
+      check('first run: the sample opens on its first lane at a readable zoom (not label-only), with no draft tray waiting', w.s >= 0.6 && !w.far && w.tray === 0, JSON.stringify(w));
+      await p.click('[data-welcome="sample"]'); await p.waitForTimeout(300);
+      const g = await p.evaluate(() => board.nodes.filter(n => n.type === 'group').map(n => n.title).join(' | '));
+      check('the sample\'s groups use the lane names (Gather, Explore, Prototype, Snapshot), not Diverge / Make / Release', /Explore/.test(g) && /Prototype/.test(g) && !/Diverge|Make ·|Release/.test(g), g);
+      check('the /claim command is described with the same words', await p.evaluate(() => /Add an idea to Explore/.test(JSON.stringify(CMDS))));
+      const pill = () => p.evaluate(() => ({ t: document.querySelector('#crewModeBtn span').textContent, c: document.querySelector('#crewModeBtn').className }));
+      check('no key: the pill says "No AI connected", not "Offline"', (await pill()).t === 'No AI connected', JSON.stringify(await pill()));
+      await p.evaluate(() => { studioPopOpen = true; renderStudioPop(); }); await p.waitForTimeout(200);
+      const ms = await p.evaluate(() => { const r = [...document.querySelectorAll('#studioPop .sp-svc')].find(e => /Media Studio/.test(e.innerText)); return { txt: r.innerText, tip: r.querySelector('.sp-svc-sub')?.title || '' }; });
+      check('Media Studio says what it is and what it needs, and never sends a Mac user to "your Windows PC"', !/Windows/.test(ms.txt + ms.tip) && /images and video/.test(ms.txt) && /NVIDIA GPU/.test(ms.tip), JSON.stringify(ms));
+      await p.evaluate(() => { studioPopOpen = false; renderStudioPop(); openApiDialog(); }); await p.waitForTimeout(200);
+      await p.click('dialog[open] [data-ap="openrouter"]'); await p.fill('#apiKeyIn', 'sk-or-zero'); await p.click('dialog[open] [data-api-test]'); await p.waitForTimeout(800);
+      const t = await p.evaluate(() => ({ txt: $('apiTestOut').innerText, href: $('apiTestOut').querySelector('a')?.href || '' }));
+      check('Test connection on a 402 says the key works but the account is out of credits, with a link to add credits', /Key works, but the account is out of credits/.test(t.txt) && /openrouter\.ai\/settings\/credits/.test(t.href), JSON.stringify(t));
+      check('Test connection has a message for every status the classifier can return', await p.evaluate(() => [200, 401, 402, 404, 429, 500].map(classifyApiStatus).concat(['unreachable']).every(k => !!apiTestMessage({ k, ms: 1, detail: 'HTTP 500' }, { baseUrl: 'https://openrouter.ai/api/v1' }).txt)));
+      await p.click('dialog[open] [data-api-save]'); await p.waitForTimeout(500);
+      let pl = await pill();
+      check('after the 402 the pill says "Out of credits" (a red dot), not "API error"', pl.t === 'Out of credits' && /\berr\b/.test(pl.c), JSON.stringify(pl));
+      await p.evaluate(() => { studioPopOpen = true; renderStudioPop(); }); await p.waitForTimeout(200);
+      check('and the Connection popover says the same', /Out of credits/.test(await p.evaluate(() => $('studioPop').innerText)) && !/\bauto\b/.test(await p.evaluate(() => $('studioPop').innerText)));
+      await p.reload(); await p.waitForTimeout(2600);
+      check('a reload remembers it (no healthy-looking pill until the next check), and the welcome does not come back', (await pill()).t === 'Out of credits' && !(await p.evaluate(() => dlg.open)), JSON.stringify(await pill()));
+      check('the key itself is not stored with the remembered status', await p.evaluate(() => !JSON.stringify(store.get('.apiHealth', {})).includes('sk-or-zero')));
+      await p.evaluate(() => { store.set('.apiHealth', null); apiHealth = { k: 'unknown', sig: '', at: 0, ms: null, detail: '' }; apiCfg = { ...apiCfg, model: 'openrouter/auto' }; renderCrew(); });
+      pl = await pill();
+      check('a key not checked yet shows the model\'s own name ("OpenRouter Auto", not "auto") without a healthy dot', pl.t === 'OpenRouter Auto' && !/claude|live/.test(pl.c), JSON.stringify(pl));
+      const a = await p.evaluate(() => { const d = board.nodes.find(n => n.type === 'direction' && n.status === 'sketch'); select([d.id]); const ph = placeholderFor([d]); adopt(d); return { ph, st: d.status, ad: board.adopted[d.idea] === d.id }; });
+      check('the hint on a draft direction says /adopt keeps and adopts it, and it does', /keep and adopt/.test(a.ph) && a.st === 'ink' && a.ad, JSON.stringify(a));
+      check('the same toast twice in a row shows once', await p.evaluate(() => { toast('Twice'); toast('Twice'); return [...document.querySelectorAll('#toasts > *')].filter(x => x.innerText.includes('Twice')).length === 1; }));
+      check('no page errors on first run and in the no-credit state', p.errors.length === 0, p.errors.join(' | '));
+      await ctx.close();
     }
   } finally {
     // 9. legibility: light and dark are designed separately, so both are measured, in the states that change colour

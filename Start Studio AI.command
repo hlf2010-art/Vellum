@@ -47,6 +47,14 @@ def default_model_id():
 
 
 DEFAULT_MODEL_ID = default_model_id()
+
+# Vellum's two stances (Vellum-Lumen.html, STANCE_TEMP): "fact" answers only from sources, cold; "create"
+# invents freely, warm. Without a stance, JSON stays at 0.35 and prose at 0.65 as before.
+STANCE_TEMPERATURE = {"fact": {"text": 0.15, "json": 0.15}, "create": {"text": 0.9, "json": 0.7}}
+
+
+def sampling_temperature(stance, is_json):
+    return STANCE_TEMPERATURE.get(stance, {}).get("json" if is_json else "text", 0.35 if is_json else 0.65)
 MODELS = {
     "qwen3-vl-4b": {
         "id": "qwen3-vl-4b",
@@ -1025,7 +1033,7 @@ class Handler(BaseHTTPRequestHandler):
                 "messages": body["messages"],
                 "response_format": body["response_format"],
                 "stream": True,
-                "temperature": 0.35 if is_json else 0.65,
+                "temperature": sampling_temperature(body.get("stance"), is_json),
                 "top_p": 0.9,
                 "presence_penalty": 0.35,
                 "frequency_penalty": 0.25,

@@ -52,6 +52,12 @@ with a stand-in script, so nothing real is launched:
 python3 studio/macos-app/test_serve_launch.py
 ```
 
+`Start Studio AI.command` takes the sampling temperature from Vellum's stance (fact answers cold, creative forks warm):
+
+```bash
+python3 tests/test_studio_ai.py
+```
+
 ## Data reader (local server)
 
 Tables from a web address read through `/fetch-data` when the site doesn't allow direct reads. It only

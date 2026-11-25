@@ -154,13 +154,15 @@ node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a
 
 ## Workflow templates (the ideal designer workflows, end to end)
 
-`tests/workflow-templates.cjs` walks the two lead workflows from a brief to something a designer can hand on, in the real page, through the stages Vellum is built around (Gather → Explore → Prototype → Snapshot). They are the first candidates for workflow templates.
+`tests/workflow-templates.cjs` walks the lead workflows from a brief to something a designer can hand on, in the real page, through the stages Vellum is built around (Gather → Explore → Prototype → Snapshot). They are the first candidates for workflow templates.
 
 - **A. Product design (a physical product):** brief → evidence by weight → fork three directions → keep two, discard one with a reason → Critic answers the designer's question against the sources → adopt (the other is recorded as passed over) → Wright's proof (a test kit) → task board → Snapshot → the exported file carries the decision trail and a reload keeps it.
+- **C. AI product, with Copilot alongside (an email-reply assistant for freelance designers):** Copilot's starter suggestions follow each step (one sentence → propose directions → compare → cheapest real test); it pins a thought on a new failure case unasked, told the stage, ending in one action; in the panel it compares the directions with the stage, directions and failure cases in hand, creates an eval set as a draft, and only suggests a change to a kept direction; Critic asks what happens when the model is wrong; the proof designs the four states (normal, wrong, unsure, no model). With no model, Copilot stays quiet rather than pin an invented thought.
 - **B. Short video (10–20 s):** brief → fork three hooks (nothing is rendered while choosing) → Critic → adopt → the hook becomes a timed beat-by-beat script page → one beat is sent to the video provider (MiniMax H3 through Media Studio, mocked at `127.0.0.1:59639`) with its own words → the approved script is frozen.
 
 ```bash
 node tests/workflow-templates.cjs            # from the repo root
+node tests/workflow-templates.cjs --only=C   # one template (A, B or C)
 ```
 
-Each template runs with a scripted model and with no model at all. Nothing calls a real model or generator. Lines marked `KNOWN` are recorded gaps (generic rule-made directions, a stand-in clip not marked as a preview, no Figma export, one hard-wired video provider); they print but do not fail the run, and turn into `PASS … (gap closed)` once fixed.
+Each template runs with a scripted model and with no model at all. Nothing calls a real model or generator. Lines marked `KNOWN` are recorded gaps (generic rule-made directions, offline Copilot answering with another project's advice, a stand-in clip not marked as a preview, no Figma export, one hard-wired video provider, no eval-set card); they print but do not fail the run, and turn into `PASS … (gap closed)` once fixed.

@@ -9,6 +9,8 @@
  *
  *   A. Product design (a physical product): brief → evidence → fork directions → critique → adopt
  *      (the others are recorded as passed over) → proof → test plan → snapshot → hand-off file.
+ *   C. AI product (Copilot alongside): stage-aware suggestions, an unasked thought on a failure case, a
+ *      compare in the panel that drafts an eval set and only suggests edits to kept cards, four-state proof.
  *   B. Short video (10–20 s): brief → fork hooks → critique → adopt → storyboard beats → render a beat
  *      through the video provider (MiniMax H3 via Media Studio, mocked) → snapshot of the script page.
  *
@@ -261,11 +263,118 @@ async function shortVideo(browser, base, live) {
   await p.context().close();
 }
 
+/* ── Template C: AI product design, with Copilot alongside at every step ───────────────────── */
+const AIPROD = {
+  brief: 'An AI assistant that drafts replies to client emails for freelance designers, never sends a price on its own',
+  failures: [
+    ['A client asked for a quote and the draft promised a price the designer never set', 'observed'],
+    ['Drafts sounded cheerful when the client was angry about a delay', 'observed'],
+    ['Designers say they would stop using it after one wrong email sent in their name', 'reported'],
+  ],
+  pin: { keywords: ['failure cases', 'trust'], thoughts: ['The failures are about trust', 'A wrong email is costly', 'Worth an eval set'], basis: [], related: [], pins: [{ agent: 'critic', note: 'These **failure cases** are your user research. Turn them into an **eval set** before you pick how much the assistant does on its own.', liftAct: 'list', liftLabel: 'Draft the eval set' }] },
+  dirs: { directions: [
+    { title: 'Sends on its own', plan: 'The assistant replies without asking when it is confident.', test: 'Run it on 20 real emails; it fails if more than 1 reply would need an apology.', mode: 'story' },
+    { title: 'Drafts, you confirm', plan: 'Every reply is a draft the designer reads, edits and sends.', test: 'Run it on 20 real emails; it fails if more than 2 drafts need a rewrite.', mode: 'story' },
+    { title: 'Sorts and reminds', plan: 'No drafting: it labels urgent, money and mood, and reminds.', test: 'Five designers use it a week; it fails if fewer than 3 say it saved time.', mode: 'story' },
+  ] },
+  copilot: 'B keeps a person between the model and the client, which is what the failure cases ask for: two of three are about a wrong email going out. A is fastest but one bad send ends trust. C is safe but may not save enough time. I drafted an eval set from your failure cases as a draft card, and suggested sharpening B\'s test.\n```actions\n[{"action":"create","cardType":"note","title":"Eval set v0","text":"20 real client emails: 5 quote requests, 5 angry about delays, 5 scope changes, 5 routine. Pass: no price stated, tone matches, under 2 rewrites."},{"action":"edit","target":"Drafts, you confirm","field":"test","value":"Run it on the 20-email eval set; it fails if more than 2 drafts need a rewrite or any draft states a price."}]\n```',
+  critique: 'Sends on its own fails the strongest evidence: designers say one wrong email sent in their name ends it, and the quote failure was observed, not imagined. Nothing here lets a sent email be taken back. What would it take for a designer to notice a wrong draft before it goes?',
+  proof: { title: 'Reply assistant · four states', kicker: 'Direction B, version 1', lede: 'Every reply is a draft. The designer always sees how sure the assistant is.', items: [
+    { title: 'Normal', body: 'A ready draft with the client thread beside it and one tap to send.', tag: 'State' },
+    { title: 'Wrong', body: 'The designer marks what was wrong; the reason goes into the eval set.', tag: 'State' },
+    { title: 'Unsure', body: 'Money, anger or scope: no draft, a short note on why and what to check.', tag: 'State' },
+    { title: 'No model', body: 'Says plainly that no AI is connected and keeps the email untouched.', tag: 'State' },
+  ], cta: 'Run the eval set' },
+};
+
+async function aiProduct(browser, base, live) {
+  const tag = live ? 'scripted model' : 'no model';
+  head(`Template C · AI product with Copilot alongside (${tag})`);
+  const p = await page(browser, base, { model: live });
+  await p.newBoard();
+  // the crew speaks when it matters (the default level), quickly, for the test
+  await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; });
+  const chips = () => p.evaluate(() => copilotStarterChips());
+  check(`[C ${tag}] on an empty board Copilot offers to put the idea in one sentence`, /one sentence/.test((await chips())[0] || ''), (await chips()).join(' | '));
+  // 1. Brief
+  await p.type('/claim ' + AIPROD.brief); await p.waitForTimeout(700);
+  const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea')?.id);
+  await p.evaluate(() => select([]));
+  let c = await chips();
+  check(`[C ${tag}] once the brief is kept, Copilot suggests directions and testing the claim`, /Propose 2 directions/.test(c[0] || '') && c.some(x => /prove this wrong/.test(x)), c.join(' | '));
+  // 2. Evidence = failure cases. Copilot looks at a new card unasked and pins a thought (only when a model can answer)
+  if (live) queue.push({ id: 'C-pin', match: 'Include 1 or at most 2 pins', text: AIPROD.pin });
+  await p.evaluate(() => select([])); await p.type('note: ' + AIPROD.failures[0][0]); await p.waitForTimeout(1500); await p.idle();
+  const firstFail = await p.evaluate(t => board.nodes.find(n => n.type === 'note' && n.text === t)?.id, AIPROD.failures[0][0]);
+  const pins = await p.evaluate(() => Object.values(board.pins || {}).flat().map(x => ({ note: x.note, engine: x.engine, act: x.liftAct })));
+  if (live) {
+    check(`[C ${tag}] Copilot speaks up on a new failure case without being asked`, pins.length === 1 && /eval set/.test(pins[0].note) && pins[0].engine === 'model', JSON.stringify(pins));
+    check(`[C ${tag}] its look was told the stage`, requests.some(r => r.matched === 'C-pin' && /STAGE: Explore/.test(r.full)));
+    check(`[C ${tag}] the thought ends in one action to take, not a question to answer`, pins[0] && pins[0].act === 'list');
+  } else {
+    check(`[C ${tag}] with no model, Copilot stays quiet rather than invent a thought`, pins.length === 0, JSON.stringify(pins));
+  }
+  await p.evaluate(([idea, id, rest]) => { checkpoint(); byId(id).weight = 'observed'; edge(id, idea, 'src'); rest.forEach(([text, weight], i) => { const n = node('note', { text, weight, status: 'ink' }, { x: -900, y: 400 + i * 160 }); edge(n.id, idea, 'src'); }); renderAll(); persist(); }, [idea, firstFail, AIPROD.failures.slice(1)]);
+  // 3. Diverge: three ways to split the work between person and model
+  if (live) queue.push({ id: 'C-fork', match: '"directions"', text: AIPROD.dirs });
+  await p.cmd([idea], '/fork 3');
+  const ds = await directions(p, idea);
+  check(`[C ${tag}] fork drafts three directions`, ds.length === 3, JSON.stringify(ds));
+  // keep B and C; A stays a draft until Critic has looked at it
+  await p.evaluate(ids => { ink(ids); select([]); }, ds.slice(1).map(d => d.id));
+  const A = ds[0], B = ds[1];
+  // 4. Critic on the riskiest direction; it is discarded with the reason
+  if (live) queue.push({ id: 'C-crit', match: 'Check this', text: AIPROD.critique });
+  await p.evaluate(a => critique(byId(a), { ask: 'What happens when it is wrong?' }), A.id); await p.idle();
+  check(`[C ${tag}] Critic answers what happens when the model is wrong`, await p.evaluate(a => (board.threads[a] || []).some(m => m.who === 'critic' && m.text.length > 20), A.id));
+  await p.evaluate(a => erase([a], { reason: 'A sent email cannot be taken back; one wrong one ends trust.' }), A.id); await p.waitForTimeout(300);
+  c = await chips();
+  check(`[C ${tag}] with directions on the board, Copilot offers to compare them`, /Compare the directions/.test(c[0] || ''), c.join(' | '));
+  // 5. Compare with Copilot in the panel: it answers, drafts an eval set, and only suggests changes to kept cards
+  if (live) queue.push({ id: 'C-sub', match: 'Sub-agent protocol', text: '- fine' }, { id: 'C-cp', match: 'Lumen Copilot', text: AIPROD.copilot });
+  await p.evaluate(() => { document.activeElement?.blur?.(); select([]); }); await p.keyboard.press('Control+.'); await p.waitForTimeout(600);
+  await p.fill('#cpInput', 'Compare the directions against the failure cases. Which would you adopt?'); await p.keyboard.press('Enter');
+  for (let i = 0; i < 60 && await p.evaluate(() => { const m = (board.copilot || []).at(-1); return !m || m.role !== 'ai' || m.streaming || m.typing; }); i++) await p.waitForTimeout(250);
+  await p.idle();
+  const reply = await p.evaluate(() => { const m = (board.copilot || []).filter(m => m.role === 'ai').at(-1); return m ? [m.text || '', ...(m.proposals || []).map(x => [x.title, x.text, ...(x.cards || []).map(c => c.title)].join(' '))].join('\n') : ''; });
+  check(`[C ${tag}] Copilot answers in the panel`, reply.length > 20, reply.slice(0, 120));
+  if (live) {
+    const cpReq = requests.find(r => r.matched === 'C-cp');
+    check(`[C ${tag}] Copilot was given the stage, the directions and the failure cases`, !!cpReq && /STAGE: Explore/.test(cpReq.full) && /Drafts, you confirm/.test(cpReq.full) && /promised a price/.test(cpReq.full), cpReq ? cpReq.full.slice(0, 200) : 'no request');
+    check(`[C ${tag}] what Copilot creates arrives as a draft for the designer to keep`, await p.evaluate(() => { const n = board.nodes.find(n => n.title === 'Eval set v0'); return !!n && n.status === 'sketch'; }));
+    const B = ds.find(d => d.title === 'Drafts, you confirm');
+    check(`[C ${tag}] a change Copilot wants on a kept direction is only suggested`, await p.evaluate(id => openProps(id).length === 1 && !/any draft states a price/.test(byId(id).test || ''), B.id));
+  } else {
+    gap(`[C ${tag}] with no model, Copilot answers with another project's advice (audit #1)`, /hair sync|creators|fit-check|headband|lifted frame/i.test(reply), reply.replace(/\s+/g, ' ').slice(0, 220));
+  }
+  await p.keyboard.press('Escape');
+  // 6. Adopt (after keeping Copilot's eval set draft, if any); Copilot's suggestions move on to testing
+  await p.evaluate(() => { const ids = board.nodes.filter(n => n.status === 'sketch' && !n.tombstone).map(n => n.id); if (ids.length) ink(ids); });
+  await p.evaluate(b => { adopt(byId(b)); select([]); }, B.id); await p.waitForTimeout(300);
+  c = await chips();
+  check(`[C ${tag}] once adopted, Copilot moves on to the cheapest real test`, /cheapest real test/.test(c[0] || ''), c.join(' | '));
+  // 7. Prototype with the four states an AI feature needs
+  if (live) queue.push({ id: 'C-build', match: 'Write the real content for this prototype', text: AIPROD.proof });
+  await p.cmd([B.id], '/build');
+  const proof = await p.evaluate(b => { const n = board.nodes.find(n => n.type === 'proof' && n.dir === b); return n && { id: n.id, items: (n.spec?.items || []).map(i => i.title) }; }, B.id);
+  check(`[C ${tag}] Wright builds a proof for the adopted direction`, !!proof && proof.items.length >= 3, JSON.stringify(proof));
+  if (live) check(`[C ${tag}] the proof designs all four states: normal, wrong, unsure, no model`, proof && ['Normal', 'Wrong', 'Unsure', 'No model'].every(s => proof.items.includes(s)), JSON.stringify(proof && proof.items));
+  await p.evaluate(id => ink([id]), proof.id);
+  await p.cmd([proof.id], '/snapshot');
+  check(`[C ${tag}] the tested version is frozen`, (await p.stage()) === 'snapshot', await p.stage());
+  const dec = await p.evaluate(() => (board.declined || []).map(d => d.kind + ':' + (d.reason || '').slice(0, 30)));
+  check(`[C ${tag}] the hand-off carries why A was dropped and C passed over`, dec.some(d => /^draft:A sent email/.test(d)) && dec.some(d => d.startsWith('passed-over')), JSON.stringify(dec));
+  gap(`[C ${tag}] no eval-set card type yet: evals live in notes and proof items (roadmap)`, await p.evaluate(() => !CMDS.some(c => /eval/i.test(c.c + c.d))));
+  check(`[C ${tag}] no page errors`, p.errors.length === 0, p.errors.join(' | '));
+  await p.context().close();
+}
+
 (async () => {
   const srv = await serve(), base = 'http://127.0.0.1:' + srv.address().port;
   const browser = await chromium.launch({ headless: !process.argv.includes('--headed') });
   try {
-    for (const live of [true, false]) { await productDesign(browser, base, live); await shortVideo(browser, base, live); }
+    const only = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7); // e.g. --only=C
+    for (const live of [true, false]) for (const [k, f] of [['A', productDesign], ['B', shortVideo], ['C', aiProduct]]) if (!only || only.includes(k)) await f(browser, base, live);
   } catch (e) { check('the run finished', false, String(e && e.stack || e).split('\n').slice(0, 3).join(' ')); }
   await browser.close(); srv.close();
   console.log(results.join('\n'));

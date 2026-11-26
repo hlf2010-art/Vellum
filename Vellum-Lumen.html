@@ -201,7 +201,7 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .by-pop .ev-ring::before{content:"";width:9px;height:9px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--label-4)}
 .by-pop .ev-row .by-pop-txt small{white-space:normal;line-height:16px}
 .by-pop .ev-n{flex:none;min-width:16px;text-align:right;font:600 13px/20px var(--ui);font-variant-numeric:tabular-nums;color:var(--label-2)}
-.by-pop .ev-acts{display:flex;gap:6px;flex-wrap:wrap;padding:8px 6px 4px;margin-top:4px;border-top:.5px solid var(--hair)}
+.by-pop .ev-acts{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;padding:8px 6px 4px;margin-top:4px;border-top:.5px solid var(--hair)}
 .by-pop .ev-act{height:28px;padding:0 10px;border:0;border-radius:var(--radius-sm);background:var(--hover);color:var(--label);font:550 12.5px/1 var(--ui);cursor:pointer;transition:background var(--d-quick),transform var(--duration-press)}
 .by-pop .ev-act:hover{background:var(--press)}
 .by-pop .ev-act:active{transform:scale(.97)}
@@ -6645,9 +6645,9 @@ function evidencePopHTML(n){
   const ns=evSourcesOf(n),t=ns.length?tally(ns):(n.weights||{}),total=ns.length||(n.of||[]).length,v=evidenceVerdict(t);
   const rows=[...WEIGHT_ORDER,"none"].filter(k=>t[k]).map((k,i)=>{const w=WEIGHTS[k];
     return `<li style="--i:${i}" class="ev-row ev-k-${k}">${k==="none"?'<span class="ev-ring" aria-hidden="true"></span>':`<span class="ev-k-g">${evBarsHTML(w.n)}</span>`}<span class="by-pop-txt"><b>${esc(k==="none"?L("Not rated","未评估"):weightLabel(k))}</b><small>${esc(k==="none"?L("Nobody has judged these yet.","还没有人判断过它们有多可信。"):weightDesc(k))}</small></span><span class="ev-n">${t[k]}</span></li>`}).join("");
-  const u=t.none||0,acts=[];
-  if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(u===1?L("Rate the unrated source","去评估这个来源"):L(`Rate ${u} unrated sources`,`去评估 ${u} 个来源`))}</button>`);
+  const u=t.none||0,acts=[];   // secondary first, primary last: the primary action sits bottom-right, where the eye lands
   if(ns.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("Show sources","在画布上查看来源"))}</button>`);
+  if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(u===1?L("Rate the unrated source","去评估这个来源"):L(`Rate ${u} unrated sources`,`去评估 ${u} 个来源`))}</button>`);
   return `<header class="ev-head ev-${v.k}">${evBarsHTML(v.bars)}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows?`<ul>${rows}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
 }
 function evidenceScale(n){const s=sourcesFor(n);if(!s.length)return L("No sources yet","暂无关联来源");return evidenceLine(tally(s),s.length)}

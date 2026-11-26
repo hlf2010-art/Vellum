@@ -3249,7 +3249,6 @@ body.snap-skip #wall{cursor:copy}
 .catch-pop .cu-foot small{flex:1;font:450 11.5px/1.4 var(--ui);color:var(--label-3)}
 .catch-pop .cu-foot .cbtn{height:30px;padding:0 14px;font-size:12.5px;flex:none}
 @media (prefers-reduced-motion:reduce){.catch-pop,.catch-pop .cu-list li{animation:none!important}}
-.crew-pop .crew-kbd{font:500 11px/1 var(--mono);color:var(--label-3)}
 .review-pop.crew-pop{width:min(372px,calc(100vw - 28px));max-height:calc(100vh - 80px);padding:16px 18px 18px;display:grid;gap:16px}
 .crew-pop .cp-pop-head{display:grid;gap:0;padding-bottom:4px}
 .crew-pop .crew-why{font:450 11.5px/1.35 var(--ui);color:var(--label-3);margin-top:3px}
@@ -4061,8 +4060,7 @@ function renderCrewPop(){
   pop.innerHTML=`<div class="cp-pop-head"><b>${L("Crew","成员")}</b>${why?`<span class="crew-why">${esc(why)}</span>`:""}</div>
     ${firstUnread?`<div class="crew-wait"><span><b>${esc(unreadTxt)}</b>${held?`<small>${esc(L(`${held} card${held>1?"s":""} held back until you read`,`${held} 张卡片暂缓，读完后出现`))}</small>`:""}</span><button type="button" class="cbtn" data-crew-show="${esc(firstUnread)}">${L("Show","查看")}</button></div>`:""}
     ${(board.held||[]).length?(()=>{const hs=board.held,last=hs[hs.length-1];return `<div class="crew-wait crew-held"><span><b>${esc(L(`Held back ${hs.length} idea${hs.length>1?"s":""} you turned down`,`略过了 ${hs.length} 个你否决过的想法`))}</b><small>${esc(clip(last.text,70))}</small></span><button type="button" class="cbtn" data-crew-held>${L("Show","查看")}</button></div>`})():""}
-    <div class="crew-axis"><div class="crew-axis-h"><b id="crew-speak-l">${L("Joins in on this board","在这块画板上的参与度")}</b><span class="crew-kbd">${PART_KEY} ${L("Focus","专注")}</span></div>${seg("speak",SPEAK_LEVELS,SPEAK_LABEL,crewSpeak)}<p>${L(SPEAK_DESC[crewSpeak][0],SPEAK_DESC[crewSpeak][1])} ${L("On every level, cards you kept change only when you accept.","无论哪一档，你确认过的卡片只有你同意才会改。")}</p></div>
-    <div class="crew-axis"><div class="crew-axis-h"><b id="crew-act-l">${L("Acts on the board","在画板上动手")}</b><button type="button" class="crew-link" data-crew-custom>${L("Customize","自定义")}</button></div>${seg("act",ACT_LEVELS,ACT_LABEL,autonomyCustom?"":crewAct)}<p>${autonomyCustom?esc(autonomyPlain()):L(ACT_DESC[crewAct][0],ACT_DESC[crewAct][1])}</p></div>
+    <div class="crew-axis"><div class="crew-axis-h"><b id="crew-act-l">${L("Acts on the board","在画板上动手")}</b><button type="button" class="crew-link" data-crew-custom>${L("Customize","自定义")}</button></div>${seg("act",ACT_LEVELS,ACT_LABEL,autonomyCustom?"":crewAct)}<p>${autonomyCustom?esc(autonomyPlain()):L(ACT_DESC[crewAct][0],ACT_DESC[crewAct][1])} ${L("Cards you kept change only when you accept.","你确认过的卡片只有你同意才会改。")}</p></div>
     <div class="crew-sec"><b>${L("Locked lanes","锁定的泳道")}</b><div class="crew-locks">${BAYS.map((b,i)=>{const on=lockedBays().includes(i);return `<button type="button" class="crew-lock" data-crew-lock="${i}" aria-pressed="${on}">${on?ic("lock"):""}${esc(bayName(b))}</button>`}).join("")}</div><span>${L("Kept cards in a locked lane are yours alone. Lock single cards from their menu.","锁定泳道里已确认的卡片只有你能改。单张卡片可在其菜单里锁定。")}</span></div>
     <div class="crew-foot"><button type="button" class="cbtn" data-crew-memory>${ic("book")}${L("Memory","记忆")}</button></div>`;
 }
@@ -7405,7 +7403,7 @@ function renderCrew(){
   const seatsHtml=Object.values(AGENTS).map(a=>{const s=crewState[a.key];const waiting=board.nodes.some(n=>n.status==="sketch"&&n.by===a.key);
     return `<button type="button" class="seat ${s.busy?"busy":""} ${waiting&&!s.busy?"waiting":""}" data-agent="${a.key}" aria-label="${a.name}: ${esc(s.status||(waiting?"waiting for you":"free"))}"><span class="mk">${a.mk}</span><span class="ring"></span></button>`}).join("");
   const quiet=typeof crewQuietReason==="function"?crewQuietReason():null,health=typeof connHealth==="function"?connHealth():{k:"none",tip:""};
-  const setTip=`${L("Crew settings","成员设置")} · ${L("Joins in","参与度")}: ${L(SPEAK_LABEL[crewSpeak][0],SPEAK_LABEL[crewSpeak][1])} · ${L("Acts","动手")}: ${autonomyCustom?L("Custom","自定义"):L(ACT_LABEL[crewAct][0],ACT_LABEL[crewAct][1])}${quiet?" · "+quiet.tip:""}`;
+  const setTip=`${L("Crew settings","成员设置")} · ${L("Acts","动手")}: ${autonomyCustom?L("Custom","自定义"):L(ACT_LABEL[crewAct][0],ACT_LABEL[crewAct][1])}${quiet?" · "+quiet.tip:""}`;
   $("crew").innerHTML=`<div class="crew-group${quiet?" quiet-"+quiet.k:""}" ${quiet?`title="${esc(quiet.tip)}"`:""}><div class="crew-seats" role="group" aria-label="AI Crew">${seatsHtml}</div>`
     +`<button type="button" id="crewSetBtn" class="crew-set" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(setTip)}" aria-label="${esc(setTip)}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg><i class="conn-dot ${health.k}" title="${esc(health.tip)}"></i></button></div>`
     +`<button type="button" id="crewModeBtn" class="crew-mode ${mode.cls||""}" aria-haspopup="dialog" aria-expanded="${studioPopOpen}" title="${esc(mode.title)}" aria-label="${esc(modeLbl)}: ${esc(mode.title)}"><b></b><span>${esc(modeLbl)}</span>${ic("chev","ico cm-chev")}</button>`;
@@ -11565,7 +11563,6 @@ $("reviewBtn").addEventListener("click",()=>{
   toggleReviewPop();
 });
 $("crewPop")?.addEventListener("click",e=>{
-  const sp=e.target.closest("[data-crew-speak]");if(sp){setSpeak(sp.dataset.crewSpeak,{from:"popover"});return}
   const ac=e.target.closest("[data-crew-act]");if(ac){setCrew({act:ac.dataset.crewAct});return}
   const lk=e.target.closest("[data-crew-lock]");if(lk){toggleBayLock(+lk.dataset.crewLock);renderCrewPop();return}
   const sh=e.target.closest("[data-crew-show]");if(sh){const n=byId(sh.dataset.crewShow);toggleCrewPop(false);if(n){focusNodes([n],Math.max(cam.s,.85),0);select([n.id],{menus:false});if(openAdvNodeId!==n.id)toggleAdvPop(n.id)}return}

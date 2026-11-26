@@ -3202,6 +3202,23 @@ body.snap-skip #wall{cursor:copy}
 .crew-pop .crew-foot{display:flex;gap:8px;flex-wrap:wrap}
 .crew-pop .crew-foot .cbtn{height:var(--size-md);font-size:12px}
 .au-row .au-seg{width:auto;min-width:228px}
+/* who made it: a small seal on the card's top edge, only on crew work. Avatar alone at rest; its name slides out on hover
+   or when the card is selected. A check on the avatar: drafted by the crew, confirmed by you. Gone in the overview. */
+.card .by-seal{--seal-ease:cubic-bezier(.32,.72,0,1);position:absolute;top:-10px;left:16px;z-index:7;display:flex;align-items:center;height:22px;max-width:22px;padding:2px;border-radius:var(--radius-pill);background:var(--card);box-shadow:0 0 0 .5px var(--hair-2),0 1px 3px rgba(11,12,14,.07);overflow:hidden;pointer-events:auto;cursor:default;transition:max-width var(--duration-spring) var(--seal-ease),opacity var(--duration-base) var(--easing-standard),transform var(--duration-base) var(--easing-standard)}
+.card .by-seal-av{position:relative;flex:none;width:18px;height:18px}
+.card .by-seal .mk{width:18px;height:18px;transition:none}
+.card .by-seal .mk svg{width:66%;height:66%;stroke-width:2}
+.card .by-seal-t{font:var(--text-caption);font-weight:560;letter-spacing:-.003em;color:var(--label-2);white-space:nowrap;overflow:hidden;max-width:0;padding:0;opacity:0;transform:translateX(-4px);transition:opacity var(--duration-base) var(--easing-standard),transform var(--duration-spring) var(--seal-ease),max-width var(--duration-spring) var(--seal-ease),padding var(--duration-spring) var(--seal-ease)}
+.card .by-seal-ok{position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border-radius:50%;background:var(--label);box-shadow:0 0 0 1.5px var(--card);display:grid;place-items:center}
+.card .by-seal-ok svg{width:10px;height:10px;fill:none;stroke:var(--card);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.card .by-seal:hover,.card.sel .by-seal{max-width:240px}
+.card .by-seal:hover .by-seal-t,.card.sel .by-seal-t{opacity:1;transform:none;max-width:214px;padding:0 8px 0 6px}
+.mk:has([data-a="copilot"]){--orb-ink:#3B3F47;--orb-bg:#EEF0F3}
+:root[data-theme="dark"] .mk:has([data-a="copilot"]){--orb-ink:#D7DAE0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mk:has([data-a="copilot"]){--orb-ink:#D7DAE0}}
+#world.is-zoomed-out .card .by-seal,#world.is-moving .card .by-seal{opacity:0;transform:translateY(3px) scale(.86);pointer-events:none}
+#world.is-zoomed-out .card:hover .by-seal,#world.is-zoomed-out .card.sel .by-seal{opacity:1;transform:scale(var(--inv-s,1));transform-origin:left bottom;pointer-events:auto}
+@media (prefers-reduced-motion:reduce){.card .by-seal,.card .by-seal-t{transition:none}}
 .card .lock-badge{position:absolute;top:8px;right:8px;z-index:7;width:20px;height:20px;display:grid;place-items:center;border-radius:var(--radius-xs);background:var(--hover);color:var(--label-2);pointer-events:auto}
 .card .lock-badge .ico{width:12px;height:12px}
 .bay-lock{pointer-events:auto;align-self:center;width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-xs);color:var(--label-3);background:transparent;opacity:.55;transition:opacity var(--d-quick),background var(--d-quick)}
@@ -3378,6 +3395,7 @@ const AV={
   muse:'<svg viewBox="0 0 24 24" data-a="muse" aria-hidden="true"><path d="M12 20.6v-8M12 12.6C12 9.2 8.7 8.1 6.3 5.8M12 12.6c0-3.4 3.3-4.5 5.7-6.8M12 12.6V5"/><circle class="f" cx="6" cy="5.5" r="1.6"/><circle class="f" cx="18" cy="5.5" r="1.6"/><circle class="f" cx="12" cy="4" r="1.6"/></svg>',
   wright:'<svg viewBox="0 0 24 24" data-a="wright" aria-hidden="true"><rect x="3.8" y="12.6" width="7.2" height="7.2" rx="1.7"/><rect x="13" y="12.6" width="7.2" height="7.2" rx="1.7"/><rect x="8.4" y="4.2" width="7.2" height="7.2" rx="1.7"/></svg>',
   critic:'<svg viewBox="0 0 24 24" data-a="critic" aria-hidden="true"><path d="M12 5v14.6M8.4 19.6h7.2M4.8 7.8h14.4"/><path d="M4.8 7.8 2.7 12.9a2.2 2.2 0 0 0 4.2 0zM19.2 7.8l-2.1 5.1a2.2 2.2 0 0 0 4.2 0z"/><circle class="f" cx="12" cy="4.3" r="1.35"/></svg>',
+  copilot:'<svg viewBox="0 0 24 24" data-a="copilot" aria-hidden="true"><path d="M12 4.6 19.2 17.6H4.8Z"/><path d="M2.8 13.6 8.8 11.4"/><path d="M16 11.4 21.2 9.4"/></svg>',
   you:'<svg viewBox="0 0 24 24" data-a="you" aria-hidden="true"><circle cx="12" cy="9" r="3.7"/><path d="M5.3 19.5a6.9 6.9 0 0 1 13.4 0"/></svg>',
 };
 const MARK=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="vl-tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B2D33"/><stop offset="1" stop-color="#0D0E11"/></linearGradient><linearGradient id="vl-beam" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
@@ -3391,6 +3409,8 @@ const AGENTS={
   wright:{key:"wright",name:"Wright",mk:AV.wright,craft:"Builds proofs: working pages, decks and action lists from an adopted direction."},
   critic:{key:"critic",name:"Critic",mk:AV.critic,craft:"Checks work against its sources and asks the question nobody wants to."},
 };
+/* makers that are not crew seats: Copilot can put cards on the board too */
+const CREATORS={copilot:{key:"copilot",name:"Copilot"}};
 /* ── Task Island: one place to watch long-running agent work ───────────────
    Every entry is a real job: a crew run (runAgent), an H3 video job on the image service, a PromptLens
    reverse or shot split, or a Copilot research turn with sub-agents. A ring fills only when the job
@@ -4089,7 +4109,7 @@ function proposalBarHTML(n){
 }
 /* Subline provenance: only crew work is marked ("Synthesis by Scout"); your own cards carry no byline.
    The engine (model, built-in rules, local service) and the source count go in the tooltip. */
-function provAuthor(n){const p=n?.prov,author=p?p.author:n.by;return author&&author!=="you"?(AGENTS[author]?.name||author):null}
+function provAuthor(n){const p=n?.prov,author=p?p.author:n.by;return author&&author!=="you"?(AGENTS[author]?.name||CREATORS[author]?.name||author):null}
 function provBy(n){const w=provAuthor(n);return w?esc(L(` by ${w}`,` · ${w} 生成`)):""}
 function provTitle(n){
   const w=provAuthor(n);if(!w)return"";const p=n.prov,eng=p&&p.engine&&p.engine!=="human"?ENGINE_LABEL[p.engine]:null,from=(p?.basis||[]).length;
@@ -4107,14 +4127,14 @@ function relDate(t){
 }
 function provSubHTML(n){
   const p=n?.prov,author=p?p.author:n.by,a=author==="you"?null:AGENTS[author];
-  const who=a?a.name:(author&&author!=="you"?author:null);
+  const who=a?a.name:(author&&author!=="you"?(CREATORS[author]?.name||author):null);
   let t=who?L(`by ${who}`,`由 ${who} 生成`):L("by you","你创建");
   if(p&&p.engine&&p.engine!=="human"){const eng=ENGINE_LABEL[p.engine];if(eng)t+=` · ${L(eng[0],eng[1])}`}
   const from=(p?.basis||[]).length;if(from)t+=` · ${L(`from ${from} card${from===1?"":"s"}`,`基于 ${from} 张卡片`)}`;
   return esc(t);
 }
 function provLineHTML(n){
-  const p=n?.prov;if(!p)return"";const a=p.author==="you"?null:AGENTS[p.author];
+  const p=n?.prov;if(!p)return"";const a=p.author==="you"?null:(AGENTS[p.author]||CREATORS[p.author]);
   const who=a?a.name:L("You","你"),eng=ENGINE_LABEL[p.engine]||["",""],from=(p.basis||[]).length;
   const engTxt=p.engine==="human"?"":` · ${L(eng[0],eng[1])}`;
   return `<div class="m-sec m-prov"><h5><span>${L("Made by","生成者")}</span><span class="m-hmeta"><span>${esc(who)}${esc(engTxt)}${from?` · ${L(`from ${from} card${from===1?"":"s"}`,`基于 ${from} 张卡片`)}`:""}</span></span></h5></div>`;
@@ -5016,7 +5036,7 @@ function sampleShowcase(){
   // 02 · DIVERGE
   const fr=at(node("frame",{from:rec.id,t:4.2,media:"u:sh-frame",weight:"observed",title:"Lifted Frame · Sightline Break"},{x:1060,y:100}),195);
   edge(rec.id,fr.id,"src");
-  const syn=at(node("synthesis",{by:"scout",title:"Evidence Audit · Corner vs World",of:[padBrief.id,src1.id,rec.id,aud.id,fr.id],weights:{observed:3,reported:1,proposed:0,illustrative:2,none:0},
+  const syn=at(node("synthesis",{by:"scout",inked:NOW(),title:"Evidence Audit · Corner vs World",of:[padBrief.id,src1.id,rec.id,aud.id,fr.id],weights:{observed:3,reported:1,proposed:0,illustrative:2,none:0},
     points:[
       "**Observed:** 9/12 players miss corner toasts while tracking rooftop cover (2.9s lag).",
       "**Reported:** Player P07 blamed delayed Triad hostility realization on peripheral clutter.",
@@ -5282,7 +5302,21 @@ function cardAuthorAgent(n){
   }
   return null;
 }
-function byline(n){const a=cardAuthorAgent(n);return a?`<span class="mk" style="width:18px;height:18px;font-size:11px" title="${esc(a.name)}">${a.mk}</span>`:""}
+/* Who made a card. Only crew work is marked; your own cards stay clean (one person per board in this version).
+   The maker is the card's provenance (prov.author, else by), never someone who only commented on it.
+   A crew card you kept, adopted or marked helpful carries a check: drafted by the crew, confirmed by you. */
+function creatorKey(n){const k=n?.prov?.author||n?.by;return k&&k!=="you"&&(AGENTS[k]||CREATORS[k])?k:null}
+function creatorOf(n){const k=creatorKey(n);return k?(AGENTS[k]||CREATORS[k]):null}
+function creatorKept(n){return !!(n&&(n.inked||n.vote==="up"||(n.type==="direction"&&board.adopted?.[n.idea]===n.id)))}
+function creatorBadgeHTML(n){
+  if(!n||n.status==="sketch"||n.type==="group")return"";   // a draft's header already says who suggested it
+  const a=creatorOf(n);if(!a)return"";
+  const kept=creatorKept(n);
+  const label=kept?L(`${a.name} · kept by you`,`${a.name} 起草 · 你已确认`):L(a.name,`${a.name} 创建`);
+  const tip=kept?L(`Drafted by ${a.name}, kept by you`,`由 ${a.name} 起草，你已确认`):L(`Made by ${a.name}, not yet confirmed by you`,`由 ${a.name} 创建，你还没有确认`);
+  return `<span class="by-seal${kept?" kept":""}" data-by="${a.key}" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="by-seal-av"><span class="mk">${AV[a.key]}</span>${kept?'<i class="by-seal-ok" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M3.3 6.2 5.2 8 8.7 4.3"/></svg></i>':""}</span><span class="by-seal-t">${esc(label)}</span></span>`;
+}
+function byline(n){return ""}   // superseded by creatorBadgeHTML: one mark per card, in one place
 function threadCount(n){
   const t=board.threads[n.id];
   if(!t||!t.length)return "";
@@ -5298,7 +5332,7 @@ function cardVotesHTML(n){
   const upT=L("Helpful · Copilot remembers you like this direction","认可 · Copilot 会记住你偏爱此类方向"),dnT=L("Not helpful · Dims card & steers Copilot away","不认可 · 淡化此卡并让 Copilot 避开此类建议");
   return `<span class="card-votes${n.vote?" has-vote":""}"><button type="button" class="vote-btn up${n.vote==="up"?" active":""}" data-a="vote-up" aria-pressed="${n.vote==="up"}" title="${esc(upT)}" aria-label="${esc(upT)}">${ic("thumbUp")}</button><button type="button" class="vote-btn dn${n.vote==="down"?" active":""}" data-a="vote-dn" aria-pressed="${n.vote==="down"}" title="${esc(dnT)}" aria-label="${esc(dnT)}">${ic("thumbDown")}</button></span>`;
 }
-function sketchHead(n){const a=AGENTS[n.by]||AGENTS.muse;const tag=n.type==="direction"?`<span class="chip">${esc(n.letter)}</span>`:n.type==="image"?`<span style="color:var(--label-3);font-weight:500">${esc(kindLabel(n))}</span>`:"";return `<div class="card-k sketch-by"><span class="sparkle"></span><b>${L(`Suggested by ${a.name}`,`由 ${a.name} 建议`)}</b>${tag}${n.prov?.engine==="rules"?`<span class="prov-rules" title="${esc(L("Made by the built-in rules because no model answered","没有模型响应，由内置规则生成"))}">${L("built-in rules","内置规则")}</span>`:""}<span class="sp"></span>${cardVotesHTML(n)}</div>`}
+function sketchHead(n){const a=creatorOf(n)||AGENTS[n.by]||AGENTS.muse;const tag=n.type==="direction"?`<span class="chip">${esc(n.letter)}</span>`:n.type==="image"?`<span style="color:var(--label-3);font-weight:500">${esc(kindLabel(n))}</span>`:"";return `<div class="card-k sketch-by"><span class="sparkle"></span><b>${L(`Suggested by ${a.name}`,`由 ${a.name} 建议`)}</b>${tag}${n.prov?.engine==="rules"?`<span class="prov-rules" title="${esc(L("Made by the built-in rules because no model answered","没有模型响应，由内置规则生成"))}">${L("built-in rules","内置规则")}</span>`:""}<span class="sp"></span>${cardVotesHTML(n)}</div>`}
 function timeTag(n){const ts=n?.created,t=exactTime(ts);if(!t)return"";const full=new Date(ts).toLocaleString(uiLang()==="zh"?"zh-CN":"en-US",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});return `<time title="${esc(full)}">${esc(t)}</time>`}
 
 const htmlDocs=new Map();
@@ -6414,7 +6448,7 @@ function nodeLineageSig(n){
   return refs.map(r=>`${r.sourceId}:${r.depType}:${r.status}:${r.node?(r.node.rev||1)+":"+digest(r.node):"T"}`).join("|");
 }
 
-function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
+function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
   n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
@@ -6454,7 +6488,7 @@ function renderNodes(){
     if(el._sig!==sig){
       if(el._sig&&el.querySelector("[contenteditable]:focus,input:focus,textarea:focus"))continue;
       const rszHTML=RESIZABLE_TYPES.has(n.type)?'<span class="card-resize is-l" data-resize="wl" title="Drag left edge to resize · Alt symmetric · Double-click to reset" aria-hidden="true"></span><span class="card-resize is-r" data-resize="wr" title="Drag right edge to resize · Alt symmetric · Double-click to reset" aria-hidden="true"></span>':"";
-      el.innerHTML=lockBadgeHTML(n)+cardBody(n)+proposalBarHTML(n)+lineageCardHTML(n)+advPinHTML(n)+'<span class="crop" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="port port-in" data-port="in" data-side="left" title="Upstream input (parent)"></span><span class="port port-out" data-port="out" data-side="right" title="Downstream output (child)"></span>'+rszHTML;el._sig=sig;
+      el.innerHTML=lockBadgeHTML(n)+creatorBadgeHTML(n)+cardBody(n)+proposalBarHTML(n)+lineageCardHTML(n)+advPinHTML(n)+'<span class="crop" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="port port-in" data-port="in" data-side="left" title="Upstream input (parent)"></span><span class="port port-out" data-port="out" data-side="right" title="Downstream output (child)"></span>'+rszHTML;el._sig=sig;
       const fr=el.querySelector("iframe[data-srcdoc]");if(fr){if(fr.dataset.srcdoc==="html")populateHtmlIframe(fr,n);else{fr.onload=()=>fr.parentElement?.classList.add("ready");fr.srcdoc=pageHTML(n.spec,{thumb:true})}}
       const pdfFr=el.querySelector("iframe[data-src-pdf]");if(pdfFr){pdfFr.onload=()=>pdfFr.parentElement?.classList.add("ready");pdfFr.src=pdfFr.dataset.srcPdf+"#toolbar=0&navpanes=0&scrollbar=0";setTimeout(()=>pdfFr.parentElement?.classList.add("ready"),250)}
       const urlFr=el.querySelector("iframe[data-src-url]");if(urlFr){urlFr.onload=()=>urlFr.parentElement?.classList.add("ready");urlFr.src=urlFr.dataset.srcUrl}
@@ -14497,7 +14531,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       }
       if(left())throw boardGone();
       if(!isCasual&&aiMsg.actions&&aiMsg.actions.length&&!aiMsg.actionResults){
-        const activeAgent=subSteps.length?(subSteps[subSteps.length-1].to||subSteps[0].to):(aiMsg.agent||"critic");
+        const activeAgent=subSteps.length?(subSteps[subSteps.length-1].to||subSteps[0].to):(aiMsg.agent||"copilot");
         aiMsg.actionResults=dispatchCanvasActions(aiMsg.actions,{by:activeAgent});
       }
       if(!isCasual)reconcileProposalsWithActions(aiMsg);
@@ -14752,6 +14786,8 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
     if(!act||typeof act!=="object")continue;
     const type=String(act.action||act.type||"create").toLowerCase();
     const who=act.by&&AGENTS[act.by]?act.by:(opts.by&&AGENTS[opts.by]?opts.by:(opts.agent&&AGENTS[opts.agent]?opts.agent:"critic"));
+    /* no crew member named: Copilot made it. by stays a crew member (retry and votes need one), prov says Copilot */
+    const byCopilot=!(act.by&&AGENTS[act.by])&&!(opts.by&&AGENTS[opts.by])&&!(opts.agent&&AGENTS[opts.agent])&&(opts.by==="copilot"||changeActor?.who==="copilot");
     try{
       if(["create","add","add_card","node","comment"].includes(type)){
         if(ruleFor("create")==="never"){skipped.push({action:"create",title:act.title||act.text||""});continue}
@@ -14812,6 +14848,7 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
           title:title||(cardType==="note"?"Note":"Card"),
           text,by:who,status,pid:"p-"+uid(),...extraProps
         },spot);
+        if(byCopilot&&n.prov)n.prov.author="copilot";
         createdNodes.push(n);
         if(fromNode&&act.connect!==false){
           const dt=act.depType||"live";

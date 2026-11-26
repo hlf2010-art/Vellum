@@ -172,6 +172,14 @@ node tests/relations.cjs
 node tests/sticky-move.cjs
 ```
 
+## Who made a card
+
+`tests/creator-badge.cjs` checks the maker's seal on the card's top edge: every crew card on the board carries its maker's avatar (Scout, Strategist, Wright, Critic, or Copilot), your own cards and drafts carry none (a draft's header already says who suggested it), and a card you made stays yours when a crew member only commented on it. A crew card you kept, adopted or marked helpful shows a check and reads "Scout · kept by you" ("Scout 起草 · 你已确认"); one you voted down does not. The avatar is the same glyph and colour as that member's seat in the top bar. At rest only the avatar shows; the name slides out on hover or selection. In the overview the seals are hidden and come back on hover. A card Copilot makes on its own is marked Copilot (it used to be filed under Critic), one it makes for a named member is marked with that member, and a Copilot draft says "Suggested by Copilot". Chinese labels and the dark theme are checked too.
+
+```bash
+node tests/creator-badge.cjs
+```
+
 ## One Copilot conversation per board
 
 `tests/copilot-per-board.cjs` checks that each board keeps its own Copilot conversation (`board.copilot`): switching boards switches the panel's conversation (the header names the board) with a short settle-in transition; a new board opens on an empty conversation that says Copilot reads only this board, with the stage's starter suggestions; half-typed words, queued messages and the crew member being addressed do not follow you to another board; a request made on one board carries none of another board's cards or conversation; leaving while a reply is streaming stops it, keeps what arrived on the board it was asked on (marked as stopped because you switched), and places nothing on either board; Export and Import carry the conversation, and a reply saved mid-stream shows as stopped instead of a caret forever; after a reload the active board opens on its own conversation.

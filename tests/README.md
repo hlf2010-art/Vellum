@@ -196,3 +196,9 @@ SHOTS=/some/dir node tests/copilot-per-board.cjs   # also saves screenshots
 ## How much the crew joins in
 
 `tests/participation.cjs` covers the Focus · Listening · Teamwork switch in the top bar (`⌘⇧.` toggles Focus; `⌘.` still opens Copilot). Each board keeps its own level and a new board starts on Listening. Focus sends nothing unasked and shows nothing; board checks keep running and wait, and leaving Focus shows them once as a short catch-up ("While you focused, I noticed 2 things") that says how long you focused and, with no model, that the crew did not read your new cards. Listening waits until you pause, then puts at most one dot on the card it is about and opens nothing by itself; Teamwork allows two and looks sooner. Board checks need no model: new observed or reported evidence that bears on an adopted direction (a relation, a wire, or shared words) and a decision with no evidence under it. They are labelled board checks, Ignore does not count them as declined ideas, and they don't come back. Changing level keeps custom permissions, and on every level edits to kept cards stay suggestions.
+
+`tests/reasoning-ink.cjs` checks that thinking is drawn in ink: claims, syntheses, directions, questions and proofs carry an ink rule in light and dark, while images, files and stickies stay plain paper. A direction set aside (another one was adopted) is fully readable, says which direction was chosen ("Set aside for B · …"), and offers "Add a reason". The reason is kept on the card, undo takes it back, the crew's record of passed-over directions carries it, and the card below moves down instead of being covered. Lines no longer take stage colours, the empty background-task pill is hidden until something has run, and an off-screen draft no longer adds a "waiting" chip at the screen edge (the top bar's "1 draft" already does that).
+
+```
+node tests/reasoning-ink.cjs
+```

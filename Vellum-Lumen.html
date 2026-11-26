@@ -3371,6 +3371,51 @@ body.snap-skip #wall{cursor:copy}
 :root[data-theme="dark"]{--field-glow:0 0 0 4px rgba(255,190,120,.09),0 4px 22px -2px rgba(255,165,80,.24)}
 .cp-box:focus-within,.m-write:focus-within,.mem-box:focus,.mcp-in:focus,.field input:focus,.sh-id input:focus,.adv-reply-in:focus,.bp-name:focus,.m-code-ed:focus,.m-notepad-ed:focus{background:var(--card);box-shadow:var(--field-glow)}
 .line.focus .line-field{box-shadow:inset 0 1px 0 var(--glass-hi),inset 0 -1px 0 var(--glass-lo),var(--field-glow),0 20px 48px -18px rgba(0,0,0,.4)}
+/* ── Thinking is drawn in ink ────────────────────────────────────────────
+   Material (files, media, notes) is plain paper. Thinking (a claim, a synthesis, a direction, a question, a proof)
+   carries an ink rule. Drafts stay pencil (dashed). A direction set aside keeps full words but loses its ink. */
+.card:is(.idea,.synthesis,.direction,.question,.proof):not(.sketch){
+  --ink-rule:color-mix(in srgb,var(--label) 62%,transparent);
+  --card-shadow:0 0 0 1.25px var(--ink-rule),0 1px 2px rgba(11,12,14,.04),0 10px 22px -16px rgba(11,12,14,.18);
+  --card-shadow-up:0 0 0 1.25px var(--ink-rule),0 2px 3px rgba(11,12,14,.04),0 8px 16px -6px rgba(11,12,14,.08),0 34px 64px -28px rgba(11,12,14,.28)}
+:root[data-theme="dark"] .card:is(.idea,.synthesis,.direction,.question,.proof):not(.sketch){
+  --ink-rule:color-mix(in srgb,var(--label) 46%,transparent);
+  --card-shadow:0 0 0 1.25px var(--ink-rule),0 14px 34px -16px rgba(0,0,0,.8);
+  --card-shadow-up:0 0 0 1.25px var(--ink-rule),0 34px 70px -24px rgba(0,0,0,.9)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .card:is(.idea,.synthesis,.direction,.question,.proof):not(.sketch){
+  --ink-rule:color-mix(in srgb,var(--label) 46%,transparent);
+  --card-shadow:0 0 0 1.25px var(--ink-rule),0 14px 34px -16px rgba(0,0,0,.8);
+  --card-shadow-up:0 0 0 1.25px var(--ink-rule),0 34px 70px -24px rgba(0,0,0,.9)}}
+.card.direction.passed,.card.direction.passed.disliked{opacity:1;filter:none;--ink-rule:var(--hair-2);background:color-mix(in srgb,var(--card) 72%,var(--card-2))}
+.card.direction.passed:hover{opacity:1}
+.card.direction.passed h4{color:var(--label-2)}
+.card.direction.passed .card-k .chip{background:var(--label-3);box-shadow:none}
+.card.direction.passed .test b{color:var(--label-2)}
+.card.direction .aside{margin-top:12px;padding-top:11px;border-top:1px solid var(--hair-2)}
+.card.direction .aside-h{display:flex;align-items:center;gap:6px;min-width:0;font:600 12px/18px var(--ui);color:var(--label-2)}
+.card.direction .aside-h .chip{width:16px;height:16px;font-size:10px;box-shadow:none}
+.card.direction .aside-w{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.card.direction .aside-why{margin:6px 0 0;font:14px/1.45 var(--ui);color:var(--label);outline:none}
+.card.direction .aside-why:empty:not([contenteditable="true"]){display:none}
+.card.direction .aside-why[contenteditable="true"]{min-height:20px;padding:4px 6px;margin-left:-6px;margin-right:-6px;border-radius:var(--radius-xs);background:var(--hover);user-select:text;-webkit-user-select:text;cursor:text}
+.card.direction .aside-why[contenteditable="true"]:empty::before{content:attr(data-ph);color:var(--label-3)}
+.card.direction .aside-add{margin-top:7px;padding:0;background:none;border:0;font:550 12.5px/18px var(--ui);color:var(--label-2);cursor:pointer;text-decoration:underline;text-decoration-color:var(--hair-2);text-underline-offset:3px}
+.card.direction .aside-add:hover{color:var(--label);text-decoration-color:currentColor}
+.card.direction .aside-add:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
+.card.is-editing .aside-add{display:none}
+
+/* ── Lines: colour says what a relation means, the stroke says whether it is kept ──
+   Neutral grey = made from / based on. Green = supports, red dashed = counters, blue = extends.
+   Dotted = a draft's line. Stage colours stay on the cards, not on the lines. */
+#wires path.w:is(.pgA,.pgB,.pgC,.pgD):not(.rel){stroke:var(--thread)}
+#wires path.w-root:is(.pgA,.pgB,.pgC,.pgD){fill:var(--thread)}
+#wires path.w-flow:is(.pgA,.pgB,.pgC,.pgD){stroke:color-mix(in srgb,var(--label) 26%,transparent)}
+#wires path.w[data-dep="frozen"]:not(.rel-conflicts){stroke-dasharray:none}
+#wires path.w.sk{stroke-dasharray:1.5 5}
+#wires path.faded,#wires path.w-root.faded{opacity:.4}
+
+/* the background-task pill appears once something has run */
+.island[data-empty]{opacity:0!important;pointer-events:none}
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="lensDefs"></defs></svg>
 <script>
@@ -3736,6 +3781,7 @@ function islRender(){
   if(mode!=="open"&&ISL.closeT){clearTimeout(ISL.closeT);ISL.closeT=0}
   const tone=mode==="flash"?(()=>{const ts=ISL.flash.ids.map(id=>ISL.tasks.find(x=>x.id===id)).filter(Boolean);return ts.some(t=>t.state==="failed")?"fail":ts.some(t=>t.tone==="warn")?"warn":ts.every(t=>t.state==="cancelled")?"":"ok"})():"";
   shell.dataset.mode=mode;if(tone)shell.dataset.tone=tone;else delete shell.dataset.tone;
+  shell.toggleAttribute("data-empty",mode==="idle"&&!ISL.tasks.some(islShown));
   shell.style.setProperty("--isl-pw",Math.min(400,innerWidth-32)+"px");
   // compose the face; same mode → patch in place (keeps focus and hover), new mode → crossfade
   const sig=mode==="compact"?"compact:"+live.map(t=>t.id+t.state+(t.pct==null)).join(","):mode==="flash"?"flash:"+ISL.flash.ids.join(","):mode;
@@ -5704,6 +5750,10 @@ function fmtBadgeHTML(fmt){return fmt?`<span class="fmt-chip" data-fmt="${esc(fm
    Older kept versions are hidden from the canvas (reversible) and reached through the card's switcher. */
 const proofView=new Map();
 function proofVersions(n){if(!n||n.type!=="proof"||n.status==="sketch")return[n];return board.nodes.filter(x=>x.type==="proof"&&!x.tombstone&&x.status!=="sketch"&&x.dir===n.dir&&(x.spec?.mode||"")===(n.spec?.mode||"")).sort((a,b)=>a.ver-b.ver)}
+/* A direction another one was chosen over stays readable: it says which one won, and keeps your reason for setting it aside */
+function setAsideFor(n){const w=n?.type==="direction"&&n.status==="ink"?board.adopted[n.idea]:null;return w&&w!==n.id?byId(w):null}
+function setAsideHTML(n){const w=setAsideFor(n);if(!w)return "";const zh=uiLang()==="zh",why=String(n.whyNot||"").trim();
+  return `<div class="aside"><div class="aside-h"><span>${zh?"已搁置，选了":"Set aside for"}</span><span class="chip${lin(w)?" pg-"+lin(w):""}">${esc(w.letter||"")}</span><span class="aside-w">${esc(clip(w.title||"",48))}</span></div><p class="aside-why" data-edit="whyNot" data-ph="${zh?"为什么不选它？":"Why not this one?"}">${esc(why)}</p><button type="button" class="aside-add" data-a="why-not">${why?(zh?"改理由":"Edit reason"):(zh?"写下为什么不选它":"Add a reason")}</button></div>`}
 function proofResults(n){const items=(n?.spec?.items||[]).filter(it=>/^(passed|failed|waiting)$/i.test(String(it.tag||"").trim()));if(!items.length)return null;const t=k=>items.filter(it=>String(it.tag).trim().toLowerCase()===k);return {passed:t("passed").length,failed:t("failed").length,waiting:t("waiting").length,failedTitles:t("failed").map(it=>it.title)}}
 function cardBody(n){
   const sk=n.status==="sketch",L=lin(n),tm=timeTag(n);
@@ -5783,7 +5833,7 @@ function cardBody(n){
   case"question":{const on=byId(n.on);return `<div class="in"><span class="qmark" aria-hidden="true">?</span>${head(`${byline(n)}${L?`<span class="q-dot"></span>`:""}<span class="q-on">${uiLang()==="zh"?"追问":"Question"}${on?`${uiLang()==="zh"?" · ":" on "}${esc(titleOf(on))}`:""}</span>`)}<h4 data-edit="text">${esc(n.text)}</h4>${foot("",fR(threadCount(n)))}</div>`}
   case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode));
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
-    <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test?`<div class="test"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span></div>`:""}
+    <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test?`<div class="test"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span></div>`:""}${sk?"":setAsideHTML(n)}
     ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",mode?`<span>${mode}</span>`:""),fR(hasProof?`<span>${uiLang()==="zh"?"已生成原型":"Proof built"}</span>`:"",threadCount(n)))}</div>`}
   case"proof":{
     /* A proof is an experiment that tests its direction: results first, thumbnail second, one next step. */
@@ -6707,7 +6757,7 @@ function nodeLineageSig(n){
 }
 
 function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -10931,6 +10981,7 @@ function adopt(d){
   {const sibs=board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"&&!x.tombstone);board.declined=(board.declined||[]).filter(r=>!(r.kind==="passed-over"&&(r.target===d.idea||r.ref===d.id)));for(const x of sibs)declineRecord("passed-over",{title:`${x.letter} · ${x.title}`,text:[x.text,x.test].filter(Boolean).join(" Test: "),by:x.by,target:d.idea,reason:L(`Adopted ${d.letter} · ${d.title} instead`,`改为采纳 ${d.letter} · ${d.title}`),ref:x.id})}
   noteChange({op:"adopt",id:d.id,type:"direction",title:clip(`${d.letter} ${d.title}`,60),who:"you",engine:"human"});
   log("you",`Adopted <b>${d.letter} ${esc(d.title)}</b>`,d.id);sfx("keep");renderAll();persist();
+  for(const x of board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"))makeRoomBelow(x);
   const st=qs(`[data-stamp="${d.id}"]`);if(st&&!calm()){st.classList.add("slam")}
   toast(wasDraft?L(`Kept and adopted ${d.title}`,`已保留并采纳 ${d.title}`):L(`Adopted ${d.title}`,`已采纳 ${d.title}`),{undo:true});
 }
@@ -11497,7 +11548,6 @@ function paintEdges(){
   const rEdge=copilotOpen&&innerWidth>640&&cp&&!cp.hidden?Math.min(r.width,cp.getBoundingClientRect().left):r.width;
   const botEdge=lr&&lr.height>0?Math.max(120,lr.top-26):r.height-100;
   const items=[];
-  for(const [pid,ns] of groups()){const b=bbox(ns);items.push({x:(b.x0+b.x1)/2,y:(b.y0+b.y1)/2,a:ns[0].by,pg:lin(ns[0]),label:`${ns.length} waiting`,pid})}
   for(const [k,cu] of Object.entries(cursors))if(crewState[k].busy&&cu._w)items.push({x:cu._w.x,y:cu._w.y,a:k,label:"working",k});
   let h="";const cx=rEdge/2,cy=r.height/2,top=76,bot=botEdge,lft=30,rgt=Math.max(80,rEdge-30);
   for(const it of items){const p=toScreen(it.x,it.y);const m=it.k?-40:0;if(p.x>lft+m&&p.x<rgt-m&&p.y>top+m&&p.y<bot-m)continue;
@@ -16055,6 +16105,7 @@ function beginInlineTextEdit(span,initial,onCommit){
 function act(a,n,el){
   if(!n)return;
   switch(a){
+    case"why-not":return startEdit(n.id,"whyNot",{collapseEnd:true});
     case"ink":return ink(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);
     case"erase":return erase(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);
     case"try":return openStage(proofView.has(n.id)?byId(proofView.get(n.id))||n:n);
@@ -17440,6 +17491,16 @@ function dropEmptyNote(n,el){
   if(gone.length){board.edges=board.edges.filter(e=>!gone.includes(e.id));if(gone.includes(selectedEdgeId))selectedEdgeId=null;if(gone.includes(relPickId))closeRelPick()}
   if(el&&!calm()){el.removeAttribute("data-id");el.classList.remove("born","sel");el.classList.add("vanish");setTimeout(()=>el.remove(),220)}
 }
+/* a card that grew (a reason added under it) moves the cards right below it down, so nothing ends up underneath */
+function makeRoomBelow(n,gap=24){const el=nodeEl(n.id);if(!el)return false;let moved=false;const placed=[n];
+  const w=x=>x.w||nodeEl(x.id)?.offsetWidth||300,hh=x=>nodeEl(x.id)?.offsetHeight||x._h||300;
+  const below=board.nodes.filter(x=>x!==n&&x.type!=="group"&&!isNodeHidden(x)&&x.y>n.y).sort((a,b)=>a.y-b.y);
+  for(const x of below){for(const p of placed){if(x.x<p.x+w(p)&&x.x+w(x)>p.x){const min=p.y+hh(p)+gap;if(x.y<min&&x.y>p.y){x.y=min;moved=true;placed.push(x);break}}}}
+  if(moved){renderAll();persist()}return moved}
+function syncSetAsideReason(n){const w=setAsideFor(n);if(!w)return;
+  const inst=L(`Adopted ${w.letter} · ${w.title} instead`,`改为采纳 ${w.letter} · ${w.title}`),why=String(n.whyNot||"").trim(),reason=clip(why?`${why} (${inst})`:inst,300);
+  const rec=(board.declined||[]).filter(r=>r.kind==="passed-over"&&r.ref===n.id).at(-1);
+  if(rec)rec.reason=reason;else declineRecord("passed-over",{title:`${n.letter} · ${n.title}`,text:[n.text,n.test].filter(Boolean).join(" Test: "),by:n.by,target:w.idea,reason,ref:n.id})}
 function startEdit(id,field,opts){
   const el=nodeEl(id);const n=byId(id);if(!el||!n||n.status==="sketch")return;
   const t=el.querySelector(`[data-edit="${field}"]`)||el.querySelector("[data-edit]");if(!t||t.contentEditable==="true")return;
@@ -17453,10 +17514,10 @@ function startEdit(id,field,opts){
     const isDefTag=f==="tag"&&(!v||v.toLowerCase()===defT.toLowerCase());
     const nextVal=isDefTag?"":v;
     const changed=save&&nextVal!==(n[f]||"");
-    if(changed){checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;if(f==="tag"&&!nextVal)delete n.tag;else n[f]=nextVal;recordNodeEdit(n,prevD,prevT,prevTx);log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id)}
+    if(changed){checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;if(f==="tag"&&!nextVal)delete n.tag;else n[f]=nextVal;recordNodeEdit(n,prevD,prevT,prevTx);log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id);if(f==="whyNot")syncSetAsideReason(n)}
     if(n.type==="note"&&f==="text"&&!n.text&&!hadText){dropEmptyNote(n,el)}
     else if(changed&&n.type!=="group"&&f!=="tag"&&v.length>=10)scheduleAdvisor(n.id,{delay:1400});
-    el._sig="";renderAll();persist()};
+    el._sig="";renderAll();persist();if(f==="whyNot")makeRoomBelow(n)};
   const multiline=(n.type==="notepad"||n.type==="note")&&f==="text";
   const onBlur=()=>done(true);const onKey=e=>{e.stopPropagation();if(e.key==="Enter"&&(!multiline&&!e.shiftKey||(multiline&&(e.metaKey||e.ctrlKey)))){e.preventDefault();t.blur()}if(e.key==="Escape"){if(f==="tag")t.innerText=n.tag||(n.type==="note"?(uiLang()==="zh"?"便签":"Sticky"):(uiLang()==="zh"?"记事本":"Notepad"));else if(n.type!=="note"||f!=="text")t.innerText=n[f]||"";t.blur()}};
   t.addEventListener("blur",onBlur);t.addEventListener("keydown",onKey);

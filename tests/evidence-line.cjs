@@ -63,8 +63,8 @@ async function open(browser, base, opts = {}) {
       await p.mouse.move(5, 450); await p.waitForTimeout(400);
       await p.frame(idea); await p.hover(`[data-id="${idea}"] .ev-line`);
       const ip = await p.pop();
-      check('hovering the line opens a card: the verdict, a sentence, and each kind with what it means', ip && ip.head === 'Mostly observed' && /were watched first-hand\. 2 not rated yet\./.test(ip.sent) && ip.rows.includes('Observed 4') && ip.rows.includes('Not rated 2'), JSON.stringify(ip));
-      check('it offers what to do next: show the sources, or (primary, last) rate the unrated', ip && ip.acts[0] === 'show:Show sources' && ip.acts[1] === 'rate:Rate 2 unrated sources', JSON.stringify(ip?.acts));
+      check('hovering the line opens a card: the verdict, a sentence, and each kind with what it means', ip && ip.head === 'Mostly observed' && /^4 of 7 sources were watched first-hand\.$/.test(ip.sent) && ip.rows.includes('Observed 4') && ip.rows.includes('Not rated 2'), JSON.stringify(ip));
+      check('it offers what to do next: show the sources, or (primary, last) rate the unrated', ip && ip.acts[0] === 'show:Show sources' && ip.acts[1] === 'rate:Rate 2', JSON.stringify(ip?.acts));
       await p.click('#byPop [data-ev-act="rate"]'); await p.waitForTimeout(900);
       const picked = await p.evaluate(() => ({ sel: sel.slice(), weight: byId(sel[0])?.weight || null, type: byId(sel[0])?.type, popGone: document.getElementById('byPop').hidden || !document.getElementById('byPop').classList.contains('in') }));
       check('"Rate" selects an unrated source and takes you to it', picked.sel.length === 1 && !picked.weight && picked.popGone, JSON.stringify(picked));
@@ -94,7 +94,7 @@ async function open(browser, base, opts = {}) {
       const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
       await p.frame(idea); await p.hover(`[data-id="${idea}"] .ev-line`);
       const ip = await p.pop();
-      check('Chinese: 以实测为主, one sentence, 去评估 / 在画布上查看来源', ip && ip.head === '以实测为主' && /个来源中，有 4 个是亲眼观察到的。另有 2 个尚未评估。/.test(ip.sent) && /去评估 2 个来源/.test(ip.acts[1]) && /在画布上查看来源/.test(ip.acts[0]), JSON.stringify(ip));
+      check('Chinese: 以实测为主, one sentence, 查看来源 / 评估 2 个', ip && ip.head === '以实测为主' && /^7 个来源中，有 4 个是亲眼观察到的。$/.test(ip.sent) && ip.acts[1] === 'rate:评估 2 个' && ip.acts[0] === 'show:查看来源', JSON.stringify(ip));
       check('E5 no page errors', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }

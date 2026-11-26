@@ -6633,7 +6633,6 @@ function evSentence(t,n){
   else if(v.k==="obs"||v.k==="part")x=L(`${o} of ${n} sources ${o===1?"was":"were"} watched first-hand.`,`${n} 个来源中，有 ${o} 个是亲眼观察到的。`);
   else if(v.k==="rep")x=o?L(`${r} of ${n} sources are what someone told us; only ${o} was watched.`,`${n} 个来源中有 ${r} 个是别人的转述，只有 ${o} 个是亲眼看到的。`):L(`Nobody has watched this happen yet; ${r} of ${n} sources are what someone told us.`,`还没有人亲眼看到过；${n} 个来源中有 ${r} 个是别人的转述。`);
   else x=L("These sources are ideas and pictures. They say nothing yet about what people actually do.","这些来源都是想法或示意图，还说明不了真实用户会怎么做。");
-  if(u&&v.k!=="none")x+=L(` ${u} not rated yet.`,`另有 ${u} 个尚未评估。`);
   return x;
 }
 function evidenceLine(t,total){
@@ -6646,8 +6645,8 @@ function evidencePopHTML(n){
   const rows=[...WEIGHT_ORDER,"none"].filter(k=>t[k]).map((k,i)=>{const w=WEIGHTS[k];
     return `<li style="--i:${i}" class="ev-row ev-k-${k}">${k==="none"?'<span class="ev-ring" aria-hidden="true"></span>':`<span class="ev-k-g">${evBarsHTML(w.n)}</span>`}<span class="by-pop-txt"><b>${esc(k==="none"?L("Not rated","未评估"):weightLabel(k))}</b><small>${esc(k==="none"?L("Nobody has judged these yet.","还没有人判断过它们有多可信。"):weightDesc(k))}</small></span><span class="ev-n">${t[k]}</span></li>`}).join("");
   const u=t.none||0,acts=[];   // secondary first, primary last: the primary action sits bottom-right, where the eye lands
-  if(ns.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("Show sources","在画布上查看来源"))}</button>`);
-  if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(u===1?L("Rate the unrated source","去评估这个来源"):L(`Rate ${u} unrated sources`,`去评估 ${u} 个来源`))}</button>`);
+  if(ns.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("Show sources","查看来源"))}</button>`);
+  if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(L(`Rate ${u}`,`评估 ${u} 个`))}</button>`);
   return `<header class="ev-head ev-${v.k}">${evBarsHTML(v.bars)}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows?`<ul>${rows}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
 }
 function evidenceScale(n){const s=sourcesFor(n);if(!s.length)return L("No sources yet","暂无关联来源");return evidenceLine(tally(s),s.length)}

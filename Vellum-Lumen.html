@@ -3010,6 +3010,7 @@ body.snap-skip #wall{cursor:copy}
     <div class="top-right">
       <button type="button" class="arch-btn" id="archiveBtn" hidden title="Archived cards"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="4" rx="1.2"/><path d="M5 8.5v9.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5M10 13h4"/></svg><span id="archCount">0</span></button>
       <button type="button" class="review" id="reviewBtn" hidden><i></i><span id="reviewTxt">1 waiting</span></button>
+      <div class="part" id="partSw" role="radiogroup" aria-label="How much the crew joins in on this board"></div>
       <div class="crew" id="crew" role="group" aria-label="Crew"></div>
       <button type="button" class="arch-btn sys-btn" id="settingsBtn" aria-haspopup="dialog" aria-label="System Settings" title="System Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
@@ -3112,6 +3113,7 @@ body.snap-skip #wall{cursor:copy}
   <section id="studioPop" class="studio-pop" hidden role="dialog" aria-label="Studio AI and local engines"></section>
   <section id="reviewPop" class="review-pop" hidden role="dialog" aria-label="Pending drafts"></section>
   <section id="crewPop" class="review-pop crew-pop" hidden role="dialog" aria-label="Crew"></section>
+  <section id="catchUp" class="review-pop catch-pop" hidden role="dialog" aria-label="Catch-up"></section>
   <section id="agentPop" class="review-pop agent-pop" hidden role="dialog" aria-label="Agent board activity"></section>
   <section id="boardsPop" class="boards-pop" hidden role="dialog" aria-label="Switch board"></section>
   <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
@@ -3189,6 +3191,65 @@ body.snap-skip #wall{cursor:copy}
 .crew-group.quiet-pacing .seat .ring{outline:1.5px dashed color-mix(in srgb,var(--label-3) 70%,transparent);outline-offset:1px}
 .crew-group.quiet-pacing .seat,.crew-group.quiet-never .seat,.crew-group.quiet-nomodel .seat,.crew-group.quiet-ceiling .seat{opacity:.72}
 .crew-group.quiet-never .seat .mk,.crew-group.quiet-nomodel .seat .mk{filter:saturate(.35)}
+/* Copilot participation switch: Focus · Listening · Teamwork. The chosen level opens to show its name; the others are icons. */
+.part{display:inline-flex;align-items:center;gap:2px;height:36px;padding:3px;border-radius:var(--radius-pill);background:var(--chrome);-webkit-backdrop-filter:blur(24px) saturate(1.3);backdrop-filter:blur(24px) saturate(1.3);box-shadow:var(--chrome-shadow);--pc:var(--label)}
+.part-b{position:relative;display:inline-flex;align-items:center;height:30px;padding:0 8px;border-radius:var(--radius-pill);color:var(--label-3);transition:background-color .34s var(--easing-standard),color .25s,box-shadow .34s var(--easing-standard),transform var(--duration-press) ease-out}
+.part-b:hover{color:var(--label)}
+.part-b:active{transform:scale(.94)}
+.part-b:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
+.part-b .ico{width:16px;height:16px;flex:none;transition:color .25s,transform .4s var(--easing-standard)}
+.part-l{display:grid;grid-template-columns:0fr;transition:grid-template-columns .42s var(--easing-standard)}
+.part-l>span{min-width:0;overflow:hidden;white-space:nowrap;font:600 12.5px/1 var(--ui);letter-spacing:-.005em;opacity:0;padding-left:0;transition:opacity .2s,padding .42s var(--easing-standard)}
+.part-b[aria-checked="true"]{color:var(--label);background:var(--card);box-shadow:0 1px 2px rgba(11,12,14,.08),0 4px 12px -4px rgba(11,12,14,.16)}
+.part-b[aria-checked="true"] .part-l{grid-template-columns:1fr}
+.part-b[aria-checked="true"] .part-l>span{opacity:1;padding-left:6px;transition:opacity .3s .12s,padding .42s var(--easing-standard)}
+.part-b[data-part="never"][aria-checked="true"] .ico{color:#6B5BD6}
+.part-b[data-part="matters"][aria-checked="true"] .ico{color:#2F6FE4}
+.part-b[data-part="often"][aria-checked="true"] .ico{color:#0E9A6C}
+.part-b[aria-checked="true"] .ico{transform:rotate(0)}
+.part-b[data-part="never"]:not([aria-checked="true"]) .ico{transform:rotate(-18deg)}
+/* listening breathes, slowly, so the bar shows it is paying attention without asking for any */
+.part-b[data-part="matters"][aria-checked="true"] .ico path{animation:part-breathe 3.6s ease-in-out infinite}
+@keyframes part-breathe{0%,100%{opacity:1}50%{opacity:.35}}
+.part.nomodel .part-b[aria-checked="true"] .ico{color:var(--label-2)}
+.part.nomodel .part-b[aria-checked="true"] .part-l>span::after{content:"";display:inline-block;width:5px;height:5px;margin-left:6px;vertical-align:2px;border-radius:50%;background:var(--warn-fill,#d97706)}
+@media (max-width:1180px){.part-b[aria-checked="true"] .part-l{grid-template-columns:0fr}.part-b[aria-checked="true"] .part-l>span{opacity:0;padding-left:0}}
+/* phone width: only the current level shows; tapping it moves to the next */
+@media (max-width:640px){.part-b:not([aria-checked="true"]){display:none}.part{padding:3px}}
+@media (prefers-reduced-motion:reduce){.part-b,.part-l,.part-l>span,.part-b .ico{transition:none!important}.part-b .ico path{animation:none!important}}
+/* Focus: the crew steps back. Pins fade away and the avatars dim; nothing is removed */
+.adv-pin{transition:opacity .38s var(--easing-standard),scale .38s var(--easing-standard),transform var(--duration-press) ease-out,border-color .2s,box-shadow .2s}
+.is-focus .adv-pin{opacity:0!important;scale:.86;pointer-events:none}
+.crew-seats{transition:opacity .45s var(--easing-standard),filter .45s}
+.is-focus .crew-seats{opacity:.42;filter:saturate(.2)}
+.is-focus #advStream,.adv-quiet #advStream{display:none!important}
+/* the catch-up after Focus: one short list, under the switch */
+.review-pop.catch-pop{width:min(384px,calc(100vw - 28px));max-height:calc(100vh - 90px);padding:14px 14px 12px;gap:10px;transform-origin:top right;animation:cu-in .42s var(--easing-standard) both}
+.catch-pop.leaving{animation:cu-out .2s ease-in both}
+@keyframes cu-in{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes cu-out{to{opacity:0;transform:translateY(-4px) scale(.98)}}
+.catch-pop .cu-head{display:flex;align-items:flex-start;gap:10px;padding:2px 4px 2px 2px}
+.catch-pop .cu-ico{display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:50%;color:#6B5BD6;background:color-mix(in srgb,#6B5BD6 12%,transparent)}
+.catch-pop .cu-ico .ico{width:15px;height:15px}
+.catch-pop .cu-head>span:last-child{display:grid;gap:3px;padding-top:2px}
+.catch-pop .cu-head b{font:650 14px/1.25 var(--ui);letter-spacing:-.016em;color:var(--label)}
+.catch-pop .cu-head small{font:500 11.5px/1.2 var(--ui);color:var(--label-3)}
+.catch-pop .cu-list{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.catch-pop .cu-list li{animation:cu-item .4s var(--easing-standard) both;animation-delay:calc(90ms + var(--i,0) * 70ms)}
+@keyframes cu-item{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.catch-pop .cu-item{display:grid;grid-template-columns:22px 1fr 14px;align-items:start;gap:10px;width:100%;padding:9px 8px 9px 6px;border-radius:12px;text-align:left;color:var(--label-2);transition:background-color .18s}
+.catch-pop .cu-item:hover,.catch-pop .cu-item:focus-visible{background:var(--hover);color:var(--label)}
+.catch-pop .cu-item:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:-2px}
+.catch-pop .cu-item.seen{opacity:.62}
+.catch-pop .cu-item .mk{width:22px;height:22px;font-size:11px;margin-top:1px}
+.catch-pop .cu-tx{font:450 13px/1.42 var(--ui)}
+.catch-pop .cu-tx .adv-b{font-weight:620;color:var(--label)}
+.catch-pop .cu-chev{width:14px;height:14px;margin-top:3px;color:var(--label-4);rotate:-90deg}
+.catch-pop .cu-foot{display:flex;align-items:center;gap:12px;padding:8px 4px 0 6px;border-top:1px solid var(--hair)}
+.catch-pop .cu-foot small{flex:1;font:450 11.5px/1.4 var(--ui);color:var(--label-3)}
+.catch-pop .cu-foot .cbtn{height:30px;padding:0 14px;font-size:12.5px;flex:none}
+@media (prefers-reduced-motion:reduce){.catch-pop,.catch-pop .cu-list li{animation:none!important}}
+.crew-pop .crew-kbd{font:500 11px/1 var(--mono);color:var(--label-3)}
 .review-pop.crew-pop{width:min(372px,calc(100vw - 28px));max-height:calc(100vh - 80px);padding:16px 18px 18px;display:grid;gap:16px}
 .crew-pop .cp-pop-head{display:grid;gap:0;padding-bottom:4px}
 .crew-pop .crew-why{font:450 11.5px/1.35 var(--ui);color:var(--label-3);margin-top:3px}
@@ -3768,7 +3829,7 @@ const store={
   set(k,v){try{localStorage.setItem(KEY+k,JSON.stringify(v));return true}catch{return false}},
   del(k){try{localStorage.removeItem(KEY+k)}catch{}},
 };
-function blank(title=""){return {id:uid(),title,memory:"",mcpContext:[],nodes:[],edges:[],adopted:{},threads:{},pins:{},copilot:[],log:[],proposals:[],changes:[],cam:null,created:NOW(),updated:NOW()}}
+function blank(title=""){return {id:uid(),title,speak:"matters",memory:"",mcpContext:[],nodes:[],edges:[],adopted:{},threads:{},pins:{},copilot:[],log:[],proposals:[],changes:[],cam:null,created:NOW(),updated:NOW()}}
 let board, sel=[], undoStack=[], redoStack=[], saveT=0, storageOk=true, idbBoardOk=false, selectedEdgeId=null;
 const byId=id=>board.nodes.find(n=>n.id===id);
 const isNodeHidden=n=>!!(n&&(n.hidden||n.archived||n.tombstone));
@@ -3793,6 +3854,7 @@ function persist(){
     store.set(".list",list);store.set(".active",board.id);syncCopilotContext?.();
     scheduleBackup?.();
   },250);
+  if(typeof scheduleChecks==="function")scheduleChecks();
 }
 /* ── history: per-author, operation-based undo ─────────────────────────────
    checkpoint() opens a transaction {id, author, before}. The next checkpoint (or undo/redo) closes it into an
@@ -3967,15 +4029,15 @@ if(!SPEAK_LEVELS.includes(crewSpeak))crewSpeak="matters";if(!ACT_LEVELS.includes
 const AUTONOMY_DEFAULT=presetFor("drafts");
 const AUTONOMY_ROWS=[["create",["Create cards and comments","新建卡片和评论"]],["link",["Link cards","连线"]],["edit",["Edit your kept cards","修改你已确认的卡片"]],["delete",["Delete your kept cards","删除你已确认的卡片"]]];
 const AUTONOMY_LEVELS=[["direct",["Do it","直接做"]],["suggest",["Ask first","先问"]],["never",["Never","不允许"]]];
-const SPEAK_LABEL={never:["Never","从不"],matters:["When it matters","有价值时"],often:["Often","经常"]};
+const SPEAK_LABEL={never:["Focus","专注"],matters:["Listening","旁听"],often:["Teamwork","协作"]};
 const ACT_LABEL={drafts:["Only drafts","只出草稿"],create:["Can create cards","可直接建卡片"]};
-const SPEAK_DESC={never:["The crew speaks only when you ask.","成员只在你要求时发言。"],matters:["One thought at a time; the next comes after you read it.","一次一条建议，读过才有下一条。"],often:["Up to two thoughts at a time, plus a drafted follow-up when it has one.","一次最多两条建议，并会起草后续卡片。"]};
+const SPEAK_DESC={never:["Quiet until you ask. What it notices waits, and you get one short catch-up when you come back.","你不问，它就不说。它注意到的会先攒着，你回来时给一条简短汇总。"],matters:["After you pause, one small dot on the card it is about. Opens only when you click.","你停下几秒后，在相关卡片旁亮一个小点，点开才展开。"],often:["Up to two thoughts at a time, sooner, plus a drafted follow-up when it has one. Flags decisions that new evidence touches.","一次最多两条建议，来得更快，还会起草后续卡片。新证据碰到你的决定时会提醒你。"]};
 const ACT_DESC={drafts:["Anything it makes arrives as a draft for you to keep or discard.","它做的东西都以草稿出现，由你保留或丢弃。"],create:["Cards it creates land directly on the board.","它新建的卡片直接落到画板上。"]};
 let crewPopOpen=false;
 function crewQuietReason(){
-  if(crewSpeak==="never")return {k:"never",tip:L("Speaks only when you ask","只在你要求时发言")};
+  if(crewSpeak==="never")return {k:"never",tip:L("Focus: speaks only when you ask","专注：只在你要求时发言")};
   const live=connSummary().engine!=="rules";
-  if(!live)return {k:"nomodel",tip:aiPref==="local"?L("AI models are off, so no unasked thoughts","AI 模型已关闭，所以不会主动提建议"):L("No AI model available, so no unasked thoughts","没有可用的 AI 模型，所以不会主动提建议")};
+  if(!live)return {k:"nomodel",tip:aiPref==="local"?L("AI models are off, so only board checks, no unasked thoughts","AI 模型已关闭，只做画板检查，不会主动提建议"):L("No AI model available, so only board checks, no unasked thoughts","没有可用的 AI 模型，只做画板检查，不会主动提建议")};
   if((SPEAK_UNREAD[crewSpeak]||0)>0&&unreadPins()>=SPEAK_UNREAD[crewSpeak])return {k:"pacing",tip:L("Waiting for you to read the last thought","等你读完上一条建议")};
   if(!advLeft())return {k:"ceiling",tip:L("Resting until the hour is up","本小时已达上限，稍后继续")};
   return null;
@@ -3999,7 +4061,7 @@ function renderCrewPop(){
   pop.innerHTML=`<div class="cp-pop-head"><b>${L("Crew","成员")}</b>${why?`<span class="crew-why">${esc(why)}</span>`:""}</div>
     ${firstUnread?`<div class="crew-wait"><span><b>${esc(unreadTxt)}</b>${held?`<small>${esc(L(`${held} card${held>1?"s":""} held back until you read`,`${held} 张卡片暂缓，读完后出现`))}</small>`:""}</span><button type="button" class="cbtn" data-crew-show="${esc(firstUnread)}">${L("Show","查看")}</button></div>`:""}
     ${(board.held||[]).length?(()=>{const hs=board.held,last=hs[hs.length-1];return `<div class="crew-wait crew-held"><span><b>${esc(L(`Held back ${hs.length} idea${hs.length>1?"s":""} you turned down`,`略过了 ${hs.length} 个你否决过的想法`))}</b><small>${esc(clip(last.text,70))}</small></span><button type="button" class="cbtn" data-crew-held>${L("Show","查看")}</button></div>`})():""}
-    <div class="crew-axis"><b id="crew-speak-l">${L("Speaks up","主动发言")}</b>${seg("speak",SPEAK_LEVELS,SPEAK_LABEL,crewSpeak)}<p>${L(SPEAK_DESC[crewSpeak][0],SPEAK_DESC[crewSpeak][1])}</p></div>
+    <div class="crew-axis"><div class="crew-axis-h"><b id="crew-speak-l">${L("Joins in on this board","在这块画板上的参与度")}</b><span class="crew-kbd">${PART_KEY} ${L("Focus","专注")}</span></div>${seg("speak",SPEAK_LEVELS,SPEAK_LABEL,crewSpeak)}<p>${L(SPEAK_DESC[crewSpeak][0],SPEAK_DESC[crewSpeak][1])} ${L("On every level, cards you kept change only when you accept.","无论哪一档，你确认过的卡片只有你同意才会改。")}</p></div>
     <div class="crew-axis"><div class="crew-axis-h"><b id="crew-act-l">${L("Acts on the board","在画板上动手")}</b><button type="button" class="crew-link" data-crew-custom>${L("Customize","自定义")}</button></div>${seg("act",ACT_LEVELS,ACT_LABEL,autonomyCustom?"":crewAct)}<p>${autonomyCustom?esc(autonomyPlain()):L(ACT_DESC[crewAct][0],ACT_DESC[crewAct][1])}</p></div>
     <div class="crew-sec"><b>${L("Locked lanes","锁定的泳道")}</b><div class="crew-locks">${BAYS.map((b,i)=>{const on=lockedBays().includes(i);return `<button type="button" class="crew-lock" data-crew-lock="${i}" aria-pressed="${on}">${on?ic("lock"):""}${esc(bayName(b))}</button>`}).join("")}</div><span>${L("Kept cards in a locked lane are yours alone. Lock single cards from their menu.","锁定泳道里已确认的卡片只有你能改。单张卡片可在其菜单里锁定。")}</span></div>
     <div class="crew-foot"><button type="button" class="cbtn" data-crew-memory>${ic("book")}${L("Memory","记忆")}</button></div>`;
@@ -4015,7 +4077,8 @@ let autonomy=autonomyCustom?{...presetFor(crewAct),...(store.get(".autonomy",{})
 const perm=k=>{const v=["direct","suggest","never"].includes(autonomy[k])?autonomy[k]:presetFor(crewAct)[k];return k==="delete"&&v==="direct"?"suggest":v};
 function setAutonomy(patch){autonomy={...autonomy,...patch};if(autonomy.delete==="direct")autonomy.delete="suggest";autonomyCustom=JSON.stringify(autonomy)!==JSON.stringify(presetFor(crewAct));store.set(".autonomy",autonomy);store.set(".autonomyCustom",autonomyCustom);renderCrewPop?.();renderCrew?.()}
 function setCrew({speak=crewSpeak,act=crewAct}={}){
-  crewSpeak=SPEAK_LEVELS.includes(speak)?speak:"matters";crewAct=ACT_LEVELS.includes(act)?act:"drafts";
+  const wasSpeak=crewSpeak;crewSpeak=SPEAK_LEVELS.includes(speak)?speak:"matters";crewAct=ACT_LEVELS.includes(act)?act:"drafts";
+  if(board){if(crewSpeak==="never"&&wasSpeak!=="never"){board.focusAt=NOW();board.speakBefore=wasSpeak}board.speak=crewSpeak}
   store.set(".crewSpeak",crewSpeak);store.set(".crewAct",crewAct);
   autonomy=presetFor(crewAct);autonomyCustom=false;store.set(".autonomy",autonomy);store.set(".autonomyCustom",false);
   advisorMode=crewSpeak!=="never";advisorAuto=crewSpeak==="often";advQuietMs=SPEAK_QUIET[crewSpeak];
@@ -4025,6 +4088,181 @@ function setCrew({speak=crewSpeak,act=crewAct}={}){
 }
 /* the earlier single dial, kept so older callers still land somewhere sensible */
 function setCrewLevel(level){setCrew({asked:{speak:"never",act:"drafts"},suggest:{speak:"matters",act:"drafts"},collab:{speak:"often",act:"create"}}[level]||{})}
+/* ── Copilot participation, per board: Focus · Listening · Teamwork ─────────
+   One switch in the top bar decides how much the crew joins in, unasked, on this board. It is the "Speaks up" axis
+   (never | matters | often) under friendlier names, kept per board.
+   Focus: nothing unasked. Board checks still run and wait; leaving Focus shows them once, as one short catch-up.
+   Listening (default): once you stop for a few seconds, at most one quiet dot on the card it is about. Nothing opens by itself.
+   Teamwork: up to two dots, sooner, and a drafted follow-up when the crew has one (as a draft, never on your kept cards).
+   Board checks need no model: they read the board (new evidence against what you decided, a decision with no evidence
+   under it) and say so as board checks, never as a model's thought. On every level, edits to cards you kept stay suggestions. */
+const PART_ICON={
+  never:`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 14.6A8.5 8.5 0 0 1 9.4 3.8a8.5 8.5 0 1 0 10.8 10.8z"/></svg>`,
+  matters:`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/><path d="M7.4 7.4a6.5 6.5 0 0 0 0 9.2M16.6 7.4a6.5 6.5 0 0 1 0 9.2"/></svg>`,
+  often:`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="12" r="5.2"/><circle cx="15" cy="12" r="5.2"/></svg>`
+};
+const PART_KEY="⌘⇧.";
+let partBoardRef=null,catchUpOpen=false,catchUpData=null;
+const speakOfBoard=b=>SPEAK_LEVELS.includes(b?.speak)?b.speak:crewSpeak;
+/* change how much the crew joins in, for this board only; the "Acts on the board" axis and custom permissions stay as they are */
+function setSpeak(level,{from="switch"}={}){
+  const next=SPEAK_LEVELS.includes(level)?level:"matters",prev=crewSpeak;
+  if(board){if(next==="never"&&prev!=="never"){board.focusAt=NOW();board.speakBefore=prev}board.speak=next}
+  crewSpeak=next;store.set(".crewSpeak",crewSpeak);
+  advisorMode=crewSpeak!=="never";advisorAuto=crewSpeak==="often";advQuietMs=SPEAK_QUIET[crewSpeak];
+  store.set(".advisor",advisorMode);store.set(".advisorAuto",advisorAuto);
+  if(!advisorMode){for(const t of advTimers.values())clearTimeout(t);advTimers.clear();advBurst.clear();clearTimeout(advBurstT);hideAdvStream?.(false);if(openAdvNodeId)closeAdvPop()}
+  if(next==="never")toggleCatchUp(false);
+  persist();renderCrew();renderCrewPop?.();renderNodes?.();
+  if(prev==="never"&&next!=="never")focusCatchUp();
+  else if(next!=="never")scheduleChecks(400);
+  if(from==="key")toast(next==="never"?L(`Focus on. The crew stays quiet until you ask · ${PART_KEY} to come back`,`专注已开启。除非你开口，成员都保持安静 · ${PART_KEY} 退出`):L(`${L(...SPEAK_LABEL[next])} on`,`已切换到${L(...SPEAK_LABEL[next])}`));
+}
+function toggleFocus(from="key"){
+  if(crewSpeak==="never")setSpeak(SPEAK_LEVELS.includes(board?.speakBefore)&&board.speakBefore!=="never"?board.speakBefore:"matters",{from});
+  else setSpeak("never",{from});
+}
+/* a board you open brings its own level; one without a level of its own keeps the last one used */
+function partSync(){
+  if(!board||partBoardRef===board)return;partBoardRef=board;
+  const lv=speakOfBoard(board);toggleCatchUp(false);
+  if(lv!==crewSpeak){crewSpeak=lv;advisorMode=lv!=="never";advisorAuto=lv==="often";advQuietMs=SPEAK_QUIET[lv];if(!advisorMode){for(const t of advTimers.values())clearTimeout(t);advTimers.clear();advBurst.clear();clearTimeout(advBurstT)}}
+}
+function partTip(k){
+  const d={never:L("AI stays quiet until you ask. What it notices waits for you","AI 保持安静，只在你开口时回答。它注意到的会先攒着"),matters:L("After you pause, a small dot on the card it is about. Opens only when you click","你停下几秒后，相关卡片旁亮一个小点，点开才展开"),often:L("The crew joins in: evidence, counterpoints and decisions worth a second look","成员主动参与：补证据、提反对意见、提醒重新审视决策")}[k];
+  return `${L(...SPEAK_LABEL[k])} · ${d}${k==="never"||crewSpeak==="never"?` (${PART_KEY})`:""}`;
+}
+function paintPart(){
+  const el=$("partSw");if(!el)return;partSync();
+  if(!el.childElementCount)el.innerHTML=SPEAK_LEVELS.map(k=>`<button type="button" role="radio" class="part-b" data-part="${k}">${PART_ICON[k]}<span class="part-l"><span></span></span></button>`).join("");
+  el.dataset.level=crewSpeak;el.setAttribute("aria-label",L("How much the crew joins in on this board","成员在这块画板上的参与度"));
+  const live=connSummary().engine!=="rules";el.classList.toggle("nomodel",!live&&crewSpeak!=="never");
+  for(const b of el.children){const k=b.dataset.part,on=k===crewSpeak;b.setAttribute("aria-checked",String(on));b.tabIndex=on?0:-1;
+    b.querySelector(".part-l>span").textContent=L(...SPEAK_LABEL[k]);
+    const tip=partTip(k)+(!live&&k!=="never"?" · "+L("No AI model connected: board checks only","未连接 AI 模型：只做画板检查"):"");b.title=tip;b.setAttribute("aria-label",tip)}
+  document.body.classList.toggle("is-focus",crewSpeak==="never");
+}
+
+/* ── board checks: what the board itself says, no model needed ───────────── */
+const EVIDENCE_W=["observed","reported"];
+const isEvidenceCard=n=>!!n&&n.status==="ink"&&!n.archived&&!n.hidden&&!n.tombstone&&EVIDENCE_W.includes(n.weight);
+function decisionsNow(){
+  return Object.entries(board.adopted||{}).map(([cid,did])=>({claim:byId(cid),dir:byId(did)})).filter(d=>d.dir&&!d.dir.tombstone&&!d.dir.archived&&!d.dir.hidden&&d.dir.status==="ink");
+}
+/* how a piece of evidence bears on a decision: a relation you made, a wire into it, or shared content. null if it doesn't */
+function bearsOn(e,d){
+  for(const t of [d.dir,d.claim].filter(Boolean)){const r=relBetween(e.id,t.id);if(r)return {rel:REL_TYPES.includes(r.rel)?r.rel:"related",how:"relation",to:t}}
+  if(sourcesFor(d.dir).some(s=>s.id===e.id)||(d.claim&&sourcesFor(d.claim).some(s=>s.id===e.id)))return {rel:"related",how:"wire",to:d.dir};
+  for(const t of [d.dir,d.claim].filter(Boolean)){
+    const p=contextFor(t,{limit:6}).picks.find(p=>p.n.id===e.id);
+    const topic=p&&p.why.find(w=>w.k==="topic"&&w.terms.length>=2);
+    if(p&&(topic||p.why.some(w=>w.k==="meaning")))return {rel:"related",how:topic?"topic":"meaning",terms:topic?.terms||[],to:d.dir};
+  }
+  return null;
+}
+function evidenceUnder(d){
+  const ids=new Set([d.dir.id,d.claim?.id].filter(Boolean)),out=[...sourcesFor(d.dir),...(d.claim?sourcesFor(d.claim):[])];
+  for(const e of board.edges){if(!e.rel||e.rel==="conflicts")continue;const o=ids.has(e.a)?e.b:ids.has(e.b)?e.a:null;if(o)out.push(byId(o))}
+  return out.filter(isEvidenceCard);
+}
+/* look at the board and queue what is new; returns the observations added */
+function runBoardChecks(){
+  if(!board)return [];
+  const W=board.watch=board.watch&&typeof board.watch==="object"?board.watch:{};
+  W.done=Array.isArray(W.done)?W.done:[];W.queue=Array.isArray(W.queue)?W.queue:[];
+  const ev=visibleNodes().filter(isEvidenceCard);
+  /* the first look only learns what is already there: an old board does not get a flood of flags */
+  if(!Array.isArray(W.seen)){W.seen=ev.map(n=>n.id);W.done.push(...decisionsNow().map(d=>"as:"+d.dir.id));return []}
+  const ds=decisionsNow(),fresh=ev.filter(n=>!W.seen.includes(n.id)),known=new Set([...W.done,...W.queue.map(o=>o.sig)]),added=[];
+  const add=o=>{if(known.has(o.sig))return;known.add(o.sig);W.queue.push(o);added.push(o)};
+  for(const e of fresh){W.seen.push(e.id);for(const d of ds){const b=bearsOn(e,d);if(b)add({kind:"revisit",sig:"rv:"+e.id+":"+d.dir.id,target:d.dir.id,about:e.id,rel:b.rel,how:b.how,terms:b.terms||[],at:NOW()})}}
+  for(const d of ds)if(!evidenceUnder(d).length)add({kind:"assume",sig:"as:"+d.dir.id,target:d.dir.id,at:NOW()});
+  if(W.seen.length>400)W.seen=W.seen.slice(-400);if(W.done.length>400)W.done=W.done.slice(-400);
+  return added;
+}
+const qTitle=n=>`**“${clip(titleOf(n),60)}”**`;
+/* an observation as a pin on the card it is about; null if the cards it names are gone */
+function checkPin(o){
+  const d=byId(o.target);if(!d||d.archived||d.hidden||d.tombstone)return null;
+  if(o.kind==="revisit"){
+    const e=byId(o.about);if(!e||!isEvidenceCard(e))return null;
+    const w=weightLabel(e.weight).toLowerCase(),how=o.how==="relation"?"":o.how==="topic"&&o.terms.length?L(` Both mention ${o.terms.slice(0,2).join(" and ")}.`,` 两者都提到${o.terms.slice(0,2).join("和")}。`):"";
+    const note=o.rel==="conflicts"?L(`New ${w} evidence ${qTitle(e)} **counters** your decision ${qTitle(d)}. Worth a second look; the decision stays as you made it.`,`新的${w}证据 ${qTitle(e)} **反驳**了你的决定 ${qTitle(d)}。值得再看一眼；决定仍按你定的来。`)
+      :o.rel==="supports"?L(`New ${w} evidence ${qTitle(e)} **supports** your decision ${qTitle(d)}.`,`新的${w}证据 ${qTitle(e)} **支持**你的决定 ${qTitle(d)}。`)
+      :L(`New ${w} evidence ${qTitle(e)} bears on your decision ${qTitle(d)}.${how} Worth a second look? Nothing changes unless you change it.`,`新的${w}证据 ${qTitle(e)} 和你的决定 ${qTitle(d)} 有关。${how}要再看一眼吗？除非你改，什么都不会变。`);
+    return {id:"pin-"+uid(),agent:o.rel==="conflicts"?"critic":"scout",t:NOW(),note,check:o.kind,sig:o.sig,engine:"rules",basis:[{id:e.id,rev:e.rev||1,relation:o.rel==="related"?"related":o.rel,why:L("new evidence","新证据")}]};
+  }
+  if(o.kind==="assume"){
+    if(evidenceUnder({dir:d,claim:byId(d.idea)}).length)return null;
+    return {id:"pin-"+uid(),agent:"critic",t:NOW(),note:L(`Your decision ${qTitle(d)} rests on **proposals only**: no observed or reported evidence is linked to it yet.`,`你的决定 ${qTitle(d)} 目前**只基于设想**：还没有连上任何实测或转述的证据。`),check:o.kind,sig:o.sig,engine:"rules",basis:[]};
+  }
+  return null;
+}
+/* put queued observations on their cards: as many as the unread rule allows, or all of them when you ask (leaving Focus) */
+function deliverChecks({all=false}={}){
+  const W=board?.watch;if(!W?.queue?.length)return [];
+  let room=all?Infinity:Math.max(0,(SPEAK_UNREAD[crewSpeak]||0)-unreadPins());
+  W.queue.sort((a,b)=>(a.kind==="revisit"?0:1)-(b.kind==="revisit"?0:1)||(a.at||0)-(b.at||0));
+  const out=[];
+  while(W.queue.length&&room>0){
+    const o=W.queue.shift(),pin=checkPin(o);W.done.push(o.sig);if(!pin)continue;
+    board.pins=board.pins||{};board.pins[o.target]=[...(board.pins[o.target]||[]).filter(p=>p.sig!==o.sig),pin];
+    const el=nodeEl(o.target);if(el)el._sig="";out.push({o,pin});room--;
+  }
+  if(out.length){renderNodes();persist();renderCrew()}
+  return out;
+}
+/* checks run a moment after the board changes, and are shown only once you have paused */
+let lastUserAct=NOW(),checksT=0;
+const IDLE_NEED={never:Infinity,matters:4000,often:2200};
+const userIdleFor=()=>NOW()-lastUserAct;
+for(const ev of ["pointerdown","keydown","wheel"])addEventListener(ev,()=>{lastUserAct=NOW()},{capture:true,passive:true});
+function scheduleChecks(ms=1500){clearTimeout(checksT);checksT=setTimeout(tickChecks,ms)}
+function tickChecks(){
+  if(!board)return;
+  runBoardChecks();
+  if(crewSpeak==="never"){paintPart();return}
+  if(!board.watch?.queue?.length)return;
+  const need=IDLE_NEED[crewSpeak]||4000;
+  if(userIdleFor()<need||dragging()){scheduleChecks(Math.max(400,Math.min(need,need-userIdleFor())));return}
+  deliverChecks();
+}
+const dragging=()=>document.body.classList.contains("is-dragging-card");
+
+/* ── leaving Focus: one short catch-up instead of a burst ────────────────── */
+function focusCatchUp(){
+  runBoardChecks();
+  const got=deliverChecks({all:true});
+  const since=board.focusAt||NOW(),mins=Math.round((NOW()-since)/60000);
+  const added=visibleNodes().filter(n=>n.status==="ink"&&n.by==="you"&&(n.created||0)>=since&&n.type!=="group");
+  const live=connSummary().engine!=="rules";
+  /* with a model, the crew looks at what you made while focused, one look for the lot (the usual pacing applies) */
+  if(live&&added.length)for(const n of added.slice(-6))scheduleAdvisor(n.id,{delay:900});
+  delete board.focusAt;persist();
+  if(!got.length){toast(live&&added.length?L(`Nothing on the board needed you while you focused. The crew will look at the ${added.length} card${added.length>1?"s":""} you added`,`你专注时画板上没有需要你的事。成员会看看你新加的 ${added.length} 张卡片`):L("Nothing came up while you focused","你专注时没有新情况"));return}
+  catchUpData={items:got.map(x=>({target:x.o.target,pin:x.pin.id,agent:x.pin.agent,note:x.pin.note})),mins,added:added.length,live};
+  toggleCatchUp(true);
+}
+function toggleCatchUp(force){
+  const next=force===undefined?!catchUpOpen:!!force;catchUpOpen=next&&!!catchUpData;
+  const pop=$("catchUp");if(!pop)return;
+  if(!catchUpOpen){if(!pop.hidden){pop.classList.add("leaving");setTimeout(()=>{if(!catchUpOpen){pop.hidden=true;pop.classList.remove("leaving")}},calm()?0:200)}return}
+  renderCatchUp();pop.classList.remove("leaving");pop.hidden=false;
+}
+function renderCatchUp(){
+  const pop=$("catchUp"),d=catchUpData;if(!pop||!d)return;
+  const items=d.items.filter(it=>byId(it.target)&&(board.pins?.[it.target]||[]).some(p=>p.id===it.pin));
+  const n=items.length,sw=$("partSw");
+  if(sw){const r=sw.getBoundingClientRect();pop.style.top=Math.round(r.bottom+10)+"px";pop.style.right=Math.max(14,Math.round(innerWidth-r.right))+"px"}
+  const head=n===1?L("While you focused, I noticed 1 thing","你专注时，我注意到 1 件事"):L(`While you focused, I noticed ${n} things`,`你专注时，我注意到 ${n} 件事`);
+  const when=d.mins>=1?L(`${d.mins} min of focus`,`专注了 ${d.mins} 分钟`):"";
+  const foot=d.live?(d.added?L(`Board checks. The crew will also look at the ${d.added} card${d.added>1?"s":""} you added.`,`以上来自画板检查。成员还会看看你新加的 ${d.added} 张卡片。`):L("From board checks.","以上来自画板检查。"))
+    :L("From board checks. No AI model is connected, so the crew did not read your new cards.","以上来自画板检查。未连接 AI 模型，所以成员没有读你新加的卡片。");
+  pop.innerHTML=`<div class="cu-head"><span class="cu-ico" aria-hidden="true">${PART_ICON.never}</span><span><b>${esc(head)}</b>${when?`<small>${esc(when)}</small>`:""}</span></div>
+    <ol class="cu-list">${items.map((it,i)=>{const a=AGENTS[it.agent]||AGENTS.critic;return `<li style="--i:${i}"><button type="button" class="cu-item" data-cu-go="${esc(it.target)}" data-cu-pin="${esc(it.pin)}"><span class="mk" aria-hidden="true">${a.mk}</span><span class="cu-tx">${renderAdvNote(it.note,[])}</span>${ic("chev","ico cu-chev")}</button></li>`}).join("")}</ol>
+    <div class="cu-foot"><small>${esc(foot)}</small><button type="button" class="cbtn solid" data-cu-close>${L("Got it","知道了")}</button></div>`;
+  if(!n){toggleCatchUp(false)}
+}
 function autonomyPlain(){
   const name=k=>L({create:"create",link:"link",edit:"edit your cards",delete:"delete your cards"}[k],{create:"新建",link:"连线",edit:"修改你的卡片",delete:"删除你的卡片"}[k]);
   const by=v=>AUTONOMY_ROWS.map(([k])=>k).filter(k=>perm(k)===v).map(name);
@@ -7161,12 +7399,13 @@ function aiSource(){
   return {live:false,kind:"local",cls:"",label:L("No AI connected","未连接 AI"),title:tip};
 }
 function renderCrew(){
+  paintPart?.();
   const mode=aiSource();
   const modeLbl=mode.label;
   const seatsHtml=Object.values(AGENTS).map(a=>{const s=crewState[a.key];const waiting=board.nodes.some(n=>n.status==="sketch"&&n.by===a.key);
     return `<button type="button" class="seat ${s.busy?"busy":""} ${waiting&&!s.busy?"waiting":""}" data-agent="${a.key}" aria-label="${a.name}: ${esc(s.status||(waiting?"waiting for you":"free"))}"><span class="mk">${a.mk}</span><span class="ring"></span></button>`}).join("");
   const quiet=typeof crewQuietReason==="function"?crewQuietReason():null,health=typeof connHealth==="function"?connHealth():{k:"none",tip:""};
-  const setTip=`${L("Crew settings","成员设置")} · ${L("Speaks up","主动发言")}: ${L(SPEAK_LABEL[crewSpeak][0],SPEAK_LABEL[crewSpeak][1])} · ${L("Acts","动手")}: ${autonomyCustom?L("Custom","自定义"):L(ACT_LABEL[crewAct][0],ACT_LABEL[crewAct][1])}${quiet?" · "+quiet.tip:""}`;
+  const setTip=`${L("Crew settings","成员设置")} · ${L("Joins in","参与度")}: ${L(SPEAK_LABEL[crewSpeak][0],SPEAK_LABEL[crewSpeak][1])} · ${L("Acts","动手")}: ${autonomyCustom?L("Custom","自定义"):L(ACT_LABEL[crewAct][0],ACT_LABEL[crewAct][1])}${quiet?" · "+quiet.tip:""}`;
   $("crew").innerHTML=`<div class="crew-group${quiet?" quiet-"+quiet.k:""}" ${quiet?`title="${esc(quiet.tip)}"`:""}><div class="crew-seats" role="group" aria-label="AI Crew">${seatsHtml}</div>`
     +`<button type="button" id="crewSetBtn" class="crew-set" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(setTip)}" aria-label="${esc(setTip)}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg><i class="conn-dot ${health.k}" title="${esc(health.tip)}"></i></button></div>`
     +`<button type="button" id="crewModeBtn" class="crew-mode ${mode.cls||""}" aria-haspopup="dialog" aria-expanded="${studioPopOpen}" title="${esc(mode.title)}" aria-label="${esc(modeLbl)}: ${esc(mode.title)}"><b></b><span>${esc(modeLbl)}</span>${ic("chev","ico cm-chev")}</button>`;
@@ -8100,13 +8339,13 @@ function renderAdvPop(){
   const a=AGENTS[p.agent]||AGENTS.critic;
   const body=(p.note||[p.take,p.edge].filter(Boolean).join(" ")).trim();
   const kws=(p.keywords&&p.keywords.length)?p.keywords:extractNodeKeywords(n);
-  const tools=`<button type="button" class="ib" data-adv-reroll title="${esc(L("Ask crew for a fresh angle","重新生成一条建议"))}" aria-label="Ask crew for a fresh angle">${ic("redo")}</button><button type="button" class="ib" data-adv-close title="${esc(L("Close","关闭"))}" aria-label="Close">${ic("x")}</button>`;
+  const tools=`${p.check?"":`<button type="button" class="ib" data-adv-reroll title="${esc(L("Ask crew for a fresh angle","重新生成一条建议"))}" aria-label="Ask crew for a fresh angle">${ic("redo")}</button>`}<button type="button" class="ib" data-adv-close title="${esc(L("Close","关闭"))}" aria-label="Close">${ic("x")}</button>`;
   const reps=Array.isArray(p.replies)?p.replies:[];
   const repsHTML=reps.length?`<div class="adv-replies">${reps.map(r=>{const isYou=r.who==="you",ra=isYou?null:(AGENTS[r.who]||a),tm=exactTime(r.t);return `<div class="adv-rep${isYou?" you":""}" data-adv-rep="${esc(r.id||"")}"><div class="adv-rep-h"><span>${esc(isYou?L("You","我"):ra.name)}</span>${tm?`<time>${esc(tm)}</time>`:""}</div><div class="adv-rep-tx${r.typing?" typing":""}">${mdLite(r.text||"")}</div></div>`}).join("")}</div>`:"";
   const relWord={conflicts:L("Conflicts","相矛盾"),supports:L("Supports","支持"),extends:L("Builds on","延伸")};
   const basisList=(p.basis||[]).filter(b=>byId(b.id)&&!isNodeHidden(byId(b.id)));
   const basisHTML=basisList.length?`<div class="adv-basis"><b>${L("Based on","依据")}</b>${basisList.map(b=>`<p>${relWord[b.relation]?`<span class="adv-rel ${esc(b.relation)}">${esc(relWord[b.relation])}</span> · `:""}<a href="#" data-adv-basis="${esc(b.id)}" title="${esc(b.why||"")}">${esc(ctxLabel(byId(b.id)))}</a></p>`).join("")}</div>`:"";
-  const engTag=p.engine==="rules"?`<span class="adv-eng" title="${esc(p.engineWhy?L(`${p.engineWhy}, so this thought came from built-in rules`,`${p.engineWhy}，这条建议来自内置规则`):L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
+  const engTag=p.check?`<span class="adv-eng" title="${esc(L("Read straight off the board: relations, wires, evidence weights and shared words. No AI model wrote this.","直接从画板读出：关系、连线、证据分量和共同词语。不是 AI 模型写的。"))}">${L("board check","画板检查")}</span>`:p.engine==="rules"?`<span class="adv-eng" title="${esc(p.engineWhy?L(`${p.engineWhy}, so this thought came from built-in rules`,`${p.engineWhy}，这条建议来自内置规则`):L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
   /* the buttons under the latest reply; gone once you write again or the reply is still typing */
   const lastR=reps[reps.length-1],picks=lastR&&lastR.who!=="you"&&!lastR.typing&&Array.isArray(lastR.actions)?lastR.actions:[];
   const waiting=!!lastR&&(lastR.who==="you"||!!lastR.typing);
@@ -8500,6 +8739,7 @@ function scheduleAdvisor(nodeId,{force=false,delay=1400}={}){
   advBurstT=setTimeout(fireAdvisorBurst,wait);
 }
 function fireAdvisorBurst(){
+  {const need=IDLE_NEED[crewSpeak]||4000;if(advBurst.size&&userIdleFor()<need&&NOW()-advBurstStart<60000){clearTimeout(advBurstT);advBurstT=setTimeout(fireAdvisorBurst,Math.max(400,Math.min(need,need-userIdleFor())));return}}
   const ids=[...advBurst].filter(id=>{const n=byId(id);return n&&!n.archived&&n.status!=="sketch"&&n.type!=="group"});advBurst.clear();
   if(!ids.length||!advisorMode)return;
   if(unreadPins()>=(SPEAK_UNREAD[crewSpeak]||0)||!advLeft()){advHeld+=ids.length;renderCrewPop?.();renderCrew?.();return}
@@ -8516,6 +8756,7 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
   if(!force&&(crewBusy()||copilotStreaming)){scheduleAdvisor(nodeId,{delay:2800});return}
   const lead=advisorRolesFor(n)[0]||"critic";
   advThinking.set(nodeId,lead);
+  document.body.classList.toggle("adv-quiet",!force&&crewSpeak==="matters");
   const cardEl=nodeEl(nodeId);if(cardEl)cardEl._sig="";
   renderNodes();
   const localRes=localAdvisorForNode(n);
@@ -8562,7 +8803,7 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
     board.pins=board.pins||{};
     {const fallback=contextFor(n,{limit:2}).picks.map(p=>({id:p.n.id,rev:p.n.rev||1,relation:"related",why:ctxWhyText(p.why),signals:p.why.map(w=>w.k)}));
      const kept=[];for(const p of (res?.pins||localRes.pins)){if(!Array.isArray(p.basis))p.basis=fallback;if(!p.engine)p.engine="rules";const e=echoOfDeclined(p.note||[p.take,p.edge].filter(Boolean).join(" "));if(e&&!e.answeredBy){holdBack("pin",{target:nodeId,who:p.agent||lead,text:p.note,payload:{...p},declined:e.d});continue}if(e)p.revisits={id:e.d.id,by:e.answeredBy.id};kept.push(p)}
-     if(kept.length)board.pins[nodeId]=kept;}
+     if(kept.length)board.pins[nodeId]=[...(board.pins[nodeId]||[]).filter(p=>p.check),...kept];}
     hideAdvStream(true);
     const updatedEl=nodeEl(nodeId);if(updatedEl)updatedEl._sig="";
     renderNodes();renderAdvPop();persist();
@@ -8585,7 +8826,7 @@ async function runAdvisorOnNode(nodeId,{force=false}={}){
 }
 function dismissAdvPin(nodeId,pinId,reason=""){
   if(!board.pins?.[nodeId])return;
-  {const p=board.pins[nodeId].find(x=>x.id===pinId);if(p){const said=(p.replies||[]).filter(r=>r.who==="you").at(-1)?.text||"";declineRecord("pin",{title:clip(String(p.note||"").replace(/\*\*/g,""),120),text:String(p.note||"").replace(/\*\*/g,""),by:p.agent,target:nodeId,reason:reason||said,ref:p.id})}}
+  {const p=board.pins[nodeId].find(x=>x.id===pinId);if(p&&!p.check){const said=(p.replies||[]).filter(r=>r.who==="you").at(-1)?.text||"";declineRecord("pin",{title:clip(String(p.note||"").replace(/\*\*/g,""),120),text:String(p.note||"").replace(/\*\*/g,""),by:p.agent,target:nodeId,reason:reason||said,ref:p.id})}}
   board.pins[nodeId]=board.pins[nodeId].filter(p=>p.id!==pinId);
   if(!board.pins[nodeId].length)delete board.pins[nodeId];
   const el=nodeEl(nodeId);if(el)el._sig="";
@@ -11324,7 +11565,7 @@ $("reviewBtn").addEventListener("click",()=>{
   toggleReviewPop();
 });
 $("crewPop")?.addEventListener("click",e=>{
-  const sp=e.target.closest("[data-crew-speak]");if(sp){setCrew({speak:sp.dataset.crewSpeak});return}
+  const sp=e.target.closest("[data-crew-speak]");if(sp){setSpeak(sp.dataset.crewSpeak,{from:"popover"});return}
   const ac=e.target.closest("[data-crew-act]");if(ac){setCrew({act:ac.dataset.crewAct});return}
   const lk=e.target.closest("[data-crew-lock]");if(lk){toggleBayLock(+lk.dataset.crewLock);renderCrewPop();return}
   const sh=e.target.closest("[data-crew-show]");if(sh){const n=byId(sh.dataset.crewShow);toggleCrewPop(false);if(n){focusNodes([n],Math.max(cam.s,.85),0);select([n.id],{menus:false});if(openAdvNodeId!==n.id)toggleAdvPop(n.id)}return}
@@ -16475,6 +16716,13 @@ $("lineCtx").addEventListener("click",e=>{
 });
 $("ledger").addEventListener("click",e=>{const b=e.target.closest("[data-l]");if(!b)return;if(b.dataset.l==="close"){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}const t=byId(b.dataset.id);if(t){select([t.id]);focusNodes([t],1)}});
 $("rail").addEventListener("click",e=>{const b=e.target.closest("[data-bay]");if(b)flyToBay(+b.dataset.bay)});
+document.addEventListener("click",e=>{
+  {const pb=e.target.closest("#partSw [data-part]");if(pb){if(pb.dataset.part!==crewSpeak)setSpeak(pb.dataset.part);else if(matchMedia("(max-width:640px)").matches)setSpeak(SPEAK_LEVELS[(SPEAK_LEVELS.indexOf(crewSpeak)+1)%3]);return}}
+  {const go=e.target.closest("[data-cu-go]");if(go){const n=byId(go.dataset.cuGo);if(n){focusNodes([n],Math.max(cam.s,.85));select([n.id],{menus:false});if(openAdvNodeId!==n.id)toggleAdvPop(n.id);const p=(board.pins?.[n.id]||[]).findIndex(x=>x.id===go.dataset.cuPin);if(p>0){openAdvIdx=p;renderAdvPop()}}go.classList.add("seen");if(![...document.querySelectorAll("#catchUp [data-cu-go]")].some(b=>!b.classList.contains("seen")))toggleCatchUp(false);return}}
+  if(e.target.closest("[data-cu-close]")){toggleCatchUp(false);return}
+});
+/* arrow keys move along the switch, like any radio group */
+$("partSw").addEventListener("keydown",e=>{const i=SPEAK_LEVELS.indexOf(crewSpeak);let j=null;if(e.key==="ArrowRight"||e.key==="ArrowDown")j=Math.min(2,i+1);else if(e.key==="ArrowLeft"||e.key==="ArrowUp")j=Math.max(0,i-1);if(j===null||j===i)return;e.preventDefault();setSpeak(SPEAK_LEVELS[j]);$("partSw").querySelector(`[data-part="${SPEAK_LEVELS[j]}"]`)?.focus()});
 $("crew").addEventListener("click",e=>{
   if(e.target.closest("#crewSetBtn")){toggleCrewPop();return}
   if(e.target.closest("#crewModeBtn")){toggleCrewPop(false);toggleStudioPopover();return}
@@ -16546,6 +16794,7 @@ document.addEventListener("pointerdown",e=>{
   if(!e.target.closest?.("[data-agent]"))hideTip();
   if(studioPopOpen&&!e.target.closest?.("#studioPop")&&!e.target.closest?.("#crewModeBtn"))toggleStudioPopover(false);
   if(reviewPopOpen&&!e.target.closest?.("#reviewPop")&&!e.target.closest?.("#reviewBtn"))toggleReviewPop(false);
+  if(catchUpOpen&&!e.target.closest?.("#catchUp")&&!e.target.closest?.("#partSw")&&!e.target.closest?.("#advPop")&&!e.target.closest?.(".adv-pin")&&!e.target.closest?.("#nodes"))toggleCatchUp(false);
   if(crewPopOpen&&!e.target.closest?.("#crewPop")&&!e.target.closest?.("#crewSetBtn")&&!e.target.closest?.("dialog"))toggleCrewPop(false);
   if(agentPopKey&&!e.target.closest?.("#agentPop")&&!e.target.closest?.("#crew [data-agent]"))toggleAgentPop(null);
   if(boardsPopOpen&&!e.target.closest?.("#boardsPop")&&!e.target.closest?.("#projectBtn"))toggleBoardsPop(false);
@@ -17696,9 +17945,10 @@ addEventListener("keydown",e=>{
   if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&e.key.toLowerCase()==="y"&&!typing){e.preventDefault();redo();return}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="d"&&!typing&&sel.length){e.preventDefault();duplicateSelection();return}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();if(findOpen)setOmniMode("cmd",{focus:true});else lineIn.focus();return}
+  if((e.metaKey||e.ctrlKey)&&e.shiftKey&&(e.code==="Period"||e.key==="."||e.key===">")){e.preventDefault();toggleFocus("key");return}
   if((e.metaKey||e.ctrlKey)&&e.key==="."){e.preventDefault();openCopilot();return}
   if(typing)return;
-  if(e.key==="Escape"){if(relPickId){closeRelPick();return}if(cardMenuOpen){closeCardMenu();return}if($("wirePop")?.querySelector(".wp-dep-menu:not([hidden])")){closeWirePopMenu();return}if(openAdvNodeId){closeAdvPop();return}if(agentPopKey){toggleAgentPop(null);return}if(boardsPopOpen){toggleBoardsPop(false);$("projectBtn")?.focus();return}if(reviewPopOpen){toggleReviewPop(false);$("reviewBtn")?.focus();return}if(crewPopOpen){toggleCrewPop(false);$("crewSetBtn")?.focus();return}if(studioPopOpen){const wasKb=!!document.activeElement?.closest?.("#studioPop");toggleStudioPopover(false);if(wasKb)$("crewModeBtn")?.focus();return}if(genPop){const back=genPop==="ratio"?"genRatioBtn":"genModelBtn";const wasKb=!!document.activeElement?.closest?.(".go-drop");genPop=null;renderGenOpts(true);if(wasKb)$(back)?.focus();return}if(copilotOpen){openCopilot(false);return}if(findOpen){toggleFindBar(false);return}if(!$("ledger").hidden){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}if(focusId){e.preventDefault();closeFocus();return}selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();return}
+  if(e.key==="Escape"){if(catchUpOpen){toggleCatchUp(false);return}if(relPickId){closeRelPick();return}if(cardMenuOpen){closeCardMenu();return}if($("wirePop")?.querySelector(".wp-dep-menu:not([hidden])")){closeWirePopMenu();return}if(openAdvNodeId){closeAdvPop();return}if(agentPopKey){toggleAgentPop(null);return}if(boardsPopOpen){toggleBoardsPop(false);$("projectBtn")?.focus();return}if(reviewPopOpen){toggleReviewPop(false);$("reviewBtn")?.focus();return}if(crewPopOpen){toggleCrewPop(false);$("crewSetBtn")?.focus();return}if(studioPopOpen){const wasKb=!!document.activeElement?.closest?.("#studioPop");toggleStudioPopover(false);if(wasKb)$("crewModeBtn")?.focus();return}if(genPop){const back=genPop==="ratio"?"genRatioBtn":"genModelBtn";const wasKb=!!document.activeElement?.closest?.(".go-drop");genPop=null;renderGenOpts(true);if(wasKb)$(back)?.focus();return}if(copilotOpen){openCopilot(false);return}if(findOpen){toggleFindBar(false);return}if(!$("ledger").hidden){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}if(focusId){e.preventDefault();closeFocus();return}selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();return}
   if(onBtn&&(e.key===" "||e.key==="Enter"))return;
   if(e.key===" "&&!spaceHeld){spaceHeld=true;wall.classList.add("hand");e.preventDefault();return}
   const latest=groups().get(currentPid());

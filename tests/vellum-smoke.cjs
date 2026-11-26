@@ -745,7 +745,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
     {
       const p = await page(browser, base);
       await p.newBoard();
-      await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; });
+      await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; IDLE_NEED.matters = 200; IDLE_NEED.often = 200; });
       const advReqs = () => requests.filter(r => r.full && /Include 1 or at most 2 pins/.test(r.full));
       const add = async list => { for (const t of list) { await p.evaluate(() => select([])); await p.type('note: ' + t); await p.waitForTimeout(120); } await p.waitForTimeout(1400); await p.idle(); };
       check('defaults: speaks up when it matters, acts only with drafts', await p.evaluate(() => crewSpeak === 'matters' && crewAct === 'drafts' && perm('create') === 'suggest' && perm('edit') === 'suggest' && perm('delete') === 'suggest' && advisorMode && !advisorAuto));
@@ -784,7 +784,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.evaluate(() => { setCrew({ speak: 'matters', act: 'drafts' }); board.pins = {}; advHeld = 0; renderCrew(); });
       check('the crew settings button belongs to the crew group', await p.evaluate(() => !!document.querySelector('.crew-group .crew-seats') && !!document.querySelector('.crew-group #crewSetBtn')));
       check('it shows connection health as a dot', await p.evaluate(() => document.querySelector('#crewSetBtn .conn-dot')?.classList.contains('ok')));
-      check('its label names both settings', /When it matters/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))) && /Only drafts/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))));
+      check('its label names both settings', /Joins in: Listening/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))) && /Only drafts/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))));
       const pinCard = await p.evaluate(() => { const id = board.nodes.find(n => n.type === 'note').id; board.pins = { [id]: [{ id: 'pin-show', agent: 'critic', note: 'Read me', t: NOW(), seen: false }] }; renderAll(); renderCrew(); return id; });
       check('the avatars show the crew is waiting for you', await p.evaluate(() => { const g = document.querySelector('.crew-group'); return g.classList.contains('quiet-pacing') && /read the last thought/.test(g.title); }));
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
@@ -801,7 +801,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
       await p.click('#crewPop [data-crew-speak="often"]'); await p.waitForTimeout(200);
       await p.click('#crewPop [data-crew-act="create"]'); await p.waitForTimeout(200);
-      check('choosing on each axis takes effect and is remembered', await p.evaluate(() => crewSpeak === 'often' && crewAct === 'create' && store.get('.crewSpeak') === 'often' && store.get('.crewAct') === 'create' && perm('create') === 'direct' && /Often/.test(document.getElementById('crewSetBtn').getAttribute('aria-label'))));
+      check('choosing on each axis takes effect and is remembered', await p.evaluate(() => crewSpeak === 'often' && crewAct === 'create' && store.get('.crewSpeak') === 'often' && store.get('.crewAct') === 'create' && perm('create') === 'direct' && /Teamwork/.test(document.getElementById('crewSetBtn').getAttribute('aria-label')) && board.speak === 'often'));
       await p.keyboard.press('Escape'); await p.waitForTimeout(200);
       // the connection popover is only about the connection
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);

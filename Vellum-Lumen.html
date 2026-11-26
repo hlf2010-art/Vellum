@@ -2938,6 +2938,13 @@ body.snap-skip #wall{cursor:copy}
 .wire-pop .wp-rel button i{width:6px;height:6px;border-radius:50%;background:var(--rc)}
 .wire-pop .wp-rel button:hover{background:var(--hover);color:var(--label)}
 .wire-pop .wp-rel button.on{background:color-mix(in srgb,var(--rc) 16%,var(--card));color:var(--label);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 40%,transparent)}
+.wire-pop.has-note{flex-direction:column;align-items:stretch;gap:4px;border-radius:18px;padding:4px 5px 6px 10px;background:color-mix(in srgb,var(--card) 95%,transparent)}
+.wire-pop .wp-note{display:flex;align-items:center;gap:8px;padding:0 2px 0 0}
+.wire-pop .wp-note span{font:600 11px/1 var(--ui);color:var(--label-3);flex:none}
+.wire-pop .wp-note input{flex:1;min-width:0;height:28px;padding:0 10px;border-radius:10px;border:0;outline:0;font:500 12.5px/1 var(--ui);color:var(--label);background:var(--card-2);box-shadow:inset 0 0 0 1px var(--hair);transition:box-shadow var(--d-quick),background var(--d-quick)}
+.wire-pop .wp-note input::placeholder{color:var(--label-3)}
+.wire-pop .wp-note input:focus{background:var(--card);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--focus) 60%,transparent)}
+.clasp.has-note::before{content:"";position:absolute;right:2px;top:2px;width:5px;height:5px;border-radius:50%;background:var(--rc);box-shadow:0 0 0 1.5px var(--canvas)}
 .wire-pop .wp-mini{height:var(--size-sm,26px);min-width:var(--size-sm,26px);padding:0 7px;border-radius:var(--radius-pill);display:inline-flex;align-items:center;justify-content:center;gap:4px;font:600 12px/1 var(--ui);color:var(--label-3);background:transparent;transition:background var(--d-quick),color var(--d-quick)}
 .wire-pop .wp-mini:hover{background:var(--hover);color:var(--label)}
 .wire-pop .wp-mini .ico{width:13px;height:13px}
@@ -4601,8 +4608,9 @@ function relatedRows(n,limit=5){
 }
 const relFetchOnce=new Set();
 /* a relation you made, as the crew and the Related list read it: yours, and "related" is never agreement */
-function ctxHumanRel(t,n){const e=relBetween(t,n);if(!e||e.by!=="you"||!e.rel)return {};return {you:true,rel:e.rel,from:e.a===n?"it":"this",snap:isBonded(e)}}
-function ctxRelText(w){
+function ctxHumanRel(t,n){const e=relBetween(t,n);if(!e||e.by!=="you"||!e.rel)return {};return {you:true,rel:e.rel,from:e.a===n?"it":"this",snap:isBonded(e),note:e.note||""}}
+function ctxRelText(w){return ctxRelBase(w)+(w.note?L(` · your note: “${w.note}”`,` · 你的说明：“${w.note}”`):"")}
+function ctxRelBase(w){
   const how=w.snap?L("you snapped them together","你把它们吸附在一起"):L("you linked them","你把它们连在一起");
   if(!w.rel||w.rel==="related")return how+L(" · related, not agreement"," · 有关，不代表同意");
   const v=L(...REL_VERB[w.rel]);
@@ -6534,7 +6542,7 @@ function drawWires(){
     const faded=b.type==="direction"&&board.adopted[b.idea]&&board.adopted[b.idea]!==b.id;
     const ep=edgeEndpoints(a,b,outSide.get(a.id),inSide.get(b.id)),d=`M${ep.x1},${ep.y1} C${ep.cx1},${ep.cy1} ${ep.cx2},${ep.cy2} ${ep.x2},${ep.y2}`,dt=edgeDepType(e,a,b);
     const cls=["w",e.kind==="src"||dt==="reference"?"src":"",L&&e.kind!=="src"?"pg"+L:"",sk?"sk":"",faded?"faded":"",selectedEdgeId===e.id?"edge-sel":"",freshEdges.has(e.id)?"grow":"",e.rel?"rel rel-"+e.rel:""].filter(Boolean).join(" ");
-    if(e.rel&&e.rel!=="related")tags.push({e,x:.125*ep.x1+.375*ep.cx1+.375*ep.cx2+.125*ep.x2,y:.125*ep.y1+.375*ep.cy1+.375*ep.cy2+.125*ep.y2});
+    if(e.rel&&(e.rel!=="related"||e.note))tags.push({e,x:.125*ep.x1+.375*ep.cx1+.375*ep.cx2+.125*ep.x2,y:.125*ep.y1+.375*ep.cy1+.375*ep.cy2+.125*ep.y2});
     const rcls=["w-root",L&&e.kind!=="src"?"pg"+L:"",faded?"faded":""].filter(Boolean).join(" ");
     const fcls=["w-flow",L&&e.kind!=="src"?"pg"+L:"",faded?"faded":""].filter(Boolean).join(" ");
     h+=`<path class="${cls}" data-dep="${dt}" d="${d}" ${freshEdges.has(e.id)?'style="--len:900"':""}/>`;
@@ -6558,6 +6566,7 @@ function renderWirePop(){
   const e=selectedEdgeId?board.edges.find(x=>x.id===selectedEdgeId):null;
   const a=e?byId(e.a):null,b=e?byId(e.b):null;
   if(!e||!a||!b||isNodeHidden(a)||isNodeHidden(b)||stageOpen){selectedEdgeId=null;pop.hidden=true;renderLineHint?.();return}
+  {const ae=document.activeElement;if(ae&&ae.dataset?.wireNote===e.id&&pop.contains(ae)){placeWirePop();return}}
   const dt=edgeDepType(e,a,b),bonded=isBonded(e),cur=e.rel||"";
   const relSeg=`<div class="wp-rel" role="group" aria-label="${esc(L("What this relation means","关系类型"))}">${REL_TYPES.map(r=>`<button type="button" class="rel-${r}${r===cur?" on":""}" data-wire-edge="${e.id}" data-wire-rel="${r}" aria-pressed="${r===cur}" title="${esc(r==="related"?L("Related, nothing more","只是有关"):relSentence({...e,rel:r}))}"><i aria-hidden="true"></i>${esc(relName(r))}</button>`).join("")}</div><span class="wp-vsep" aria-hidden="true"></span>`;
   const extra=(dt==="reference"&&e.rel?`<button type="button" class="wp-mini" data-wire-swap="${e.id}" title="${esc(L("Swap direction","交换方向"))}" aria-label="${esc(L("Swap direction","交换方向"))}">⇄</button>`:"")+(e.rel&&(bonded||e.line)?`<button type="button" class="wp-mini" data-wire-line="${e.id}">${e.line?L("Hide line","隐藏连线"):L("Show line","显示连线")}</button>`:"");
@@ -6605,6 +6614,8 @@ function renderWirePop(){
       ${ic("trash")}
     </button>
   </div>`;
+  if(e.rel)pop.insertAdjacentHTML("beforeend",`<label class="wp-note"><span>${L("Note","说明")}</span><input type="text" data-wire-note="${e.id}" maxlength="${REL_NOTE_MAX}" value="${esc(e.note||"")}" placeholder="${esc(L("Why, or a “but…” (e.g. only for solo hikers)","为什么，或者“但是……”（例如：只适用于独自徒步的人）"))}" aria-label="${esc(L("Note on this relation","这条关系的说明"))}"></label>`);
+  pop.classList.toggle("has-note",!!e.rel);
   pop.hidden=false;placeWirePop();renderLineHint?.();
 }
 function placeWirePop(){
@@ -6693,12 +6704,24 @@ function relSentence(e){
   if(!e.rel||e.rel==="related")return L(`${ta} and ${tb} are related`,`${ta} 与 ${tb} 有关`);
   const v=REL_VERB[e.rel];return L(`${ta} ${v[0]} ${tb}`,`${ta} ${v[1]} ${tb}`);
 }
+const relTitle=e=>relSentence(e)+(e.note?" · "+e.note:"");
 function setRelType(id,rel){
   const e=board.edges.find(x=>x.id===id);if(!e||!REL_TYPES.includes(rel))return;
   if(e.rel===rel&&e.by==="you"){paintRelPick();return}
+  const was=e.by==="you"&&e.rel?e.rel:null;
   checkpoint();e.rel=rel;e.by="you";
-  sfx("pop");log("you",esc(relSentence(e)),e.b);
+  sfx("pop");log("you",esc(relSentence(e))+(was?L(` (was: ${relName(was).toLowerCase()})`,`（原来是：${relName(was)}）`):""),e.b);
   renderAll();persist();paintRelPick();
+}
+/* a short note on a relation: the "but" or the "why" (for example "supports, but only for solo hikers") */
+const REL_NOTE_MAX=140;
+function setRelNote(id,text){
+  const e=board.edges.find(x=>x.id===id);if(!e)return;
+  const t=String(text||"").replace(/\s+/g," ").trim().slice(0,REL_NOTE_MAX);
+  if((e.note||"")===t)return;
+  checkpoint();if(t)e.note=t;else delete e.note;e.by="you";if(!e.rel)e.rel="related";
+  log("you",t?L(`Note on “${esc(relSentence(e))}”: ${esc(t)}`,`给“${esc(relSentence(e))}”加了说明：${esc(t)}`):L(`Removed the note on “${esc(relSentence(e))}”`,`删除了“${esc(relSentence(e))}”的说明`),e.b);
+  sfx("tick");renderAll();persist();
 }
 function swapRelation(id){
   const e=board.edges.find(x=>x.id===id);if(!e)return;
@@ -6899,17 +6922,17 @@ function paintRelLayer(bonds,tags){
   const put=(k,make,upd)=>{keep.add(k);let el=els.get(k);if(!el){el=make();el.dataset.k=k;layer.appendChild(el);els.set(k,el)}upd(el)};
   for(const {e,s} of bonds){
     put("c"+e.id,()=>{const b=document.createElement("button");b.type="button";b.className="clasp";b.innerHTML="<i></i>";b.dataset.clasp=e.id;return b},el=>{
-      const cls=`clasp o-${s.o} rel-${e.rel||"related"}${selectedEdgeId===e.id?" sel":""}${freshClasps.has(e.id)?" fresh":""}${el.classList.contains("hit")?" hit":""}`;
+      const cls=`clasp o-${s.o} rel-${e.rel||"related"}${e.note?" has-note":""}${selectedEdgeId===e.id?" sel":""}${freshClasps.has(e.id)?" fresh":""}${el.classList.contains("hit")?" hit":""}`;
       if(el.className!==cls)el.className=cls;
       el.style.left=s.x+"px";el.style.top=s.y+"px";el.style.setProperty("--len",clamp(Math.round(s.len*.34),20,46)+"px");
-      const say=relSentence(e);
+      const say=relTitle(e);
       if(el._say!==say){el._say=say;el.setAttribute("aria-label",L(`Snapped: ${say}. Click to edit, drag to move them together.`,`已吸附：${say}。点击修改，拖动一起移动。`));el.title=say}
     });
   }
   for(const {e,x,y} of tags){
     put("t"+e.id,()=>{const b=document.createElement("button");b.type="button";b.className="rel-tag";b.dataset.reltag=e.id;return b},el=>{
       const cls=`rel-tag rel-${e.rel}${selectedEdgeId===e.id?" sel":""}`;if(el.className!==cls)el.className=cls;
-      const t=relName(e.rel);if(el.textContent!==t)el.textContent=t;el.title=relSentence(e);
+      const t=relName(e.rel)+(e.note?" · "+clip(e.note,28):"");if(el.textContent!==t)el.textContent=t;el.title=relTitle(e);
       el.style.left=x+"px";el.style.top=y+"px";
     });
   }
@@ -15974,6 +15997,11 @@ $("wirePop")?.addEventListener("click",e=>{
   }
 });
 
+{const wp=$("wirePop");if(wp){
+  wp.addEventListener("change",e=>{const i=e.target.closest?.("[data-wire-note]");if(i)setRelNote(i.dataset.wireNote,i.value)});
+  wp.addEventListener("keydown",e=>{const i=e.target.closest?.("[data-wire-note]");if(!i)return;e.stopPropagation();
+    if(e.key==="Enter"){e.preventDefault();i.blur()}else if(e.key==="Escape"){e.preventDefault();const ed=board.edges.find(x=>x.id===i.dataset.wireNote);i.value=ed?.note||"";i.blur()}});
+}}
 {const rp=$("relPick");if(rp){
   rp.addEventListener("click",e=>{const b=e.target.closest("[data-relpick]");if(b&&relPickId){setRelType(relPickId,b.dataset.relpick);armRelPick(1300)}});
   rp.addEventListener("pointerenter",()=>clearTimeout(relPickTimer));rp.addEventListener("pointerleave",()=>{if(relPickId)armRelPick(2200)});

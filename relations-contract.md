@@ -15,21 +15,23 @@ A relation is an edge with `by: "you"` and a `rel`:
 | `conflicts` | Counters · 反驳 | `a` counters `b` |
 | `extends` | Refines · 细化 | `a` refines `b` |
 
-`via` records the gesture (`snap` or `wire`). Lineage edges the crew makes while it works (`derive`, `live`, `frozen`) are not relations until a person snaps or connects the same pair; then the same edge gains `by` and `rel`.
+`note` is an optional short text (up to 140 characters) for the why or the "but", for example "supports, but only for solo hikers". `via` records the gesture (`snap` or `wire`). Lineage edges the crew makes while it works (`derive`, `live`, `frozen`) are not relations until a person snaps or connects the same pair; then the same edge gains `by` and `rel`.
 
 ## Rules
 
-1. **One per pair.** Two cards have at most one relation. Snapping cards that are already related, or drawing a connector between them, opens that relation to edit; it never adds a second one.
+1. **One per pair.** Two cards have at most one relation, of one type (decided by Mars, 2026-11-26). A pair that both supports and counters is a contradiction the crew would have to guess about; a mixed case is one type plus a note. Snapping cards that are already related, or drawing a connector between them, opens that relation to edit; it never adds a second one.
 2. **Snapped is a way of showing it.** Two related cards that sit edge to edge (a 12px seam) show the relation as a clasp on the seam instead of a line. Show line draws it anyway.
 3. **Pulling apart keeps it.** Drag a snapped card away and the relation stays, drawn as a line with its type on it. A toast offers Unbind.
 4. **Unbinding is explicit.** A relation goes away only when the person deletes it (⌫ on the selected relation, Unbind, or the bin in its popover). Undo brings it back.
 5. **The type is optional.** After a snap or a new connector a small picker offers the four types (keys 1 to 4). Ignoring it leaves `related`.
 6. **Groups.** Cards snapped together, directly or through each other, are a snapped group. Dragging a clasp moves the whole group; dragging a card pulls just that card out. A connector dropped on a clasp relates the card to every card in the group. Each card can still be connected to others on its own.
 7. **On and off.** Smart snap is a toolbar toggle (M), on by default and remembered. Holding ⌥ while dragging skips it for that drag.
+8. **A note says the nuance.** Click a line or a clasp and write in Note; Enter saves, Esc cancels. The note shows on the line next to the type (a dot on a clasp, the full text on hover), and the crew reads it with the relation.
+9. **History.** Every change goes to the Activity log and to Undo: a new type is logged with what it was ("counters (was: supports)"), a note with its text.
 
 ## What the crew may do
 
-- **Read** relations as stated. A direct relation is the strongest context signal a card has (it ranks above shared words, close meaning and position), and reaches the model as, for example, "you snapped them together · related, not agreement" or "you linked them · it counters this card".
+- **Read** relations as stated, with the person's note when there is one. A direct relation is the strongest context signal a card has (it ranks above shared words, close meaning and position), and reaches the model as, for example, "you snapped them together · related, not agreement" or "you linked them · it counters this card".
 - **Never change or remove** a relation the person made. A crew `connect` on a related pair is skipped, unless the person asked for it in their own words. Every agent's prompt says so.
 - The Related section of a card's sheet lists the person's relations first, with their type.
 

@@ -1317,6 +1317,14 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .cp-modes button[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:var(--seg-on-shadow)}
 .cp-msgs{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px;display:flex;flex-direction:column;gap:12px}
 .cp-empty{margin:auto 0;padding:14px 4px;display:grid;gap:10px}
+.cp-empty-board{justify-self:start;display:inline-flex;align-items:center;gap:6px;max-width:100%;height:24px;padding:0 10px;border-radius:999px;font:600 12px/1 var(--ui);color:var(--label-2);background:var(--hover);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-empty-board::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--B);box-shadow:0 0 8px 1px var(--bloom)}
+.cp-empty p.cp-empty-src{font-size:13px;color:var(--label-3)}
+/* switching boards swaps the conversation: the new one settles in rather than snapping */
+@keyframes cpBoardIn{from{opacity:0;transform:translateY(10px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+.copilot-panel.cp-board-in .cp-msgs{animation:cpBoardIn .38s var(--smooth) both}
+.copilot-panel.cp-board-in .cp-chips{animation:cpBoardIn .38s var(--smooth) .07s both}
+.copilot-panel.cp-board-in .cp-titles small{animation:cpBoardIn .3s var(--smooth) both}
 .cp-empty h3{margin:0;font:650 17px/1.25 var(--ui);letter-spacing:-.025em;color:var(--label)}
 .cp-empty p{margin:0;font:14px/1.5 var(--ui);color:var(--label-2)}
 .cp-msg{display:flex;flex-direction:column;gap:8px;animation:rise .22s var(--ease)}
@@ -7939,7 +7947,7 @@ function renderLedger(){
 }
 
 function renderAll(){if(board&&(!changeShadow||changeShadow.id!==board.id))changeShadow=shadowOf(board);
-  litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();
+  litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();syncCopilotBoard?.();
   $("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";
   const archCount=board.nodes.filter(n=>!n.tombstone&&n.archived).length;
   const hidCount=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived).length;
@@ -13712,6 +13720,40 @@ function renderCopilotCompCards(ctx){
     return `<span class="cp-comp-chip" title="${esc(lbl)}">${img}<span class="t">${esc(clip(lbl,28))}</span><button type="button" data-cp-unctx="${esc(n.id)}" aria-label="Remove ${esc(lbl)} from context">${ic("x")}</button></span>`;
   }).join("")+((ctx||[]).length>4?`<span class="cp-comp-chip"><span class="t">+${ctx.length-4} more</span></span>`:"");
 }
+/* ── one conversation per board ─────────────────────────────────────────────────────────────────────────────
+   The conversation lives on the board (board.copilot) and travels with it: saved, backed up, exported and imported
+   with it. What is not on the board is the panel's own state: a reply still streaming, queued messages, the crew
+   member being addressed and half-typed words. Every route to another board (the board menu, New board, a template,
+   Import, Delete, the sample) ends in renderAll, which calls this. It stops a reply in flight and keeps what arrived
+   on the board it was asked on, so nothing from one board lands on another, and clears the rest. */
+let cpBoardId=null;
+function syncCopilotBoard(){
+  if(!board)return;
+  const sm=$("cpBoard");if(sm)sm.textContent=board.title||L("Untitled board","未命名画板");
+  if(cpBoardId===board.id)return;
+  const first=cpBoardId===null;cpBoardId=board.id;
+  /* a reply cut off by a closed tab would otherwise wait forever with a caret */
+  for(const m of board.copilot||[])if(m.streaming){delete m.streaming;if(!m.text)m.text=L("Stopped.","已停止。")}
+  if(first)return;
+  if(copilotStreaming&&copilotAbort){copilotAbort.abort("board-switch");copilotStreaming=false;copilotAbort=null}
+  cpQueue=[];cpQueuePaused=false;cpTarget=null;
+  const inp=$("cpInput");if(inp){inp.value="";inp.style.height="auto"}
+  if(copilotOpen&&!$("copilotPanel")?.hidden){renderCopilot();cpBoardTransition()}else syncCpSend();
+}
+function cpBoardTransition(){
+  const p=$("copilotPanel");if(!p||calm())return;
+  clearTimeout(p._boardT);p.classList.remove("cp-board-in");void p.offsetWidth;p.classList.add("cp-board-in");
+  p._boardT=setTimeout(()=>p.classList.remove("cp-board-in"),520);
+}
+/* a reply that finishes after its board was left is written straight to that board's storage, unless it was deleted */
+function saveBoardQuiet(b){
+  if(!b?.id||!store.get(".list",[]).some(x=>x.id===b.id))return;
+  b.updated=NOW();const slim={...b,nodes:b.nodes.map(({_h,...n})=>n)};
+  store.set(".board."+b.id,slim);putBoardIdb?.(slim);
+}
+function copilotEmptyHTML(){
+  return `<div class="cp-empty"><span class="cp-empty-board">${esc(board.title||L("Untitled board","未命名画板"))}</span><h3>${L("A conversation for this board","这块画板的对话")}</h3><p>${L("Copilot reads only this board. The conversation stays with it, so you can come back and pick up where you left off.","Copilot 只读这块画板。对话跟着画板走，回来时可以接着聊。")}</p><p class="cp-empty-src">${L("Selected cards and images go along with your question. Live context from <b>GitHub</b>, <b>NotebookLM</b>, <b>Notion</b> or <b>Figma</b> comes in through MCP.","提问时会带上选中的卡片和图片。也可以通过 MCP 引入 <b>GitHub</b>、<b>NotebookLM</b>、<b>Notion</b> 或 <b>Figma</b> 的实时内容。")}</p></div>`;
+}
 function renderCopilot(){
   const p=$("copilotPanel");if(!p)return;
   const prevInp=$("cpInput"),draft=prevInp?prevInp.value:"",hadFocus=prevInp===document.activeElement;
@@ -13724,13 +13766,13 @@ function renderCopilot(){
   const extPills=extAll.length?`<div class="cp-ext" id="cpExtCtx"><span class="cp-ext-lbl">MCP (${extActive.length})</span>${extAll.map(it=>{const m=mcpMeta(it.provider),on=it.active!==false;return `<div class="cp-ext-pill${on?"":" muted"}" style="--mc:${m.color}"><span class="cp-ext-dot"></span><button type="button" class="cp-ext-tog" data-cp-ext-tog="${esc(it.id)}" title="${esc(`${m.name}: ${it.title} — click to ${on?"mute":"activate"}`)}"><span>${esc(m.short)}: ${esc(it.title)}</span></button><button type="button" class="cp-ext-act" data-cp-ext-view="${esc(it.id)}" title="Preview">${ic("eye")}</button><button type="button" class="cp-ext-act" data-cp-ext-pin="${esc(it.id)}" title="Pin to canvas">${ic("plus")}</button><button type="button" class="cp-ext-act" data-cp-ext-del="${esc(it.id)}" title="Detach">${ic("x")}</button></div>`}).join("")}</div>`:`<div class="cp-ext" id="cpExtCtx"></div>`;
   p.innerHTML=`<header class="cp-head">
       <span class="mk">${AV.muse}</span>
-      <div class="cp-titles" title="${esc(src.label)}"><b>Lumen Copilot</b></div>
+      <div class="cp-titles" title="${esc(src.label)}"><b>Lumen Copilot</b><small id="cpBoard" title="${esc(L("This conversation belongs to this board","这段对话属于这块画板"))}">${esc(board.title||L("Untitled board","未命名画板"))}</small></div>
       <button type="button" class="cp-iconbtn${hasAnyMemory()?" has-mem":""}" data-cp="memory" title="Memory &amp; Brief" aria-label="Memory and Brief">${ic("book")}</button>
       <span class="cp-more-wrap"><button type="button" class="cp-iconbtn" data-cp="more" title="More" aria-label="More" aria-haspopup="menu">${ic("more")}</button>
         <div class="cp-more-pop" role="menu" hidden><button type="button" role="menuitem" data-cp="mcp">${ic("plug")}${L("Sources","数据源")}</button><button type="button" role="menuitem" class="danger" data-cp="clear">${ic("trash")}${L("Clear chat","清空对话")}</button><small>${esc(src.label)}</small>${/(^|[^\d.])(0\.\d+|[1-4](\.\d+)?)\s*b\b/i.test(src.label)?`<small class="cp-hint">${L("Small models often miss card formats. A larger model gives more reliable suggestion cards.","小模型常常输出不了正确的卡片格式，换更大的模型会更可靠。")}</small>`:""}</div></span>
       <button type="button" class="cp-iconbtn" data-cp="close" title="Close Copilot (⌘.)" aria-label="Close Copilot">${ic("x")}</button>
     </header>
-    <div class="cp-msgs" id="cpMsgs">${msgs.length?msgs.map(renderCopilotMsg).join(""):`<div class="cp-empty"><h3>Think across the board</h3><p>Ask about selected cards, images, or pull live context from <b>GitHub</b>, <b>Google Notebook (NotebookLM)</b>, <b>Notion</b>, or <b>Figma</b> via MCP.</p></div>`}</div>
+    <div class="cp-msgs" id="cpMsgs">${msgs.length?msgs.map(renderCopilotMsg).join(""):copilotEmptyHTML()}</div>
     <div class="cp-chips">${chips.map(c=>`<button type="button" class="cp-chip" data-cp-chip="${esc(c)}">${esc(c)}</button>`).join("")}</div>
     <footer class="cp-foot">${cpTarget?`<div class="cp-target" id="cpTarget"><span class="mk">${AGENTS[cpTarget].mk}</span><span>${L("Asking","正在问")} <b>${esc(AGENTS[cpTarget].name)}</b></span><button type="button" data-cp-untarget aria-label="${L("Ask Copilot instead","改问 Copilot")}" title="${L("Ask Copilot instead","改问 Copilot")}">${ic("x")}</button></div>`:""}${compCards}${extPills}<div id="cpQueue" class="q-list cp-q" aria-live="polite"></div><form id="cpForm" class="cp-box" autocomplete="off">
       <span class="cp-plus-wrap"><button type="button" class="lbtn" id="cpFileBtn" title="Add" aria-label="Add files or sources" aria-haspopup="menu">${ic("plus")}</button>
@@ -14318,7 +14360,9 @@ async function sendCopilotMessage(raw,ctxOverride=null){
   const inp=$("cpInput");if(inp){inp.value="";inp.dispatchEvent(new Event("input"))}
 
   preemptBackgroundAdvisors?.();
-  copilotStreaming=true;copilotAbort=new AbortController();syncCpSend();
+  const home=board,ac=new AbortController(),left=()=>board!==home;
+  const boardGone=()=>{const e=new Error("board switched");e.name="AbortError";return e};
+  copilotStreaming=true;copilotAbort=ac;syncCpSend();
   const pullCmd=text.match(/^\/(?:pull|mcp)\s+(?:(github|notebooklm|notion|figma|custom)\s+)?([\s\S]+)$/i);
   if(pullCmd){
     const detProv=pullCmd[1]?.toLowerCase()||(detectConnectorUrls(pullCmd[2])[0]?.provider)||"github";
@@ -14338,7 +14382,8 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       aiMsg.text=`Could not pull from **${mcpMeta(detProv).name}**: ${err?.message||"connector error"}. Open **MCP Sources** to configure credentials or paste a manual excerpt.`;
       aiMsg.proposals=[{kind:"config",title:"Open MCP Sources",text:"Configure GitHub, Google Notebook, Notion, Figma or MCP server",changes:{openDialog:"mcp"},placed:false}];
     }finally{
-      delete aiMsg.streaming;copilotStreaming=false;copilotAbort=null;renderCopilot();persist();
+      delete aiMsg.streaming;if(copilotAbort===ac){copilotStreaming=false;copilotAbort=null}
+      if(left())saveBoardQuiet(home);else{renderCopilot();persist()}
     }
     return;
   }
@@ -14370,7 +14415,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
   const factOn=!skipDelegate&&!isCasual&&factStance(text);
   try{
     if(factOn){
-      const fa=await factAnswer(text,{signal:copilotAbort.signal});
+      const fa=await factAnswer(text,{signal:ac.signal});
       aiMsg.text=fa.text;aiMsg.stance="fact";aiMsg.factSources=fa.found||[];aiMsg.chips=fa.sources?[PIN_SOURCES_CHIP()]:[];
     }else if(skipDelegate){
       const loc=copilotLocalReply(text,ctx);
@@ -14387,7 +14432,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
           const prior=step.handoffFromId?subSteps.find(s=>s.id===step.handoffFromId):null;
           const scoped=scopeSubAgentContext(step.to,text,ctx,prior);
           scoped.docNames.forEach(d=>{if(!aiMsg.trace.docsActivated.includes(d))aiMsg.trace.docsActivated.push(d)});
-          await runCopilotSubStep(step,scoped,aiMsg,copilotAbort.signal);
+          await runCopilotSubStep(step,scoped,aiMsg,ac.signal);
         }
         aiMsg.trace.totalMs=Math.max(10,Math.round(performance.now()-traceT0));
         paintCopilotTrace(aiMsg);
@@ -14396,7 +14441,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       const imgNodes=isCasual?[]:ctx.filter(n=>n.type==="image"||n.type==="frame");
       const selectedText=ctx.length?wallText(ctx,{docCap:2200,shortCap:280,totalCap:4200}):"(none selected)";
       const traceSummaryBlock=subSteps.length?`\n[Sub-Agent Reports]\n${subSteps.map(s=>`- ${traceActorInfo(s.from).name} → ${traceActorInfo(s.to).name}${s.handoff?" (Review)":""}: ${s.output}`).join("\n")}\nSynthesize these sub-agent findings cleanly without repeating raw card text.`:"";
-      if(!isCasual&&ctx[0])await ctxEnsureEmbeddings(visibleNodes().filter(x=>x.status==="ink"),{signal:copilotAbort?.signal});
+      if(!isCasual&&ctx[0])await ctxEnsureEmbeddings(visibleNodes().filter(x=>x.status==="ink"),{signal:ac.signal});
       const digestBlock=isCasual?"":boardDigestForCopilot({query:subSteps.length?"":text,ctx});
       const sys=isCasual
         ?`You are Lumen Copilot, a concise design workspace assistant for board "${board.title||"Untitled"}". The user sent a brief conversational message ("${text.trim()}"). Reply in 1 short, natural sentence (under 18 words). Do NOT roleplay as a human teammate, do NOT mention playtests, synthesis docs, or background work, do NOT output multiple paragraphs, and do NOT add a sign-off.`
@@ -14411,7 +14456,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         try{
           const urls=[];for(const im of imgNodes.slice(0,2)){const u=await nodeImageDataURL(im);if(u)urls.push(u)}
           const finalMsg=urls.length?{role:"user",content:[{type:"text",text},...urls.map(url=>({type:"image_url",image_url:{url}}))]}:lastUser;
-          const full=await (eng==="studio"?studioChat:apiChat)({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:copilotAbort.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
+          const full=await (eng==="studio"?studioChat:apiChat)({system:sys,messages:[...chatHist,finalMsg],json:false,maxTokens:maxTok,signal:ac.signal,onText:({text:t})=>{aiMsg.text=t;streamPaint()}});
           const parsed=parseCopilotBlocks(full),body=parsed.text||(parsed.proposals.length||parsed.visuals.length?"":full);
           aiMsg.text=isCasual?trimCasual(parsed.text||full):eng==="studio"?tidySmallReply(body):body;aiMsg.visuals=isCasual?[]:enrichCopilotVisuals(aiMsg.text,text,ctx,parsed.visuals);aiMsg.proposals=isCasual?[]:parsed.proposals;aiMsg.chips=parsed.chips;aiMsg.actions=isCasual?[]:(parsed.actions||[]);
           if(!isCasual&&eng==="studio"){const lc=looseChips(aiMsg.text);aiMsg.text=lc.text;if(!(aiMsg.chips||[]).length&&lc.chips.length)aiMsg.chips=lc.chips}
@@ -14425,6 +14470,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
           aiMsg.text="";
         }
       }
+      if(left())throw boardGone();
       if(cpDone){}
       else if(aiPref!=="local"&&sampleFn){
         const prompt=`Conversation so far:\n${chatHist.map(h=>h.role+": "+h.content).join("\n")}\n\nRespond to the designer's latest message.`;
@@ -14438,6 +14484,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         if(loc.actionResults)aiMsg.actionResults=loc.actionResults;
         aiMsg.route=L("Built-in rules","内置规则");
       }
+      if(left())throw boardGone();
       if(!isCasual&&aiMsg.actions&&aiMsg.actions.length&&!aiMsg.actionResults){
         const activeAgent=subSteps.length?(subSteps[subSteps.length-1].to||subSteps[0].to):(aiMsg.agent||"critic");
         aiMsg.actionResults=dispatchCanvasActions(aiMsg.actions,{by:activeAgent});
@@ -14445,18 +14492,21 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       if(!isCasual)reconcileProposalsWithActions(aiMsg);
     }
   }catch(e){
-    if(e?.name==="AbortError"){
+    if(e?.name==="AbortError"||left()){
       cpTask?.cancelled();
       if(aiMsg.trace)aiMsg.trace.steps.forEach(s=>{if(s.status==="running")s.status="skipped"});
-      aiMsg.text=parseCopilotBlocks(aiMsg.text).text||"Stopped.";
+      const kept=parseCopilotBlocks(aiMsg.text).text;
+      aiMsg.text=left()?(kept?kept+"\n\n":"")+"_"+L("Stopped here because you switched to another board.","你切换了画板，这条回答停在这里。")+"_":(kept||"Stopped.");
+      if(left()){aiMsg.proposals=[];aiMsg.actions=[];aiMsg.chips=[];aiMsg.stoppedBy="board-switch"}
     }else{
       const r=failReason(aiPref==="auto"&&studioState.status==="ready"?L("Local AI","本地模型"):L("Cloud API","云端 API"),e);
       const loc=copilotLocalReply(text,ctx);aiMsg.text=offlineLead(r)+loc.text;aiMsg.route=L("Built-in rules","内置规则");aiMsg.visuals=loc.visuals||[];aiMsg.proposals=loc.proposals;aiMsg.chips=loc.chips;
     }
   }finally{
-    if(!copilotAbort?.signal?.aborted)await unveilDrain(qs(`[data-cp-msg-id="${aiMsg.id}"] .cp-bubble`));
-    delete aiMsg.streaming;copilotStreaming=false;copilotAbort=null;
+    if(!ac.signal.aborted&&!left())await unveilDrain(qs(`[data-cp-msg-id="${aiMsg.id}"] .cp-bubble`));
+    delete aiMsg.streaming;if(copilotAbort===ac){copilotStreaming=false;copilotAbort=null}
     cpTask?.done();
+    if(left()){saveBoardQuiet(home);syncCpSend();return} // the queue was this board's and was cleared on the way out
     renderCopilot();persist();
     if(!cpQueuePaused&&cpQueue.length){const next=cpQueue.shift();renderCopilotQueue();setTimeout(()=>sendCopilotMessage(next.text,next.ctxIds),60)}
   }

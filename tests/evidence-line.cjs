@@ -44,11 +44,17 @@ async function open(browser, base, opts = {}) {
         const t = (o, r, pr, il, n) => evidenceVerdict({ observed: o, reported: r, proposed: pr, illustrative: il, none: n });
         return { strong: t(3, 1, 0, 0, 0), half: t(1, 1, 0, 0, 0), part: t(2, 1, 2, 0, 0), mostlyRep: t(1, 2, 0, 0, 0), repOnly: t(0, 2, 0, 0, 1), ideas: t(0, 0, 2, 1, 0), none: t(0, 0, 0, 0, 4) };
       });
-      check('mostly observed: half or more of the rated sources were watched', v.strong.txt === 'Mostly observed' && v.strong.bars === 3 && v.half.k === 'obs', JSON.stringify(v));
-      check('partly observed: some watched, more than reported', v.part.txt === 'Partly observed' && v.part.bars === 2, JSON.stringify(v.part));
-      check('second-hand: reports outweigh what was watched; "only" when nothing was', v.mostlyRep.txt === 'Mostly second-hand' && v.repOnly.txt === 'Second-hand only' && v.repOnly.bars === 1, JSON.stringify([v.mostlyRep, v.repOnly]));
-      check('ideas and pictures are not evidence', v.ideas.txt === 'No evidence yet' && v.ideas.bars === 0, JSON.stringify(v.ideas));
+      check('mostly observed: half or more of the rated sources were watched', v.strong.txt === 'Mostly observed' && v.strong.ico === 'observed' && v.half.k === 'obs', JSON.stringify(v));
+      check('partly observed: some watched, more than reported', v.part.txt === 'Partly observed' && v.part.ico === 'observed', JSON.stringify(v.part));
+      check('second-hand: reports outweigh what was watched; "only" when nothing was', v.mostlyRep.txt === 'Mostly second-hand' && v.repOnly.txt === 'Second-hand only' && v.repOnly.ico === 'reported' && v.mostlyRep.ico === 'reported', JSON.stringify([v.mostlyRep, v.repOnly]));
+      check('ideas and pictures are not evidence', v.ideas.txt === 'No evidence yet' && v.ideas.ico === 'proposed', JSON.stringify(v.ideas));
       check('nothing rated says so', v.none.txt === 'Not rated yet', JSON.stringify(v.none));
+
+      // signs say what kind of evidence it is, not a strength meter (bars read as a phone signal)
+      const signs = await p.evaluate(() => ({ bars: document.querySelectorAll('.w-bars, .ev-bars').length,
+        pill: document.querySelector('#nodes .weight.observed svg.w-ico path')?.getAttribute('d') === EV_ICON.observed.match(/d="([^"]+)"/)[1],
+        line: document.querySelector('#nodes .ev-line.ev-obs svg.ev-ico path')?.getAttribute('d') === EV_ICON.observed.match(/d="([^"]+)"/)[1] }));
+      check('an eye marks observed evidence, on a source\'s pill and on the line; no signal bars anywhere', !signs.bars && signs.pill && signs.line, JSON.stringify(signs));
 
       // E2. the line on the card: short, no chart, no "6/5"
       const lines = await p.evaluate(() => [...document.querySelectorAll('#nodes .ev-line')].map(e => ({ type: e.closest('.card').classList[1], text: e.textContent, scale: !!e.closest('.foot').querySelector('.scale') })));

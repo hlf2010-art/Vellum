@@ -183,22 +183,19 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .ev-line{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;padding:2px 6px 2px 4px;margin:-2px -6px -2px -4px;border-radius:var(--radius-xs);cursor:default;outline:none;transition:background var(--d-quick)}
 .ev-line:hover,.ev-line.is-open{background:var(--hover)}
 .ev-line:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--label) 40%,transparent)}
-.ev-bars{display:inline-flex;align-items:flex-end;gap:1.5px;height:10px;width:11px;flex:none}
-.ev-bars i{width:2.5px;border-radius:1.25px;background:color-mix(in srgb,currentColor 22%,transparent)}
-.ev-bars i:nth-child(1){height:4px}.ev-bars i:nth-child(2){height:7px}.ev-bars i:nth-child(3){height:10px}
-.ev-bars i.on{background:currentColor}
-.ev-line .ev-bars,.ev-head .ev-bars{color:var(--label-3)}
-.ev-obs .ev-bars,.ev-part .ev-bars,.ev-k-observed .ev-bars{color:var(--C)}
-.ev-rep .ev-bars,.ev-k-reported .ev-bars{color:var(--A)}
-.ev-k-proposed .ev-bars{color:var(--B)}
+.ev-ico{width:13px;height:13px;flex:none;color:var(--label-3)}
+.ev-obs .ev-ico,.ev-part .ev-ico,.ev-k-observed .ev-ico{color:var(--C)}
+.ev-rep .ev-ico,.ev-k-reported .ev-ico{color:var(--A)}
+.ev-k-proposed .ev-ico{color:var(--B)}
+.ev-k-none .ev-ico,.ev-none .ev-ico{color:var(--label-4)}
 .by-pop.is-ev{width:300px;max-width:calc(100vw - 16px);padding:12px 6px 6px}
 .by-pop .ev-head{display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--label);font:inherit;letter-spacing:0}
 .by-pop .ev-head b{font:650 15px/1.25 var(--ui);letter-spacing:-.01em}
-.by-pop .ev-head .ev-bars{transform:scale(1.25);transform-origin:left bottom;margin-right:2px}
+.by-pop .ev-head .ev-ico{width:17px;height:17px}
 .by-pop .ev-sent{margin:6px 10px 8px;font:var(--text-body);font-size:13px;line-height:19px;color:var(--label-2)}
 .by-pop .ev-row{align-items:flex-start}
-.by-pop .ev-k-g,.by-pop .ev-ring{flex:none;width:24px;height:20px;display:grid;place-items:center}
-.by-pop .ev-ring::before{content:"";width:9px;height:9px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--label-4)}
+.by-pop .ev-k-g{flex:none;width:24px;height:20px;display:grid;place-items:center}
+.by-pop .ev-k-g .ev-ico{width:15px;height:15px}
 .by-pop .ev-row .by-pop-txt small{white-space:normal;line-height:16px}
 .by-pop .ev-n{flex:none;min-width:16px;text-align:right;font:600 13px/20px var(--ui);font-variant-numeric:tabular-nums;color:var(--label-2)}
 .by-pop .ev-acts{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;padding:8px 6px 4px;margin-top:4px;border-top:.5px solid var(--hair)}
@@ -3238,7 +3235,7 @@ body.snap-skip #wall{cursor:copy}
 .card .by-seal:hover,.card.sel .by-seal{max-width:240px}
 .card .by-seal:hover .by-seal-t,.card.sel .by-seal-t{opacity:1;transform:none;max-width:214px;padding:0 8px 0 6px}
 .mk:has([data-a="copilot"]){--orb-ink:#3B3F47;--orb-bg:#EEF0F3}
-.card .by-seal .mk.person{background:var(--person);color:#fff;font:650 10px/1 var(--ui);letter-spacing:0}
+.card .by-seal .mk.person{background:var(--person);color:#fff;font:650 8px/1 var(--ui);letter-spacing:-.02em}
 .card .by-seal .mk.person.anon{background:color-mix(in srgb,var(--seal-solid) 9%,var(--seal-bg));color:var(--seal-ink)}
 .sys-name{width:200px;max-width:56%;height:30px;padding:0 10px;border-radius:var(--radius-sm);border:0;background:var(--hover);box-shadow:inset 0 0 0 .5px var(--hair-2);color:var(--label);font:var(--text-body);outline:none}
 .sys-name:focus-visible{box-shadow:inset 0 0 0 1.5px var(--label-2)}
@@ -3248,7 +3245,7 @@ body.snap-skip #wall{cursor:copy}
 .card .foot-by{display:inline-flex;align-items:center;gap:6px;min-width:0}
 .card .by-seal.in-foot{position:relative;top:auto;left:auto;z-index:auto;height:18px;max-width:none;padding:0;background:none;box-shadow:none;overflow:visible}
 .card .by-seal.in-foot .by-seal-av,.card .by-seal.in-foot .mk{width:16px;height:16px}
-.card .by-seal.in-foot .mk.person{font-size:9px}
+.card .by-seal.in-foot .mk.person{font-size:7.5px}
 .card .by-seal.in-foot .by-seal-ok{right:-3px;bottom:-3px;width:9px;height:9px}
 .card .by-seal.in-foot .by-seal-ok svg{width:9px;height:9px}
 .card .by-seal.in-foot .by-seal-t{font:inherit;color:var(--label-2);letter-spacing:0}
@@ -3263,7 +3260,7 @@ body.snap-skip #wall{cursor:copy}
 .card .by-av:first-child{margin-left:0}
 .card .by-av .mk{width:18px;height:18px;transition:none}
 .card .by-av .mk svg{width:66%;height:66%;stroke-width:2}
-.card .by-av .mk.person{background:var(--person);color:#fff;font:650 9.5px/1 var(--ui)}
+.card .by-av .mk.person{background:var(--person);color:#fff;font:650 8px/1 var(--ui);letter-spacing:-.02em}
 .card .by-av .mk.person.anon{background:color-mix(in srgb,var(--label) 9%,var(--card));color:var(--label-2)}
 .card .by-av .by-seal-ok{position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:var(--label);box-shadow:0 0 0 1.5px var(--card);display:grid;place-items:center}
 .card .by-av .by-seal-ok svg{width:9px;height:9px;fill:none;stroke:var(--card);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -3286,7 +3283,10 @@ body.snap-skip #wall{cursor:copy}
 .by-pop-av{position:relative;flex:none;width:24px;height:24px}
 .by-pop-av .mk{width:24px;height:24px;transition:none}
 .by-pop-av .mk svg{width:62%;height:62%;stroke-width:1.9}
-.by-pop-av .mk.person{background:var(--person);color:#fff;font:650 11px/1 var(--ui)}
+.by-pop-av .mk.person{background:var(--person);color:#fff;font:650 10px/1 var(--ui);letter-spacing:-.01em}
+.card .by-seal .mk.person.one,.card .by-av .mk.person.one{font-size:10px}
+.card .by-seal.in-foot .mk.person.one{font-size:9px}
+.by-pop-av .mk.person.one{font-size:11px}
 .by-pop-av .mk.person.anon{background:var(--hover);color:var(--label-2)}
 .by-pop-av .by-seal-ok{position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border-radius:50%;background:var(--label);box-shadow:0 0 0 1.5px var(--chrome,var(--card));display:grid;place-items:center}
 .by-pop-av .by-seal-ok svg{width:11px;height:11px;fill:none;stroke:var(--chrome,var(--card));stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -5383,7 +5383,18 @@ function renderBays(){
 
 /* ── cards ───────────────────────────────────────────────────────────── */
 function mediaSrc(key){return MEDIA[key]||userMedia.get(key)||""}
-function weightGlyphHTML(w){const o=WEIGHTS[w];if(!o)return "";if(o.n>0)return `<span class="w-bars" aria-hidden="true">${[1,2,3].map(i=>`<i class="${i<=o.n?"on":""}"></i>`).join("")}</span>`;return `<svg class="w-ico" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2.25" width="9" height="7.5" rx="1.75"/><circle cx="4.25" cy="4.9" r=".7" fill="currentColor" stroke="none"/><path d="M2.2 8.75 4.8 6.4l1.9 1.6 1.3-1.2 1.8 1.95"/></svg>`}
+/* One sign per kind of evidence, saying what it is rather than how strong (bars read as a phone signal):
+   observed = an eye (someone watched), reported = a speech bubble (someone said), proposal = a light bulb (our idea),
+   illustration = a picture, not rated = an empty dashed ring. */
+const EV_ICON={
+  observed:'<path d="M1.1 6S3.1 2.5 6 2.5 10.9 6 10.9 6 8.9 9.5 6 9.5 1.1 6 1.1 6Z"/><circle cx="6" cy="6" r="1.55"/>',
+  reported:'<path d="M2.6 2.2h6.8a1.2 1.2 0 0 1 1.2 1.2v3.9a1.2 1.2 0 0 1-1.2 1.2H5.4L3.2 10.1V8.5h-.6a1.2 1.2 0 0 1-1.2-1.2V3.4a1.2 1.2 0 0 1 1.2-1.2Z"/>',
+  proposed:'<path d="M4.4 8.1A3.4 3.4 0 1 1 7.6 8.1v.8H4.4Z"/><path d="M4.7 10.6h2.6"/>',
+  illustrative:'<rect x="1.5" y="2.25" width="9" height="7.5" rx="1.75"/><circle cx="4.25" cy="4.9" r=".7" fill="currentColor" stroke="none"/><path d="M2.2 8.75 4.8 6.4l1.9 1.6 1.3-1.2 1.8 1.95"/>',
+  none:'<circle cx="6" cy="6" r="4.2" stroke-dasharray="2 1.6"/>',
+};
+function evIconHTML(k,cls="w-ico"){return EV_ICON[k]?`<svg class="${cls}" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${EV_ICON[k]}</svg>`:""}
+function weightGlyphHTML(w){return WEIGHTS[w]?evIconHTML(w):""}
 function weightHTML(w,staticBadge=false){if(!w||!WEIGHTS[w])return staticBadge?"":`<button type="button" class="weight unrated" data-a="cycle-weight" title="${esc(L("Unrated — click to say how much this source can carry","未标注 — 点击标注这条来源的证据等级"))}" aria-label="${esc(L("Evidence: unrated. Click to rate","证据：未标注。点击标注"))}">${esc(L("Unrated","未标注"))}</button>`;const lbl=weightLabel(w),desc=weightDesc(w),hint=staticBadge?desc:`${desc} — ${L("Click to change","点击切换证据等级")}`;return staticBadge?`<span class="weight ${w}" title="${esc(hint)}">${weightGlyphHTML(w)}${esc(lbl)}</span>`:`<button type="button" class="weight ${w}" data-a="cycle-weight" title="${esc(hint)}" aria-label="${esc(`${lbl}: ${desc}`)}">${weightGlyphHTML(w)}${esc(lbl)}</button>`}
 function cardAuthorAgent(n){
   if(!n)return null;
@@ -5408,7 +5419,15 @@ function creatorKept(n){return !!(n&&(n.inked||n.vote==="up"||(n.type==="directi
    Letters for people, symbols for the crew, so the two read apart at a glance. */
 const PERSON_HUES=["#D9486E","#0E8A7E","#4F5BD5","#C2561F","#7A5AF8","#2F7D32"];
 function personHue(name){let h=0;for(const ch of String(name||""))h=(h*31+ch.codePointAt(0))>>>0;return PERSON_HUES[h%PERSON_HUES.length]}
-function personInitial(name){const t=String(name||"").trim();if(!t)return"";const c=[...t][0];return /[a-z]/i.test(c)?c.toUpperCase():c}
+/* Two-letter initials for Latin names: first and last word ("Mars Lin" → ML), or the first two letters of a single
+   word ("Mars" → MA). A Chinese or Japanese name keeps one character: two would be unreadable in a 16px circle. */
+function personInitial(name){
+  const t=String(name||"").trim();if(!t)return"";
+  const words=t.split(/\s+/).filter(Boolean),first=[...words[0]][0],ok=c=>!!c&&/[\p{L}\p{N}]/u.test(c);
+  if(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(first)||!ok(first))return first;
+  const second=words.length>1?[...words[words.length-1]][0]:[...words[0]][1];
+  return (first+(ok(second)?second:"")).toLocaleUpperCase();
+}
 function personName(n){return n?.prov?.name||myName()}
 function creatorBadgeHTML(n,{foot=false}={}){
   if(!n||n.status==="sketch"||n.type==="group")return"";   // a draft's header already says who suggested it
@@ -5417,7 +5436,7 @@ function creatorBadgeHTML(n,{foot=false}={}){
     const who=personName(n),ini=personInitial(who);
     const label=who||L("You","你");
     const tip=who?L(`Created by ${who}`,`由 ${who} 创建`):L("Created by you · set your name in Settings","你创建的 · 可在设置里填写名字");
-    const av=ini?`<span class="mk person" style="--person:${personHue(who)}">${esc(ini)}</span>`:`<span class="mk person anon">${AV.you}</span>`;
+    const av=ini?`<span class="mk person${[...ini].length<2?" one":""}" style="--person:${personHue(who)}">${esc(ini)}</span>`:`<span class="mk person anon">${AV.you}</span>`;
     return `<span class="by-seal is-person${foot?" in-foot":""}" data-by="you" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="by-seal-av">${av}</span><span class="by-seal-t">${esc(label)}</span></span>`;
   }
   const kept=creatorKept(n);
@@ -5441,7 +5460,7 @@ function contribName(c){return c.who==="you"?(c.name||myName()||L("You","你")):
 function contribAvatar(c,{kept=false}={}){
   if(c.who!=="you"){const k=AGENTS[c.who]||CREATORS[c.who];return `<span class="mk">${AV[k.key]}</span>${kept?'<i class="by-seal-ok" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M3.3 6.2 5.2 8 8.7 4.3"/></svg></i>':""}`}
   const nm=c.name||myName(),ini=personInitial(nm);
-  return ini?`<span class="mk person" style="--person:${personHue(nm)}">${esc(ini)}</span>`:`<span class="mk person anon">${AV.you}</span>`;
+  return ini?`<span class="mk person${[...ini].length<2?" one":""}" style="--person:${personHue(nm)}">${esc(ini)}</span>`:`<span class="mk person anon">${AV.you}</span>`;
 }
 function contribRoles(c){
   const r=[];
@@ -6614,18 +6633,17 @@ function scaleHTML(t){if(!weighedCount(t)&&!(t?.none))return"";
   return `<div class="scale${each?" is-count":""}" role="img" aria-label="${esc(L("Evidence: ","证据：")+scaleSummary(t))}">${seg("observed","")}${seg("reported","r")}${seg("proposed","p")}${seg("illustrative","l")}${seg("none","n")}</div>`}
 function scaleLabeledHTML(t){if(!weighedCount(t))return"";const tip=L("Every source this card rests on, including those behind linked directions and questions. One block per source.","这张卡片依据的所有来源，包括关联方向和问题背后的来源。每格代表一个来源。");return `<div class="scale-cap" title="${esc(tip)}"><span>${L("Evidence behind it","背后的证据")}</span><span>${esc(scaleSummary(t))}</span></div>${scaleHTML(t)}`}
 /* The evidence line on a card's bottom row answers one question: how well is this backed?
-   A strength glyph (the same bars as a source's rating) and a plain verdict; how many sources it rests on is in the card it opens.
-   Bars say how strong; colour says what kind dominates (green observed, amber second-hand, grey ideas).
+   The sign of the dominant kind (the same signs as a source's rating) and a plain verdict; how many sources it rests on is in the card it opens.
+   The sign and colour say what kind dominates (eye green observed, bubble amber second-hand, bulb grey ideas).
    Hover, focus or tap opens the evidence card: the verdict in a sentence, what each kind means, and what to do next. */
 function evidenceVerdict(t){
   const o=t.observed||0,r=t.reported||0,w=weighedCount(t);
-  if(!w)return {k:"none",bars:0,txt:L("Not rated yet","尚未评估")};
-  if(o&&o*2>=w)return {k:"obs",bars:3,txt:L("Mostly observed","以实测为主")};
-  if(o&&o>r)return {k:"part",bars:2,txt:L("Partly observed","部分有实测")};
-  if(r)return o?{k:"rep",bars:2,txt:L("Mostly second-hand","多为转述")}:{k:"rep",bars:1,txt:L("Second-hand only","只有转述")};
-  return {k:"thin",bars:0,txt:L("No evidence yet","还没有证据")};
+  if(!w)return {k:"none",ico:"none",txt:L("Not rated yet","尚未评估")};
+  if(o&&o*2>=w)return {k:"obs",ico:"observed",txt:L("Mostly observed","以实测为主")};
+  if(o&&o>r)return {k:"part",ico:"observed",txt:L("Partly observed","部分有实测")};
+  if(r)return o?{k:"rep",ico:"reported",txt:L("Mostly second-hand","多为转述")}:{k:"rep",ico:"reported",txt:L("Second-hand only","只有转述")};
+  return {k:"thin",ico:"proposed",txt:L("No evidence yet","还没有证据")};
 }
-function evBarsHTML(b){return `<span class="w-bars ev-bars" aria-hidden="true">${[1,2,3].map(i=>`<i class="${i<=b?"on":""}"></i>`).join("")}</span>`}
 function evSentence(t,n){
   const o=t.observed||0,r=t.reported||0,u=t.none||0,w=weighedCount(t),v=evidenceVerdict(t);
   let x;
@@ -6637,17 +6655,17 @@ function evSentence(t,n){
 }
 function evidenceLine(t,total){
   const v=evidenceVerdict(t),n=total,src=L(`${n} source${n===1?"":"s"}`,`${n} 个来源`);
-  return `<span class="ev-line ev-${v.k}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(`${L("Evidence","证据")}: ${v.txt}, ${src}`)}">${evBarsHTML(v.bars)}<span class="ev-txt">${esc(v.txt)}</span></span>`;
+  return `<span class="ev-line ev-${v.k}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(`${L("Evidence","证据")}: ${v.txt}, ${src}`)}">${evIconHTML(v.ico,"ev-ico")}<span class="ev-txt">${esc(v.txt)}</span></span>`;
 }
 function evSourcesOf(n){return n?.type==="synthesis"?(n.of||[]).map(byId).filter(Boolean):sourcesFor(n)}
 function evidencePopHTML(n){
   const ns=evSourcesOf(n),t=ns.length?tally(ns):(n.weights||{}),total=ns.length||(n.of||[]).length,v=evidenceVerdict(t);
   const rows=[...WEIGHT_ORDER,"none"].filter(k=>t[k]).map((k,i)=>{const w=WEIGHTS[k];
-    return `<li style="--i:${i}" class="ev-row ev-k-${k}">${k==="none"?'<span class="ev-ring" aria-hidden="true"></span>':`<span class="ev-k-g">${evBarsHTML(w.n)}</span>`}<span class="by-pop-txt"><b>${esc(k==="none"?L("Not rated","未评估"):weightLabel(k))}</b><small>${esc(k==="none"?L("Nobody has judged these yet.","还没有人判断过它们有多可信。"):weightDesc(k))}</small></span><span class="ev-n">${t[k]}</span></li>`}).join("");
+    return `<li style="--i:${i}" class="ev-row ev-k-${k}"><span class="ev-k-g">${evIconHTML(k,"ev-ico")}</span><span class="by-pop-txt"><b>${esc(k==="none"?L("Not rated","未评估"):weightLabel(k))}</b><small>${esc(k==="none"?L("Nobody has judged these yet.","还没有人判断过它们有多可信。"):weightDesc(k))}</small></span><span class="ev-n">${t[k]}</span></li>`}).join("");
   const u=t.none||0,acts=[];   // secondary first, primary last: the primary action sits bottom-right, where the eye lands
   if(ns.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("View","查看"))}</button>`);
   if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(L("Rate","评估"))}</button>`);
-  return `<header class="ev-head ev-${v.k}">${evBarsHTML(v.bars)}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows?`<ul>${rows}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
+  return `<header class="ev-head ev-${v.k}">${evIconHTML(v.ico,"ev-ico")}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows?`<ul>${rows}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
 }
 function evidenceScale(n){const s=sourcesFor(n);if(!s.length)return L("No sources yet","暂无关联来源");return evidenceLine(tally(s),s.length)}
 function driftOf(p){

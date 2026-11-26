@@ -2070,12 +2070,6 @@ textarea,input{caret-color:var(--label)}
 .m-tag-editable:hover{background:color-mix(in srgb,var(--label) 12%,transparent)}
 .m-tag-editable:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--focus)}
 .m-tag-editable:empty::before{content:attr(data-ph);color:var(--label-3);font-weight:450}
-.note-edit-btn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:var(--radius-xs);color:var(--label-3);opacity:0;cursor:pointer;transition:opacity .15s,background .15s,color .15s,transform .12s var(--snappy)}
-.card.note:hover .note-edit-btn,.card.note.sel .note-edit-btn,.note-edit-btn:focus-visible{opacity:.78}
-.note-edit-btn:hover{opacity:1!important;background:var(--hover);color:var(--label)}
-.note-edit-btn:active{transform:scale(.92)}
-.note-edit-btn .ico{width:12.5px;height:12.5px}
-.card.note.is-editing .note-edit-btn{display:none}
 .card.note:not(.sketch) h4{
   position:relative;z-index:1;flex:1;margin:8px 0 0;padding:0;
   font:470 16px/1.58 var(--ui);letter-spacing:-.01em;text-wrap:pretty;white-space:pre-wrap;color:var(--label);
@@ -3222,6 +3216,57 @@ body.snap-skip #wall{cursor:copy}
 .sys-name::placeholder{color:var(--label-3)}
 :root[data-theme="dark"] .mk:has([data-a="copilot"]){--orb-ink:#D7DAE0}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mk:has([data-a="copilot"]){--orb-ink:#D7DAE0}}
+.card .foot-by{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.card .by-seal.in-foot{position:relative;top:auto;left:auto;z-index:auto;height:18px;max-width:none;padding:0;background:none;box-shadow:none;overflow:visible}
+.card .by-seal.in-foot .by-seal-av,.card .by-seal.in-foot .mk{width:16px;height:16px}
+.card .by-seal.in-foot .mk.person{font-size:9px}
+.card .by-seal.in-foot .by-seal-ok{right:-3px;bottom:-3px;width:9px;height:9px}
+.card .by-seal.in-foot .by-seal-ok svg{width:9px;height:9px}
+.card .by-seal.in-foot .by-seal-t{font:inherit;color:var(--label-2);letter-spacing:0}
+.card .by-seal.in-foot:hover .by-seal-t,.card.sel .by-seal.in-foot .by-seal-t{padding:0 0 0 6px}
+.card .by-seal.in-foot .by-seal-t::after{content:" ·";color:var(--label-3)}
+/* several contributors: an avatar group. Stacked at rest, each ringed in the card's colour; on hover the
+   avatars ease apart one after another and a card says who did what. More than three: two avatars and "+N". */
+.card .by-group{display:inline-flex;align-items:center;height:20px;padding:0 1px;border-radius:var(--radius-pill);cursor:default;outline:none;--by-ease:cubic-bezier(.32,.72,0,1)}
+.card .by-group:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--label) 40%,transparent)}
+.card .by-av,.card .by-more{position:relative;flex:none;width:18px;height:18px;border-radius:50%;box-shadow:0 0 0 2px var(--seal-ring,var(--card));margin-left:-4px;z-index:calc(10 - var(--i));transition:margin-left var(--duration-spring) var(--by-ease),transform var(--duration-spring) var(--by-ease);transition-delay:calc(var(--i) * 28ms)}
+.card .by-av{background:var(--seal-ring,var(--card))}   /* a solid disc under each avatar: tinted avatars must not show their neighbour through */
+.card .by-av:first-child{margin-left:0}
+.card .by-av .mk{width:18px;height:18px;transition:none}
+.card .by-av .mk svg{width:66%;height:66%;stroke-width:2}
+.card .by-av .mk.person{background:var(--person);color:#fff;font:650 9.5px/1 var(--ui)}
+.card .by-av .mk.person.anon{background:color-mix(in srgb,var(--label) 9%,var(--card));color:var(--label-2)}
+.card .by-av .by-seal-ok{position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:var(--label);box-shadow:0 0 0 1.5px var(--card);display:grid;place-items:center}
+.card .by-av .by-seal-ok svg{width:9px;height:9px;fill:none;stroke:var(--card);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.card .by-more{display:grid;place-items:center;width:auto;min-width:18px;padding:0 5px 0 6px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--label) 8%,var(--card));color:var(--label-2);font:650 10px/1 var(--ui);font-variant-numeric:tabular-nums}
+.card .by-group:hover .by-av,.card .by-group:hover .by-more,.card .by-group.is-open .by-av,.card .by-group.is-open .by-more,.card.sel .by-group .by-av,.card.sel .by-group .by-more{margin-left:3px}
+.card .by-group:hover .by-av:first-child,.card .by-group.is-open .by-av:first-child,.card.sel .by-group .by-av:first-child{margin-left:0}
+.card .by-group:hover .by-av:hover{transform:translateY(-2px)}
+.card.note .by-group{--seal-ring:var(--note-bot)}
+#world.is-zoomed-out .card .by-group,#world.is-moving .card .by-group{opacity:0;pointer-events:none;transition:opacity var(--duration-base) var(--easing-standard)}
+#world.is-zoomed-out .card:hover .by-group,#world.is-zoomed-out .card.sel .by-group{opacity:1;pointer-events:auto}
+.by-pop{position:fixed;z-index:var(--z-tooltip);min-width:220px;max-width:300px;padding:6px;border-radius:var(--radius-md);background:var(--chrome,var(--card));-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);color:var(--label);box-shadow:0 0 0 .5px var(--hair-2),0 12px 32px -8px rgba(11,12,14,.22),0 2px 6px rgba(11,12,14,.06);
+  opacity:0;transform:translateY(4px) scale(.97);transform-origin:var(--ox,50%) 100%;transition:opacity 120ms var(--easing-standard),transform 120ms var(--easing-standard);pointer-events:auto}
+.by-pop.below{transform:translateY(-4px) scale(.97);transform-origin:var(--ox,50%) 0}
+.by-pop.in{opacity:1;transform:none;transition:opacity 180ms var(--easing-standard),transform var(--duration-spring) cubic-bezier(.32,.72,0,1)}
+.by-pop header{padding:6px 8px 4px;font:var(--text-eyebrow);letter-spacing:.02em;color:var(--label-3)}
+.by-pop ul{list-style:none;margin:0;padding:0}
+.by-pop li{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:var(--radius-sm);opacity:0;transform:translateY(3px);transition:opacity 160ms var(--easing-standard),transform 240ms cubic-bezier(.32,.72,0,1)}
+.by-pop.in li{opacity:1;transform:none;transition-delay:calc(40ms + var(--i) * 30ms)}
+.by-pop li:hover{background:var(--hover)}
+.by-pop-av{position:relative;flex:none;width:24px;height:24px}
+.by-pop-av .mk{width:24px;height:24px;transition:none}
+.by-pop-av .mk svg{width:62%;height:62%;stroke-width:1.9}
+.by-pop-av .mk.person{background:var(--person);color:#fff;font:650 11px/1 var(--ui)}
+.by-pop-av .mk.person.anon{background:var(--hover);color:var(--label-2)}
+.by-pop-av .by-seal-ok{position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border-radius:50%;background:var(--label);box-shadow:0 0 0 1.5px var(--chrome,var(--card));display:grid;place-items:center}
+.by-pop-av .by-seal-ok svg{width:11px;height:11px;fill:none;stroke:var(--chrome,var(--card));stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.by-pop-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.by-pop-txt b{font:600 13px/1.2 var(--ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.by-pop-txt small{font:var(--text-caption);color:var(--label-3)}
+.by-pop time{flex:none;font:var(--text-caption);color:var(--label-3);font-variant-numeric:tabular-nums}
+.by-pop footer{padding:4px 8px 6px;font:var(--text-caption);color:var(--label-3)}
+@media (prefers-reduced-motion:reduce){.card .by-av,.card .by-more,.by-pop,.by-pop li{transition:opacity 120ms linear!important;transform:none!important}}
 #world.is-zoomed-out .card .by-seal,#world.is-moving .card .by-seal{opacity:0;transform:translateY(3px) scale(.86);pointer-events:none}
 #world.is-zoomed-out .card:hover .by-seal,#world.is-zoomed-out .card.sel .by-seal{opacity:1;transform:scale(var(--inv-s,1));transform-origin:left bottom;pointer-events:auto}
 @media (prefers-reduced-motion:reduce){.card .by-seal,.card .by-seal-t{transition:none}}
@@ -3927,8 +3972,8 @@ function recordChanges(){
   for(const [id,cur] of now.nodes){
     const old=changeShadow.nodes.get(id);
     if(!old){const n=byId(id);if(n?.prov&&!n.prov.basis)n.prov.basis=inputsOf(id).map(x=>({id:x.id,rev:x.rev||1}));entry("create",id,cur,{who:n?.prov?.author||cur.by||act.who,engine:n?.prov?.engine,more:n?.prov?.basis?.length?{basis:n.prov.basis.map(x=>x.id)}:{}});continue}
-    if(old.st==="sketch"&&cur.st==="ink")entry("accept",id,cur);
-    else if(old.d!==cur.d)entry("edit",id,cur);
+    if(old.st==="sketch"&&cur.st==="ink"){entry("accept",id,cur);noteContrib(byId(id),act.who,"kept",t)}
+    else if(old.d!==cur.d){entry("edit",id,cur);noteContrib(byId(id),act.who,"edit",t)}
     if(old.ar!==cur.ar)entry(cur.ar?"archive":"restore",id,cur);
     if(old.hd!==cur.hd)entry(cur.hd?"hide":"show",id,cur);
   }
@@ -3937,6 +3982,19 @@ function recordChanges(){
   for(const k of changeShadow.edges)if(!now.edges.has(k)){const [x,y]=k.split(">");entry("unlink",y,{type:"edge",title:""},{more:{from:x}})}
   changeShadow=now;
   if(out.length){board.changes=Array.isArray(board.changes)?board.changes:[];board.changes.push(...out);trimChanges()}
+}
+/* Who has worked on a card, kept on the card itself so the routine-edit trimming of the change log can't lose it:
+   n.contrib = [{who, name?, edits, t, kept?}]. "who" is a crew key or "you"; a person's name is stamped when known.
+   The maker's own edits in the first five minutes are just finishing the card, not a second contribution. */
+function noteContrib(n,who,role,t=NOW()){
+  if(!n||n.tombstone||!who)return;
+  const maker=n.prov?.author||n.by||"you";
+  if(role==="edit"&&who===maker&&t-(n.created||0)<300000)return;
+  const list=Array.isArray(n.contrib)?n.contrib:(n.contrib=[]);
+  let c=list.find(x=>x.who===who);if(!c){c={who,edits:0,t};list.push(c)}
+  if(who==="you"){const me=myName();if(me)c.name=me}
+  if(role==="edit")c.edits=(c.edits||0)+1;else if(role==="kept")c.kept=t;
+  c.t=t;
 }
 function asActor(actor,fn){const prev=changeActor;changeActor=actor;recordChanges();try{const r=fn();if(r&&typeof r.then==="function")return r.finally(()=>{recordChanges();changeActor=prev});recordChanges();changeActor=prev;return r}catch(e){changeActor=prev;throw e}}
 /* ── proposals: what an agent wants to change on a card you have kept ─────────
@@ -5323,7 +5381,7 @@ const PERSON_HUES=["#D9486E","#0E8A7E","#4F5BD5","#C2561F","#7A5AF8","#2F7D32"];
 function personHue(name){let h=0;for(const ch of String(name||""))h=(h*31+ch.codePointAt(0))>>>0;return PERSON_HUES[h%PERSON_HUES.length]}
 function personInitial(name){const t=String(name||"").trim();if(!t)return"";const c=[...t][0];return /[a-z]/i.test(c)?c.toUpperCase():c}
 function personName(n){return n?.prov?.name||myName()}
-function creatorBadgeHTML(n){
+function creatorBadgeHTML(n,{foot=false}={}){
   if(!n||n.status==="sketch"||n.type==="group")return"";   // a draft's header already says who suggested it
   const a=creatorOf(n),me=myName();
   if(!a){
@@ -5331,14 +5389,83 @@ function creatorBadgeHTML(n){
     const label=who||L("You","你");
     const tip=who?L(`Created by ${who}`,`由 ${who} 创建`):L("Created by you · set your name in Settings","你创建的 · 可在设置里填写名字");
     const av=ini?`<span class="mk person" style="--person:${personHue(who)}">${esc(ini)}</span>`:`<span class="mk person anon">${AV.you}</span>`;
-    return `<span class="by-seal is-person" data-by="you" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="by-seal-av">${av}</span><span class="by-seal-t">${esc(label)}</span></span>`;
+    return `<span class="by-seal is-person${foot?" in-foot":""}" data-by="you" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="by-seal-av">${av}</span><span class="by-seal-t">${esc(label)}</span></span>`;
   }
   const kept=creatorKept(n);
   const label=kept?(me?L(`${a.name} · kept by ${me}`,`${a.name} 起草 · ${me} 已确认`):L(`${a.name} · kept by you`,`${a.name} 起草 · 你已确认`)):L(a.name,`${a.name} 创建`);
   const tip=kept?(me?L(`Drafted by ${a.name}, kept by ${me}`,`由 ${a.name} 起草，${me} 已确认`):L(`Drafted by ${a.name}, kept by you`,`由 ${a.name} 起草，你已确认`)):L(`Made by ${a.name}, not yet confirmed`,`由 ${a.name} 创建，还没有人确认`);
-  return `<span class="by-seal${kept?" kept":""}" data-by="${a.key}" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="by-seal-av"><span class="mk">${AV[a.key]}</span>${kept?'<i class="by-seal-ok" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M3.3 6.2 5.2 8 8.7 4.3"/></svg></i>':""}</span><span class="by-seal-t">${esc(label)}</span></span>`;
+  return `<span class="by-seal${kept?" kept":""}${foot?" in-foot":""}" data-by="${a.key}" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="by-seal-av"><span class="mk">${AV[a.key]}</span>${kept?'<i class="by-seal-ok" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M3.3 6.2 5.2 8 8.7 4.3"/></svg></i>':""}</span><span class="by-seal-t">${esc(label)}</span></span>`;
 }
-function byline(n){return ""}   // superseded by creatorBadgeHTML: one mark per card, in one place
+/* Everyone who worked on a card, maker first, then by most recent activity: a crew member or a person.
+   Each carries what they did (made, edited ×n, kept) and when, for the avatar group and its hover card. */
+function contributorsOf(n){
+  if(!n)return[];
+  const maker=n.prov?.author||n.by||"you",out=new Map();
+  const add=(who,name)=>{let c=out.get(who);if(!c){c={who,name:"",made:0,edits:0,kept:0,t:0};out.set(who,c)}if(name&&!c.name)c.name=name;return c};
+  {const m=add(maker,maker==="you"?personName(n):"");m.made=n.created||n.prov?.at||0;m.t=m.made}
+  for(const x of Array.isArray(n.contrib)?n.contrib:[]){if(!x||!x.who||!(x.who==="you"||AGENTS[x.who]||CREATORS[x.who]))continue;const c=add(x.who,x.name);c.edits+=x.edits||0;if(x.kept)c.kept=Math.max(c.kept,x.kept);c.t=Math.max(c.t,x.t||0)}
+  if(maker!=="you"&&creatorKept(n)&&!out.get("you")?.kept){const y=add("you",myName());y.kept=n.inked||y.t||n.updated||0;y.t=Math.max(y.t,y.kept)}
+  const [first,...rest]=[...out.values()];
+  return [first,...rest.sort((a,b)=>b.t-a.t)];
+}
+function contribName(c){return c.who==="you"?(c.name||myName()||L("You","你")):(AGENTS[c.who]||CREATORS[c.who])?.name||c.who}
+function contribAvatar(c,{kept=false}={}){
+  if(c.who!=="you"){const k=AGENTS[c.who]||CREATORS[c.who];return `<span class="mk">${AV[k.key]}</span>${kept?'<i class="by-seal-ok" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M3.3 6.2 5.2 8 8.7 4.3"/></svg></i>':""}`}
+  const nm=c.name||myName(),ini=personInitial(nm);
+  return ini?`<span class="mk person" style="--person:${personHue(nm)}">${esc(ini)}</span>`:`<span class="mk person anon">${AV.you}</span>`;
+}
+function contribRoles(c){
+  const r=[];
+  if(c.made)r.push(c.who==="you"||!AGENTS[c.who]&&!CREATORS[c.who]?L("Created","创建"):L("Drafted","起草"));
+  if(c.edits)r.push(c.edits>1?L(`Edited ${c.edits}×`,`编辑 ${c.edits} 次`):L("Edited","编辑"));
+  if(c.kept)r.push(L("Kept","确认"));
+  return r.join(" · ");
+}
+const BY_MAX=3;   // avatars shown before "+N"; with more people, two avatars and the count keep the row three wide
+function contribGroupHTML(n){
+  if(!n||n.status==="sketch"||n.type==="group")return"";
+  const cs=contributorsOf(n);if(cs.length<2)return creatorBadgeHTML(n,{foot:true});
+  const shown=cs.length>BY_MAX?cs.slice(0,BY_MAX-1):cs,more=cs.length-shown.length,kept=creatorKept(n)&&cs[0].who!=="you";
+  const names=cs.map(contribName),label=L(`${cs.length} contributors: ${names.join(", ")}`,`${cs.length} 位参与者：${names.join("、")}`);
+  const avs=shown.map((c,i)=>`<span class="by-av" style="--i:${i}" data-by="${esc(c.who)}">${contribAvatar(c)}</span>`).join("");
+  return `<span class="by-group${more?" has-more":""}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(label)}" data-count="${cs.length}">${avs}${more?`<span class="by-more" style="--i:${shown.length}">+${more}</span>`:""}</span>`;
+}
+/* The hover card: who worked on this card, what each did, and when. Lives in screen space so it reads at any zoom.
+   Opens after a short hover (or on focus / tap), closes a beat after the pointer leaves both the group and the card. */
+const byPop={el:null,for:null,openT:0,closeT:0};
+function byPopEl(){if(byPop.el)return byPop.el;const d=document.createElement("div");d.id="byPop";d.className="by-pop";d.setAttribute("role","dialog");d.hidden=true;document.body.appendChild(d);
+  d.addEventListener("pointerenter",()=>clearTimeout(byPop.closeT));d.addEventListener("pointerleave",()=>closeByPop());return byPop.el=d}
+function openByPop(grp,{now=false}={}){
+  clearTimeout(byPop.closeT);clearTimeout(byPop.openT);
+  const go=()=>{
+    const card=grp.closest(".card"),n=card&&byId(card.dataset.id);if(!n)return;
+    const cs=contributorsOf(n),d=byPopEl(),kept=creatorKept(n)&&cs[0].who!=="you";
+    const rows=cs.slice(0,8).map((c,i)=>`<li style="--i:${i}"><span class="by-pop-av">${contribAvatar(c,{kept:i===0&&kept})}</span><span class="by-pop-txt"><b>${esc(contribName(c))}</b><small>${esc(contribRoles(c))}</small></span><time>${esc(c.t?relDate(c.t):"")}</time></li>`).join("");
+    d.innerHTML=`<header>${esc(L(`${cs.length} contributors`,`${cs.length} 位参与者`))}</header><ul>${rows}</ul>${cs.length>8?`<footer>${esc(L(`and ${cs.length-8} more`,`还有 ${cs.length-8} 位`))}</footer>`:""}`;
+    d.setAttribute("aria-label",grp.getAttribute("aria-label")||"");
+    d.hidden=false;d.classList.remove("in");
+    const r=grp.getBoundingClientRect(),w=d.offsetWidth,h=d.offsetHeight;
+    let x=r.left+r.width/2-w/2,y=r.top-h-10,below=false;
+    if(y<8){y=r.bottom+10;below=true}
+    x=clamp(x,8,innerWidth-w-8);
+    d.style.left=x+"px";d.style.top=y+"px";d.classList.toggle("below",below);
+    d.style.setProperty("--ox",(clamp(r.left+r.width/2-x,16,w-16))+"px");
+    byPop.for=grp;grp.classList.add("is-open");
+    requestAnimationFrame(()=>d.classList.add("in"));
+  };
+  if(now)go();else byPop.openT=setTimeout(go,140);
+}
+function closeByPop(delay=120){
+  clearTimeout(byPop.openT);clearTimeout(byPop.closeT);
+  byPop.closeT=setTimeout(()=>{const d=byPop.el;if(!d||d.hidden)return;d.classList.remove("in");byPop.for?.classList.remove("is-open");byPop.for=null;setTimeout(()=>{if(!d.classList.contains("in"))d.hidden=true},140)},delay);
+}
+document.addEventListener("pointerover",e=>{const g=e.target.closest?.(".by-group");if(g&&byPop.for!==g&&!e.buttons)openByPop(g);else if(g)clearTimeout(byPop.closeT)});
+document.addEventListener("pointerout",e=>{const g=e.target.closest?.(".by-group");if(g&&!g.contains(e.relatedTarget)&&!byPop.el?.contains(e.relatedTarget))closeByPop()});
+document.addEventListener("focusin",e=>{const g=e.target.closest?.(".by-group");if(g)openByPop(g,{now:true})});
+document.addEventListener("focusout",e=>{if(e.target.closest?.(".by-group"))closeByPop()});
+document.addEventListener("pointerdown",e=>{if(byPop.el&&!byPop.el.hidden&&!byPop.el.contains(e.target)&&!e.target.closest?.(".by-group"))closeByPop(0)},true);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&byPop.el&&!byPop.el.hidden){closeByPop(0);byPop.for?.focus?.()}});
+function byline(n){return ""}   // superseded by creatorBadgeHTML: one mark per card, beside its time
 function threadCount(n){
   const t=board.threads[n.id];
   if(!t||!t.length)return "";
@@ -5470,7 +5597,7 @@ const proofView=new Map();
 function proofVersions(n){if(!n||n.type!=="proof"||n.status==="sketch")return[n];return board.nodes.filter(x=>x.type==="proof"&&!x.tombstone&&x.status!=="sketch"&&x.dir===n.dir&&(x.spec?.mode||"")===(n.spec?.mode||"")).sort((a,b)=>a.ver-b.ver)}
 function proofResults(n){const items=(n?.spec?.items||[]).filter(it=>/^(passed|failed|waiting)$/i.test(String(it.tag||"").trim()));if(!items.length)return null;const t=k=>items.filter(it=>String(it.tag).trim().toLowerCase()===k);return {passed:t("passed").length,failed:t("failed").length,waiting:t("waiting").length,failedTitles:t("failed").map(it=>it.title)}}
 function cardBody(n){
-  const sk=n.status==="sketch",L=lin(n),tm=timeTag(n);
+  const sk=n.status==="sketch",L=lin(n),tm0=timeTag(n),seal=contribGroupHTML(n),tm=seal&&tm0?`<span class="foot-by">${seal}${tm0}</span>`:tm0;
   const head=k=>sk?sketchHead(n):`<div class="card-k">${k}<span class="sp"></span>${cardVotesHTML(n)}</div>`;
   const group=(cls,...xs)=>{const a=xs.filter(Boolean);return a.length?`<span class="${cls}">${a.join('<span class="foot-sep" aria-hidden="true">·</span>')}</span>`:""};
   const fL=(...xs)=>group("foot-l",...xs);
@@ -5479,8 +5606,8 @@ function cardBody(n){
   const fmt=fileFormatOf(n);
   const thumbBadge=f=>f?`<span class="badge">${ic(f.icon)}${esc(f.label)}</span>`:"";
   switch(n.type){
-  case"note":{const defNoteTag=uiLang()==="zh"?"便签":"Sticky",tagTxt=esc(n.tag||defNoteTag),tagTitle=esc(uiLang()==="zh"?"点击编辑便签标签":"Click to edit tag"),noteLbl=esc(uiLang()==="zh"?"编辑便签":"Edit note text");
-    const noteHead=sk?head(`${byline(n)}<span class="note-tag"><i aria-hidden="true"></i><span>${tagTxt}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag" data-a="edit-tag" title="${tagTitle}"><i aria-hidden="true"></i><span data-edit="tag" spellcheck="false">${tagTxt}</span></span><span class="sp"></span>${cardVotesHTML(n)}<button type="button" class="note-edit-btn" data-a="edit-note" title="${noteLbl}" aria-label="${noteLbl}">${ic("pen")}</button></div>`;
+  case"note":{const defNoteTag=uiLang()==="zh"?"便签":"Sticky",tagTxt=esc(n.tag||defNoteTag),tagTitle=esc(uiLang()==="zh"?"点击编辑便签标签":"Click to edit tag");
+    const noteHead=sk?head(`${byline(n)}<span class="note-tag"><i aria-hidden="true"></i><span>${tagTxt}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag" data-a="edit-tag" title="${tagTitle}"><i aria-hidden="true"></i><span data-edit="tag" spellcheck="false">${tagTxt}</span></span><span class="sp"></span>${cardVotesHTML(n)}</div>`;
     return `<div class="in">${sk?"":'<span class="note-grain" aria-hidden="true"></span><span class="note-grip" aria-hidden="true"></span>'}${noteHead}
     <h4 data-edit="text">${esc(n.text)}</h4>${sk?sketchActs(n):foot(n.weight?weightHTML(n.weight):"",fR(threadCount(n)))}</div>`;}
   case"notepad":{const defPadTag=uiLang()==="zh"?"记事本":"Notepad",padTag=esc(n.tag||defPadTag),padTitle=esc(uiLang()==="zh"?"点击编辑记事本标签":"Click to edit tag");
@@ -6470,7 +6597,7 @@ function nodeLineageSig(n){
   return refs.map(r=>`${r.sourceId}:${r.depType}:${r.status}:${r.node?(r.node.rev||1)+":"+digest(r.node):"T"}`).join("|");
 }
 
-function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
+function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
   n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
@@ -6510,7 +6637,8 @@ function renderNodes(){
     if(el._sig!==sig){
       if(el._sig&&el.querySelector("[contenteditable]:focus,input:focus,textarea:focus"))continue;
       const rszHTML=RESIZABLE_TYPES.has(n.type)?'<span class="card-resize is-l" data-resize="wl" title="Drag left edge to resize · Alt symmetric · Double-click to reset" aria-hidden="true"></span><span class="card-resize is-r" data-resize="wr" title="Drag right edge to resize · Alt symmetric · Double-click to reset" aria-hidden="true"></span>':"";
-      el.innerHTML=lockBadgeHTML(n)+creatorBadgeHTML(n)+cardBody(n)+proposalBarHTML(n)+lineageCardHTML(n)+advPinHTML(n)+'<span class="crop" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="port port-in" data-port="in" data-side="left" title="Upstream input (parent)"></span><span class="port port-out" data-port="out" data-side="right" title="Downstream output (child)"></span>'+rszHTML;el._sig=sig;
+      const body=cardBody(n);
+      el.innerHTML=lockBadgeHTML(n)+(/class="by-(seal|group)/.test(body)?"":creatorBadgeHTML(n))+body+proposalBarHTML(n)+lineageCardHTML(n)+advPinHTML(n)+'<span class="crop" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="port port-in" data-port="in" data-side="left" title="Upstream input (parent)"></span><span class="port port-out" data-port="out" data-side="right" title="Downstream output (child)"></span>'+rszHTML;el._sig=sig;
       const fr=el.querySelector("iframe[data-srcdoc]");if(fr){if(fr.dataset.srcdoc==="html")populateHtmlIframe(fr,n);else{fr.onload=()=>fr.parentElement?.classList.add("ready");fr.srcdoc=pageHTML(n.spec,{thumb:true})}}
       const pdfFr=el.querySelector("iframe[data-src-pdf]");if(pdfFr){pdfFr.onload=()=>pdfFr.parentElement?.classList.add("ready");pdfFr.src=pdfFr.dataset.srcPdf+"#toolbar=0&navpanes=0&scrollbar=0";setTimeout(()=>pdfFr.parentElement?.classList.add("ready"),250)}
       const urlFr=el.querySelector("iframe[data-src-url]");if(urlFr){urlFr.onload=()=>urlFr.parentElement?.classList.add("ready");urlFr.src=urlFr.dataset.srcUrl}

@@ -155,3 +155,11 @@ node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a
 ```
 
 `--live` sends the synthetic fixture board (no user data) to `LIVE_BASE` (default `https://openrouter.ai/api/v1`, key from `LIVE_KEY` or an injecting proxy). `--json out.json` writes every check; `--shots dir` saves a screenshot of a thought's "Based on" line. Lines marked KNOWN are recorded limitations; PART means a live rate below the bar but above zero.
+
+## Relations
+
+`tests/relations.cjs` checks `relations-contract.md` with real mouse drags: the snap previews before it happens and makes one `related` relation shown as a clasp; the type picker (keys 1 to 4); a connector between snapped cards opens the same relation instead of adding one; Show line and Hide line; pulling apart keeps the relation as a line with its type and offers Unbind; ⌥ skips the snap, M and the toolbar toggle it (remembered); one Undo takes back the move and the relation; nudging a snapped card asks nothing again; a snapped group moves by its clasp and a connector dropped on the clasp relates to every card in it; the crew reads relations with their type and direction, ranks them first and never changes them; reduced motion and dark mode.
+
+```bash
+node tests/relations.cjs
+```

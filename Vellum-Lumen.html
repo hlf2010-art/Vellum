@@ -2857,6 +2857,95 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 @media (max-width:760px){.island{top:calc(64px + env(safe-area-inset-top,0px))}.island[data-mode="open"]~.toasts,.island[data-mode="flash"]~.toasts{top:calc(var(--isl-h,36px) + 76px + env(safe-area-inset-top,0px))}}
 @media (prefers-reduced-transparency:reduce){.island{-webkit-backdrop-filter:none;backdrop-filter:none;--isl-bg:var(--card)}}
 @media (prefers-reduced-motion:reduce){.island,.isl-face{transition-duration:.01ms!important}.isl-av.ind .isl-ring,.isl-av.queued .isl-ring{animation:none}.isl-bar.ind i{animation:none;width:100%;opacity:.45}}
+
+/* ── relations: clasps on seams, snap preview, the type picker ─────────── */
+.rel-related{--rc:color-mix(in srgb,var(--label) 46%,var(--card))}
+.rel-supports{--rc:var(--ok)}
+.rel-conflicts{--rc:var(--danger)}
+.rel-extends{--rc:var(--B)}
+#relLayer{position:absolute;left:0;top:0;z-index:21;pointer-events:none}
+/* a clasp: the relation of two snapped cards, sitting in the seam between them */
+.clasp{position:absolute;left:0;top:0;width:24px;height:calc(var(--len,30px) + 12px);margin:0;padding:0;border:0;background:none;pointer-events:auto;cursor:grab;
+  display:grid;place-items:center;transform:translate(-50%,-50%) scale(var(--inv-s,1));-webkit-tap-highlight-color:transparent;transition:opacity .2s var(--ease)}
+.clasp.o-h{width:calc(var(--len,30px) + 12px);height:24px}
+.clasp i{display:block;width:6px;height:var(--len,30px);border-radius:99px;pointer-events:none;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 78%,#fff),var(--rc) 55%,color-mix(in srgb,var(--rc) 86%,#000));
+  box-shadow:0 0 0 2.5px var(--canvas),0 0 0 3px color-mix(in srgb,var(--rc) 22%,transparent),0 3px 10px -3px color-mix(in srgb,var(--rc) 70%,transparent);
+  transition:width .28s var(--bouncy),height .28s var(--bouncy),box-shadow .2s var(--ease),transform .28s var(--bouncy)}
+.clasp.o-h i{width:var(--len,30px);height:6px;background:linear-gradient(90deg,color-mix(in srgb,var(--rc) 78%,#fff),var(--rc) 55%,color-mix(in srgb,var(--rc) 86%,#000))}
+.clasp:hover i,.clasp:focus-visible i{width:9px;box-shadow:0 0 0 2.5px var(--canvas),0 0 0 4px color-mix(in srgb,var(--rc) 35%,transparent),0 4px 14px -2px color-mix(in srgb,var(--rc) 80%,transparent)}
+.clasp.o-h:hover i,.clasp.o-h:focus-visible i{width:var(--len,30px);height:9px}
+.clasp:active{cursor:grabbing}
+.clasp:focus-visible{outline:none}
+.clasp.sel i,.clasp.hit i{box-shadow:0 0 0 2.5px var(--canvas),0 0 0 4.5px var(--focus),0 0 16px 2px color-mix(in srgb,var(--focus) 40%,transparent)}
+.clasp.hit i{transform:scale(1.12)}
+.clasp.fresh i{animation:claspIn .62s var(--bouncy) both}
+.clasp.fresh::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:calc(var(--len,30px) + 8px);border-radius:99px;border:1.5px solid var(--rc);transform:translate(-50%,-50%);animation:claspRing .72s var(--ease) both;pointer-events:none}
+.clasp.o-h.fresh::after{width:calc(var(--len,30px) + 8px);height:14px}
+.clasp.gone{opacity:0;transition:opacity .2s var(--ease)}
+@keyframes claspIn{0%{transform:scale(.2,.35);opacity:0}45%{opacity:1}}
+@keyframes claspRing{0%{opacity:.75;transform:translate(-50%,-50%) scale(.7)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.1)}}
+/* what a line means, when it means more than "related" */
+.rel-tag{position:absolute;left:0;top:0;margin:0;border:0;pointer-events:auto;cursor:pointer;transform:translate(-50%,-50%) scale(var(--inv-s,1));
+  padding:3px 8px 3px 7px;border-radius:99px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  font:600 11px/1.1 var(--ui);letter-spacing:-.005em;color:var(--label);background:color-mix(in srgb,var(--card) 92%,transparent);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--rc) 45%,transparent),0 4px 12px -6px color-mix(in srgb,var(--rc) 60%,transparent);
+  transition:box-shadow .16s var(--ease),transform .2s var(--bouncy)}
+.rel-tag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--rc);flex:none}
+.rel-tag:hover,.rel-tag.sel{box-shadow:0 0 0 1.5px var(--rc),0 6px 16px -6px color-mix(in srgb,var(--rc) 70%,transparent)}
+#world.far .rel-tag{display:none}
+#wires path.w.rel{stroke-dasharray:none;stroke-width:1.7}
+#wires path.w.rel-related{stroke:color-mix(in srgb,var(--label) 34%,transparent)}
+#wires path.w.rel-supports{stroke:color-mix(in srgb,var(--ok) 75%,transparent)}
+#wires path.w.rel-conflicts{stroke:color-mix(in srgb,var(--danger) 72%,transparent);stroke-dasharray:7 4}
+#wires path.w.rel-extends{stroke:color-mix(in srgb,var(--B) 72%,transparent)}
+/* the snap preview: a glowing seam where the clasp will land, and a guide when edges line up */
+.snap-guide{position:absolute;left:0;top:0;pointer-events:none;opacity:0;transition:opacity .12s var(--ease)}
+.snap-guide.on{opacity:1}
+.snap-guide.o-v{width:0}.snap-guide.o-h{height:0}
+.snap-guide::before{content:"";position:absolute;border-radius:99px;background:color-mix(in srgb,var(--focus) 55%,transparent);box-shadow:0 0 12px 1px color-mix(in srgb,var(--focus) 45%,transparent)}
+.snap-guide.o-v::before{left:-1px;top:0;bottom:0;width:2px}.snap-guide.o-h::before{top:-1px;left:0;right:0;height:2px}
+.snap-guide i{position:absolute;left:50%;top:50%;width:6px;height:26px;border-radius:99px;background:var(--focus);transform:translate(-50%,-50%) scale(var(--inv-s,1));box-shadow:0 0 0 2.5px var(--canvas),0 0 14px 2px color-mix(in srgb,var(--focus) 55%,transparent);animation:snapBreathe 1.1s var(--ease) infinite alternate}
+.snap-guide.o-h i{width:26px;height:6px}
+@keyframes snapBreathe{from{opacity:.55}to{opacity:1}}
+.snap-align{position:absolute;left:0;top:0;pointer-events:none;opacity:0;transition:opacity .1s}
+.snap-align.on{opacity:1}
+.snap-align.o-h{height:0;border-top:1px dashed color-mix(in srgb,var(--focus) 60%,transparent)}
+.snap-align.o-v{width:0;border-left:1px dashed color-mix(in srgb,var(--focus) 60%,transparent)}
+body.is-dragging-card .port{opacity:0!important}
+.card.snap-target{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--focus) 55%,transparent),0 0 0 7px color-mix(in srgb,var(--focus) 9%,transparent),var(--card-shadow-up)}
+.card.dragging.magnet{transition:left .16s var(--ease),top .16s var(--ease),box-shadow .35s var(--ease)}
+.card.bond-pulse{animation:bondPulse .64s var(--ease)}
+@keyframes bondPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--focus) 34%,transparent),var(--card-shadow)}100%{box-shadow:0 0 0 14px color-mix(in srgb,var(--focus) 0%,transparent),var(--card-shadow)}}
+body.snap-skip #wall{cursor:copy}
+/* the quick type picker */
+.rel-pick{position:fixed;z-index:36;transform:translate(-50%,-100%);margin-top:-16px;display:inline-flex;align-items:center;gap:2px;padding:4px;border-radius:var(--radius-pill);
+  background:var(--chrome);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);box-shadow:var(--chrome-shadow);transform-origin:50% 100%}
+.rel-pick[hidden]{display:none}
+.rel-pick.in{animation:relPickIn .34s var(--bouncy) both}
+.rel-pick.out{opacity:0;transform:translate(-50%,-100%) scale(.96);transition:opacity .15s,transform .15s}
+@keyframes relPickIn{from{opacity:0;transform:translate(-50%,-100%) translateY(6px) scale(.9)}}
+.rel-pick .rp-k{font:600 11px/1 var(--ui);color:var(--label-3);padding:0 6px 0 8px;letter-spacing:.01em}
+.rel-pick .rp-opt{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px 0 9px;border-radius:var(--radius-pill);font:600 12px/1 var(--ui);color:var(--label-2);background:transparent;
+  transition:background var(--d-quick,.15s),color var(--d-quick,.15s),transform var(--d-press,.09s)}
+.rel-pick .rp-opt i{width:7px;height:7px;border-radius:50%;background:var(--rc);box-shadow:0 0 0 2px color-mix(in srgb,var(--rc) 20%,transparent);transition:transform .25s var(--bouncy)}
+.rel-pick .rp-opt:hover{background:var(--hover);color:var(--label)}
+.rel-pick .rp-opt:hover i{transform:scale(1.25)}
+.rel-pick .rp-opt:active{transform:scale(.95)}
+.rel-pick .rp-opt.on{background:color-mix(in srgb,var(--rc) 16%,var(--card));color:var(--label);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 40%,transparent)}
+.wire-pop .wp-rel{display:inline-flex;align-items:center;gap:1px}
+.wire-pop .wp-rel button{display:inline-flex;align-items:center;gap:5px;height:var(--size-sm,26px);padding:0 8px;border-radius:var(--radius-pill);font:600 12px/1 var(--ui);color:var(--label-2);background:transparent;transition:background var(--d-quick),color var(--d-quick)}
+.wire-pop .wp-rel button i{width:6px;height:6px;border-radius:50%;background:var(--rc)}
+.wire-pop .wp-rel button:hover{background:var(--hover);color:var(--label)}
+.wire-pop .wp-rel button.on{background:color-mix(in srgb,var(--rc) 16%,var(--card));color:var(--label);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 40%,transparent)}
+.wire-pop .wp-mini{height:var(--size-sm,26px);min-width:var(--size-sm,26px);padding:0 7px;border-radius:var(--radius-pill);display:inline-flex;align-items:center;justify-content:center;gap:4px;font:600 12px/1 var(--ui);color:var(--label-3);background:transparent;transition:background var(--d-quick),color var(--d-quick)}
+.wire-pop .wp-mini:hover{background:var(--hover);color:var(--label)}
+.wire-pop .wp-mini .ico{width:13px;height:13px}
+@media (prefers-reduced-motion:reduce){
+  .clasp i,.clasp.fresh i,.clasp.fresh::after,.snap-guide i,.rel-pick.in,.card.bond-pulse{animation:none!important;transition:none!important}
+  .clasp.fresh::after{display:none}
+}
+.src-pill.rel-pill{color:var(--rc);background:color-mix(in srgb,var(--rc) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 38%,transparent)}
 </style>
 <div id="app">
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
@@ -2865,6 +2954,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
       <div id="bays" aria-hidden="true"></div>
       <svg id="wires" aria-hidden="true"></svg>
       <div id="nodes"></div>
+      <div id="relLayer"></div>
       <div id="preview" aria-hidden="true"></div>
       <svg id="sketchpad" aria-hidden="true"></svg>
     </div>
@@ -2895,6 +2985,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
     <button type="button" data-ttool="select" aria-pressed="true" aria-label="Select / Pan (V)" data-tip="Select / Pan · V"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l12.5 7.2-5.6 1.9-1.9 5.6z"/></svg></button>
     <button type="button" data-ttool="lasso" aria-pressed="false" aria-label="Lasso select (S)" data-tip="Lasso select · S"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5c4.7 0 8.5 3.1 8.5 6.9s-3.8 6.9-8.5 6.9-8.5-3.1-8.5-6.9c0-2.6 1.7-4.8 4.3-6"/><circle cx="7.5" cy="17.8" r="1.6"/></svg></button>
     <button type="button" data-ttool="hand" aria-pressed="false" aria-label="Hand / Pan (H)" data-tip="Hand / Pan · H"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 13V6.8a1.3 1.3 0 0 1 2.6 0V11m0-4.2V5.3a1.3 1.3 0 0 1 2.6 0V11m0-3.7a1.3 1.3 0 0 1 2.6 0V12c0 4-2.5 6.8-6.1 6.8-2.3 0-4.1-1.1-5-3l-1.5-3.1a1.3 1.3 0 0 1 2.2-1.3L8.5 13"/></svg></button>
+    <button type="button" id="snapBtn" data-tact="snap" aria-pressed="true" aria-label="Smart snap (M)" data-tip="Smart snap · M · hold ⌥ to skip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h3.4v8a2.6 2.6 0 0 0 5.2 0V4H18v8a6 6 0 0 1-12 0z"/><path d="M6 8h3.4M14.6 8H18"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
     <button type="button" id="uploadMediaBtn" data-tact="files" aria-label="Upload file or media (U)" data-tip="Upload file or media · U"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.4"/><path d="m21 15.5-4.5-4.5-6.5 6.5L7 14.5l-4 4"/></svg></button>
     <button type="button" id="organizeBtn" data-tact="tidy" aria-label="Organize canvas (T)" data-tip="Organize canvas · T"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2"/></svg></button>
@@ -2928,6 +3019,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
   <aside id="margin" class="margin" hidden aria-label="Open card" role="dialog"></aside>
   <div id="selbar" class="selbar glass" hidden></div>
   <div id="wirePop" class="wire-pop glass" hidden></div>
+  <div id="relPick" class="rel-pick" hidden role="toolbar" aria-label="Relation type"></div>
   <input id="boardImportIn" type="file" accept=".json,.vellum.json,application/json" hidden>
 
   <form id="line" class="line" autocomplete="off" aria-label="Composer">
@@ -3887,7 +3979,7 @@ function autonomyPlain(){
 function autonomySummary(){const short={direct:L("do it","直接做"),suggest:L("ask","先问"),never:L("never","不允许")};return AUTONOMY_ROWS.map(([k,l])=>`${L({create:"Create",link:"Link",edit:"Edit",delete:"Delete"}[k],{create:"新建",link:"连线",edit:"修改",delete:"删除"}[k])}: ${short[perm(k)]}`).join(" · ")}
 function autonomyPromptLine(){
   const say={direct:"you may do it directly",suggest:"it becomes a suggestion the designer accepts or declines (say you suggested it, never that you did it)",never:"you may not do it; tell the designer instead"};
-  return `Board permissions set by the designer: creating cards or comments: ${say[perm("create")]}${perm("create")==="suggest"?" (cards arrive as drafts)":""}; linking cards: ${say[perm("link")]}; editing cards the designer has kept: ${say[perm("edit")]}; deleting cards the designer has kept: ${say[perm("delete")]}. Locked cards (and every kept card in a locked lane, such as Snapshot) you may not change or suggest changes to. Your own drafts you may always edit.`;
+  return `Board permissions set by the designer: creating cards or comments: ${say[perm("create")]}${perm("create")==="suggest"?" (cards arrive as drafts)":""}; linking cards: ${say[perm("link")]}; editing cards the designer has kept: ${say[perm("edit")]}; deleting cards the designer has kept: ${say[perm("delete")]}. Locked cards (and every kept card in a locked lane, such as Snapshot) you may not change or suggest changes to. Your own drafts you may always edit. Relations the designer drew or snapped between cards are theirs: read each as stated ("related" means related, not agreement), and never change or remove one.`;
 }
 function openAutonomyDialog(){
   const row=([k,l])=>{const opts=AUTONOMY_LEVELS.filter(([v])=>!(k==="delete"&&v==="direct"));return `<div class="au-row"><span id="au-l-${k}">${L(l[0],l[1])}</span><div class="sp-seg au-seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))" role="group" aria-labelledby="au-l-${k}">${opts.map(([v,vl])=>`<button type="button" data-au="${k}" data-v="${v}" aria-pressed="${perm(k)===v}">${L(vl[0],vl[1])}</button>`).join("")}</div></div>`};
@@ -4479,13 +4571,13 @@ function contextFor(target,{query="",limit=6,pool=null}={}){
   for(const n of live){
     const why=[],d=wires.get(n.id),sim=ctxSim(self,idx.docs.get(n.id)||new Map(),idx),mean=meaning.get(n.id);
     const near=!!tc&&Math.hypot(ctxCenter(n).x-tc.x,ctxCenter(n).y-tc.y)<CTX_NEAR;
-    if(d)why.push({k:"wired",d});
+    if(d)why.push({k:"wired",d,...(d===1&&target?ctxHumanRel(target.id,n.id):{})});
     if(ctxRelated(sim))why.push({k:"topic",terms:sim.shared.slice(0,3),score:+sim.score.toFixed(3)});
     if(mean?.top)why.push({k:"meaning",score:+mean.c.toFixed(3)});
     if(!why.length){if(near)skipped.push({n,why:"near on the canvas, but no link, shared topic or close meaning"});continue}
     if(near)why.push({k:"near"});
     if(co.has(n.id))why.push({k:"attention"});
-    const score=(d?1/d:0)+sim.score+(mean?mean.c*(mean.top&&why.length===1?.6:.2):0)+(near?.08:0)+(co.has(n.id)?.05:0);
+    const score=(d?1/d:0)+(why.some(w=>w.you)?.6:0)+sim.score+(mean?mean.c*(mean.top&&why.length===1?.6:.2):0)+(near?.08:0)+(co.has(n.id)?.05:0);
     picks.push({n,score,why});
   }
   picks.sort((a,b)=>b.score-a.score);
@@ -4500,14 +4592,24 @@ function ctxLabel(n){if(!n)return"";if(n.title||["direction","proof","print","fr
 function relatedRows(n,limit=5){
   if(!n)return [];
   const deps=new Set(inputsOf(n.id).map(x=>x.id)),seen=new Set([n.id,...deps]),rows=[];
+  /* relations you made come first, with their type; a typed one shows here even when the card is also listed under Based On */
+  for(const e of board.edges){if(e.by!=="you"||!e.rel)continue;const o=e.a===n.id?e.b:e.b===n.id?e.a:null;if(!o||o===n.id||rows.some(r=>r.n.id===o)||(seen.has(o)&&e.rel==="related"))continue;const x=byId(o);if(!x||isNodeHidden(x))continue;seen.add(o);rows.push({n:x,relation:e.rel,why:ctxRelText(ctxHumanRel(n.id,o)),by:"you"})}
   const judged=board.related?.[n.id];
   for(const r of judged?.items||[]){const x=byId(r.id);if(!x||isNodeHidden(x)||seen.has(x.id))continue;seen.add(x.id);rows.push({n:x,relation:r.relation,why:r.why||"",by:"crew"})}
   for(const p of contextFor(n,{limit:8}).picks){if(seen.has(p.n.id)||p.why.every(w=>w.k==="wired"&&w.d===1))continue;seen.add(p.n.id);rows.push({n:p.n,relation:"related",why:ctxWhyText(p.why),by:"signals"})}
-  return rows.sort((a,b)=>(b.relation==="conflicts")-(a.relation==="conflicts")).slice(0,limit);
+  return rows.sort((a,b)=>((b.by==="you")-(a.by==="you"))||((b.relation==="conflicts")-(a.relation==="conflicts"))).slice(0,limit);
 }
 const relFetchOnce=new Set();
+/* a relation you made, as the crew and the Related list read it: yours, and "related" is never agreement */
+function ctxHumanRel(t,n){const e=relBetween(t,n);if(!e||e.by!=="you"||!e.rel)return {};return {you:true,rel:e.rel,from:e.a===n?"it":"this",snap:isBonded(e)}}
+function ctxRelText(w){
+  const how=w.snap?L("you snapped them together","你把它们吸附在一起"):L("you linked them","你把它们连在一起");
+  if(!w.rel||w.rel==="related")return how+L(" · related, not agreement"," · 有关，不代表同意");
+  const v=L(...REL_VERB[w.rel]);
+  return how+" · "+(w.from==="it"?L(`it ${v} this card`,`它${v}这张卡`):L(`this card ${v} it`,`这张卡${v}它`));
+}
 function ctxWhyText(why){
-  return why.map(w=>w.k==="wired"?(w.d===1?L("linked directly","直接连线"):L(`${w.d} links away`,`相隔 ${w.d} 条连线`)):w.k==="topic"?L(`shares ${w.terms.join(", ")}`,`共同提到 ${w.terms.join("、")}`):w.k==="meaning"?L("close in meaning","意思相近"):w.k==="near"?L("also near it","位置也相近"):w.k==="attention"?L("you worked on both around the same time","你在相近时间编辑过两者"):"").filter(Boolean).join(" · ");
+  return why.map(w=>w.k==="wired"?(w.you?ctxRelText(w):w.d===1?L("linked directly","直接连线"):L(`${w.d} links away`,`相隔 ${w.d} 条连线`)):w.k==="topic"?L(`shares ${w.terms.join(", ")}`,`共同提到 ${w.terms.join("、")}`):w.k==="meaning"?L("close in meaning","意思相近"):w.k==="near"?L("also near it","位置也相近"):w.k==="attention"?L("you worked on both around the same time","你在相近时间编辑过两者"):"").filter(Boolean).join(" · ");
 }
 /* the candidate block an agent sees: keyed for citation, positions withheld on purpose */
 function ctxCandidates(target,{limit=6,query=""}={}){
@@ -6415,9 +6517,10 @@ function lineageCardHTML(n){
 }
 function drawWires(){
   let h="",hits="";const outSide=new Map(),inSide=new Map();
-  const visEdges=[];
+  const visEdges=[],bonds=[],tags=[];
   for(const e of board.edges){
     const a=byId(e.a),b=byId(e.b);if(!a||!b||isNodeHidden(a)||isNodeHidden(b))continue;
+    if(e.rel&&!e.line){const s=seamOf(a,b);if(s){bonds.push({e,s});continue}}
     visEdges.push({e,a,b});
     const sp=autoSidePair(a,b);
     if(!outSide.has(a.id))outSide.set(a.id,sp.sa);
@@ -6430,11 +6533,12 @@ function drawWires(){
     const L=lin(b)||lin(a),sk=a.status==="sketch"||b.status==="sketch";
     const faded=b.type==="direction"&&board.adopted[b.idea]&&board.adopted[b.idea]!==b.id;
     const ep=edgeEndpoints(a,b,outSide.get(a.id),inSide.get(b.id)),d=`M${ep.x1},${ep.y1} C${ep.cx1},${ep.cy1} ${ep.cx2},${ep.cy2} ${ep.x2},${ep.y2}`,dt=edgeDepType(e,a,b);
-    const cls=["w",e.kind==="src"||dt==="reference"?"src":"",L&&e.kind!=="src"?"pg"+L:"",sk?"sk":"",faded?"faded":"",selectedEdgeId===e.id?"edge-sel":"",freshEdges.has(e.id)?"grow":""].filter(Boolean).join(" ");
+    const cls=["w",e.kind==="src"||dt==="reference"?"src":"",L&&e.kind!=="src"?"pg"+L:"",sk?"sk":"",faded?"faded":"",selectedEdgeId===e.id?"edge-sel":"",freshEdges.has(e.id)?"grow":"",e.rel?"rel rel-"+e.rel:""].filter(Boolean).join(" ");
+    if(e.rel&&e.rel!=="related")tags.push({e,x:.125*ep.x1+.375*ep.cx1+.375*ep.cx2+.125*ep.x2,y:.125*ep.y1+.375*ep.cy1+.375*ep.cy2+.125*ep.y2});
     const rcls=["w-root",L&&e.kind!=="src"?"pg"+L:"",faded?"faded":""].filter(Boolean).join(" ");
     const fcls=["w-flow",L&&e.kind!=="src"?"pg"+L:"",faded?"faded":""].filter(Boolean).join(" ");
     h+=`<path class="${cls}" data-dep="${dt}" d="${d}" ${freshEdges.has(e.id)?'style="--len:900"':""}/>`;
-    if(!freshEdges.has(e.id))h+=`<path class="${rcls}" d="${taperRootPath(ep)}"/><path class="${fcls}" d="${d}"/>`;
+    if(!freshEdges.has(e.id))h+=`<path class="${rcls}" d="${taperRootPath(ep)}"/>${e.rel?"":`<path class="${fcls}" d="${d}"/>`}`;
     hits+=`<path class="w-hit" data-edge="${e.id}" d="${d}"/>`;
   }
   h+=provenanceSVG()+hits;
@@ -6446,14 +6550,17 @@ function drawWires(){
     if(pi){pi.dataset.side=is||(os==="left"?"right":"left");pi.classList.toggle("connected",!!is)}
     if(po){po.dataset.side=os||(is==="right"?"left":"right");po.classList.toggle("connected",!!os)}
   });
-  placeWirePop();
+  paintRelLayer(bonds,tags);
+  placeWirePop();placeRelPick();
 }
 function renderWirePop(){
   const pop=$("wirePop");if(!pop)return;
   const e=selectedEdgeId?board.edges.find(x=>x.id===selectedEdgeId):null;
   const a=e?byId(e.a):null,b=e?byId(e.b):null;
   if(!e||!a||!b||isNodeHidden(a)||isNodeHidden(b)||stageOpen){selectedEdgeId=null;pop.hidden=true;renderLineHint?.();return}
-  const dt=edgeDepType(e,a,b);
+  const dt=edgeDepType(e,a,b),bonded=isBonded(e),cur=e.rel||"";
+  const relSeg=`<div class="wp-rel" role="group" aria-label="${esc(L("What this relation means","关系类型"))}">${REL_TYPES.map(r=>`<button type="button" class="rel-${r}${r===cur?" on":""}" data-wire-edge="${e.id}" data-wire-rel="${r}" aria-pressed="${r===cur}" title="${esc(r==="related"?L("Related, nothing more","只是有关"):relSentence({...e,rel:r}))}"><i aria-hidden="true"></i>${esc(relName(r))}</button>`).join("")}</div><span class="wp-vsep" aria-hidden="true"></span>`;
+  const extra=(dt==="reference"&&e.rel?`<button type="button" class="wp-mini" data-wire-swap="${e.id}" title="${esc(L("Swap direction","交换方向"))}" aria-label="${esc(L("Swap direction","交换方向"))}">⇄</button>`:"")+(e.rel&&(bonded||e.line)?`<button type="button" class="wp-mini" data-wire-line="${e.id}">${e.line?L("Hide line","隐藏连线"):L("Show line","显示连线")}</button>`:"");
   const descMap={
     reference:L("Reference only — no update alerts","仅作参考连线 — 不触发更新提醒"),
     live:L("Live link — marks stale on update","活依赖 — 上游改动提醒更新"),
@@ -6472,6 +6579,7 @@ function renderWirePop(){
       <span class="wp-ep-t">${esc(labelB)}</span>
     </span>
     <span class="wp-vsep" aria-hidden="true"></span>
+    ${relSeg}
     <div class="wp-dep-wrap">
       <button type="button" class="wp-dep-btn" data-wire-edge="${e.id}" data-wire-dep-toggle title="${esc(desc)} · ${L("Click to change mode","点击切换模式")}" aria-haspopup="true">
         <span class="wp-dep-name">${depLabels[dt]}</span>
@@ -6492,8 +6600,8 @@ function renderWirePop(){
         </button>
       </div>
     </div>
-    <span class="wp-vsep" aria-hidden="true"></span>
-    <button type="button" class="wp-del-btn" data-wire-del="${e.id}" title="${L("Disconnect wire (⌫)","断开连线 (⌫)")}" aria-label="Disconnect wire">
+    <span class="wp-vsep" aria-hidden="true"></span>${extra}
+    <button type="button" class="wp-del-btn" data-wire-del="${e.id}" title="${bonded?L("Unbind (⌫)","解除关系 (⌫)"):e.rel?L("Remove relation (⌫)","删除关系 (⌫)"):L("Disconnect wire (⌫)","断开连线 (⌫)")}" aria-label="${bonded?"Unbind":"Disconnect wire"}">
       ${ic("trash")}
     </button>
   </div>`;
@@ -6504,7 +6612,7 @@ function placeWirePop(){
   const e=selectedEdgeId?board.edges.find(x=>x.id===selectedEdgeId):null;
   const a=e?byId(e.a):null,b=e?byId(e.b):null;
   if(!e||!a||!b||isNodeHidden(a)||isNodeHidden(b)||stageOpen){pop.hidden=true;return}
-  const m=edgeMidpoint(a,b),sp=toScreen(m.x,m.y),r=wall.getBoundingClientRect();
+  const m=(isBonded(e)&&seamOf(a,b))||edgeMidpoint(a,b),sp=toScreen(m.x,m.y),r=wall.getBoundingClientRect();
   pop.style.left=clamp(r.left+sp.x,160,innerWidth-160)+"px";
   pop.style.top=clamp(r.top+sp.y,80,innerHeight-60)+"px";
 }
@@ -6529,8 +6637,317 @@ function deleteEdgeById(id){
   checkpoint();board.edges.splice(idx,1);selectedEdgeId=null;
   sfx("remove");
   log("you",`Disconnected <b>${esc(a?titleOf(a):"card")}</b> → <b>${esc(b?titleOf(b):"card")}</b>`,b?.id||a?.id||null);
-  renderAll();persist();toast("Connection removed",{undo:true});
+  renderAll();persist();toast(ed.rel?L("Relation removed","已解除关系"):"Connection removed",{undo:true});
 }
+
+/* ── relations: a connector and a snap are two gestures for one object ──────
+   A relation is an edge a person made or confirmed (by:"you"). rel says what it means: related (the default, never read
+   as agreement), supports, conflicts or extends, read from a to b. Between two cards there is at most one: snapping
+   them, or drawing a connector between them again, opens and edits that one. Two cards that sit edge to edge with a
+   relation are snapped: the relation shows as a clasp on the seam instead of a line. Pull them apart and the relation
+   stays, drawn as a line; unbinding means deleting it. The crew reads relations and never changes one you made.
+   relations-contract.md says the same for people. */
+const REL_TYPES=["related","supports","conflicts","extends"];
+const REL_LABEL={related:["Related","有关"],supports:["Supports","支持"],conflicts:["Counters","反驳"],extends:["Refines","细化"]};
+const REL_VERB={supports:["supports","支持"],conflicts:["counters","反驳"],extends:["refines","细化"]};
+const relName=r=>L(...(REL_LABEL[r]||REL_LABEL.related));
+const BOND_GAP=12;            // world px between two snapped cards: the seam the clasp sits in
+const SNAP_IN=18,SNAP_OUT=34; // screen px: how close a card must come to catch, and how far it must be pulled to let go
+const SNAP_ALIGN=10;          // screen px: edges and centres this close line up
+const SNAP_MIN_OVERLAP=28;    // world px of shared edge before two cards count as side by side
+let snapOn=store.get(".snap",true)!==false;
+const relBetween=(x,y)=>board.edges.find(e=>(e.a===x&&e.b===y)||(e.a===y&&e.b===x))||null;
+const relRect=n=>({x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)});
+const relCardOk=n=>!!n&&!n.tombstone&&n.type!=="group"&&!isNodeHidden(n);
+/* the seam between two cards that sit edge to edge (gap up to BOND_GAP plus slack), or null */
+function seamOf(a,b,slack=6){
+  if(!relCardOk(a)||!relCardOk(b))return null;
+  const A=relRect(a),B=relRect(b);
+  const gx=Math.max(B.x-(A.x+A.w),A.x-(B.x+B.w)),gy=Math.max(B.y-(A.y+A.h),A.y-(B.y+B.h));
+  const oy0=Math.max(A.y,B.y),oy1=Math.min(A.y+A.h,B.y+B.h),ox0=Math.max(A.x,B.x),ox1=Math.min(A.x+A.w,B.x+B.w);
+  const lim=BOND_GAP+slack;
+  if(gx>=-2&&gx<=lim&&oy1-oy0>=SNAP_MIN_OVERLAP){const L0=A.x<B.x?A:B,R0=A.x<B.x?B:A;return {o:"v",x:(L0.x+L0.w+R0.x)/2,y:(oy0+oy1)/2,len:oy1-oy0}}
+  if(gy>=-2&&gy<=lim&&ox1-ox0>=SNAP_MIN_OVERLAP){const T0=A.y<B.y?A:B,B0=A.y<B.y?B:A;return {o:"h",x:(ox0+ox1)/2,y:(T0.y+T0.h+B0.y)/2,len:ox1-ox0}}
+  return null;
+}
+function isBonded(e){if(!e||!e.rel||e.line)return false;return !!seamOf(byId(e.a),byId(e.b))}
+/* every card snapped to this one, directly or through others */
+function bondCluster(id){
+  const out=new Set([id]),q=[id];
+  for(let i=0;i<q.length;i++)for(const e of board.edges){
+    if(e.a!==q[i]&&e.b!==q[i])continue;const o=e.a===q[i]?e.b:e.a;
+    if(!out.has(o)&&isBonded(e)){out.add(o);q.push(o)}
+  }
+  return [...out];
+}
+/* make or confirm the one relation between two cards; returns {e, existed} */
+function makeRelation(src,dst,{via="wire",rel="related"}={}){
+  const ex=relBetween(src,dst);
+  if(ex){if(!ex.rel)ex.rel=rel;ex.by="you";if(via==="snap")delete ex.line;return {e:ex,existed:true}}
+  const e=edge(src,dst,"src","reference");if(!e)return {e:null,existed:false};
+  e.rel=rel;e.by="you";e.via=via;e.at=NOW();
+  return {e,existed:false};
+}
+function relSentence(e){
+  const a=byId(e.a),b=byId(e.b),ta=clip(a?titleOf(a):"",40),tb=clip(b?titleOf(b):"",40);
+  if(!e.rel||e.rel==="related")return L(`${ta} and ${tb} are related`,`${ta} 与 ${tb} 有关`);
+  const v=REL_VERB[e.rel];return L(`${ta} ${v[0]} ${tb}`,`${ta} ${v[1]} ${tb}`);
+}
+function setRelType(id,rel){
+  const e=board.edges.find(x=>x.id===id);if(!e||!REL_TYPES.includes(rel))return;
+  if(e.rel===rel&&e.by==="you"){paintRelPick();return}
+  checkpoint();e.rel=rel;e.by="you";
+  sfx("pop");log("you",esc(relSentence(e)),e.b);
+  renderAll();persist();paintRelPick();
+}
+function swapRelation(id){
+  const e=board.edges.find(x=>x.id===id);if(!e)return;
+  checkpoint();[e.a,e.b]=[e.b,e.a];sfx("tick");renderAll();persist();
+}
+function toggleRelLine(id){
+  const e=board.edges.find(x=>x.id===id);if(!e)return;
+  checkpoint();if(e.line)delete e.line;else e.line=true;freshEdges.add(e.id);setTimeout(()=>freshEdges.delete(e.id),1000);
+  sfx("tick");renderAll();persist();
+}
+function selectEdge(id){closeRelPick();selectedEdgeId=id;select([],{menus:false});closeMenu?.()}
+function setSnap(on){
+  snapOn=!!on;store.set(".snap",snapOn);sfx("tick");
+  const b=$("snapBtn");if(b){b.setAttribute("aria-pressed",String(snapOn));b.dataset.tip=snapOn?L("Smart snap on · M · hold ⌥ to skip","智能吸附已开 · M · 按住 ⌥ 临时关闭"):L("Smart snap off · M","智能吸附已关 · M")}
+  toast(snapOn?L("Smart snap on: cards that touch become related. Hold ⌥ while dragging to skip.","智能吸附已开：贴在一起的卡片会建立关系。拖动时按住 ⌥ 可临时跳过。"):L("Smart snap off","智能吸附已关闭"));
+}
+const relHaptic=()=>{try{if(matchMedia("(pointer:coarse)").matches)navigator.vibrate?.(8)}catch{}};
+
+/* ── the snap while dragging: catch, hold, let go ─────────────────────── */
+function snapPoolFor(ids){
+  const moving=new Set(ids);
+  return visibleNodes().filter(n=>!moving.has(n.id)&&relCardOk(n)&&n.status!=="sketch");
+}
+/* where the dragged card would sit next to a neighbour, or null. Catches within SNAP_IN, holds until SNAP_OUT. */
+function snapCandidate(g,x,y){
+  const p=byId(g.id);if(!p)return null;
+  const W=nodeW(p),H=nodeH(p),inR=SNAP_IN/cam.s,outR=SNAP_OUT/cam.s,al=SNAP_ALIGN/cam.s;
+  let best=null;
+  for(const t of g.snapPool||[]){
+    const T=relRect(t);
+    if(x>T.x+T.w+outR+BOND_GAP||x+W<T.x-outR-BOND_GAP||y>T.y+T.h+outR+BOND_GAP||y+H<T.y-outR-BOND_GAP)continue;
+    const ovY=Math.min(y+H,T.y+T.h)-Math.max(y,T.y),ovX=Math.min(x+W,T.x+T.w)-Math.max(x,T.x);
+    const tries=[
+      {side:"right",nx:T.x+T.w+BOND_GAP,d:Math.abs(x-(T.x+T.w+BOND_GAP)),ov:ovY},
+      {side:"left",nx:T.x-W-BOND_GAP,d:Math.abs(x-(T.x-W-BOND_GAP)),ov:ovY},
+      {side:"bottom",ny:T.y+T.h+BOND_GAP,d:Math.abs(y-(T.y+T.h+BOND_GAP)),ov:ovX},
+      {side:"top",ny:T.y-H-BOND_GAP,d:Math.abs(y-(T.y-H-BOND_GAP)),ov:ovX},
+    ];
+    for(const c of tries){
+      const held=g.snap&&g.snap.id===t.id&&g.snap.side===c.side;
+      if(c.d>(held?outR:inR)||c.ov<Math.min(SNAP_MIN_OVERLAP,(c.nx!=null?Math.min(H,T.h):Math.min(W,T.w))*.5))continue;
+      const score=c.d-(held?1e4:0);
+      if(!best||score<best.score)best={...c,id:t.id,T,score};
+    }
+  }
+  if(!best)return null;
+  /* line up an edge or the centre along the seam when it is close; otherwise the card slides freely along it */
+  let nx=best.nx,ny=best.ny,align=null;
+  if(nx!=null){
+    const opts=[["start",best.T.y],["center",best.T.y+best.T.h/2-H/2],["end",best.T.y+best.T.h-H]];
+    const hit=opts.map(([k,v])=>[k,v,Math.abs(y-v)]).filter(o=>o[2]<=al).sort((a,b)=>a[2]-b[2])[0];
+    ny=hit?hit[1]:y;align=hit?hit[0]:null;
+  }else{
+    const opts=[["start",best.T.x],["center",best.T.x+best.T.w/2-W/2],["end",best.T.x+best.T.w-W]];
+    const hit=opts.map(([k,v])=>[k,v,Math.abs(x-v)]).filter(o=>o[2]<=al).sort((a,b)=>a[2]-b[2])[0];
+    nx=hit?hit[1]:x;align=hit?hit[0]:null;
+  }
+  return {id:best.id,side:best.side,x:Math.round(nx),y:Math.round(ny),align,W,H,T:best.T};
+}
+/* called on every drag move: returns the (possibly magnetised) offset, and paints the preview */
+function snapDuring(g,dx,dy,ev){
+  const o=g.orig.find(o=>o.n.id===g.id);
+  if(!o||g.noSnap||!snapOn||ev.altKey||g.ids.length>12){if(g.snap){g.snap=null;paintSnapGuide(null)}document.body.classList.toggle("snap-skip",!!(ev.altKey&&snapOn&&!g.noSnap));return {dx,dy}}
+  document.body.classList.remove("snap-skip");
+  const c=snapCandidate(g,o.x+dx,o.y+dy);
+  const was=g.snap;
+  if(c&&(!was||was.id!==c.id||was.side!==c.side)){sfx("tick");magnetGlide(g)}
+  else if(!c&&was)magnetGlide(g);
+  g.snap=c;paintSnapGuide(c);
+  return c?{dx:c.x-o.x,dy:c.y-o.y}:{dx,dy};
+}
+/* a short glide as the card is caught or let go, so the jump reads as a magnet rather than a glitch */
+function magnetGlide(g){
+  if(calm())return;
+  for(const id of g.ids){const el=nodeEl(id);if(!el)continue;el.classList.add("magnet");clearTimeout(el._mg);el._mg=setTimeout(()=>el.classList.remove("magnet"),170)}
+}
+function paintSnapGuide(c){
+  const layer=$("relLayer");if(!layer)return;
+  let gd=layer.querySelector(".snap-guide"),al=layer.querySelector(".snap-align");
+  qsa(".card.snap-target",nodesEl).forEach(el=>{if(!c||el.dataset.id!==c.id)el.classList.remove("snap-target")});
+  if(!c){gd?.classList.remove("on");al?.classList.remove("on");return}
+  if(!gd){gd=document.createElement("div");gd.className="snap-guide";gd.innerHTML="<i></i>";layer.appendChild(gd)}
+  if(!al){al=document.createElement("div");al.className="snap-align";layer.appendChild(al)}
+  nodeEl(c.id)?.classList.add("snap-target");
+  const T=c.T,v=c.side==="left"||c.side==="right";
+  const sx=c.side==="right"?T.x+T.w+BOND_GAP/2:c.side==="left"?T.x-BOND_GAP/2:null;
+  const sy=c.side==="bottom"?T.y+T.h+BOND_GAP/2:c.side==="top"?T.y-BOND_GAP/2:null;
+  if(v){const y0=Math.max(c.y,T.y),y1=Math.min(c.y+c.H,T.y+T.h);gd.className="snap-guide o-v on";gd.style.cssText=`left:${sx}px;top:${y0}px;height:${Math.max(0,y1-y0)}px`}
+  else{const x0=Math.max(c.x,T.x),x1=Math.min(c.x+c.W,T.x+T.w);gd.className="snap-guide o-h on";gd.style.cssText=`left:${x0}px;top:${sy}px;width:${Math.max(0,x1-x0)}px`}
+  if(c.align){
+    const span=v?[Math.min(c.x,T.x),Math.max(c.x+c.W,T.x+T.w)]:[Math.min(c.y,T.y),Math.max(c.y+c.H,T.y+T.h)];
+    const at=v?(c.align==="start"?T.y:c.align==="end"?T.y+T.h:T.y+T.h/2):(c.align==="start"?T.x:c.align==="end"?T.x+T.w:T.x+T.w/2);
+    al.className="snap-align on "+(v?"o-h":"o-v");
+    al.style.cssText=v?`left:${span[0]}px;top:${at}px;width:${span[1]-span[0]}px`:`left:${at}px;top:${span[0]}px;height:${span[1]-span[0]}px`;
+  }else al.classList.remove("on");
+}
+/* bonded relations that a drag could pull apart: one end moves, the other stays */
+function bondsAtRisk(ids){const m=new Set(ids);return board.edges.filter(e=>(m.has(e.a)!==m.has(e.b))&&isBonded(e)).map(e=>e.id)}
+function watchTear(g){
+  if(!g.atRisk?.length)return;
+  for(const id of g.atRisk){
+    const e=board.edges.find(x=>x.id===id);if(!e)continue;
+    const torn=!isBonded(e);
+    if(torn&&!g.torn.has(id)){g.torn.add(id);freshEdges.add(id);sfx("unsnap")}
+    else if(!torn&&g.torn.has(id)){g.torn.delete(id);freshEdges.delete(id)}
+  }
+}
+/* the drop: a caught card becomes related to its neighbour; a pulled-away one keeps its relation as a line */
+function snapOnDrop(g){
+  document.body.classList.remove("snap-skip");
+  paintSnapGuide(null);
+  for(const id of g.torn||[])setTimeout(()=>freshEdges.delete(id),1000);
+  let made=null;
+  if(g.snap){
+    const c=g.snap,p=byId(g.id),t=byId(c.id),held=p&&t&&relBetween(p.id,t.id);
+    if(held&&(g.atRisk||[]).includes(held.id)){g.snap=null;return {made:null,torn:[...(g.torn||[])].filter(id=>{const e=board.edges.find(x=>x.id===id);return e&&!isBonded(e)})}}
+    if(p&&t){
+      const {e,existed}=makeRelation(p.id,t.id,{via:"snap"});
+      if(e){made=e;
+        log("you",existed?L(`Snapped <b>${esc(titleOf(p))}</b> to <b>${esc(titleOf(t))}</b> (already related)`,`把 <b>${esc(titleOf(p))}</b> 吸附到 <b>${esc(titleOf(t))}</b>（已有关系）`):L(`Snapped <b>${esc(titleOf(p))}</b> to <b>${esc(titleOf(t))}</b>: related`,`把 <b>${esc(titleOf(p))}</b> 吸附到 <b>${esc(titleOf(t))}</b>：有关`),t.id);
+        sfx("snap");relHaptic();
+        for(const id of [p.id,t.id]){const el=nodeEl(id);if(el&&!calm()){el.classList.remove("bond-pulse");void el.offsetWidth;el.classList.add("bond-pulse");setTimeout(()=>el.classList.remove("bond-pulse"),700)}}
+        freshClasps.add(e.id);setTimeout(()=>freshClasps.delete(e.id),900);
+      }
+    }
+    g.snap=null;
+  }
+  const torn=[...(g.torn||[])].filter(id=>{const e=board.edges.find(x=>x.id===id);return e&&!isBonded(e)});
+  return {made,torn};
+}
+function afterSnapDrop(res){
+  if(res.made)openRelPick(res.made.id);
+  else if(res.torn.length){
+    const id=res.torn[0],e=board.edges.find(x=>x.id===id);
+    toast(res.torn.length===1?L("Still related, now shown as a line","关系还在，已显示为连线"):L(`${res.torn.length} relations kept, now shown as lines`,`${res.torn.length} 条关系保留，已显示为连线`),
+      {actLabel:L("Unbind","解除关系"),onAct:()=>{for(const t of res.torn)if(board.edges.some(x=>x.id===t)){checkpoint();board.edges=board.edges.filter(x=>x.id!==t)}selectedEdgeId=null;sfx("remove");renderAll();persist()}});
+    if(e)log("you",L(`Pulled apart: ${esc(relSentence(e))}, kept as a line`,`拉开：${esc(relSentence(e))}，保留为连线`),e.b);
+  }
+}
+
+/* ── connectors onto relations: never a second one between the same two cards ─ */
+function wireTargetAt(x,y){
+  const under=document.elementsFromPoint(x,y);
+  const clasp=under.map(el=>el.closest?.(".clasp")).find(Boolean)||null;
+  const card=clasp?null:(under.map(el=>el.closest?.(".card")).find(Boolean)||null);
+  return {clasp,card};
+}
+function paintWireTarget(a,x,y){
+  qsa(".card.hit,.clasp.hit").forEach(c=>c.classList.remove("hit"));
+  const {clasp,card}=wireTargetAt(x,y);
+  if(clasp){const e=board.edges.find(z=>z.id===clasp.dataset.clasp);if(e){clasp.classList.add("hit");for(const id of bondCluster(e.a))if(id!==a.id)nodeEl(id)?.classList.add("hit")}}
+  else if(card&&card.dataset.id!==a.id)card.classList.add("hit");
+}
+/* a connector dropped on a card: a new relation, or the existing one opened for editing */
+function wireDrop(a,isIn,x,y){
+  qsa(".card.hit,.clasp.hit").forEach(c=>c.classList.remove("hit"));
+  const {clasp,card}=wireTargetAt(x,y);
+  if(clasp){
+    const ce=board.edges.find(z=>z.id===clasp.dataset.clasp);if(!ce){drawWires();return}
+    const members=bondCluster(ce.a).filter(id=>id!==a.id);let n=0;checkpoint();
+    for(const id of members){if(relBetween(a.id,id))continue;const r=makeRelation(isIn?id:a.id,isIn?a.id:id,{via:"wire"});if(r.e&&!r.existed){n++;freshEdges.add(r.e.id)}}
+    setTimeout(()=>freshEdges.clear(),1000);
+    sfx("connect");log("you",L(`Related <b>${esc(titleOf(a))}</b> to a snapped group of ${members.length}`,`把 <b>${esc(titleOf(a))}</b> 与 ${members.length} 张吸附在一起的卡片建立关系`),a.id);
+    renderAll();persist();
+    toast(n?L(`Related to all ${members.length} snapped cards`,`已与这组 ${members.length} 张卡片建立关系`):L("Already related to every card in that group","已经和这组每张卡片都有关系"),{undo:!!n});
+    return;
+  }
+  if(!card||card.dataset.id===a.id){drawWires();return}
+  const other=byId(card.dataset.id);if(!other){drawWires();return}
+  const ex=relBetween(a.id,other.id);
+  if(ex){
+    if(ex.by!=="you"||!ex.rel){checkpoint();ex.by="you";ex.rel=ex.rel||"related";persist()}
+    sfx("pop");selectEdge(ex.id);
+    toast(L("They're already related. Edit the relation here.","它们已经有关系了，可以在这里修改。"));
+    return;
+  }
+  const src=isIn?other:a,dst=isIn?a:other;
+  checkpoint();const {e}=makeRelation(src.id,dst.id,{via:"wire"});
+  if(!e){drawWires();return}
+  freshEdges.add(e.id);setTimeout(()=>freshEdges.delete(e.id),1000);
+  sfx("connect");log("you",L(`Related <b>${esc(titleOf(src))}</b> to <b>${esc(titleOf(dst))}</b>`,`把 <b>${esc(titleOf(src))}</b> 与 <b>${esc(titleOf(dst))}</b> 建立关系`),dst.id);
+  renderAll();persist();openRelPick(e.id);
+}
+
+/* ── the relation layer: clasps on seams, and what a line means ───────── */
+const freshClasps=new Set();
+function relPointerDown(e,el){
+  const id=el.dataset.clasp||el.dataset.reltag,ed=board.edges.find(x=>x.id===id);if(!ed)return false;
+  closeRelPick();
+  if(el.dataset.reltag){gesture={type:"relsel",id};wall.setPointerCapture(e.pointerId);return true}
+  const ids=bondCluster(ed.a);
+  gesture={type:"drag",id:ed.a,ids,sx:e.clientX,sy:e.clientY,orig:ids.map(i=>{const n=byId(i);return {n,x:n.x,y:n.y}}),moved:false,shift:false,target:e.target,wasSel:false,editHit:false,cx:e.clientX,cy:e.clientY,fromClasp:id,noSnap:true};
+  wall.setPointerCapture(e.pointerId);return true;
+}
+function paintRelLayer(bonds,tags){
+  const layer=$("relLayer");if(!layer)return;
+  const els=layer._els||(layer._els=new Map()),keep=new Set();
+  const put=(k,make,upd)=>{keep.add(k);let el=els.get(k);if(!el){el=make();el.dataset.k=k;layer.appendChild(el);els.set(k,el)}upd(el)};
+  for(const {e,s} of bonds){
+    put("c"+e.id,()=>{const b=document.createElement("button");b.type="button";b.className="clasp";b.innerHTML="<i></i>";b.dataset.clasp=e.id;return b},el=>{
+      const cls=`clasp o-${s.o} rel-${e.rel||"related"}${selectedEdgeId===e.id?" sel":""}${freshClasps.has(e.id)?" fresh":""}${el.classList.contains("hit")?" hit":""}`;
+      if(el.className!==cls)el.className=cls;
+      el.style.left=s.x+"px";el.style.top=s.y+"px";el.style.setProperty("--len",clamp(Math.round(s.len*.34),20,46)+"px");
+      const say=relSentence(e);
+      if(el._say!==say){el._say=say;el.setAttribute("aria-label",L(`Snapped: ${say}. Click to edit, drag to move them together.`,`已吸附：${say}。点击修改，拖动一起移动。`));el.title=say}
+    });
+  }
+  for(const {e,x,y} of tags){
+    put("t"+e.id,()=>{const b=document.createElement("button");b.type="button";b.className="rel-tag";b.dataset.reltag=e.id;return b},el=>{
+      const cls=`rel-tag rel-${e.rel}${selectedEdgeId===e.id?" sel":""}`;if(el.className!==cls)el.className=cls;
+      const t=relName(e.rel);if(el.textContent!==t)el.textContent=t;el.title=relSentence(e);
+      el.style.left=x+"px";el.style.top=y+"px";
+    });
+  }
+  for(const [k,el] of els)if(!keep.has(k)){els.delete(k);if(k[0]==="c"&&!calm()){el.classList.add("gone");setTimeout(()=>el.remove(),220)}else el.remove()}
+}
+
+/* ── the type picker after a snap or a new connector ──────────────────── */
+let relPickId=null,relPickTimer=0;
+function relAnchor(e){
+  const a=byId(e.a),b=byId(e.b);if(!a||!b)return null;
+  /* snapped: above the pair, so the picker never covers what the cards say; a line: at its middle */
+  const s=isBonded(e)?seamOf(a,b):null,m=s?{x:s.x,y:Math.min(a.y,b.y)-2}:edgeMidpoint(a,b),sp=toScreen(m.x,m.y),r=wall.getBoundingClientRect();
+  return {x:r.left+sp.x,y:r.top+sp.y};
+}
+function openRelPick(id){
+  const pop=$("relPick"),e=board.edges.find(x=>x.id===id);if(!pop||!e)return;
+  relPickId=id;paintRelPick();pop.hidden=false;
+  pop.classList.remove("in");void pop.offsetWidth;pop.classList.add("in");
+  placeRelPick();armRelPick(5200);
+}
+function armRelPick(ms){clearTimeout(relPickTimer);relPickTimer=setTimeout(closeRelPick,ms)}
+function placeRelPick(){
+  const pop=$("relPick");if(!pop||pop.hidden)return;
+  const e=board.edges.find(x=>x.id===relPickId),p=e&&relAnchor(e);if(!p){closeRelPick();return}
+  pop.style.left=clamp(p.x,150,innerWidth-150)+"px";pop.style.top=clamp(p.y,90,innerHeight-40)+"px";
+}
+function paintRelPick(){
+  const pop=$("relPick");if(!pop)return;const e=board.edges.find(x=>x.id===relPickId);if(!e)return;
+  const cur=e.rel||"related";
+  pop.innerHTML=`<span class="rp-k">${L("Relation","关系")}</span>${REL_TYPES.map((r,i)=>`<button type="button" class="rp-opt rel-${r}${r===cur?" on":""}" data-relpick="${r}" aria-pressed="${r===cur}" title="${esc(r==="related"?L("Related, nothing more. The crew won't read it as agreement.","只是有关，成员不会把它当作同意。"):relSentence({...e,rel:r}))} · ${i+1}"><i aria-hidden="true"></i>${esc(relName(r))}</button>`).join("")}`;
+}
+function closeRelPick(){
+  clearTimeout(relPickTimer);const pop=$("relPick");if(!pop||pop.hidden){relPickId=null;return}
+  relPickId=null;
+  if(calm()){pop.hidden=true;return}
+  pop.classList.remove("in");pop.classList.add("out");setTimeout(()=>{pop.classList.remove("out");if(!relPickId)pop.hidden=true},160);
+}
+
 
 /* ── rail ────────────────────────────────────────────────────────────── */
 function renderRail(){
@@ -7340,7 +7757,7 @@ function renderMargin(){queueMicrotask(placeBars);
     if(n.type==="group")return "";
     if(embedModel()&&!relFetchOnce.has(n.id)&&visibleNodes().some(x=>x.status==="ink"&&!ctxVecOf(x))){relFetchOnce.add(n.id);ctxEnsureEmbeddings(visibleNodes().filter(x=>x.status==="ink")).then(ok=>{if(ok&&focusId===n.id)renderMargin()})}
     const rows=relatedRows(n);if(!rows.length)return "";
-    return `<div class="m-sec m-related"><h5><span>${L("Related","相关")}</span><span>${rows.length}</span></h5><div class="srcs">${rows.map(r=>`<div class="src-row"><button type="button" class="src-btn" data-m="goto" data-id="${esc(r.n.id)}" title="${esc(r.why)}"><span class="src-kind">${esc(refKindShort(r.n))}</span><span class="sp">${esc(ctxLabel(r.n))}</span>${r.relation==="conflicts"?`<span class="src-pill danger">${L("Conflicts","相矛盾")}</span>`:""}</button></div>`).join("")}</div></div>`;
+    return `<div class="m-sec m-related"><h5><span>${L("Related","相关")}</span><span>${rows.length}</span></h5><div class="srcs">${rows.map(r=>`<div class="src-row"><button type="button" class="src-btn" data-m="goto" data-id="${esc(r.n.id)}" title="${esc(r.why)}"><span class="src-kind">${esc(refKindShort(r.n))}</span><span class="sp">${esc(ctxLabel(r.n))}</span>${r.by==="you"&&r.relation!=="related"?`<span class="src-pill rel-pill rel-${esc(r.relation)}">${esc(relName(r.relation))}</span>`:r.relation==="conflicts"?`<span class="src-pill danger">${L("Conflicts","相矛盾")}</span>`:""}</button></div>`).join("")}</div></div>`;
   })();
   const listHTML=n.type==="list"?(()=>{const items=n.items||[],done=items.filter(it=>it.done).length;return `<div class="m-sec"><h5><span>Items</span><span class="m-hmeta"><span>${done}/${items.length}</span>${done?`<button type="button" class="m-clear" data-m="clear-done" title="Remove completed items">Clear done</button>`:""}</span></h5>${todoListHTML(n,true)}</div>`})():n.type==="kanban"?(()=>{const cols=kanbanColsOf(n),cards=n.cards||[],lastId=cols[cols.length-1]?.id,done=cards.filter(c=>c.col===lastId).length;return `<div class="m-sec"><h5><span>Board</span><span class="m-hmeta"><span>${done}/${cards.length} done</span>${done?`<button type="button" class="m-clear" data-m="clear-kb-done" title="Remove completed cards">Clear done</button>`:""}</span></h5>${kanbanHTML(n,true)}</div>`})():n.type==="treemap"?(()=>{const {total,branches}=countTreeNodes(treeMapOf(n));return `<div class="m-sec"><h5><span>Tree Map</span><span class="m-hmeta"><span>${branches} ${branches===1?"branch":"branches"} · ${total} nodes</span></span></h5>${treemapHTML(n,true)}</div>`})():"";
   const synHTML=n.type==="synthesis"?`<div class="m-sec"><h5><span>Points</span><span>${(n.points||[]).length}</span></h5>${synPointsHTML(n,true)}</div>`:"";
@@ -14414,6 +14831,7 @@ function dispatchCanvasActionsRun(rawActions, opts={}){
         const a=resolveNodeId(act.from||act.source||act.a)||ctxNodes()[0]?.id;
         const b=resolveNodeId(act.to||act.target||act.b)||ctxNodes()[1]?.id;
         if(a&&b&&a!==b&&lockedOut(byId(b))){skipped.push({action:"link",from:a,to:b,locked:true});continue}
+        if(a&&b&&a!==b&&!opts.userIntent&&relBetween(a,b)?.by==="you"){skipped.push({action:"link",from:a,to:b,yours:true});continue}
         if(a&&b&&a!==b&&ruleFor("link")==="never"){skipped.push({action:"link",from:a,to:b});continue}
         if(a&&b&&a!==b&&ruleFor("link")==="suggest"&&!createdNodes.some(x=>x.id===a||x.id===b)){
           const pr=propose(who,opts.engine||"model","link",byId(b),{from:a,kind:act.kind||"derive",depType:act.depType||"live"});proposed.push({action:"propose-link",id:b,title:titleOf(byId(b)),proposal:pr.id});continue;
@@ -15546,6 +15964,9 @@ $("wirePop")?.addEventListener("click",e=>{
     if(eid&&db.dataset.wireDep){setEdgeDepType(eid,db.dataset.wireDep)}
     return;
   }
+  const rb=e.target.closest("[data-wire-rel]");if(rb){e.stopPropagation();setRelType(rb.dataset.wireEdge,rb.dataset.wireRel);return}
+  const sw=e.target.closest("[data-wire-swap]");if(sw){e.stopPropagation();swapRelation(sw.dataset.wireSwap);return}
+  const ln=e.target.closest("[data-wire-line]");if(ln){e.stopPropagation();toggleRelLine(ln.dataset.wireLine);return}
   const b=e.target.closest("[data-wire-del]");
   if(b){
     closeWirePopMenu();
@@ -15553,6 +15974,11 @@ $("wirePop")?.addEventListener("click",e=>{
   }
 });
 
+{const rp=$("relPick");if(rp){
+  rp.addEventListener("click",e=>{const b=e.target.closest("[data-relpick]");if(b&&relPickId){setRelType(relPickId,b.dataset.relpick);armRelPick(1300)}});
+  rp.addEventListener("pointerenter",()=>clearTimeout(relPickTimer));rp.addEventListener("pointerleave",()=>{if(relPickId)armRelPick(2200)});
+}}
+{const sb=$("snapBtn");if(sb){sb.setAttribute("aria-pressed",String(snapOn));if(!snapOn)sb.dataset.tip="Smart snap off · M"}}
 /* ── find bar, spatial align, duplicate/copy-paste, board backup ────── */
 function alignSelected(axis){
   const ns=selected();if(ns.length<2)return;
@@ -16138,7 +16564,7 @@ function helpDialog(opts={}){
   <div class="principle"><i style="border:1.5px dashed var(--label-3)"></i><span><b>See before you send</b>As you type, the board shows where the work will land and which cards will be read.</span></div>
   <dl class="keys"><dt>Click / Lasso</dt><dd>Select with V, circle with S (or ⇧+drag in Select) · hold Space to pan · click wires to disconnect</dd><dt>↵ or double-click</dt><dd>Open a card in place · Esc closes</dd><dt>Space</dt><dd>Preview a proof, direction or recording</dd>
   <dt>/ and @</dt><dd>Actions and crew in the composer · ⇥ makes a request more specific</dd><dt>] </dt><dd>Next suggestion waiting for you</dd>
-  <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · duplicate · copy &amp; paste selected cards</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd></dl>`;
+  <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · duplicate · copy &amp; paste selected cards</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
   if(!onBack){openDialog("How Lumen Works",body);return}
   dlg.className="sheet mem-sheet in-settings";
   dlg.innerHTML=`<header class="sh-head">${onBack?shBackBtn(onBack):`<span class="sys-ico" aria-hidden="true">${ic("question")}</span>`}
@@ -16296,6 +16722,17 @@ function sfx(kind){
         bell(659.25,.068,.011,0,{bend:.98,over:2,overGain:.2});
         bell(987.77,.09,.011,.018,{bend:1.01,over:2,overGain:.24});
         break;
+      // Magnetic clasp: two cards catch edge to edge (a felt click with a bright seal)
+      case"snap":
+        air(3600,2300,2.2,.011,.017,0);
+        bell(523.25,.05,.012,0,{bend:1.09,over:2,overGain:.18,atk:.0012});
+        bell(1046.5,.075,.0105,.013,{bend:.99,over:2,overGain:.24,atk:.0016});
+        break;
+      // Released: a soft upward breath as snapped cards come apart
+      case"unsnap":
+        air(1700,3100,1.4,.022,.011,0);
+        bell(880,.036,.0068,0,{bend:.93,over:1.5,overGain:.12,atk:.002});
+        break;
       // Subtle translucent reference lock
       case"dep":
         air(3100,2600,2.0,.012,.01,0);
@@ -16372,7 +16809,7 @@ function setTool(t){
 $("tools").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.tool)return setTool(b.dataset.tool);
   ({note:()=>newNoteAt(),files:()=>pickFilesFor("canvas"),tidy,undo,help:helpDialog})[b.dataset.act]?.()});
 wireOmniBar();
-$("topTools")?.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.ttool)return setTool(b.dataset.ttool);const a=b.dataset.tact;if(a==="tidy")return tidy();if(a==="files")return pickFilesFor("canvas");if(a==="undo")return undo();if(a==="redo")return redo()});
+$("topTools")?.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.ttool)return setTool(b.dataset.ttool);const a=b.dataset.tact;if(a==="snap")return setSnap(!snapOn);if(a==="tidy")return tidy();if(a==="files")return pickFilesFor("canvas");if(a==="undo")return undo();if(a==="redo")return redo()});
 $("boardImportIn")?.addEventListener("change",e=>{const f=e.target.files?.[0];if(f)importBoardFile(f);e.target.value=""});
 $("archiveBtn")?.addEventListener("click",archiveDialog);
 qs(".zoom").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const r=wall.getBoundingClientRect();
@@ -16772,9 +17209,10 @@ function resetCardWidth(n){
 wall.addEventListener("pointerdown",e=>{
   if(e.button===2)return;
   closeCardMenu();
-  closeWirePopMenu();
+  closeWirePopMenu();closeRelPick();
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2){const [a,b]=[...pointers.values()];gesture={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y),c:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};return}
+  {const rl=e.target.closest(".clasp,.rel-tag");if(rl&&e.button===0&&tool!=="hand"&&!spaceHeld){stopCam();if(relPointerDown(e,rl))return}}
   if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop,.tbl-block tbody td,.tbl-chart"))return;
   const card=e.target.closest(".card");const port=e.target.closest("[data-port]");const rsz=e.target.closest("[data-resize]");const wh=e.target.closest(".w-hit[data-edge]");stopCam();
   if(port&&card){selectedEdgeId=null;const n=byId(card.dataset.id);wireDrag={from:n,role:port.dataset.port==="in"?"in":"out",side:port.dataset.side||"right",d:""};gesture={type:"wire"};wall.setPointerCapture(e.pointerId);return}
@@ -16806,7 +17244,7 @@ wall.addEventListener("pointerdown",e=>{
       const inside=visibleNodes().filter(m=>m.id!==clicked.id&&m.type!=="group").filter(m=>{const cx=m.x+nodeW(m)/2,cy=m.y+nodeH(m)/2;return cx>=gx0&&cx<=gx1&&cy>=gy0&&cy<=gy1}).map(m=>m.id);
       ids=[...new Set([...ids,...inside])];
     }
-    gesture={type:"drag",id,ids,sx:e.clientX,sy:e.clientY,orig:ids.map(i=>{const n=byId(i);return {n,x:n.x,y:n.y}}),moved:false,shift:e.shiftKey||e.metaKey,target:e.target,wasSel:sel.length===1&&sel[0]===id,editHit:!!e.target.closest("[data-edit='text']"),cx:e.clientX,cy:e.clientY};
+    gesture={type:"drag",id,ids,sx:e.clientX,sy:e.clientY,orig:ids.map(i=>{const n=byId(i);return {n,x:n.x,y:n.y}}),moved:false,shift:e.shiftKey||e.metaKey,target:e.target,wasSel:sel.length===1&&sel[0]===id,editHit:!!e.target.closest("[data-edit='text']"),cx:e.clientX,cy:e.clientY,snapPool:snapPoolFor(ids),atRisk:bondsAtRisk(ids),torn:new Set(),noSnap:clicked?.type==="group"};
     wall.setPointerCapture(e.pointerId);return;
   }
   gesture={type:"pan",sx:e.clientX,sy:e.clientY,cx:cam.x,cy:cam.y,moved:false};wall.classList.add("panning");wall.setPointerCapture(e.pointerId);
@@ -16851,9 +17289,10 @@ wall.addEventListener("pointermove",e=>{
     drawWires();placeMargin();placeBars();return;
   }
   if(gesture.type==="drag"){const dx=(e.clientX-gesture.sx)/cam.s,dy=(e.clientY-gesture.sy)/cam.s;if(!gesture.moved&&Math.hypot(e.clientX-gesture.sx,e.clientY-gesture.sy)<4)return;
-    if(!gesture.moved){gesture.moved=true;checkpoint();if(selectedEdgeId){selectedEdgeId=null;renderWirePop?.()}if(!gesture.shift&&!sel.includes(gesture.id))select([gesture.id],{menus:false});gesture.ids.forEach(i=>nodeEl(i)?.classList.add("dragging"))}
-    for(const o of gesture.orig){o.n.x=Math.round(o.x+dx);o.n.y=Math.round(o.y+dy);const el=nodeEl(o.n.id);if(el){el.style.left=o.n.x+"px";el.style.top=o.n.y+"px"}}
-    drawWires();placeMargin();placeBars();return}
+    if(!gesture.moved){gesture.moved=true;checkpoint();if(selectedEdgeId){selectedEdgeId=null;renderWirePop?.()}if(gesture.fromClasp)select(gesture.ids,{menus:false});else if(!gesture.shift&&!sel.includes(gesture.id))select([gesture.id],{menus:false});gesture.ids.forEach(i=>nodeEl(i)?.classList.add("dragging"));document.body.classList.add("is-dragging-card")}
+    const m=snapDuring(gesture,dx,dy,e);
+    for(const o of gesture.orig){o.n.x=Math.round(o.x+m.dx);o.n.y=Math.round(o.y+m.dy);const el=nodeEl(o.n.id);if(el){el.style.left=o.n.x+"px";el.style.top=o.n.y+"px"}}
+    watchTear(gesture);drawWires();placeMargin();placeBars();return}
   if(gesture.type==="marquee"){
     const r=wall.getBoundingClientRect();
     gesture.w1=toWorld(e.clientX-r.left,e.clientY-r.top);
@@ -16880,12 +17319,13 @@ wall.addEventListener("pointermove",e=>{
     return;
   }
   if(gesture.type==="wire"){const a=wireDrag.from,p=toWorld(e.clientX,e.clientY),p1=portPoint(a,wireDrag.side),d=Math.max(48,Math.hypot(p.x-p1.x,p.y-p1.y)*.42);
-    wireDrag.d=`M${p1.x},${p1.y} C${p1.x+p1.vx*d},${p1.y+p1.vy*d} ${p.x-p1.vx*d},${p.y-p1.vy*d} ${p.x},${p.y}`;qsa(".card.hit").forEach(c=>c.classList.remove("hit"));const over=cardAt(e.clientX,e.clientY);if(over&&over.dataset.id!==a.id)over.classList.add("hit");drawWires()}
+    wireDrag.d=`M${p1.x},${p1.y} C${p1.x+p1.vx*d},${p1.y+p1.vy*d} ${p.x-p1.vx*d},${p.y-p1.vy*d} ${p.x},${p.y}`;paintWireTarget(a,e.clientX,e.clientY);drawWires()}
 });
 function endPointer(e){
   pointers.delete(e.pointerId);if(!gesture)return;const g=gesture;
   if(g.type==="pinch"){if(pointers.size<2)gesture=null;return}
   gesture=null;wall.classList.remove("panning");
+  if(g.type==="relsel"){selectEdge(g.id);return}
   if(g.type==="pan"&&!g.moved&&!e.target.closest(".card")){selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();closeMenu()}
   if(g.type==="resize"){
     document.body.classList.remove("is-resizing-w");
@@ -16899,8 +17339,9 @@ function endPointer(e){
     }else select([g.id]);
     return;
   }
-  if(g.type==="drag"){qsa(".dragging").forEach(c=>c.classList.remove("dragging"));
-    if(g.moved){g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist()}
+  if(g.type==="drag"){qsa(".dragging").forEach(c=>c.classList.remove("dragging","magnet"));document.body.classList.remove("is-dragging-card");
+    if(g.moved){const sr=snapOnDrop(g);g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();afterSnapDrop(sr)}
+    else if(g.fromClasp){selectEdge(g.fromClasp);return}
     else{const a=g.target.closest("[data-a]");if(a&&!a.matches("button")){act(a.dataset.a,byId(g.id),a);return}const hit=byId(g.id);if(!g.shift&&g.wasSel&&g.editHit&&hit?.type==="note"&&hit.status!=="sketch"){startEdit(g.id,"text",{clientX:g.cx,clientY:g.cy});return}select(g.shift?g.ids:[g.id])}}
   if(g.type==="marquee"){
     $("marquee").hidden=true;
@@ -16916,8 +17357,7 @@ function endPointer(e){
     select(g.add?[...new Set([...g.base,...hits])]:hits);
     return;
   }
-  if(g.type==="wire"){qsa(".card.hit").forEach(c=>c.classList.remove("hit"));const over=cardAt(e.clientX,e.clientY);const a=wireDrag.from,isIn=wireDrag.role==="in";wireDrag=null;
-    if(over&&over.dataset.id!==a.id){const other=byId(over.dataset.id),src=isIn?other:a,dst=isIn?a:other;checkpoint();edge(src.id,dst.id,"src","reference");sfx("connect");log("you",`Fed <b>${esc(titleOf(src))}</b> into <b>${esc(titleOf(dst))}</b>`,dst.id);renderAll();persist();toast(`${titleOf(src)} now feeds ${titleOf(dst)}`)}else drawWires()}
+  if(g.type==="wire"){const a=wireDrag.from,isIn=wireDrag.role==="in";wireDrag=null;wireDrop(a,isIn,e.clientX,e.clientY)}
 }
 wall.addEventListener("pointerup",endPointer);wall.addEventListener("pointercancel",endPointer);
 wall.addEventListener("wheel",e=>{
@@ -17084,7 +17524,7 @@ addEventListener("keydown",e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();if(findOpen)setOmniMode("cmd",{focus:true});else lineIn.focus();return}
   if((e.metaKey||e.ctrlKey)&&e.key==="."){e.preventDefault();openCopilot();return}
   if(typing)return;
-  if(e.key==="Escape"){if(cardMenuOpen){closeCardMenu();return}if($("wirePop")?.querySelector(".wp-dep-menu:not([hidden])")){closeWirePopMenu();return}if(openAdvNodeId){closeAdvPop();return}if(agentPopKey){toggleAgentPop(null);return}if(boardsPopOpen){toggleBoardsPop(false);$("projectBtn")?.focus();return}if(reviewPopOpen){toggleReviewPop(false);$("reviewBtn")?.focus();return}if(crewPopOpen){toggleCrewPop(false);$("crewSetBtn")?.focus();return}if(studioPopOpen){const wasKb=!!document.activeElement?.closest?.("#studioPop");toggleStudioPopover(false);if(wasKb)$("crewModeBtn")?.focus();return}if(genPop){const back=genPop==="ratio"?"genRatioBtn":"genModelBtn";const wasKb=!!document.activeElement?.closest?.(".go-drop");genPop=null;renderGenOpts(true);if(wasKb)$(back)?.focus();return}if(copilotOpen){openCopilot(false);return}if(findOpen){toggleFindBar(false);return}if(!$("ledger").hidden){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}if(focusId){e.preventDefault();closeFocus();return}selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();return}
+  if(e.key==="Escape"){if(relPickId){closeRelPick();return}if(cardMenuOpen){closeCardMenu();return}if($("wirePop")?.querySelector(".wp-dep-menu:not([hidden])")){closeWirePopMenu();return}if(openAdvNodeId){closeAdvPop();return}if(agentPopKey){toggleAgentPop(null);return}if(boardsPopOpen){toggleBoardsPop(false);$("projectBtn")?.focus();return}if(reviewPopOpen){toggleReviewPop(false);$("reviewBtn")?.focus();return}if(crewPopOpen){toggleCrewPop(false);$("crewSetBtn")?.focus();return}if(studioPopOpen){const wasKb=!!document.activeElement?.closest?.("#studioPop");toggleStudioPopover(false);if(wasKb)$("crewModeBtn")?.focus();return}if(genPop){const back=genPop==="ratio"?"genRatioBtn":"genModelBtn";const wasKb=!!document.activeElement?.closest?.(".go-drop");genPop=null;renderGenOpts(true);if(wasKb)$(back)?.focus();return}if(copilotOpen){openCopilot(false);return}if(findOpen){toggleFindBar(false);return}if(!$("ledger").hidden){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}if(focusId){e.preventDefault();closeFocus();return}selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();return}
   if(onBtn&&(e.key===" "||e.key==="Enter"))return;
   if(e.key===" "&&!spaceHeld){spaceHeld=true;wall.classList.add("hand");e.preventDefault();return}
   const latest=groups().get(currentPid());
@@ -17096,8 +17536,9 @@ addEventListener("keydown",e=>{
   if(e.shiftKey&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&e.key.toLowerCase()==="h"){if(sel.length){e.preventDefault();archiveNodes([...sel])}return}
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   const k=e.key.toLowerCase();
+  if(relPickId&&["1","2","3","4"].includes(k)){e.preventDefault();setRelType(relPickId,REL_TYPES[+k-1]);armRelPick(1300);return}
   if(k==="/"||k==="@"){e.preventDefault();lineIn.focus();lineIn.value=k;updateMenu();renderRoute();return}
-  if(k==="v")setTool("select");else if(k==="s")setTool("lasso");else if(k==="h")setTool("hand");else if(k==="n"){e.preventDefault();newNoteAt()}else if(k==="u"){e.preventDefault();pickFilesFor("canvas")}else if(k==="t")tidy();else if(k==="f")fitAll();
+  if(k==="v")setTool("select");else if(k==="s")setTool("lasso");else if(k==="h")setTool("hand");else if(k==="n"){e.preventDefault();newNoteAt()}else if(k==="u"){e.preventDefault();pickFilesFor("canvas")}else if(k==="t")tidy();else if(k==="m")setSnap(!snapOn);else if(k==="f")fitAll();
   else if(k==="l")$("ledgerBtn").click();else if(k==="?")helpDialog();else if(["1","2","3","4"].includes(k))flyToBay(+k-1);
   else if(k==="="||k==="+"){const r=wall.getBoundingClientRect();zoomAt(1.2,r.width/2,r.height/2)}else if(k==="-"){const r=wall.getBoundingClientRect();zoomAt(1/1.2,r.width/2,r.height/2)}
   else if(k==="r"){const g=[...groups().keys()].pop();if(g)redraw(g)}

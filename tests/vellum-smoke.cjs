@@ -1137,8 +1137,11 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         const n0 = requests.length;
         queue = [{ id: 'busy', match: 'ping429', status: 429, body: JSON.stringify({ error: { code: 429, details: [{ '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '1s' }] } }) }, { id: 'pong', match: 'ping429', text: 'pong' }];
         const r = await p.evaluate(async () => { const t = performance.now(); const v = await apiChat({ prompt: 'ping429' }); return { v, ms: performance.now() - t }; });
-        check('a per-minute 429 waits the retryDelay and tries again', r.v === 'pong' && r.ms >= 1000 && requests.length - n0 === 2, JSON.stringify(r));
-        check('and leaves room for a thinking model (max_tokens + 4096)', requests.at(-1).max === 2200 + 4096, String(requests.at(-1).max));
+        /* count only this call's requests: a crew member's own look at a card can land inside the one-second wait */
+        const asked = requests.slice(n0).filter(q => /ping429/.test(q.full)).map(q => q.matched);
+        check('a per-minute 429 waits the retryDelay and tries again', r.v === 'pong' && r.ms >= 1000 && asked.join() === 'busy,pong', JSON.stringify({ ...r, asked }));
+        const last429 = requests.slice(n0).filter(q => /ping429/.test(q.full)).at(-1);
+        check('and leaves room for a thinking model (max_tokens + 4096)', last429?.max === 2200 + 4096, String(last429?.max));
         queue = [{ id: 'short1', match: 'short-check', text: 'ok' }];
         await p.evaluate(() => apiChat({ prompt: 'short-check', maxTokens: 300 }));
         check('a short reply keeps its limit as a length cap', requests.at(-1).max === 300, String(requests.at(-1).max));

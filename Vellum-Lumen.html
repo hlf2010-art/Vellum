@@ -6646,7 +6646,7 @@ function evidencePopHTML(n){
     return `<li style="--i:${i}" class="ev-row ev-k-${k}">${k==="none"?'<span class="ev-ring" aria-hidden="true"></span>':`<span class="ev-k-g">${evBarsHTML(w.n)}</span>`}<span class="by-pop-txt"><b>${esc(k==="none"?L("Not rated","未评估"):weightLabel(k))}</b><small>${esc(k==="none"?L("Nobody has judged these yet.","还没有人判断过它们有多可信。"):weightDesc(k))}</small></span><span class="ev-n">${t[k]}</span></li>`}).join("");
   const u=t.none||0,acts=[];   // secondary first, primary last: the primary action sits bottom-right, where the eye lands
   if(ns.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("Show sources","查看来源"))}</button>`);
-  if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(L(`Rate ${u}`,`评估 ${u} 个`))}</button>`);
+  if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(L("Rate sources","评估来源"))}</button>`);
   return `<header class="ev-head ev-${v.k}">${evBarsHTML(v.bars)}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows?`<ul>${rows}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
 }
 function evidenceScale(n){const s=sourcesFor(n);if(!s.length)return L("No sources yet","暂无关联来源");return evidenceLine(tally(s),s.length)}

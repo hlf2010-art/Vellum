@@ -3202,18 +3202,24 @@ body.snap-skip #wall{cursor:copy}
 .crew-pop .crew-foot{display:flex;gap:8px;flex-wrap:wrap}
 .crew-pop .crew-foot .cbtn{height:var(--size-md);font-size:12px}
 .au-row .au-seg{width:auto;min-width:228px}
+:root{--seal-bg:var(--card);--seal-ink:var(--label-2);--seal-solid:var(--label)}  /* resolved at the root: a sticky's own ink colours must not reach the seal */
 /* who made it: a small seal on the card's top edge, only on crew work. Avatar alone at rest; its name slides out on hover
    or when the card is selected. A check on the avatar: drafted by the crew, confirmed by you. Gone in the overview. */
-.card .by-seal{--seal-ease:cubic-bezier(.32,.72,0,1);position:absolute;top:-10px;left:16px;z-index:7;display:flex;align-items:center;height:22px;max-width:22px;padding:2px;border-radius:var(--radius-pill);background:var(--card);box-shadow:0 0 0 .5px var(--hair-2),0 1px 3px rgba(11,12,14,.07);overflow:hidden;pointer-events:auto;cursor:default;transition:max-width var(--duration-spring) var(--seal-ease),opacity var(--duration-base) var(--easing-standard),transform var(--duration-base) var(--easing-standard)}
+.card .by-seal{--seal-ease:cubic-bezier(.32,.72,0,1);position:absolute;top:-10px;left:16px;z-index:7;display:flex;align-items:center;height:22px;max-width:22px;padding:2px;border-radius:var(--radius-pill);background:var(--seal-bg);box-shadow:0 0 0 .5px var(--hair-2),0 1px 3px rgba(11,12,14,.07);overflow:hidden;pointer-events:auto;cursor:default;transition:max-width var(--duration-spring) var(--seal-ease),opacity var(--duration-base) var(--easing-standard),transform var(--duration-base) var(--easing-standard)}
 .card .by-seal-av{position:relative;flex:none;width:18px;height:18px}
 .card .by-seal .mk{width:18px;height:18px;transition:none}
 .card .by-seal .mk svg{width:66%;height:66%;stroke-width:2}
-.card .by-seal-t{font:var(--text-caption);font-weight:560;letter-spacing:-.003em;color:var(--label-2);white-space:nowrap;overflow:hidden;max-width:0;padding:0;opacity:0;transform:translateX(-4px);transition:opacity var(--duration-base) var(--easing-standard),transform var(--duration-spring) var(--seal-ease),max-width var(--duration-spring) var(--seal-ease),padding var(--duration-spring) var(--seal-ease)}
-.card .by-seal-ok{position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border-radius:50%;background:var(--label);box-shadow:0 0 0 1.5px var(--card);display:grid;place-items:center}
-.card .by-seal-ok svg{width:10px;height:10px;fill:none;stroke:var(--card);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.card .by-seal-t{font:var(--text-caption);font-weight:560;letter-spacing:-.003em;color:var(--seal-ink);white-space:nowrap;overflow:hidden;max-width:0;padding:0;opacity:0;transform:translateX(-4px);transition:opacity var(--duration-base) var(--easing-standard),transform var(--duration-spring) var(--seal-ease),max-width var(--duration-spring) var(--seal-ease),padding var(--duration-spring) var(--seal-ease)}
+.card .by-seal-ok{position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border-radius:50%;background:var(--seal-solid);box-shadow:0 0 0 1.5px var(--seal-bg);display:grid;place-items:center}
+.card .by-seal-ok svg{width:10px;height:10px;fill:none;stroke:var(--seal-bg);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .card .by-seal:hover,.card.sel .by-seal{max-width:240px}
 .card .by-seal:hover .by-seal-t,.card.sel .by-seal-t{opacity:1;transform:none;max-width:214px;padding:0 8px 0 6px}
 .mk:has([data-a="copilot"]){--orb-ink:#3B3F47;--orb-bg:#EEF0F3}
+.card .by-seal .mk.person{background:var(--person);color:#fff;font:650 10px/1 var(--ui);letter-spacing:0}
+.card .by-seal .mk.person.anon{background:color-mix(in srgb,var(--seal-solid) 9%,var(--seal-bg));color:var(--seal-ink)}
+.sys-name{width:200px;max-width:56%;height:30px;padding:0 10px;border-radius:var(--radius-sm);border:0;background:var(--hover);box-shadow:inset 0 0 0 .5px var(--hair-2);color:var(--label);font:var(--text-body);outline:none}
+.sys-name:focus-visible{box-shadow:inset 0 0 0 1.5px var(--label-2)}
+.sys-name::placeholder{color:var(--label-3)}
 :root[data-theme="dark"] .mk:has([data-a="copilot"]){--orb-ink:#D7DAE0}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mk:has([data-a="copilot"]){--orb-ink:#D7DAE0}}
 #world.is-zoomed-out .card .by-seal,#world.is-moving .card .by-seal{opacity:0;transform:translateY(3px) scale(.86);pointer-events:none}
@@ -3896,7 +3902,10 @@ function engineOf(author){
   if(r&&NOW()-r.t<15000)return r.live===true?"model":r.live===false?"rules":"service";
   return "service";
 }
-function provFor(n){const author=n.by||"you";return {author,engine:engineOf(author),at:NOW(),basis:null}}
+function provFor(n){const author=n.by||"you",p={author,engine:engineOf(author),at:NOW(),basis:null};const me=author==="you"?myName():"";if(me)p.name=me;return p}
+/* The person's own name, set in Settings. Stamped on the cards they make (prov.name), so authorship survives
+   a board being shared later; cards made before a name was set show the current name. */
+function myName(){const v=store.get(".me","");return typeof v==="string"?v.trim().slice(0,40):""}
 const ENGINE_LABEL={human:["You","你"],model:["model","模型"],rules:["built-in rules","内置规则"],service:["local service","本地服务"]};
 function shadowOf(b){const m=new Map();for(const n of b.nodes)m.set(n.id,{d:digest(n),st:n.status,ar:!!n.archived,hd:!!n.hidden,by:n.by,type:n.type,title:clip(titleOf(n),60)});return {id:b.id,nodes:m,edges:new Set(b.edges.map(e=>e.a+">"+e.b))}}
 /* The change log keeps the last 500 entries, but a decision is the point of keeping a trail: what you kept,
@@ -5302,18 +5311,31 @@ function cardAuthorAgent(n){
   }
   return null;
 }
-/* Who made a card. Only crew work is marked; your own cards stay clean (one person per board in this version).
+/* Who made a card: every card names its maker, a person or a crew member, so contributors stay visible once a board is shared.
    The maker is the card's provenance (prov.author, else by), never someone who only commented on it.
    A crew card you kept, adopted or marked helpful carries a check: drafted by the crew, confirmed by you. */
 function creatorKey(n){const k=n?.prov?.author||n?.by;return k&&k!=="you"&&(AGENTS[k]||CREATORS[k])?k:null}
 function creatorOf(n){const k=creatorKey(n);return k?(AGENTS[k]||CREATORS[k]):null}
 function creatorKept(n){return !!(n&&(n.inked||n.vote==="up"||(n.type==="direction"&&board.adopted?.[n.idea]===n.id)))}
+/* A person's avatar is their initial on a solid colour (as in Figma and Miro); a crew member's is its sign on a tint.
+   Letters for people, symbols for the crew, so the two read apart at a glance. */
+const PERSON_HUES=["#D9486E","#0E8A7E","#4F5BD5","#C2561F","#7A5AF8","#2F7D32"];
+function personHue(name){let h=0;for(const ch of String(name||""))h=(h*31+ch.codePointAt(0))>>>0;return PERSON_HUES[h%PERSON_HUES.length]}
+function personInitial(name){const t=String(name||"").trim();if(!t)return"";const c=[...t][0];return /[a-z]/i.test(c)?c.toUpperCase():c}
+function personName(n){return n?.prov?.name||myName()}
 function creatorBadgeHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return"";   // a draft's header already says who suggested it
-  const a=creatorOf(n);if(!a)return"";
+  const a=creatorOf(n),me=myName();
+  if(!a){
+    const who=personName(n),ini=personInitial(who);
+    const label=who||L("You","你");
+    const tip=who?L(`Created by ${who}`,`由 ${who} 创建`):L("Created by you · set your name in Settings","你创建的 · 可在设置里填写名字");
+    const av=ini?`<span class="mk person" style="--person:${personHue(who)}">${esc(ini)}</span>`:`<span class="mk person anon">${AV.you}</span>`;
+    return `<span class="by-seal is-person" data-by="you" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="by-seal-av">${av}</span><span class="by-seal-t">${esc(label)}</span></span>`;
+  }
   const kept=creatorKept(n);
-  const label=kept?L(`${a.name} · kept by you`,`${a.name} 起草 · 你已确认`):L(a.name,`${a.name} 创建`);
-  const tip=kept?L(`Drafted by ${a.name}, kept by you`,`由 ${a.name} 起草，你已确认`):L(`Made by ${a.name}, not yet confirmed by you`,`由 ${a.name} 创建，你还没有确认`);
+  const label=kept?(me?L(`${a.name} · kept by ${me}`,`${a.name} 起草 · ${me} 已确认`):L(`${a.name} · kept by you`,`${a.name} 起草 · 你已确认`)):L(a.name,`${a.name} 创建`);
+  const tip=kept?(me?L(`Drafted by ${a.name}, kept by ${me}`,`由 ${a.name} 起草，${me} 已确认`):L(`Drafted by ${a.name}, kept by you`,`由 ${a.name} 起草，你已确认`)):L(`Made by ${a.name}, not yet confirmed`,`由 ${a.name} 创建，还没有人确认`);
   return `<span class="by-seal${kept?" kept":""}" data-by="${a.key}" title="${esc(tip)}" aria-label="${esc(tip)}"><span class="by-seal-av"><span class="mk">${AV[a.key]}</span>${kept?'<i class="by-seal-ok" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M3.3 6.2 5.2 8 8.7 4.3"/></svg></i>':""}</span><span class="by-seal-t">${esc(label)}</span></span>`;
 }
 function byline(n){return ""}   // superseded by creatorBadgeHTML: one mark per card, in one place
@@ -6448,7 +6470,7 @@ function nodeLineageSig(n){
   return refs.map(r=>`${r.sourceId}:${r.depType}:${r.status}:${r.node?(r.node.rev||1)+":"+digest(r.node):"T"}`).join("|");
 }
 
-function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
+function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
   n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
@@ -16585,6 +16607,7 @@ function systemSettingsDialog(){
       <div class="sys-group">
         <div class="sys-pref-row"><span class="sys-pref-lbl">${L("Appearance","外观")}</span><div class="sh-seg" role="group" aria-label="${L("Appearance","外观")}">${opt("auto",L("Auto","自动"))}${opt("light",L("Light","浅色"))}${opt("dark",L("Dark","深色"))}</div></div>
         <div class="sys-pref-row"><span class="sys-pref-lbl">${L("Language","语言")}</span><div class="sh-seg" role="group" aria-label="${L("Language","语言")}"><button type="button" data-lang="en" aria-pressed="${uiLang()==="en"}">English</button><button type="button" data-lang="zh" aria-pressed="${uiLang()==="zh"}">中文</button></div></div>
+      <div class="sys-pref-row"><label class="sys-pref-lbl" for="sysMyName">${L("Your name","你的名字")}</label><input type="text" id="sysMyName" class="sys-name" maxlength="40" autocomplete="name" spellcheck="false" placeholder="${esc(L("Shown on the cards you make","显示在你创建的卡片上"))}" value="${esc(myName())}"></div>
       <div class="sys-pref-row"><span class="sys-pref-lbl">${L("Sound effects","交互音效")}</span><div class="sys-sfx-ctrl"><div class="sys-vol${sfxEnabled()?"":" is-dim"}" id="sysSfxVolRow"><button type="button" class="sys-vol-test" data-sfx-test title="${L("Preview sound","试听音效")}" aria-label="${L("Preview sound","试听音效")}"${sfxEnabled()?"":" disabled"}>${sfxVolume()>0?'<svg class="ico" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>':'<svg class="ico" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M3 3l18 18"/></svg>'}</button><input type="range" min="0" max="100" step="5" value="${sfxVolume()}" style="--p:${sfxVolume()}%" data-sfx-vol aria-label="${L("Sound volume","音效音量")}"${sfxEnabled()?"":" disabled"}><span class="sys-vol-val" data-sfx-vol-txt>${sfxVolume()}%</span></div><button type="button" class="sys-sw" role="switch" aria-checked="${sfxEnabled()}" aria-label="${L("Sound effects","交互音效")}" data-sfx-sw></button></div></div>
       </div>
     </section>
@@ -16611,6 +16634,7 @@ function systemSettingsDialog(){
   if(sfxSw)sfxSw.onclick=()=>{const on=sfxSw.getAttribute("aria-checked")!=="true";store.set(".sfx",on?"on":"off");sfxSw.setAttribute("aria-checked",String(on));sfxVolRow?.classList.toggle("is-dim",!on);if(sfxSl)sfxSl.disabled=!on;if(sfxTst)sfxTst.disabled=!on;if(on)sfx("pop")};
   if(sfxSl){const icoOn='<svg class="ico" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>',icoOff='<svg class="ico" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M3 3l18 18"/></svg>';sfxSl.oninput=()=>{const v=clamp(Number(sfxSl.value)||0,0,100);store.set(".sfxVol",v);sfxSl.style.setProperty("--p",v+"%");if(sfxTxt)sfxTxt.textContent=v+"%";if(sfxTst)sfxTst.innerHTML=v>0?icoOn:icoOff;_sfxSetGain(v)};sfxSl.onchange=()=>sfx("pop")}
   if(sfxTst)sfxTst.onclick=()=>sfx("done");
+  {const nm=qs("#sysMyName",d);if(nm){const save=()=>{const v=nm.value.trim().slice(0,40);if(v)store.set(".me",v);else store.del(".me");renderNodes()};nm.oninput=save;nm.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();nm.blur()}}}}
   d.querySelectorAll("[data-act2]").forEach(b=>b.onclick=()=>{
     const a=b.dataset.act2;
     if(a==="memory")memoryDialog({onBack:systemSettingsDialog});

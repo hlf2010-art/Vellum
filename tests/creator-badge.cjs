@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Crew cards carry their maker's avatar; your own cards carry nothing.
+/* Every card names its maker: a crew member's sign, or your initial and name.
  * Drives the real Vellum-Lumen.html in headless Chromium.
  *
  *   node tests/creator-badge.cjs            (from the repo root)
@@ -40,7 +40,7 @@ async function open(browser, base, opts = {}) {
       const yours = all.filter(c => !c.by || c.by === 'you');
       const drafts = all.filter(c => c.status === 'sketch');
       check('every crew card on the board shows its maker', crewInk.length >= 6 && crewInk.every(c => c.seal === c.by), JSON.stringify(crewInk));
-      check('your own cards show no seal', yours.length >= 10 && yours.every(c => !c.seal), JSON.stringify(yours.filter(c => c.seal)));
+      check('your own cards show a seal too: "You" until you set a name', yours.length >= 10 && yours.filter(c => c.type !== 'group').every(c => c.seal === 'you' && c.label === 'You' && /set your name in Settings/.test(c.tip)), JSON.stringify(yours.filter(c => c.seal !== 'you')));
       check('drafts show no seal (their header already says who suggested them)', drafts.length >= 1 && drafts.every(c => !c.seal), JSON.stringify(drafts));
       const syn = all.find(c => c.type === 'synthesis'), dirs = await p.evaluate(() => board.nodes.filter(n => n.type === 'direction' && n.status === 'ink').map(n => ({ id: n.id, letter: n.letter, adopted: board.adopted[n.idea] === n.id, vote: n.vote })));
       const dB = dirs.find(d => d.adopted), dA = dirs.find(d => !d.adopted && d.vote === 'down');
@@ -86,7 +86,23 @@ async function open(browser, base, opts = {}) {
       const mine = yours.find(c => c.type === 'note' || c.type === 'source');
       await p.evaluate(id => { board.threads[id] = [{ who: 'critic', t: Date.now(), text: 'Where is this from?' }]; renderAll(); }, mine.id);
       const after = (await p.seals()).find(c => c.id === mine.id);
-      check('a crew comment on your card does not make it the crew\'s', !after.seal, JSON.stringify(after));
+      check('a crew comment on your card does not make it the crew\'s', after.seal === 'you', JSON.stringify(after));
+
+      // set a name in Settings: your cards say it, as an initial on a colour; confirmations say it too
+      await p.click('#settingsBtn'); await p.waitForTimeout(300);
+      await p.fill('#sysMyName', 'Mars'); await p.waitForTimeout(200);
+      await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+      const named = await p.seals();
+      const myCard = named.find(c => c.id === mine.id), synN = named.find(c => c.type === 'synthesis');
+      const av = await p.evaluate(id => { const m = document.querySelector(`[data-id="${id}"] .by-seal .mk`); return { text: m.textContent, bg: getComputedStyle(m).backgroundColor, color: getComputedStyle(m).color }; }, mine.id);
+      check('with a name set, your cards show it, with your initial as the avatar', myCard.label === 'Mars' && /Created by Mars/.test(myCard.tip) && av.text === 'M' && av.color === 'rgb(255, 255, 255)' && av.bg !== 'rgba(0, 0, 0, 0)', JSON.stringify({ myCard, av }));
+      check('a confirmed crew card says who confirmed it', /Scout · kept by Mars/.test(synN.label) && /kept by Mars/.test(synN.tip), JSON.stringify(synN));
+      const stamped = await p.evaluate(() => { const n = node('note', { text: 'Ask the QA lead' }, { x: 0, y: 0 }); renderAll(); return n.prov; });
+      check('a card made after the name is set records it (prov.name)', stamped.author === 'you' && stamped.name === 'Mars', JSON.stringify(stamped));
+      await p.evaluate(() => { store.set('.me', 'Someone Else'); renderAll(); });
+      const kept2 = (await p.seals()).find(c => c.id === mine.id), newer = (await p.seals()).find(c => c.label === 'Mars');
+      check('a card keeps the name it was made under; older ones follow the current name', kept2.label === 'Someone Else' && !!newer, JSON.stringify({ kept2, newer }));
+      await p.evaluate(() => { store.del('.me'); renderAll(); });
       check('B1 no page errors', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
@@ -112,12 +128,22 @@ async function open(browser, base, opts = {}) {
     // B3. Chinese labels, dark theme
     {
       const p = await open(browser, base, { zh: true, dark: true });
-      const all = (await p.seals()).filter(c => c.seal);
+      const all = (await p.seals()).filter(c => c.seal && c.seal !== 'you');
       const syn = all.find(c => c.type === 'synthesis'), other = all.find(c => !c.kept);
       check('Chinese: confirmed reads "起草 · 你已确认"', /Scout 起草 · 你已确认/.test(syn.label) && /你已确认/.test(syn.tip), JSON.stringify(syn));
-      check('Chinese: unconfirmed reads "创建"', /创建/.test(other.label) && /还没有确认/.test(other.tip), JSON.stringify(other));
+      check('Chinese: unconfirmed reads "创建"', /创建/.test(other.label) && /还没有人确认/.test(other.tip), JSON.stringify(other));
+      const me = (await p.seals()).find(c => c.seal === 'you');
+      check('Chinese: your own card reads "你"', me && me.label === '你', JSON.stringify(me));
       const bg = await p.evaluate(() => { const s = document.querySelector('.by-seal'); return [getComputedStyle(s).backgroundColor, getComputedStyle(s.closest('.card')).backgroundColor]; });
       check('dark: the seal sits on the card colour', bg[0] === bg[1], JSON.stringify(bg));
+      const ink = await p.evaluate(() => {
+        const n = board.nodes.find(n => n.type === 'note' && n.by === 'you'); sel = [n.id]; renderAll();
+        const s = document.querySelector(`[data-id="${n.id}"] .by-seal`), t = s.querySelector('.by-seal-t');
+        const rgb = c => c.match(/[\d.]+/g).map(Number), lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
+        const bgc = rgb(getComputedStyle(s).backgroundColor), fc = rgb(getComputedStyle(t).color), a = fc[3] ?? 1, mix = [0, 1, 2].map(i => fc[i] * a + bgc[i] * (1 - a));
+        const x = lum(mix), y = lum(bgc); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05);
+      });
+      check('dark: the name on a sticky\'s seal is readable (a sticky\'s own ink colours do not leak in)', ink >= 4.5, String(ink));
       check('B3 no page errors', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }

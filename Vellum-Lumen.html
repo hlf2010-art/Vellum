@@ -2729,10 +2729,17 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .m-paths .src-row .src-pill.ok{background:var(--card-3,var(--hover));color:var(--ok)}
 .m-paths .src-row .src-pill.on{background:var(--card-3,var(--hover));color:var(--label)}
 .m-paths .pth-round{margin:20px 0 8px;font:600 12px/1 var(--ui);color:var(--label-3)}
-.m-paths .pth-round:first-of-type{margin-top:10px}
+.m-paths .pth-round:first-of-type{margin-top:16px}
 .m-paths .srcs{gap:6px}
 .m-paths .pth-row{margin:0;padding:0;border-radius:var(--radius-md);background:var(--card-2)}
-.m-paths .pth-row.is-gone{display:flex;align-items:center;gap:8px;padding-right:10px;background:transparent;border:1px dashed color-mix(in srgb,var(--label) 18%,transparent)}
+.m-paths .pth-row.has-act{display:flex;align-items:center;gap:8px;padding-right:10px}
+.m-paths .pth-row.is-gone{background:transparent;border:1px dashed color-mix(in srgb,var(--label) 18%,transparent)}
+.m-paths .pth-res{grid-column:3;grid-row:1/span 2;font:600 12px/1 var(--ui);color:var(--label-3)}
+.m-paths .pth-res.failed{color:var(--danger-ink)}
+.m-paths .pth-res.passed{color:var(--ok)}
+.m-paths .pth-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:40px;margin-top:6px;border:1px dashed color-mix(in srgb,var(--label) 22%,transparent);border-radius:var(--radius-md);background:transparent;color:var(--label-2);font:550 13px/1 var(--ui);transition:background var(--d-quick),color var(--d-quick)}
+.m-paths .pth-add:hover{background:var(--hover);color:var(--label)}
+.m-paths .pth-add .ico{width:var(--icon-sm,14px);height:var(--icon-sm,14px)}
 .m-paths .pth-btn{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;row-gap:3px;align-items:center;flex:1;width:100%;min-width:0;margin:0;padding:10px 12px;border-radius:inherit;text-align:left;font:550 14px/1.35 var(--ui);color:var(--label)}
 .m-paths button.pth-btn:hover{background:color-mix(in srgb,var(--label) 4%,transparent)}
 .m-paths .pth-btn>.pth-chip{grid-column:1;grid-row:1/span 2;align-self:start}
@@ -2745,7 +2752,7 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .m-paths .pth-chip{position:relative;box-sizing:border-box;width:22px;height:22px;border-radius:var(--radius-chip);display:grid;place-items:center;background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--label) 22%,transparent);color:var(--label-2);font:650 11px/1 var(--ui)}
 .m-paths .pth-row.is-passed .pth-chip{color:var(--label);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--label) 42%,transparent)}
 .m-paths .pth-row.is-failed .pth-chip{color:var(--label-3)}
-.m-paths .pth-row.is-failed .pth-chip::after{content:"";position:absolute;inset:4px;background:linear-gradient(to top right,transparent calc(50% - .6px),currentColor calc(50% - .6px),currentColor calc(50% + .6px),transparent calc(50% + .6px))}
+.m-paths .pth-row.is-failed .pth-chip::after{content:"";position:absolute;inset:3px;background:linear-gradient(to top right,transparent calc(50% - .85px),currentColor calc(50% - .85px),currentColor calc(50% + .85px),transparent calc(50% + .85px))}
 .m-paths .pth-row.is-adopted .pth-chip{background:var(--act);color:var(--on-act);box-shadow:none}
 .m-paths .pth-round .m-clear{margin:-3px 0 -3px -7px}
 .m-paths .pth-row.is-gone .pth-chip,.m-paths .pth-row.is-draft .pth-chip{box-shadow:none;border:1px dashed color-mix(in srgb,var(--label) 30%,transparent);color:var(--label-3)}
@@ -7340,7 +7347,9 @@ function renderMargin(){queueMicrotask(placeBars);
   const relHTML=(()=>{
     if(n.type==="group")return "";
     if(embedModel()&&!relFetchOnce.has(n.id)&&visibleNodes().some(x=>x.status==="ink"&&!ctxVecOf(x))){relFetchOnce.add(n.id);ctxEnsureEmbeddings(visibleNodes().filter(x=>x.status==="ink")).then(ok=>{if(ok&&focusId===n.id)renderMargin()})}
-    const rows=relatedRows(n);if(!rows.length)return "";
+    /* a claim's own rounds and directions are already in its Paths list: Related does not repeat them */
+    const fam=pathsSheetHTML(n)?new Set(roundFamily(n).map(x=>x.id)):null;
+    const rows=relatedRows(n).filter(r=>!fam||!(fam.has(r.n.id)||r.n.type==="direction"&&fam.has(r.n.idea)));if(!rows.length)return "";
     return `<div class="m-sec m-related"><h5><span>${L("Related","相关")}</span><span>${rows.length}</span></h5><div class="srcs">${rows.map(r=>`<div class="src-row"><button type="button" class="src-btn" data-m="goto" data-id="${esc(r.n.id)}" title="${esc(r.why)}"><span class="src-kind">${esc(refKindShort(r.n))}</span><span class="sp">${esc(ctxLabel(r.n))}</span>${r.relation==="conflicts"?`<span class="src-pill danger">${L("Conflicts","相矛盾")}</span>`:""}</button></div>`).join("")}</div></div>`;
   })();
   const listHTML=n.type==="list"?(()=>{const items=n.items||[],done=items.filter(it=>it.done).length;return `<div class="m-sec"><h5><span>Items</span><span class="m-hmeta"><span>${done}/${items.length}</span>${done?`<button type="button" class="m-clear" data-m="clear-done" title="Remove completed items">Clear done</button>`:""}</span></h5>${todoListHTML(n,true)}</div>`})():n.type==="kanban"?(()=>{const cols=kanbanColsOf(n),cards=n.cards||[],lastId=cols[cols.length-1]?.id,done=cards.filter(c=>c.col===lastId).length;return `<div class="m-sec"><h5><span>Board</span><span class="m-hmeta"><span>${done}/${cards.length} done</span>${done?`<button type="button" class="m-clear" data-m="clear-kb-done" title="Remove completed cards">Clear done</button>`:""}</span></h5>${kanbanHTML(n,true)}</div>`})():n.type==="treemap"?(()=>{const {total,branches}=countTreeNodes(treeMapOf(n));return `<div class="m-sec"><h5><span>Tree Map</span><span class="m-hmeta"><span>${branches} ${branches===1?"branch":"branches"} · ${total} nodes</span></span></h5>${treemapHTML(n,true)}</div>`})():"";
@@ -10287,15 +10296,19 @@ function pathsSheetHTML(n){
   if(fam.length<2&&!dirsOf(n.id).length&&!discardedDirs(n).length)return "";
   const all=fam.flatMap(c=>dirsOf(c.id).filter(d=>!d.archived));
   const failed=all.filter(d=>d.outcome?.result==="failed").length;
-  const meta=[`${all.length} ${all.length===1?L("direction","个方向"):L("directions","个方向")}`,failed?`${failed} ${L("failed","个未通过")}`:"",fam.length>1?`${fam.length} ${L("rounds","轮")}`:""].filter(Boolean).join(" · ");
+  /* the round headings already show the rounds, so the count line does not repeat them */
+  const meta=[`${all.length} ${all.length===1?L("direction","个方向"):L("directions","个方向")}`,failed?`${failed} ${L("failed","个未通过")}`:""].filter(Boolean).join(" · ");
+  /* one quiet word at most per row: a result in its ink, or Draft. Adopted and open are said by the chip's shape */
   const row=(d,c)=>{
     const ad=board.adopted[c.id]===d.id,res=d.outcome?.result;
-    const pill=res?`<span class="src-pill ${res==="failed"?"danger":"ok"}">${outcomeWord(res)}</span>`:ad?`<span class="src-pill on">${L("Adopted","已采纳")}</span>`:d.status==="sketch"?`<span class="src-pill">${L("Draft","草稿")}</span>`:board.adopted[c.id]?`<span class="src-pill">${L("Not adopted","未采纳")}</span>`:"";
+    const word=res?`<span class="pth-res ${res}">${outcomeWord(res)}</span>`:d.status==="sketch"?`<span class="pth-res">${L("Draft","草稿")}</span>`:"";
     const why=res&&d.outcome.note?`<span class="pth-why">${esc(clip(d.outcome.note,120))}</span>`:"";
     const cls=["src-row","pth-row",res?"is-"+res:"",ad?"is-adopted":"",d.status==="sketch"?"is-draft":""].filter(Boolean).join(" ");
-    return `<div class="${cls}"><button type="button" class="pth-btn" data-m="goto" data-id="${esc(d.id)}"><span class="pth-chip">${esc(d.letter)}</span><span class="sp">${esc(d.title)}</span>${why}${pill}</button></div>`;
+    const tip=ad?L("Adopted","已采纳"):d.status==="sketch"?L("Draft","草稿"):res?outcomeWord(res):L("Open","未定");
+    const back=ad?`<button type="button" class="src-act" data-m="go-back" data-id="${esc(c.id)}">${L("Go back","回到这里")}</button>`:"";
+    return `<div class="${cls}${back?" has-act":""}"><button type="button" class="pth-btn" data-m="goto" data-id="${esc(d.id)}"><span class="pth-chip" title="${esc(tip)}" aria-label="${esc(`${d.letter} · ${tip}`)}">${esc(d.letter)}</span><span class="sp">${esc(d.title)}</span>${why}${word}</button>${back}</div>`;
   };
-  const gone=c=>discardedDirs(c).slice(-4).reverse().map(r=>`<div class="src-row pth-row is-gone"><div class="pth-btn"><span class="pth-chip">${esc(r.meta?.letter||"·")}</span><span class="sp">${esc(clip(r.title,60))}</span>${r.reason?`<span class="pth-why">${esc(clip(r.reason,120))}</span>`:""}<span class="src-pill">${L("Discarded","已舍弃")}</span></div><button type="button" class="src-act" data-m="bring-back" data-id="${esc(r.id)}">${L("Bring back","找回")}</button></div>`).join("");
+  const gone=c=>discardedDirs(c).slice(-4).reverse().map(r=>`<div class="src-row pth-row is-gone has-act"><div class="pth-btn"><span class="pth-chip" title="${esc(L("Discarded","已舍弃"))}" aria-label="${esc(`${r.meta?.letter||""} · ${L("Discarded","已舍弃")}`)}">${esc(r.meta?.letter||"·")}</span><span class="sp">${esc(clip(r.title,60))}</span>${r.reason?`<span class="pth-why">${esc(clip(r.reason,120))}</span>`:""}</div><button type="button" class="src-act" data-m="bring-back" data-id="${esc(r.id)}">${L("Bring back","找回")}</button></div>`).join("");
   const body=fam.map(c=>{
     const ds=dirsOf(c.id).filter(d=>!d.archived).sort((a,b)=>String(a.letter).localeCompare(String(b.letter)));
     const label=L(`Round ${c.round||1}`,`第 ${c.round||1} 轮`);
@@ -10303,8 +10316,9 @@ function pathsSheetHTML(n){
     const rows=ds.map(d=>row(d,c)).join("")+gone(c);
     return head+`<div class="srcs">${rows||`<p style="margin:0;font:12.5px/1.5 var(--ui);color:var(--label-3)">${L("No directions yet.","还没有方向。")}</p>`}</div>`;
   }).join("");
-  const acts=`<div class="pth-acts">${board.adopted[n.id]?`<button type="button" class="cbtn" data-m="go-back">${ic("undo")}${L("Go back here","回到这里")}</button>`:""}<button type="button" class="cbtn" data-m="new-round">${ic("lineage")}${L("New round","新一轮")}</button></div>`;
-  return `<div class="m-sec m-paths"><h5><span>${L("Paths","路径")}</span><span>${esc(meta)}</span></h5>${body}${acts}</div>`;
+  /* the next round appears where this placeholder sits: at the foot of the list */
+  const add=`<button type="button" class="pth-add" data-m="new-round">${ic("plus")}${L(`New round ${Math.max(1,...fam.map(x=>x.round||1))+1}`,`开始第 ${Math.max(1,...fam.map(x=>x.round||1))+1} 轮`)}</button>`;
+  return `<div class="m-sec m-paths"><h5><span>${L("Paths","路径")}</span><span>${esc(meta)}</span></h5>${body}${add}</div>`;
 }
 /* a direction's sheet: how its test came out, recorded by the designer */
 function resultSheetHTML(n){
@@ -15565,7 +15579,7 @@ $("margin").addEventListener("click",e=>{
   if(a==="goto"){const t=byId(b.dataset.id);if(t){closeFocus();setTimeout(()=>{select([t.id]);focusNodes([t],Math.max(cam.s,.8))},320)}else toast("That source is no longer on the wall.");return}
   if(a==="weight"){checkpoint();n.weight=n.weight===b.dataset.w?null:b.dataset.w;n.updated=NOW();log("you",`Marked <b>${esc(titleOf(n))}</b> as ${WEIGHTS[n.weight]?.label?.toLowerCase()||"unweighed"}`,n.id);renderAll();persist();return}
   if(a==="outcome"){if(n){const v=qs("#mResNote",$("margin"))?.value;setOutcome(n,n.outcome?.result===b.dataset.r?null:b.dataset.r,v)}return}
-  if(a==="go-back"){if(n)goBack(n.type==="direction"?byId(n.idea):n);return}
+  if(a==="go-back"){const c=b.dataset.id?byId(b.dataset.id):n&&(n.type==="direction"?byId(n.idea):n);if(c)goBack(c);return}
   if(a==="new-round"){if(n){const c=n.type==="direction"?byId(n.idea):n;closeFocus();setTimeout(()=>newRound(byId(c?.id)),calm()?0:220)}return}
   if(a==="bring-back"){bringBack(b.dataset.id);return}
   if(a==="post")return postMargin();

@@ -791,7 +791,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('a discarded direction keeps its letter, plan and test in the record', rec && rec.meta && rec.meta.letter === 'D' && rec.meta.test === 'Two of three Xero users connect it' && rec.meta.mode === 'desk', JSON.stringify(rec && rec.meta));
       await p.evaluate(id => { select([id]); openFocus(id); }, ids.claim); await p.waitForTimeout(600);
       r = await p.evaluate(() => { const s = document.querySelector('#margin .m-paths'); return s ? { text: s.innerText.replace(/\s+/g, ' '), back: !!s.querySelector('[data-m="bring-back"]'), goBack: !!s.querySelector('[data-m="go-back"]'), round: !!s.querySelector('[data-m="new-round"]') } : null; });
-      check('the claim\'s sheet lists every path and how it ended', !!r && /Paths/.test(r.text) && /3 directions · 1 failed/.test(r.text) && /Concierge chasing 1 of 5 kept using it Failed/.test(r.text) && /Narrow to Xero Discarded/.test(r.text), r && r.text);
+      check('the claim\'s sheet lists every path and how it ended', !!r && /Paths/.test(r.text) && /3 directions · 1 failed/.test(r.text) && /Concierge chasing 1 of 5 kept using it Failed/.test(r.text) && /Narrow to Xero/.test(r.text) && !/Not adopted|Adopted/.test(r.text), r && r.text);
       check('it offers Bring back and New round, and no Go back while nothing is adopted', r && r.back && r.round && !r.goBack, JSON.stringify(r));
       {
         const bad = await p.evaluate(LEGIBILITY, '#margin .m-paths');

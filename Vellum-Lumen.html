@@ -117,15 +117,41 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 #wires,#sketchpad,#preview{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
 #wires{z-index:2}#nodes{position:relative}#preview{z-index:4}#sketchpad{z-index:5}
 
+:root{--zone:rgba(255,255,255,.3);--zone-2:rgba(255,255,255,.62);--zone-edge:rgba(11,12,14,.055);--zone-rule:rgba(11,12,14,.12);--zone-dash:rgba(11,12,14,.2)}
+:root[data-theme="dark"]{--zone:rgba(255,255,255,.016);--zone-2:rgba(255,255,255,.04);--zone-edge:rgba(255,255,255,.06);--zone-rule:rgba(255,255,255,.12);--zone-dash:rgba(255,255,255,.2)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--zone:rgba(255,255,255,.016);--zone-2:rgba(255,255,255,.04);--zone-edge:rgba(255,255,255,.06);--zone-rule:rgba(255,255,255,.12);--zone-dash:rgba(255,255,255,.2)}}
 .bay{position:absolute;top:-260px;height:4200px;pointer-events:none}
-.bay-head{position:absolute;left:80px;top:100px;display:flex;align-items:baseline;gap:14px}
-.bay-head .step{font:500 16px/1 var(--mono);color:var(--label-3);font-variant-numeric:tabular-nums;transform:translateY(-2px)}
-.bay-head h2{margin:0;font:650 46px/1 var(--ui);letter-spacing:-.04em;color:var(--label)}
-.bay-head p{margin:0;font:450 16px/1.2 var(--ui);color:var(--label-3);letter-spacing:-.012em}
-.bay-empty{position:absolute;left:80px;top:320px;width:420px;pointer-events:auto;display:grid;gap:8px}
-.bay-empty .glyph{display:none}
-.bay-empty h3{margin:0;font:600 21px/1.2 var(--ui);letter-spacing:-.025em;color:var(--label-2)}
-.bay-empty p{margin:0;font:14px/1.5 var(--ui);color:var(--label-3);max-width:40ch}
+/* lanes are zones: a tinted band under each, a hairline between them; every other lane a shade deeper */
+.bay-zone{position:absolute;left:18px;right:18px;top:64px;bottom:0;border-radius:36px 36px 0 0;background:var(--zone);box-shadow:inset 0 0 0 1px var(--zone-edge)}
+.bay-1 .bay-zone,.bay-3 .bay-zone{background:var(--zone-2)}
+.bay-head{position:absolute;left:62px;right:62px;top:96px;display:flex;align-items:center;gap:14px;padding-bottom:22px;border-bottom:1.5px solid var(--zone-rule)}
+.bay-ico{width:calc(44px * max(1, var(--inv-s,1) * .8));height:calc(44px * max(1, var(--inv-s,1) * .8));flex:none;display:grid;place-items:center;border-radius:14px;background:var(--card);color:var(--label-2);box-shadow:0 0 0 1px var(--zone-edge)}
+.bay-ico .ico{width:calc(24px * max(1, var(--inv-s,1) * .8));height:calc(24px * max(1, var(--inv-s,1) * .8));stroke-width:1.6}
+.bay-head h2{margin:0;font:650 calc(44px * max(1, var(--inv-s,1) * .8))/1 var(--ui);flex:none;letter-spacing:-.04em;color:var(--label)}
+.bay-head p{margin:0;font:500 calc(17px * var(--inv-s,1))/1.25 var(--ui);color:var(--label-2);letter-spacing:-.012em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bay-head .bay-lock{margin-left:auto;flex:none}
+/* the way into an empty lane */
+.bay-start{position:absolute;left:62px;top:300px;width:600px;box-sizing:border-box;pointer-events:auto;display:flex;gap:22px;align-items:flex-start;padding:30px 32px;border-radius:28px;
+  background:color-mix(in srgb,var(--card) 72%,transparent);border:2px dashed var(--zone-dash);color:var(--label);text-align:left;
+  transition:border-color var(--d-quick),background var(--d-quick),transform var(--t-bouncy) var(--bouncy),box-shadow var(--d-quick)}
+.bay-start[data-bay-go]{cursor:pointer}
+.bay-start[data-bay-go]:hover,.bay-start:focus-visible,.bay-start.bs-drop:hover{border-color:var(--focus);background:var(--card);box-shadow:0 14px 40px -18px rgba(11,12,14,.28)}
+.bay-start[data-bay-go]:active{transform:scale(.99)}
+.bay-start.bs-pick{border-style:solid;border-color:var(--zone-edge)}
+.bs-ico{width:56px;height:56px;flex:none;display:grid;place-items:center;border-radius:18px;background:var(--card-2);color:var(--label-2)}
+.bs-ico .ico{width:28px;height:28px;stroke-width:1.6}
+.bay-start:hover .bs-ico,.bay-start:focus-visible .bs-ico{color:var(--focus)}
+.bs-txt{display:grid;gap:8px;min-width:0}
+.bs-txt h3{margin:0;font:650 26px/1.15 var(--ui);letter-spacing:-.03em;color:var(--label)}
+.bs-txt p{margin:0;font:450 17px/1.45 var(--ui);color:var(--label-2);max-width:38ch}
+.bs-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.bs-btn,.bs-chip{font:550 16px/1 var(--ui);height:42px;padding:0 18px;border-radius:12px;background:var(--card-2);color:var(--label);display:inline-flex;align-items:center;gap:8px;max-width:100%;box-sizing:border-box;
+  transition:background var(--d-quick),transform var(--t-bouncy) var(--bouncy)}
+.bs-btn:hover,.bs-chip:hover{background:var(--hover);transform:translateY(-1px)}
+.bs-btn.solid{background:var(--act);color:var(--on-act)}
+.bs-btn.solid:hover{background:var(--act);filter:brightness(1.12)}
+.bs-chip{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:inline-block;line-height:42px}
+.bs-chip b{font-weight:700;margin-right:8px;color:var(--label-2)}
 
 /* ── cards: solid = decided ─────────────────────────────────────────── */
 .card{position:absolute;z-index:3;background:var(--card);border-radius:var(--radius-card);box-shadow:var(--card-shadow);user-select:none;-webkit-user-select:none;touch-action:none;
@@ -207,6 +233,15 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .by-pop .ev-act.primary{background:var(--label);color:var(--card)}
 .by-pop .ev-act.primary:hover{background:color-mix(in srgb,var(--label) 86%,var(--card))}
 .ev-line .ev-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-wrap{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:100%}
+.ev-empty .ev-txt{color:var(--label-3)}
+.ev-ctr{flex:none;display:inline-flex;align-items:center;gap:5px;font:600 12px/1 var(--ui);color:var(--danger);white-space:nowrap}
+.ev-ctr::before{content:"";width:12px;height:0;border-top:1.5px dashed currentColor}
+.by-pop .ev-ctr-dot{width:14px;height:0;border-top:2px dashed var(--danger)}
+.by-pop .ev-k-ctr b{color:var(--danger)}
+.foot-branch{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px 0 10px;border-radius:var(--radius-sm);background:var(--label);color:var(--card);font:600 12px/1 var(--ui);flex:none;transition:transform var(--t-bouncy) var(--bouncy),filter var(--d-quick)}
+.foot-branch .ico{width:13px;height:13px}
+.foot-branch:hover{transform:translateX(2px);filter:brightness(1.15)}
 .card .foot .weight{flex:none}
 .th-cnt{display:inline-flex;align-items:center;gap:3.5px}
 .th-mk{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;background:color-mix(in srgb,var(--label) 10%,transparent);flex:none;color:var(--label-2)}
@@ -2983,7 +3018,7 @@ body.snap-skip #wall{cursor:copy}
 .rel-pick.in{animation:relPickIn .34s var(--bouncy) both}
 .rel-pick.out{opacity:0;transform:translate(-50%,-100%) scale(.96);transition:opacity .15s,transform .15s}
 @keyframes relPickIn{from{opacity:0;transform:translate(-50%,-100%) translateY(6px) scale(.9)}}
-.rel-pick .rp-k{font:600 11px/1 var(--ui);color:var(--label-3);padding:0 6px 0 8px;letter-spacing:.01em}
+.rel-pick .rp-k{font:600 11px/1 var(--ui);color:var(--label-3);padding:0 6px 0 8px;letter-spacing:.01em;white-space:nowrap;flex:none}
 .rel-pick .rp-opt{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px 0 9px;border-radius:var(--radius-pill);font:600 12px/1 var(--ui);color:var(--label-2);background:transparent;
   transition:background var(--d-quick,.15s),color var(--d-quick,.15s),transform var(--d-press,.09s)}
 .rel-pick .rp-opt i{width:7px;height:7px;border-radius:50%;background:var(--rc);box-shadow:0 0 0 2px color-mix(in srgb,var(--rc) 20%,transparent);transition:transform .25s var(--bouncy)}
@@ -3009,7 +3044,7 @@ body.snap-skip #wall{cursor:copy}
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
     <div id="dots" aria-hidden="true"></div>
     <div id="world">
-      <div id="bays" aria-hidden="true"></div>
+      <div id="bays"></div>
       <svg id="wires" aria-hidden="true"></svg>
       <div id="nodes"></div>
       <div id="relLayer"></div>
@@ -3034,7 +3069,7 @@ body.snap-skip #wall{cursor:copy}
       <button type="button" class="review" id="reviewBtn" hidden><i></i><span id="reviewTxt">1 waiting</span></button>
       <div class="part" id="partSw" role="radiogroup" aria-label="How much the crew joins in on this board"></div>
       <div class="crew" id="crew" role="group" aria-label="Crew"></div>
-      <button type="button" class="arch-btn sys-btn" id="settingsBtn" aria-haspopup="dialog" aria-label="System Settings" title="System Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button type="button" class="arch-btn sys-btn" id="settingsBtn" hidden aria-haspopup="dialog" aria-label="System Settings" title="System Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
   <div id="island" class="island" data-mode="idle" role="region" aria-label="Background tasks"></div>
@@ -3201,6 +3236,35 @@ body.snap-skip #wall{cursor:copy}
 
 /* crew level pill, crew popover, locks */
 .crew-group{display:inline-flex;align-items:center;gap:6px;padding:0 3px 0 0;border-radius:var(--radius-pill)}
+/* the one entry: the crew's marks, and words only when something is wrong */
+.crew-hub{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 10px 0 5px;border-radius:var(--radius-pill);background:var(--chrome);box-shadow:var(--chrome-shadow);color:var(--label-2);font:560 13px/1 var(--ui);transition:background var(--d-quick),color var(--d-quick),transform var(--duration-press)}
+.crew-hub:hover,.crew-hub[aria-expanded="true"]{background:var(--card);color:var(--label)}
+.crew-hub:active{transform:scale(.97)}
+.crew-hub:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.hub-mks{display:inline-flex;align-items:center}
+.hub-mk{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;box-shadow:0 0 0 2px var(--card);margin-left:-7px;transition:transform var(--t-bouncy) var(--bouncy)}
+.hub-mk:first-child{margin-left:0}
+.hub-mk .mk{width:26px;height:26px}
+.crew-hub:hover .hub-mk:nth-child(2){transform:translateX(2px)}.crew-hub:hover .hub-mk:nth-child(3){transform:translateX(4px)}.crew-hub:hover .hub-mk:nth-child(4){transform:translateX(6px)}
+.crew-hub.off .hub-mk .mk{filter:saturate(.35)}
+.hub-mk.busy{box-shadow:0 0 0 2px var(--card),0 0 12px 2px var(--bloom)}
+.crew-hub .hub-l{white-space:nowrap}
+.crew-hub .cm-chev{width:12px;height:12px;color:var(--label-3);transition:transform var(--d-quick)}
+.crew-hub[aria-expanded="true"] .cm-chev{transform:rotate(180deg)}
+.hub-box{display:grid;gap:8px}
+.hub-seats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.hub-seat.seat{width:auto;height:auto;border-radius:var(--radius-md);display:flex;align-items:center;gap:9px;padding:7px 8px;background:var(--card-2);text-align:left;transform:none!important}
+.hub-seat.seat:hover{background:var(--hover)}
+.hub-seat .mk{width:28px;height:28px;flex:none}
+.hub-seat-t{display:grid;gap:2px;min-width:0}
+.hub-seat-t b{font:600 13px/1.2 var(--ui);color:var(--label)}
+.hub-seat-t small{font:500 11.5px/1.2 var(--ui);color:var(--label-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hub-row.crew-mode{width:100%;height:auto;min-height:44px;padding:8px 10px 8px 12px;border-radius:var(--radius-md);background:var(--card-2);box-shadow:none;gap:10px;justify-content:flex-start}
+.hub-row.crew-mode:hover{background:var(--hover)}
+.hub-row-t{display:grid;gap:2px;text-align:left;flex:1;min-width:0}
+.hub-row-t>span{font:600 13px/1.2 var(--ui);color:var(--label)}
+.hub-row-t small{font:500 12px/1.2 var(--ui);color:var(--label-2)}
+.hub-row .hub-go{width:13px;height:13px;transform:rotate(-90deg);color:var(--label-3)}
 .crew-set{position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:var(--radius-pill);color:var(--label-2);background:var(--chrome);box-shadow:var(--chrome-shadow)}
 .crew-set:hover{color:var(--label)}
 .crew-set .ico{width:17px;height:17px}
@@ -3243,7 +3307,7 @@ body.snap-skip #wall{cursor:copy}
 .adv-pin{transition:opacity .38s var(--easing-standard),scale .38s var(--easing-standard),transform var(--duration-press) ease-out,border-color .2s,box-shadow .2s}
 .is-focus .adv-pin{opacity:0!important;scale:.86;pointer-events:none}
 .crew-seats{transition:opacity .45s var(--easing-standard),filter .45s}
-.is-focus .crew-seats{opacity:.42;filter:saturate(.2)}
+.is-focus .crew-seats,.is-focus #crewSetBtn .hub-mks{opacity:.42;filter:saturate(.2)}
 .is-focus #advStream,.adv-quiet #advStream{display:none!important}
 /* the catch-up after Focus: one short list, under the switch */
 .review-pop.catch-pop{width:min(384px,calc(100vw - 28px));max-height:calc(100vh - 90px);padding:14px 14px 12px;gap:10px;transform-origin:top right;animation:cu-in .42s var(--easing-standard) both}
@@ -3271,7 +3335,7 @@ body.snap-skip #wall{cursor:copy}
 .catch-pop .cu-foot small{flex:1;font:450 11.5px/1.4 var(--ui);color:var(--label-3)}
 .catch-pop .cu-foot .cbtn{height:30px;padding:0 14px;font-size:12.5px;flex:none}
 @media (prefers-reduced-motion:reduce){.catch-pop,.catch-pop .cu-list li{animation:none!important}}
-.review-pop.crew-pop{width:min(372px,calc(100vw - 28px));max-height:calc(100vh - 80px);padding:16px 18px 18px;display:grid;gap:16px}
+.review-pop.crew-pop{z-index:49;width:min(372px,calc(100vw - 28px));max-height:calc(100vh - 80px);padding:16px 18px 18px;display:grid;gap:16px}
 .crew-pop .cp-pop-head{display:grid;gap:0;padding-bottom:4px}
 .crew-pop .crew-why{font:450 11.5px/1.35 var(--ui);color:var(--label-3);margin-top:3px}
 .crew-pop .cp-pop-head b{font:650 14px/1.2 var(--ui);letter-spacing:-.018em;color:var(--label)}
@@ -3584,10 +3648,10 @@ const ic=(n,c="ico")=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">
 
 const BAY=1000;
 const BAYS=[
-  {n:"01",name:"Gather",zh:"收集素材",sub:"Evidence, recordings & notes",zhSub:"实测记录、文档、截图与笔记",icon:'<path d="M4 7.5 6 4h12l2 3.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 8h16M10 12h4"/>',empty:["No evidence yet","Drag recordings, screenshots, notes or text files here, then rate how strong each source is."],zhEmpty:["还没有素材","将文档、录屏、截图或便签拖到这里，并标注每份素材的证据可信度。"]},
-  {n:"02",name:"Explore",zh:"探索方向",sub:"Ideas & directions to test",zhSub:"想法与待验证方向",icon:'<path d="M12 20V11M12 11 6 4M12 11l6-7"/><circle cx="12" cy="20" r="1.5"/>',empty:["No idea yet","Write your idea in the bar below. Strategist can branch it into directions worth testing."],zhEmpty:["还没有想法","在下方输入框写下你的想法，Strategist 会帮你拆出多个待验证方向。"]},
-  {n:"03",name:"Prototype",zh:"制作原型",sub:"Interactive builds & proofs",zhSub:"根据选定方向生成的交互原型",icon:'<rect x="3.5" y="5" width="17" height="13" rx="3"/><path d="M8 21h8M3.5 9h17"/>',empty:["No prototypes yet","Adopt a direction and Wright will build a working prototype from the sources it rests on."],zhEmpty:["还没有原型","采纳一个方向后，Wright 会基于上游素材直接生成可交互原型。"]},
-  {n:"04",name:"Snapshot",zh:"定稿分享",sub:"Frozen editions to share",zhSub:"锁定版本的离线快照与分享包",icon:'<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',empty:["No snapshots yet","A snapshot is a frozen standalone HTML edition of a prototype. Open any prototype and choose Snapshot."],zhEmpty:["还没有定稿快照","定稿快照是锁定某版原型的独立 HTML，打开任意原型点击 Snapshot 即可生成。"]},
+  {n:"01",name:"Gather",zh:"收集素材",sub:"Evidence: what people did and said",zhSub:"证据：用户做了什么、说了什么",icon:'<path d="M4 7.5 6 4h12l2 3.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 8h16M10 12h4"/>',empty:["No evidence yet","Drag recordings, screenshots, notes or text files here, then rate how strong each source is."],zhEmpty:["还没有素材","将文档、录屏、截图或便签拖到这里，并标注每份素材的证据可信度。"]},
+  {n:"02",name:"Explore",zh:"探索方向",sub:"Judgments, and directions to test them",zhSub:"判断，以及检验它的方向",icon:'<path d="M12 20V11M12 11 6 4M12 11l6-7"/><circle cx="12" cy="20" r="1.5"/>',empty:["No idea yet","Write your idea in the bar below. Strategist can branch it into directions worth testing."],zhEmpty:["还没有想法","在下方输入框写下你的想法，Strategist 会帮你拆出多个待验证方向。"]},
+  {n:"03",name:"Prototype",zh:"制作原型",sub:"Prototypes branched from a direction",zhSub:"从方向分支出的原型",icon:'<rect x="3.5" y="5" width="17" height="13" rx="3"/><path d="M8 21h8M3.5 9h17"/>',empty:["No prototypes yet","Adopt a direction and Wright will build a working prototype from the sources it rests on."],zhEmpty:["还没有原型","采纳一个方向后，Wright 会基于上游素材直接生成可交互原型。"]},
+  {n:"04",name:"Snapshot",zh:"定稿分享",sub:"Frozen editions to share",zhSub:"锁定版本，用于分享",icon:'<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',empty:["No snapshots yet","A snapshot is a frozen standalone HTML edition of a prototype. Open any prototype and choose Snapshot."],zhEmpty:["还没有定稿快照","定稿快照是锁定某版原型的独立 HTML，打开任意原型点击 Snapshot 即可生成。"]},
 ];
 const bayName=b=>uiLang()==="zh"?b.zh:b.name;
 const baySub=b=>uiLang()==="zh"?b.zhSub:b.sub;
@@ -4192,9 +4256,18 @@ function connHealth(){
   const k=aiPref==="local"?"rules":c.tone==="err"?"error":c.engine!=="rules"?"ok":"none";
   return {k,tip:c.mode+(c.issue?" · "+c.issue:"")};
 }
+/* the crew and the connection, inside the one entry */
+function paintHub(mode){
+  const box=$("hubSeats");if(!box)return;
+  mode=mode||aiSource();
+  box.innerHTML=`<div class="hub-seats" role="group" aria-label="AI Crew">${Object.values(AGENTS).map(a=>{const st=crewState[a.key];const waiting=board.nodes.some(n=>n.status==="sketch"&&n.by===a.key);
+      const stt=st?.busy?(st.status||L("working","工作中")):waiting?L("waiting for you","等你确认"):L("free","空闲");
+      return `<button type="button" class="seat hub-seat${st?.busy?" busy":""}" data-agent="${a.key}" aria-label="${a.name}: ${esc(stt)}"><span class="mk">${a.mk}</span><span class="hub-seat-t"><b>${a.name}</b><small>${esc(clip(stt,24))}</small></span></button>`}).join("")}</div>
+    <button type="button" id="crewModeBtn" class="hub-row crew-mode ${mode.cls||""}" aria-haspopup="dialog" aria-expanded="${studioPopOpen}" title="${esc(mode.title)}"><b></b><span class="hub-row-t"><span>${L("Model","模型")}</span><small>${esc(mode.label)}</small></span>${ic("chev","ico hub-go")}</button>`;
+}
 function renderCrewPop(){
   const pop=$("crewPop");if(!pop)return;
-  pop.hidden=!crewPopOpen;renderCrew?.();if(!crewPopOpen)return;
+  pop.hidden=!crewPopOpen;if(!renderCrew._in)renderCrew?.();   // built while closed too, so the model row is always current
   const btn=$("crewSetBtn");
   if(btn){const r=btn.getBoundingClientRect();pop.style.top=Math.round(r.bottom+8)+"px";pop.style.right=Math.max(14,Math.round(innerWidth-r.right))+"px"}
   const unread=unreadPins(),held=advHeld;
@@ -4203,12 +4276,13 @@ function renderCrewPop(){
   const quiet=crewQuietReason();
   const why=quiet&&quiet.k==="ceiling"?quiet.tip:""; // only when it changes what the crew does; "no model" is said once, on the connection chip
   const unreadTxt=unread>1?L(`${unread} thoughts waiting`,`${unread} 条建议等你查看`):L("A thought is waiting","有一条建议等你查看");
-  pop.innerHTML=`<div class="cp-pop-head"><b>${L("Crew","成员")}</b>${why?`<span class="crew-why">${esc(why)}</span>`:""}</div>
+  pop.innerHTML=`<div class="cp-pop-head"><b>${L("Crew","成员")}</b>${why?`<span class="crew-why">${esc(why)}</span>`:""}</div><div id="hubSeats" class="hub-box"></div>
     ${firstUnread?`<div class="crew-wait"><span><b>${esc(unreadTxt)}</b>${held?`<small>${esc(L(`${held} card${held>1?"s":""} held back until you read`,`${held} 张卡片暂缓，读完后出现`))}</small>`:""}</span><button type="button" class="cbtn" data-crew-show="${esc(firstUnread)}">${L("Show","查看")}</button></div>`:""}
     ${(board.held||[]).length?(()=>{const hs=board.held,last=hs[hs.length-1];return `<div class="crew-wait crew-held"><span><b>${esc(L(`Held back ${hs.length} idea${hs.length>1?"s":""} you turned down`,`略过了 ${hs.length} 个你否决过的想法`))}</b><small>${esc(clip(last.text,70))}</small></span><button type="button" class="cbtn" data-crew-held>${L("Show","查看")}</button></div>`})():""}
     <div class="crew-axis"><div class="crew-axis-h"><b id="crew-act-l">${L("Acts on the board","在画板上动手")}</b><button type="button" class="crew-link" data-crew-custom>${L("Customize","自定义")}</button></div>${seg("act",ACT_LEVELS,ACT_LABEL,autonomyCustom?"":crewAct)}<p>${autonomyCustom?esc(autonomyPlain()):L(ACT_DESC[crewAct][0],ACT_DESC[crewAct][1])} ${L("Cards you kept change only when you accept.","你确认过的卡片只有你同意才会改。")}</p></div>
     <div class="crew-sec"><b>${L("Locked lanes","锁定的泳道")}</b><div class="crew-locks">${BAYS.map((b,i)=>{const on=lockedBays().includes(i);return `<button type="button" class="crew-lock" data-crew-lock="${i}" aria-pressed="${on}">${on?ic("lock"):""}${esc(bayName(b))}</button>`}).join("")}</div><span>${L("Kept cards in a locked lane are yours alone. Lock single cards from their menu.","锁定泳道里已确认的卡片只有你能改。单张卡片可在其菜单里锁定。")}</span></div>
-    <div class="crew-foot"><button type="button" class="cbtn" data-crew-memory>${ic("book")}${L("Memory","记忆")}</button></div>`;
+    <div class="crew-foot"><button type="button" class="cbtn" data-crew-memory>${ic("book")}${L("Memory","记忆")}</button><button type="button" class="cbtn" data-crew-settings>${ic("settings")}${L("Settings","设置")}</button></div>`;
+  paintHub();
 }
 function toggleCrewPop(force){
   const next=force===undefined?!crewPopOpen:!!force;if(next===crewPopOpen)return;crewPopOpen=next;
@@ -5420,11 +5494,7 @@ function sampleShowcase(){
   const prevBoard=board;board=b;
   const T=NOW(),min=60000;
   const at=(n,ago)=>{n.created=T-ago*min;return n};
-  // Bay Groups framing the 4-stage workflow
-  at(node("group",{title:"01 · Gather · Telemetry, Concept & Brief",gw:936,gh:1340},{x:32,y:16}),260);
-  at(node("group",{title:"02 · Explore · Synthesis, Thesis & Forks",gw:936,gh:1340},{x:1032,y:16}),200);
-  at(node("group",{title:"03 · Prototype · Interactive HUD & Proof",gw:936,gh:1340},{x:2032,y:16}),120);
-  at(node("group",{title:"04 · Snapshot · Spec & Sprint",gw:936,gh:1340},{x:3032,y:16}),45);
+  // no lane-wide groups: the lanes themselves are the zones (a group the size of a lane only repeats its name)
 
   // 01 · GATHER
   const padBrief=at(node("notepad",{title:"Project Brief · Ashen Crown HUD",weight:"observed",text:"Design Pillar: Zero pause-screen menu fatigue during Kowloon street infiltration.\n\nTarget Outcome: Player reads syndicate trust shifts and ambush risk in under 1.2s without breaking stealth camera lock.\n\nHard Non-Goals:\n- No full-screen radial wheel slowdowns\n- No top-right toast spam during rooftops\n- Colorblind legibility required in neon rain"},{x:60,y:100}),255);
@@ -5679,12 +5749,56 @@ function flyToBay(i){
 
 /* Part 2 · rendering: bays, cards, wires, rail, crew, margin, proposal bars, toasts, ledger */
 
+/* Lanes are zones, not steps: a tinted band with a header that says what lives there, no step numbers, and
+   cards go anywhere (evidence can sit beside the judgment it backs). An empty lane is a way in: a drop target for
+   evidence, a judgment to write, a direction to prototype, a prototype to freeze. Each starts the action itself. */
 function renderBays(){
-  const used=new Set(visibleNodes().filter(n=>n.status==="ink").map(bayOf));
-  $("bays").innerHTML=BAYS.map((b,i)=>{const em=bayEmpty(b);return `<div class="bay" style="left:${i*BAY}px;width:${BAY}px">
-    <div class="bay-head"><span class="step">${b.n}</span><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" title="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic("lock")}</button></div>
-    ${used.has(i)?"":`<div class="bay-empty"><span class="glyph"><svg class="ico" viewBox="0 0 24 24">${b.icon}</svg></span><h3>${esc(em[0])}</h3><p>${esc(em[1])}</p></div>`}
-  </div>`}).join("");
+  /* a lane invites only while nothing of its kind exists anywhere: cards can live in any lane */
+  const ink=visibleNodes().filter(n=>n.status==="ink"),used=new Set(ink.map(bayOf));
+  const has=[ink.some(isMaterial),ink.some(n=>n.type==="idea"||n.type==="synthesis"),ink.some(n=>n.type==="proof"),ink.some(n=>n.type==="print")];
+  $("bays").innerHTML=BAYS.map((b,i)=>`<div class="bay bay-${i}" style="left:${i*BAY}px;width:${BAY}px">
+    <div class="bay-zone" aria-hidden="true"></div>
+    <div class="bay-head"><span class="bay-ico" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24">${b.icon}</svg></span><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" title="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic("lock")}</button></div>
+    ${used.has(i)||has[i]?"":bayStartHTML(i)}
+  </div>`).join("");
+}
+/* the way into an empty lane: what to do next, and a control that does it */
+function bayStartHTML(i){
+  const ink=t=>visibleNodes().filter(n=>n.type===t&&n.status==="ink");
+  const chip=(n,a,label)=>`<button type="button" class="bs-chip" data-bay-go="${a}" data-id="${n.id}" title="${esc(titleOf(n))}">${label}</button>`;
+  const tile=(cls,act,ico,h,p,extra="")=>`<div class="bay-start ${cls}" ${act?`data-bay-go="${act}" role="button" tabindex="0"`:""} aria-label="${esc(h)}"><span class="bs-ico" aria-hidden="true">${ico}</span><div class="bs-txt"><h3>${esc(h)}</h3><p>${esc(p)}</p>${extra}</div></div>`;
+  if(i===0)return tile("bs-drop","files",'<svg class="ico" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 14v4a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></svg>',
+    L("Drop a recording, screenshot or note","拖入一条录音、截图或笔记"),L("Then say what it is: watched first-hand, or what someone told you.","再标明它是什么：亲眼看到的，还是别人告诉你的。"),
+    `<div class="bs-acts"><button type="button" class="bs-btn solid" data-bay-go="files">${esc(L("Choose files","选择文件"))}</button><button type="button" class="bs-btn" data-bay-go="note">${esc(L("Write a note","写一条笔记"))}</button></div>`);
+  if(i===1)return tile("bs-write","claim",'<svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>',
+    L("Write your core judgment","写下你的核心判断"),L("One sentence you believe and could be wrong about. Evidence you drag beside it backs it or counters it.","一句你相信、但可能是错的话。拖到它旁边的证据会支持或反驳它。"));
+  if(i===2){const ds=ink("direction").filter(d=>!setAsideFor(d)&&!outputsOf(d.id).some(o=>o.type==="proof")).slice(0,4);
+    const ico='<svg class="ico" viewBox="0 0 24 24"><path d="M6 4v6a4 4 0 0 0 4 4h8"/><path d="m15 10.5 3.5 3.5-3.5 3.5"/><circle cx="6" cy="4" r="1.6"/></svg>';
+    if(ds.length)return tile("bs-pick","",ico,L("Pick a direction to prototype","选一个方向做原型"),L("The prototype branches from it and keeps what it rests on.","原型会从它分支出来，并带上它依据的证据。"),
+      `<div class="bs-acts">${ds.map(d=>chip(d,"build",`<b>${esc(d.letter||"")}</b>${esc(clip(d.title,34))}`)).join("")}</div>`);
+    /* no direction yet: offer to branch a judgment, which is where directions come from */
+    const cs=ink("idea").slice(0,3);if(!cs.length)return "";
+    return tile("bs-pick","",ico,L("Branch a judgment into directions","把一个判断分支成几个方向"),L("Each direction comes with a test it could fail. Pick one, and its prototype starts here.","每个方向都带一个可能失败的测试。选定一个，原型就从这里开始。"),
+      `<div class="bs-acts">${cs.map(c=>chip(c,"fork",esc(clip(c.text||titleOf(c),40)))).join("")}</div>`)}
+  const ps=ink("proof").slice(0,4);if(!ps.length)return "";
+  return tile("bs-pick","",'<svg class="ico" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>',
+    L("Freeze a prototype to share","锁定一个原型来分享"),L("A snapshot won't change, even if the prototype does.","快照不会再变，即使原型后来改了。"),
+    `<div class="bs-acts">${ps.map(p=>chip(p,"print",esc(clip(titleOf(p),38)))).join("")}</div>`);
+}
+function bayGo(a,el){
+  const id=el?.dataset.id,n=id&&byId(id);
+  if(a==="files")return pickFilesFor("gather");
+  if(a==="note"){newNoteAt({x:80+W.note/2+40,y:140});return}
+  if(a==="claim")return startClaim();
+  if(a==="build"&&n)return build(n);
+  if(a==="fork"&&n)return fork(n,3);
+  if(a==="print"&&n)return pullPrint(n);
+}
+/* a new judgment where the Explore lane invites one; left empty, it goes away again */
+function startClaim(at){
+  checkpoint();const pos=at||freeSpot(BAY+80,60,W.idea||320,180);
+  const n=node("idea",{kind:"Claim",text:""},pos);sfx("create");renderAll();select([],{menus:false});
+  const el=nodeEl(n.id);el?.classList.add("born");startEdit(n.id,"text");return n;
 }
 
 /* ── cards ───────────────────────────────────────────────────────────── */
@@ -5789,7 +5903,7 @@ function contribGroupHTML(n){
 const byPop={el:null,for:null,openT:0,closeT:0};
 function byPopEl(){if(byPop.el)return byPop.el;const d=document.createElement("div");d.id="byPop";d.className="by-pop";d.setAttribute("role","dialog");d.hidden=true;document.body.appendChild(d);
   d.addEventListener("pointerenter",()=>clearTimeout(byPop.closeT));
-  d.addEventListener("click",e=>{const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for),ns=evSourcesOf(n);closeByPop(0);
+  d.addEventListener("click",e=>{const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for),ro=n?restsOn(n):{sup:[],ctr:[]},ns=[...ro.sup,...ro.ctr];closeByPop(0);
     if(b.dataset.evAct==="rate"){const s=ns.find(x=>!x.weight);if(s){select([s.id]);focusNodes([s],Math.max(cam.s,.9))}}
     else if(ns.length){select(ns.map(x=>x.id));focusNodes(ns,Math.max(Math.min(cam.s,1),.5))}});d.addEventListener("pointerleave",()=>closeByPop());return byPop.el=d}
 function openByPop(grp,{now=false}={}){
@@ -6038,7 +6152,7 @@ function cardBody(n){
   case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode));
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
     <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test?`<div class="test"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span></div>`:""}${sk?"":setAsideHTML(n)}
-    ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",mode?`<span>${mode}</span>`:""),fR(hasProof?`<span>${uiLang()==="zh"?"已生成原型":"Proof built"}</span>`:"",threadCount(n)))}</div>`}
+    ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",mode&&!(adopted&&!hasProof)?`<span>${mode}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<span>${uiLang()==="zh"?"已生成原型":"Proof built"}</span>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
   case"proof":{
     /* A proof is an experiment that tests its direction: results first, thumbnail second, one next step. */
     const zh=uiLang()==="zh",L_=(e,z)=>zh?z:e,fx=n.fixed||[],dr=driftOf(n),dir=byId(n.dir);
@@ -6081,7 +6195,7 @@ function cardBody(n){
     ${treemapHTML(n,false)}${sk?sketchActs(n):foot(`<span>${branches} ${uiLang()==="zh"?"分支":(branches===1?"branch":"branches")} · ${total} ${uiLang()==="zh"?"节点":"nodes"}</span>`,fR(threadCount(n)))}</div>`}
   case"synthesis":{const ofNs=(n.of||[]).map(byId).filter(Boolean),srcCnt=(n.of||[]).length,synT=ofNs.length?tally(ofNs):n.weights,wCnt=weighedCount(synT);
     return `<div class="in">${head(`${byline(n)}${uiLang()==="zh"?"多源综合":"Synthesis"}`)}
-    <h4 data-edit="title">${esc(n.title)}</h4>${synPointsHTML(n,false)}${sk?sketchActs(n):foot(srcCnt?evidenceLine(synT||{},srcCnt):`<span>${srcCnt} ${uiLang()==="zh"?"个来源":(srcCnt===1?"source":"sources")}</span>`,fR(threadCount(n)))}</div>`}
+    <h4 data-edit="title">${esc(n.title)}</h4>${synPointsHTML(n,false)}${sk?sketchActs(n):foot((srcCnt?evidenceLine(synT||{},srcCnt):`<span>${srcCnt} ${uiLang()==="zh"?"个来源":(srcCnt===1?"source":"sources")}</span>`)+counterMark(restsOn(n).ctr),fR(threadCount(n)))}</div>`}
   }
   return `<div class="in"><h4>${esc(n.title||n.text||n.type)}</h4></div>`;
 }
@@ -6968,16 +7082,36 @@ function evidenceLine(t,total){
   return `<span class="ev-line ev-${v.k}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(`${L("Evidence","证据")}: ${v.txt}, ${src}`)}">${evIconHTML(v.ico,"ev-ico")}<span class="ev-txt">${esc(v.txt)}</span></span>`;
 }
 function evSourcesOf(n){return n?.type==="synthesis"?(n.of||[]).map(byId).filter(Boolean):sourcesFor(n)}
+/* What a judgment rests on: the material upstream of it, plus material you tied to it (snapped beside it or connected),
+   read whichever way the relation was drawn. Material you said counters it is kept apart: it is not backing. */
+const MATERIAL_T=["source","image","recording","audio","link","frame","note","notepad","table"];
+const JUDGMENT_T=["idea","synthesis","direction","question"];
+const isMaterial=n=>!!n&&MATERIAL_T.includes(n.type)&&n.status==="ink"&&!n.tombstone&&!n.archived;
+const isJudgment=n=>!!n&&JUDGMENT_T.includes(n.type);
+function restsOn(n){
+  const sup=new Map(evSourcesOf(n).map(s=>[s.id,s])),ctr=new Map();
+  for(const e of board.edges){if(!e.rel||e.by!=="you")continue;const o=e.a===n.id?e.b:e.b===n.id?e.a:null;const m=o&&byId(o);if(!isMaterial(m))continue;
+    if(e.rel==="conflicts"){ctr.set(m.id,m);sup.delete(m.id)}else sup.set(m.id,m)}
+  return {sup:[...sup.values()],ctr:[...ctr.values()]};
+}
+/* the relations you made on a card, for its render signature */
+const relSig=n=>board.edges.filter(e=>e.by==="you"&&(e.a===n.id||e.b===n.id)).map(e=>e.a+e.rel+e.b).join();
+function counterMark(ctr){const k=ctr.length;if(!k)return"";
+  return `<span class="ev-ctr" title="${esc(L("Countered by: ","反驳它的：")+ctr.slice(0,3).map(titleOf).join(" · "))}">${esc(L(`${k} counter${k>1?"s":""}`,`${k} 条反驳`))}</span>`}
 function evidencePopHTML(n){
-  const ns=evSourcesOf(n),t=ns.length?tally(ns):(n.weights||{}),total=ns.length||(n.of||[]).length,v=evidenceVerdict(t);
+  const ro=restsOn(n),ns=ro.sup,ctr=ro.ctr,t=ns.length?tally(ns):(n.weights||{}),total=ns.length||(n.of||[]).length,v=evidenceVerdict(t);
   const rows=[...WEIGHT_ORDER,"none"].filter(k=>t[k]).map((k,i)=>{const w=WEIGHTS[k];
     return `<li style="--i:${i}" class="ev-row ev-k-${k}"><span class="ev-k-g">${evIconHTML(k,"ev-ico")}</span><span class="by-pop-txt"><b>${esc(k==="none"?L("Not rated","未评估"):weightLabel(k))}</b><small>${esc(k==="none"?L("Nobody has judged these yet.","还没有人判断过它们有多可信。"):weightDesc(k))}</small></span><span class="ev-n">${t[k]}</span></li>`}).join("");
+  const ctrRow=ctr.length?`<li style="--i:6" class="ev-row ev-k-ctr"><span class="ev-k-g"><i class="ev-ctr-dot" aria-hidden="true"></i></span><span class="by-pop-txt"><b>${esc(L("Counters it","反驳它"))}</b><small>${esc(ctr.slice(0,3).map(x=>clip(titleOf(x),46)).join(" · "))}</small></span><span class="ev-n">${ctr.length}</span></li>`:"";
   const u=t.none||0,acts=[];   // secondary first, primary last: the primary action sits bottom-right, where the eye lands
-  if(ns.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("View","查看"))}</button>`);
+  if(ns.length||ctr.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("View","查看"))}</button>`);
   if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(L("Rate","评估"))}</button>`);
-  return `<header class="ev-head ev-${v.k}">${evIconHTML(v.ico,"ev-ico")}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows?`<ul>${rows}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
+  if(!ns.length&&!(n.of||[]).length)return `<header class="ev-head ev-none">${evIconHTML("none","ev-ico")}<b>${esc(L("Nothing behind it yet","还没有依据"))}</b></header><p class="ev-sent">${esc(L("Drag a piece of evidence beside this card to back it, or say it counters it. You can also draw a line from any card.","把一条证据拖到这张卡旁边来支持它，或标明它是反驳。也可以从任意卡片拉一条线过来。"))}</p>${ctrRow?`<ul>${ctrRow}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
+  return `<header class="ev-head ev-${v.k}">${evIconHTML(v.ico,"ev-ico")}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows||ctrRow?`<ul>${rows}${ctrRow}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
 }
-function evidenceScale(n){const s=sourcesFor(n);if(!s.length)return L("No sources yet","暂无关联来源");return evidenceLine(tally(s),s.length)}
+function evidenceScale(n){const {sup,ctr}=restsOn(n);
+  const line=sup.length?evidenceLine(tally(sup),sup.length):`<span class="ev-line ev-empty" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(L("Nothing behind it yet","还没有依据"))}">${evIconHTML("none","ev-ico")}<span class="ev-txt">${esc(L("Nothing behind it yet","还没有依据"))}</span></span>`;
+  return ctr.length?`<span class="ev-wrap">${line}${counterMark(ctr)}</span>`:line}
 function driftOf(p){
   const moved=[],unavailable=[],archived=[],changed=[];
   for(const f of p.fixed||[]){
@@ -6995,7 +7129,7 @@ function nodeLineageSig(n){
 }
 
 function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -7284,6 +7418,8 @@ function bondCluster(id){
 function makeRelation(src,dst,{via="wire",rel="related"}={}){
   const ex=relBetween(src,dst);
   if(ex){if(!ex.rel)ex.rel=rel;ex.by="you";if(via==="snap")delete ex.line;return {e:ex,existed:true}}
+  /* evidence tied to a judgment reads evidence -> judgment, whichever card was dragged: "this recording supports that claim" */
+  if(isJudgment(byId(src))&&isMaterial(byId(dst)))[src,dst]=[dst,src];
   const e=edge(src,dst,"src","reference");if(!e)return {e:null,existed:false};
   e.rel=rel;e.by="you";e.via=via;e.at=NOW();
   return {e,existed:false};
@@ -7539,7 +7675,8 @@ function placeRelPick(){
 function paintRelPick(){
   const pop=$("relPick");if(!pop)return;const e=board.edges.find(x=>x.id===relPickId);if(!e)return;
   const cur=e.rel||"related";
-  pop.innerHTML=`<span class="rp-k">${L("Relation","关系")}</span>${REL_TYPES.map((r,i)=>`<button type="button" class="rp-opt rel-${r}${r===cur?" on":""}" data-relpick="${r}" aria-pressed="${r===cur}" title="${esc(r==="related"?L("Related, nothing more. The crew won't read it as agreement.","只是有关，成员不会把它当作同意。"):relSentence({...e,rel:r}))} · ${i+1}"><i aria-hidden="true"></i>${esc(relName(r))}</button>`).join("")}`;
+  const evj=isMaterial(byId(e.a))&&isJudgment(byId(e.b));
+  pop.innerHTML=`<span class="rp-k">${evj?L("This evidence","这条证据"):L("Relation","关系")}</span>${REL_TYPES.map((r,i)=>`<button type="button" class="rp-opt rel-${r}${r===cur?" on":""}" data-relpick="${r}" aria-pressed="${r===cur}" title="${esc(r==="related"?L("Related, nothing more. The crew won't read it as agreement.","只是有关，成员不会把它当作同意。"):relSentence({...e,rel:r}))} · ${i+1}"><i aria-hidden="true"></i>${esc(relName(r))}</button>`).join("")}`;
 }
 function closeRelPick(){
   clearTimeout(relPickTimer);const pop=$("relPick");if(!pop||pop.hidden){relPickId=null;return}
@@ -7691,13 +7828,15 @@ function renderCrew(){
   paintPart?.();
   const mode=aiSource();
   const modeLbl=mode.label;
-  const seatsHtml=Object.values(AGENTS).map(a=>{const s=crewState[a.key];const waiting=board.nodes.some(n=>n.status==="sketch"&&n.by===a.key);
-    return `<button type="button" class="seat ${s.busy?"busy":""}" data-agent="${a.key}" aria-label="${a.name}: ${esc(s.status||(waiting?"waiting for you":"free"))}"><span class="mk">${a.mk}</span><span class="ring"></span></button>`}).join("");
   const quiet=typeof crewQuietReason==="function"?crewQuietReason():null,health=typeof connHealth==="function"?connHealth():{k:"none",tip:""};
-  const setTip=`${L("Crew settings","成员设置")} · ${L("Acts","动手")}: ${autonomyCustom?L("Custom","自定义"):L(ACT_LABEL[crewAct][0],ACT_LABEL[crewAct][1])}${quiet?" · "+quiet.tip:""}`;
-  $("crew").innerHTML=`<div class="crew-group${quiet?" quiet-"+quiet.k:""}" ${quiet?`title="${esc(quiet.tip)}"`:""}><div class="crew-seats" role="group" aria-label="AI Crew">${seatsHtml}</div>`
-    +`<button type="button" id="crewSetBtn" class="crew-set" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(setTip)}" aria-label="${esc(setTip)}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg></button></div>`
-    +`<button type="button" id="crewModeBtn" class="crew-mode ${mode.cls||""}" aria-haspopup="dialog" aria-expanded="${studioPopOpen}" title="${esc(mode.title)}" aria-label="${esc(modeLbl)}: ${esc(mode.title)}"><b></b><span>${esc(modeLbl)}</span>${ic("chev","ico cm-chev")}</button>`;
+  const setTip=`${L("Crew, model and settings","成员、模型与设置")} · ${L("Acts","动手")}: ${autonomyCustom?L("Custom","自定义"):L(ACT_LABEL[crewAct][0],ACT_LABEL[crewAct][1])}${quiet?" · "+quiet.tip:""}`;
+  /* One entry for the crew, the model connection and settings. At rest it shows the crew's marks; it says what is
+     wrong only when something is ("No AI connected", "Out of credits"), and nothing about where the model runs. */
+  const marks=Object.values(AGENTS).map(a=>`<span class="hub-mk${crewState[a.key]?.busy?" busy":""}" data-mk="${a.key}" aria-hidden="true"><span class="mk">${a.mk}</span></span>`).join("");
+  const anyBusy=Object.values(crewState).some(x=>x?.busy);
+  $("crew").innerHTML=`<button type="button" id="crewSetBtn" class="crew-hub${mode.live?" live":" off"}${quiet?" quiet-"+quiet.k:""}${anyBusy?" busy":""}" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(setTip)}" aria-label="${esc(setTip+(mode.live?"":" · "+modeLbl))}"><span class="hub-mks">${marks}</span>${mode.live?"":`<span class="hub-l">${esc(modeLbl)}</span>`}${ic("chev","ico cm-chev")}</button>`;
+  if(!$("hubSeats")&&!renderCrew._in&&typeof renderCrewPop==="function"){renderCrew._in=1;try{renderCrewPop()}finally{renderCrew._in=0}}
+  paintHub(mode);
   paintCopilotHeader?.();
   renderLineCrew?.();
   if(studioPopOpen)renderStudioPop();
@@ -11452,7 +11591,9 @@ let litCache=null;
 function litSet(){
   if(litCache)return litCache;const s=new Set(),e=new Set();
   const depth=new Map();
-  if(sel.length===1&&!stageOpen){const walk=(id,d)=>{if(d>8)return;for(const ed of board.edges)if(ed.b===id&&ed.kind!=="ask"&&!e.has(ed.id)){e.add(ed.id);depth.set(ed.id,d);s.add(ed.a);walk(ed.a,d+1)}};walk(sel[0],0)}
+  if(sel.length===1&&!stageOpen){const walk=(id,d)=>{if(d>8)return;for(const ed of board.edges)if(ed.b===id&&ed.kind!=="ask"&&!e.has(ed.id)){e.add(ed.id);depth.set(ed.id,d);s.add(ed.a);walk(ed.a,d+1)}};walk(sel[0],0);
+    /* a judgment also lights the evidence you tied to it, whichever way the line was drawn */
+    const n0=byId(sel[0]);if(isJudgment(n0))for(const ed of board.edges)if(ed.by==="you"&&ed.a===n0.id&&isMaterial(byId(ed.b))&&!e.has(ed.id)){e.add(ed.id);depth.set(ed.id,0);s.add(ed.b)}}
   return litCache={nodes:s,edges:e,depth};
 }
 function provenanceSVG(){
@@ -11859,10 +12000,17 @@ $("crewPop")?.addEventListener("click",e=>{
   const sh=e.target.closest("[data-crew-show]");if(sh){const n=byId(sh.dataset.crewShow);toggleCrewPop(false);if(n){focusNodes([n],Math.max(cam.s,.85),0);select([n.id],{menus:false});if(openAdvNodeId!==n.id)toggleAdvPop(n.id)}return}
   if(e.target.closest("[data-crew-custom]")){toggleCrewPop(false);openAutonomyDialog();return}
   if(e.target.closest("[data-crew-memory]")){toggleCrewPop(false);memoryDialog();return}
+  if(e.target.closest("[data-crew-settings]")){toggleCrewPop(false);systemSettingsDialog();return}
+  if(e.target.closest("#crewModeBtn")){toggleCrewPop(false);toggleStudioPopover(true);return}
+  {const a=e.target.closest("[data-agent]");if(a){toggleCrewPop(false);toggleAgentPop(a.dataset.agent);return}}
   if(e.target.closest("[data-crew-held]")){toggleCrewPop(false);heldDialog();return}
 });
 document.addEventListener("pointerdown",e=>{const b=e.target.closest?.("[data-bay-lock]");if(b){e.stopPropagation();e.preventDefault()}},true);
 document.addEventListener("click",e=>{const b=e.target.closest?.("[data-bay-lock]");if(b){e.stopPropagation();toggleBayLock(+b.dataset.bayLock)}},true);
+/* the empty lanes' ways in: they sit under the cards, so they take the pointer before the canvas pans */
+document.addEventListener("pointerdown",e=>{const b=e.target.closest?.("#bays [data-bay-go]");if(b&&e.button===0){e.stopPropagation()}},true);
+document.addEventListener("click",e=>{const b=e.target.closest?.("#bays [data-bay-go]");if(b){e.stopPropagation();bayGo(b.dataset.bayGo,b)}},true);
+document.addEventListener("keydown",e=>{if(e.key!=="Enter"&&e.key!==" ")return;const b=e.target.closest?.("#bays .bay-start[data-bay-go]");if(b&&e.target===b){e.preventDefault();e.stopPropagation();bayGo(b.dataset.bayGo,b)}},true);
 $("reviewPop")?.addEventListener("click",e=>{
   {const g=e.target.closest("[data-rp-prop-go],[data-rp-prop-accept],[data-rp-prop-reject]");if(g){e.stopPropagation();const id=g.dataset.rpPropGo||g.dataset.rpPropAccept||g.dataset.rpPropReject,pr=(board.proposals||[]).find(p=>p.id===id);
     if(g.dataset.rpPropAccept)acceptProposal(id,{force:!!pr?.stale});else if(g.dataset.rpPropReject)rejectProposal(id);else{const n=pr&&byId(pr.target);if(n){expandedProps.add(id);focusNodes([n],Math.max(cam.s,.8));select([n.id]);renderNodes()}}
@@ -11917,7 +12065,7 @@ function renderAgentPop(){
   const pop=$("agentPop");if(!pop)return;
   if(!agentPopKey||!AGENTS[agentPopKey]){pop.hidden=true;return}
   const k=agentPopKey,a=AGENTS[k],items=agentActivityFor(k);
-  const btn=qs(`#crew [data-agent="${k}"]`);
+  const btn=qs(`#crew [data-agent="${k}"]`)||$("crewSetBtn");
   if(btn){const r=btn.getBoundingClientRect();pop.style.top=Math.round(r.bottom+10)+"px";pop.style.right=Math.max(14,Math.round(innerWidth-r.right))+"px"}
   pop.hidden=false;
   const acts=items.length>1
@@ -13325,7 +13473,7 @@ function renderLineHint(){
   if(selectedEdgeId){h.textContent=L("Click Ref / Live / Frozen above to control update tracking · Esc to deselect","点击上方「引用 / 活依赖 / 冻结」切换联动方式 · Esc 取消");return}
   const ns=ctxNodes();
   if(linePending.length&&!ns.length){h.textContent=L("Image staged in composer — type your prompt and press Enter / Send, or click × to remove","图片已挂载到输入框 — 输入指令后按回车或点击 Send 随指令发出，点击 × 可取消");return}
-  h.textContent=board.nodes.length?"":L("Double-click the canvas for a sticky · drop files anywhere","双击画布新建便签 · 拖入文件即可添加");
+  h.textContent=board.nodes.length?"":L("Double-click the canvas for a sticky","双击画布新建便签");
 }
 function syncStaticLang(){
   const mt=qs(".map-title");if(mt)mt.textContent=L("Overview","画板总览");
@@ -17013,10 +17161,7 @@ document.addEventListener("click",e=>{
 /* arrow keys move along the switch, like any radio group */
 $("partSw").addEventListener("keydown",e=>{const i=SPEAK_LEVELS.indexOf(crewSpeak);let j=null;if(e.key==="ArrowRight"||e.key==="ArrowDown")j=Math.min(2,i+1);else if(e.key==="ArrowLeft"||e.key==="ArrowUp")j=Math.max(0,i-1);if(j===null||j===i)return;e.preventDefault();setSpeak(SPEAK_LEVELS[j]);$("partSw").querySelector(`[data-part="${SPEAK_LEVELS[j]}"]`)?.focus()});
 $("crew").addEventListener("click",e=>{
-  if(e.target.closest("#crewSetBtn")){toggleCrewPop();return}
-  if(e.target.closest("#crewModeBtn")){toggleCrewPop(false);toggleStudioPopover();return}
-  const b=e.target.closest("[data-agent]");if(!b)return;
-  toggleAgentPop(b.dataset.agent);
+  if(e.target.closest("#crewSetBtn")){if(studioPopOpen){toggleStudioPopover(false);return}if(agentPopKey){toggleAgentPop(null);return}toggleCrewPop();return}
 });
 $("routeWrap")?.addEventListener("click",e=>{
   const rt=e.target.closest("#route");
@@ -17500,6 +17645,7 @@ $("fileIn").addEventListener("change",e=>{
     if(others.length)addFiles(others);
     return;
   }
+  if(target==="gather"){addFiles(all,{x:80+150+40,y:60+100});return}
   addFiles(all);
 });
 $("projectBtn").onclick=boardsDialog;
@@ -17755,7 +17901,7 @@ function startEdit(id,field,opts){
     const nextVal=isDefTag?"":v;
     const changed=save&&nextVal!==(n[f]||"");
     if(changed){checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;if(f==="tag"&&!nextVal)delete n.tag;else n[f]=nextVal;recordNodeEdit(n,prevD,prevT,prevTx);log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id);if(f==="whyNot")syncSetAsideReason(n)}
-    if(n.type==="note"&&f==="text"&&!n.text&&!hadText){dropEmptyNote(n,el)}
+    if((n.type==="note"||n.type==="idea")&&f==="text"&&!n.text&&!hadText){dropEmptyNote(n,el)}
     else if(changed&&n.type!=="group"&&f!=="tag"&&v.length>=10)scheduleAdvisor(n.id,{delay:1400});
     el._sig="";renderAll();persist();if(f==="whyNot")makeRoomBelow(n)};
   const multiline=(n.type==="notepad"||n.type==="note")&&f==="text";

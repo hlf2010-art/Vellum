@@ -173,7 +173,7 @@ async function open(browser, base, { theme = 'light', live = false } = {}) {
     await p.evaluate(() => { const n = node('note', { text: 'Sketch: handle doubles as a hook' }, { x: 900, y: 500 }); renderAll(); persist(); });
     await p.settle(2200);
     check('Focus: nothing lands on the board, the checks wait', (await p.checkPins()).length === 0 && await p.evaluate(() => board.watch.queue.length >= 2), await p.evaluate(() => board.watch.queue.length));
-    check('Focus: the crew is dimmed and pins would be hidden', await p.evaluate(() => document.body.classList.contains('is-focus') && getComputedStyle(document.querySelector('.crew-seats')).opacity < .9));
+    check('Focus: the crew is dimmed and pins would be hidden', await p.evaluate(() => document.body.classList.contains('is-focus') && getComputedStyle(document.querySelector('#crewSetBtn .hub-mks')).opacity < .9));
     await p.click('#partSw [data-part="matters"]'); await p.waitForTimeout(900);
     const cu = await p.evaluate(() => ({ open: catchUpOpen && !$('catchUp').hidden, head: $('catchUp').querySelector('.cu-head b')?.textContent, when: $('catchUp').querySelector('.cu-head small')?.textContent, items: [...document.querySelectorAll('#catchUp [data-cu-go]')].map(b => b.innerText), foot: $('catchUp').querySelector('.cu-foot small')?.textContent }));
     pins = await p.checkPins();

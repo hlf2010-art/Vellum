@@ -15,6 +15,8 @@ A relation is an edge with `by: "you"` and a `rel`:
 | `conflicts` | Counters · 反驳 | `a` counters `b` |
 | `extends` | Refines · 细化 | `a` refines `b` |
 
+**Evidence and judgments.** When one card is material (a source, image, recording, audio, link, frame, note, notepad or table) and the other a judgment (an idea, synthesis, direction or question), the relation always reads evidence → judgment, whichever card was dragged or where the line started, so "this interview supports that claim" reads right. The type picker then says "This evidence". The judgment's bottom row says what it rests on (the verdict) and, apart from it, how many pieces counter it; counter-evidence never counts as backing. Selecting a judgment lights the evidence tied to it.
+
 `via` records the gesture (`snap` or `wire`). Lineage edges the crew makes while it works (`derive`, `live`, `frozen`) are not relations until a person snaps or connects the same pair; then the same edge gains `by` and `rel`.
 
 ## Rules

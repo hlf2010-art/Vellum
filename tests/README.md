@@ -24,6 +24,10 @@ Those questions stay about the idea: for an idea with no place or period of its 
 
 Run it before committing a change to `Vellum-Lumen.html`.
 
+## The board as a reasoning workflow
+
+`tests/reasoning-flow.cjs` checks that lanes are zones (a tinted band, a header saying what lives there, no step numbers, no lane-wide groups in the sample); that an empty lane is a way in that starts the action (Choose files / Write a note, Write your core judgment, pick a direction to prototype or branch a judgment, freeze a prototype) and stops inviting once its kind of card exists anywhere; that evidence tied to a judgment reads evidence → judgment, shows on the judgment's bottom row with counter-evidence apart, and lights up when the judgment is selected; that an adopted direction offers Prototype; and that the crew, the model and settings are one entry in the top bar.
+
 ## Stage and roles
 
 `stage-role-contract.md` says who does what at each stage. Group 5h checks that the stage is derived from what the designer kept (drafts do not count; adopting moves Explore to Prototype; a frozen proof makes it Snapshot), that the brief counts evidence by weight and names what is decided and open, and that Copilot, the advisor and a pin reply are each told it.

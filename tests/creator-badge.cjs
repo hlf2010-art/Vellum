@@ -58,9 +58,9 @@ const firstOf = m => m.seal || (m.group && m.group[0]) || null;
       const place = await p.evaluate(() => [...document.querySelectorAll('#nodes .by-seal, #nodes .by-group')].map(s => { const by = s.closest('.foot-by'); return { type: s.closest('.card').classList[1], foot: !!s.closest('.foot-r'), ok: by?.lastElementChild?.tagName === 'TIME' && by.firstElementChild === s }; }));
       check('the mark sits in the bottom row, right before the time', place.length >= 20 && place.every(x => x.foot && x.ok), JSON.stringify(place.filter(x => !(x.foot && x.ok))));
 
-      // the crew avatars are the top-bar seats
+      // the crew avatars are the marks on the top-bar entry
       const same = await p.evaluate(() => ['scout', 'muse', 'wright', 'critic'].every(k => {
-        const seat = document.querySelector(`.seat[data-agent="${k}"] .mk svg`), m = document.querySelector(`#nodes [data-by="${k}"] .mk svg`);
+        const seat = document.querySelector(`#crewSetBtn [data-mk="${k}"] .mk svg`), m = document.querySelector(`#nodes [data-by="${k}"] .mk svg`);
         return !m || (seat && seat.outerHTML === m.outerHTML && getComputedStyle(seat.closest('.mk')).getPropertyValue('--orb-ink') === getComputedStyle(m.closest('.mk')).getPropertyValue('--orb-ink'));
       }));
       check('crew avatars are the top-bar crew avatars (same glyph, same colour family)', same);
@@ -141,7 +141,7 @@ const firstOf = m => m.seal || (m.group && m.group[0]) || null;
       await p.keyboard.press('Escape'); await p.mouse.click(1300, 850); await p.waitForTimeout(300);
 
       // set a name in Settings
-      await p.click('#settingsBtn'); await p.waitForTimeout(300);
+      await p.click('#crewSetBtn'); await p.waitForTimeout(250); await p.click('#crewPop [data-crew-settings]'); await p.waitForTimeout(300);
       await p.fill('#sysMyName', 'Mars'); await p.waitForTimeout(200);
       await p.keyboard.press('Escape'); await p.waitForTimeout(300);
       const named = (await p.marks()).find(c => c.id === mine.id);

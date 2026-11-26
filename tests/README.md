@@ -188,3 +188,7 @@ node tests/creator-badge.cjs
 node tests/copilot-per-board.cjs
 SHOTS=/some/dir node tests/copilot-per-board.cjs   # also saves screenshots
 ```
+
+## Deleting a card
+
+`tests/delete-dialog.cjs` checks that deleting asks a question only when another card was made from the one being deleted. A card that is only related to another (a line you drew or a snap) is deleted at once, the toast names it, and Undo brings back the card and the relation. Otherwise one sheet asks `Delete “name”?`, says in plain words that the card made from it stays and is marked for review, shows that card as a chip, and offers Hide instead, Cancel and Delete (focused, red; Enter deletes). Delete leaves a marker so the other card says its source needs review, and Undo restores everything. From Hidden & Archived, Delete permanently uses the same sheet, says it can't be undone, and scrubs the title from Undo history. `--shots DIR` saves light and dark screenshots of the sheet.

@@ -636,12 +636,18 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .brand-name-in{height:30px;padding:0 9px;border:0;outline:0;border-radius:var(--radius-xs);background:var(--card);color:var(--label);font:620 14px/1 var(--ui);letter-spacing:-.018em;min-width:240px;max-width:min(460px,52vw);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--focus) 50%,transparent)}
 .top-right{display:flex;align-items:center;gap:8px;min-width:0}
 .top-tools{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);z-index:32;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--chrome) 92%,transparent);-webkit-backdrop-filter:blur(28px) saturate(1.4);backdrop-filter:blur(28px) saturate(1.4);box-shadow:var(--chrome-shadow)}
-.top-tools::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;background:conic-gradient(from var(--arc),transparent 0deg,transparent 210deg,color-mix(in srgb,var(--light) 55%,#fff) 275deg,color-mix(in srgb,var(--B-fill) 60%,transparent) 320deg,transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.55;animation:arc 7s linear infinite}
+/* the bar's edge: one even hairline all the way round (it used to be a sweeping light, blue on one side and white at the bottom) */
+.top-tools::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 .5px var(--hair-2)}
 .top-tools button{position:relative;display:grid;place-items:center;width:36px;height:36px;padding:0;border-radius:50%;color:var(--label-2);transition:background var(--d-quick),color var(--d-quick),transform var(--d-press),box-shadow var(--d-quick)}
 .top-tools button:hover{background:var(--hover);color:var(--label)}
 .top-tools button:active{transform:scale(.93)}
-.top-tools button[aria-pressed="true"]{background:radial-gradient(circle at 32% 28%,color-mix(in srgb,var(--card) 98%,#fff 8%),var(--card));color:var(--label);box-shadow:0 2px 10px -2px rgba(0,0,0,.35),0 0 18px -4px var(--bloom)}
-.top-tools button[aria-pressed="true"]::before{content:"";position:absolute;inset:-1px;border-radius:50%;padding:1.25px;pointer-events:none;background:conic-gradient(from var(--arc),transparent 0deg,transparent 200deg,var(--light) 280deg,color-mix(in srgb,var(--A-fill) 65%,#fff) 330deg,transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.85;animation:arc 3.6s linear infinite}
+/* the active tool (Select, Lasso, Hand) is the one with the ring; its glow stays inside the bar */
+.top-tools button[data-ttool][aria-pressed="true"]{background:radial-gradient(circle at 32% 28%,color-mix(in srgb,var(--card) 98%,#fff 8%),var(--card));color:var(--label);box-shadow:0 1px 3px -1px rgba(0,0,0,.28),0 0 8px -3px var(--bloom)}
+.top-tools button[data-ttool][aria-pressed="true"]::before{content:"";position:absolute;inset:-1px;border-radius:50%;padding:1.25px;pointer-events:none;background:conic-gradient(from var(--arc),transparent 0deg,transparent 200deg,var(--light) 280deg,color-mix(in srgb,var(--A-fill) 65%,#fff) 330deg,transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.6;animation:arc 3.6s linear infinite}
+/* a setting that is on (Smart snap) is not a tool: tinted icon and a small dot, no ring */
+#snapBtn[aria-pressed="true"]{color:color-mix(in srgb,var(--A) 82%,var(--label))}
+#snapBtn[aria-pressed="true"]::before{content:"";position:absolute;right:6px;bottom:6px;width:5px;height:5px;border-radius:50%;background:var(--A-fill);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--chrome) 92%,transparent);pointer-events:none}
+#snapBtn[aria-pressed="false"]{color:var(--label-3)}
 .top-tools button .ico{position:relative;z-index:1;width:16px;height:16px;stroke-width:1.85}
 .top-tools .tt-sep{width:18px;height:1px;background:var(--hair-2);margin:2px 0}
 .top-tools button[data-tip]::after{content:attr(data-tip);position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%) translateX(-4px);padding:6px 10px;border-radius:var(--radius-sm);white-space:nowrap;pointer-events:none;font:560 12px/1 var(--ui);letter-spacing:-.01em;color:var(--label);background:color-mix(in srgb,var(--chrome) 96%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--chrome-shadow);opacity:0;transition:opacity .14s ease,transform var(--t-snappy) var(--snappy)}
@@ -2736,21 +2742,32 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .src-row .src-pill.danger{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
 .src-row .src-act{flex:none;height:24px;padding:0 8px;border-radius:var(--radius-pill);font:600 11px/1 var(--ui);background:var(--hover);color:var(--label-2)}
 .src-row .src-act:hover{background:var(--press);color:var(--label)}
-.imp-ico{width:40px;height:40px;display:grid;place-items:center;border-radius:var(--radius-md);background:color-mix(in srgb,var(--A) 14%,transparent);color:var(--A)}
-.imp-ico .ico{width:20px;height:20px}
-.imp-box{display:grid;gap:6px;padding:10px 12px;border-radius:var(--radius-md);background:var(--well);box-shadow:none}
-.imp-stat{display:flex;gap:12px;flex-wrap:wrap;font:560 13px/1.3 var(--ui);color:var(--label-2)}
-.imp-stat b{color:var(--label)}
-.imp-items{display:grid;gap:4px;max-height:145px;overflow-y:auto}
-.imp-item{display:flex;align-items:center;gap:8px;font:500 13px/1.35 var(--ui);color:var(--label-2)}
-.imp-item .src-kind{font:600 10px/1 var(--ui);padding:2px 6px;border-radius:5px;background:var(--card);color:var(--label-3);flex:none}
-.imp-item b{flex:1;min-width:0;font-weight:550;color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.imp-item small{font:500 11px/1 var(--ui);color:var(--label-3);flex:none}
 .sys-row.danger .sys-row-ico{color:var(--danger)}
 .sys-row.danger b{color:var(--danger)}
-.imp-confirm{margin-top:8px;padding:10px 12px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--danger) 10%,transparent);box-shadow:none;display:grid;gap:8px}
-.imp-confirm p{margin:0;font:450 12px/1.45 var(--ui);color:var(--label-2)}
-.imp-confirm-acts{display:flex;justify-content:flex-end;gap:8px}
+/* delete sheet: a question, the cards it touches, and the answer */
+dialog.sheet.del-sheet{width:min(420px,calc(100% - 24px))}
+.del-sheet .sh-head{padding:24px 20px 10px 24px}
+.del-title{display:block;font:650 18px/1.3 var(--ui);letter-spacing:-.02em;color:var(--label);overflow-wrap:anywhere;text-wrap:pretty}
+.del-main{gap:16px}
+.del-lead{margin:0;font:450 14px/1.5 var(--ui);color:var(--label-2);text-wrap:pretty}
+.del-warn{font-weight:600;color:var(--danger-ink)}
+.del-refs{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.del-ref{display:inline-flex;align-items:center;gap:7px;max-width:100%;min-width:0;height:30px;padding:0 11px 0 5px;border-radius:var(--radius-pill);background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair-2);font:550 13px/1 var(--ui);color:var(--label)}
+.del-kind{flex:none;height:20px;display:inline-flex;align-items:center;padding:0 7px;border-radius:var(--radius-pill);background:var(--hover);font:600 11px/1 var(--ui);color:var(--label-3)}
+.del-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.del-ref.del-more{padding:0 11px;color:var(--label-3);background:transparent}
+.del-acts{display:flex;align-items:center;gap:8px;margin-top:6px}
+.del-acts .sp{flex:1}
+.del-alt{display:inline-flex;align-items:center;gap:6px;height:var(--size-md);padding:0 10px;margin-left:-10px;border-radius:var(--radius-pill);font:550 13px/1 var(--ui);color:var(--label-2);transition:background var(--d-quick),color var(--d-quick)}
+.del-alt:hover{background:var(--hover);color:var(--label)}
+.del-alt .ico{width:14px;height:14px;stroke-width:2}
+.del-sheet .sh-id{grid-column:1/3}
+/* white on red reads at AA in both themes: the dark theme's lighter red is taken down a step */
+.cbtn.del-go{--del-bg:color-mix(in srgb,var(--danger) 86%,#000);background:var(--del-bg);color:#fff}
+:root[data-theme="dark"] .cbtn.del-go{--del-bg:color-mix(in srgb,var(--danger) 76%,#000)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cbtn.del-go{--del-bg:color-mix(in srgb,var(--danger) 76%,#000)}}
+.cbtn.del-go:hover{background:var(--del-bg);box-shadow:inset 0 0 0 100px rgba(0,0,0,.08)}
+.cbtn.del-go:focus-visible{outline:2px solid color-mix(in srgb,var(--danger) 55%,transparent);outline-offset:2px}
 .arch-sec-lbl{font:600 12px/1 var(--ui);letter-spacing:.02em;text-transform:uppercase;color:var(--label-3);margin:12px 0 6px}
 .arch-sec-lbl:first-child{margin-top:2px}
 /* ── Task Island: long-running agent work, top centre ─────────────────── */
@@ -4376,7 +4393,7 @@ function nodeLineageSummary(n){
   const hidden=deps.filter(d=>d.status==="hidden");
   return {deps,unavailable,unavailableAcked,archived,stale,frozenChanged,hidden,needsReview:unavailable.length>0||stale.length>0};
 }
-function directChildrenOf(id,{includeSketch=false}={}){
+function directChildrenOf(id,{includeSketch=false,skipRelations=false}={}){
   const out=new Map();
   const add=(nid,depType)=>{
     if(!nid||nid===id)return;
@@ -4384,7 +4401,10 @@ function directChildrenOf(id,{includeSketch=false}={}){
     if(!x||x.tombstone||(!includeSketch&&x.status==="sketch"))return;
     if(!out.has(nid))out.set(nid,{node:x,depType});
   };
-  for(const e of board.edges||[])if(e.a===id){const dst=byId(e.b);add(e.b,edgeDepType(e,byId(id),dst))}
+  for(const e of board.edges||[])if(e.a===id){const dst=byId(e.b),dt=edgeDepType(e,byId(id),dst);
+    /* a relation you drew or snapped (related, supports…) says two cards belong together; nothing was made from it, so deleting one end is not a downstream loss */
+    if(skipRelations&&e.rel&&e.by==="you"&&dt==="reference")continue;
+    add(e.b,dt)}
   for(const x of board.nodes||[]){
     if(!x||x.tombstone||x.id===id)continue;
     if(x.dir===id||x.proof===id||(Array.isArray(x.fixed)&&x.fixed.some(f=>f.id===id)))add(x.id,"frozen");
@@ -4393,14 +4413,14 @@ function directChildrenOf(id,{includeSketch=false}={}){
   }
   return [...out.values()];
 }
-function computeUpstreamImpact(rootIds,{includeSketch=false}={}){
+function computeUpstreamImpact(rootIds,{includeSketch=false,skipRelations=false}={}){
   const rootSet=new Set(rootIds);
   const visited=new Set(rootIds);
   const directIds=new Set(),transitiveIds=new Set(),items=[];
   const q=[...rootIds.map(id=>({id,depth:0}))];
   while(q.length){
     const {id,depth}=q.shift();
-    for(const ch of directChildrenOf(id,{includeSketch})){
+    for(const ch of directChildrenOf(id,{includeSketch,skipRelations})){
       const cid=ch.node.id;
       if(rootSet.has(cid))continue;
       if(depth===0)directIds.add(cid);
@@ -10539,9 +10559,9 @@ async function erase(ids,opts={}){
       sfx("remove");renderAll();persist();toast("Discarded",{undo:true});
       return "deleted";
     }
-    const impact=computeUpstreamImpact(ns.map(n=>n.id));
+    const impact=computeUpstreamImpact(ns.map(n=>n.id),{skipRelations:true});
     if(impact.transitiveIds.size>0){
-      upstreamDeleteDialog(ns.map(n=>n.id),impact);
+      upstreamDeleteDialog(ns.map(n=>n.id),impact,{permanent:!!opts.permanent});
       return "prompted";
     }
     if(!opts.permanent){
@@ -10556,7 +10576,7 @@ async function erase(ids,opts={}){
       if(focusId&&gone.has(focusId))closeFocus();
       sweepOrphanTombstones();
       log("you",`Removed ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,null);
-      sfx("remove");renderAll();persist();toast("Removed "+(ns.length>1?ns.length+" cards":titleOf(ns[0])),{undo:true});
+      sfx("remove");renderAll();persist();toast(ns.length>1?L(`Deleted ${ns.length} cards`,`已删除 ${ns.length} 张卡片`):L(`Deleted “${clip(titleOf(ns[0])||kindLabel(ns[0]),40)}”`,`已删除“${clip(titleOf(ns[0])||kindLabel(ns[0]),40)}”`),{undo:true});
       return "deleted";
     }
   }
@@ -15602,6 +15622,9 @@ function scrubNodeFromUndoRedo(goneSet,tombMap,scrubStrings=[]){
   const matchesScrub=html=>scrubStrings.some(s=>s&&String(html||"").includes(s));
   const scrubPatch=pt=>{if(!pt)return pt;
     for(const k of ["nodes","proposals"])if(pt[k])for(const id of Object.keys(pt[k])){if(goneSet.has(id)||(k==="proposals"&&pt[k][id].some(v=>v&&goneSet.has(v.target))))delete pt[k][id]}
+    /* a surviving card's history can still quote the deleted card's title (its depAck / fixed entries); blank those too */
+    const scrubRefs=x=>{if(!x||typeof x!=="object")return;if(Array.isArray(x.fixed))x.fixed=x.fixed.map(f=>goneSet.has(f.id)?{...f,title:"Deleted source",d:""}:f);if(x.depAck)for(const gid of goneSet)if(x.depAck[gid])x.depAck[gid]={...x.depAck[gid],title:"Deleted source",digest:x.depAck[gid].digest==="__reviewed__"?"__reviewed__":""}};
+    if(pt.nodes)for(const id of Object.keys(pt.nodes))pt.nodes[id].slice(0,2).forEach(scrubRefs);
     if(pt.edges)for(const id of Object.keys(pt.edges)){if(pt.edges[id].some(e=>e&&(goneSet.has(e.a)||goneSet.has(e.b))))delete pt.edges[id]}
     for(const k of ["adopted","threads","pins"])if(pt[k])for(const id of Object.keys(pt[k])){if(goneSet.has(id)||(k==="adopted"&&pt[k][id].some(v=>goneSet.has(v))))delete pt[k][id]}
     return pt};
@@ -15646,6 +15669,9 @@ async function permanentlyDeleteNodes(ids,opts={}){
   const goneSet=new Set(ns.map(n=>n.id));
   ns.forEach(n=>{const el=nodeEl(n.id);if(el)el.classList.add("erasing")});
   if(opts.animate!==false)await wait(calm()?0:280);
+  /* undoable: the card goes and the cards made from it are marked for review, but nothing is scrubbed, so Undo brings it all back */
+  const undoable=!!opts.undoable;
+  if(undoable)checkpoint();
   const survRefs=new Set();
   for(const x of board.nodes){
     if(!x||x.tombstone||goneSet.has(x.id))continue;
@@ -15673,7 +15699,8 @@ async function permanentlyDeleteNodes(ids,opts={}){
       tombMap.set(n.id,{id:n.id,type:n.type,x:0,y:0,created:n.created||NOW(),deletedAt:NOW(),tombstone:true,status:"ink"});
     }
   }
-  const scrubStrings=[...scrubSet];
+  const scrubStrings=undoable?[]:[...scrubSet];
+  if(undoable)blobKeysToDelete.clear();
   for(const k of blobKeysToDelete){
     htmlDocs.delete(k);
     const um=userMedia.get(k);
@@ -15711,33 +15738,44 @@ async function permanentlyDeleteNodes(ids,opts={}){
   if(selectedEdgeId){const se=board.edges.find(e=>e.id===selectedEdgeId);if(!se)selectedEdgeId=null}
   sel=sel.filter(id=>!goneSet.has(id));lineExtras=lineExtras.filter(id=>!goneSet.has(id));
   sweepOrphanTombstones();
+  if(undoable){
+    log("you",`Deleted ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`+(tombMap.size?" · cards made from it marked for review":""),null);
+    sfx("remove");renderAll();persist();
+    const who=ns.length>1?L(`${ns.length} cards`,`${ns.length} 张卡片`):`“${clip(titleOf(ns[0])||kindLabel(ns[0]),32)}”`;
+    toast(tombMap.size?L(`Deleted ${who} · linked cards marked for review`,`已删除${who} · 关联卡片已标记待审阅`):L(`Deleted ${who}`,`已删除${who}`),{undo:true});
+    return;
+  }
   scrubNodeFromUndoRedo(goneSet,tombMap,scrubStrings);
   log("you",`Permanently deleted ${ns.length>1?ns.length+" cards":"1 card"}`+(tombMap.size?" (downstream references marked unavailable)":""),null);
   renderAll();persistNow?.();
   toast(tombMap.size?"Permanently deleted · downstream marked unavailable":"Permanently deleted (cannot be undone)");
 }
-function upstreamDeleteDialog(ids,impact){
+/* Deleting a card that other cards were made from: one plain question, the cards it touches, and Delete as the answer.
+   Delete is undoable (the made-from cards stay and are marked for review); Hide is offered as the quieter alternative.
+   From the Hidden & Archived list ("Delete permanently") the same sheet scrubs content and says it cannot be undone. */
+function upstreamDeleteDialog(ids,impact,{permanent=false}={}){
   const roots=ids.map(byId).filter(Boolean);
-  const title=roots.length===1?(titleOf(roots[0])||kindLabel(roots[0])):`${roots.length} selected cards`;
-  const rep=impact.items.slice(0,6),more=impact.items.length-rep.length;
-  const depTag=dt=>dt==="frozen"?"Frozen snapshot":dt==="live"?"Live dependency":"Reference";
-  dlg.className="sheet";
-  dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>Before deleting ${esc(clip(title,42))}</b><small>${impact.directIds.size} direct · ${impact.transitiveIds.size} total downstream card${impact.transitiveIds.size===1?"":"s"} affected</small></div><button type="button" class="sh-x" data-d="close" aria-label="Close">${ic("x")}</button></header>
-  <div class="sh-main"><div class="imp-lead">This card is referenced downstream. Choose how to handle it without losing downstream work:</div>
-    <div class="imp-list">${rep.map(({node:d,depth,depType})=>`<div class="imp-item"><span class="imp-kind">${esc(kindLabel(d))}</span><span class="imp-title">${esc(prettyTitle(d,52))}</span><span class="imp-tag">${esc(depTag(depType))}${depth>1?` · L${depth}`:""}</span></div>`).join("")}${more>0?`<div class="imp-item"><span class="imp-title" style="color:var(--label-3)">+${more} more downstream card${more===1?"":"s"}</span></div>`:""}</div>
-    <div class="imp-opts">
-      <div class="imp-opt primary"><div><b>Hide from canvas</b><small>Hides visually only. Keeps edges, lineage, and downstream snapshots intact. Show anytime.</small></div><button type="button" class="cbtn solid" data-imp="hide">Hide</button></div>
-      <div class="imp-opt"><div><b>Archive source</b><small>Excludes from new AI runs. Downstream cards stay inspectable and show “Source archived”.</small></div><button type="button" class="cbtn" data-imp="archive">Archive</button></div>
-      <div class="imp-opt"><div><b>Permanently delete</b><small>Scrubs content &amp; local media (cannot undo). Downstream cards remain and mark “Unavailable · Review required”.</small></div><button type="button" class="cbtn" style="color:#E0245E;border-color:color-mix(in srgb,#E0245E 40%,var(--hair))" data-imp="perm-step1">Delete</button></div>
-    </div>
-    <div class="imp-confirm" id="impPermConfirm" hidden><b>Confirm permanent deletion — scrubbed data cannot be recovered via Undo.</b><div class="imp-confirm-acts"><button type="button" class="cbtn" data-imp="perm-cancel">Cancel</button><button type="button" class="cbtn" style="background:#E0245E;border-color:#E0245E;color:#fff" data-imp="perm-confirm">Confirm Permanent Delete</button></div></div>
+  const name=roots.length===1?clip(titleOf(roots[0])||kindLabel(roots[0]),48):"";
+  const head=roots.length===1?L(`Delete “${name}”?`,`删除“${name}”？`):L(`Delete ${roots.length} cards?`,`删除 ${roots.length} 张卡片？`);
+  const direct=impact.items.filter(i=>i.depth===1),others=impact.items.length-direct.length;
+  const nRef=direct.length||impact.items.length;
+  const subj=roots.length===1?L("it","它"):L("them","它们");
+  const lead=nRef===1?L(`1 card was made from ${subj}.`,`有 1 张卡片基于${subj}生成。`):L(`${nRef} cards were made from ${subj}.`,`有 ${nRef} 张卡片基于${subj}生成。`);
+  const keep=L(`They stay on the board, marked so you can review them${others>0?` (plus ${others} further along)`:""}.`,`这些卡片会保留，并标记为待审阅${others>0?`（另有 ${others} 张间接关联）`:""}。`);
+  const keep1=L(`It stays on the board, marked so you can review it${others>0?` (plus ${others} further along)`:""}.`,`它会保留，并标记为待审阅${others>0?`（另有 ${others} 张间接关联）`:""}。`);
+  const list=(direct.length?direct:impact.items);const shown=list.slice(0,3),more=list.length-shown.length;
+  const chip=d=>`<li class="del-ref" title="${esc(titleOf(d)||kindLabel(d))}"><span class="del-kind">${esc(kindLabel(d))}</span><span class="del-name">${esc(prettyTitle(d,60)||kindLabel(d))}</span></li>`;
+  dlg.className="sheet del-sheet";
+  dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b class="del-title">${esc(head)}</b></div><button type="button" class="sh-x" data-d="close" aria-label="${esc(L("Close","关闭"))}">${ic("x")}</button></header>
+  <div class="sh-main del-main">
+    <p class="del-lead">${esc(lead)} ${esc(nRef===1?keep1:keep)}${permanent?` <b class="del-warn">${esc(L("Its content is erased for good and can't be undone.","内容会被彻底清除，无法撤销。"))}</b>`:""}</p>
+    <ul class="del-refs">${shown.map(({node:d})=>chip(d)).join("")}${more>0?`<li class="del-ref del-more">${esc(L(`+${more} more`,`另有 ${more} 张`))}</li>`:""}</ul>
+    <div class="del-acts">${permanent?"":`<button type="button" class="del-alt" data-imp="hide" title="${esc(L("Out of sight, links kept. Bring it back from Hidden & Archived.","不显示在画布上，关联保留。可在“隐藏与归档”中恢复。"))}">${ic("eyeOff")}${esc(L("Hide instead","改为隐藏"))}</button>`}<span class="sp"></span><button type="button" class="cbtn" data-d="close">${esc(L("Cancel","取消"))}</button><button type="button" class="cbtn del-go" data-imp="delete">${esc(permanent?L("Delete permanently","永久删除"):L("Delete","删除"))}</button></div>
   </div>`;
   if(!dlg.open)dlg.showModal();
-  qs('[data-imp="hide"]',dlg).onclick=()=>{dlg.close();hideFromCanvasNodes(ids)};
-  qs('[data-imp="archive"]',dlg).onclick=()=>{dlg.close();archiveNodes(ids)};
-  qs('[data-imp="perm-step1"]',dlg).onclick=()=>{const c=qs("#impPermConfirm",dlg);if(c)c.hidden=false};
-  qs('[data-imp="perm-cancel"]',dlg).onclick=()=>{const c=qs("#impPermConfirm",dlg);if(c)c.hidden=true};
-  qs('[data-imp="perm-confirm"]',dlg).onclick=()=>{dlg.close();permanentlyDeleteNodes(ids,{permanent:true})};
+  requestAnimationFrame(()=>qs('[data-imp="delete"]',dlg)?.focus());
+  qs('[data-imp="hide"]',dlg)?.addEventListener("click",()=>{dlg.close();hideFromCanvasNodes(ids)});
+  qs('[data-imp="delete"]',dlg).onclick=()=>{dlg.close();permanent?permanentlyDeleteNodes(ids,{permanent:true}):permanentlyDeleteNodes(ids,{undoable:true})};
 }
 function archiveDialog(){
   const paint=()=>{

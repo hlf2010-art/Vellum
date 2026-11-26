@@ -321,6 +321,15 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .card.direction .test b{display:block;font:600 12px/1 var(--ui);color:var(--pg);margin-bottom:6px}
 .card.direction.passed{opacity:.42;filter:saturate(.4)}
 .card.direction.passed:hover{opacity:.9;filter:none}
+/* paths: a direction's test result, and the cards built on a direction that failed */
+.card.direction .test .res{display:block;margin:11px -13px -11px;padding:8px 13px 9px;border-radius:0 0 var(--radius-md) var(--radius-md);font:500 13px/1.4 var(--ui);color:var(--label-2);background:var(--hover)}
+.card.direction .test .res:first-child{margin-top:-11px;border-radius:var(--radius-md)}
+.card.direction .test .res b{display:inline;margin:0;font:600 12px/1 var(--ui)}
+.card.direction .test .res.failed b{color:var(--danger-ink)}
+.card.direction .test .res.passed b{color:var(--ok)}
+.card.closed{opacity:.58;filter:saturate(.35)}
+.card.closed:hover{opacity:1;filter:none}
+.idea .round{color:var(--label-3)}
 .card.adopted{box-shadow:0 0 0 1.5px var(--pg),0 0 40px -10px color-mix(in srgb,var(--pg) 60%,transparent),var(--card-shadow)}
 .card.adopted.sel{box-shadow:0 0 0 2px var(--pg),0 0 0 5.5px color-mix(in srgb,var(--pg) 18%,transparent),0 0 40px -8px color-mix(in srgb,var(--pg) 55%,transparent),var(--card-shadow-up)}
 .stamp{display:inline-flex;align-items:center;gap:5px;font:600 12px/1 var(--ui);color:var(--pg)}
@@ -2713,9 +2722,37 @@ dialog.sheet.sys-sheet[open],dialog.sheet.in-settings[open]{display:flex;flex-di
 .src-row .src-main .sp{flex:1;min-width:0;overflow-wrap:anywhere;text-wrap:pretty}
 .src-row .src-kind,.src-row .src-pill{flex:none;font:600 11px/1 var(--ui);padding:3px 6px;border-radius:var(--radius-xs);background:var(--hover);color:var(--label-3)}
 .src-row .src-pill.warn{background:color-mix(in srgb,var(--A) 15%,transparent);color:var(--A)}
+/* Paths: each direction is its own neutral grey block; the result is said by its word in ink, not by a fill colour.
+   Rounds are groups with their own heading. */
+.m-paths .src-row .src-pill{background:var(--card-3,var(--hover));color:var(--label-2)}
+.m-paths .src-row .src-pill.danger{background:var(--card-3,var(--hover));color:var(--danger-ink)}
+.m-paths .src-row .src-pill.ok{background:var(--card-3,var(--hover));color:var(--ok)}
+.m-paths .src-row .src-pill.on{background:var(--card-3,var(--hover));color:var(--label)}
+.m-paths .pth-round{margin:20px 0 8px;font:600 12px/1 var(--ui);color:var(--label-3)}
+.m-paths .pth-round:first-of-type{margin-top:10px}
+.m-paths .srcs{gap:6px}
+.m-paths .pth-row{margin:0;padding:0;border-radius:var(--radius-md);background:var(--card-2)}
+.m-paths .pth-row.is-adopted{box-shadow:inset 0 0 0 1.5px var(--lc)}
+.m-paths .pth-row.is-gone{display:flex;align-items:center;gap:8px;padding-right:10px;background:transparent;box-shadow:inset 0 0 0 1px var(--hair-2)}
+.m-paths .pth-btn{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;row-gap:3px;align-items:center;flex:1;width:100%;min-width:0;margin:0;padding:10px 12px;border-radius:inherit;text-align:left;font:550 14px/1.35 var(--ui);color:var(--label)}
+.m-paths button.pth-btn:hover{background:color-mix(in srgb,var(--label) 4%,transparent)}
+.m-paths .pth-btn>.pth-chip{grid-column:1;grid-row:1/span 2;align-self:start}
+.m-paths .pth-btn>.sp{grid-column:2;grid-row:1}
+.m-paths .pth-btn>.pth-why{grid-column:2;grid-row:2;font:450 13px/1.4 var(--ui);color:var(--label-2)}
+.m-paths .pth-btn>.src-pill{grid-column:3;grid-row:1/span 2}
+.m-paths .pth-chip{width:22px;height:22px;border-radius:var(--radius-chip);display:grid;place-items:center;background:var(--lc,var(--label-3));color:var(--chip-ink);font:750 11px/1 var(--ui)}
+.m-paths .pth-round .m-clear{margin:-3px 0 -3px -7px}
+.m-paths .pth-row.is-gone .pth-chip,.m-paths .pth-row.is-draft .pth-chip{background:var(--hover);color:var(--label-2)}
+.m-paths .pth-row.is-gone .sp{color:var(--label-2)}
+.m-paths .pth-acts,.m-result .pth-acts{display:flex;justify-content:flex-end;gap:6px;margin-top:12px}
+.m-result .seg{margin-top:2px}
+.m-result input{width:100%;height:34px;margin-top:8px;padding:0 12px;border:0;border-radius:var(--radius-sm);background:var(--card-2);color:var(--label);font:14px var(--ui)}
+.m-result input::placeholder{color:var(--label-3)}
 .src-row .src-pill.danger{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
 .src-row .src-act{flex:none;height:24px;padding:0 8px;border-radius:var(--radius-pill);font:600 11px/1 var(--ui);background:var(--hover);color:var(--label-2)}
 .src-row .src-act:hover{background:var(--press);color:var(--label)}
+/* a row's action is a small pill beside the row, not a list row: it keeps none of the list button's padding or bleed */
+.srcs .src-row .src-act{display:inline-flex;align-items:center;align-self:center;margin:0;padding:0 10px;height:26px}
 .imp-ico{width:40px;height:40px;display:grid;place-items:center;border-radius:var(--radius-md);background:color-mix(in srgb,var(--A) 14%,transparent);color:var(--A)}
 .imp-ico .ico{width:20px;height:20px}
 .imp-box{display:grid;gap:6px;padding:10px 12px;border-radius:var(--radius-md);background:var(--well);box-shadow:none}
@@ -3770,7 +3807,7 @@ function shadowOf(b){const m=new Map();for(const n of b.nodes)m.set(n.id,{d:dige
 /* The change log keeps the last 500 entries, but a decision is the point of keeping a trail: what you kept,
    discarded, adopted, accepted or turned down must not be pushed out by a day of routine edits. When the log is
    full the oldest routine entries go first; decisions are only dropped past 5,000. */
-const KEY_CHANGE_OPS=new Set(["accept","discard","delete","adopt","accept-proposal","reject-proposal"]);
+const KEY_CHANGE_OPS=new Set(["accept","discard","delete","adopt","accept-proposal","reject-proposal","outcome","go-back","new-round","bring-back"]);
 const isKeyChange=c=>KEY_CHANGE_OPS.has(c?.op)||String(c?.op||"").startsWith("decline-");
 function trimChanges(){
   const a=board.changes;if(!Array.isArray(a)||a.length<=500)return;
@@ -4534,9 +4571,9 @@ function ctxResolveBasis(raw,rows){
    a record with what was turned down, about which card, and why when you said why (your reply in a thought's thread is
    taken as the reason). Records are undone with the act that made them. Agents are shown the records that bear on what
    they are working on, and anything they produce that repeats one is held back, unless a card added since answers it. */
-function declineRecord(kind,{title="",text="",by="",target=null,reason="",ref=null}={}){
+function declineRecord(kind,{title="",text="",by="",target=null,reason="",ref=null,meta=null}={}){
   board.declined=Array.isArray(board.declined)?board.declined:[];
-  const d={id:"dc-"+uid(),kind,title:clip(title,120),text:clipDoc(String(text||""),1200),by:by||"",target:target||null,ref:ref||null,reason:clip(reason||"",300),at:NOW()};
+  const d={id:"dc-"+uid(),kind,title:clip(title,120),text:clipDoc(String(text||""),1200),by:by||"",target:target||null,ref:ref||null,reason:clip(reason||"",300),at:NOW(),...(meta?{meta}:{})};
   board.declined.push(d);if(board.declined.length>1000)board.declined.shift();
   noteChange({op:"decline-"+kind,id:target||ref||d.id,type:kind,title:clip(title||text,60),who:"you",engine:"human",...(d.reason?{reason:clip(d.reason,120)}:{})});
   return d;
@@ -4548,12 +4585,17 @@ function declinedFor(target,{query="",limit=3,kinds=null}={}){
   const all=(board.declined||[]).filter(d=>(!kinds||kinds.includes(d.kind))&&!(d.kind==="retried"&&byId(d.ref)));if(!all.length)return [];
   const pool=visibleNodes().filter(n=>n.status==="ink");
   const idx=ctxIndex(pool),self=ctxTerms((target?ctxTextOf(target):"")+" "+query);
-  return all.map(d=>{const s=ctxSim(self,ctxTerms(declText(d)+" "+d.reason),idx),same=!!target&&(d.target===target.id||d.ref===target.id);return {d,score:(same?1:0)+s.score,ok:same||ctxRelated(s)}})
+  /* every round of a claim shares its turned-down ideas: round 2 must not offer what round 1 ruled out */
+  const fam=target?new Set(roundFamily(target).map(x=>x.id)):null;
+  return all.map(d=>{const s=ctxSim(self,ctxTerms(declText(d)+" "+d.reason),idx),same=!!target&&(fam.has(d.target)||d.ref===target.id);return {d,score:(same?1:0)+s.score,ok:same||ctxRelated(s)}})
     .filter(x=>x.ok).sort((a,b)=>b.score-a.score).slice(0,limit).map(x=>x.d);
 }
 /* a card made after the decision that speaks to what was declined, or to the reason given */
 function declAnsweredBy(d){
-  const pool=visibleNodes().filter(n=>n.status==="ink"&&n.type!=="group"&&(n.created||0)>d.at&&n.ref!==d.ref);
+  /* a failed real-world test is reopened only by new evidence: not by what was built on the failed direction, by a new
+     round of the same claim, or by another suggestion */
+  const EVID=["source","note","notepad","image","recording","audio","link","frame","synthesis","table"];
+  const pool=visibleNodes().filter(n=>n.status==="ink"&&n.type!=="group"&&(n.created||0)>d.at&&n.ref!==d.ref&&(d.kind!=="failed"||EVID.includes(n.type)&&n.dir!==d.ref));
   if(!pool.length)return null;
   const idx=ctxIndex(pool),self=ctxTerms(declText(d)+" "+d.reason);
   let best=null;for(const n of pool){const s=ctxSim(self,ctxTerms(ctxTextOf(n)),idx);if(ctxRelated(s)&&(!best||s.score>best.s))best={n,s:s.score}}
@@ -4604,7 +4646,7 @@ function heldDialog(){
 }
 function declinedPromptBlock(items){
   if(!items.length)return "";
-  const kind={draft:"a draft",pin:"a thought",edit:"a suggested edit",delete:"a suggested deletion",link:"a suggested link","passed-over":"a direction not adopted",retried:"a draft they asked you to redo",rerolled:"a thought they asked you to replace with a fresh angle","edited-out":"text they removed from an agent's card",deleted:"an agent's card they deleted"};
+  const kind={draft:"a draft",pin:"a thought",edit:"a suggested edit",delete:"a suggested deletion",link:"a suggested link","passed-over":"a direction not adopted",retried:"a draft they asked you to redo",rerolled:"a thought they asked you to replace with a fresh angle","edited-out":"text they removed from an agent's card",deleted:"an agent's card they deleted",failed:"a direction whose real-world test failed"};
   return `\nIdeas the designer already turned down (do not offer them again unless a newer card answers the reason; if you revisit one, say which card changes things):\n${items.map(d=>`- “${clip(declText(d),140)}” (${kind[d.kind]||d.kind}, ${relDate(d.at)})${d.reason?` — reason: ${clip(d.reason,160)}`:" — no reason given"}`).join("\n")}`;
 }
 function revisionsOf(n){return [...(n?.versions||[]),...(n?[{rev:n.rev||1,t:n.updated||n.created,title:n.title||"",text:n.text||"",current:true}]:[])]}
@@ -5313,7 +5355,7 @@ function cardBody(n){
     const conflict=pend?`<div class="tbl-conflict" role="group" aria-label="${esc(tr("Newer data from ","来自 ")+where+tr(""," 的新数据"))}"><span>${esc(tr(`${where} has newer data, and you've edited this table.`,`${where} 有新数据，而你也修改过这个表格。`))}</span><span class="tbl-conflict-acts"><button type="button" class="sp-mini" data-tbl-conflict="replace">${tr("Replace my edits","替换我的修改")}</button><button type="button" class="sp-mini" data-tbl-conflict="both">${tr("Keep both","两者都保留")}</button><button type="button" class="sp-mini quiet" data-tbl-conflict="cancel">${tr("Cancel","取消")}</button></span></div>`:"";
     return `<div class="in">${head(`${byline(n)}${ic("grid")}<span>${tr("Table","表格")}</span>`)}
     <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol,editable:!sk,sort:n.tblSort})}${conflict}${sk?sketchActs(n):foot(fL(from?`<span class="tbl-src">${esc(from)}${refresh}</span>`:""),live?group("foot-r",threadCount(n),readAt):fR(threadCount(n)))}</div>`;}
-  case"idea":return `<div class="in">${head(esc(n.kind||"Idea"))}
+  case"idea":return `<div class="in">${head(esc(n.kind||"Idea")+(n.round>1?`<span class="round"> · ${uiLang()==="zh"?`第 ${n.round} 轮`:`Round ${n.round}`}</span>`:""))}
     <h4 data-edit="text">${esc(n.text)}</h4>${foot(evidenceScale(n),fR(threadCount(n)))}</div>`;
   case"source":{
     if(isHtmlSource(n)){
@@ -5363,8 +5405,9 @@ function cardBody(n){
   case"frame":{const r=byId(n.from),plChip=plBusyNodes.has(n.id)?`<span class="foot-pl busy">Reversing…</span>`:n.plPack?.positive?`<button type="button" class="foot-pl" data-a="reverse-prompt" title="${esc(uiLang()==="zh"?"查看反推提示词包":"View extracted Prompt Pack")}">${ic("sparkles")}Prompt</button>`:"";return `<div class="media"><img src="${mediaSrc(n.media)}" alt="" draggable="false"><span class="badge">${ic("frame")}FRAME</span><span class="tc">@ ${tc(n.t)}</span></div><div class="in">${head(`<span class="card-k-src">Frame${r?` · ${esc(r.title)}`:""}</span>`)}<h4 data-edit="title">${esc(n.title||"Frame "+tc(n.t))}</h4>${foot(fL(n.weight?weightHTML(n.weight,sk):"",plChip),fR(threadCount(n)))}</div>`}
   case"question":{const on=byId(n.on);return `<div class="in"><span class="qmark" aria-hidden="true">?</span>${head(`${byline(n)}${L?`<span class="q-dot"></span>`:""}<span class="q-on">${uiLang()==="zh"?"追问":"Question"}${on?`${uiLang()==="zh"?" · ":" on "}${esc(titleOf(on))}`:""}</span>`)}<h4 data-edit="text">${esc(n.text)}</h4>${foot("",fR(threadCount(n)))}</div>`}
   case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode));
+    const res=!sk&&n.outcome?.result,resHTML=res?`<span class="res ${res}"><b>${outcomeWord(res)}</b>${n.outcome.note?` · ${esc(n.outcome.note)}`:""}</span>`:"";
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
-    <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test?`<div class="test"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span></div>`:""}
+    <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test||resHTML?`<div class="test">${n.test?`<b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span>`:""}${resHTML}</div>`:""}
     ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",mode?`<span>${mode}</span>`:""),fR(hasProof?`<span>${uiLang()==="zh"?"已生成原型":"Proof built"}</span>`:"",threadCount(n)))}</div>`}
   case"proof":{
     /* A proof is an experiment that tests its direction: results first, thumbnail second, one next step. */
@@ -6287,7 +6330,7 @@ function nodeLineageSig(n){
   return refs.map(r=>`${r.sourceId}:${r.depType}:${r.status}:${r.node?(r.node.rev||1)+":"+digest(r.node):"T"}`).join("|");
 }
 
-function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
+function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
   n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
@@ -6334,7 +6377,7 @@ function renderNodes(){
     }
     const L=lin(n),passed=n.type==="direction"&&n.status==="ink"&&board.adopted[n.idea]&&board.adopted[n.idea]!==n.id;
     const fCls=hasFind?(hitIds.has(n.id)?(curId===n.id?"find-hit find-cur":"find-hit"):"find-dim"):"";
-    el.className=["card",n.type,isHtmlSource(n)?"html":"",n.status==="sketch"?"sketch":"",n.vote==="down"?"disliked":"",L?"pg-"+L:"",sel.includes(n.id)?"sel":"",litSet().nodes.has(n.id)?"lit":"",n.pid&&n.pid===currentPid()&&groups().size>1?"current":"",n.type==="direction"&&board.adopted[n.idea]===n.id&&n.status==="ink"?"adopted":"",passed?"passed":"",fCls,el.dataset.extra||""].filter(Boolean).join(" ");
+    el.className=["card",n.type,isHtmlSource(n)?"html":"",n.status==="sketch"?"sketch":"",n.vote==="down"?"disliked":"",L?"pg-"+L:"",sel.includes(n.id)?"sel":"",litSet().nodes.has(n.id)?"lit":"",n.pid&&n.pid===currentPid()&&groups().size>1?"current":"",n.type==="direction"&&board.adopted[n.idea]===n.id&&n.status==="ink"?"adopted":"",passed?"passed":"",n.type==="direction"&&n.status==="ink"&&n.outcome?.result==="failed"?"res-failed":"",n.type!=="direction"&&failedPath(n)?"closed":"",fCls,el.dataset.extra||""].filter(Boolean).join(" ");
     if(n.tone)el.dataset.tone=n.tone;else delete el.dataset.tone;
     el.style.left=n.x+"px";el.style.top=n.y+"px";el.style.width=nodeW(n)+"px";el.style.height=n.type==="group"?nodeH(n)+"px":"";
     el.setAttribute("aria-label",(n.status==="sketch"?"Sketch: ":"")+n.type+": "+titleOf(n));el.tabIndex=-1;el.dataset.t=clip(n.type==="print"&&(n.title||n.spec?.title)?`No. ${n.ed} · ${n.title||n.spec.title}`:titleOf(n),90);
@@ -7313,7 +7356,7 @@ function renderMargin(){queueMicrotask(placeBars);
   const moreMenuHTML=`<div class="m-more-wrap"><button type="button" class="m-iconbtn" data-m="more-toggle" title="More actions" aria-label="More actions"><svg class="ico" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.75" fill="currentColor" stroke="none"/></svg></button><div class="m-more-pop" id="mMorePop" hidden>${moreActs?`<div class="m-more-sec">${moreActs}</div><div class="m-more-div"></div>`:""}<div class="m-more-sec"><button type="button" class="cbtn" data-m="hide-card">${ic("eyeOff")}Hide from canvas</button><button type="button" class="cbtn" data-m="archive">${ic("archive")}Archive</button><button type="button" class="cbtn danger" data-m="delete-card">${ic("trash")}Delete</button></div></div></div>`;
   const notesHTML=thread.length?`<div class="m-sec"><h5><span>Notes</span><span class="m-hmeta"><span>${thread.length}</span>${thread.length>1?`<button type="button" class="m-clear" data-m="clear-msgs" title="Clear all notes">Clear all</button>`:""}</span></h5><div class="thread" id="mThread">${thread.map((msg,idx)=>msgHTML(msg,idx)).join("")}</div></div>`:"";
   m.innerHTML=`<div class="grabber" data-m="close"></div><div class="m-head"><div class="m-head-bar"><div class="m-head-main">${focusTitle(n)}${sublineHTML}</div><div class="m-head-tools">${voteBtns}${dlBtn}${moreMenuHTML}<button type="button" class="m-iconbtn" data-m="close" title="Close (Esc)" aria-label="Close">${ic("x")}</button></div></div></div>
-   <div class="m-body">${htmlMain}${padHTML}${listHTML}${synHTML}${evidenceHTML}${fullHTML}${attachHTML}${plHTML}${srcs}${relHTML}${notesHTML}</div>
+   <div class="m-body">${htmlMain}${resultSheetHTML(n)}${pathsSheetHTML(n)}${padHTML}${listHTML}${synHTML}${evidenceHTML}${fullHTML}${attachHTML}${plHTML}${srcs}${relHTML}${notesHTML}</div>
    <div class="m-foot">${n.type==="proof"?`<div class="m-acts-row">${acts}</div>`:""}<div class="m-chips">${["critic","scout","muse","wright"].map(k=>`<button type="button" data-m="mention" data-k="${k}">@${AGENTS[k].name.toLowerCase()}</button>`).join("")}</div><div class="m-write"><label for="mInput" class="sr">Add a note</label><textarea id="mInput" rows="1" placeholder="Add a note, or ask @${AGENTS[defaultAgentFor(n)].name.toLowerCase()}">${esc(draft)}</textarea><button type="button" class="send" id="mSendBtn" data-m="post" aria-label="Post"${draft.trim()?"":" disabled"}><svg class="ico" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div></div>`;
   const ta=qs("#mInput",m),sb=qs("#mSendBtn",m);
   if(ta&&sb){
@@ -7329,6 +7372,9 @@ function renderMargin(){queueMicrotask(placeBars);
     mEd.oninput=()=>{const t=fmtCodeStat(mEd.value),st=qs("#mHtmlStat",m),ln=qs("#mHtmlLen",m);if(st)st.textContent=t;if(ln)ln.textContent=t;saveHtmlCode(n,mEd.value,{skipMargin:true,liveEdit:true})};
     mEd.onkeydown=e=>handleCodeKey(e,async()=>{await saveHtmlCode(n,mEd.value,{checkpoint:true,force:true,liveEdit:true});recordNodeEdit(n,htmlDig,htmlT,htmlTx);htmlDig=digest(n);htmlT=n.title;htmlTx=n.text;renderAll();persist();toast("Saved HTML changes")});
   }
+  /* the line about what happened saves when you leave it or press Enter; before a result is chosen it waits for one */
+  const resNote=qs("#mResNote",m);
+  if(resNote){resNote.onchange=()=>{const d=byId(n.id);if(d?.outcome)setOutcome(d,d.outcome.result,resNote.value)};resNote.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();resNote.blur()}}}
   const mPad=qs("#mNotepadEd",m);
   if(mPad){
     let padCheck=false,padDig=digest(n),padT=n.title,padTx=n.text;
@@ -9565,7 +9611,7 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
   if(!["idea","note","notepad","treemap"].includes(idea.type))return toast("Strategist forks claims, ideas, notes, notepads and tree maps.");
   const existing=board.nodes.filter(n=>n.type==="direction"&&n.idea===idea.id);
   const free=LETTERS.filter(l=>!existing.some(d=>d.letter===l));
-  if(!free.length)return toast("This claim has four directions already. Discard one to explore again.");
+  if(!free.length)return toast(L("This claim has four directions. Start a new round to explore more; these stay on the board.","这个论点已有四个方向。开始新一轮继续探索，现有方向会保留在画板上。"),{onAct:()=>newRound(byId(idea.id)),actLabel:L("New round","新一轮")});
   if(count>free.length)toast(free.length===1?`Room for one more direction. Strategist will suggest ${free[0]}.`:`Room for ${free.length} more directions.`);
   // the questions make up for a small model; when Auto sends the fork to the cloud there is nothing to make up for
   if(ask&&smallModelOn()&&autoPlan("heavy").order[0]==="studio"&&!existing.length&&forkIsOpen(idea,brief,sourcesFor(idea))){
@@ -9581,15 +9627,15 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
   const srcs=[...new Map([...sourcesFor(idea),...scoutSrcs()].map(n=>[n.id,n])).values()];
   const groundNote=srcs.some(n=>n.by==="scout"&&n.type==="source")?"\nBackground Scout found on the web is on the wall. Draw on it where it helps and never contradict it; it is not a checklist, so do not build a direction around a single fact.\n":"";
   const imgNodes=[idea,...srcs].filter(n=>n&&(n.type==="image"||n.type==="frame"));
-  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${groundNote}${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text).join("\n")}\n`:""}${declinedPromptBlock(declinedFor(idea,{limit:4,kinds:["draft","passed-over","retried"]}))}
+  const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${groundNote}${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text+(d.outcome?` (its test ${d.outcome.result}${d.outcome.note?": "+d.outcome.note:""})`:"")).join("\n")}\n`:""}${earlierRoundsBlock(idea)}${declinedPromptBlock(declinedFor(idea,{limit:4,kinds:["draft","passed-over","retried","failed"]}))}
 ${brief?`\nThe designer added: "${brief}"\n`:""}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
-  const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,(wallText(srcs)||"")+groundNote):null;
+  const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,(wallText(srcs)||"")+groundNote+earlierRoundsBlock(idea)):null;
   const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({weight:"heavy",system:`${ROLE.muse}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const held=[];
-  const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count).filter(d=>{const e=echoOfDeclined(`${d.title||""} — ${d.plan||d.text||""}`,{kinds:["draft","passed-over"]});if(e&&!e.answeredBy){held.push(e.d);holdBack("direction",{target:idea.id,who:"muse",text:`${d.title||""} — ${d.plan||d.text||""}`,payload:{title:d.title,plan:d.plan||d.text||"",test:d.test||"",mode:d.mode},declined:e.d});return false}if(e)d._revisits={id:e.d.id,by:e.answeredBy.id};return true});
+  const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count).filter(d=>{const e=echoOfDeclined(`${d.title||""} — ${d.plan||d.text||""}`,{kinds:["draft","passed-over","failed"]});if(e&&!e.answeredBy){held.push(e.d);holdBack("direction",{target:idea.id,who:"muse",text:`${d.title||""} — ${d.plan||d.text||""}`,payload:{title:d.title,plan:d.plan||d.text||"",test:d.test||"",mode:d.mode},declined:e.d});return false}if(e)d._revisits={id:e.d.id,by:e.answeredBy.id};return true});
   if(!list.length){persist();return toast(L(`Strategist only came up with directions you already turned down (${held.map(d=>`“${clip(d.title,28)}”`).join(", ")}). Add what changed, then fork again.`,`Strategist 只想到了你已否决的方向（${held.map(d=>`「${clip(d.title,28)}」`).join("、")}）。补充新的信息后再试。`))}
   checkpoint();const pid="p-"+uid();
   const made=list.map((d,i)=>{const n=node("direction",{_src:idea.id,idea:idea.id,letter:free[i],mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan||d.text||"",test:d.test||"",...(d.risk?{risk:String(d.risk)}:{}),by:"muse",status:"sketch",pid,...(d._revisits?{revisits:d._revisits}:{})},places[i]);const e=edge(idea.id,n.id,"derive","live");captureDepSnapshot(n,[idea]);freshEdges.add(e.id);return n});
@@ -9999,7 +10045,7 @@ async function erase(ids,opts={}){
     if(ns.every(n=>n.status==="sketch")){
       checkpoint();
       ns.forEach(n=>{const el=nodeEl(n.id);if(el){dissolve(el);el.classList.add("erasing")}});await wait(calm()?0:320);
-      for(const n of ns)declineRecord("draft",{title:n.type==="direction"?n.title:titleOf(n),text:[fullTextOf(n),n.test].filter(Boolean).join(" Test: "),by:n.by,target:n.idea||n._src||inputsOf(n.id)[0]?.id||null,reason:opts.reason||"",ref:n.id});
+      for(const n of ns)declineRecord("draft",{title:n.type==="direction"?n.title:titleOf(n),text:[fullTextOf(n),n.test].filter(Boolean).join(" Test: "),by:n.by,target:n.idea||n._src||inputsOf(n.id)[0]?.id||null,reason:opts.reason||"",ref:n.id,meta:n.type==="direction"?{type:"direction",letter:n.letter,mode:n.mode,plan:n.text||"",test:n.test||""}:null});
       const gone=new Set(ns.map(n=>n.id));
       board.nodes=board.nodes.filter(n=>!gone.has(n.id));
       board.edges=board.edges.filter(e=>!gone.has(e.a)&&!gone.has(e.b));
@@ -10108,6 +10154,157 @@ function adopt(d){
   log("you",`Adopted <b>${d.letter} ${esc(d.title)}</b>`,d.id);sfx("keep");renderAll();persist();
   const st=qs(`[data-stamp="${d.id}"]`);if(st&&!calm()){st.classList.add("slam")}
   toast(`Adopted ${d.title}`,{undo:true});
+}
+/* ── paths: a test's result, going back to a choice, new rounds ──────────
+   Every path stays on the board. The designer records how a direction's real-world test came out (the crew
+   never does: real evidence comes from the designer), goes back to the claim's choice when a path fails or
+   they change their mind, starts a new round of directions from the claim when the four letters are used up
+   or a fresh start is due, and brings back a direction they discarded. A failed path stays visible, and it
+   joins decision memory so the crew does not offer it again. Each step is one undoable transaction. */
+const dirsOf=id=>board.nodes.filter(n=>n.type==="direction"&&n.idea===id&&!n.tombstone);
+const isClaim=n=>!!n&&["idea","note","notepad","treemap"].includes(n.type);
+function roundFamily(n){
+  if(!isClaim(n))return n?[n]:[];
+  const root=(n.roundOf&&byId(n.roundOf))||n;
+  return [root,...board.nodes.filter(x=>x.roundOf===root.id&&!x.tombstone).sort((a,b)=>(a.round||0)-(b.round||0))];
+}
+const outcomeWord=r=>r==="passed"?L("Passed","通过"):r==="failed"?L("Failed","未通过"):"";
+const failedPath=n=>{if(!n)return false;if(n.type==="direction")return n.outcome?.result==="failed";const d=n.dir&&byId(n.dir);return !!d&&d.outcome?.result==="failed"};
+function setOutcome(d,result,note){
+  if(!d||d.type!=="direction")return toast(L("Select a direction to record its result.","请先选中一个方向再记录结果。"));
+  if(d.status==="sketch")return toast(L("Keep this direction first.","请先保留这个方向。"));
+  result=result==="passed"||result==="failed"?result:null;
+  note=clip(String(note??d.outcome?.note??"").replace(/\s+/g," ").trim(),200);
+  if((d.outcome?.result||null)===result&&(!result||(d.outcome?.note||"")===note))return;
+  checkpoint();
+  board.declined=(board.declined||[]).filter(r=>!(r.kind==="failed"&&r.ref===d.id));
+  if(result){
+    d.outcome={result,note,at:NOW()};
+    if(result==="failed")declineRecord("failed",{title:`${d.letter} · ${d.title}`,text:[d.text,d.test].filter(Boolean).join(" Test: "),by:d.by,target:d.idea,reason:note,ref:d.id});
+  }else delete d.outcome;
+  noteChange({op:"outcome",id:d.id,type:"direction",title:clip(`${d.letter} ${d.title}`,60),who:"you",engine:"human",result:result||"open",...(result&&note?{reason:clip(note,120)}:{})});
+  log("you",result?`Marked <b>${d.letter} ${esc(d.title)}</b> ${result}${note?`: <i>${esc(clip(note,90))}</i>`:""}`:`Cleared the result of <b>${d.letter} ${esc(d.title)}</b>`,d.id);
+  sfx(result==="failed"?"remove":"keep");renderAll();persist();
+  const claim=byId(d.idea);
+  if(result==="failed"&&claim&&board.adopted[claim.id]===d.id)toast(L(`${d.letter} failed its test and stays on the board. Go back to the claim to try another direction.`,`${d.letter} 未通过验证，会保留在画板上。回到论点，换一个方向试试。`),{onAct:()=>goBack(byId(claim.id)),actLabel:L("Go back","回到论点")});
+  else toast(result?L(`Marked ${d.letter} ${result}`,`已标记 ${d.letter} ${outcomeWord(result)}`):L("Result cleared","已清除结果"),{undo:true});
+}
+function resultDialog(d){
+  if(!d||d.type!=="direction")return;
+  if(d.status==="sketch")return toast(L("Keep this direction first.","请先保留这个方向。"));
+  let pick=d.outcome?.result||null;
+  const seg=()=>["passed","failed"].map(r=>`<button type="button" data-r="${r}" aria-pressed="${pick===r}">${outcomeWord(r)}</button>`).join("");
+  openDialog(esc(L(`Result of ${d.letter} · ${clip(d.title,40)}`,`${d.letter} · ${clip(d.title,40)} 的结果`)),`<form id="resForm" class="m-result" style="display:grid;gap:10px">
+    ${d.test?`<p style="margin:0;font:14px/1.5 var(--ui);color:var(--label-2)"><b style="font-weight:600;color:var(--label)">${L("The test","验证标准")}</b> · ${esc(d.test)}</p>`:""}
+    <div class="seg" role="group" aria-label="${esc(L("How the test came out","验证结果"))}">${seg()}</div>
+    <input name="note" maxlength="200" value="${esc(d.outcome?.note||"")}" placeholder="${esc(L("What happened, in one line: 1 of 5 kept the draft","一句话说明发生了什么：5 人中只有 1 人保留了草稿"))}" aria-label="${esc(L("What happened","发生了什么"))}">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">${d.outcome?`<button type="button" class="cbtn" data-res-clear>${L("Clear result","清除结果")}</button>`:""}<button type="button" class="cbtn" data-d="close">${L("Cancel","取消")}</button><button type="submit" class="cbtn solid">${L("Record","记录")}</button></div>
+  </form>`,dl=>{
+    const form=qs("#resForm",dl),sg=qs(".seg",form);
+    sg.onclick=e=>{const b=e.target.closest("[data-r]");if(!b)return;pick=pick===b.dataset.r?null:b.dataset.r;sg.innerHTML=seg()};
+    qs("[data-res-clear]",form)?.addEventListener("click",()=>{dl.close();setOutcome(byId(d.id),null)});
+    form.onsubmit=e=>{e.preventDefault();if(!pick)return toast(L("Choose Passed or Failed.","请选择通过或未通过。"));const note=form.note.value;dl.close();setOutcome(byId(d.id),pick,note)};
+    setTimeout(()=>(pick?form.note:sg.querySelector("button"))?.focus(),40);
+  });
+}
+function goBack(claim){
+  if(!isClaim(claim))return toast(L("Select a claim to go back to.","请先选中要回到的论点。"));
+  const cur=byId(board.adopted[claim.id]);
+  if(!cur)return toast(L("Nothing is adopted on this claim, so its choice is already open.","这个论点还没有采纳方向，选择仍然开放。"));
+  checkpoint();
+  delete board.adopted[claim.id];
+  /* the other directions were passed over for this one; with the choice open again they are candidates again */
+  board.declined=(board.declined||[]).filter(r=>!(r.kind==="passed-over"&&r.target===claim.id));
+  const res=cur.outcome?.result||null;
+  noteChange({op:"go-back",id:claim.id,type:claim.type,title:clip(titleOf(claim),60),who:"you",engine:"human",from:cur.id,...(res?{result:res}:{})});
+  log("you",`Went back to <b>${esc(clip(titleOf(claim),60))}</b>, leaving <b>${cur.letter} ${esc(cur.title)}</b>${res?` (${res})`:""} on the board`,claim.id);
+  sfx("undo");select([claim.id],{menus:false});renderAll();persist();
+  focusNodes([claim,...dirsOf(claim.id).filter(n=>!isNodeHidden(n))],Math.max(.55,Math.min(cam.s,.9)));
+  const free=LETTERS.some(l=>!dirsOf(claim.id).some(x=>x.letter===l));
+  toast(L(`Back at the choice. ${cur.letter} stays on the board${res==="failed"?" as failed":""}. Adopt another direction${free?", explore more":""} or start a new round.`,`已回到选择点。${cur.letter} 会保留在画板上${res==="failed"?"（未通过）":""}。可以采纳其他方向${free?"、继续探索":""}，或开始新一轮。`),{undo:true});
+}
+function newRound(claim){
+  if(!isClaim(claim))return toast(L("Select a claim to start a new round from.","请先选中一个论点再开始新一轮。"));
+  if(claim.status==="sketch")return toast(L("Keep the claim first.","请先保留这个论点。"));
+  const fam=roundFamily(claim),root=fam[0],num=Math.max(1,...fam.map(x=>x.round||1))+1;
+  const cluster=[claim,...dirsOf(claim.id)].flatMap(n=>[n,...outputsOf(n.id)]).filter(n=>!isNodeHidden(n));
+  const box=bbox(cluster);
+  checkpoint();
+  const props={text:claim.type==="idea"?(claim.text||""):clip(titleOf(claim),200),round:num,roundOf:root.id,prevRound:claim.id,by:"you"};
+  if(claim.type==="idea"&&claim.kind)props.kind=claim.kind;
+  const n=node("idea",props,freeSpot(claim.x,box.y1+120,W.idea,HGUESS.idea));
+  const e=edge(claim.id,n.id,"derive","live");freshEdges.add(e.id);setTimeout(()=>freshEdges.clear(),1200);
+  const failed=fam.flatMap(c=>dirsOf(c.id)).filter(d=>d.outcome?.result==="failed").length;
+  noteChange({op:"new-round",id:n.id,type:"idea",title:clip(titleOf(n),60),who:"you",engine:"human",from:claim.id,round:num});
+  log("you",`Started round ${num} of <b>${esc(clip(titleOf(root),60))}</b>`,n.id);
+  sfx("create");select([n.id],{menus:false});renderAll();persist();
+  focusNodes([claim,n],Math.max(.55,Math.min(cam.s,.9)));
+  toast(L(`Round ${num} started. Say what changed, then explore directions.${failed?" Strategist knows what failed.":""}`,`第 ${num} 轮已开始。先写下有什么变化，再探索方向。${failed?"Strategist 知道之前哪些方向未通过。":""}`),{onAct:()=>{const c=byId(n.id);if(c)fork(c,3)},actLabel:L("Explore","探索")});
+  return n;
+}
+/* a discarded direction lives on as a decision record; its letter, plan and test come back with it */
+function directionFromRecord(r){
+  const m=r?.meta||{};if(m.type&&m.type!=="direction")return null;
+  const t=String(r?.text||""),i=t.indexOf(" Test: ");
+  if(!m.type&&i<0)return null;
+  return {title:r.title||"",plan:m.plan??(i>=0?t.slice(0,i):t),test:m.test??(i>=0?t.slice(i+7):""),mode:m.mode,letter:m.letter};
+}
+const discardedDirs=claim=>(board.declined||[]).filter(r=>r.kind==="draft"&&r.target===claim.id&&!byId(r.ref)&&directionFromRecord(r));
+function bringBack(recId){
+  const r=(board.declined||[]).find(x=>x.id===recId);if(!r)return toast(L("That direction is no longer in the record.","这条记录已不存在。"));
+  const claim=byId(r.target),d=directionFromRecord(r);
+  if(!isClaim(claim)||isNodeHidden(claim)||!d)return toast(L("The claim it belonged to is gone.","它所属的论点已不存在。"));
+  const used=dirsOf(claim.id).map(x=>x.letter),free=LETTERS.filter(l=>!used.includes(l));
+  if(!free.length)return toast(L("This claim has four directions. Start a new round to bring this one back.","这个论点已有四个方向。开始新一轮后再找回它。"),{onAct:()=>newRound(byId(claim.id)),actLabel:L("New round","新一轮")});
+  const letter=free.includes(d.letter)?d.letter:free[0],place=planFork(claim,1).places[0];
+  checkpoint();
+  const n=node("direction",{_src:claim.id,idea:claim.id,letter,mode:MODES[d.mode]?d.mode:"story",title:clip(d.title,48),text:d.plan,test:d.test,by:r.by||"muse",status:"sketch",pid:"p-"+uid(),broughtBack:r.id},place);
+  edge(claim.id,n.id,"derive","live");captureDepSnapshot(n,[claim]);
+  board.declined=board.declined.filter(x=>x.id!==r.id);
+  noteChange({op:"bring-back",id:n.id,type:"direction",title:clip(`${letter} ${n.title}`,60),who:"you",engine:"human",declined:r.id});
+  log("you",`Brought back <b>${letter} ${esc(n.title)}</b>, discarded ${relDate(r.at)}`,n.id);
+  sfx("create");renderAll();persist();follow([claim,n]);
+  toast(L(`Brought back ${letter} · ${n.title} as a draft. Keep it to work on it.`,`已找回 ${letter} · ${n.title}（草稿）。保留后即可继续。`),{undo:true});
+  return n;
+}
+/* what Strategist is told when it forks a later round: what earlier rounds tried, and how each came out */
+function earlierRoundsBlock(claim){
+  const fam=roundFamily(claim);if(fam.length<2)return "";
+  const prior=fam.filter(c=>c.id!==claim.id&&(c.round||1)<(claim.round||1));
+  const lines=prior.flatMap(c=>dirsOf(c.id).filter(d=>d.status==="ink").map(d=>`- Round ${c.round||1}, ${d.letter} · ${d.title}: ${d.text}${d.outcome?` (test ${d.outcome.result}${d.outcome.note?": "+d.outcome.note:""})`:board.adopted[c.id]===d.id?" (adopted, not tested yet)":" (not adopted)"}`));
+  return lines.length?`\nThis is round ${claim.round||1} of the claim. Earlier rounds tried these directions. Do not repeat them, and learn from how they came out:\n${lines.join("\n")}\n`:"";
+}
+/* the claim's sheet: every round, every direction and how it ended, plus the ways back */
+function pathsSheetHTML(n){
+  if(!isClaim(n))return "";
+  const fam=roundFamily(n);
+  if(fam.length<2&&!dirsOf(n.id).length&&!discardedDirs(n).length)return "";
+  const all=fam.flatMap(c=>dirsOf(c.id).filter(d=>!d.archived));
+  const failed=all.filter(d=>d.outcome?.result==="failed").length;
+  const meta=[`${all.length} ${all.length===1?L("direction","个方向"):L("directions","个方向")}`,failed?`${failed} ${L("failed","个未通过")}`:"",fam.length>1?`${fam.length} ${L("rounds","轮")}`:""].filter(Boolean).join(" · ");
+  const row=(d,c)=>{
+    const ad=board.adopted[c.id]===d.id,res=d.outcome?.result;
+    const pill=res?`<span class="src-pill ${res==="failed"?"danger":"ok"}">${outcomeWord(res)}</span>`:ad?`<span class="src-pill on">${L("Adopted","已采纳")}</span>`:d.status==="sketch"?`<span class="src-pill">${L("Draft","草稿")}</span>`:board.adopted[c.id]?`<span class="src-pill">${L("Not adopted","未采纳")}</span>`:"";
+    const why=res&&d.outcome.note?`<span class="pth-why">${esc(clip(d.outcome.note,120))}</span>`:"";
+    const cls=["src-row","pth-row",res?"is-"+res:"",ad?"is-adopted":"",d.status==="sketch"?"is-draft":""].filter(Boolean).join(" ");
+    return `<div class="${cls}" style="--lc:var(--${esc(d.letter)})"><button type="button" class="pth-btn" data-m="goto" data-id="${esc(d.id)}"><span class="pth-chip">${esc(d.letter)}</span><span class="sp">${esc(d.title)}</span>${why}${pill}</button></div>`;
+  };
+  const gone=c=>discardedDirs(c).slice(-4).reverse().map(r=>`<div class="src-row pth-row is-gone"><div class="pth-btn"><span class="pth-chip">${esc(r.meta?.letter||"·")}</span><span class="sp">${esc(clip(r.title,60))}</span>${r.reason?`<span class="pth-why">${esc(clip(r.reason,120))}</span>`:""}<span class="src-pill">${L("Discarded","已舍弃")}</span></div><button type="button" class="src-act" data-m="bring-back" data-id="${esc(r.id)}">${L("Bring back","找回")}</button></div>`).join("");
+  const body=fam.map(c=>{
+    const ds=dirsOf(c.id).filter(d=>!d.archived).sort((a,b)=>String(a.letter).localeCompare(String(b.letter)));
+    const label=L(`Round ${c.round||1}`,`第 ${c.round||1} 轮`);
+    const head=fam.length>1?`<p class="pth-round">${c.id===n.id?`${label} · ${L("this claim","当前论点")}`:`<button type="button" class="m-clear" data-m="goto" data-id="${esc(c.id)}">${label}</button>`}</p>`:"";
+    const rows=ds.map(d=>row(d,c)).join("")+gone(c);
+    return head+`<div class="srcs">${rows||`<p style="margin:0;font:12.5px/1.5 var(--ui);color:var(--label-3)">${L("No directions yet.","还没有方向。")}</p>`}</div>`;
+  }).join("");
+  const acts=`<div class="pth-acts">${board.adopted[n.id]?`<button type="button" class="cbtn" data-m="go-back">${ic("undo")}${L("Go back here","回到这里")}</button>`:""}<button type="button" class="cbtn" data-m="new-round">${ic("lineage")}${L("New round","新一轮")}</button></div>`;
+  return `<div class="m-sec m-paths"><h5><span>${L("Paths","路径")}</span><span>${esc(meta)}</span></h5>${body}${acts}</div>`;
+}
+/* a direction's sheet: how its test came out, recorded by the designer */
+function resultSheetHTML(n){
+  if(n.type!=="direction"||n.status==="sketch")return "";
+  const res=n.outcome?.result||null;
+  return `<div class="m-sec m-result"><h5><span>${L("Result","结果")}</span><span>${res?outcomeWord(res):L("Not tested yet","尚未验证")}</span></h5><div class="seg" role="group" aria-label="${esc(L("How the test came out","验证结果"))}">${["passed","failed"].map(r=>`<button type="button" data-m="outcome" data-r="${r}" aria-pressed="${res===r}">${outcomeWord(r)}</button>`).join("")}</div><input id="mResNote" maxlength="200" value="${esc(n.outcome?.note||"")}" placeholder="${esc(L("What happened, in one line","一句话说明发生了什么"))}" aria-label="${esc(L("What happened","发生了什么"))}">${res==="failed"&&board.adopted[n.idea]===n.id?`<div class="pth-acts"><button type="button" class="cbtn" data-m="go-back">${ic("undo")}${L("Go back to the claim","回到论点")}</button></div>`:""}</div>`;
 }
 function pullPrint(p){
   if(!p||p.type!=="proof")return toast(L("Select a proof to snapshot.","请先选中一个原型再生成快照。"));if(p.status==="sketch")return toast("Keep the proof before taking a snapshot.");
@@ -10351,10 +10548,13 @@ function provenanceSVG(){
 function stripActs(n){
   const A=(k,label,cls="",key="",icn="")=>({k,label,cls,key,ic:icn});
   const open=A("open","Details","","↵","arrow");
+  /* a claim with directions can be gone back to, and can start a new round */
+  const paths=isClaim(n)?[board.adopted[n.id]?A("go-back","Go Back Here","","","undo"):null,dirsOf(n.id).length||n.round>1?A("new-round","New Round","","","lineage"):null].filter(Boolean):[];
+  const result=n.type==="direction"&&n.status==="ink"?[A("result",n.outcome?"Change Result":"Record Result","","","check")]:[];
   switch(n.type){
-    case"note":return [A("edit-tag","Tag","","","tag"),A("fork","Explore Directions","","","sparkles"),A("critique","Check Evidence","","","check"),A("list","Action List","","","list"),A("copilot","Ask Copilot","","","ask"),open];
-    case"notepad":return [A("edit-tag","Tag","","","tag"),A("fork","Explore Directions","","","sparkles"),A("critique","Check Evidence","","","check"),A("list","Action List","","","list"),A("kanban","Kanban","","","kanban"),A("copilot","Ask Copilot","","","ask"),open];
-    case"idea":return [A("fork","Explore Directions","","","sparkles"),A("critique","Check Evidence","","","check"),A("list","Action List","","","list"),A("kanban","Kanban","","","kanban"),A("copilot","Ask Copilot","","","ask"),open];
+    case"note":return [A("edit-tag","Tag","","","tag"),A("fork","Explore Directions","","","sparkles"),...paths,A("critique","Check Evidence","","","check"),A("list","Action List","","","list"),A("copilot","Ask Copilot","","","ask"),open];
+    case"notepad":return [A("edit-tag","Tag","","","tag"),A("fork","Explore Directions","","","sparkles"),...paths,A("critique","Check Evidence","","","check"),A("list","Action List","","","list"),A("kanban","Kanban","","","kanban"),A("copilot","Ask Copilot","","","ask"),open];
+    case"idea":return [A("fork","Explore Directions","","","sparkles"),...paths,A("critique","Check Evidence","","","check"),A("list","Action List","","","list"),A("kanban","Kanban","","","kanban"),A("copilot","Ask Copilot","","","ask"),open];
     case"image":return [A("look","View","","Space","eye"),A("reverse-prompt",n.plPack?"Prompt Pack":"Reverse Prompt","","","sparkles"),n.gen?.format==="gif"?A("to-video","To Video","","","video"):A("to-gif","To GIF","","","gif"),n.gen&&n.gen.format!=="gif"?A("variations","Variations","","","copy"):A("gather","Ask Scout","","","book"),A("copilot","Ask Copilot","","","ask"),open];
     case"source":return isHtmlSource(n)?[A("look","Preview","","Space","eye"),A("download-attach","Download","","","down"),A("gather","Ask Scout","","","book"),open]:[A("gather","Ask Scout","","","book"),open];
     case"recording":return [A("look","Play","","Space","play"),A("shot-split","Split Shots","","","frame"),A("to-gif","To GIF","","","gif"),A("download-attach","Download","","","down"),open];
@@ -10363,12 +10563,12 @@ function stripActs(n){
     case"group":return [open];
     case"frame":return [A("look","View","","Space","eye"),A("reverse-prompt",n.plPack?"Prompt Pack":"Reverse Prompt","","","sparkles"),A("to-gif","To GIF","","","gif"),A("to-video","To Video","","","video"),A("askframe","Ask About Frame","","","frame"),open];
     case"question":return [A("answer","Ask Critic","","","question"),open];
-    case"direction":return board.adopted[n.idea]===n.id?[A("look","Preview","","Space","eye"),A("build",outputsOf(n.id).some(o=>o.type==="proof")?"Rebuild Proof":"Build Proof","pg","","grid"),open]:[A("look","Preview","","Space","eye"),A("adopt","Adopt","pg","","stamp"),open];
+    case"direction":return board.adopted[n.idea]===n.id?[A("look","Preview","","Space","eye"),A("build",outputsOf(n.id).some(o=>o.type==="proof")?"Rebuild Proof":"Build Proof","pg","","grid"),...result,open]:[A("look","Preview","","Space","eye"),A("adopt","Adopt","pg","","stamp"),...result,open];
     case"proof":return [A("look","Open","","Space","eye"),A("print","Snapshot","","","print"),open];
     case"print":return [A("look","View","","Space","eye"),A("download","Download","","","down"),open];
     case"list":return [A("kanban","Turn into Kanban","","","kanban"),A("treemap","Tree Map","","","treemap"),A("copilot","Ask Copilot","","","ask"),open];
     case"kanban":return [A("list","Action List","","","list"),A("treemap","Tree Map","","","treemap"),A("copilot","Ask Copilot","","","ask"),open];
-    case"treemap":return [A("tm-brief","Notepad Brief","","","notepad"),A("tm-dirs","To Directions","","","sparkles"),A("build","Build UI","pg","","grid"),A("deck","Slide Deck","","","filePpt"),A("copilot","Ask Copilot","","","ask"),open];
+    case"treemap":return [A("tm-brief","Notepad Brief","","","notepad"),A("tm-dirs","To Directions","","","sparkles"),...paths,A("build","Build UI","pg","","grid"),A("deck","Slide Deck","","","filePpt"),A("copilot","Ask Copilot","","","ask"),open];
     case"synthesis":return [A("fork","Explore Directions","","","sparkles"),A("copilot","Ask Copilot","","","ask"),open];
     default:return [open];
   }
@@ -14076,12 +14276,17 @@ const STAGE_HERE={
 function stageBrief(){
   const st=boardStage(),name={gather:"Gather",explore:"Explore",prototype:"Prototype",snapshot:"Snapshot"}[st.stage];
   const t=n=>clip(titleOf(n),48),decided=st.adopted.length?st.adopted.map(t).join("; "):"nothing adopted yet"; // a direction's title already starts with its letter
+  /* the latest round of a claim is the one being worked on */
+  const lead=st.claims.slice().sort((a,b)=>(b.round||1)-(a.round||1))[0];
+  /* how real tests came out: the designer records these, and a failed path is not offered again */
+  const res=k=>st.dirs.filter(d=>d.outcome?.result===k).map(d=>`${t(d)}${d.outcome.note?` (${clip(d.outcome.note,80)})`:""}`).join("; ");
+  const tested=[res("failed")?`Ruled out by a real test: ${res("failed")}.`:"",res("passed")?`Passed a real test: ${res("passed")}.`:""].filter(Boolean).map(s=>s+" ").join("");
   const open=st.stage==="gather"?"a claim to work on"
-    :st.stage==="explore"?(st.dirs.length?`which direction to adopt for “${t(st.claims[0]||st.dirs[0])}”`:`directions for “${t(st.claims[0])}”`)
-    :st.stage==="prototype"?(st.adopted.some(d=>outputsOf(d.id).some(o=>o.type==="proof"))?"what the proofs show":"no proof built yet for the adopted direction")
+    :st.stage==="explore"?(st.dirs.length?`which direction to adopt for “${t(lead||st.dirs[0])}”`:`directions for “${t(lead)}”`)
+    :st.stage==="prototype"?(st.adopted.every(d=>d.outcome?.result==="failed")?"the adopted direction failed its test; the designer decides whether to go back to the claim, revise it or start a new round":st.adopted.some(d=>outputsOf(d.id).some(o=>o.type==="proof"))?"what the proofs show":"no proof built yet for the adopted direction")
     :"what the snapshot does not cover";
   const ev=WEIGHT_ORDER.filter(w=>st.evidence[w]).map(w=>`${st.evidence[w]} ${WEIGHTS[w].label.toLowerCase()}`).join(", ")||"none yet";
-  return `STAGE: ${name}. Decided: ${decided}. Open: ${open}. Evidence on the wall: ${ev} (proposals and illustrations are not evidence of behaviour).\n${STAGE_HERE[st.stage]} Anything you create is a draft the designer keeps or discards; add to what exists instead of starting again.`;
+  return `STAGE: ${name}. Decided: ${decided}. ${tested}Open: ${open}. Evidence on the wall: ${ev} (proposals and illustrations are not evidence of behaviour).\n${STAGE_HERE[st.stage]} Anything you create is a draft the designer keeps or discards; add to what exists instead of starting again.`;
 }
 const nothingAdopted=()=>!boardStage().adopted.length;
 const looksLikeDirection=title=>nothingAdopted()&&DIRECTION_TITLE.test(String(title||""));
@@ -15136,6 +15341,9 @@ function act(a,n,el){
     case"archive":return archiveNodes([n.id]);
     case"hide":return hideFromCanvasNodes([n.id]);
     case"adopt":return adopt(n);
+    case"result":return resultDialog(n);
+    case"go-back":return goBack(n.type==="direction"?byId(n.idea):n);
+    case"new-round":return newRound(n.type==="direction"?byId(n.idea):n);
     case"build":return build(n);
     case"deck":return build(n,{mode:"deck"});
     case"tm-brief":return spawnTreeNotepad(n,{expand:false});
@@ -15350,6 +15558,10 @@ $("margin").addEventListener("click",e=>{
   if(a==="mention"){const ta=qs("#mInput"),sb=qs("#mSendBtn"),k=b.dataset.k,handle=AGENTS[k]?.name.toLowerCase()||k;if(ta&&k){ta.value="@"+handle+" "+ta.value.replace(/^@\w+\s*/,"");ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,110)+"px";if(sb)sb.disabled=false}return}
   if(a==="goto"){const t=byId(b.dataset.id);if(t){closeFocus();setTimeout(()=>{select([t.id]);focusNodes([t],Math.max(cam.s,.8))},320)}else toast("That source is no longer on the wall.");return}
   if(a==="weight"){checkpoint();n.weight=n.weight===b.dataset.w?null:b.dataset.w;n.updated=NOW();log("you",`Marked <b>${esc(titleOf(n))}</b> as ${WEIGHTS[n.weight]?.label?.toLowerCase()||"unweighed"}`,n.id);renderAll();persist();return}
+  if(a==="outcome"){if(n){const v=qs("#mResNote",$("margin"))?.value;setOutcome(n,n.outcome?.result===b.dataset.r?null:b.dataset.r,v)}return}
+  if(a==="go-back"){if(n)goBack(n.type==="direction"?byId(n.idea):n);return}
+  if(a==="new-round"){if(n){const c=n.type==="direction"?byId(n.idea):n;closeFocus();setTimeout(()=>newRound(byId(c?.id)),calm()?0:220)}return}
+  if(a==="bring-back"){bringBack(b.dataset.id);return}
   if(a==="post")return postMargin();
   if(a==="vote-up")return voteNode(n,"up");
   if(a==="vote-dn")return voteNode(n,"down");

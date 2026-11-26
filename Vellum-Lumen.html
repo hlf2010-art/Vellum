@@ -1331,7 +1331,7 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .cp-bubble h3{font-size:14px}.cp-bubble h4{font-size:14px}.cp-bubble h5{font-size:13px;color:var(--label-2);text-transform:uppercase;letter-spacing:.04em}
 .cp-bubble ul,.cp-bubble ol{margin:4px 0 9px;padding-left:18px;display:grid;gap:4px}
 .cp-bubble li{line-height:1.5;color:var(--label)}.cp-bubble li b,.cp-bubble li strong{color:var(--label)}
-.cp-bubble blockquote{margin:7px 0 9px;padding:7px 11px;border-radius:0 10px 10px 0;border-left:2.5px solid var(--C);background:color-mix(in srgb,var(--card-2) 85%,transparent);color:var(--label-2);font-size:13px;line-height:1.48}
+.cp-bubble blockquote{margin:7px 0 9px;padding:7px 11px;border-radius:0 10px 10px 0;border-left:2.5px solid var(--hair-2);background:color-mix(in srgb,var(--card-2) 85%,transparent);color:var(--label);font-size:13.5px;line-height:1.48}
 .cp-bubble blockquote p{margin:0}
 .cp-bubble hr{border:0;height:1px;background:var(--hair-2);margin:10px 0}
 .cp-bubble pre{margin:7px 0 9px;padding:9px 11px;border-radius:var(--radius-sm);background:var(--card-2);box-shadow:none;overflow-x:auto;font:500 12px/1.45 var(--mono);color:var(--label)}
@@ -1464,16 +1464,22 @@ th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
 .cp-msg-card{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px 0 6px;border-radius:var(--radius-pill);font:560 11px/1 var(--ui);color:var(--label-2);background:var(--card-2);box-shadow:none;max-width:220px;cursor:pointer;transition:background var(--d-quick),color var(--d-quick)}
 .cp-msg-card:hover{background:var(--hover);color:var(--label)}
 .cp-msg-card img{width:16px;height:16px;object-fit:cover;border-radius:4px;flex:none}
-.cp-msg-card .cp-mc-k{font:650 10px/1 var(--ui);text-transform:uppercase;letter-spacing:.03em;padding:2px 5px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--C) 14%,transparent);color:var(--C);flex:none}
+.cp-msg-card .cp-mc-k{font:650 10px/1 var(--ui);text-transform:uppercase;letter-spacing:.03em;padding:2px 5px;border-radius:var(--radius-pill);background:var(--hover);color:var(--label-2);flex:none}
 .cp-msg-card .cp-mc-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cp-comp-cards{display:flex;flex-wrap:wrap;gap:5px;padding:2px 2px 4px}
 .cp-comp-cards:empty{display:none}
-.cp-comp-chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 5px 0 7px;border-radius:var(--radius-pill);font:560 11px/1 var(--ui);color:var(--label);background:var(--card-2);box-shadow:none;max-width:210px}
+.cp-comp-chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 0 0 7px;border-radius:var(--radius-pill);font:560 11px/1 var(--ui);color:var(--label);background:var(--card-2);box-shadow:none;max-width:210px}
 .cp-comp-chip img{width:16px;height:16px;object-fit:cover;border-radius:4px;flex:none}
-.cp-comp-chip .cp-mc-k{font:650 10px/1 var(--ui);text-transform:uppercase;letter-spacing:.03em;padding:2px 5px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--C) 14%,transparent);color:var(--C);flex:none}
+.cp-comp-chip .cp-mc-k{font:650 10px/1 var(--ui);text-transform:uppercase;letter-spacing:.03em;padding:2px 5px;border-radius:var(--radius-pill);background:var(--hover);color:var(--label-2);flex:none}
 .cp-comp-chip span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cp-comp-chip button{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;color:var(--label-3);flex:none}
+.cp-comp-chip button{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:var(--label-3);flex:none;background:transparent;box-shadow:none}
 .cp-comp-chip button:hover{background:var(--hover);color:var(--label)}
+.cp-comp-chip .cp-cc-open{all:unset;display:inline-flex;align-items:center;gap:5px;min-width:0;height:100%;cursor:pointer;border-radius:var(--radius-pill)}
+.cp-comp-chip .cp-cc-open:focus-visible{box-shadow:0 0 0 2px var(--focus)}
+.cp-comp-chip .cp-cc-open:hover span.t{color:var(--label)}
+.cp-comp-chip.cp-who-chip{padding-left:3px;color:var(--label-2)}
+.cp-comp-chip.cp-who-chip .mk{width:18px;height:18px;flex:none}
+.cp-comp-chip.cp-who-chip b{color:var(--label);font-weight:620}
 .cp-comp-chip button .ico{width:10px;height:10px;stroke-width:2.3}
 .cp-md-more summary{cursor:pointer;font:600 12px/1.4 var(--ui);color:var(--C);list-style:none;display:flex;align-items:center;gap:6px;user-select:none}
 .cp-md-more summary::-webkit-details-marker{display:none}
@@ -1502,8 +1508,8 @@ th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
 .cp-trace{width:100%;border-radius:var(--radius-md);background:var(--card-2);box-shadow:none;overflow:hidden}
 .cp-trace-head{width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;border:0;background:transparent;color:var(--label-2);font:550 12px/1.2 var(--ui);text-align:left;cursor:pointer;transition:background var(--d-quick),color var(--d-quick)}
 .cp-trace-head:hover{background:var(--hover);color:var(--label)}
-.cp-trace-dot{width:6px;height:6px;border-radius:50%;flex:none;background:var(--B-fill)}
-.cp-trace-dot.live{background:var(--A-fill);box-shadow:0 0 7px var(--A);animation:beat 1.1s ease-in-out infinite}
+.cp-trace-dot{display:none;width:6px;height:6px;border-radius:50%;flex:none}
+.cp-trace-dot.live{display:block;background:var(--A-fill);box-shadow:0 0 7px var(--A);animation:beat 1.1s ease-in-out infinite}
 .cp-trace-mks{display:inline-flex;align-items:center;flex:none}
 .cp-trace-mks .mk{width:17px;height:17px;font-size:8.5px;margin-left:-4px;box-shadow:0 0 0 1.5px var(--card-2)}
 .cp-trace-mks .mk:first-child{margin-left:0}
@@ -9190,6 +9196,21 @@ function looseChips(text){
   let chips=[];try{chips=JSON.parse(m[1]).map(String).map(x=>x.trim()).filter(Boolean).slice(0,3)}catch{}
   return {text:s.slice(0,m.index).trim(),chips};
 }
+/* A reply that ends by asking the designer to choose ("Are you trying to build a tool, or just figure out who
+   needs one?") gets its options as one-tap answers when the model gave no chips of its own. English only; a
+   question that is not a plain two-way choice gets none. */
+function choiceChips(text){
+  const paras=String(text||"").trim().split(/\n\s*\n/).slice(-2).join("\n").replace(/^\s*>\s?/gm,"").replace(/[*_`]/g,"");
+  const qs=paras.match(/[^.?!\n]+\?/g);if(!qs)return [];
+  const q=qs[qs.length-1].trim();
+  const AUX=/^(?:are|is|do|does|did|should|would|will|can|could|shall)\s+(?:you|we|i|it|this|they)\s+/i;
+  if(!AUX.test(q))return [];
+  const m=q.replace(AUX,"").match(/^(.+?),?\s+or\s+(.+?)\?$/i);if(!m)return [];
+  const tidy=x=>{let t=x.trim();for(let i=0;i<4;i++)t=t.replace(AUX,"").replace(/^(?:trying|going|planning|looking|hoping|aiming|wanting)\s+to\s+/i,"").replace(/^(?:want|need|prefer)\s+(?:to\s+)?/i,"").replace(/^(?:just|rather|more|still|mainly|mostly|actually|instead)\s+/i,"").trim();
+    t=t.replace(/\s+instead$/i,"").replace(/[,;:]+$/,"").trim();return t.charAt(0).toUpperCase()+t.slice(1)};
+  const out=[tidy(m[1]),tidy(m[2])];
+  return out.every(x=>x.length>=2&&x.length<=36&&!/\bor\b|,/i.test(x))&&out[0].toLowerCase()!==out[1].toLowerCase()?out:[];
+}
 /* Small models sometimes end with two questions ("— or —") or promise work they won't do. Keep one question. */
 function tidySmallReply(text){
   /* the crew prompt's "**label:** insight" pattern, copied literally */
@@ -13161,9 +13182,10 @@ function copilotStarterChips(){
   const ctx=ctxNodes(),sketches=groups().size,st=boardStage(),stage=st.stage;
   if(ctx.some(n=>n.type==="image"||n.type==="frame"))return [L("Examine this image","分析这张图片"),L("Suggest 2 directions from this","据此提出 2 个方向"),L("Generate sharper variations","生成更鲜明的变体")];
   if(ctx.length){
-    const c0=ctx[0],nm=c0.type==="direction"&&c0.letter?c0.letter:clip(titleOf(c0),18);
-    const crit=L(`Critique ${nm}`,`评审 ${nm}`);
-    return stage==="gather"?[crit,L("What evidence is missing?","还缺哪些依据？"),L("Put this in one sentence","用一句话概括")]
+    const c0=ctx[0],many=ctx.length>1;
+    const kind=many?L("these cards","这些卡片"):L(`this ${String(kindLabel(c0)).toLowerCase()}`,"这张卡片");
+    const crit=!many&&c0.type==="direction"&&c0.letter?L(`Critique ${c0.letter}`,`评审 ${c0.letter}`):L(`Critique ${kind}`,`评审${kind}`);
+    return stage==="gather"?[crit,L("What evidence is missing?","还缺哪些依据？"),L(`Put ${kind} in one sentence`,`把${kind}概括成一句话`)]
       :stage==="explore"?[crit,L("What would prove this wrong?","什么会证明这是错的？"),st.dirs.length>1?L("Compare the directions","对比这几个方向"):L("Suggest 2 directions","提出 2 个方向")]
       :stage==="prototype"?[crit,L("Break this into tasks","拆成任务"),L("What's the cheapest real test?","最便宜的真人测试是什么？")]
       :[crit,L("What does this not cover?","它没覆盖什么？"),L("What should I decide next?","接下来我该决定什么？")];
@@ -13176,11 +13198,14 @@ function copilotStarterChips(){
     :[L("What does this not cover?","它没覆盖什么？"),L("What should I decide next?","接下来我该决定什么？"),L("What would change my mind?","什么会改变我的想法？")];
 }
 function renderCopilotCompCards(ctx){
-  return (ctx||[]).slice(0,4).map(n=>{
+  const who=cpTarget&&AGENTS[cpTarget]?`<span class="cp-comp-chip cp-who-chip" id="cpTarget"><span class="mk">${AGENTS[cpTarget].mk}</span><span class="t">${L("To","发给")} <b>${esc(AGENTS[cpTarget].name)}</b></span><button type="button" data-cp-untarget aria-label="${L("Ask Copilot instead","改问 Copilot")}" title="${L("Ask Copilot instead","改问 Copilot")}">${ic("x")}</button></span>`:"";
+  return who+(ctx||[]).slice(0,4).map(n=>{
     const lbl=titleOf(n)||kindLabel(n);
+    const body=String(n.text||"").replace(/\s+/g," ").trim();
+    const tip=`${kindLabel(n)}: ${lbl}${body&&body!==lbl?`\n\n${clip(body,400)}`:""}\n\n${L("Click to show it on the canvas","点击在画布上查看")}`;
     const img=(n.type==="image"||n.type==="frame")&&(mediaSrc(n.media)||n.data)?`<img src="${esc(mediaSrc(n.media)||n.data)}" alt="">`:`<span class="cp-mc-k">${esc(kindLabel(n))}</span>`;
-    return `<span class="cp-comp-chip" title="${esc(lbl)}">${img}<span class="t">${esc(clip(lbl,28))}</span><button type="button" data-cp-unctx="${esc(n.id)}" aria-label="Remove ${esc(lbl)} from context">${ic("x")}</button></span>`;
-  }).join("")+((ctx||[]).length>4?`<span class="cp-comp-chip"><span class="t">+${ctx.length-4} more</span></span>`:"");
+    return `<span class="cp-comp-chip"><button type="button" class="cp-cc-open" data-cp-peek-card="${esc(n.id)}" title="${esc(tip)}">${img}<span class="t">${esc(clip(lbl,28))}</span></button><button type="button" data-cp-unctx="${esc(n.id)}" aria-label="Remove ${esc(lbl)} from context">${ic("x")}</button></span>`;
+  }).join("")+((ctx||[]).length>4?`<span class="cp-comp-chip" style="padding-right:7px"><span class="t">+${ctx.length-4} more</span></span>`:"");
 }
 function renderCopilot(){
   const p=$("copilotPanel");if(!p)return;
@@ -13202,7 +13227,7 @@ function renderCopilot(){
     </header>
     <div class="cp-msgs" id="cpMsgs">${msgs.length?msgs.map(renderCopilotMsg).join(""):`<div class="cp-empty"><h3>Think across the board</h3><p>Ask about selected cards, images, or pull live context from <b>GitHub</b>, <b>Google Notebook (NotebookLM)</b>, <b>Notion</b>, or <b>Figma</b> via MCP.</p></div>`}</div>
     <div class="cp-chips">${chips.map(c=>`<button type="button" class="cp-chip" data-cp-chip="${esc(c)}">${esc(c)}</button>`).join("")}</div>
-    <footer class="cp-foot">${cpTarget?`<div class="cp-target" id="cpTarget"><span class="mk">${AGENTS[cpTarget].mk}</span><span>${L("Asking","正在问")} <b>${esc(AGENTS[cpTarget].name)}</b></span><button type="button" data-cp-untarget aria-label="${L("Ask Copilot instead","改问 Copilot")}" title="${L("Ask Copilot instead","改问 Copilot")}">${ic("x")}</button></div>`:""}${compCards}${extPills}<div id="cpQueue" class="q-list cp-q" aria-live="polite"></div><form id="cpForm" class="cp-box" autocomplete="off">
+    <footer class="cp-foot">${compCards}${extPills}<div id="cpQueue" class="q-list cp-q" aria-live="polite"></div><form id="cpForm" class="cp-box" autocomplete="off">
       <span class="cp-plus-wrap"><button type="button" class="lbtn" id="cpFileBtn" title="Add" aria-label="Add files or sources" aria-haspopup="menu">${ic("plus")}</button>
         <div class="cp-plus-pop" role="menu" hidden><button type="button" role="menuitem" data-cp-plus="files">${ic("fileImg")}${L("Upload files or images","上传文件或图片")}</button><button type="button" role="menuitem" data-cp-plus="source">${ic("plug")}${L("Add from Notion, GitHub or Figma","从 Notion、GitHub 或 Figma 添加")}</button></div></span>
       <textarea id="cpInput" rows="1" placeholder="${cpTarget?L(`Ask ${AGENTS[cpTarget].name}…`,`向 ${AGENTS[cpTarget].name} 提问…`):ctx.length?L("Ask about selection…","询问选中卡片…"):L("Ask Copilot…","向 Copilot 提问…")}"></textarea>
@@ -13354,6 +13379,8 @@ function enrichCopilotVisuals(aiText,userText,ctx,existing){
   }
   return [];
 }
+/* The model's file name ("Qwen3-VL-8B-Instruct-Q4…") means little in the reply header; it stays in the tooltip. */
+function shortRoute(r){return String(r||"").replace(/^(Local AI|本地模型) · [^·]+/,"$1").trim()}
 function traceActorInfo(k){
   if(k==="copilot")return {name:"Copilot",mk:AV.muse};
   const a=AGENTS[k];
@@ -13364,10 +13391,13 @@ function renderCopilotTrace(m){
   if(!tr||!Array.isArray(tr.steps)||!tr.steps.length)return "";
   const live=tr.steps.some(s=>s.status==="running"),doneCnt=tr.steps.filter(s=>s.status==="done").length;
   const roles=[...new Set(tr.steps.map(s=>s.to).filter(k=>k&&k!=="copilot"))];
-  const mks=roles.map(k=>{const a=traceActorInfo(k);return `<span class="mk" title="${esc(a.name)}">${a.mk}</span>`}).join("");
+  const single=tr.steps.length===1;
+  const mks=single?"":roles.map(k=>{const a=traceActorInfo(k);return `<span class="mk" title="${esc(a.name)}">${a.mk}</span>`}).join("");
   const active=tr.steps.find(s=>s.status==="running");
-  const headLbl=live&&active?`${traceActorInfo(active.to).name} working (${doneCnt+1}/${tr.steps.length})…`:(tr.summary||`Delegated ${roles.map(k=>traceActorInfo(k).name).join(" → ")} (${doneCnt} step${doneCnt>1?"s":""})`);
-  const stat=tr.totalMs?`${(tr.totalMs/1000).toFixed(1)}s`:tr.ctxLabel||"";
+  const secs=tr.totalMs?`${(tr.totalMs/1000).toFixed(1)}s`:"";
+  const headLbl=live&&active?(single?L("Thinking…","思考中…"):`${traceActorInfo(active.to).name} working (${doneCnt+1}/${tr.steps.length})…`)
+    :(tr.summary||(single?(secs?L(`Thought for ${secs}`,`思考了 ${secs}`):L("How I got here","思考过程")):L(`Consulted ${roles.map(k=>traceActorInfo(k).name).join(" → ")} (${doneCnt} steps)`,`咨询了 ${roles.map(k=>traceActorInfo(k).name).join(" → ")}（${doneCnt} 步）`)));
+  const stat=single&&!tr.summary?"":(secs||tr.ctxLabel||"");
   const body=tr.steps.map(s=>{
     const fa=traceActorInfo(s.from),ta=traceActorInfo(s.to);
     const ms=s.ms?`${(s.ms/1000).toFixed(1)}s`:(s.status==="running"?"running…":"");
@@ -13442,7 +13472,7 @@ function renderCopilotMsg(m){
   const bubbleHTML=(bubbleBody||m.streaming)?`<div class="cp-bubble">${bubbleBody}${m.streaming?'<span class="cp-caret"></span>':""}</div>`:"";
   const actionsHTML=(m.actions&&m.actions.length)?renderCopilotActionsSummary(m):"";
   return `<div class="cp-msg ai" data-cp-msg-id="${m.id}">
-    <div class="cp-who"><span class="mk">${ag?ag.mk:AV.muse}</span><span>${ag?ag.name:"Lumen Copilot"}</span>${m.route&&!m.streaming?`<span class="cp-route" title="${esc(L("Which model answered","由哪个模型作答"))}">${esc(m.route)}</span>`:""}</div>
+    <div class="cp-who"><span class="mk">${ag?ag.mk:AV.muse}</span><span>${ag?ag.name:"Lumen Copilot"}</span>${m.route&&!m.streaming?`<span class="cp-route" title="${esc(L("Which model answered: ","由哪个模型作答：")+m.route)}">${esc(shortRoute(m.route))}</span>`:""}</div>
     ${traceHTML}
     ${bubbleHTML}
     ${actionsHTML}
@@ -13843,12 +13873,12 @@ async function sendCopilotMessage(raw,ctxOverride=null){
       }
       const imgNodes=isCasual?[]:ctx.filter(n=>n.type==="image"||n.type==="frame");
       const selectedText=ctx.length?wallText(ctx,{docCap:2200,shortCap:280,totalCap:4200}):"(none selected)";
-      const traceSummaryBlock=subSteps.length?`\n[Sub-Agent Reports]\n${subSteps.map(s=>`- ${traceActorInfo(s.from).name} → ${traceActorInfo(s.to).name}${s.handoff?" (Review)":""}: ${s.output}`).join("\n")}\nSynthesize these sub-agent findings cleanly without repeating raw card text.`:"";
+      const traceSummaryBlock=subSteps.length?`\n[Your working notes (private)]\n${subSteps.map(s=>`- ${s.output}`).join("\n")}\nUse these notes as your own thinking. The designer never sees them: do not mention notes, reports, sub-agents, the crew, delegation or "paths" they suggest, and do not repeat raw card text.`:"";
       if(!isCasual&&ctx[0])await ctxEnsureEmbeddings(visibleNodes().filter(x=>x.status==="ink"),{signal:copilotAbort?.signal});
       const digestBlock=isCasual?"":boardDigestForCopilot({query:subSteps.length?"":text,ctx});
       const sys=isCasual
         ?`You are Lumen Copilot, a concise design workspace assistant for board "${board.title||"Untitled"}". The user sent a brief conversational message ("${text.trim()}"). Reply in 1 short, natural sentence (under 18 words). Do NOT roleplay as a human teammate, do NOT mention playtests, synthesis docs, or background work, do NOT output multiple paragraphs, and do NOT add a sign-off.`
-        :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\n${forced?`The designer is addressing ${AGENTS[forced].name} directly (${AGENTS[forced].craft}) Answer as ${AGENTS[forced].name}, in first person, and stay in that role.\n\n`:""}CONTEXT GOVERNANCE:\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions.\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Add tasks to a kanban that already exists: {"action":"add_cards","target":"kanban nodeId or title","cards":[{"title":"...","col":0}]}\n- ONE KANBAN PER PROJECT: if a kanban is already on the board, add tasks to it with add_cards and never create a second one. Only when the designer asks for a separate or phased board, create it with "separate":true. A kanban holds tasks to do: a design direction or option is a "direction" card, not a kanban.\n- THREE ROLES, ONE VOICE: when you inspire, offer options the designer can ignore, and never commit anything; when you facilitate, help the designer decide, ask only if you cannot guess, and end with choices; when you execute, act only on what the designer decided or asked for, and add to what exists instead of starting again. The STAGE line in the board summary says which fits now.\n- CHOOSING A DIRECTION IS NOT PLANNING: while nothing is adopted yet ("Adopted: none") and the designer is exploring or asking for options, offer 2-3 options as "direction" cards, each with a one-line test it could fail. Do not use a kanban or list for options. A kanban or list is for tasks, once a direction is adopted or when the designer asks for a plan.\n- Never emit the same card as both an action and a proposal. An action lands on the board directly, so leave it out of the proposals.\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles).`);
+        :withMemorySystem(`You are Lumen Copilot — the Orchestrator coordinating 4 specialized sub-agents (Scout=evidence/search, Strategist=directions/tradeoffs, Wright=builds/docs/assets, Critic=verification/risks).\n${STYLE}\nMode: ${copilotMode}. ${systemConfigSummary()}\nSelected cards:\n${selectedText}\n\n${digestBlock}${traceSummaryBlock}\n\n${forced?`The designer is addressing ${AGENTS[forced].name} directly (${AGENTS[forced].craft}) Answer as ${AGENTS[forced].name}, in first person, and stay in that role.\n\n`:""}CONTEXT GOVERNANCE:\n- VOICE: speak to the designer as "you" and of yourself as "I". Never call them "the user", and never describe how you work inside (orchestrator, sub-agents, reports, steps).\n- QUOTE ONLY THE BOARD: put quotation marks only around words that actually appear on a card. Read the selected card in full before calling it unclear, and say which words are unclear.\n- STRICT GROUNDING: Never roleplay as a human teammate, never claim you were running tests or writing code in the background, and NEVER invent off-board technical details, APIs, game engines, or data not present in the board cards.\n- PROPORTIONAL LENGTH: Keep prose scannable (~60–130 words unless drafting a brief). Lead with a 1–2 sentence takeaway + 2–4 bullets (**label:** insight). No \`---\`, no emoji headings, no sign-offs.\n- CONVERSATIONAL CLOSE: For substantive answers, design critiques, and card analyses, conclude naturally with exactly 1 brief, relevant follow-up question or creative angle connecting back to the board (e.g. asking whether to fork a visual direction, test an alternative aesthetic, or anchor on a specific layout element). Keep casual/small-talk answers short and quiet without asking questions. When that question offers a choice, also give each choice in \`\`\`chips, in the designer's words, so they can answer with one tap (e.g. ["Build a tool","Find who needs one"]).\n- Never repeat card bodies verbatim; synthesize concisely. Cite full-text docs only when expanded.\n- Default to clear markdown prose + an optional populated proposal card. Emit a \`\`\`ui block ONLY when the user explicitly asks for a data chart or side-by-side comparison table.\n\nCANVAS ACTION PROTOCOL (\`\`\`actions [...] \`\`\` before proposals):\nYou and your subagents have direct permission to operate the whiteboard! When the user asks to add, create, edit, tag, connect, or delete cards, or when changes should land directly on the board, emit a \`\`\`actions [...] \`\`\` block:\n- Add card: {"action":"create","cardType":"note|notepad|list|kanban|treemap|direction","title":"...","text":"...","tag":"...","from":"nodeId or title","by":"scout|muse|wright|critic"}\n- Edit card: {"action":"edit","target":"nodeId or title","field":"text|title|tag","value":"..."}\n- Add tasks to a kanban that already exists: {"action":"add_cards","target":"kanban nodeId or title","cards":[{"title":"...","col":0}]}\n- ONE KANBAN PER PROJECT: if a kanban is already on the board, add tasks to it with add_cards and never create a second one. Only when the designer asks for a separate or phased board, create it with "separate":true. A kanban holds tasks to do: a design direction or option is a "direction" card, not a kanban.\n- THREE ROLES, ONE VOICE: when you inspire, offer options the designer can ignore, and never commit anything; when you facilitate, help the designer decide, ask only if you cannot guess, and end with choices; when you execute, act only on what the designer decided or asked for, and add to what exists instead of starting again. The STAGE line in the board summary says which fits now.\n- CHOOSING A DIRECTION IS NOT PLANNING: while nothing is adopted yet ("Adopted: none") and the designer is exploring or asking for options, offer 2-3 options as "direction" cards, each with a one-line test it could fail. Do not use a kanban or list for options. A kanban or list is for tasks, once a direction is adopted or when the designer asks for a plan.\n- Never emit the same card as both an action and a proposal. An action lands on the board directly, so leave it out of the proposals.\n- Delete card: {"action":"erase","targets":["nodeId or title"]}\n- Connect: {"action":"connect","from":"nodeId or title","to":"nodeId or title","depType":"live|reference|frozen"}\n- Start editing: {"action":"startEdit","target":"nodeId or title","field":"text|tag"}\n- ${autonomyPromptLine()}\n\nOPTIONAL UI BLOCKS (\`\`\`ui [...] \`\`\` before \`\`\`proposals — ONLY when explicitly comparing options or charting metrics):\n- "chart": {"kind":"chart","title":"...","subtitle":"...","unit":"cards|%","mode":"bar|donut","items":[{"label":"...","value":4,"tone":"B|C|A|D","note":"..."}]}\n- "compare": {"kind":"compare","title":"...","left":"Option A","right":"Option B","rows":[{"dim":"...","a":"...","b":"...","winner":"left|right|tie","note":"..."}]}\n\nPROPOSALS (\`\`\`proposals [...] \`\`\` at END): kinds = config, memory, direction, note (MUST include non-empty "title" and "text"), notepad (MUST include non-empty "title" and "text"), list, kanban, treemap, generate_media (with [{"kind":"generate_media","media_kind":"image"|"video","prompt":"..."}]), gif, search. Never emit a proposal without a concrete title and text/prompt. Optional \`\`\`chips ["..."] \`\`\` at the very end (2–3 short verb-first prompts under 36 chars, never card titles; if you ended with a choice question, the chips are its answers).`);
 
       const maxTok=isCasual?64:3000;
       /* Auto routing, as for the crew: a merge is heavy (cloud first), everything else is light (Local AI first).
@@ -13886,6 +13916,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         if(loc.actionResults)aiMsg.actionResults=loc.actionResults;
         if(cpWhy)toast(L(`${cpWhy}, so built-in rules answered instead.`,`${cpWhy}，已改用内置规则。`));
       }
+      if(!isCasual&&!(aiMsg.chips||[]).some(isValidCopilotChip)){const cc=choiceChips(aiMsg.text);if(cc.length)aiMsg.chips=cc}
       if(!isCasual&&aiMsg.actions&&aiMsg.actions.length&&!aiMsg.actionResults){
         const activeAgent=subSteps.length?(subSteps[subSteps.length-1].to||subSteps[0].to):(aiMsg.agent||"critic");
         aiMsg.actionResults=dispatchCanvasActions(aiMsg.actions,{by:activeAgent});
@@ -14424,6 +14455,8 @@ function initCopilot(){
   $("copilotPanel")?.addEventListener("click",e=>{
     const c=e.target.closest("[data-cp]");if(!e.target.closest(".cp-more-wrap,.cp-plus-wrap"))qsa(".cp-more-pop,.cp-plus-pop").forEach(x=>x.hidden=true);if(c){const a=c.dataset.cp;if(a==="more"){const pop=qs(".cp-more-pop");if(pop)pop.hidden=!pop.hidden;return}qsa(".cp-more-pop").forEach(x=>x.hidden=true);if(a==="close")return openCopilot(false);if(a==="memory")return memoryDialog();if(a==="mcp")return mcpDialog();if(a==="clear"){board.copilot=[];cpQueue=[];cpQueuePaused=false;renderCopilot();persist();return}}
     const un=e.target.closest("[data-cp-unctx]");if(un){const id=un.dataset.cpUnctx;lineExtras=lineExtras.filter(x=>x!==id);select(sel.filter(x=>x!==id));return}
+    /* a context chip shows its card without changing the selection, which is the context */
+    const pk=e.target.closest("[data-cp-peek-card]");if(pk){const n=byId(pk.dataset.cpPeekCard);if(n)focusNodes([n],.95);return}
     const fc=e.target.closest("[data-cp-focus-card]");if(fc){const n=byId(fc.dataset.cpFocusCard);if(n){select([n.id],{menus:false});focusNodes([n],.95)}return}
     const fm=e.target.closest("[data-cp-full-msg]");if(fm){openCopilotFullMsgModal(fm.dataset.cpFullMsg);return}
     const et=e.target.closest("[data-cp-ext-tog]");if(et){toggleMcpItem(et.dataset.cpExtTog);return}

@@ -2,6 +2,7 @@
 /* Thinking is drawn in ink: claims, syntheses, directions, questions and proofs carry an ink rule, material does not.
  * A direction set aside stays readable, says which direction won, and keeps your reason (which the crew also learns).
  * Lines: stage colours stay on cards, not lines. The idle task pill and the "N waiting" edge chip are gone.
+ * The top bar says each thing once: "No AI connected" only on the connection chip, a waiting draft only as "1 draft".
  *   node tests/reasoning-ink.cjs   (from the repo root)
  */
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -46,6 +47,11 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
       check('the empty task pill is hidden when nothing has run', await p.evaluate(() => { const i = $('island'); return i.dataset.mode === 'idle' && +getComputedStyle(i).opacity === 0; }));
       await p.evaluate(() => { cam = { s: 1, x: 5000, y: 5000 }; paintCam(); paintEdges(); }); await p.waitForTimeout(200);
       check('a draft off screen does not add a second "waiting" chip (the top bar already says "1 draft")', await p.evaluate(() => !/waiting/.test($('edges').innerText) && !$('reviewBtn').hidden));
+      /* the top bar says each thing once */
+      const tb = await p.evaluate(() => { const sw = document.querySelector('#partSw .part-b[aria-checked="true"] .part-l>span'); toggleCrewPop(true); const pop = $('crewPop').innerText; toggleCrewPop(false);
+        return { chip: $('crewModeBtn').innerText.trim(), setDot: !!document.querySelector('#crewSetBtn .conn-dot'), swDot: sw ? getComputedStyle(sw, '::after').display : 'none', pop: /No AI model/.test(pop), seatGlow: !!document.querySelector('.seat.waiting'), seatLabel: document.querySelector('.seat[data-agent="muse"]').getAttribute('aria-label') }; });
+      check('"No AI connected" is said once, on the connection chip', tb.chip === 'No AI connected' && !tb.setDot && tb.swDot === 'none' && !tb.pop, JSON.stringify(tb));
+      check('a waiting draft is shown by "1 draft", not also by a glowing seat (the seat still says so to screen readers)', !tb.seatGlow && /waiting for you/.test(tb.seatLabel), JSON.stringify(tb));
       check('light: no page errors', !errs.length, errs.join(' | '));
       await c.close();
     }

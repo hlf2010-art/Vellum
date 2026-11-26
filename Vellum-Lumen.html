@@ -3413,6 +3413,8 @@ body.snap-skip #wall{cursor:copy}
 #wires path.w.sk{stroke-dasharray:1.5 5}
 #wires path.faded,#wires path.w-root.faded{opacity:.4}
 
+/* "No AI connected" is said once, on the connection chip, not as a dot on the participation switch too */
+.part.nomodel .part-b[aria-checked="true"] .part-l>span::after{display:none}
 /* the background-task pill appears once something has run */
 .island[data-empty]{opacity:0!important;pointer-events:none}
 </style>
@@ -4101,7 +4103,7 @@ function renderCrewPop(){
   const seg=(axis,levels,labels,cur)=>`<div class="sp-seg crew-seg" style="grid-template-columns:repeat(${levels.length},minmax(0,1fr))" role="group" aria-labelledby="crew-${axis}-l">${levels.map(k=>`<button type="button" data-crew-${axis}="${k}" aria-pressed="${cur===k}">${L(labels[k][0],labels[k][1])}</button>`).join("")}</div>`;
   const firstUnread=Object.entries(board.pins||{}).find(([id,ps])=>byId(id)&&(ps||[]).some(x=>!x.seen))?.[0];
   const quiet=crewQuietReason();
-  const why=quiet&&(quiet.k==="nomodel"||quiet.k==="ceiling")?quiet.tip:""; // only when it changes what the crew does
+  const why=quiet&&quiet.k==="ceiling"?quiet.tip:""; // only when it changes what the crew does; "no model" is said once, on the connection chip
   const unreadTxt=unread>1?L(`${unread} thoughts waiting`,`${unread} 条建议等你查看`):L("A thought is waiting","有一条建议等你查看");
   pop.innerHTML=`<div class="cp-pop-head"><b>${L("Crew","成员")}</b>${why?`<span class="crew-why">${esc(why)}</span>`:""}</div>
     ${firstUnread?`<div class="crew-wait"><span><b>${esc(unreadTxt)}</b>${held?`<small>${esc(L(`${held} card${held>1?"s":""} held back until you read`,`${held} 张卡片暂缓，读完后出现`))}</small>`:""}</span><button type="button" class="cbtn" data-crew-show="${esc(firstUnread)}">${L("Show","查看")}</button></div>`:""}
@@ -7451,11 +7453,11 @@ function renderCrew(){
   const mode=aiSource();
   const modeLbl=mode.label;
   const seatsHtml=Object.values(AGENTS).map(a=>{const s=crewState[a.key];const waiting=board.nodes.some(n=>n.status==="sketch"&&n.by===a.key);
-    return `<button type="button" class="seat ${s.busy?"busy":""} ${waiting&&!s.busy?"waiting":""}" data-agent="${a.key}" aria-label="${a.name}: ${esc(s.status||(waiting?"waiting for you":"free"))}"><span class="mk">${a.mk}</span><span class="ring"></span></button>`}).join("");
+    return `<button type="button" class="seat ${s.busy?"busy":""}" data-agent="${a.key}" aria-label="${a.name}: ${esc(s.status||(waiting?"waiting for you":"free"))}"><span class="mk">${a.mk}</span><span class="ring"></span></button>`}).join("");
   const quiet=typeof crewQuietReason==="function"?crewQuietReason():null,health=typeof connHealth==="function"?connHealth():{k:"none",tip:""};
   const setTip=`${L("Crew settings","成员设置")} · ${L("Acts","动手")}: ${autonomyCustom?L("Custom","自定义"):L(ACT_LABEL[crewAct][0],ACT_LABEL[crewAct][1])}${quiet?" · "+quiet.tip:""}`;
   $("crew").innerHTML=`<div class="crew-group${quiet?" quiet-"+quiet.k:""}" ${quiet?`title="${esc(quiet.tip)}"`:""}><div class="crew-seats" role="group" aria-label="AI Crew">${seatsHtml}</div>`
-    +`<button type="button" id="crewSetBtn" class="crew-set" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(setTip)}" aria-label="${esc(setTip)}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg><i class="conn-dot ${health.k}" title="${esc(health.tip)}"></i></button></div>`
+    +`<button type="button" id="crewSetBtn" class="crew-set" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(setTip)}" aria-label="${esc(setTip)}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg></button></div>`
     +`<button type="button" id="crewModeBtn" class="crew-mode ${mode.cls||""}" aria-haspopup="dialog" aria-expanded="${studioPopOpen}" title="${esc(mode.title)}" aria-label="${esc(modeLbl)}: ${esc(mode.title)}"><b></b><span>${esc(modeLbl)}</span>${ic("chev","ico cm-chev")}</button>`;
   paintCopilotHeader?.();
   renderLineCrew?.();

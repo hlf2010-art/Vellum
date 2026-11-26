@@ -2089,6 +2089,17 @@ textarea,input{caret-color:var(--label)}
 }
 .card.note:not(.sketch) .foot{position:relative;z-index:1;margin-top:auto;padding-top:12px}
 .card.note.is-editing .foot-r::before{content:"⌘↵ done · ";color:var(--label-3);opacity:.82}
+/* a sticky being written can still be moved: from anywhere while it is empty, from its edge or grip once it has words */
+.card.note.is-editing:not(.sketch) .in{cursor:grab}
+.card.note.is-editing.is-empty:not(.sketch) h4[contenteditable="true"]{cursor:grab}
+body.is-dragging-card .card.note.is-editing,body.is-dragging-card .card.note.is-editing *{cursor:grabbing!important}
+.note-grip{position:absolute;z-index:2;top:2px;left:50%;width:40px;height:14px;margin-left:-20px;border-radius:7px;cursor:grab;opacity:0;pointer-events:none;transition:opacity .18s var(--ease),background .15s}
+.note-grip::before{content:"";position:absolute;left:11px;right:11px;top:3px;height:8px;background:radial-gradient(circle,var(--note-ink,var(--label-3)) 1px,transparent 1.4px) 0 0/6px 4px;opacity:.6}
+.card.note.is-editing:not(.sketch) .note-grip{opacity:.7;pointer-events:auto}
+.card.note.is-editing:not(.sketch) .note-grip:hover,.card.note.is-editing.dragging .note-grip{opacity:1;background:color-mix(in srgb,var(--note-ink,var(--label)) 9%,transparent)}
+.card.note.vanish{pointer-events:none;animation:note-vanish .19s var(--ease) both}
+@keyframes note-vanish{to{opacity:0;transform:scale(.86)}}
+@media (prefers-reduced-motion:reduce){.card.note.vanish{animation:none;opacity:0}}
 .note-edit-hint{font:500 11px/1 var(--ui);color:var(--label-3);letter-spacing:-.005em}
 /* Light mode paper tints: uncoated stationery hues */
 .card.note:not(.sketch)[data-tone="butter"]{--note-top:#FFF096;--note-mid:#FCE15D;--note-bot:#F8D240;--note-curl:#FCE878;--note-rim:rgba(138,98,8,.30);--note-ply:rgba(138,98,8,.24);--note-ply-r:rgba(138,98,8,.16);--note-ink:#925600}
@@ -5414,7 +5425,7 @@ function cardBody(n){
   switch(n.type){
   case"note":{const defNoteTag=uiLang()==="zh"?"便签":"Sticky",tagTxt=esc(n.tag||defNoteTag),tagTitle=esc(uiLang()==="zh"?"点击编辑便签标签":"Click to edit tag"),noteLbl=esc(uiLang()==="zh"?"编辑便签":"Edit note text");
     const noteHead=sk?head(`${byline(n)}<span class="note-tag"><i aria-hidden="true"></i><span>${tagTxt}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag" data-a="edit-tag" title="${tagTitle}"><i aria-hidden="true"></i><span data-edit="tag" spellcheck="false">${tagTxt}</span></span><span class="sp"></span>${cardVotesHTML(n)}<button type="button" class="note-edit-btn" data-a="edit-note" title="${noteLbl}" aria-label="${noteLbl}">${ic("pen")}</button></div>`;
-    return `<div class="in">${sk?"":'<span class="note-grain" aria-hidden="true"></span>'}${noteHead}
+    return `<div class="in">${sk?"":'<span class="note-grain" aria-hidden="true"></span><span class="note-grip" aria-hidden="true"></span>'}${noteHead}
     <h4 data-edit="text">${esc(n.text)}</h4>${sk?sketchActs(n):foot(n.weight?weightHTML(n.weight):"",fR(threadCount(n)))}</div>`;}
   case"notepad":{const defPadTag=uiLang()==="zh"?"记事本":"Notepad",padTag=esc(n.tag||defPadTag),padTitle=esc(uiLang()==="zh"?"点击编辑记事本标签":"Click to edit tag");
     const npHead=sk?head(`${byline(n)}<span class="note-tag notepad-tag"><span class="np-ico">${ic("notepad")}</span><span>${padTag}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag notepad-tag" data-a="edit-tag" title="${padTitle}"><span class="np-ico">${ic("notepad")}</span><span data-edit="tag" spellcheck="false">${padTag}</span></span><span class="sp"></span>${cardVotesHTML(n)}</div>`;
@@ -6450,7 +6461,7 @@ function renderNodes(){
     }
     const L=lin(n),passed=n.type==="direction"&&n.status==="ink"&&board.adopted[n.idea]&&board.adopted[n.idea]!==n.id;
     const fCls=hasFind?(hitIds.has(n.id)?(curId===n.id?"find-hit find-cur":"find-hit"):"find-dim"):"";
-    el.className=["card",n.type,isHtmlSource(n)?"html":"",n.status==="sketch"?"sketch":"",n.vote==="down"?"disliked":"",L?"pg-"+L:"",sel.includes(n.id)?"sel":"",litSet().nodes.has(n.id)?"lit":"",n.pid&&n.pid===currentPid()&&groups().size>1?"current":"",n.type==="direction"&&board.adopted[n.idea]===n.id&&n.status==="ink"?"adopted":"",passed?"passed":"",fCls,el.dataset.extra||""].filter(Boolean).join(" ");
+    el.className=["card",n.type,isHtmlSource(n)?"html":"",n.status==="sketch"?"sketch":"",n.vote==="down"?"disliked":"",L?"pg-"+L:"",sel.includes(n.id)?"sel":"",litSet().nodes.has(n.id)?"lit":"",n.pid&&n.pid===currentPid()&&groups().size>1?"current":"",n.type==="direction"&&board.adopted[n.idea]===n.id&&n.status==="ink"?"adopted":"",passed?"passed":"",fCls,el.dataset.extra||"",...["is-editing","is-empty"].filter(c=>el.classList.contains(c))].filter(Boolean).join(" ");
     if(n.tone)el.dataset.tone=n.tone;else delete el.dataset.tone;
     el.style.left=n.x+"px";el.style.top=n.y+"px";el.style.width=nodeW(n)+"px";el.style.height=n.type==="group"?nodeH(n)+"px":"";
     el.setAttribute("aria-label",(n.status==="sketch"?"Sketch: ":"")+n.type+": "+titleOf(n));el.tabIndex=-1;el.dataset.t=clip(n.type==="print"&&(n.title||n.spec?.title)?`No. ${n.ed} · ${n.title||n.spec.title}`:titleOf(n),90);
@@ -17098,19 +17109,28 @@ function placeCaretIn(t,opts){
   if(opts?.collapseEnd)r.collapse(false);
   s.removeAllRanges();s.addRange(r);
 }
+/* a sticky that was never written in leaves quietly when you click away: no blank cards, no orphaned relations */
+function dropEmptyNote(n,el){
+  board.nodes=board.nodes.filter(x=>x!==n);sel=sel.filter(x=>x!==n.id);
+  const gone=board.edges.filter(e=>e.a===n.id||e.b===n.id).map(e=>e.id);
+  if(gone.length){board.edges=board.edges.filter(e=>!gone.includes(e.id));if(gone.includes(selectedEdgeId))selectedEdgeId=null;if(gone.includes(relPickId))closeRelPick()}
+  if(el&&!calm()){el.removeAttribute("data-id");el.classList.remove("born","sel");el.classList.add("vanish");setTimeout(()=>el.remove(),220)}
+}
 function startEdit(id,field,opts){
   const el=nodeEl(id);const n=byId(id);if(!el||!n||n.status==="sketch")return;
   const t=el.querySelector(`[data-edit="${field}"]`)||el.querySelector("[data-edit]");if(!t||t.contentEditable==="true")return;
   const f=t.dataset.edit,hadText=!!(n[f]&&String(n[f]).trim());
   t.contentEditable="true";el.classList.add("is-editing");
-  const done=save=>{t.contentEditable="false";el.classList.remove("is-editing");t.removeEventListener("blur",onBlur);t.removeEventListener("keydown",onKey);
+  const isNoteText=n.type==="note"&&f==="text",onInput=()=>el.classList.toggle("is-empty",!t.innerText.trim());
+  if(isNoteText){onInput();t.addEventListener("input",onInput)}
+  const done=save=>{t.contentEditable="false";el.classList.remove("is-editing","is-empty");t.removeEventListener("blur",onBlur);t.removeEventListener("keydown",onKey);t.removeEventListener("input",onInput);
     const v=t.innerText.trim();
     const defT=(n.type==="note"?(uiLang()==="zh"?"便签":"Sticky"):(uiLang()==="zh"?"记事本":"Notepad"));
     const isDefTag=f==="tag"&&(!v||v.toLowerCase()===defT.toLowerCase());
     const nextVal=isDefTag?"":v;
     const changed=save&&nextVal!==(n[f]||"");
     if(changed){checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;if(f==="tag"&&!nextVal)delete n.tag;else n[f]=nextVal;recordNodeEdit(n,prevD,prevT,prevTx);log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id)}
-    if(n.type==="note"&&f==="text"&&!n.text&&!hadText){board.nodes=board.nodes.filter(x=>x!==n);sel=sel.filter(x=>x!==n.id)}
+    if(n.type==="note"&&f==="text"&&!n.text&&!hadText){dropEmptyNote(n,el)}
     else if(changed&&n.type!=="group"&&f!=="tag"&&v.length>=10)scheduleAdvisor(n.id,{delay:1400});
     el._sig="";renderAll();persist()};
   const multiline=(n.type==="notepad"||n.type==="note")&&f==="text";
@@ -17263,6 +17283,7 @@ wall.addEventListener("pointerdown",e=>{
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2){const [a,b]=[...pointers.values()];gesture={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y),c:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};return}
   {const rl=e.target.closest(".clasp,.rel-tag");if(rl&&e.button===0&&tool!=="hand"&&!spaceHeld){stopCam();if(relPointerDown(e,rl))return}}
+  if(writingNoteDrag(e))return;
   if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop,.tbl-block tbody td,.tbl-chart"))return;
   const card=e.target.closest(".card");const port=e.target.closest("[data-port]");const rsz=e.target.closest("[data-resize]");const wh=e.target.closest(".w-hit[data-edge]");stopCam();
   if(port&&card){selectedEdgeId=null;const n=byId(card.dataset.id);wireDrag={from:n,role:port.dataset.port==="in"?"in":"out",side:port.dataset.side||"right",d:""};gesture={type:"wire"};wall.setPointerCapture(e.pointerId);return}
@@ -17299,6 +17320,28 @@ wall.addEventListener("pointerdown",e=>{
   }
   gesture={type:"pan",sx:e.clientX,sy:e.clientY,cx:cam.x,cy:cam.y,moved:false};wall.classList.add("panning");wall.setPointerCapture(e.pointerId);
 });
+/* A sticky you are writing in can be moved without leaving it: an empty one from anywhere, one with words from
+   its edge or grip (dragging inside the words still selects them). The caret stays where it was, ready to type. */
+let keepFocusOnPress=false;
+function writingNoteDrag(e){
+  if(e.button!==0||tool==="hand"||spaceHeld||e.shiftKey||e.metaKey||e.ctrlKey)return false;
+  const card=e.target.closest(".card.note.is-editing");if(!card)return false;
+  const t=card.querySelector("[data-edit='text'][contenteditable='true']"),n=byId(card.dataset.id);if(!t||!n)return false;
+  if(e.target.closest("button,[data-port],[data-resize],[data-edit='tag'][contenteditable='true']"))return false;
+  const empty=!t.innerText.trim(),inText=!!e.target.closest("[data-edit='text']");
+  if(inText&&!empty)return false;
+  stopCam();e.preventDefault();keepFocusOnPress=true;
+  const ids=[n.id];
+  gesture={type:"drag",id:n.id,ids,sx:e.clientX,sy:e.clientY,orig:[{n,x:n.x,y:n.y}],moved:false,shift:false,target:e.target,wasSel:false,editHit:false,cx:e.clientX,cy:e.clientY,
+    snapPool:snapPoolFor(ids),atRisk:bondsAtRisk(ids),torn:new Set(),noSnap:false,writing:t,inText};
+  wall.setPointerCapture(e.pointerId);return true;
+}
+/* the press must not take focus from the words being written, or the edit would end (and an empty sticky would go) */
+wall.addEventListener("mousedown",e=>{if(keepFocusOnPress){keepFocusOnPress=false;e.preventDefault()}},true);
+function refocusWriting(t){
+  if(!t?.isConnected||t.contentEditable!=="true")return;
+  if(document.activeElement!==t){t.focus({preventScroll:true});placeCaretIn(t,{collapseEnd:true})}
+}
 wall.addEventListener("pointermove",e=>{
   if(pointers.has(e.pointerId))pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(!gesture)return;
@@ -17339,7 +17382,7 @@ wall.addEventListener("pointermove",e=>{
     drawWires();placeMargin();placeBars();return;
   }
   if(gesture.type==="drag"){const dx=(e.clientX-gesture.sx)/cam.s,dy=(e.clientY-gesture.sy)/cam.s;if(!gesture.moved&&Math.hypot(e.clientX-gesture.sx,e.clientY-gesture.sy)<4)return;
-    if(!gesture.moved){gesture.moved=true;checkpoint();if(selectedEdgeId){selectedEdgeId=null;renderWirePop?.()}if(gesture.fromClasp)select(gesture.ids,{menus:false});else if(!gesture.shift&&!sel.includes(gesture.id))select([gesture.id],{menus:false});gesture.ids.forEach(i=>nodeEl(i)?.classList.add("dragging"));document.body.classList.add("is-dragging-card")}
+    if(!gesture.moved){gesture.moved=true;checkpoint();if(selectedEdgeId){selectedEdgeId=null;renderWirePop?.()}if(gesture.fromClasp)select(gesture.ids,{menus:false});else if(!gesture.shift&&!sel.includes(gesture.id))select([gesture.id],{menus:false});gesture.ids.forEach(i=>{const el=nodeEl(i);if(el){el.classList.remove("born");el.classList.add("dragging")}});document.body.classList.add("is-dragging-card")}
     const m=snapDuring(gesture,dx,dy,e);
     for(const o of gesture.orig){o.n.x=Math.round(o.x+m.dx);o.n.y=Math.round(o.y+m.dy);const el=nodeEl(o.n.id);if(el){el.style.left=o.n.x+"px";el.style.top=o.n.y+"px"}}
     watchTear(gesture);drawWires();placeMargin();placeBars();return}
@@ -17389,6 +17432,12 @@ function endPointer(e){
     }else select([g.id]);
     return;
   }
+  if(g.type==="drag"&&g.writing){keepFocusOnPress=false;qsa(".dragging").forEach(c=>c.classList.remove("dragging","magnet"));document.body.classList.remove("is-dragging-card");
+    if(g.moved){const sr=snapOnDrop(g);g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();
+      /* nothing written yet: typing comes first, so the relation stays "related" without the type picker (change it from the clasp later) */
+      if(g.writing.innerText.trim())afterSnapDrop(sr);else if(sr.torn.length)afterSnapDrop({made:null,torn:sr.torn})}
+    else if(!g.inText){const a=g.target.closest("[data-a]");if(a&&!a.matches("button")&&a.dataset.a!=="edit-note"){act(a.dataset.a,byId(g.id),a);return}}
+    requestAnimationFrame(()=>refocusWriting(g.writing));return}
   if(g.type==="drag"){qsa(".dragging").forEach(c=>c.classList.remove("dragging","magnet"));document.body.classList.remove("is-dragging-card");
     if(g.moved){const sr=snapOnDrop(g);g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();afterSnapDrop(sr)}
     else if(g.fromClasp){selectEdge(g.fromClasp);return}

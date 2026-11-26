@@ -164,6 +164,14 @@ node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a
 node tests/relations.cjs
 ```
 
+## Moving a sticky while you write it
+
+`tests/sticky-move.cjs` checks that a sticky made by double-clicking the canvas can be moved before anything is typed: dragging an empty sticky from anywhere moves it (it used to vanish) and leaves the caret in it, so typing after the drop goes into the sticky; once it has words, dragging inside them selects text, while the grip at the top or the edge moves it without ending the edit or losing the selection; clicking away from a sticky that was never written in removes it (also after it was moved or snapped, together with its relation), but a sticky that had words is never removed; a fresh sticky shows the snap preview and snaps into a `related` relation like any card, without the type picker until it has words (with words, the picker comes up as usual).
+
+```bash
+node tests/sticky-move.cjs
+```
+
 ## One Copilot conversation per board
 
 `tests/copilot-per-board.cjs` checks that each board keeps its own Copilot conversation (`board.copilot`): switching boards switches the panel's conversation (the header names the board) with a short settle-in transition; a new board opens on an empty conversation that says Copilot reads only this board, with the stage's starter suggestions; half-typed words, queued messages and the crew member being addressed do not follow you to another board; a request made on one board carries none of another board's cards or conversation; leaving while a reply is streaming stops it, keeps what arrived on the board it was asked on (marked as stopped because you switched), and places nothing on either board; Export and Import carry the conversation, and a reply saved mid-stream shows as stopped instead of a caret forever; after a reload the active board opens on its own conversation.

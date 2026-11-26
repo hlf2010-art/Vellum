@@ -3374,7 +3374,7 @@ body.snap-skip #wall{cursor:copy}
    Material (files, media, notes) is plain paper. Thinking (a claim, a synthesis, a direction, a question, a proof)
    carries an ink rule. Drafts stay pencil (dashed). A direction set aside keeps full words but loses its ink. */
 .card:is(.idea,.synthesis,.direction,.question,.proof):not(.sketch){
-  --ink-rule:color-mix(in srgb,var(--label) 62%,transparent);
+  --ink-rule:color-mix(in srgb,var(--label) 20%,transparent);
   --card-shadow:0 0 0 1.25px var(--ink-rule),0 1px 2px rgba(11,12,14,.04),0 10px 22px -16px rgba(11,12,14,.18);
   --card-shadow-up:0 0 0 1.25px var(--ink-rule),0 2px 3px rgba(11,12,14,.04),0 8px 16px -6px rgba(11,12,14,.08),0 34px 64px -28px rgba(11,12,14,.28)}
 :root[data-theme="dark"] .card:is(.idea,.synthesis,.direction,.question,.proof):not(.sketch){
@@ -3385,7 +3385,7 @@ body.snap-skip #wall{cursor:copy}
   --ink-rule:color-mix(in srgb,var(--label) 46%,transparent);
   --card-shadow:0 0 0 1.25px var(--ink-rule),0 14px 34px -16px rgba(0,0,0,.8);
   --card-shadow-up:0 0 0 1.25px var(--ink-rule),0 34px 70px -24px rgba(0,0,0,.9)}}
-.card.direction.passed,.card.direction.passed.disliked{opacity:1;filter:none;--ink-rule:var(--hair-2);background:color-mix(in srgb,var(--card) 72%,var(--card-2))}
+.card.direction.passed,.card.direction.passed.disliked{opacity:1;filter:none;--ink-rule:var(--hair);background:color-mix(in srgb,var(--card) 72%,var(--card-2))}
 .card.direction.passed:hover{opacity:1}
 .card.direction.passed h4{color:var(--label-2)}
 .card.direction.passed .card-k .chip{background:var(--label-3);box-shadow:none}

@@ -174,10 +174,18 @@ node tests/sticky-move.cjs
 
 ## Who made a card
 
-`tests/creator-badge.cjs` checks the maker's seal on the card's top edge: every crew card on the board carries its maker's avatar (Scout, Strategist, Wright, Critic, or Copilot), your own cards and drafts carry none (a draft's header already says who suggested it), and a card you made stays yours when a crew member only commented on it. A crew card you kept, adopted or marked helpful shows a check and reads "Scout · kept by you" ("Scout 起草 · 你已确认"); one you voted down does not. The avatar is the same glyph and colour as that member's seat in the top bar. At rest only the avatar shows; the name slides out on hover or selection. In the overview the seals are hidden and come back on hover. A card Copilot makes on its own is marked Copilot (it used to be filed under Critic), one it makes for a named member is marked with that member, and a Copilot draft says "Suggested by Copilot". Chinese labels and the dark theme are checked too.
+`tests/creator-badge.cjs` checks who a card names, in its bottom row right before the time. A card with one maker shows that maker's avatar: a crew member's sign (Scout, Strategist, Wright, Critic, or Copilot), or your initial on a solid colour with your name from Settings › Your name ("You" / "你" until one is set); the name slides out ("Critic ·") on hover or selection. A card several people or crew members worked on shows an avatar group: maker first, then by latest activity; stacked at rest, eased apart one after another on hover or selection; more than three shows two avatars and "+N". Hovering the group (or focusing it with the keyboard) opens a card listing each contributor with what they did (Drafted / Created, Edited n×, Kept) and when; moving away or Escape closes it. Contributions are kept on the card (`n.contrib`), so trimming the change log can't lose them: editing a card adds the editor, keeping a crew card adds you, a comment adds nobody, and finishing your own new card in its first minutes is not a second contribution. Drafts show nobody (their header already names who suggested them). A card records the name it was made under (`prov.name`). Crew avatars are the top-bar seat avatars. In the overview the marks are hidden and come back on hover. Stickies no longer have a pen button; double-click edits. A card Copilot makes on its own is marked Copilot (it used to be filed under Critic), and a Copilot draft says "Suggested by Copilot". Chinese labels and the dark theme are checked too.
 
 ```bash
 node tests/creator-badge.cjs
+```
+
+## How well a card is backed
+
+`tests/evidence-line.cjs` checks the evidence line on idea and synthesis cards. Instead of a "6/5 rated" bar chart, the card says one plain verdict with the same signal bars as a source's rating: Mostly observed (half or more of the rated sources were watched), Partly observed, Mostly second-hand / Second-hand only, No evidence yet (only proposals and illustrations), or Not rated yet. Hovering or focusing the line opens a card with the verdict in a sentence ("4 of 7 sources were watched first-hand. 2 not rated yet."), each kind of source with what it means and how many, and what to do next: "Rate 2 unrated sources" selects and flies to one, "Show sources" selects them all. A synthesis counts the sources it actually rests on (its stored weights once outnumbered them). It also checks that no card's bottom row runs past the card's edge, at rest, with every card selected, and with five contributors on every card. Chinese is checked too.
+
+```bash
+node tests/evidence-line.cjs
 ```
 
 ## One Copilot conversation per board

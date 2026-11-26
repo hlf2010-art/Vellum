@@ -784,12 +784,12 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.evaluate(() => { setCrew({ speak: 'matters', act: 'drafts' }); board.pins = {}; advHeld = 0; renderCrew(); });
       check('the crew settings button belongs to the crew group', await p.evaluate(() => !!document.querySelector('.crew-group .crew-seats') && !!document.querySelector('.crew-group #crewSetBtn')));
       check('it shows connection health as a dot', await p.evaluate(() => document.querySelector('#crewSetBtn .conn-dot')?.classList.contains('ok')));
-      check('its label names both settings', /Joins in: Listening/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))) && /Only drafts/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))));
+      check('its label names what the crew may do, not the participation level (that is the top-bar switch)', !/Listening|Joins in/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))) && /Only drafts/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))));
       const pinCard = await p.evaluate(() => { const id = board.nodes.find(n => n.type === 'note').id; board.pins = { [id]: [{ id: 'pin-show', agent: 'critic', note: 'Read me', t: NOW(), seen: false }] }; renderAll(); renderCrew(); return id; });
       check('the avatars show the crew is waiting for you', await p.evaluate(() => { const g = document.querySelector('.crew-group'); return g.classList.contains('quiet-pacing') && /read the last thought/.test(g.title); }));
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
       const segs = await p.evaluate(() => ['speak', 'act'].map(a => [...document.querySelectorAll(`#crewPop [data-crew-${a}]`)].map(b => b.dataset['crew' + a[0].toUpperCase() + a.slice(1)] + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(',')).join(' | '));
-      check('the popover has two segmented axes', segs === 'never,matters*,often | drafts*,create' && await p.evaluate(() => document.querySelectorAll('#crewPop .sp-seg').length === 2), segs);
+      check('the popover has one segmented axis (acts on the board); participation lives only in the top-bar switch', segs === ' | drafts*,create' && await p.evaluate(() => document.querySelectorAll('#crewPop .sp-seg').length === 1 && !/Focus|Listening|Teamwork/.test($('crewPop').innerText)), segs);
       check('no Copilot shortcut in the popover', await p.evaluate(() => !document.querySelector('#crewPop [data-crew-copilot]')));
       await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
       check('lanes can be locked from the popover', await p.evaluate(() => lockedBays().includes(1) && document.querySelector('#crewPop [data-crew-lock="1"]').getAttribute('aria-pressed') === 'true'));
@@ -798,10 +798,10 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.click('#crewPop [data-crew-show]'); await p.waitForTimeout(500);
       check('Show opens the waiting thought and marks it read', await p.evaluate(id => openAdvNodeId === id && board.pins[id][0].seen === true && !document.querySelector('.crew-group').classList.contains('quiet-pacing'), pinCard));
       await p.evaluate(() => closeAdvPop());
+      await p.click('#partSw [data-part="often"]'); await p.waitForTimeout(200);
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
-      await p.click('#crewPop [data-crew-speak="often"]'); await p.waitForTimeout(200);
       await p.click('#crewPop [data-crew-act="create"]'); await p.waitForTimeout(200);
-      check('choosing on each axis takes effect and is remembered', await p.evaluate(() => crewSpeak === 'often' && crewAct === 'create' && store.get('.crewSpeak') === 'often' && store.get('.crewAct') === 'create' && perm('create') === 'direct' && /Teamwork/.test(document.getElementById('crewSetBtn').getAttribute('aria-label')) && board.speak === 'often'));
+      check('choosing on each axis takes effect and is remembered', await p.evaluate(() => crewSpeak === 'often' && crewAct === 'create' && store.get('.crewSpeak') === 'often' && store.get('.crewAct') === 'create' && perm('create') === 'direct' && /Can create cards/.test(document.getElementById('crewSetBtn').getAttribute('aria-label')) && board.speak === 'often'));
       await p.keyboard.press('Escape'); await p.waitForTimeout(200);
       // the connection popover is only about the connection
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);

@@ -175,10 +175,39 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .card h4{margin:8px 0 0;font:600 17px/1.28 var(--ui);letter-spacing:-.022em;color:var(--label);text-wrap:wrap;overflow-wrap:break-word}
 .card p{margin:6px 0 0;font:14px/1.45 var(--ui);color:var(--label-2);overflow-wrap:anywhere}
 .card .foot{display:flex;align-items:center;gap:8px;margin-top:14px;font:500 12px/1.2 var(--ui);color:var(--label-3);min-height:20px}
-.card .foot .sp{flex:1}
+.card .foot .sp{flex:1 1 0;min-width:0}
 .card .foot-l,.card .foot-r{display:inline-flex;align-items:center;gap:6px;min-width:0}
 .card .foot-l{flex:0 1 auto}
-.card .foot-r{flex:0 1 auto;justify-content:flex-end}
+.card .foot-r{flex:0 0 auto;justify-content:flex-end}   /* who and when never get squeezed; the left side gives way */
+.card .foot-l,.card .foot>span:first-child{overflow:hidden}
+.ev-line{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;padding:2px 6px 2px 4px;margin:-2px -6px -2px -4px;border-radius:var(--radius-xs);cursor:default;outline:none;transition:background var(--d-quick)}
+.ev-line:hover,.ev-line.is-open{background:var(--hover)}
+.ev-line:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--label) 40%,transparent)}
+.ev-bars{display:inline-flex;align-items:flex-end;gap:1.5px;height:10px;width:11px;flex:none}
+.ev-bars i{width:2.5px;border-radius:1.25px;background:color-mix(in srgb,currentColor 22%,transparent)}
+.ev-bars i:nth-child(1){height:4px}.ev-bars i:nth-child(2){height:7px}.ev-bars i:nth-child(3){height:10px}
+.ev-bars i.on{background:currentColor}
+.ev-line .ev-bars,.ev-head .ev-bars{color:var(--label-3)}
+.ev-obs .ev-bars,.ev-part .ev-bars,.ev-k-observed .ev-bars{color:var(--C)}
+.ev-rep .ev-bars,.ev-k-reported .ev-bars{color:var(--A)}
+.ev-k-proposed .ev-bars{color:var(--B)}
+.by-pop.is-ev{width:300px;max-width:calc(100vw - 16px);padding:12px 6px 6px}
+.by-pop .ev-head{display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--label);font:inherit;letter-spacing:0}
+.by-pop .ev-head b{font:650 15px/1.25 var(--ui);letter-spacing:-.01em}
+.by-pop .ev-head .ev-bars{transform:scale(1.25);transform-origin:left bottom;margin-right:2px}
+.by-pop .ev-sent{margin:6px 10px 8px;font:var(--text-body);font-size:13px;line-height:19px;color:var(--label-2)}
+.by-pop .ev-row{align-items:flex-start}
+.by-pop .ev-k-g,.by-pop .ev-ring{flex:none;width:24px;height:20px;display:grid;place-items:center}
+.by-pop .ev-ring::before{content:"";width:9px;height:9px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--label-4)}
+.by-pop .ev-row .by-pop-txt small{white-space:normal;line-height:16px}
+.by-pop .ev-n{flex:none;min-width:16px;text-align:right;font:600 13px/20px var(--ui);font-variant-numeric:tabular-nums;color:var(--label-2)}
+.by-pop .ev-acts{display:flex;gap:6px;flex-wrap:wrap;padding:8px 6px 4px;margin-top:4px;border-top:.5px solid var(--hair)}
+.by-pop .ev-act{height:28px;padding:0 10px;border:0;border-radius:var(--radius-sm);background:var(--hover);color:var(--label);font:550 12.5px/1 var(--ui);cursor:pointer;transition:background var(--d-quick),transform var(--duration-press)}
+.by-pop .ev-act:hover{background:var(--press)}
+.by-pop .ev-act:active{transform:scale(.97)}
+.by-pop .ev-act.primary{background:var(--label);color:var(--card)}
+.by-pop .ev-act.primary:hover{background:color-mix(in srgb,var(--label) 86%,var(--card))}
+.ev-line .ev-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card .foot .weight{flex:none}
 .th-cnt{display:inline-flex;align-items:center;gap:3.5px}
 .th-mk{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;background:color-mix(in srgb,var(--label) 10%,transparent);flex:none;color:var(--label-2)}
@@ -3245,7 +3274,7 @@ body.snap-skip #wall{cursor:copy}
 .card.note .by-group{--seal-ring:var(--note-bot)}
 #world.is-zoomed-out .card .by-group,#world.is-moving .card .by-group{opacity:0;pointer-events:none;transition:opacity var(--duration-base) var(--easing-standard)}
 #world.is-zoomed-out .card:hover .by-group,#world.is-zoomed-out .card.sel .by-group{opacity:1;pointer-events:auto}
-.by-pop{position:fixed;z-index:var(--z-tooltip);min-width:220px;max-width:300px;padding:6px;border-radius:var(--radius-md);background:var(--chrome,var(--card));-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);color:var(--label);box-shadow:0 0 0 .5px var(--hair-2),0 12px 32px -8px rgba(11,12,14,.22),0 2px 6px rgba(11,12,14,.06);
+.by-pop{position:fixed;z-index:var(--z-tooltip);min-width:220px;max-width:300px;padding:6px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--card) 96%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);color:var(--label);box-shadow:0 0 0 .5px var(--hair-2),0 12px 32px -8px rgba(11,12,14,.22),0 2px 6px rgba(11,12,14,.06);
   opacity:0;transform:translateY(4px) scale(.97);transform-origin:var(--ox,50%) 100%;transition:opacity 120ms var(--easing-standard),transform 120ms var(--easing-standard);pointer-events:auto}
 .by-pop.below{transform:translateY(-4px) scale(.97);transform-origin:var(--ox,50%) 0}
 .by-pop.in{opacity:1;transform:none;transition:opacity 180ms var(--easing-standard),transform var(--duration-spring) cubic-bezier(.32,.72,0,1)}
@@ -5434,14 +5463,19 @@ function contribGroupHTML(n){
    Opens after a short hover (or on focus / tap), closes a beat after the pointer leaves both the group and the card. */
 const byPop={el:null,for:null,openT:0,closeT:0};
 function byPopEl(){if(byPop.el)return byPop.el;const d=document.createElement("div");d.id="byPop";d.className="by-pop";d.setAttribute("role","dialog");d.hidden=true;document.body.appendChild(d);
-  d.addEventListener("pointerenter",()=>clearTimeout(byPop.closeT));d.addEventListener("pointerleave",()=>closeByPop());return byPop.el=d}
+  d.addEventListener("pointerenter",()=>clearTimeout(byPop.closeT));
+  d.addEventListener("click",e=>{const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for),ns=evSourcesOf(n);closeByPop(0);
+    if(b.dataset.evAct==="rate"){const s=ns.find(x=>!x.weight);if(s){select([s.id]);focusNodes([s],Math.max(cam.s,.9))}}
+    else if(ns.length){select(ns.map(x=>x.id));focusNodes(ns,Math.max(Math.min(cam.s,1),.5))}});d.addEventListener("pointerleave",()=>closeByPop());return byPop.el=d}
 function openByPop(grp,{now=false}={}){
   clearTimeout(byPop.closeT);clearTimeout(byPop.openT);
   const go=()=>{
     const card=grp.closest(".card"),n=card&&byId(card.dataset.id);if(!n)return;
-    const cs=contributorsOf(n),d=byPopEl(),kept=creatorKept(n)&&cs[0].who!=="you";
+    const d=byPopEl(),isEv=grp.classList.contains("ev-line");d.classList.toggle("is-ev",isEv);
+    if(isEv){d.innerHTML=evidencePopHTML(n);d.dataset.for=n.id}else{
+    const cs=contributorsOf(n),kept=creatorKept(n)&&cs[0].who!=="you";
     const rows=cs.slice(0,8).map((c,i)=>`<li style="--i:${i}"><span class="by-pop-av">${contribAvatar(c,{kept:i===0&&kept})}</span><span class="by-pop-txt"><b>${esc(contribName(c))}</b><small>${esc(contribRoles(c))}</small></span><time>${esc(c.t?relDate(c.t):"")}</time></li>`).join("");
-    d.innerHTML=`<header>${esc(L(`${cs.length} contributors`,`${cs.length} 位参与者`))}</header><ul>${rows}</ul>${cs.length>8?`<footer>${esc(L(`and ${cs.length-8} more`,`还有 ${cs.length-8} 位`))}</footer>`:""}`;
+    d.innerHTML=`<header>${esc(L(`${cs.length} contributors`,`${cs.length} 位参与者`))}</header><ul>${rows}</ul>${cs.length>8?`<footer>${esc(L(`and ${cs.length-8} more`,`还有 ${cs.length-8} 位`))}</footer>`:""}`;}
     d.setAttribute("aria-label",grp.getAttribute("aria-label")||"");
     d.hidden=false;d.classList.remove("in");
     const r=grp.getBoundingClientRect(),w=d.offsetWidth,h=d.offsetHeight;
@@ -5459,11 +5493,11 @@ function closeByPop(delay=120){
   clearTimeout(byPop.openT);clearTimeout(byPop.closeT);
   byPop.closeT=setTimeout(()=>{const d=byPop.el;if(!d||d.hidden)return;d.classList.remove("in");byPop.for?.classList.remove("is-open");byPop.for=null;setTimeout(()=>{if(!d.classList.contains("in"))d.hidden=true},140)},delay);
 }
-document.addEventListener("pointerover",e=>{const g=e.target.closest?.(".by-group");if(g&&byPop.for!==g&&!e.buttons)openByPop(g);else if(g)clearTimeout(byPop.closeT)});
-document.addEventListener("pointerout",e=>{const g=e.target.closest?.(".by-group");if(g&&!g.contains(e.relatedTarget)&&!byPop.el?.contains(e.relatedTarget))closeByPop()});
-document.addEventListener("focusin",e=>{const g=e.target.closest?.(".by-group");if(g)openByPop(g,{now:true})});
-document.addEventListener("focusout",e=>{if(e.target.closest?.(".by-group"))closeByPop()});
-document.addEventListener("pointerdown",e=>{if(byPop.el&&!byPop.el.hidden&&!byPop.el.contains(e.target)&&!e.target.closest?.(".by-group"))closeByPop(0)},true);
+document.addEventListener("pointerover",e=>{const g=e.target.closest?.(".by-group,.ev-line");if(g&&byPop.for!==g&&!e.buttons)openByPop(g);else if(g)clearTimeout(byPop.closeT)});
+document.addEventListener("pointerout",e=>{const g=e.target.closest?.(".by-group,.ev-line");if(g&&!g.contains(e.relatedTarget)&&!byPop.el?.contains(e.relatedTarget))closeByPop()});
+document.addEventListener("focusin",e=>{const g=e.target.closest?.(".by-group,.ev-line");if(g)openByPop(g,{now:true})});
+document.addEventListener("focusout",e=>{if(e.target.closest?.(".by-group,.ev-line"))closeByPop()});
+document.addEventListener("pointerdown",e=>{if(byPop.el&&!byPop.el.hidden&&!byPop.el.contains(e.target)&&!e.target.closest?.(".by-group,.ev-line"))closeByPop(0)},true);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&byPop.el&&!byPop.el.hidden){closeByPop(0);byPop.for?.focus?.()}});
 function byline(n){return ""}   // superseded by creatorBadgeHTML: one mark per card, beside its time
 function threadCount(n){
@@ -5716,9 +5750,9 @@ function cardBody(n){
   case"treemap":{const {total,branches}=countTreeNodes(treeMapOf(n));
     return `<div class="in">${head(`${byline(n)}${uiLang()==="zh"?"思维导图":"Tree Map"}`)}
     ${treemapHTML(n,false)}${sk?sketchActs(n):foot(`<span>${branches} ${uiLang()==="zh"?"分支":(branches===1?"branch":"branches")} · ${total} ${uiLang()==="zh"?"节点":"nodes"}</span>`,fR(threadCount(n)))}</div>`}
-  case"synthesis":{const srcCnt=(n.of||[]).length,wCnt=weighedCount(n.weights);
+  case"synthesis":{const ofNs=(n.of||[]).map(byId).filter(Boolean),srcCnt=(n.of||[]).length,synT=ofNs.length?tally(ofNs):n.weights,wCnt=weighedCount(synT);
     return `<div class="in">${head(`${byline(n)}${uiLang()==="zh"?"多源综合":"Synthesis"}`)}
-    <h4 data-edit="title">${esc(n.title)}</h4>${synPointsHTML(n,false)}${sk?sketchActs(n):foot(wCnt>0?scaleBar(uiLang()==="zh"?`${wCnt}/${srcCnt} 已标证据`:`${wCnt}/${srcCnt} rated`,n.weights):`<span>${srcCnt} ${uiLang()==="zh"?"个来源":(srcCnt===1?"source":"sources")}</span>`,fR(threadCount(n)))}</div>`}
+    <h4 data-edit="title">${esc(n.title)}</h4>${synPointsHTML(n,false)}${sk?sketchActs(n):foot(srcCnt?evidenceLine(synT||{},srcCnt):`<span>${srcCnt} ${uiLang()==="zh"?"个来源":(srcCnt===1?"source":"sources")}</span>`,fR(threadCount(n)))}</div>`}
   }
   return `<div class="in"><h4>${esc(n.title||n.text||n.type)}</h4></div>`;
 }
@@ -6579,8 +6613,44 @@ function scaleHTML(t){if(!weighedCount(t)&&!(t?.none))return"";
   const seg=(k,c)=>{const n=t[k]||0;if(!n)return"";const tip=`${n} ${weightLabel(k)||L("unrated","未标证据")}`;return each?Array.from({length:n},()=>`<i class="${c}" title="${esc(tip)}"></i>`).join(""):`<i class="${c}" style="flex:${n}" title="${esc(tip)}"></i>`};
   return `<div class="scale${each?" is-count":""}" role="img" aria-label="${esc(L("Evidence: ","证据：")+scaleSummary(t))}">${seg("observed","")}${seg("reported","r")}${seg("proposed","p")}${seg("illustrative","l")}${seg("none","n")}</div>`}
 function scaleLabeledHTML(t){if(!weighedCount(t))return"";const tip=L("Every source this card rests on, including those behind linked directions and questions. One block per source.","这张卡片依据的所有来源，包括关联方向和问题背后的来源。每格代表一个来源。");return `<div class="scale-cap" title="${esc(tip)}"><span>${L("Evidence behind it","背后的证据")}</span><span>${esc(scaleSummary(t))}</span></div>${scaleHTML(t)}`}
-function scaleBar(label,t){const bar=scaleHTML(t),sum=scaleSummary(t);return bar?`<span style="display:flex;align-items:center;gap:8px;width:100%" title="${esc(sum)}"><span style="white-space:nowrap">${label}</span><span style="flex:1">${bar.replace('class="scale"','class="scale" style="margin:0"')}</span></span>`:`<span>${label}</span>`}
-function evidenceScale(n){const s=sourcesFor(n);if(!s.length)return L("No sources yet","暂无关联来源");const t=tally(s);return weighedCount(t)?scaleBar(L(`${weighedCount(t)}/${s.length} rated`,`${weighedCount(t)}/${s.length} 已标证据`),t):L(`${s.length} ${s.length===1?"source":"sources"}`,`${s.length} 份来源`)}
+/* The evidence line on a card's bottom row answers one question: how well is this backed?
+   A strength glyph (the same bars as a source's rating) and a plain verdict; how many sources it rests on is in the card it opens.
+   Bars say how strong; colour says what kind dominates (green observed, amber second-hand, grey ideas).
+   Hover, focus or tap opens the evidence card: the verdict in a sentence, what each kind means, and what to do next. */
+function evidenceVerdict(t){
+  const o=t.observed||0,r=t.reported||0,w=weighedCount(t);
+  if(!w)return {k:"none",bars:0,txt:L("Not rated yet","尚未评估")};
+  if(o&&o*2>=w)return {k:"obs",bars:3,txt:L("Mostly observed","以实测为主")};
+  if(o&&o>r)return {k:"part",bars:2,txt:L("Partly observed","部分有实测")};
+  if(r)return o?{k:"rep",bars:2,txt:L("Mostly second-hand","多为转述")}:{k:"rep",bars:1,txt:L("Second-hand only","只有转述")};
+  return {k:"thin",bars:0,txt:L("No evidence yet","还没有证据")};
+}
+function evBarsHTML(b){return `<span class="w-bars ev-bars" aria-hidden="true">${[1,2,3].map(i=>`<i class="${i<=b?"on":""}"></i>`).join("")}</span>`}
+function evSentence(t,n){
+  const o=t.observed||0,r=t.reported||0,u=t.none||0,w=weighedCount(t),v=evidenceVerdict(t);
+  let x;
+  if(v.k==="none")x=L(`None of the ${n} sources has been rated. Rate them to see how strong this is.`,`${n} 个来源都还没评估。评估后才能看出这张卡站不站得住。`);
+  else if(v.k==="obs"||v.k==="part")x=L(`${o} of ${n} sources ${o===1?"was":"were"} watched first-hand.`,`${n} 个来源中，有 ${o} 个是亲眼观察到的。`);
+  else if(v.k==="rep")x=o?L(`${r} of ${n} sources are what someone told us; only ${o} was watched.`,`${n} 个来源中有 ${r} 个是别人的转述，只有 ${o} 个是亲眼看到的。`):L(`Nobody has watched this happen yet; ${r} of ${n} sources are what someone told us.`,`还没有人亲眼看到过；${n} 个来源中有 ${r} 个是别人的转述。`);
+  else x=L("These sources are ideas and pictures. They say nothing yet about what people actually do.","这些来源都是想法或示意图，还说明不了真实用户会怎么做。");
+  if(u&&v.k!=="none")x+=L(` ${u} not rated yet.`,`另有 ${u} 个尚未评估。`);
+  return x;
+}
+function evidenceLine(t,total){
+  const v=evidenceVerdict(t),n=total,src=L(`${n} source${n===1?"":"s"}`,`${n} 个来源`);
+  return `<span class="ev-line ev-${v.k}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(`${L("Evidence","证据")}: ${v.txt}, ${src}`)}">${evBarsHTML(v.bars)}<span class="ev-txt">${esc(v.txt)}</span></span>`;
+}
+function evSourcesOf(n){return n?.type==="synthesis"?(n.of||[]).map(byId).filter(Boolean):sourcesFor(n)}
+function evidencePopHTML(n){
+  const ns=evSourcesOf(n),t=ns.length?tally(ns):(n.weights||{}),total=ns.length||(n.of||[]).length,v=evidenceVerdict(t);
+  const rows=[...WEIGHT_ORDER,"none"].filter(k=>t[k]).map((k,i)=>{const w=WEIGHTS[k];
+    return `<li style="--i:${i}" class="ev-row ev-k-${k}">${k==="none"?'<span class="ev-ring" aria-hidden="true"></span>':`<span class="ev-k-g">${evBarsHTML(w.n)}</span>`}<span class="by-pop-txt"><b>${esc(k==="none"?L("Not rated","未评估"):weightLabel(k))}</b><small>${esc(k==="none"?L("Nobody has judged these yet.","还没有人判断过它们有多可信。"):weightDesc(k))}</small></span><span class="ev-n">${t[k]}</span></li>`}).join("");
+  const u=t.none||0,acts=[];
+  if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(u===1?L("Rate the unrated source","去评估这个来源"):L(`Rate ${u} unrated sources`,`去评估 ${u} 个来源`))}</button>`);
+  if(ns.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("Show sources","在画布上查看来源"))}</button>`);
+  return `<header class="ev-head ev-${v.k}">${evBarsHTML(v.bars)}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows?`<ul>${rows}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
+}
+function evidenceScale(n){const s=sourcesFor(n);if(!s.length)return L("No sources yet","暂无关联来源");return evidenceLine(tally(s),s.length)}
 function driftOf(p){
   const moved=[],unavailable=[],archived=[],changed=[];
   for(const f of p.fixed||[]){

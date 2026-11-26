@@ -180,6 +180,14 @@ node tests/sticky-move.cjs
 node tests/creator-badge.cjs
 ```
 
+## How well a card is backed
+
+`tests/evidence-line.cjs` checks the evidence line on idea and synthesis cards. Instead of a "6/5 rated" bar chart, the card says one plain verdict with the same signal bars as a source's rating: Mostly observed (half or more of the rated sources were watched), Partly observed, Mostly second-hand / Second-hand only, No evidence yet (only proposals and illustrations), or Not rated yet. Hovering or focusing the line opens a card with the verdict in a sentence ("4 of 7 sources were watched first-hand. 2 not rated yet."), each kind of source with what it means and how many, and what to do next: "Rate 2 unrated sources" selects and flies to one, "Show sources" selects them all. A synthesis counts the sources it actually rests on (its stored weights once outnumbered them). It also checks that no card's bottom row runs past the card's edge, at rest, with every card selected, and with five contributors on every card. Chinese is checked too.
+
+```bash
+node tests/evidence-line.cjs
+```
+
 ## One Copilot conversation per board
 
 `tests/copilot-per-board.cjs` checks that each board keeps its own Copilot conversation (`board.copilot`): switching boards switches the panel's conversation (the header names the board) with a short settle-in transition; a new board opens on an empty conversation that says Copilot reads only this board, with the stage's starter suggestions; half-typed words, queued messages and the crew member being addressed do not follow you to another board; a request made on one board carries none of another board's cards or conversation; leaving while a reply is streaming stops it, keeps what arrived on the board it was asked on (marked as stopped because you switched), and places nothing on either board; Export and Import carry the conversation, and a reply saved mid-stream shows as stopped instead of a caret forever; after a reload the active board opens on its own conversation.

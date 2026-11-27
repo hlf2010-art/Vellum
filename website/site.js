@@ -102,7 +102,7 @@
     },
     zh: {
       "skip": "跳到正文",
-      "nav.why": "为什么是 Vellum", "nav.how": "怎么用", "nav.crew": "AI 伙伴",
+      "nav.why": "理念", "nav.how": "用法", "nav.crew": "AI 伙伴",
       "cta.get": "获取 Vellum",
       "hero.title": "你的好想法，不该困在一个聊天框里。", "hero.t1": "你的好想法，不该困在一个", "hero.kw": "聊天框", "hero.t2": "里。",
       "hero.lede": "把整个问题摊在一张白板上，让 AI 团队把它辩清楚。每个选择，都留着理由。",

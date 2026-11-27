@@ -3573,6 +3573,13 @@ header.top .part-b[aria-checked="true"] .part-l>span{padding-left:7px}
 :root[data-theme="dark"] .hub-mk .ring .ar{stroke:oklch(.78 .1 var(--h))}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) :is(.hub-mk,.hub-seat,.crew-bub .cb-hd) .mk{background:oklch(.33 .045 var(--h));color:oklch(.86 .07 var(--h))}:root:not([data-theme="light"]) .hub-mk .ring .tr{stroke:oklch(.78 .1 var(--h) / .18)}:root:not([data-theme="light"]) .hub-mk .ring .ar{stroke:oklch(.78 .1 var(--h))}}
 .crew-hub.off .hub-mk .mk{filter:saturate(.35)}
+/* A crew member is its sign on its own plate wherever it appears: card makers, contributor groups and their hover card,
+   menus and tips, the same as in the top bar. People keep their initials on a solid colour (Mars, 2026-11-27).
+   Live work (a moving cursor, a busy seat, the progress bar) keeps the warm glow, which means "working", not "who". */
+.mk:has(>svg[data-a="scout"]){--h:200}.mk:has(>svg[data-a="muse"]){--h:305}.mk:has(>svg[data-a="wright"]){--h:100}.mk:has(>svg[data-a="critic"]){--h:262}
+:root .mk:is(:has(>svg[data-a="scout"]),:has(>svg[data-a="muse"]),:has(>svg[data-a="wright"]),:has(>svg[data-a="critic"])):not(.seat.busy .mk,.cursor .mk,.pbar .mk,.narr .mk,.msg.agent .mk.live){background:oklch(.955 .026 var(--h));color:oklch(.48 .085 var(--h));box-shadow:none;filter:none}
+:root[data-theme="dark"] .mk:is(:has(>svg[data-a="scout"]),:has(>svg[data-a="muse"]),:has(>svg[data-a="wright"]),:has(>svg[data-a="critic"])):not(.seat.busy .mk,.cursor .mk,.pbar .mk,.narr .mk,.msg.agent .mk.live){background:oklch(.33 .045 var(--h));color:oklch(.86 .07 var(--h))}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mk:is(:has(>svg[data-a="scout"]),:has(>svg[data-a="muse"]),:has(>svg[data-a="wright"]),:has(>svg[data-a="critic"])):not(.seat.busy .mk,.cursor .mk,.pbar .mk,.narr .mk,.msg.agent .mk.live){background:oklch(.33 .045 var(--h));color:oklch(.86 .07 var(--h))}}
 /* cloud calls: nothing at rest; a small ring and the count only under 20% left (amber), red at none */
 .hub-q{display:inline-flex;align-items:center;gap:5px;font:600 12px/1 var(--ui);color:var(--warn);font-variant-numeric:tabular-nums}
 .hub-q svg{width:16px;height:16px;transform:rotate(-90deg)}

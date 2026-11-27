@@ -97,6 +97,17 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
     const snd = await p.evaluate(() => __snd.filter(k => k.startsWith('speak-')));
     check('C9b one chime per change, its pitch by level; none when nothing changes', JSON.stringify(snd) === '["speak-often","speak-never"]', JSON.stringify(snd));
     check('C9c sounds are on by default', await p.evaluate(() => sfxEnabled()));
+    // C10: a crew member is its sign on its own plate on cards too, never a letter; people keep initials
+    const cardPlates = await p.evaluate(() => {
+      const out = {};
+      document.querySelectorAll('article .by-seal .mk, article .by-av .mk').forEach(m => {
+        const s = m.querySelector('svg[data-a]'); if (!s || s.dataset.a === 'you') return;
+        out[s.dataset.a] = { bg: getComputedStyle(m).backgroundColor, text: m.textContent.trim() };
+      });
+      return out;
+    });
+    const keys = Object.keys(cardPlates), bgs = new Set(keys.map(k => cardPlates[k].bg));
+    check('C10 crew avatars on cards are icons on their own tinted plate', keys.length >= 3 && bgs.size === keys.length && keys.every(k => /oklch/.test(cardPlates[k].bg) && !cardPlates[k].text), JSON.stringify(cardPlates));
 
     check('C8 no page errors', !errors.length, errors.join(' | '));
   } finally { await browser.close(); srv.close(); }

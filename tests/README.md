@@ -233,3 +233,7 @@ node tests/workflow-templates.cjs --only=C   # one part (A, B, C, or P for the p
 ```
 
 Each template runs with a scripted model and with no model at all. Nothing calls a real model or generator. Lines marked `KNOWN` are recorded gaps (offline Copilot answering with another project's advice, a stand-in clip not marked as a preview, no Figma export, one hard-wired video provider, no eval-set card); they print but do not fail the run, and turn into `PASS … (gap closed)` once fixed.
+
+## Card types
+
+`tests/card-types.cjs` checks format per block and one label per card. The local rules read a quote (with its speaker), code (with its language), Chinese speaker lines, counted or timed evidence (Observed) and "what if we" (Proposal), and leave ordinary text alone. A paste is drawn as blocks with a "Quote · JS" kind line and a title from the words. With Edit = Ask first the label is a dashed "Reported?" pill whose hover card says why with Change and Keep; the menu marks Scout's pick without applying it and works with the keyboard; Show as plain text and editing show the raw words. With Do it the label is applied with one glow and a toast whose Undo removes only the label; with Never nothing is suggested. A paste holding two points is never split on its own; Split (on hover) makes two snapped cards with their own suggestions, and Undo restores the original. Light and dark, English and Chinese, with nothing past the card's edge. `--shots DIR` saves screenshots.

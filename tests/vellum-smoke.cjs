@@ -1557,8 +1557,8 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       if (theme === 'light') { await p.context().close(); continue; }
       check('a source you add shows an Unrated pill you can click', (await p.locator(pill).count()) === 1 && /Unrated/.test(await p.locator(pill).innerText()));
       const seen = [];
-      for (let i = 0; i < 5; i++) { await p.click(pill); await p.waitForTimeout(150); seen.push(await w()); }
-      check('clicking the pill steps through every weight and back to unrated', seen.join() === 'observed,reported,proposed,illustrative,', seen.join());
+      for (const k of ['observed', 'reported', 'proposed', 'illustrative', '']) { await p.click(pill); await p.waitForTimeout(200); await p.click(`.w-menu .wm-i[data-w="${k}"]`); await p.waitForTimeout(200); seen.push(await w()); }
+      check('clicking the pill opens the four weights (and Unrated once rated), and each one sets it', seen.join() === 'observed,reported,proposed,illustrative,', seen.join());
       await p.evaluate(id => openFocus(id), id); await p.waitForTimeout(600);
       check('the sheet has an Evidence section with the four weights', (await p.locator('#margin .m-evidence [data-m="weight"]').count()) === 4);
       await p.click('#margin .m-evidence [data-w="reported"]'); await p.waitForTimeout(300);

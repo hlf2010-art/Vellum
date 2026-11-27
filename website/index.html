@@ -231,38 +231,39 @@
       <div class="sec-head">
         <h2 id="crew-title" data-i18n="crew.title">A crew that thinks with you, and sometimes against you.</h2>
       </div>
-      <div class="crew" id="crewRow" data-mode="listen">
+      <div class="crew">
         <figure class="agent" style="--c: var(--crew-scout)">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-scout"/></svg></span><div><h3>Scout</h3><p data-i18n="crew.scout">Weighs the evidence</p></div></div>
-          <blockquote data-i18n="crew.scoutq">“Two of these seven sources are the same review.”</blockquote>
+          <blockquote data-i18n="crew.scoutq" data-clauses>“Two of these seven sources are the same review.”</blockquote>
         </figure>
         <figure class="agent" style="--c: var(--crew-strategist)">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-strategist"/></svg></span><div><h3>Strategist</h3><p data-i18n="crew.strat">Forks it into directions</p></div></div>
-          <blockquote data-i18n="crew.stratq">“If B is right, campers find it in five seconds.”</blockquote>
+          <blockquote data-i18n="crew.stratq" data-clauses>“If B is right, campers find it in five seconds.”</blockquote>
         </figure>
         <figure class="agent" style="--c: var(--crew-wright)">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-wright"/></svg></span><div><h3>Wright</h3><p data-i18n="crew.wright">Builds the proof</p></div></div>
-          <blockquote data-i18n="crew.wrightq">“The foam mock-up for B is ready. Keep it?”</blockquote>
+          <blockquote data-i18n="crew.wrightq" data-clauses>“The foam mock-up for B is ready. Keep it?”</blockquote>
         </figure>
         <figure class="agent" style="--c: var(--crew-critic)">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-critic"/></svg></span><div><h3>Critic</h3><p data-i18n="crew.critic">Checks it against the sources</p></div></div>
-          <blockquote data-i18n="crew.criticq">“Nothing here says campers want a dial.”</blockquote>
+          <blockquote data-i18n="crew.criticq" data-clauses>“Nothing here says campers want a dial.”</blockquote>
         </figure>
       </div>
       <div class="agency">
-        <div class="agency-copy">
-          <p class="agency-line" data-i18n="crew.agency">They can challenge your decision. Only you can make it.</p>
+        <p class="agency-line" data-i18n="crew.agency" data-clauses>They can challenge your decision. Only you can make it.</p>
+        <!-- The same moment on a small board, three ways. The switch sits on the board it changes, and the line under
+             the board says what you're watching, so the eye moves down, never across. -->
+        <div class="scene-col">
           <div class="seg modes" role="radiogroup" aria-label="How much the crew joins in" id="modes">
             <button type="button" role="radio" data-mode="focus" aria-checked="false" tabindex="-1" data-i18n="mode.focus">Focus</button>
             <button type="button" role="radio" data-mode="listen" aria-checked="true" data-i18n="mode.listen">Listening</button>
             <button type="button" role="radio" data-mode="team" aria-checked="false" tabindex="-1" data-i18n="mode.team">Teamwork</button>
           </div>
+          <figure class="scene-wrap" id="scene" aria-hidden="true">
+            <div class="scene" id="sceneBox"><div class="scene-stage" id="sceneStage"></div></div>
+          </figure>
           <p class="mode-desc" id="modeDesc" aria-live="polite"></p>
         </div>
-        <!-- The same moment on a small board, three ways: what the crew does while you work. -->
-        <figure class="scene-wrap" id="scene" aria-hidden="true">
-          <div class="scene" id="sceneBox"><div class="scene-stage" id="sceneStage"></div></div>
-        </figure>
       </div>
     </div>
   </section>
@@ -314,7 +315,7 @@
               </select></div>
             </div>
             <p class="form-msg span2" id="formMsg" role="alert"></p>
-            <button class="btn btn-primary span2" type="submit"><svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg><span data-i18n="cta.waitlist">Join the waitlist</span></button>
+            <button class="btn btn-primary submit" type="submit"><svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg><span data-i18n="cta.waitlist">Join the waitlist</span></button>
           </div>
           <div class="done-state" role="status">
             <span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span>

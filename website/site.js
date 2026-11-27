@@ -132,14 +132,14 @@
       "cases.t1": "产品设计", "cases.t2": "短视频", "cases.t3": "AI 产品",
       "crew.title": "和你一起想，\u200b有时也和你唱反调。",
       "crew.scout": "掂量证据", "crew.scoutq": "“这七条来源里，有两条是同一篇评论。”",
-      "crew.strat": "把判断分成方向", "crew.stratq": "“如果 B 是对的，露营者五秒内就能找到灯。”",
+      "crew.strat": "把判断分成方向", "crew.stratq": "“如果 B 是对的，露营者五秒就能找到灯。”",
       "crew.wright": "做出能验证的东西", "crew.wrightq": "“B 的泡沫手板做好了，留下吗？”",
-      "crew.critic": "对照来源挑毛病", "crew.criticq": "“这里没有任何证据说露营者想要旋钮。”",
+      "crew.critic": "对照来源挑毛病", "crew.criticq": "“这里没有证据表明，露营者想要旋钮。”",
       "crew.agency": "它们可以质疑你的决定，但只有你能做决定。",
       "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
       "mode.focusd": "不打扰你。它们注意到的事，等你回来再说。",
       "sc.wait": "条待看", "sc.backK": "你专注的时候", "sc.backT": "伙伴记下了 3 条",
-      "sc.critic": "这里没有任何证据说露营者想要旋钮。", "sc.draftK": "原型 · 草稿", "sc.draftT": "泡沫手板", "sc.keep": "留下", "sc.discard": "丢掉",
+      "sc.critic": "这里没有证据表明，露营者想要旋钮。", "sc.draftK": "原型 · 草稿", "sc.draftT": "泡沫手板", "sc.keep": "留下", "sc.discard": "丢掉",
       "mode.listend": "只在有地方说不通时才开口。",
       "mode.teamd": "和你一起起草，好的你留下。",
       "modes.label": "AI 伙伴参与的程度",
@@ -337,7 +337,11 @@
   function applyCopy() {
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
       var v = t(el.getAttribute("data-i18n"));
-      if (v) el.textContent = v;
+      if (!v) return;
+      // Chinese may break between any two characters, which in a short display line can split a word (决/定).
+      // Here each clause stays whole and lines break between clauses; a clause too long for the line still wraps.
+      if (lang === "zh" && el.hasAttribute("data-clauses")) el.innerHTML = v.replace(/([，；])/g, "$1\u0001").split("\u0001").map(function (c) { return '<span class="cl">' + esc(c) + "</span>"; }).join("");
+      else el.textContent = v;
     });
     $("langSel").value = lang;
     document.title = t("title");
@@ -1408,7 +1412,9 @@
   // difference between the modes, so the board plays it out in time.
   var scene = (function () {
     var boxEl = $("sceneBox"), st = $("sceneStage");
-    var W = 560, H = 236, D = 5200, LAY = { wide: { W: 560, H: 236, mine: [40, 66], bubble: [272, 44, 248], back: [300, 92], draft: [304, 104] }, narrow: { W: 340, H: 300, mine: [18, 24], bubble: [44, 158, 272], back: [100, 166], draft: [116, 170] } }, timers = [], seen = false, running = false;
+    var W = 560, H = 236, D = 5200, L, LAY = { wide: { W: 560, H: 236, mine: [40, 48], bubble: [272, 44, 248], back: [300, 92], draft: [304, 104], tip: "bl", wr: [1.01, .15],
+        hops: [[.88, .86], [.2, 1.18], [.45, 1.32], [.3, 1.42], [.62, 1.25], [.4, 1.38]] }, narrow: { W: 340, H: 300, mine: [18, 24], bubble: [44, 158, 272], back: [100, 166], draft: [116, 170], tip: "tl", wr: [.6, 1.06],
+        hops: [[.88, .86], [1.08, .3], [1.2, .55], [1.1, .8], [1.22, .4], [1.12, .62]] } }, timers = [], seen = false, running = false;
     var TICKS = [0.06, 0.2, 0.34, 0.5, 0.66, 0.82];
     // Each mode: what shows on the board, and when (as a share of the run).
     var PLAN = {
@@ -1419,13 +1425,14 @@
     var av = function (c, l) { return '<b class="av" style="--c:' + c + '">' + l + "</b>"; };
     st.innerHTML =
       '<article class="vc ink sc-card" id="scMine" style="left:40px;top:66px;width:214px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-fork"/></svg><span data-sc="mk"></span><span class="by"><b style="background:var(--label);color:var(--card)" data-sc="me"></b></span></div>' +
-        '<div class="t"><span class="chip A">A</span><span data-sc="mt"></span></div><div class="b" data-sc="mb"></div><span class="sc-dot">' + av("var(--crew-critic)", "C") + "</span></article>" +
+        '<div class="t"><span class="chip A">A</span><span data-sc="mt"></span></div><div class="b" data-sc="mb"></div></article>' +
+      '<span class="sc-dot" id="scDot">' + av("var(--crew-critic)", "C") + "</span>" +
       '<div class="sc-bubble" id="scBubble" style="left:272px;top:44px;width:248px">' + av("var(--crew-critic)", "C") + '<p data-sc="critic"></p></div>' +
       '<article class="vc sc-card sc-back" id="scBack" style="left:300px;top:92px;width:222px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-tray"/></svg><span data-sc="backK"></span></div><div class="t" data-sc="backT"></div>' +
         '<div class="sc-avs">' + av("var(--crew-scout)", "S") + av("var(--crew-critic)", "C") + av("var(--crew-wright)", "W") + "</div></article>" +
       '<article class="vc sc-card sc-draft" id="scDraft" style="left:304px;top:104px;width:206px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-window"/></svg><span data-sc="draftK"></span><span class="by"><b style="background:var(--crew-wright)">W</b></span></div>' +
-        '<div class="t" data-sc="draftT"></div><div class="sc-acts"><span class="keep" data-sc="keep"></span><span data-sc="discard"></span></div></article>';
-    var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = mine.querySelector(".sc-dot");
+        '<div class="t"><span data-sc="draftT"></span></div><div class="sc-acts"><span data-sc="discard"></span><span class="keep" data-sc="keep"></span></div></article>';
+    var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = $("scDot");
 
     var cur = {};
     function cursorEl(name, color) {
@@ -1460,12 +1467,14 @@
     function mbox() { return { x: mine.offsetLeft, y: mine.offsetTop, w: mine.offsetWidth, h: mine.offsetHeight }; }
     // Two layouts: side by side when there's room, stacked on a phone so the cards stay readable.
     function fit() {
-      var L = LAY[boxEl.clientWidth < 480 ? "narrow" : "wide"];
+      L = LAY[boxEl.clientWidth < 480 ? "narrow" : "wide"];
       W = L.W; H = L.H;
       boxEl.style.aspectRatio = W + " / " + H;
       st.style.width = W + "px"; st.style.height = H + "px";
       var put = function (e, p) { e.style.left = p[0] + "px"; e.style.top = p[1] + "px"; if (p[2]) e.style.width = p[2] + "px"; };
       put(mine, L.mine); put(bubble, L.bubble); put(back, L.back); put(draft, L.draft);
+      // The Critic's pin sits exactly where its note's avatar will be, so the note opens out of it.
+      put(dot, [L.bubble[0] + 2, L.bubble[1] + 3]); dot.setAttribute("data-tip", L.tip);
       st.style.transform = "scale(" + (boxEl.clientWidth / W) + ")";
     }
 
@@ -1479,12 +1488,11 @@
       if (what === "dot") dot.classList.add("on");
       if (what === "bubble") { bubble.classList.add("on"); if (!instant) stream(bubble.querySelector("p"), 180); }
       if (what === "back") instant ? back.classList.add("on") : land(back, W - 30, H - 30);
-      if (what === "draft") { var mb = mbox(); if (instant) draft.classList.add("on"); else { land(draft, mb.x + mb.w, mb.y + mb.h * 0.6); stream(draft.querySelector(".t"), 260); } }
+      if (what === "draft") { var mb = mbox(); if (instant) draft.classList.add("on"); else { land(draft, mb.x + mb.w * L.wr[0], mb.y + mb.h * L.wr[1]); stream(draft.querySelector(".t span"), 260); } }
       if (what === "wright" && !instant) {
         var w = cursorEl("wright", "var(--crew-wright)"), m = mbox(); relabel();
-        glide(w, m.x + m.w - 10, m.y + m.h * 0.55, 520);
-        at(600, function () { glide(w, draft.offsetLeft + draft.offsetWidth - 40, draft.offsetTop + draft.offsetHeight - 8, 640); });
-        at(1500, function () { w.classList.remove("on"); });
+        glide(w, m.x + m.w * L.wr[0], m.y + m.h * L.wr[1], 520);
+        at(1250, function () { w.classList.remove("on"); });
       }
     }
     // The end state of a mode, all at once: for reduced motion, and while the board is off screen.
@@ -1497,10 +1505,11 @@
       reset(); running = true; relabel();
       var you = cursorEl("you", "var(--label)"); relabel();
       var m = mbox(), P = function (fx, fy) { return [m.x + m.w * fx, m.y + m.h * fy]; };
-      glide(you, P(.4, .3)[0], P(.4, .3)[1], 0);
-      at(240, function () { land(mine, P(.44, .32)[0], P(.44, .32)[1]); });
-      // You keep working: one small move per tick on your row.
-      var hops = [P(.5, .7), P(.75, .5), P(.25, .78), P(.65, .86), P(.45, .6), P(.8, .7)];
+      // You put the card down from its corner, then keep working on the empty board beside it: one small move
+      // per tick, in a patch the crew never uses, so name tags never sit on words or on each other.
+      var hops = L.hops.map(function (h) { return P(h[0], h[1]); });
+      glide(you, hops[0][0], hops[0][1], 0);
+      at(240, function () { land(mine, hops[0][0], hops[0][1]); });
       TICKS.forEach(function (x, i) {
         if (i) at(x * D, function () { glide(you, hops[i][0], hops[i][1], 420); });
       });
@@ -1518,7 +1527,7 @@
     return { play: play, relabel: relabel, idle: function () { return !running; } };
   })();
 
-  // ---- Crew participation: the switch changes the crew above it --------------------------------
+  // ---- Crew participation: the switch replays the small board it sits on ------------------------
   var crewMode = "listen", modesEl = $("modes"), modeBtns = Array.prototype.slice.call(modesEl.querySelectorAll("button"));
   function renderMode(focus) {
     modeBtns.forEach(function (b) {
@@ -1551,6 +1560,7 @@
       else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); }
       var primary = !!url && a.dataset.os === want;
       a.classList.toggle("btn-primary", primary); a.classList.toggle("btn-quiet", !primary);
+      if (primary) a.parentNode.appendChild(a);   // the primary sits last: on the right, or at the bottom on a phone
     });
     var submit = document.querySelector("#waitlist button[type=submit]");
     submit.classList.toggle("btn-primary", !live); submit.classList.toggle("btn-quiet", live);

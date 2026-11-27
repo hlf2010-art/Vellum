@@ -135,6 +135,7 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 :lang(zh) body { letter-spacing: 0; }
 :lang(zh) h1 { line-height: 1.12; letter-spacing: -.02em; font-weight: 600; font-size: clamp(34px, 9.6vw, 96px); }
 :lang(zh) h1, :lang(zh) h2 { word-break: keep-all; overflow-wrap: anywhere; }
+.cl { display: inline-block; max-width: 100%; text-indent: 0; }
 :lang(zh) h2 { line-height: 1.22; letter-spacing: -.01em; font-weight: 600; max-width: 15em; }
 :lang(zh) h3 { letter-spacing: 0; }
 :lang(zh) .lede { line-height: 1.7; letter-spacing: 0; }
@@ -406,7 +407,7 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .bcard.show-note .more .note { display: block; animation: none; }
 /* The divider lives inside the folded part, so it folds away with it instead of hanging under the card. */
 .bcard.show-note:not(.show-flag) .more .note { margin-top: 10px; border-top: 1px solid var(--hair-2); }
-.bcard .fb { display: none; gap: 6px; padding: 10px 0 1px; flex-wrap: wrap; }
+.bcard .fb { display: none; justify-content: flex-end; gap: 6px; padding: 10px 0 1px; flex-wrap: wrap; }
 .bcard.show-flag:not(.resolved) .fb { display: flex; }
 .bcard.open .more, .bcard:focus-within .more { grid-template-rows: 1fr; }
 @media (hover: hover) { .bcard:hover .more { grid-template-rows: 1fr; transition-delay: .12s; } }
@@ -613,8 +614,10 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .lp-ic { flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--card); box-shadow: inset 0 0 0 1px var(--hair-2); color: var(--label-3); }
 .zc .media.lp .lp-ic svg { position: static; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .lp-tx { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+@media (max-width: 360px) { .lp-ic { display: none; } }
 .lp-d { font-size: 11.5px; line-height: 14px; color: var(--label-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lp-t { font-size: 13px; line-height: 16px; font-weight: 600; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The page title is the part that says something, so it may take a second line; only the address gets cut. */
+.lp-t { font-size: 13px; line-height: 16px; font-weight: 600; color: var(--label); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; text-wrap: balance; }
 .zc .cb { padding: 8px 0 0 10px; font: 500 11px/16px var(--mono); color: var(--label-3); white-space: nowrap;
   -webkit-mask-image: linear-gradient(90deg, #000 80%, transparent), linear-gradient(#000 62%, transparent); -webkit-mask-composite: source-in;
   mask-image: linear-gradient(90deg, #000 80%, transparent), linear-gradient(#000 62%, transparent); mask-composite: intersect; }
@@ -794,10 +797,13 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 @keyframes alive { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--c) 8%, transparent), 0 10px 26px -6px color-mix(in srgb, var(--c) 80%, transparent); } }
 
 .agency { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s6) clamp(var(--s6), 5vw, var(--s9)); align-items: center; margin-top: var(--s8); padding-top: var(--s7); border-top: 1px solid var(--hair-2); }
-.agency-copy { display: grid; gap: var(--s5); justify-items: start; align-content: center; }
 .agency-line { font-family: var(--display); font-size: clamp(22px, 2.3vw, 30px); line-height: 1.2; font-weight: 560; letter-spacing: -.024em; font-variation-settings: "opsz" 32; max-width: 16em; text-wrap: balance; }
 :lang(zh) .agency-line { letter-spacing: 0; font-weight: 600; }
-.mode-desc { font-size: 15px; line-height: 1.45; color: var(--label-2); min-height: 2.9em; max-width: 26em; text-wrap: pretty; margin-top: calc(var(--s2) * -1); }
+/* The switch sits on the board it changes (same place as the tabs above the How board), the caption under it. */
+.scene-col { display: grid; justify-items: start; min-width: 0; }
+.scene-col .modes { margin-bottom: var(--s5); }
+.scene-col .scene-wrap { width: 100%; }
+.mode-desc { font-size: 15px; line-height: 1.45; color: var(--label-2); min-height: 2.9em; max-width: 34em; text-wrap: pretty; margin-top: var(--s4); }
 
 /* The crew scene: a small board where the same moment plays out in each mode, with a timeline of when. */
 .scene-wrap { margin: 0; min-width: 0; }
@@ -808,23 +814,28 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
   transition: opacity .2s var(--e-out), transform .24s var(--e-out), filter .2s var(--e-out); }
 .sc-card.on { opacity: 1; transform: none; filter: none; transition: opacity .36s var(--e-out), transform .62s var(--settle), filter .42s var(--e-out); }
 .sc-card .t { display: flex; align-items: baseline; }
-.sc-dot { position: absolute; right: -7px; top: -7px; transform: scale(0); transition: transform .45s var(--settle); }
+/* The Critic's pin: a note not opened yet. It sits on the board beside your card, never on it, with its tip
+   toward the card, exactly where the note's avatar will be, so the note opens out of it. */
+.sc-dot { position: absolute; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--card); box-shadow: var(--shadow-card);
+  transform: scale(0); transform-origin: 0 100%; transition: transform .45s var(--settle); }
+.sc-dot[data-tip="bl"] { border-bottom-left-radius: 6px; }
+.sc-dot[data-tip="tl"] { border-top-left-radius: 6px; transform-origin: 0 0; }
 .sc-dot.on { transform: scale(1); }
-.sc-dot .av { box-shadow: 0 0 0 2px var(--canvas-lift); }
 .av { width: 18px; height: 18px; border-radius: 50%; flex: none; display: inline-grid; place-items: center; background: var(--c); color: #fff; font: 700 9.5px/1 var(--sans); }
 :root[data-theme="dark"] .av { color: #0a0b0d; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .av { color: #0a0b0d; } }
 .sc-bubble { position: absolute; display: flex; gap: 9px; align-items: flex-start; padding: 10px 13px 11px 10px; border-radius: 13px; background: var(--card);
   box-shadow: var(--shadow-card); font-size: 13.5px; line-height: 1.42; color: var(--label);
-  opacity: 0; transform: translateX(-10px) scale(.94); transform-origin: 0 20px; transition: opacity .2s var(--e-out), transform .24s var(--e-out); }
+  opacity: 0; transform: scale(.4); transform-origin: 19px 20px; transition: opacity .2s var(--e-out), transform .24s var(--e-out); }
 .sc-bubble.on { opacity: 1; transform: none; transition: opacity .3s var(--e-out), transform .55s var(--settle); }
 .sc-bubble .av { margin-top: 1px; }
+.sc-bubble p { text-wrap: balance; }
 .sc-avs { display: flex; margin-top: 10px; }
 .sc-avs .av { box-shadow: 0 0 0 1.5px var(--card); }
 .sc-avs .av + .av { margin-left: -3px; }
 .sc-draft { background: color-mix(in srgb, var(--card) 70%, transparent); box-shadow: inset 0 0 0 1.25px var(--thread); }
 .sc-draft::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: repeating-linear-gradient(-45deg, transparent 0 7px, var(--hair) 7px 8px); opacity: .5; }
-.sc-acts { position: relative; display: flex; gap: 6px; margin-top: 10px; }
+.sc-acts { position: relative; display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
 .sc-acts span { font-size: 12px; font-weight: 600; line-height: 24px; padding: 0 10px; border-radius: 999px; color: var(--label); box-shadow: inset 0 0 0 1px var(--hair-2); background: var(--card); }
 .sc-acts .keep { background: var(--act); color: var(--on-act); box-shadow: none; }
 @media (max-width: 1000px) { .agency { grid-template-columns: 1fr; } }
@@ -877,6 +888,8 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
 .pgrid .btn { width: 100%; padding: 0 var(--s4); }
 .span2 { grid-column: 1 / -1; }
+/* Buttons sit on the right: the submit takes the right column, under the last field. */
+.pgrid .submit { grid-column: 2; }
 .divider { height: 1px; background: var(--hair); }
 .dl .soon { font-size: 11.5px; font-weight: 600; line-height: 18px; padding: 0 7px; border-radius: 999px; color: var(--label-3); background: var(--hover); box-shadow: inset 0 0 0 1px var(--hair); }
 .dl.live .soon { display: none; }
@@ -903,7 +916,7 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .done-ic svg.ic { width: 15px; height: 15px; stroke-width: 2.2; }
 .waitlist.sent .done-state { display: flex; animation: rise .45s var(--ease); }
 .waitlist.sent .form-body { display: none; }
-@media (max-width: 520px) { .pgrid { grid-template-columns: minmax(0, 1fr); } .pgrid .dl { grid-column: auto; } }
+@media (max-width: 520px) { .pgrid { grid-template-columns: minmax(0, 1fr); } .pgrid .dl, .pgrid .submit { grid-column: auto; } }
 
 /* ---------- Footer ---------- */
 .foot { background: var(--canvas-lift); }

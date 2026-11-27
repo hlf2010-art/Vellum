@@ -68,7 +68,7 @@ if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
       if (SHOTS) await p.screenshot({ path: path.join(SHOTS, `${theme}-${lang}-2-recorded-note.png`) });
       await p.click('[data-dm="dec"]'); await p.waitForTimeout(900);
       const dv = await p.evaluate(() => ({ open: !document.querySelector('#decPanel')?.hidden, txt: document.querySelector('#decPanel')?.textContent || '' }));
-      check(`${lang}: the decision view shows the recorded re-check and the new evidence`, dv.open && dv.txt.includes(T('Crew re-check · recorded', '成员复核 · 录制回放')) && dv.txt.includes(T('Beta test', '内测')), dv.txt.slice(0, 200));
+      check(`${lang}: the decision view shows the recorded re-check and the new evidence`, dv.open && dv.txt.includes(T('The crew · recorded', '成员 · 录制回放')) && dv.txt.includes(T('Beta test', '内测')), dv.txt.slice(0, 200));
       if (SHOTS) await p.screenshot({ path: path.join(SHOTS, `${theme}-${lang}-3-decision-view.png`) });
       await p.click('[data-dv-hold]'); await p.waitForTimeout(300);
       await p.click('[data-dv-hold-save]').catch(() => {}); await p.waitForTimeout(400);

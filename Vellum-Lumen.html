@@ -243,6 +243,10 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .by-pop .ev-k-ctr b{color:var(--danger)}
 .foot-branch{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px 0 10px;border-radius:var(--radius-sm);background:var(--label);color:var(--card);font:600 12px/1 var(--ui);flex:none;transition:transform var(--t-bouncy) var(--bouncy),filter var(--d-quick)}
 .foot-branch .ico{width:13px;height:13px}
+.foot-link{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 6px 0 7px;margin-right:-4px;border-radius:var(--radius-sm);color:var(--label-2);font:550 12px/1 var(--ui);flex:none;transition:color var(--d-quick),background var(--d-quick)}
+.foot-link .ico{width:12px;height:12px;transition:transform var(--t-bouncy) var(--bouncy)}
+.foot-link:hover,.foot-link:focus-visible{color:var(--label);background:var(--hover)}
+.foot-link:hover .ico{transform:translateX(2px)}
 .foot-branch:hover{transform:translateX(2px);filter:brightness(1.15)}
 .card .foot .weight{flex:none}
 .th-cnt{display:inline-flex;align-items:center;gap:3.5px}
@@ -6237,7 +6241,7 @@ function cardBody(n){
     const res=!sk&&n.outcome?.result,resHTML=res?`<span class="res ${res}"><b>${outcomeWord(res)}</b>${n.outcome.note?` · ${esc(n.outcome.note)}`:""}</span>`:"";
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
     <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test||resHTML?`<div class="test">${n.test?`<b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span>`:""}${resHTML}</div>`:""}${sk?"":setAsideHTML(n)}
-    ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",mode&&!(adopted&&!hasProof)?`<span>${mode}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<span>${uiLang()==="zh"?"已生成原型":"Proof built"}</span>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
+    ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<button type="button" class="foot-link" data-a="goto-proof" title="${uiLang()==="zh"?"跳到这个方向的原型":"Go to this direction's proof"}">${uiLang()==="zh"?"原型":"Proof"}${ic("arrow")}</button>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
   case"proof":{
     /* A proof is an experiment that tests its direction: results first, thumbnail second, one next step. */
     const zh=uiLang()==="zh",L_=(e,z)=>zh?z:e,fx=n.fixed||[],dr=driftOf(n),dir=byId(n.dir);
@@ -17017,6 +17021,7 @@ function act(a,n,el){
     case"result":return resultDialog(n);
     case"go-back":return goBack(n.type==="direction"?byId(n.idea):n);
     case"new-round":return newRound(n.type==="direction"?byId(n.idea):n);
+    case"goto-proof":{const ps=outputsOf(n.id).filter(o=>o.type==="proof");const pr=ps.at(-1);if(pr){select([pr.id]);focusNodes([pr],1)}return}
     case"build":return build(n);
     case"deck":return build(n,{mode:"deck"});
     case"tm-brief":return spawnTreeNotepad(n,{expand:false});

@@ -196,6 +196,14 @@ node tests/creator-badge.cjs
 node tests/evidence-line.cjs
 ```
 
+## Directions that rest on assumptions
+
+`tests/assumption-flags.cjs` checks that a kept direction nothing observed or reported backs yet says so before it is adopted. The claim's evidence shows the problem, not that one answer to it works, so only evidence tied to the direction itself counts (snapped beside it, connected or wired in, but not as a counter), or its own test having passed; a proposal tied to it does not count, and a synthesis of observed evidence does. The flag sits in the direction's test box ("Assumptions only · no real evidence yet"), where a recorded result would go, and drafts are not flagged. Its hover card says why, shows the direction's test, and offers Record result. Adopting such a direction says so in the toast (with Undo), rings the flag once, and the crew leaves one note on the card right then, without waiting for a pause; it is a board check with no model behind it, it is said once per direction (also after Undo), and in Focus it waits for the catch-up. Tying observed or reported evidence to it, or recording a result, clears the flag at once. The stage brief tells Copilot and the crew which directions rest on assumptions. It also checks the dark theme and the Chinese wording.
+
+```bash
+node tests/assumption-flags.cjs
+```
+
 ## One Copilot conversation per board
 
 `tests/copilot-per-board.cjs` checks that each board keeps its own Copilot conversation (`board.copilot`): switching boards switches the panel's conversation (the header names the board) with a short settle-in transition; a new board opens on an empty conversation that says Copilot reads only this board, with the stage's starter suggestions; half-typed words, queued messages and the crew member being addressed do not follow you to another board; a request made on one board carries none of another board's cards or conversation; leaving while a reply is streaming stops it, keeps what arrived on the board it was asked on (marked as stopped because you switched), and places nothing on either board; Export and Import carry the conversation, and a reply saved mid-stream shows as stopped instead of a caret forever; after a reload the active board opens on its own conversation.

@@ -160,7 +160,7 @@ async function open(browser, base, { theme = 'light', live = false } = {}) {
     });
     await p.settle(2000);
     pins = await p.checkPins();
-    check('a decision resting on proposals only is flagged once', pins.filter(x => x.kind === 'assume' && x.on === D2.dir).length === 1 && /proposals only/.test(pins.find(x => x.kind === 'assume')?.note || ''), JSON.stringify(pins.map(x => x.kind)));
+    check('a decision resting on assumptions only is flagged once', pins.filter(x => x.kind === 'assume' && x.on === D2.dir).length === 1 && /assumptions only/.test(pins.find(x => x.kind === 'assume')?.note || ''), JSON.stringify(pins.map(x => x.kind)));
     check('no model was asked for any of this', requests.length === 0, String(requests.length));
     if (SHOTS) { await p.evaluate(id => { const n = byId(id); focusNodes([n], 1, 0); }, D.dir); await p.waitForTimeout(800); await p.screenshot({ path: path.join(SHOTS, 'light-2-listening-dot.png') }); }
 

@@ -237,6 +237,18 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .ev-line .ev-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ev-wrap{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:100%}
 .ev-empty .ev-txt{color:var(--label-3)}
+.ev-assume .ev-ico{color:var(--B)}
+.ev-assume .ev-txt{color:var(--label-2)}
+.card.direction .test .res.assume{padding:6px 13px 7px}
+.card.direction .test .res.assume .ev-line{display:flex;margin:0 -6px 0 -4px;max-width:calc(100% + 10px)}
+.card.direction .test .res.assume .ev-txt b{display:inline;margin:0;font:600 12.5px/18px var(--ui);color:var(--label-2)}
+.card.direction .test .res.assume .ev-sub{font:500 12.5px/18px var(--ui);color:var(--label-3)}
+.ev-assume.ring{animation:evRing 1.1s var(--bouncy,cubic-bezier(.3,1.4,.5,1)) .18s both}
+@keyframes evRing{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--B) 0%,transparent);background:transparent}30%{box-shadow:0 0 0 3px color-mix(in srgb,var(--B) 26%,transparent);background:color-mix(in srgb,var(--B) 12%,transparent)}100%{box-shadow:0 0 0 9px color-mix(in srgb,var(--B) 0%,transparent);background:transparent}}
+@media (prefers-reduced-motion:reduce){.ev-assume.ring{animation:none}}
+.by-pop .ev-thin .ev-ico{color:var(--B)}
+.by-pop .ev-how{margin-top:2px;color:var(--label-3);font-size:12.5px;line-height:18px}
+.by-pop .ev-k-test .ev-ico{color:var(--C)}
 .ev-ctr{flex:none;display:inline-flex;align-items:center;gap:5px;font:600 12px/1 var(--ui);color:var(--danger);white-space:nowrap}
 .ev-ctr::before{content:"";width:12px;height:0;border-top:1.5px dashed currentColor}
 .by-pop .ev-ctr-dot{width:14px;height:0;border-top:2px dashed var(--danger)}
@@ -4472,7 +4484,7 @@ function runBoardChecks(){
   const ds=decisionsNow(),fresh=ev.filter(n=>!W.seen.includes(n.id)),known=new Set([...W.done,...W.queue.map(o=>o.sig)]),added=[];
   const add=o=>{if(known.has(o.sig))return;known.add(o.sig);W.queue.push(o);added.push(o)};
   for(const e of fresh){W.seen.push(e.id);for(const d of ds){const b=bearsOn(e,d);if(b)add({kind:"revisit",sig:"rv:"+e.id+":"+d.dir.id,target:d.dir.id,about:e.id,rel:b.rel,how:b.how,terms:b.terms||[],at:NOW()})}}
-  for(const d of ds)if(!evidenceUnder(d).length)add({kind:"assume",sig:"as:"+d.dir.id,target:d.dir.id,at:NOW()});
+  for(const d of ds)if(onAssumptions(d.dir))add({kind:"assume",sig:"as:"+d.dir.id,target:d.dir.id,at:NOW()});
   if(W.seen.length>400)W.seen=W.seen.slice(-400);if(W.done.length>400)W.done=W.done.slice(-400);
   return added;
 }
@@ -4489,8 +4501,9 @@ function checkPin(o){
     return {id:"pin-"+uid(),agent:o.rel==="conflicts"?"critic":"scout",t:NOW(),note,check:o.kind,sig:o.sig,engine:"rules",basis:[{id:e.id,rev:e.rev||1,relation:o.rel==="related"?"related":o.rel,why:L("new evidence","新证据")}]};
   }
   if(o.kind==="assume"){
-    if(evidenceUnder({dir:d,claim:byId(d.idea)}).length)return null;
-    return {id:"pin-"+uid(),agent:"critic",t:NOW(),note:L(`Your decision ${qTitle(d)} rests on **proposals only**: no observed or reported evidence is linked to it yet.`,`你的决定 ${qTitle(d)} 目前**只基于设想**：还没有连上任何实测或转述的证据。`),check:o.kind,sig:o.sig,engine:"rules",basis:[]};
+    if(board.adopted[d.idea]!==d.id||!onAssumptions(d))return null;
+    const tt=clip(String(d.test||"").trim().replace(/[.。!！]+$/,""),90),test=tt?L(` Its test is the cheapest way to find out: “${tt}”.`,`最省事的办法是跑一遍它的验证：“${tt}”。`):L(" One real test would tell you if it holds."," 一次真实的测试就能看出它站不站得住。");
+    return {id:"pin-"+uid(),agent:"critic",t:NOW(),note:L(`You adopted ${qTitle(d)} on **assumptions only**: nothing observed or reported backs it yet. The decision stays yours.`,`你采纳的 ${qTitle(d)} **只靠设想**：还没有实测或转述的证据支持它。决定仍由你来做。`)+test,check:o.kind,sig:o.sig,engine:"rules",basis:[]};
   }
   return null;
 }
@@ -5987,7 +6000,9 @@ function contribGroupHTML(n){
 const byPop={el:null,for:null,openT:0,closeT:0};
 function byPopEl(){if(byPop.el)return byPop.el;const d=document.createElement("div");d.id="byPop";d.className="by-pop";d.setAttribute("role","dialog");d.hidden=true;document.body.appendChild(d);
   d.addEventListener("pointerenter",()=>clearTimeout(byPop.closeT));
-  d.addEventListener("click",e=>{const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for),ro=n?restsOn(n):{sup:[],ctr:[]},ns=[...ro.sup,...ro.ctr];closeByPop(0);
+  d.addEventListener("click",e=>{const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for);closeByPop(0);
+    if(n?.type==="direction"){if(b.dataset.evAct==="result")return resultDialog(n);const g=groundOf(n),ns=[n,...g.soft,...g.ctr];select(ns.map(x=>x.id));focusNodes(ns,Math.max(Math.min(cam.s,1),.5));return}
+    const ro=n?restsOn(n):{sup:[],ctr:[]},ns=[...ro.sup,...ro.ctr];
     if(b.dataset.evAct==="rate"){const s=ns.find(x=>!x.weight);if(s){select([s.id]);focusNodes([s],Math.max(cam.s,.9))}}
     else if(ns.length){select(ns.map(x=>x.id));focusNodes(ns,Math.max(Math.min(cam.s,1),.5))}});d.addEventListener("pointerleave",()=>closeByPop());return byPop.el=d}
 function openByPop(grp,{now=false}={}){
@@ -6233,8 +6248,8 @@ function cardBody(n){
     ${sk?sketchActs(n):foot(fL(weightHTML(n.weight),!g&&frCnt?`<span class="foot-txt">${frCnt} ${frCnt===1?"frame":"frames"} lifted</span>`:""),fR(threadCount(n)))}</div>`;}
   case"frame":{const r=byId(n.from),plChip=plBusyNodes.has(n.id)?`<span class="foot-pl busy">Reversing…</span>`:n.plPack?.positive?`<button type="button" class="foot-pl" data-a="reverse-prompt" title="${esc(uiLang()==="zh"?"查看反推提示词包":"View extracted Prompt Pack")}">${ic("sparkles")}Prompt</button>`:"";return `<div class="media"><img src="${mediaSrc(n.media)}" alt="" draggable="false"><span class="badge">${ic("frame")}FRAME</span><span class="tc">@ ${tc(n.t)}</span></div><div class="in">${head(`<span class="card-k-src">Frame${r?` · ${esc(r.title)}`:""}</span>`)}<h4 data-edit="title">${esc(n.title||"Frame "+tc(n.t))}</h4>${foot(fL(n.weight?weightHTML(n.weight,sk):"",plChip),fR(threadCount(n)))}</div>`}
   case"question":{const on=byId(n.on);return `<div class="in"><span class="qmark" aria-hidden="true">?</span>${head(`${byline(n)}${L?`<span class="q-dot"></span>`:""}<span class="q-on">${uiLang()==="zh"?"追问":"Question"}${on?`${uiLang()==="zh"?" · ":" on "}${esc(titleOf(on))}`:""}</span>`)}<h4 data-edit="text">${esc(n.text)}</h4>${foot("",fR(threadCount(n)))}</div>`}
-  case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode));
-    const res=!sk&&n.outcome?.result,resHTML=res?`<span class="res ${res}"><b>${outcomeWord(res)}</b>${n.outcome.note?` · ${esc(n.outcome.note)}`:""}</span>`:"";
+  case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode)),assumed=!sk&&onAssumptions(n);
+    const res=!sk&&n.outcome?.result,resHTML=res?`<span class="res ${res}"><b>${outcomeWord(res)}</b>${n.outcome.note?` · ${esc(n.outcome.note)}`:""}</span>`:assumed?`<span class="res assume">${assumeFlagHTML(n)}</span>`:"";
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
     <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test||resHTML?`<div class="test">${n.test?`<b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span>`:""}${resHTML}</div>`:""}${sk?"":setAsideHTML(n)}
     ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",mode&&!(adopted&&!hasProof)?`<span>${mode}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<span>${uiLang()==="zh"?"已生成原型":"Proof built"}</span>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
@@ -7183,7 +7198,44 @@ function restsOn(n){
 const relSig=n=>board.edges.filter(e=>e.by==="you"&&(e.a===n.id||e.b===n.id)).map(e=>e.a+e.rel+e.b).join();
 function counterMark(ctr){const k=ctr.length;if(!k)return"";
   return `<span class="ev-ctr" title="${esc(L("Countered by: ","反驳它的：")+ctr.slice(0,3).map(titleOf).join(" · "))}">${esc(L(`${k} counter${k>1?"s":""}`,`${k} 条反驳`))}</span>`}
+/* ── assumption flags: a direction nothing observed or reported backs yet ──
+   The claim's evidence shows the problem; it does not show that this answer to it works. So a direction counts as
+   backed only by observed or reported evidence tied to the direction itself (snapped beside it, connected, or wired
+   into it, but not as a counter), or by its own test having passed. Until then it rests on assumptions, and the card
+   says so; adopting it says so once more, and the crew speaks up once. A direction with a recorded result is not
+   flagged: its test already spoke. The same rule decides the card, the adopt moment and the board check. */
+const firmEvidence=o=>isEvidenceCard(o)||(!!o&&o.type==="synthesis"&&o.status==="ink"&&!o.tombstone&&!o.archived&&!o.hidden&&((o.weights?.observed||0)+(o.weights?.reported||0))>0);
+function groundOf(d){
+  const firm=new Map(),soft=new Map(),ctr=new Map();
+  if(!d||d.type!=="direction")return {firm:[],soft:[],ctr:[]};
+  for(const e of board.edges){
+    const oid=e.a===d.id?e.b:e.b===d.id?e.a:null;if(!oid||oid===d.idea)continue;
+    const o=byId(oid);if(!o||o.tombstone||o.archived||o.hidden||o.status!=="ink")continue;
+    if(e.rel==="conflicts"){if(isMaterial(o))ctr.set(o.id,o);continue}
+    if(firmEvidence(o))firm.set(o.id,o);else if(isMaterial(o))soft.set(o.id,o);
+  }
+  for(const id of ctr.keys()){firm.delete(id);soft.delete(id)}
+  return {firm:[...firm.values()],soft:[...soft.values()],ctr:[...ctr.values()]};
+}
+const onAssumptions=d=>!!d&&d.type==="direction"&&!d.tombstone&&!d.archived&&!d.outcome?.result&&!groundOf(d).firm.length;
+const assumeSig=d=>onAssumptions(d)?"A"+groundOf(d).soft.length:"";
+function assumeFlagHTML(d){
+  const t=L("Assumptions only","只靠设想");
+  return `<span class="ev-line ev-assume" data-assume="${d.id}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(L("Evidence: assumptions only. Nothing observed or reported backs this direction yet","证据：只靠设想。还没有实测或转述的证据支持这个方向"))}">${evIconHTML("proposed","ev-ico")}<span class="ev-txt"><b>${esc(t)}</b><span class="ev-sub"> · ${esc(L("no real evidence yet","还没有真实证据"))}</span></span></span>`;
+}
+function assumePopHTML(d){
+  const g=groundOf(d),k=g.soft.length,adopted=board.adopted[d.idea]===d.id;
+  const why=L("Nothing observed or reported backs this direction itself yet. The claim's evidence shows the problem, not that this answer works.","还没有实测或转述的证据支持这个方向本身。论点的证据说明问题存在，但不能说明这个方案行得通。");
+  const soft=k?`<li style="--i:0" class="ev-row ev-k-proposed"><span class="ev-k-g">${evIconHTML("proposed","ev-ico")}</span><span class="by-pop-txt"><b>${esc(L(`${k} tied to it ${k>1?"are":"is"} not evidence`,`${k} 条关联内容不算证据`))}</b><small>${esc(g.soft.slice(0,2).map(x=>clip(titleOf(x),40)).join(" · ")+" · "+L("ideas, pictures or unrated","想法、示意或未评估"))}</small></span><span class="ev-n">${k}</span></li>`:"";
+  const test=d.test?`<li style="--i:1" class="ev-row ev-k-test"><span class="ev-k-g">${evIconHTML("observed","ev-ico")}</span><span class="by-pop-txt"><b>${esc(L("Its test would tell you","它的验证标准能给出答案"))}</b><small>${esc(clip(d.test,120))}</small></span></li>`:"";
+  const how=d.test?L("Or drag observed or reported evidence beside the card to back it.","或者把实测、转述的证据拖到这张卡旁边来支持它。"):L("Drag observed or reported evidence beside the card to back it, or test it with real people and record the result.","把实测、转述的证据拖到这张卡旁边来支持它，或者找真人测一下并记录结果。");
+  const acts=[];
+  if(g.firm.length===0&&(k||g.ctr.length))acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("View","查看"))}</button>`);
+  if(d.status==="ink")acts.push(`<button type="button" class="ev-act primary" data-ev-act="result">${esc(L("Record result","记录结果"))}</button>`);
+  return `<header class="ev-head ev-thin">${evIconHTML("proposed","ev-ico")}<b>${esc(L(adopted?"Adopted on assumptions":"Assumptions only",adopted?"凭设想采纳":"只靠设想"))}</b></header><p class="ev-sent">${esc(why)}</p>${soft||test?`<ul>${soft}${test}</ul>`:""}<p class="ev-sent ev-how">${esc(how)}</p>${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
+}
 function evidencePopHTML(n){
+  if(n?.type==="direction")return assumePopHTML(n);
   const ro=restsOn(n),ns=ro.sup,ctr=ro.ctr,t=ns.length?tally(ns):(n.weights||{}),total=ns.length||(n.of||[]).length,v=evidenceVerdict(t);
   const rows=[...WEIGHT_ORDER,"none"].filter(k=>t[k]).map((k,i)=>{const w=WEIGHTS[k];
     return `<li style="--i:${i}" class="ev-row ev-k-${k}"><span class="ev-k-g">${evIconHTML(k,"ev-ico")}</span><span class="by-pop-txt"><b>${esc(k==="none"?L("Not rated","未评估"):weightLabel(k))}</b><small>${esc(k==="none"?L("Nobody has judged these yet.","还没有人判断过它们有多可信。"):weightDesc(k))}</small></span><span class="ev-n">${t[k]}</span></li>`}).join("");
@@ -7214,7 +7266,7 @@ function nodeLineageSig(n){
 }
 
 function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="direction"&&assumeSig(n),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -11470,13 +11522,34 @@ function adopt(d){
   if(!d||d.type!=="direction")return toast(L("Select a direction to adopt.","请先选中一个方向再采纳。"));const wasDraft=d.status==="sketch";
   // Adopting a draft keeps it too: the intent is clear, and "Keep this direction first" was a dead end
   if(wasDraft){ink([d.id],{quiet:true});if(d.status==="sketch")return}
-  if(board.adopted[d.idea]===d.id)return;checkpoint();board.adopted[d.idea]=d.id;
+  if(board.adopted[d.idea]===d.id)return;
+  if(!Array.isArray(board.watch?.seen))runBoardChecks();   // the board's first look happens before this decision, so it is not taken for an old one
+  checkpoint();board.adopted[d.idea]=d.id;
   {const sibs=board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"&&!x.tombstone);board.declined=(board.declined||[]).filter(r=>!(r.kind==="passed-over"&&(r.target===d.idea||r.ref===d.id)));for(const x of sibs)declineRecord("passed-over",{title:`${x.letter} · ${x.title}`,text:[x.text,x.test].filter(Boolean).join(" Test: "),by:x.by,target:d.idea,reason:L(`Adopted ${d.letter} · ${d.title} instead`,`改为采纳 ${d.letter} · ${d.title}`),ref:x.id})}
   noteChange({op:"adopt",id:d.id,type:"direction",title:clip(`${d.letter} ${d.title}`,60),who:"you",engine:"human"});
   log("you",`Adopted <b>${d.letter} ${esc(d.title)}</b>`,d.id);sfx("keep");renderAll();persist();
   for(const x of board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"))makeRoomBelow(x);
+  const assumed=onAssumptions(d);if(assumed)speakAtAdopt(d);   // before the stamp animates: speaking re-renders the card
   const st=qs(`[data-stamp="${d.id}"]`);if(st&&!calm()){st.classList.add("slam")}
+  if(assumed){
+    const fl=qs(`[data-assume="${d.id}"]`);if(fl&&!calm())fl.classList.add("ring");
+    toast(wasDraft?L(`Kept and adopted ${d.title}, on assumptions only. Its test will tell you if it holds.`,`已保留并采纳 ${d.title}，目前只靠设想。跑一遍验证就知道它站不站得住。`)
+      :L(`Adopted ${d.title}, on assumptions only. Its test will tell you if it holds.`,`已采纳 ${d.title}，目前只靠设想。跑一遍验证就知道它站不站得住。`),{undo:true,ms:7000});
+    return;
+  }
   toast(wasDraft?L(`Kept and adopted ${d.title}`,`已保留并采纳 ${d.title}`):L(`Adopted ${d.title}`,`已采纳 ${d.title}`),{undo:true});
+}
+/* adopting a direction that rests on assumptions: the crew says so once, right then, instead of after the next pause.
+   In Focus it waits for the catch-up like any other board check. It is said once per direction, also after Undo. */
+function speakAtAdopt(d){
+  const W=board.watch;if(!W||!Array.isArray(W.done))return;const sig="as:"+d.id;
+  if(W.done.includes(sig))return;
+  W.queue=(W.queue||[]).filter(o=>o.sig!==sig);
+  const o={kind:"assume",sig,target:d.id,at:NOW()};
+  if(crewSpeak==="never"){W.queue.push(o);persist();paintPart();return}
+  const pin=checkPin(o);W.done.push(sig);if(!pin)return;
+  board.pins=board.pins||{};board.pins[d.id]=[...(board.pins[d.id]||[]).filter(p=>p.sig!==sig),pin];
+  const el=nodeEl(d.id);if(el)el._sig="";renderNodes();persist();renderCrew();
 }
 /* ── paths: a test's result, going back to a choice, new rounds ──────────
    Every path stays on the board. The designer records how a direction's real-world test came out (the crew
@@ -15718,7 +15791,10 @@ function stageBrief(){
     :"what the snapshot does not cover";
   const ev=WEIGHT_ORDER.filter(w=>st.evidence[w]).map(w=>`${st.evidence[w]} ${WEIGHTS[w].label.toLowerCase()}`).join(", ")||"none yet";
   const tb=templateBrief(st.stage);
-  return `STAGE: ${name}. Decided: ${decided}. ${tested}Open: ${open}. Evidence on the wall: ${ev} (proposals and illustrations are not evidence of behaviour).\n${STAGE_HERE[st.stage]} Anything you create is a draft the designer keeps or discards; add to what exists instead of starting again.${tb?"\n"+tb:""}`;
+  /* directions nothing observed or reported backs yet (see onAssumptions): the crew should not treat them as settled */
+  const asm=st.dirs.filter(d=>d.status==="ink"&&onAssumptions(d)).map(d=>`${t(d)}${board.adopted[d.idea]===d.id?" (adopted)":""}`);
+  const assumed=asm.length?`Resting on assumptions only (no observed or reported evidence tied to the direction itself): ${asm.join("; ")}. `:"";
+  return `STAGE: ${name}. Decided: ${decided}. ${tested}Open: ${open}. ${assumed}Evidence on the wall: ${ev} (proposals and illustrations are not evidence of behaviour).\n${STAGE_HERE[st.stage]} Anything you create is a draft the designer keeps or discards; add to what exists instead of starting again.${tb?"\n"+tb:""}`;
 }
 /* ── workflow templates ──────────────────────────────────────────────────
    A template is the seven-step skeleton (brief, evidence, diverge, critique, converge, build, freeze) plus what a

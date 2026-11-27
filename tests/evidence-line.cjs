@@ -57,7 +57,7 @@ async function open(browser, base, opts = {}) {
       check('an eye marks observed evidence, on a source\'s pill and on the line; no signal bars anywhere', !signs.bars && signs.pill && signs.line, JSON.stringify(signs));
 
       // E2. the line on the card: short, no chart, no "6/5"
-      const lines = await p.evaluate(() => [...document.querySelectorAll('#nodes .ev-line')].map(e => ({ type: e.closest('.card').classList[1], text: e.textContent, scale: !!e.closest('.foot').querySelector('.scale') })));
+      const lines = await p.evaluate(() => [...document.querySelectorAll('#nodes .ev-line:not(.ev-assume)')].map(e => ({ type: e.closest('.card').classList[1], text: e.textContent, scale: !!e.closest('.foot').querySelector('.scale') })));
       check('idea and synthesis cards show a short verdict, not a bar chart', lines.length >= 2 && lines.every(l => !l.scale && !/rated|\//.test(l.text) && l.text.length <= 22), JSON.stringify(lines));
       const syn = await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'synthesis'); return { id: n.id, of: n.of.length, rated: n.of.map(byId).filter(x => x && x.weight).length }; });
       await p.frame(syn.id); await p.hover(`[data-id="${syn.id}"] .ev-line`);

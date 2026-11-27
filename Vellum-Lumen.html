@@ -208,6 +208,8 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .card .foot-l{flex:0 1 auto}
 .card .foot-r{flex:0 0 auto;justify-content:flex-end}   /* who and when never get squeezed; the left side gives way */
 .card .foot-l,.card .foot>span:first-child{overflow:hidden}
+.card .foot-l>.weight{flex:none}
+.card .foot-l>.foot-txt{min-width:0;overflow:hidden;text-overflow:ellipsis}   /* a count beside the weight gives way first */
 .ev-line{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;padding:2px 6px 2px 4px;margin:-2px -6px -2px -4px;border-radius:var(--radius-xs);cursor:default;outline:none;transition:background var(--d-quick)}
 .ev-line:hover,.ev-line.is-open{background:var(--hover)}
 .ev-line:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--label) 40%,transparent)}
@@ -6202,7 +6204,7 @@ function cardBody(n){
     const recHead=g?`${byline(n)}<span class="card-k-src" title="${esc(g.prompt||"")}">Video${g.model?` · ${esc(g.model)}`:""}</span>`:`${badge?"":fmtBadgeHTML(fmt)}<span>Recording</span>`;
     return `<div class="media${pv?" pv":""}"><img src="${mediaSrc(n.poster)||""}" alt="" draggable="false" ${mediaSrc(n.poster)?"":'style="height:190px"'}>${badge}<button type="button" class="play" data-a="open" aria-label="Play ${g?"video":"recording"}">${ic("play")}</button><span class="tc">${tc(n.dur||0).replace(/\.\d$/,"")}</span></div><div class="film"></div>
     <div class="in">${head(recHead)}<h4 data-edit="title">${esc(n.title)}</h4>${n.text&&!isAuto?`<p data-edit="text">${esc(n.text)}</p>`:""}
-    ${sk?sketchActs(n):foot(weightHTML(n.weight),fR(!g&&frCnt?`<span>${frCnt} ${frCnt===1?"frame":"frames"} lifted</span>`:"",threadCount(n)))}</div>`;}
+    ${sk?sketchActs(n):foot(fL(weightHTML(n.weight),!g&&frCnt?`<span class="foot-txt">${frCnt} ${frCnt===1?"frame":"frames"} lifted</span>`:""),fR(threadCount(n)))}</div>`;}
   case"frame":{const r=byId(n.from),plChip=plBusyNodes.has(n.id)?`<span class="foot-pl busy">Reversing…</span>`:n.plPack?.positive?`<button type="button" class="foot-pl" data-a="reverse-prompt" title="${esc(uiLang()==="zh"?"查看反推提示词包":"View extracted Prompt Pack")}">${ic("sparkles")}Prompt</button>`:"";return `<div class="media"><img src="${mediaSrc(n.media)}" alt="" draggable="false"><span class="badge">${ic("frame")}FRAME</span><span class="tc">@ ${tc(n.t)}</span></div><div class="in">${head(`<span class="card-k-src">Frame${r?` · ${esc(r.title)}`:""}</span>`)}<h4 data-edit="title">${esc(n.title||"Frame "+tc(n.t))}</h4>${foot(fL(n.weight?weightHTML(n.weight,sk):"",plChip),fR(threadCount(n)))}</div>`}
   case"question":{const on=byId(n.on);return `<div class="in"><span class="qmark" aria-hidden="true">?</span>${head(`${byline(n)}${L?`<span class="q-dot"></span>`:""}<span class="q-on">${uiLang()==="zh"?"追问":"Question"}${on?`${uiLang()==="zh"?" · ":" on "}${esc(titleOf(on))}`:""}</span>`)}<h4 data-edit="text">${esc(n.text)}</h4>${foot("",fR(threadCount(n)))}</div>`}
   case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode));

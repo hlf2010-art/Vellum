@@ -236,13 +236,13 @@
   var CASES = {
     en: {
       product: {
-        e1: { k: "Reported", t: "Returns", b: "“Too loud for calls.” 38 of them.", page: "Returns, last 90 days" },
-        e2: { k: "Observed", t: "Sound test", b: "48 dB on the lowest setting." },
-        j: { t: "Noise, not airflow, is why people send it back." },
-        A: { t: "Bigger, slower blades", why: "Won't fit on a desk." },
-        B: { t: "Brushless motor, call mode", b: "Chosen. Quiet enough for a meeting." },
-        C: { t: "Bladeless tower", why: "Quiet, and twice the price." },
-        P: { t: "Call-mode prototype", meta: "31 dB at full speed" },
+        e1: { k: "Reported", t: "Returns", b: "“Hurts my nose after an hour.” 38 of them.", page: "Returns, last 90 days" },
+        e2: { k: "Observed", t: "Wear time", b: "Worn 2 hours a day after the first week." },
+        j: { t: "Weight, not features, is why they come off." },
+        A: { t: "Bigger battery, same frame", why: "Even heavier." },
+        B: { t: "32 g frame, battery in the temple tips", b: "Chosen. Light enough to forget." },
+        C: { t: "Drop the camera", why: "Lighter, but loses the main use." },
+        P: { t: "32 g prototype", meta: "Worn 6 hours straight in testing" },
         S: { t: "Spec for the tooling review" }
       },
       video: {
@@ -269,13 +269,13 @@
     },
     zh: {
       product: {
-        e1: { k: "转述", t: "退货原因", b: "“开会时太吵。”38 条。", page: "退货记录，近 90 天" },
-        e2: { k: "观察", t: "噪音测试", b: "最低档也有 48 分贝。" },
-        j: { t: "退货是因为噪音，不是风量。" },
-        A: { t: "加大扇叶、降低转速", why: "放不进桌面。" },
-        B: { t: "无刷电机 + 通话模式", b: "已选定。安静到可以开会。" },
-        C: { t: "无叶塔扇", why: "很安静，价格翻倍。" },
-        P: { t: "通话模式样机", meta: "最高档 31 分贝" },
+        e1: { k: "转述", t: "退货原因", b: "“戴一小时就压鼻梁。”38 条。", page: "退货记录，近 90 天" },
+        e2: { k: "观察", t: "佩戴时长", b: "第一周之后，每天只戴 2 小时。" },
+        j: { t: "大家摘下它，是因为重量，不是功能。" },
+        A: { t: "加大电池，镜框不变", why: "只会更重。" },
+        B: { t: "32 克镜框，电池放进镜腿尾端", b: "已选定。轻到忘了戴着。" },
+        C: { t: "去掉摄像头", why: "轻了，但丢了最主要的用途。" },
+        P: { t: "32 克样机", meta: "测试中连续戴了 6 小时" },
         S: { t: "给开模评审的规格书" }
       },
       video: {
@@ -1032,13 +1032,16 @@
     var EDGES = [["e1", "j", "supports"], ["e2", "j", "supports"], ["j", "A", "aside"], ["j", "B", ""], ["j", "C", "aside"], ["B", "P", "lineB"], ["P", "S", "lineB"]];
 
     var ILL = {
-      product: // a desk fan in call mode: the blades spin when you point at the card
-        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true"><ellipse cx="100" cy="134" rx="46" ry="5" fill="currentColor" opacity=".07"/>' +
-        '<path class="line" d="M100 104v22M78 130h44"/><circle class="fill-card line" cx="100" cy="62" r="42"/>' +
-        '<g class="soft"><circle cx="100" cy="62" r="33"/><path d="M100 20v10M100 94v10M58 62h10M132 62h10M70.3 32.3l7 7M122.7 84.7l7 7M70.3 91.7l7-7M122.7 39.3l7-7"/></g>' +
-        '<g class="blades"><path class="fill-2 line" d="M100 62c-3-12 2-24 10-24 7 0 6 14-10 24ZM100 62c12-1 21 7 18 15-3 6-15 0-18-15ZM100 62c-8 9-21 10-24 3-2-7 11-12 24-3Z"/></g>' +
-        '<circle class="fill-card line" cx="100" cy="62" r="5"/>' +
-        '<g class="b-stroke"><path d="M152 50c4 3 6 7 6 12s-2 9-6 12" opacity=".9"/><path d="M161 43c6 5 9 11 9 19s-3 14-9 19" opacity=".45"/></g></svg>',
+      product: // the 32 g prototype set down on a scale: it settles when you reach it, the battery tips in B
+        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true"><ellipse cx="100" cy="134" rx="56" ry="5" fill="currentColor" opacity=".07"/>' +
+        '<rect class="fill-card line" x="44" y="108" width="112" height="20" rx="6"/><rect class="fill-2" x="82" y="112" width="36" height="12" rx="3"/>' +
+        '<text x="100" y="121" text-anchor="middle">32 g</text>' +
+        '<g class="drop">' +
+        '<path class="line" d="M48 70H34l-4 6M152 70h14l4 6"/>' +
+        '<rect class="b-ink" x="24" y="74" width="12" height="9" rx="4.5"/><rect class="b-ink" x="164" y="74" width="12" height="9" rx="4.5"/>' +
+        '<rect class="fill-card line" x="48" y="62" width="44" height="34" rx="14"/><rect class="fill-card line" x="108" y="62" width="44" height="34" rx="14"/>' +
+        '<path class="soft" d="M58 72c6-4 14-5 20-3M118 72c6-4 14-5 20-3"/><path class="line" d="M92 74c4-6 12-6 16 0"/>' +
+        '<circle class="line fill-2" cx="53" cy="67" r="2.4"/></g></svg>',
       video: // a storyboard with the chosen opening framed in B
         '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true">' +
         '<g><rect class="fill-card" x="12" y="42" width="54" height="40" rx="5"/><rect class="b-stroke" x="12" y="42" width="54" height="40" rx="5"/><circle class="b-ink" cx="39" cy="62" r="9" opacity=".9"/><path class="line" d="M28 75h22" opacity=".5"/></g>' +
@@ -1244,7 +1247,7 @@
       zb.querySelectorAll(".lit").forEach(function (n) { n.classList.remove("lit"); });
     }
 
-    // The prototype plays once when you reach it: the fan spins up, the playhead runs, the evals tick.
+    // The prototype plays once when you reach it: the glasses settle on the scale, the playhead runs, the evals tick.
     var aliveT = 0;
     function wake() {
       var c = nodes.P;

@@ -4,10 +4,10 @@ Generated with ComfyUI on a local PC (Z-Image Turbo, Qwen Image 2.1, LTX 2.3). N
 
 | File | Use | Size |
 |---|---|---|
-| beta-clip.mp4 | Raw skate footage: home "beta" card (crop to ~2.4:1 with object-fit) and demo video card (`demo/media/beta-clip.mp4`). 16:9, 1280×704, 4 s (sped up 1.5×), 24 fps, H.264, no audio | 431 KB |
-| beta-clip-poster.jpg | Poster for the above (approach frame) | 112 KB |
-| output-landing.mp4 | "Finished cut" output: landing segment, 4:3, 928×696, 1.7 s | 196 KB |
-| output-landing-poster.jpg | Still for reduced motion (landing frame) | 109 KB |
+| beta-clip.mp4 | Raw skate footage, seamless loop: home "beta" card and demo video card (`demo/media/beta-clip.mp4`). Three real-speed clips joined frame to frame (ollie + grind, kickflip, roll back), the end dissolves into the start so it loops without a jump. 16:9, 960×528, 13.5 s, 24 fps, H.264, no audio | 994 KB |
+| beta-clip-poster.jpg | Poster for the above (first frame) | |
+| output-landing.mp4 | "Finished cut" output: grind segment, 4:3, 928×696, 1.8 s | 205 KB |
+| output-landing-poster.jpg | Still for reduced motion | |
 | hero-skate.jpg | Product site hero inside the browser mock, 3:4, 1200×1600, dark, top third is empty sky for text | 352 KB |
 | glasses-prototype.jpg | "32 g prototype" card, 4:3, 1600×1200 | 244 KB |
 | storyboard-1-result.jpg / -2-process / -3-start | Short-video case, "three versions" storyboard, 16:9, 1920×1088 | ~280 KB each |

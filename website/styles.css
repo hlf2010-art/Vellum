@@ -1067,10 +1067,11 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 }
 
 /* ---------- Hero board: real footage, the decision record, B's first proof ---------- */
-.bcard .media.vid { background: #121419; }
+/* Footage keeps its own 16:9 frame: nothing cropped, whatever the board's layout. */
+.board .bcard .media.vid { height: auto; aspect-ratio: 16 / 9; background: #121419; }
 .bcard .media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.bcard .media.vid::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,.22), transparent 34%, transparent 52%, rgba(0,0,0,.58)); }
-.bcard .media.vid svg { z-index: 1; }
+.vprog { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.18); }
+.vprog b { display: block; height: 100%; background: rgba(255,255,255,.85); transform: scaleX(0); transform-origin: 0 50%; transition: transform .25s linear; }
 .ill .mk { fill: var(--B-fill); }
 .ill .mk-l { fill: none; stroke: var(--B-fill); stroke-width: 1.2; opacity: .75; }
 .bcard .rec { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 10px; align-items: start; margin: 11px 0 1px; padding-top: 10px; border-top: 1px solid var(--hair); }

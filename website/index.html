@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#050608" media="(prefers-color-scheme: dark)">
 <meta property="og:title" content="Vellum: your best thinking deserves more than a chat box">
 <meta property="og:description" content="A shared thinking space for humans and AI.">
-<link rel="icon" href="assets/vellum-mark.svg" type="image/svg+xml">
+<link rel="icon" href="assets/mark.svg" type="image/svg+xml">
 <link rel="preload" href="fonts/BricolageGrotesque-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
@@ -31,6 +31,9 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <!-- One icon set, drawn like the app's: 24px grid, round caps and joins. Stroke width comes from CSS. -->
   <defs>
+    <!-- The mark: your card, set down by hand, and the AI's, square to the grid. Only the overlap is solid. -->
+    <clipPath id="mk-a"><rect x="14" y="15" width="50" height="56" rx="14" transform="rotate(-10 39 43)"/></clipPath>
+    <symbol id="i-mark" viewBox="0 0 100 100"><g opacity=".26"><rect x="14" y="15" width="50" height="56" rx="14" transform="rotate(-10 39 43)"/><rect x="35" y="30" width="50" height="56" rx="14"/></g><rect x="35" y="30" width="50" height="56" rx="14" clip-path="url(#mk-a)"/></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></symbol>
     <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5.5h16v10.5H10L5.5 19.5V16H4Z"/></symbol>
     <symbol id="i-quote" viewBox="0 0 24 24"><path d="M10 7c-2.6.9-4.2 2.9-4.2 6v4h4.4v-4.4H7.5M18.6 7c-2.6.9-4.2 2.9-4.2 6v4h4.4v-4.4h-2.7"/></symbol>
@@ -65,7 +68,7 @@
 
 <header class="site-head" id="top">
   <div class="wrap head-row">
-    <a class="brand" href="#top" aria-label="Vellum"><img src="assets/vellum-mark.svg" alt="" width="28" height="28"><span>Vellum</span></a>
+    <a class="brand" href="#top" aria-label="Vellum"><svg class="mark" aria-hidden="true"><use href="#i-mark"/></svg><span>Vellum</span></a>
     <nav class="nav" aria-label="Main">
       <a href="#why" data-i18n="nav.why">Why Vellum</a>
       <a href="#how" data-i18n="nav.how">How it works</a>
@@ -267,6 +270,14 @@
   <!-- 5. Get Vellum. -->
   <section class="get" id="get" aria-labelledby="get-title">
     <div class="wrap get-wrap">
+      <!-- The mark at full size, as a light: two frosted panes, and the part you share gives off light through the glass below. -->
+      <div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><clipPath id="gm-a"><rect x="14" y="15" width="50" height="56" rx="14" transform="rotate(-10 39 43)"/></clipPath>
+          <linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="14" y="15" width="50" height="56" rx="14" transform="rotate(-10 39 43)"/><rect x="35" y="30" width="50" height="56" rx="14"/></g>
+        <rect class="gm-on" x="35" y="30" width="50" height="56" rx="14" clip-path="url(#gm-a)" filter="url(#gm-f)"/>
+      </svg></div>
       <div class="sec-head">
         <h2 id="get-title" data-i18n="get.title">Get Vellum.</h2>
       </div>
@@ -317,7 +328,7 @@
 
 <footer class="foot">
   <div class="wrap foot-row">
-    <a class="brand brand-sm" href="#top" aria-label="Vellum"><img src="assets/vellum-mark.svg" alt="" width="22" height="22"><span>Vellum</span></a>
+    <a class="brand brand-sm" href="#top" aria-label="Vellum"><svg class="mark" aria-hidden="true"><use href="#i-mark"/></svg><span>Vellum</span></a>
     <nav class="foot-nav" aria-label="Footer">
       <a href="https://github.com/hlf2010-art/Vellum">GitHub</a>
       <span>© 2026 Vellum</span>

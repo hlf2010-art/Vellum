@@ -1,8 +1,10 @@
 # Publishes /website to Cloudflare Pages on every merge to main (and on demand from the Actions tab).
 # Uses Wrangler's direct upload, so it doesn't need Cloudflare's GitHub app. Pages Functions
 # (website/functions) and the KV binding set in the Cloudflare dashboard work the same way.
-# Needs two repository secrets: CLOUDFLARE_API_TOKEN (Account > Cloudflare Pages > Edit) and
-# CLOUDFLARE_ACCOUNT_ID. Without them the run skips with a warning instead of failing.
+# Needs one repository secret, CLOUDFLARE_API_TOKEN (Account > Cloudflare Pages > Edit), under
+# Settings > Secrets and variables > Actions > Secrets > Repository secrets. The account ID isn't
+# secret, so it lives here (a CLOUDFLARE_ACCOUNT_ID secret overrides it). Without the token the
+# run skips with a warning that says what's missing, instead of failing.
 name: Deploy website
 
 on:
@@ -22,6 +24,7 @@ concurrency:
 
 env:
   PROJECT: vellum
+  ACCOUNT_ID: d8cb67a08c3ed7d61518210e061b2d86
 
 jobs:
   deploy:
@@ -34,13 +37,19 @@ jobs:
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TOKEN_AS_VAR: ${{ vars.CLOUDFLARE_API_TOKEN }}
         run: |
-          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ]; then
-            echo "::warning::CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is not set, so nothing was published. See website/README.md."
+          if [ -n "$TOKEN" ]; then
+            echo "Found the CLOUDFLARE_API_TOKEN secret."
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "$TOKEN_AS_VAR" ]; then
+            echo "::warning::CLOUDFLARE_API_TOKEN is under the Variables tab, where anyone with access can read it. Delete it there and add it under Secrets > Repository secrets."
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::No repository secret named CLOUDFLARE_API_TOKEN, so nothing was published. Add it under Settings > Secrets and variables > Actions > Secrets > Repository secrets."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
+          echo "account=${ACCOUNT:-$ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         if: steps.keys.outputs.ready == 'true'
@@ -52,7 +61,7 @@ jobs:
         working-directory: website
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.keys.outputs.account }}
         run: |
           if npx --yes wrangler@4 pages project list | grep -qw "$PROJECT"; then
             echo "Project $PROJECT exists."
@@ -65,5 +74,5 @@ jobs:
         working-directory: website
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.keys.outputs.account }}
         run: npx --yes wrangler@4 pages deploy . --project-name "$PROJECT" --branch main --commit-hash "$GITHUB_SHA" --commit-message "${GITHUB_SHA::7}"

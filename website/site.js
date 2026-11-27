@@ -3,14 +3,15 @@
   "use strict";
 
   // ---- Go-live settings -------------------------------------------------------------------
-  // Fill these in to make Download and the waitlist real. Until then the buttons say "Soon"
-  // and a sign-up only tells the visitor that this is a preview.
+  // Fill these in to make Download and the waitlist real. Until a build is live, everyone joins the waitlist;
+  // without an endpoint, a sign-up only tells the visitor that this is a preview.
   var CONFIG = {
     downloads: {
       mac: "",   // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-mac.dmg"
       win: ""    // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-Setup.exe"
     },
-    waitlistEndpoint: "" // POST {email, use, lang} as JSON (Formspree, Buttondown, a Worker…)
+    waitlistEndpoint: "" // POST {email, os, lang} as JSON (Formspree, Buttondown, a Worker…); os is "mac", "win" or "".
+                         // If they then change the system or say what it's for, a second POST adds {use, update: true}.
   };
 
   var root = document.documentElement;
@@ -85,13 +86,12 @@
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
       "get.title": "Get Vellum.",
-      "get.dl": "Download", "get.dld": "Early builds for macOS and Windows.",
-      "get.mac": "macOS", "get.win": "Windows", "get.soon": "Soon",
-      "get.wl": "Hear about new builds", "get.wld": "One email when a build is worth your time. That's the whole newsletter.",
-      "get.email": "Email", "get.use": "Mostly for", "get.other": "Something else",
-      "cta.waitlist": "Join the waitlist",
-      "get.thanks": "You're on the list.",
-      "get.thanksd": "We'll write to {email} when a build is ready.",
+      "get.l1": "Early builds for macOS and Windows are on the way.", "get.l2": "One email when yours is worth your time.",
+      "get.os": "Preferred system", "get.mac": "macOS", "get.win": "Windows", "get.use": "What will you use it for?", "get.email": "Email",
+      "get.useph": "A product launch, a short film…", "get.skip": "Skip", "get.done": "Done",
+      "cta.waitlist": "Join the waitlist", "get.dlfor": "Download for {os}",
+      "get.thanks": "You're on the list.", "get.thanksos": "You're on the list for {os}.",
+      "get.thanksd": "We'll write to {email} when it's ready.",
       "get.thankspreview": "This preview doesn't send sign-ups yet, so {email} stayed right here.",
       "get.bademail": "That doesn't look like an email address.",
       "get.fail": "That didn't go through. Try again in a moment.",
@@ -144,13 +144,12 @@
       "mode.teamd": "和你一起起草，好的你留下。",
       "modes.label": "AI 伙伴参与的程度",
       "get.title": "获取 Vellum。",
-      "get.dl": "下载", "get.dld": "macOS 和 Windows 早期版本。",
-      "get.mac": "macOS", "get.win": "Windows", "get.soon": "即将推出",
-      "get.wl": "新版本通知", "get.wld": "有值得一试的版本时，发你一封邮件。仅此而已。",
-      "get.email": "邮箱", "get.use": "主要用来做", "get.other": "其他",
-      "cta.waitlist": "加入等候名单",
-      "get.thanks": "已加入名单。",
-      "get.thanksd": "版本准备好后，我们会写信到 {email}。",
+      "get.l1": "macOS 和 Windows 早期版本快来了。", "get.l2": "你的那一版值得一试时，发你一封邮件。",
+      "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "你打算用它来做什么？", "get.email": "邮箱",
+      "get.useph": "比如：一款新产品、一支短片…", "get.skip": "跳过", "get.done": "完成",
+      "cta.waitlist": "加入等候名单", "get.dlfor": "下载 {os} 版",
+      "get.thanks": "已加入名单。", "get.thanksos": "已加入 {os} 名单。",
+      "get.thanksd": "准备好后，我们会写信到 {email}。",
       "get.thankspreview": "这是预览版，报名还没有接通，{email} 没有被发送出去。",
       "get.bademail": "这看起来不像邮箱地址。",
       "get.fail": "没有提交成功，请稍后再试。",
@@ -358,7 +357,9 @@
     zones.render(false);
     reel.relabel();
     renderMode(false);
-    renderDownloads();
+    $("email").setAttribute("aria-label", t("get.email"));
+    $("useText").setAttribute("placeholder", t("get.useph"));
+    renderPicks();
   }
 
   // ---- Theme and language ------------------------------------------------------------------
@@ -1548,26 +1549,46 @@
   window.addEventListener("resize", function () { renderMode(false); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { renderMode(false); });
 
-  // ---- Downloads: one primary per card ----------------------------------------------------------
-  function renderDownloads() {
-    var live = !!(CONFIG.downloads.mac || CONFIG.downloads.win);
-    var want = /Win/i.test(navigator.platform || navigator.userAgent || "") ? "win" : "mac";
-    if (!CONFIG.downloads[want]) want = CONFIG.downloads.mac ? "mac" : "win";   // one primary, even if only one build is out
-    document.querySelectorAll(".dl").forEach(function (a) {
-      var url = CONFIG.downloads[a.dataset.os];
-      a.classList.toggle("live", !!url);
-      if (url) { a.href = url; a.removeAttribute("aria-disabled"); a.removeAttribute("tabindex"); }
-      else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); }
-      var primary = !!url && a.dataset.os === want;
-      a.classList.toggle("btn-primary", primary); a.classList.toggle("btn-quiet", !primary);
-      if (primary) a.parentNode.appendChild(a);   // the primary sits last: on the right, or at the bottom on a phone
-    });
-    var submit = document.querySelector("#waitlist button[type=submit]");
-    submit.classList.toggle("btn-primary", !live); submit.classList.toggle("btn-quiet", live);
+  // ---- Get Vellum: one line, then two optional questions ---------------------------------------
+  // Joining saves the email straight away. Then a small dialog asks which system (picked for you from the
+  // browser; a phone or tablet can't tell, so nothing is picked there) and, in their own words, what it's for.
+  // Skip, Esc or a click outside closes it and the sign-up still stands. Once a build is live for the visitor's
+  // system, the line becomes its download.
+  var form = $("waitlist"), email = $("email"), msg = $("formMsg"), dlGo = $("dlGo");
+  var dlg = $("more"), moreForm = $("moreForm"), useText = $("useText");
+  var pick = { os: guessOS() }, sent = null;
+  function guessOS() {
+    var ua = navigator.userAgent || "", pf = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+    if (/iPhone|iPad|iPod|Android/i.test(ua) || (/Mac/i.test(pf) && navigator.maxTouchPoints > 1)) return "";
+    return /Mac/i.test(pf) ? "mac" : /Win/i.test(pf) ? "win" : "";
   }
-
-  // ---- Waitlist ---------------------------------------------------------------------------
-  var form = $("waitlist"), email = $("email"), msg = $("formMsg");
+  function renderPicks() {
+    dlg.querySelectorAll(".pick").forEach(function (b) {
+      var on = b.dataset.os === pick.os;
+      b.setAttribute("aria-checked", on ? "true" : "false"); b.tabIndex = on || !pick.os && b.dataset.os === "mac" ? 0 : -1;
+    });
+    var url = pick.os && CONFIG.downloads[pick.os];
+    form.classList.toggle("live", !!url && !sent);
+    dlGo.hidden = !url || !!sent;
+    if (url) { dlGo.href = url; dlGo.textContent = t("get.dlfor").replace("{os}", t("get." + pick.os)); }
+    if (sent) {
+      $("doneText").textContent = sent.os ? t("get.thanksos").replace("{os}", t("get." + sent.os)) : t("get.thanks");
+      $("doneNote").textContent = t(sent.note).replace("{email}", sent.email);
+    }
+  }
+  function post(data) {
+    return fetch(CONFIG.waitlistEndpoint, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(data) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); });
+  }
+  var osBtns = Array.prototype.slice.call(dlg.querySelectorAll(".pick"));
+  osBtns.forEach(function (b, i) {
+    b.addEventListener("click", function () { pick.os = b.dataset.os; renderPicks(); });
+    b.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+      if (!d) return;
+      e.preventDefault(); var n = osBtns[(i + d + osBtns.length) % osBtns.length]; pick.os = n.dataset.os; renderPicks(); n.focus();
+    });
+  });
   email.addEventListener("input", function () { email.removeAttribute("aria-invalid"); msg.textContent = ""; });
   form.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -1579,16 +1600,29 @@
       return;
     }
     var btn = form.querySelector("button[type=submit]");
-    function done(key) { $("doneText").textContent = t(key).replace("{email}", v); form.classList.add("sent"); }
-    if (!CONFIG.waitlistEndpoint) { done("get.thankspreview"); return; }
+    function ask(note) {
+      sent = { os: pick.os, email: v, note: note, first: pick.os };
+      renderPicks(); useText.value = "";
+      if (typeof dlg.showModal === "function") { dlg.returnValue = ""; dlg.showModal(); useText.focus(); } else finish();
+    }
+    if (!CONFIG.waitlistEndpoint) { ask("get.thankspreview"); return; }
     btn.disabled = true;
-    fetch(CONFIG.waitlistEndpoint, {
-      method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ email: v, use: $("use").value, lang: lang })
-    }).then(function (r) { if (!r.ok) throw new Error(r.status); done("get.thanksd"); })
+    post({ email: v, os: pick.os, lang: lang })
+      .then(function () { ask("get.thanksd"); })
       .catch(function () { msg.textContent = t("get.fail"); })
       .then(function () { btn.disabled = false; });
   });
+  // Closing the dialog, however it happens, ends at the same quiet line. Only answers that add something are sent.
+  function finish() {
+    var use = dlg.returnValue === "done" ? useText.value.trim() : "";
+    sent.os = pick.os;
+    if (CONFIG.waitlistEndpoint && (use || pick.os !== sent.first)) post({ email: sent.email, os: pick.os, use: use, lang: lang, update: true }).catch(function () {});
+    form.classList.add("sent"); renderPicks();
+  }
+  dlg.addEventListener("close", finish);
+  // Enter in the text field means Done (the form's first button is Skip, which would drop what was typed).
+  useText.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); dlg.close("done"); } });
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) { dlg.returnValue = "skip"; dlg.close(); } });
 
   applyCopy();
 })();

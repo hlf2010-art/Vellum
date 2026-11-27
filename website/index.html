@@ -278,48 +278,43 @@
       </svg></div>
       <div class="sec-head">
         <h2 id="get-title" data-i18n="get.title">Get Vellum.</h2>
+        <p class="get-lede"><span data-i18n="get.l1">Early builds for macOS and Windows are on the way.</span> <span data-i18n="get.l2">One email when yours is worth your time.</span></p>
       </div>
 
-      <div class="panel">
-        <div class="pblock">
-          <div class="phead">
-            <h3 data-i18n="get.dl">Download</h3>
-            <p data-i18n="get.dld">Early builds for macOS and Windows.</p>
-          </div>
-          <div class="pgrid">
-            <a class="btn btn-quiet dl" data-os="mac" href="#get"><svg class="ic" aria-hidden="true"><use href="#i-apple"/></svg><span data-i18n="get.mac">macOS</span><span class="soon" data-i18n="get.soon">Soon</span></a>
-            <a class="btn btn-quiet dl" data-os="win" href="#get"><svg class="ic" aria-hidden="true"><use href="#i-windows"/></svg><span data-i18n="get.win">Windows</span><span class="soon" data-i18n="get.soon">Soon</span></a>
-          </div>
+      <!-- One line: the email and its button. Joining saves the email first, then a small dialog asks two optional
+           things: which system (already picked from the browser) and, in their own words, what it's for. -->
+      <form class="join" id="waitlist" novalidate>
+        <div class="pill" id="joinLine">
+          <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@studio.com" aria-label="Email">
+          <button class="btn btn-primary" type="submit" data-i18n="cta.waitlist">Join the waitlist</button>
         </div>
-        <div class="divider" role="presentation"></div>
-        <form class="pblock waitlist" id="waitlist" novalidate>
-          <div class="phead">
-            <h3 data-i18n="get.wl">Hear about new builds</h3>
-            <p data-i18n="get.wld">One email when a build is worth your time. That's the whole newsletter.</p>
-          </div>
-          <div class="pgrid form-body">
-            <div class="field">
-              <label for="email" data-i18n="get.email">Email</label>
-              <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@studio.com">
+        <a class="btn btn-primary dl-go" id="dlGo" hidden></a>
+        <p class="form-msg" id="formMsg" role="alert"></p>
+        <div class="done-state" role="status">
+          <span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span>
+          <div><strong id="doneText"></strong><p id="doneNote"></p></div>
+        </div>
+      </form>
+      <dialog class="more" id="more" aria-labelledby="moreTitle">
+        <form method="dialog" id="moreForm">
+          <h3 id="moreTitle"><span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span><span data-i18n="get.thanks">You're on the list.</span></h3>
+          <div class="mrow">
+            <span class="mlabel" id="osLabel" data-i18n="get.os">Preferred system</span>
+            <div class="chips" role="radiogroup" aria-labelledby="osLabel" id="osChips">
+              <button type="button" class="pick" role="radio" data-os="mac" aria-checked="false"><svg class="ic" aria-hidden="true"><use href="#i-apple"/></svg><span data-i18n="get.mac">macOS</span></button>
+              <button type="button" class="pick" role="radio" data-os="win" aria-checked="false"><svg class="ic" aria-hidden="true"><use href="#i-windows"/></svg><span data-i18n="get.win">Windows</span></button>
             </div>
-            <div class="field">
-              <label for="use" data-i18n="get.use">Mostly for</label>
-              <div class="select"><select id="use" name="use">
-                <option value="product" data-i18n="cases.t1">Product design</option>
-                <option value="video" data-i18n="cases.t2">Short video</option>
-                <option value="ai" data-i18n="cases.t3">AI products</option>
-                <option value="other" data-i18n="get.other">Something else</option>
-              </select></div>
-            </div>
-            <p class="form-msg span2" id="formMsg" role="alert"></p>
-            <button class="btn btn-primary submit" type="submit"><svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg><span data-i18n="cta.waitlist">Join the waitlist</span></button>
           </div>
-          <div class="done-state" role="status">
-            <span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span>
-            <div><strong data-i18n="get.thanks">You're on the list.</strong><p id="doneText"></p></div>
+          <label class="mrow">
+            <span class="mlabel" data-i18n="get.use">What will you use it for?</span>
+            <input class="mfield" id="useText" name="use" type="text" maxlength="200" autocomplete="off" placeholder="A product launch, a short film…">
+          </label>
+          <div class="macts">
+            <button class="btn btn-quiet" type="submit" value="skip" data-i18n="get.skip">Skip</button>
+            <button class="btn btn-primary" type="submit" value="done" data-i18n="get.done">Done</button>
           </div>
         </form>
-      </div>
+      </dialog>
     </div>
   </section>
 </main>

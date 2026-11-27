@@ -56,7 +56,7 @@
       "why.a3": "Rejected ideas, lost in final_v3", "why.b3": "Set-aside ideas, kept with the reason",
       "why.a4": "A decision nobody remembers making", "why.b4": "A decision that speaks up when the facts change",
       "how.title": "Every card knows where it came from.",
-      "how.lede": "Evidence, then a judgment, then directions, then the thing you build. Pick any card to see what it rests on.",
+      "how.lede": "Pick one to see what it rests on.",
       "z.1": "Gather", "z.1d": "What people did and said",
       "z.2": "Explore", "z.2d": "Judgments, then directions",
       "z.3": "Prototype", "z.3d": "Built from one direction",
@@ -106,7 +106,7 @@
       "why.a3": "被否的想法，埋在 final_v3 里", "why.b3": "搁置的想法，连同理由一起留着",
       "why.a4": "没人记得是怎么定下的决定", "why.b4": "事实一变，决定会自己站出来",
       "how.title": "每张卡片\u200b都知道自己从哪来。",
-      "how.lede": "先有证据，再有判断，再分方向，最后做出东西。点任意一张卡片，看它建立在什么之上。",
+      "how.lede": "选一张，看它建立在什么之上。",
       "z.1": "收集", "z.1d": "人们做了什么、说了什么",
       "z.2": "探索", "z.2d": "先下判断，再分方向",
       "z.3": "原型", "z.3d": "从一个方向做出来",
@@ -388,14 +388,23 @@
     // see where they sit; everything else steps back but stays readable. Pointing at a card overrides it.
     var LIT = { 0: ["e1", "e2", "e3"], 1: ["j1"], 2: ["dA", "dB", "dC", "st"], 3: ["dB"], 4: ["n1"] };
     var CTX = { 3: ["dA", "dC"] };
-    var litSet = {};
+    var litSet = {}, spotOne = null, spotT = 0;
+    // While a step is being built, the light follows the card that just landed; once it is all down, the
+    // whole step lights up together.
+    function spotlight(id, settleAfter) {
+      spotOne = id; light();
+      clearTimeout(spotT);
+      if (settleAfter) spotT = setTimeout(function () { spotOne = null; light(); }, settleAfter);
+    }
     function light() {
       var lit = {}, ctx = {};
       (LIT[step] || []).forEach(function (id) { lit[id] = 1; });
       if (step === 4 && resolved) lit.dB = 1;
+      if (spotOne && lit[spotOne]) Object.keys(lit).forEach(function (k) { if (k !== spotOne) { delete lit[k]; ctx[k] = 1; } });
       (CTX[step] || []).forEach(function (id) { ctx[id] = 1; });
       RELS.forEach(function (r) { if (lit[r.a]) ctx[r.b] = 1; if (lit[r.b]) ctx[r.a] = 1; });
       litSet = lit;
+      el.classList.toggle("b-back", !lit.dB);           // the marker loop belongs to B: it steps back with it
       Object.keys(cards).forEach(function (id) {
         cards[id].classList.toggle("lit", !!lit[id]);
         cards[id].classList.toggle("ctx", !lit[id] && !!ctx[id]);
@@ -689,6 +698,7 @@
     // Bring the board to step n. One step forward plays its choreography; anything else just moves there.
     function stepTo(n, animate) {
       clearLater();
+      clearTimeout(spotT); spotOne = null;
       held = {}; holdDecide = false; holdFlag = false;
       var choreo = animate && !reduced && n === step + 1;
       if (!choreo) { leaveAll(); go(n, animate); if (n === 4) settle(); return; }
@@ -697,14 +707,25 @@
       ({ 0: evidence, 1: judgment, 2: directions, 3: decision, 4: news })[n]();
     }
     function evidence() {
+      // One card at a time, so the eye has somewhere to start: yours, then the Scout's, then yours again.
       held = { e1: 1, e2: 1, e3: 1 }; go(0, true);
       moveTo("you", spot("e1")[0], spot("e1")[1], function () {
-        press("you", function () { reveal("e1", spot("e1")); });
-        soon(function () { moveTo("you", spot("e3")[0], spot("e3")[1], function () { press("you", function () { reveal("e3", spot("e3")); leave("you", 700); }); }); }, 420);
+        press("you", function () {
+          reveal("e1", spot("e1")); spotlight("e1");
+          soon(function () {
+            moveTo("scout", spot("e2")[0], spot("e2")[1], function () {
+              press("scout", function () {
+                reveal("e2", spot("e2")); spotlight("e2"); leave("scout", 900);
+                soon(function () {
+                  moveTo("you", spot("e3")[0], spot("e3")[1], function () {
+                    press("you", function () { reveal("e3", spot("e3")); spotlight("e3", 1500); leave("you", 700); });
+                  });
+                }, 380);
+              });
+            });
+          }, 420);
+        });
       });
-      soon(function () {
-        moveTo("scout", spot("e2")[0], spot("e2")[1], function () { press("scout", function () { reveal("e2", spot("e2")); leave("scout", 900); }); });
-      }, 380);
     }
     function judgment() {
       held = { j1: 1 }; go(1, true);
@@ -720,7 +741,7 @@
         });
       });
       soon(function () {
-        moveTo("critic", spot("st")[0], spot("st")[1], function () { press("critic", function () { reveal("st", spot("st")); leave("critic", 1100); }); });
+        moveTo("critic", spot("st")[0], spot("st")[1], function () { press("critic", function () { reveal("st", spot("st")); spotlight("st", 1900); leave("critic", 1100); }); });
       }, 1250);
     }
     function decision() {
@@ -797,7 +818,7 @@
       }, 2200);
     }
 
-    var DWELL = [3000, 2900, 3900, 3500];
+    var DWELL = [4300, 2900, 4400, 3500];
     function play() {
       if (playing) return;
       playing = true; played = true;
@@ -832,17 +853,21 @@
 
     // Point at a card and the board answers "what is this connected to?": its lines and neighbours stay,
     // everything else steps back. A short pause first, so passing over the board doesn't flicker.
-    var hotT = 0;
+    // Only a pointer that actually moves can focus a card. While you scroll, cards slide under a resting
+    // pointer; that must not dim the story mid-step.
+    var hotT = 0, lastScroll = 0;
+    window.addEventListener("scroll", function () { lastScroll = performance.now(); }, { passive: true });
     function hot(id, on) {
       clearTimeout(hotT);
+      if (on && performance.now() - lastScroll < 450) return;
       svg.querySelectorAll("path[data-a]").forEach(function (p) { if (p.dataset.a === id || p.dataset.b === id) p.classList.toggle("hot", on); });
-      if (!on) { el.classList.remove("focus"); Object.keys(cards).forEach(function (n) { cards[n].classList.remove("near"); }); return; }
+      if (!on) { el.classList.remove("focus", "b-far"); Object.keys(cards).forEach(function (n) { cards[n].classList.remove("near"); }); return; }
       hotT = setTimeout(function () {
         if (!cards[id].matches(":hover") || cards[id].classList.contains("dragging")) return;
         var near = {}; near[id] = 1;
         svg.querySelectorAll("path[data-a]").forEach(function (p) { if (p.dataset.a === id) near[p.dataset.b] = 1; if (p.dataset.b === id) near[p.dataset.a] = 1; });
         Object.keys(cards).forEach(function (n) { cards[n].classList.toggle("near", !!near[n]); });
-        el.classList.add("focus");
+        el.classList.add("focus"); el.classList.toggle("b-far", !near.dB);
       }, 160);
     }
 
@@ -850,6 +875,7 @@
     function drag(c) {
       var sx, sy, ox, oy, lx, id = c.dataset.id, active = false, tilt = 0, raf = 0;
       c.addEventListener("pointerenter", function () { hot(id, true); });
+      c.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse" && !el.classList.contains("focus") && !active) hot(id, true); });
       c.addEventListener("pointerleave", function () { if (!active) hot(id, false); });
       c.addEventListener("pointerdown", function (e) {
         if (e.button !== 0 || e.pointerType === "touch" || e.target.closest("button")) return;

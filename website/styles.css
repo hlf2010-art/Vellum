@@ -243,6 +243,10 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .board.spotlit:not(.focus) .rel-tag { opacity: .55; }
 /* Set-aside cards already wear a veil; dimming them again would make them unreadable. */
 .board.spotlit:not(.focus) .bcard.on.aside:not(.lit) { opacity: .66; }
+/* The marker loop is part of the chosen card: when B steps back, so does its loop. */
+.board-lines path.marker { transition: opacity .36s var(--e-out); }
+.board.spotlit.b-back:not(.focus) .board-lines path.marker { opacity: .34; }
+.board.focus.b-far .board-lines path.marker { opacity: .24; }
 .board-lines path.out { opacity: 0; transition: opacity .2s var(--e-out); }
 .board-lines circle.pen { stroke: none; }
 .board-lines path.hot { stroke-width: 2.2; }
@@ -415,10 +419,13 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .sec-head .lede { max-width: 32em; }
 
 /* Why */
+/* Two-tone heads: one sentence in ink, one in grey, same size. The colour does the work small print used to. */
 .why-title { max-width: 21ch; }
-.why-title .quiet { color: var(--label-3); }
+.two-tone .quiet { color: var(--label-3); }
 .why-title .quiet::after { content: " "; }
-:lang(zh) .why-title .quiet::after { content: none; }
+#how-title { max-width: 24ch; }
+#how-title .quiet::before { content: " "; }
+:lang(zh) .two-tone .quiet::after, :lang(zh) .two-tone .quiet::before { content: none; }
 .why-body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s5) clamp(var(--s6), 6vw, var(--s9)); margin-top: var(--head-gap); align-items: start; }
 .why-body .lede { max-width: 18em; }
 .why-side { display: grid; gap: clamp(var(--s6), 5vw, var(--s8)); align-content: start; }

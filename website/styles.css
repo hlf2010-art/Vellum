@@ -293,6 +293,23 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .vc .by b { width: 16px; height: 16px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 9px; font-weight: 700; color: #fff; box-shadow: 0 0 0 1.5px var(--card); }
 .vc .by b + b { margin-left: -6px; }
 .vc.ink { box-shadow: 0 0 0 1px var(--ink-rule), var(--shadow-card); }
+/* A quote looks like a quote: one big mark instead of a label, the words in the display face, and a cite line
+   with who said it and the recording it came from. */
+.vc.quote .k { min-height: 16px; margin-bottom: 2px; }
+.vc.quote .k .ki, .vc.quote .k .kk { display: none; }
+.vc.quote .k::before { content: "\201C"; font: 600 46px/1 var(--display); color: var(--label-4); height: 18px; margin: 2px 0 0 -2px; letter-spacing: 0; }
+:root[data-theme="dark"] .vc.quote .k::before { color: rgba(244,245,247,.24); }
+.vc.quote .b { margin-top: 0; font: 500 15.5px/1.38 var(--display); letter-spacing: -.012em; color: var(--label); }
+:lang(zh) .vc.quote .b { font-weight: 560; letter-spacing: 0; }
+.vc.quote .cite { display: flex; align-items: center; gap: 10px; margin-top: 9px; }
+.vc.quote .cite .t { flex: none; white-space: nowrap; font-size: 12.5px; line-height: 1.3; font-weight: 500; letter-spacing: 0; color: var(--label-3); }
+.vc.quote .cite .t::before { content: "\2014\00a0"; }
+/* The recording trails off instead of being cut: on a narrow card the bars run out under a soft edge. */
+.wave { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; height: 18px; flex: 0 1 auto; min-width: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, #000 72%, transparent); mask-image: linear-gradient(90deg, #000 72%, transparent); }
+.wave i { display: block; flex: none; width: 2px; border-radius: 1px; background: var(--label-4); }
+.wave i.on { background: var(--label-3); }
+.wave .pl { width: 0; height: 0; margin-right: 4px; border-radius: 0; background: none; border-style: solid; border-width: 4.5px 0 4.5px 7px; border-color: transparent transparent transparent var(--label-3); }
 .chip { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5.5px; font: 700 11.5px/1 var(--sans); color: var(--chip-ink); flex: none; vertical-align: 1.5px; margin-right: 7px; }
 .chip.A { background: var(--A-fill); } .chip.B { background: var(--B-fill); } .chip.C { background: var(--C-fill); }
 .vc.adopted { box-shadow: 0 0 0 2px var(--B-fill), var(--shadow-card); }
@@ -556,12 +573,24 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .zc .media svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .zc .meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; color: var(--label-3); font-variant-numeric: tabular-nums; }
 .zc .meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok-fill); }
-/* The snapshot is a small page: the decision it carries, what that rests on, what was set aside. */
-.zc .page { margin-top: 10px; padding: 2px 10px; border-radius: 9px; background: var(--card-2); box-shadow: inset 0 0 0 1px var(--hair); }
-.zc .page .r { display: flex; align-items: baseline; padding: 6px 0; font-size: 12.5px; line-height: 1.35; color: var(--label-2); }
-.zc .page .r + .r { border-top: 1px solid var(--hair); }
-.zc .page .r:first-child { color: var(--label); font-weight: 560; }
-.zc .page .chip { width: 16px; height: 16px; margin-right: 7px; border-radius: 5px; font-size: 10.5px; align-self: flex-start; vertical-align: 0; }
+/* What ships: a picture of the output, drawn with the same three facts as the board (B, its sources, A and C set aside). */
+.zc .meta .sep { margin: 0 2px; color: var(--label-3); }
+.ill .sheet-front { fill: var(--card); stroke: var(--hair-2); stroke-width: 1; }
+.ill .sheet-back { fill: var(--card-3); }
+.ill .bar-ink { fill: var(--label); opacity: .82; }
+.ill .bar-soft { fill: var(--label-4); }
+.ill .pill-ok { fill: color-mix(in srgb, var(--ok-fill) 30%, transparent); }
+.ill .set-aside rect { fill: var(--label-4); opacity: .7; }
+.ill .frame { fill: #16181d; }
+.ill .frame-ink { fill: #0e0f12; opacity: .85; }
+.ill .glow-b { fill: color-mix(in srgb, var(--B-fill) 45%, transparent); filter: blur(10px); }
+.ill .play { fill: rgba(255,255,255,.92); }
+.ill .play-ink { fill: #0b0c0e; }
+.ill .track { fill: var(--label-4); opacity: .6; }
+.ill .track-cut { fill: var(--label-4); }
+.ill .dot3 { fill: var(--label-4); }
+.ill .ring { fill: none; stroke: var(--label-4); stroke-width: 5; }
+.ill .ring-b { fill: none; stroke: var(--B-fill); stroke-width: 5; stroke-linecap: round; }
 
 /* illustrations inside prototype cards */
 .ill .line { fill: none; stroke: var(--label); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }

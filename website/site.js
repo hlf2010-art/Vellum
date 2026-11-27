@@ -158,7 +158,7 @@
       cards: {
         e1: { k: "Observed", t: "Field notes", b: "8 of 10 campers hung it from the tent loop.", by: "You" },
         e2: { k: "Reported", t: "Reviews", b: "“Blinding at arm's length.” 41 mentions.", by: "Scout" },
-        e3: { k: "Quote", t: "Interview", b: "“I just want to find it in the dark.”", by: "You" },
+        e3: { k: "Quote", t: "Camper", b: "I just want to find it in the dark.", by: "You" },
         j1: { k: "Judgment", t: "It's used hanging, up close, after dark.", b: "Rests on 3 sources, mostly observed.", by: "You + Scout" },
         dA: { k: "Direction", t: "Shade dial", b: "Twist a hood to dim it.", by: "Strategist" },
         dB: { k: "Direction", t: "Hook-first, warm low glow", b: "Hook on top. 2200K at 40 lumens.", by: "Strategist" },
@@ -190,7 +190,7 @@
       cards: {
         e1: { k: "观察", t: "实地记录", b: "10 位露营者里，8 位把灯挂在帐篷挂环上。", by: "你" },
         e2: { k: "转述", t: "用户评论", b: "“近看太刺眼。”41 条提到。", by: "Scout" },
-        e3: { k: "原话", t: "访谈", b: "“我只想在黑暗里找得到它。”", by: "你" },
+        e3: { k: "原话", t: "露营者", b: "我只想在黑暗里找得到它。", by: "你" },
         j1: { k: "判断", t: "它是挂着用的：近距离，天黑以后。", b: "依据 3 条来源，大多是观察。", by: "你 + Scout" },
         dA: { k: "方向", t: "遮光旋钮", b: "转动灯罩来调暗。", by: "Strategist" },
         dB: { k: "方向", t: "挂钩优先，暖色低光", b: "顶部挂钩，2200K 暖光，40 流明。", by: "Strategist" },
@@ -243,7 +243,7 @@
         P: { t: "Eval, 50 real cases", meta: "46 pass" },
         S: { t: "Ship to 10% of users" }
       },
-      kinds: { judgment: "Judgment", direction: "Direction", prototype: "Prototype", snapshot: "Snapshot", sources: "2 sources", aside: "A and C set aside, with reasons", by: "Wright" }
+      kinds: { judgment: "Judgment", direction: "Direction", prototype: "Prototype", snapshot: "Snapshot", sources: "2 sources", aside: "A, C set aside", by: "Wright" }
     },
     zh: {
       product: {
@@ -276,9 +276,16 @@
         P: { t: "评测集，50 条真实案例", meta: "46 条通过" },
         S: { t: "先开放给 10% 的用户" }
       },
-      kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", sources: "2 条依据", aside: "A、C 已搁置，附理由", by: "Wright" }
+      kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", sources: "2 条依据", aside: "A、C 已搁置", by: "Wright" }
     }
   };
+  // A quote shows where it came from: who said it, and the recording it was transcribed from.
+  var WAVE = (function () {
+    var h = [5, 9, 6, 12, 8, 14, 7, 10, 13, 6, 9, 11, 5, 8, 12, 7, 10, 6], o = '<span class="wave" aria-hidden="true"><i class="pl"></i>';
+    h.forEach(function (v, i) { o += '<i class="w' + (i < 7 ? " on" : "") + '" style="height:' + v + 'px"></i>'; });
+    return o + "</span>";
+  })();
+  function unquote(t) { return String(t).replace(/^[“"「『]|[”"」』]$/g, ""); }
   var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "观察": "eye", "转述": "msg", "原话": "quote" };
 
   var lang = root.lang === "zh-CN" ? "zh" : "en";
@@ -441,9 +448,11 @@
         c.className = "vc bcard";
         if (id === "j1" || id[0] === "d") c.classList.add("ink");
         if (id === "st") c.classList.add("sticky");
+        if (id === "e3") c.classList.add("quote");
         c.dataset.id = id;
         c.innerHTML = '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI[id] + '"/></svg><span class="kk"></span>' + (id === "st" ? "" : '<span class="by"></span>') + "</div>" +
-          (id === "st" ? "" : '<div class="t"></div>') + '<div class="b"></div>' +
+          (id === "e3" ? '<div class="b"></div><div class="cite"><div class="t"></div>' + WAVE + "</div>" :
+          (id === "st" ? "" : '<div class="t"></div>') + '<div class="b"></div>') +
           (id === "dA" || id === "dC" ? '<div class="veil"></div><div class="note"></div><span class="back-chip"><svg class="ki" aria-hidden="true"><use href="#i-retry"/></svg><span></span></span>' : "") +
           // The chosen card shows one line; why it was chosen and what you can do open on hover, focus or tap.
           (id === "dB" ? '<div class="flag"><div class="fh"></div></div><div class="more"><div class="mi"><div class="note"></div><div class="fb" role="group"><button type="button" class="reopen"></button><button type="button" class="holds"></button></div></div></div>' : "");
@@ -988,20 +997,48 @@
         })()
     };
 
+    // What ships, drawn as the thing itself: a spec document, the final cut, or a staged rollout.
+    // Each picture carries the same three facts without words: B on top, what it rests on, A and C set aside.
+    var SHIP = {
+      product:
+        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true">' +
+        '<rect class="sheet-back" x="62" y="20" width="92" height="114" rx="7" transform="rotate(4 108 77)"/>' +
+        '<rect class="sheet-front" x="50" y="16" width="96" height="118" rx="7"/>' +
+        '<rect class="b-ink" x="62" y="29" width="13" height="13" rx="4"/><rect class="bar-ink" x="81" y="31.5" width="50" height="8" rx="4"/>' +
+        '<rect class="bar-soft" x="62" y="52" width="72" height="5" rx="2.5"/><rect class="bar-soft" x="62" y="62" width="58" height="5" rx="2.5"/>' +
+        '<rect class="pill-ok" x="62" y="77" width="26" height="9" rx="4.5"/><rect class="pill-ok" x="92" y="77" width="26" height="9" rx="4.5"/>' +
+        '<g class="set-aside"><rect x="62" y="100" width="58" height="5" rx="2.5"/><rect x="62" y="111" width="44" height="5" rx="2.5"/></g></svg>',
+      video:
+        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true">' +
+        '<rect class="frame" x="22" y="20" width="156" height="88" rx="9"/>' +
+        '<circle class="glow-b" cx="78" cy="64" r="26"/><path class="frame-ink" d="M22 92c34-18 70-22 156-8v15a9 9 0 0 1-9 9H31a9 9 0 0 1-9-9Z"/>' +
+        '<circle class="play" cx="100" cy="64" r="13"/><path class="play-ink" d="M96 57.5v13l11-6.5Z"/>' +
+        '<rect class="track" x="22" y="120" width="156" height="8" rx="4"/><rect class="b-ink" x="22" y="120" width="52" height="8" rx="4"/>' +
+        '<rect class="track-cut" x="78" y="120" width="44" height="8" rx="4"/><rect class="track-cut" x="126" y="120" width="52" height="8" rx="4"/>' +
+        '<path class="playhead b-stroke" d="M74 115v18"/></svg>',
+      ai:
+        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true">' +
+        '<rect class="sheet-front" x="20" y="18" width="160" height="114" rx="9"/><path class="soft" d="M20 36h160"/>' +
+        '<circle class="dot3" cx="31" cy="27" r="2.6"/><circle class="dot3" cx="40" cy="27" r="2.6"/><circle class="dot3" cx="49" cy="27" r="2.6"/>' +
+        '<rect class="b-ink" x="34" y="50" width="13" height="13" rx="4"/><rect class="bar-ink" x="53" y="52.5" width="58" height="8" rx="4"/>' +
+        '<rect class="bar-soft" x="34" y="74" width="80" height="5" rx="2.5"/><rect class="bar-soft" x="34" y="84" width="64" height="5" rx="2.5"/>' +
+        '<rect class="pill-ok" x="34" y="102" width="26" height="9" rx="4.5"/><rect class="pill-ok" x="64" y="102" width="26" height="9" rx="4.5"/>' +
+        '<circle class="ring" cx="148" cy="88" r="20"/><circle class="ring-b" cx="148" cy="88" r="20" pathLength="100" stroke-dasharray="10 90" transform="rotate(-90 148 88)"/></svg>'
+    };
+
     function cardHTML(id, d, k, c) {
       var kind = function (icon, label) { return '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + icon + '"/></svg><span>' + esc(label) + "</span></div>"; };
+      if ((id === "e1" || id === "e2") && KIND_ICON[d.k] === "quote")
+        return '<article class="vc zc quote" data-id="' + id + '" tabindex="0"><div class="k"></div><div class="b">' + esc(unquote(d.b)) + '</div><div class="cite"><div class="t">' + esc(d.t) + "</div>" + WAVE + "</div></article>";
       if (id === "e1" || id === "e2") return '<article class="vc zc" data-id="' + id + '" tabindex="0">' + kind(KIND_ICON[d.k] || "eye", d.k) + '<div class="t">' + esc(d.t) + '</div><div class="b">' + esc(d.b) + "</div></article>";
       if (id === "j") return '<article class="vc zc ink wide" data-id="j" tabindex="0">' + kind("judge", k.judgment) + '<div class="t">' + esc(d.t) + "</div></article>";
       if (id === "A" || id === "C") return '<article class="vc zc ink dir aside" data-id="' + id + '" tabindex="0"><div class="t"><span class="chip ' + id + '">' + id + "</span><span>" + esc(d.t) + '</span></div><div class="veil"></div><div class="note">' + esc(d.why) + "</div></article>";
       if (id === "B") return '<article class="vc zc ink dir adopted wide" data-id="B" tabindex="0">' + kind("fork", k.direction) + '<div class="t"><span class="chip B">B</span><span>' + esc(d.t) + '</span></div><div class="b">' + esc(d.b) + "</div></article>";
       if (id === "P") return '<article class="vc zc wide proto" data-id="P" tabindex="0"><div class="media">' + ILL[c] + "</div>" + kind("window", k.prototype) + '<div class="t">' + esc(d.t) + '</div><div class="meta"><i></i><span>' + esc(d.meta) + "</span></div></article>";
-      // The snapshot is a small page: what was decided, what it rests on, and what was set aside (with reasons).
-      return '<article class="vc zc wide snap" data-id="S" tabindex="0">' + kind("snap", k.snapshot) + '<div class="t">' + esc(d.t) + "</div>" +
-        '<div class="page">' +
-          '<div class="r"><span class="chip B">B</span><span>' + esc(CASES[lang][c].B.t) + "</span></div>" +
-          '<div class="r">' + esc(k.sources) + "</div>" +
-          '<div class="r">' + esc(k.aside) + "</div>" +
-        "</div></article>";
+      // What ships: the same anatomy as the prototype beside it. A picture of the thing, one word for what it
+      // is, its name, and one quiet line of what it carries.
+      return '<article class="vc zc wide proto ship" data-id="S" tabindex="0"><div class="media">' + SHIP[c] + "</div>" +
+        kind("snap", k.snapshot) + '<div class="t">' + esc(d.t) + '</div><div class="meta">' + esc(k.sources) + '<span class="sep" aria-hidden="true">·</span>' + esc(k.aside) + "</div></article>";
     }
 
     function render(animate) {

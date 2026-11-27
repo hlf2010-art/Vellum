@@ -345,6 +345,9 @@
     var CREW = { "Scout": "var(--crew-scout)", "Strategist": "var(--crew-strategist)" };
     var mode = null, scale = 1, step = -1, timer = null, playing = false, played = false, resolved = null, dragged = false;
     var cards = {}, moved = {}, paths = {}, loop = null, later = [];
+    // Choreography: cards the director is still holding back, and who is on the board right now.
+    var held = {}, holdDecide = false, holdFlag = false, shownAt = {}, cursors = {};
+    var track = $("track"), pinned = false, stepPx = 400, pinTop = 80, decidedAt = 0;
 
     function L() { return BOARD[lang]; }
     function soon(fn, ms) { later.push(setTimeout(fn, ms)); }
@@ -375,7 +378,10 @@
       L().steps.forEach(function (_, i) {
         var li = document.createElement("li");
         li.innerHTML = '<button type="button"><svg class="ic" aria-hidden="true"><use href="#i-' + icons[i] + '"/></svg><span class="lbl"></span></button>';
-        li.firstChild.addEventListener("click", function () { stop(); played = true; resolved = null; go(i, true); if (i === 4) settle(); });
+        li.firstChild.addEventListener("click", function () {
+          if (pinned) { window.scrollTo({ top: window.scrollY + track.getBoundingClientRect().top - pinTop + i * stepPx + 2, behavior: reduced ? "auto" : "smooth" }); return; }
+          stop(); played = true; resolved = null; stepTo(i, true);
+        });
         stepsEl.appendChild(li);
       });
       replayBtn.addEventListener("click", function () { reset(); play(); });
@@ -427,10 +433,23 @@
       if (nextMode !== mode) { mode = nextMode; moved = {}; el.setAttribute("data-layout", mode); }
       var lay = LAYOUT[mode];
       scale = Math.min(lay.max, bw / lay.w);
+      // Pin the board while the story plays if the whole board fits on screen at a readable size.
+      var head = document.querySelector(".site-head"), foot = el.parentNode.querySelector(".board-foot");
+      pinTop = (head ? head.offsetHeight : 64) + 16;
+      var room = window.innerHeight - pinTop - (foot ? foot.offsetHeight + 16 : 80) - 16;
+      var fit = Math.min(scale, room / lay.h);
+      var canPin = !reduced && mode !== "narrow" && fit >= 0.7 && fit >= scale * 0.72;
+      if (canPin) scale = fit;
+      if (canPin !== pinned) { pinned = canPin; track.classList.toggle("pinned", pinned); replayBtn.hidden = pinned || !(step === 4 && !playing); }
       stage.style.width = lay.w + "px"; stage.style.height = lay.h + "px";
       stage.style.left = Math.round((bw - lay.w * scale) / 2) + "px";
       stage.style.transform = "scale(" + scale + ")";
       el.style.height = Math.round(lay.h * scale) + "px";
+      if (pinned) {
+        stepPx = Math.round(Math.max(260, window.innerHeight * 0.48));
+        track.style.setProperty("--pin-top", pinTop + "px");
+        track.style.height = (el.parentNode.offsetHeight + stepPx * 4 + Math.round(window.innerHeight * 0.25)) + "px";
+      } else track.style.height = "";
       svg.setAttribute("viewBox", "0 0 " + lay.w + " " + lay.h);
       svg.setAttribute("width", lay.w); svg.setAttribute("height", lay.h);
       Object.keys(cards).forEach(function (id) {
@@ -445,17 +464,24 @@
     function drawLines(animateNew) {
       RELS.forEach(function (r, i) {
         var key = "r" + i, p = paths[key];
-        if (step < r.at) { if (p) { p.path.remove(); if (p.tag) p.tag.remove(); delete paths[key]; } return; }
+        var seen = step >= r.at && cards[r.a].classList.contains("on") && cards[r.b].classList.contains("on");
+        if (!seen) {   // lines leave quickly, the way cards do
+          if (p) { delete paths[key]; p.path.classList.add("out"); if (p.tag) p.tag.classList.remove("on"); (function (q) { setTimeout(function () { q.path.remove(); if (q.tag) q.tag.remove(); }, 240); })(p); }
+          return;
+        }
         var g = curve(box(r.a), box(r.b), true);
+        // A line drawn because a card just landed is drawn by hand, even if a resize asked first.
+        var fresh = animateNew || (performance.now() - Math.max(shownAt[r.a] || 0, shownAt[r.b] || 0) < 900);
         if (!p) {
           var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
           path.setAttribute("class", r.type);
           path.dataset.a = r.a; path.dataset.b = r.b;
           svg.appendChild(path);
           p = paths[key] = { path: path };
-          if (animateNew && !reduced) {
+          if (fresh && !reduced) {
             path.setAttribute("pathLength", "1"); path.classList.add("draw");
             setTimeout(function () { path.removeAttribute("pathLength"); path.classList.remove("draw"); }, 800);
+            p.pen = r.type;
           }
           if (r.tag && !(mode === "narrow" && r.a === "n1")) {
             var tag = document.createElement("span");
@@ -466,6 +492,7 @@
           }
         }
         p.path.setAttribute("d", g.d);
+        if (p.pen) { pen(p.path, p.pen); p.pen = null; }
         p.path.classList.toggle("dim", step >= 3 && !resolved && r.type === "related" && r.b !== "dB");
         if (p.tag) { p.tag.textContent = L()[r.type]; p.tag.style.left = g.m.x + "px"; p.tag.style.top = g.m.y + "px"; }
       });
@@ -474,8 +501,8 @@
 
     // A marker loop around the chosen card, like circling it on a whiteboard.
     function drawLoop(animate) {
-      var want = step >= 3 && resolved !== "reopen";
-      if (!want) { if (loop) { loop.remove(); loop = null; } return; }
+      var want = step >= 3 && resolved !== "reopen" && !holdDecide;
+      if (!want) { if (loop) { var lp0 = loop; loop = null; lp0.classList.add("out"); setTimeout(function () { lp0.remove(); }, 240); } return; }
       var b = box("dB"), m = LAYOUT[mode].loop, cx = b.x + b.w / 2, cy = b.y + b.h / 2, rx = b.w / 2 + m, ry = b.h / 2 + m;
       var pts = [], N = 72, over = 6;
       for (var i = 0; i <= N + over; i++) {
@@ -489,6 +516,7 @@
         var mx = (pts[j][0] + pts[j + 1][0]) / 2, my = (pts[j][1] + pts[j + 1][1]) / 2;
         d += " Q" + pts[j][0].toFixed(1) + " " + pts[j][1].toFixed(1) + " " + mx.toFixed(1) + " " + my.toFixed(1);
       }
+      animate = (animate || performance.now() - decidedAt < 400) && !reduced;
       if (!loop) {
         loop = document.createElementNS("http://www.w3.org/2000/svg", "path");
         loop.setAttribute("class", "marker");
@@ -496,10 +524,154 @@
         if (animate && !reduced) {
           loop.setAttribute("pathLength", "1"); loop.classList.add("draw-slow");
           var lp = loop; setTimeout(function () { lp.removeAttribute("pathLength"); lp.classList.remove("draw-slow"); }, 1500);
+          if (cursors.you && cursors.you.classList.contains("on")) requestAnimationFrame(function () { trace(lp); });
         }
       }
       loop.setAttribute("d", d);
       loop.setAttribute("transform", "rotate(-1.4 " + cx.toFixed(1) + " " + cy.toFixed(1) + ")");
+    }
+
+    // ---- The director: who does what, when a step plays ---------------------------------------------
+    var easeIO = function (k) { return k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
+    var PEN = { supports: "color-mix(in srgb, var(--ok) 80%, transparent)", counters: "var(--danger)", related: "var(--label-3)" };
+
+    // A small nib rides the tip of a line while it is being drawn, so you see which way the relation runs.
+    function pen(path, type) {
+      var dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("r", "3"); dot.setAttribute("class", "pen"); dot.style.fill = PEN[type] || PEN.related;
+      svg.appendChild(dot);
+      var len = path.getTotalLength(), t0 = performance.now(), dur = 750;
+      (function f(now) {
+        var k = Math.min(1, (now - t0) / dur), pt = path.getPointAtLength(easeIO(k) * len);
+        dot.setAttribute("cx", pt.x); dot.setAttribute("cy", pt.y);
+        dot.style.opacity = k < .85 ? 1 : (1 - k) / .15;
+        if (k < 1 && dot.isConnected) requestAnimationFrame(f); else dot.remove();
+      })(t0);
+    }
+
+    var WHO = { you: "var(--label)", scout: "var(--crew-scout)", strategist: "var(--crew-strategist)", critic: "var(--crew-critic)" };
+    function cursor(name) {
+      if (cursors[name]) return cursors[name];
+      var c = document.createElement("div");
+      c.className = "cursor" + (name === "you" ? " you" : "");
+      c.style.setProperty("--c", WHO[name]);
+      c.innerHTML = '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2.5 1.8 15 8.4l-5.6 1.5-2.4 5.4Z"/></svg><span class="who"></span>';
+      c.setAttribute("aria-hidden", "true");
+      stage.appendChild(c);
+      return (cursors[name] = c);
+    }
+    function nameOf(name) { return name === "you" ? (lang === "zh" ? "你" : "You") : name.charAt(0).toUpperCase() + name.slice(1); }
+    // Glide a cursor to a point on the board; a cursor that isn't on the board yet drifts in from nearby.
+    function moveTo(name, x, y, then) {
+      var c = cursor(name), p = c._p;
+      c.querySelector(".who").textContent = nameOf(name);
+      if (!c.classList.contains("on")) {
+        p = [x + (x > LAYOUT[mode].w / 2 ? 70 : -70), y + 60];
+        c.style.setProperty("--mv", "0ms"); c.style.transform = "translate(" + p[0] + "px," + p[1] + "px)";
+        void c.offsetWidth; c.classList.add("on");
+      }
+      var d = Math.hypot(x - p[0], y - p[1]), t = Math.round(Math.max(360, Math.min(880, 260 + d * 0.75)));
+      c.style.setProperty("--mv", t + "ms"); c.style.transform = "translate(" + x + "px," + y + "px)";
+      c._p = [x, y];
+      if (then) soon(then, t);
+      return t;
+    }
+    function press(name, then) {
+      var c = cursor(name), r = document.createElement("span");
+      c.classList.add("press"); soon(function () { c.classList.remove("press"); }, 140);
+      r.className = "ripple"; r.style.setProperty("--c", WHO[name]); r.style.left = c._p[0] + 3 + "px"; r.style.top = c._p[1] + 2 + "px";
+      stage.appendChild(r); setTimeout(function () { r.remove(); }, 700);
+      if (then) soon(then, 160);
+    }
+    function leave(name, ms) { soon(function () { if (cursors[name]) cursors[name].classList.remove("on"); }, ms || 0); }
+    function leaveAll() { Object.keys(cursors).forEach(function (n) { cursors[n].classList.remove("on"); }); }
+    // Where a hand would put a card down: a little left of centre, near the top.
+    function spot(id) { var b = box(id); return [b.x + b.w * 0.46, b.y + Math.min(b.h * 0.42, 44)]; }
+    function mid(id) { var b = box(id); return [b.x + b.w / 2, b.y + b.h / 2]; }
+
+    // A card lands from the point that placed it: lifted and soft, then settled, its shadow last.
+    function reveal(id, at) {
+      var c = cards[id], b = box(id), cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      delete held[id];
+      c.style.transition = "none";
+      c.style.setProperty("--ox", ((at[0] - cx) * 0.32).toFixed(1) + "px");
+      c.style.setProperty("--oy", ((at[1] - cy) * 0.32).toFixed(1) + "px");
+      c.style.transformOrigin = (at[0] - b.x).toFixed(0) + "px " + (at[1] - b.y).toFixed(0) + "px";
+      void c.offsetWidth;
+      c.style.transition = ""; c.style.transitionDelay = "0ms";
+      c.classList.add("on", "landing", "landed");
+      shownAt[id] = performance.now();
+      setTimeout(function () { c.classList.remove("landing"); }, 360);
+      setTimeout(function () { c.classList.remove("landed"); }, 1300);
+      if (id === "n1") { c.classList.remove("fresh"); void c.offsetWidth; c.classList.add("fresh"); }
+      requestAnimationFrame(function () { drawLines(true); });
+    }
+
+    // Your cursor circles the chosen card, the way you'd circle it with a marker.
+    function trace(path) {
+      var c = cursor("you"), len = path.getTotalLength(), t0 = performance.now() + 300, dur = 1150;
+      c.style.setProperty("--mv", "0ms");
+      (function f(now) {
+        if (!c.classList.contains("on") || !path.isConnected) return;
+        var k = Math.max(0, Math.min(1, (now - t0) / dur)), pt = path.getPointAtLength(easeIO(k) * len);
+        var m = path.getCTM ? path.transform.baseVal.consolidate() : null, x = pt.x, y = pt.y;
+        if (m) { var q = m.matrix; x = q.a * pt.x + q.c * pt.y + q.e; y = q.b * pt.x + q.d * pt.y + q.f; }
+        c.style.transform = "translate(" + x + "px," + y + "px)"; c._p = [x, y];
+        if (k < 1) requestAnimationFrame(f);
+      })(performance.now());
+    }
+
+    // Bring the board to step n. One step forward plays its choreography; anything else just moves there.
+    function stepTo(n, animate) {
+      clearLater();
+      held = {}; holdDecide = false; holdFlag = false;
+      var choreo = animate && !reduced && n === step + 1;
+      if (!choreo) { leaveAll(); go(n, animate); if (n === 4) settle(); return; }
+      if (step >= 0) go(step, false);   // finish whatever the last step was still doing
+      leaveAll();
+      ({ 0: evidence, 1: judgment, 2: directions, 3: decision, 4: news })[n]();
+    }
+    function evidence() {
+      held = { e1: 1, e2: 1, e3: 1 }; go(0, true);
+      moveTo("you", spot("e1")[0], spot("e1")[1], function () {
+        press("you", function () { reveal("e1", spot("e1")); });
+        soon(function () { moveTo("you", spot("e3")[0], spot("e3")[1], function () { press("you", function () { reveal("e3", spot("e3")); leave("you", 700); }); }); }, 420);
+      });
+      soon(function () {
+        moveTo("scout", spot("e2")[0], spot("e2")[1], function () { press("scout", function () { reveal("e2", spot("e2")); leave("scout", 900); }); });
+      }, 380);
+    }
+    function judgment() {
+      held = { j1: 1 }; go(1, true);
+      moveTo("you", spot("j1")[0], spot("j1")[1], function () { press("you", function () { reveal("j1", spot("j1")); leave("you", 1000); }); });
+    }
+    function directions() {
+      held = { dA: 1, dB: 1, dC: 1, st: 1 }; go(2, true);
+      var o = mid("j1");
+      moveTo("strategist", o[0], o[1], function () {
+        press("strategist", function () {
+          ["dA", "dB", "dC"].forEach(function (id, i) { soon(function () { reveal(id, o); }, i * 120); });
+          soon(function () { moveTo("strategist", spot("dB")[0] - 30, spot("dB")[1] + 24); leave("strategist", 900); }, 420);
+        });
+      });
+      soon(function () {
+        moveTo("critic", spot("st")[0], spot("st")[1], function () { press("critic", function () { reveal("st", spot("st")); leave("critic", 1100); }); });
+      }, 1250);
+    }
+    function decision() {
+      holdDecide = true; go(3, true);
+      moveTo("you", spot("dB")[0], spot("dB")[1], function () {
+        press("you", function () { holdDecide = false; go(3, true); leave("you", 1700); });
+      });
+    }
+    function news() {
+      held = { n1: 1 }; holdFlag = true; go(4, true);
+      moveTo("you", spot("n1")[0], spot("n1")[1], function () {
+        press("you", function () {
+          reveal("n1", spot("n1")); leave("you", 900);
+          soon(function () { holdFlag = false; go(4, true); settle(); }, 950);
+        });
+      });
     }
 
     function go(n, animate) {
@@ -507,11 +679,13 @@
       step = n;
       if (n < 4) resolved = null;
       Object.keys(cards).forEach(function (id) {
-        var c = cards[id], on = SHOW[id] <= n;
+        var c = cards[id], on = SHOW[id] <= n && !held[id];
+        if (on && !c.classList.contains("on") && animate) shownAt[id] = performance.now() + stagger(id) * 90;
         c.style.transitionDelay = on && !c.classList.contains("on") && animate && !reduced ? (stagger(id) * 90) + "ms" : "0ms";
         c.classList.toggle("on", on);
       });
-      var decided = n >= 3 && resolved !== "reopen";
+      var decided = n >= 3 && resolved !== "reopen" && !holdDecide;
+      if (decided && animate && !cards.dB.classList.contains("adopted")) decidedAt = performance.now();
       cards.dB.classList.toggle("adopted", decided);
       cards.dB.classList.toggle("show-note", decided);
       ["dA", "dC"].forEach(function (id) {
@@ -519,12 +693,13 @@
         cards[id].classList.toggle("show-note", decided);
         cards[id].classList.toggle("back", n >= 4 && resolved === "reopen");
       });
-      cards.dB.classList.toggle("show-flag", n >= 4);
+      cards.dB.classList.toggle("show-flag", n >= 4 && !holdFlag);
       var flag = cards.dB.querySelector(".flag");
       flag.classList.toggle("resolved", !!resolved);
+      flag.classList.toggle("held", resolved === "holds");
       cards.dB.classList.toggle("resolved", !!resolved);
       if (resolved || n < 4) flag.classList.remove("waiting");
-      if (n === 4 && prev < 4 && animate && !reduced) { cards.n1.classList.remove("fresh"); void cards.n1.offsetWidth; cards.n1.classList.add("fresh"); }
+      if (n === 4 && prev < 4 && animate && !reduced && !held.n1) { cards.n1.classList.remove("fresh"); void cards.n1.offsetWidth; cards.n1.classList.add("fresh"); }
       relabel();
       setCaption(animate);
       requestAnimationFrame(function () { drawLines(animate); });   // lines need the cards' final sizes
@@ -533,7 +708,7 @@
         b.classList.toggle("cur", i === n);
         if (i === n) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
       });
-      replayBtn.hidden = !(n === 4 && !playing);
+      replayBtn.hidden = !(n === 4 && !playing) || pinned;
     }
     function stagger(id) { return { e1: 0, e2: 1, e3: 2, j1: 0, dA: 0, dB: 1, dC: 2, st: 4, n1: 0 }[id] || 0; }
 
@@ -556,16 +731,16 @@
       }, 2200);
     }
 
-    var DWELL = [2400, 2700, 3300, 3500];
+    var DWELL = [3000, 2900, 3900, 3500];
     function play() {
       if (playing) return;
       playing = true; played = true;
       var i = step < 0 ? 0 : step + 1;
       if (i > 4) i = 0;
       (function tick() {
-        go(i, true);
+        stepTo(i, true);
         progress(i);
-        if (i >= 4) { playing = false; replayBtn.hidden = false; settle(); return; }
+        if (i >= 4) { playing = false; replayBtn.hidden = pinned; return; }
         timer = setTimeout(function () { i++; tick(); }, DWELL[i]);
       })();
     }
@@ -581,7 +756,7 @@
         if (k < 1) requestAnimationFrame(f);
       })(start);
     }
-    function stop() { playing = false; clearTimeout(timer); clearLater(); }
+    function stop() { playing = false; clearTimeout(timer); clearLater(); leaveAll(); held = {}; holdDecide = false; holdFlag = false; }
     function reset() {
       stop(); moved = {}; resolved = null; step = -1;
       Object.keys(paths).forEach(function (k) { paths[k].path.remove(); if (paths[k].tag) paths[k].tag.remove(); delete paths[k]; });
@@ -589,8 +764,20 @@
       layout();
     }
 
+    // Point at a card and the board answers "what is this connected to?": its lines and neighbours stay,
+    // everything else steps back. A short pause first, so passing over the board doesn't flicker.
+    var hotT = 0;
     function hot(id, on) {
+      clearTimeout(hotT);
       svg.querySelectorAll("path[data-a]").forEach(function (p) { if (p.dataset.a === id || p.dataset.b === id) p.classList.toggle("hot", on); });
+      if (!on) { el.classList.remove("focus"); Object.keys(cards).forEach(function (n) { cards[n].classList.remove("near"); }); return; }
+      hotT = setTimeout(function () {
+        if (!cards[id].matches(":hover") || cards[id].classList.contains("dragging")) return;
+        var near = {}; near[id] = 1;
+        svg.querySelectorAll("path[data-a]").forEach(function (p) { if (p.dataset.a === id) near[p.dataset.b] = 1; if (p.dataset.b === id) near[p.dataset.a] = 1; });
+        Object.keys(cards).forEach(function (n) { cards[n].classList.toggle("near", !!near[n]); });
+        el.classList.add("focus");
+      }, 160);
     }
 
     // Cards are paper: they lift, tilt with the drag, and settle when you let go.
@@ -632,11 +819,31 @@
     window.addEventListener("resize", function () { cancelAnimationFrame(rz); rz = requestAnimationFrame(layout); });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { layout(); });
 
-    // Play once when the board comes into view. Reduced motion shows the final state.
+    // Pinned, scrolling is the timeline: each half screen moves the story one step, and the bar under the
+    // current step fills as you go. Scroll back and the board steps back with you. Nothing is taken from the
+    // scroll itself; the page moves exactly as far as you do.
+    function onScroll() {
+      if (!pinned || step < 0 || playing) return;
+      var scrolled = pinTop - track.getBoundingClientRect().top;
+      var k = Math.max(0, Math.min(4, Math.floor(scrolled / stepPx + 0.5)));
+      if (k !== step) { resolved = k < 4 ? null : resolved; stepTo(k, true); }
+      stepsEl.querySelectorAll("button").forEach(function (x, i) { if (i !== step) x.style.removeProperty("--p"); });
+      var b = stepsEl.querySelectorAll("button")[step];
+      if (b) b.style.setProperty("--p", step >= 4 ? "100%" : (Math.max(0, Math.min(1, scrolled / stepPx + 0.5 - step)) * 100).toFixed(1) + "%");
+    }
+    var sr = 0;
+    window.addEventListener("scroll", function () { if (!sr) sr = requestAnimationFrame(function () { sr = 0; onScroll(); }); }, { passive: true });
+
+    // The story starts when the board comes into view: pinned, it then follows your scroll; otherwise it
+    // plays on its own. Reduced motion shows the final state.
     if (reduced) { go(4, false); settle(); }
     else if ("IntersectionObserver" in window) {
       var io = new IntersectionObserver(function (es) {
-        es.forEach(function (en) { if (en.isIntersecting && !played) { play(); io.disconnect(); } });
+        es.forEach(function (en) {
+          if (!en.isIntersecting || played) return;
+          played = true; io.disconnect();
+          if (pinned) { stepTo(0, true); setTimeout(onScroll, 1800); } else { played = false; play(); }
+        });
       }, { threshold: 0.3 });
       io.observe(el);
     } else play();
@@ -777,8 +984,43 @@
       zb.classList.add("tracing");
       Object.keys(nodes).forEach(function (n) { nodes[n].classList.toggle("lit", !!set[n]); });
       svg.querySelectorAll("path").forEach(function (p) { p.classList.toggle("lit", !!(set[p.dataset.a] && set[p.dataset.b])); });
+      flow(set);
+    }
+    // A spark runs down each lit line, evidence first, so you can watch the reasoning arrive at the card.
+    var flowRun = 0, SPARK = { supports: "var(--ok)", lineB: "var(--B-fill)" };
+    function flow(set) {
+      var run = ++flowRun;
+      svg.querySelectorAll(".spark").forEach(function (d) { d.remove(); });
+      if (reduced) return;
+      var depth = {};
+      var dep = function (n) {
+        if (depth[n] != null) return depth[n];
+        var d = 0;
+        EDGES.forEach(function (e) { if (e[1] === n && set[e[0]]) d = Math.max(d, dep(e[0]) + 1); });
+        return (depth[n] = d);
+      };
+      svg.querySelectorAll("path.lit").forEach(function (p) {
+        var dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute("r", "3.2"); dot.setAttribute("class", "spark");
+        dot.style.fill = SPARK[p.getAttribute("class").split(" ")[0]] || "var(--label-2)";
+        dot.style.opacity = "0";
+        p.parentNode.appendChild(dot);
+        var len = p.getTotalLength(), t0 = performance.now() + dep(p.dataset.a) * 200, dur = 560;
+        (function f(now) {
+          if (run !== flowRun || !dot.isConnected) { dot.remove(); return; }
+          var k = (now - t0) / dur;
+          if (k >= 0) {
+            var kk = Math.min(1, k), e = kk < .5 ? 2 * kk * kk : 1 - Math.pow(-2 * kk + 2, 2) / 2, pt = p.getPointAtLength(e * len);
+            dot.setAttribute("cx", pt.x); dot.setAttribute("cy", pt.y);
+            dot.style.opacity = kk < .12 ? kk / .12 : kk > .8 ? (1 - kk) / .2 : 1;
+            if (kk >= 1) { dot.remove(); return; }
+          }
+          requestAnimationFrame(f);
+        })(performance.now());
+      });
     }
     function clearTrace() {
+      flowRun++; svg.querySelectorAll(".spark").forEach(function (d) { d.remove(); });
       zb.classList.remove("tracing");
       zb.querySelectorAll(".lit").forEach(function (n) { n.classList.remove("lit"); });
     }
@@ -818,7 +1060,7 @@
           Object.keys(nodes).forEach(function (n) { nodes[n].classList.toggle("lit", !!lit[n]); });
           svg.querySelectorAll("path").forEach(function (p) { p.classList.toggle("lit", !!(lit[p.dataset.a] && lit[p.dataset.b])); });
           i++; setTimeout(next, 260);
-        } else setTimeout(function () { if (!interacted && !pinned) clearTrace(); }, 1300);
+        } else { flow(lit); setTimeout(function () { if (!interacted && !pinned) clearTrace(); }, 1700); }
       })();
     }
     if ("IntersectionObserver" in window) {

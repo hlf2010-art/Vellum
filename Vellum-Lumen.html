@@ -3359,9 +3359,8 @@ body.snap-skip #wall{cursor:copy}
     <button type="button" data-ttool="hand" aria-pressed="false" aria-label="Hand / Pan (H)" data-tip="Hand / Pan · H"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 13V6.8a1.3 1.3 0 0 1 2.6 0V11m0-4.2V5.3a1.3 1.3 0 0 1 2.6 0V11m0-3.7a1.3 1.3 0 0 1 2.6 0V12c0 4-2.5 6.8-6.1 6.8-2.3 0-4.1-1.1-5-3l-1.5-3.1a1.3 1.3 0 0 1 2.2-1.3L8.5 13"/></svg></button>
     <button type="button" id="snapBtn" data-tact="snap" aria-pressed="true" aria-label="Smart snap (M)" data-tip="Smart snap · M · hold ⌥ to skip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h3.4v8a2.6 2.6 0 0 0 5.2 0V4H18v8a6 6 0 0 1-12 0z"/><path d="M6 8h3.4M14.6 8H18"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
-    <button type="button" id="uploadMediaBtn" data-tact="files" aria-label="Upload file or media (U)" data-tip="Upload file or media · U"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.4"/><path d="m21 15.5-4.5-4.5-6.5 6.5L7 14.5l-4 4"/></svg></button>
     <button type="button" id="organizeBtn" data-tact="tidy" aria-label="Organize canvas (T)" data-tip="Organize canvas · T"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2"/></svg></button>
-    <button type="button" id="findBtn" onclick="setOmniMode('search')" aria-label="Search cards (⌘F)" data-tip="Search cards · ⌘F"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
+    <button type="button" id="findBtn" onclick="openPalette({search:true})" aria-label="Search cards (⌘F)" data-tip="Search cards · ⌘F"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
     <button type="button" id="topUndoBtn" data-tact="undo" disabled aria-label="Undo (⌘Z)" data-tip="Undo · ⌘Z"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button type="button" id="topRedoBtn" data-tact="redo" disabled aria-label="Redo (⌘⇧Z)" data-tip="Redo · ⌘⇧Z"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
@@ -13014,6 +13013,75 @@ function pointInSelection(e){
 function closeCardMenu(){
   const cm=$("cardMenu");if(cm&&!cm.hidden){cm.hidden=true;cardMenuOpen=false}
 }
+/* Right-click on empty canvas: what you can put there, then the board as a whole.
+   Things you add land where you clicked, not wherever the middle of the screen happens to be. */
+let canvasMenuAt=null;
+function openCanvasMenu(x,y){
+  const cm=$("cardMenu");if(!cm)return;
+  const r=wall.getBoundingClientRect();canvasMenuAt=toWorld(x-r.left,y-r.top);
+  const mac=/Mac|iP(hone|ad)/.test(navigator.platform||navigator.userAgent||""),mod=mac?"⌘":"Ctrl ";
+  const empty=!visibleNodes().length;
+  const acts=[
+    {k:"note",label:L("New sticky here","在这里新建便签"),ic:"note",key:"N"},
+    {k:"paste",label:L("Paste here","粘贴到这里"),ic:"copy",key:mod+"V"},
+    {k:"files",label:L("Upload files here…","上传文件到这里…"),ic:"upload",key:"U"},
+    {sep:true},
+    {k:"all",label:L("Select all","全选"),ic:"selAll",key:mod+"A",off:empty},
+    {k:"fit",label:L("Fit to screen","适应屏幕"),ic:"fitView",key:"F",off:empty}];
+  cm.innerHTML=acts.map(a=>a.sep?`<div class="cm-sep"></div>`:`<button type="button" role="menuitem" data-wm="${a.k}"${a.off?" disabled":""}><span class="cm-lbl">${ic(a.ic)}<span>${esc(a.label)}</span></span><kbd>${a.key}</kbd></button>`).join("");
+  cm.setAttribute("aria-label",L("Canvas actions","画布操作"));
+  cm.hidden=false;cardMenuOpen=true;
+  const cw=cm.offsetWidth||210,ch=cm.offsetHeight||200;
+  cm.style.left=clamp(x,10,innerWidth-cw-12)+"px";cm.style.top=clamp(y,10,innerHeight-ch-12)+"px";
+}
+function selectAllCards(){const ids=visibleNodes().map(n=>n.id);if(ids.length)select(ids)}
+/* Paste here reads the clipboard itself, since a menu click is not a paste event. Cards copied in Vellum come back
+   as cards; images and files become cards; text goes through the same rules as ⌘V. */
+async function pasteAt(at){
+  const recent=internalCardClip&&Date.now()-internalCardClip.ts<300000?internalCardClip:null;
+  let files=[],text="";
+  try{
+    if(navigator.clipboard?.read){
+      for(const item of await navigator.clipboard.read()){
+        const img=item.types.find(t=>t.startsWith("image/"));
+        if(img){const b=await item.getType(img);files.push(new File([b],"Pasted image."+(img.split("/")[1]||"png").replace("svg+xml","svg"),{type:img}))}
+        else if(item.types.includes("text/plain"))text+=await (await item.getType("text/plain")).text();
+      }
+    }else if(navigator.clipboard?.readText)text=await navigator.clipboard.readText();
+  }catch{
+    if(!recent){toast(L(`The browser kept the clipboard to itself. Press ${/Mac/.test(navigator.platform||"")?"⌘":"Ctrl+"}V instead.`,`浏览器没有交出剪贴板。请改按 ${/Mac/.test(navigator.platform||"")?"⌘":"Ctrl+"}V。`));return}
+  }
+  pasteData({payload:!files.length&&recent&&(!text||text===recent.plain)?recent.payload:null,files,text},at);
+}
+function pasteData({payload=null,files=[],text=""},at=null){
+  if(payload?.nodes?.length){
+    const made=insertClonedPayload(payload,at?{at}:{centerInView:true});
+    if(made.length){log("you",`Pasted ${made.length} card${made.length>1?"s":""}`,made[0].id);toast(`Pasted ${made.length} card${made.length>1?"s":""}`,{undo:true})}
+    return true;
+  }
+  if(files.length){addFiles(files,at||undefined);return true}
+  const s=(text||"").trim();if(!s){if(at)toast(L("Nothing to paste","剪贴板是空的"));return false}
+  const lines=s.split(/\r?\n/).length,before=new Set(board.nodes.map(n=>n.id));
+  if(/^https?:\/\/\S+$/i.test(s)&&looksLikeNotionDb(s))tableFromNotion(s).then(n=>{if(!n)createLinkNode(s,at||undefined)});
+  else if(/^https?:\/\/\S+$/i.test(s)&&looksLikeDataUrl(s))tableFromUrl(s).then(n=>{if(!n)createLinkNode(s,at||undefined)});
+  else if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s,at||undefined);
+  else if(looksTabular(s)){const ds=datasetFromText(s);if(ds){checkpoint();const v=viewRect(),n=makeTableCard(ds,{title:L("Pasted table","粘贴的表格"),source:{kind:"paste"},at:at||toWorld(v.w/2,v.h/2)});sel=[n.id];renderAll();persist();follow([n]);toast(L("Pasted as a table","已粘贴为表格"),{undo:true})}else createNotepadNode(s,at||undefined)}
+  else{
+    if(s.length>280||lines>=4||parsePaste(s))createPastedCard(s);else pinCard("note",s);
+    /* these two place themselves; move what they made to the click */
+    const made=at?board.nodes.filter(n=>!before.has(n.id)):[];
+    if(made.length){const x0=Math.min(...made.map(n=>n.x)),y0=Math.min(...made.map(n=>n.y));made.forEach(n=>{n.x=Math.round(n.x-x0+at.x-(nodeW(n)||280)/2);n.y=Math.round(n.y-y0+at.y-40)});settleInZones(made);renderAll();persist()}
+  }
+  return true;
+}
+function canvasMenuAct(k){
+  const at=canvasMenuAt;
+  if(k==="note")return newNoteAt(at);
+  if(k==="paste")return pasteAt(at);
+  if(k==="files"){filePickAt=at;return pickFilesFor("point")}
+  if(k==="all")return selectAllCards();
+  if(k==="fit")return fitAll();
+}
 $("strip").addEventListener("click",e=>{
   const td=e.target.closest("[data-tone]");if(td){const n=one();if(!n)return;checkpoint();if(td.dataset.tone)n.tone=td.dataset.tone;else delete n.tone;n.updated=NOW();sfx("tick");renderAll();persist();return}
   const b=e.target.closest("[data-k]");if(!b)return;const n=one();if(!n)return;const k=b.dataset.k;
@@ -13029,6 +13097,8 @@ $("strip").addEventListener("click",e=>{
   act(k,n,b);
 });
 $("cardMenu")?.addEventListener("click",e=>{
+  const wm=e.target.closest("[data-wm]");
+  if(wm){closeCardMenu();canvasMenuAct(wm.dataset.wm);return}
   const sm=e.target.closest("[data-sm]");
   if(sm){const ns=selected();closeCardMenu();selectionActions(ns)[sm.dataset.sm]?.();return}
   const b=e.target.closest("[data-cm]");if(!b)return;
@@ -14260,7 +14330,7 @@ document.addEventListener("click",e=>{if(e.detail!==0)return;const b=e.target.cl
 /* ── selection ──────────────────────────────────────────────────────── */
 let lineExtras=[];
 let linePending=[];
-let filePickTarget="canvas";
+let filePickTarget="canvas",filePickAt=null;
 let selMenusSuppressed=false;
 function select(ids,{menus=true}={}){sel=[...new Set(ids)].filter(byId);if(!sel.length)closeCardMenu();if(sel.length===1){const sn=byId(sel[0]);if(sn?.status==="sketch"&&sn.pid&&sn.pid!==currentPid()){reviewPid=sn.pid;renderBars()}}if(sel.length)selectedEdgeId=null;selMenusSuppressed=!menus||!sel.length;litCache=null;renderNodes();drawWires();renderMargin();renderSelbar();renderLineCtx();renderStrip();renderWirePop?.();paintMap();syncCopilotContext?.()}
 const ctxNodes=()=>[...new Set([...sel,...lineExtras])].map(byId).filter(Boolean);
@@ -18369,16 +18439,17 @@ function cloneNodesPayload(ns){
   const threads={};for(const id of ids)if(board.threads?.[id]?.length)threads[id]=JSON.parse(JSON.stringify(board.threads[id]));
   return {v:1,nodes,edges,threads};
 }
-function insertClonedPayload(payload,{offsetX=36,offsetY=36,centerInView=false}={}){
+function insertClonedPayload(payload,{offsetX=36,offsetY=36,centerInView=false,at=null}={}){
   if(!payload?.nodes?.length)return [];
   checkpoint();
   const map=new Map(),now=NOW();
   let dx=offsetX,dy=offsetY;
-  if(centerInView){
+  if(centerInView||at){
     const x0=Math.min(...payload.nodes.map(n=>n.x)),y0=Math.min(...payload.nodes.map(n=>n.y));
     const x1=Math.max(...payload.nodes.map(n=>n.x+(nodeW(n)||320))),y1=Math.max(...payload.nodes.map(n=>n.y+(n.gh||300)));
-    const vr=viewRect(),c=toWorld(vr.w/2,vr.h/2);
-    dx=Math.round(c.x-(x0+x1)/2);dy=Math.round(c.y-(y0+y1)/2);
+    const vr=viewRect(),c=at||toWorld(vr.w/2,vr.h/2);
+    /* at a click point the cards hang from it (top edge near the pointer); centred in view they sit around the middle */
+    dx=Math.round(c.x-(x0+x1)/2);dy=Math.round(at?c.y-y0-24:c.y-(y0+y1)/2);
   }
   const created=[];
   for(const raw of payload.nodes){
@@ -18510,7 +18581,11 @@ function syncFindStatus(){
   if(prev)prev.disabled=matches.length<2;
   if(next)next.disabled=matches.length<2;
   if(clr)clr.hidden=!hasQ;
-  if(fp){
+  const nothing=!visibleNodes().length;
+  if(fp&&nothing){
+    fp.hidden=false;
+    fp.innerHTML=`<div class="find-empty">${L("Nothing to search yet. Cards you add will turn up here.","还没有可搜索的卡片。加上卡片后，就能在这里找到。")}</div>`;
+  }else if(fp){
     fp.hidden=!hasQ;
     if(hasQ){
       if(matches.length){
@@ -18931,7 +19006,7 @@ function helpDialog(opts={}){
   <div class="principle"><i style="border:1.5px dashed var(--label-3)"></i><span><b>See before you send</b>As you type, the board shows where the work will land and which cards will be read.</span></div>
   <dl class="keys"><dt>Click / Pen</dt><dd>Select with V, draw with P (or ⌥+drag on the board, or a stylus): circle cards to select them, circle a direction to adopt it · ⇧+drag in Select draws a box · hold Space to pan · click wires to disconnect</dd><dt>↵ or double-click</dt><dd>Open a card in place · Esc closes</dd><dt>Space</dt><dd>Preview a proof, direction or recording</dd>
   <dt>/ and @</dt><dd>Actions and crew in the composer · ⇥ makes a request more specific</dd><dt>] </dt><dd>Next suggestion waiting for you</dd>
-  <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · duplicate · copy &amp; paste selected cards</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
+  <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘A · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · select all · duplicate · copy &amp; paste selected cards</dd><dt>Right-click</dt><dd>On empty canvas: new sticky, paste or upload files right there</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
   if(!onBack){openDialog("How Lumen Works",body);return}
   dlg.className="sheet mem-sheet in-settings";
   dlg.innerHTML=`<header class="sh-head">${onBack?shBackBtn(onBack):`<span class="sys-ico" aria-hidden="true">${ic("question")}</span>`}
@@ -19184,7 +19259,7 @@ $("archiveBtn")?.addEventListener("click",archiveDialog);
 qs(".zoom").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const r=wall.getBoundingClientRect();
   ({zout:()=>zoomAt(1/1.25,r.width/2,r.height/2),zin:()=>zoomAt(1.25,r.width/2,r.height/2),z100:()=>{const c=toWorld(r.width/2,r.height/2);flyTo({s:1,x:r.width/2-c.x,y:r.height/2-c.y},350)},fit:fitAll})[b.dataset.act]?.()});
 $("fileIn").addEventListener("change",e=>{
-  const target=filePickTarget;filePickTarget="canvas";
+  const target=filePickTarget,at=filePickAt;filePickTarget="canvas";filePickAt=null;
   const all=[...(e.target.files||[])];e.target.value="";
   if(!all.length)return;
   if(target==="line"){
@@ -19194,6 +19269,7 @@ $("fileIn").addEventListener("change",e=>{
     return;
   }
   if(target==="gather"){addFiles(all,{x:80+150+40,y:60+100});return}
+  if(target==="point"&&at){addFiles(all,at);return}
   addFiles(all);
 });
 $("projectBtn").onclick=boardsDialog;
@@ -19944,6 +20020,8 @@ wall.addEventListener("dblclick",e=>{
   const r=wall.getBoundingClientRect();newNoteAt(toWorld(e.clientX-r.left,e.clientY-r.top));
 });
 wall.addEventListener("contextmenu",e=>{
+  /* text being written keeps the system menu: spelling, copy, paste and look up live there */
+  if(e.target.closest?.("textarea,input,[contenteditable='true']")){closeCardMenu();return}
   const card=e.target.closest(".card");
   if(card){
     e.preventDefault();
@@ -19956,7 +20034,7 @@ wall.addEventListener("contextmenu",e=>{
   }else if(sel.length>1&&pointInSelection(e)){
     e.preventDefault();openSelectionMenu(e.clientX,e.clientY);
   }else{
-    closeCardMenu();
+    e.preventDefault();openCanvasMenu(e.clientX,e.clientY);
   }
 });
 
@@ -20005,23 +20083,7 @@ addEventListener("paste",e=>{
   let clipPayload=null;
   if(rawClip){try{clipPayload=JSON.parse(rawClip)}catch{}}
   else if(!fs.length&&internalCardClip&&Date.now()-internalCardClip.ts<300000&&(!t||t===internalCardClip.plain)){clipPayload=internalCardClip.payload}
-  if(clipPayload?.nodes?.length){
-    e.preventDefault();
-    const made=insertClonedPayload(clipPayload,{centerInView:true});
-    if(made.length){log("you",`Pasted ${made.length} card${made.length>1?"s":""}`,made[0].id);toast(`Pasted ${made.length} card${made.length>1?"s":""}`,{undo:true})}
-    return;
-  }
-  if(fs.length){e.preventDefault();addFiles(fs);return}
-  if(t&&t.trim()){
-    e.preventDefault();
-    const s=t.trim(),lines=s.split(/\r?\n/).length;
-    if(/^https?:\/\/\S+$/i.test(s)&&looksLikeNotionDb(s))tableFromNotion(s).then(n=>{if(!n)createLinkNode(s)});
-    else if(/^https?:\/\/\S+$/i.test(s)&&looksLikeDataUrl(s))tableFromUrl(s).then(n=>{if(!n)createLinkNode(s)});
-    else if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s);
-    else if(looksTabular(s)){const ds=datasetFromText(s);if(ds){checkpoint();const v=viewRect(),n=makeTableCard(ds,{title:L("Pasted table","粘贴的表格"),source:{kind:"paste"},at:toWorld(v.w/2,v.h/2)});sel=[n.id];renderAll();persist();follow([n]);toast(L("Pasted as a table","已粘贴为表格"),{undo:true})}else createNotepadNode(s)}
-    else if(s.length>280||lines>=4||parsePaste(s))createPastedCard(s);
-    else pinCard("note",s);
-  }
+  if(clipPayload?.nodes?.length||fs.length||(t&&t.trim())){e.preventDefault();pasteData({payload:clipPayload,files:fs,text:t})}
 });
 
 $("line").addEventListener("paste",e=>{
@@ -20071,6 +20133,7 @@ addEventListener("keydown",e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="f"){e.preventDefault();toggleFindBar(true);return}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="z"&&!typing){e.preventDefault();if(e.shiftKey)redo();else undo();return}
   if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&e.key.toLowerCase()==="y"&&!typing){e.preventDefault();redo();return}
+  if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==="a"&&!typing&&!focusId){e.preventDefault();selectAllCards();return}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="d"&&!typing&&sel.length){e.preventDefault();duplicateSelection();return}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();if(findOpen)setOmniMode("cmd",{focus:true});else lineIn.focus();return}
   if((e.metaKey||e.ctrlKey)&&e.shiftKey&&(e.code==="Period"||e.key==="."||e.key===">")){e.preventDefault();toggleFocus("key");return}
@@ -20364,6 +20427,8 @@ Object.assign(ICONS,{
   template:'<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M3.5 9h17M9 9v11.5"/>',
   relate:'<path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1"/><path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1"/>',
   image:'<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-4.5-4.5-7.5 7.5"/>',
+  fitView:'<path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3"/>',
+  selAll:'<rect x="4" y="4" width="16" height="16" rx="2.5" stroke-dasharray="2.6 2.6"/><path d="m9 12 2.2 2.2L15.5 10"/>',
 });
 /* ── Command palette ───────────────────────────────────────────────────────────────────────────────────────────
    ⌘K, "/" on the canvas, or the hint at the bottom opens one field in the middle of the screen. Esc or a click

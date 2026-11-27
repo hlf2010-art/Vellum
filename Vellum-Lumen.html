@@ -35,7 +35,7 @@
   --orb-off:#D9DADE; --orb-off-ink:rgba(12,13,15,.55);
   --card-shadow:0 0 0 .5px rgba(11,12,14,.07),0 1px 1px rgba(11,12,14,.03),0 2px 4px -1px rgba(11,12,14,.04),0 12px 28px -16px rgba(11,12,14,.16);
   --card-shadow-up:0 0 0 .5px rgba(11,12,14,.08),0 2px 3px rgba(11,12,14,.04),0 8px 16px -6px rgba(11,12,14,.08),0 34px 64px -28px rgba(11,12,14,.28);
-  --chrome-shadow:0 0 0 .5px rgba(11,12,14,.08),0 1px 2px rgba(11,12,14,.04),0 12px 32px -14px rgba(11,12,14,.24);
+  --chrome-shadow:0 0 0 .5px rgba(11,12,14,.03),0 1px 2px rgba(11,12,14,.015),0 6px 20px -14px rgba(11,12,14,.1);
   --spectrum:#FF6B6B,#FFB547,#FFE066,#5BE38F,#4FC3FF,#7C8CFF,#C77DFF;
   --ui:"Inter Var","Vellum Sans SC",-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei","Segoe UI",Roboto,system-ui,sans-serif;
   --mono:"Lumen Mono",ui-monospace,"SF Mono",Menlo,"Vellum Sans SC","PingFang SC","Noto Sans SC",monospace;
@@ -3363,7 +3363,7 @@ body.snap-skip #wall{cursor:copy}
 .part-b .ico{width:16px;height:16px;flex:none;transition:color .25s,transform .4s var(--easing-standard)}
 .part-l{display:grid;grid-template-columns:0fr;transition:grid-template-columns .42s var(--easing-standard)}
 .part-l>span{min-width:0;overflow:hidden;white-space:nowrap;font:600 12.5px/1 var(--ui);letter-spacing:-.005em;opacity:0;padding-left:0;transition:opacity .2s,padding .42s var(--easing-standard)}
-.part-b[aria-checked="true"]{color:var(--label);background:var(--card);box-shadow:0 1px 2px rgba(11,12,14,.08),0 4px 12px -4px rgba(11,12,14,.16)}
+.part-b[aria-checked="true"]{color:var(--label);background:var(--card);box-shadow:0 1px 2px rgba(11,12,14,.05),0 3px 10px -4px rgba(11,12,14,.1)}
 .part-b[aria-checked="true"] .part-l{grid-template-columns:1fr}
 .part-b[aria-checked="true"] .part-l>span{opacity:1;padding-left:6px;transition:opacity .3s .12s,padding .42s var(--easing-standard)}
 .part-b[data-part="never"][aria-checked="true"] .ico{color:#6B5BD6}
@@ -3521,10 +3521,19 @@ body.snap-skip #wall{cursor:copy}
 @media (prefers-reduced-motion:reduce){.card .by-seal,.card .by-seal-t{transition:none}}
 .card .lock-badge{position:absolute;top:8px;right:8px;z-index:7;width:20px;height:20px;display:grid;place-items:center;border-radius:var(--radius-xs);background:var(--hover);color:var(--label-2);pointer-events:auto}
 .card .lock-badge .ico{width:12px;height:12px}
-.bay-lock{pointer-events:auto;align-self:center;width:24px;height:24px;display:grid;place-items:center;border-radius:var(--radius-xs);color:var(--label-3);background:transparent;opacity:.55;transition:opacity var(--d-quick),background var(--d-quick)}
-.bay-lock .ico{width:13px;height:13px}
-.bay-lock:hover,.bay-lock:focus-visible{opacity:1;background:var(--hover)}
-.bay-lock.on{opacity:1;color:var(--label)}
+/* the lane lock: a tile the size of the lane's own icon, open when anyone may change kept cards, filled when only you may */
+.bay-lock{--bl:calc(44px * max(1, var(--inv-s,1) * .8));pointer-events:auto;position:relative;align-self:center;width:var(--bl);height:var(--bl);display:grid;place-items:center;border-radius:14px;
+  color:var(--label-3);background:transparent;box-shadow:inset 0 0 0 1.5px var(--zone-edge);cursor:pointer;
+  transition:color var(--d-quick),background var(--d-quick),box-shadow var(--d-quick),transform var(--t-bouncy) var(--bouncy)}
+.bay-lock .ico{width:calc(var(--bl) * .48);height:calc(var(--bl) * .48);stroke-width:1.7}
+.bay-lock:hover,.bay-lock:focus-visible{color:var(--label);background:var(--card);box-shadow:inset 0 0 0 1.5px var(--zone-rule),0 6px 18px -10px rgba(11,12,14,.3)}
+.bay-lock:active{transform:scale(.94)}
+.bay-lock.on{color:var(--card);background:var(--label);box-shadow:none}
+.bay-lock.on:hover,.bay-lock.on:focus-visible{color:var(--card);background:var(--label-2)}
+.bay-lock::after{content:attr(data-tip);position:absolute;right:0;top:calc(100% + 10px);width:max-content;max-width:calc(260px * var(--inv-s,1));padding:calc(7px * var(--inv-s,1)) calc(11px * var(--inv-s,1));border-radius:calc(10px * var(--inv-s,1));
+  font:560 calc(13px * var(--inv-s,1))/1.35 var(--ui);letter-spacing:-.01em;text-align:left;white-space:normal;color:var(--card);background:var(--label);
+  opacity:0;transform:translateY(-4px);pointer-events:none;transition:opacity var(--d-quick),transform var(--d-quick);z-index:5}
+.bay-lock:hover::after,.bay-lock:focus-visible::after{opacity:1;transform:none;transition-delay:.25s}
 /* connection popover: actions read as actions */
 .sp-svc>.sp-mini,.sp-svc .sp-hdr-acts .sp-mini{background:transparent;box-shadow:inset 0 0 0 1px var(--hair-2)}
 .sp-svc>.sp-mini:hover,.sp-svc .sp-hdr-acts .sp-mini:hover{background:var(--hover)}
@@ -3675,6 +3684,7 @@ const ICONS={
   phone:'<rect x="7" y="2.8" width="10" height="18.4" rx="2.4"/><path d="M11 18h2"/>',desk:'<rect x="2.8" y="4.2" width="18.4" height="12.4" rx="2"/><path d="M8.5 20h7M12 16.6V20"/>',
   warn:'<path d="M10.3 4.7 3.3 17a2 2 0 0 0 1.7 3h14a2 2 0 0 0 1.7-3l-7-12.3a2 2 0 0 0-3.4 0z"/><path d="M12 9.6v3.9M12 16.6h.01"/>',
   lock:'<rect x="5.5" y="10.5" width="13" height="9.5" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  unlock:'<rect x="5.5" y="10.5" width="13" height="9.5" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 6.9-.9"/>',
   print:'<path d="M7 8.5V4.5h10v4M7 16.5H5.2A1.7 1.7 0 0 1 3.5 14.8v-4.6c0-.9.8-1.7 1.7-1.7h13.6c.9 0 1.7.8 1.7 1.7v4.6c0 .9-.8 1.7-1.7 1.7H17"/><rect x="7" y="13.5" width="10" height="6.5" rx="1"/>',
   stamp:'<path d="M9 13V9a3 3 0 1 1 6 0v4M5 13h14v4H5zM6 21h12"/>',pen:'<path d="M4.5 19.5 5.4 15.6 15.7 5.3a2 2 0 0 1 2.9 2.9L8.3 18.6z"/><path d="m13.8 7.2 3 3"/>',
   notepad:'<rect x="5" y="3.5" width="14" height="17" rx="2.2"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4.5"/>',
@@ -3723,7 +3733,8 @@ const ICONS={
 };
 const ic=(n,c="ico")=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||""}</svg>`;
 
-const BAY=1000;
+/* A zone's width in world px. Boards laid out before zones widened (1000) are moved over once, by fitZones. */
+const BAY=1400,ZONE_W0=1000,ZONE_IN=36;
 const BAYS=[
   {n:"01",name:"Gather",zh:"收集素材",sub:"Evidence: what people did and said",zhSub:"证据：用户做了什么、说了什么",icon:'<path d="M4 7.5 6 4h12l2 3.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 8h16M10 12h4"/>',empty:["No evidence yet","Drag recordings, screenshots, notes or text files here, then rate how strong each source is."],zhEmpty:["还没有素材","将文档、录屏、截图或便签拖到这里，并标注每份素材的证据可信度。"]},
   {n:"02",name:"Explore",zh:"探索方向",sub:"Judgments, and directions to test them",zhSub:"判断，以及检验它的方向",icon:'<path d="M12 20V11M12 11 6 4M12 11l6-7"/><circle cx="12" cy="20" r="1.5"/>',empty:["No idea yet","Write your idea in the bar below. Strategist can branch it into directions worth testing."],zhEmpty:["还没有想法","在下方输入框写下你的想法，Strategist 会帮你拆出多个待验证方向。"]},
@@ -4099,7 +4110,7 @@ const store={
   set(k,v){try{localStorage.setItem(KEY+k,JSON.stringify(v));return true}catch{return false}},
   del(k){try{localStorage.removeItem(KEY+k)}catch{}},
 };
-function blank(title=""){return {id:uid(),title,speak:"matters",memory:"",mcpContext:[],nodes:[],edges:[],adopted:{},threads:{},pins:{},copilot:[],log:[],proposals:[],changes:[],cam:null,created:NOW(),updated:NOW()}}
+function blank(title=""){return {id:uid(),title,speak:"matters",memory:"",mcpContext:[],nodes:[],edges:[],adopted:{},threads:{},pins:{},copilot:[],log:[],proposals:[],changes:[],cam:null,zoneW:BAY,created:NOW(),updated:NOW()}}
 let board, sel=[], undoStack=[], redoStack=[], saveT=0, storageOk=true, idbBoardOk=false, selectedEdgeId=null;
 const byId=id=>board.nodes.find(n=>n.id===id);
 const isNodeHidden=n=>!!(n&&(n.hidden||n.archived||n.tombstone));
@@ -4731,6 +4742,48 @@ function lin(n,d=0){
   return null;
 }
 const bayOf=n=>clamp(Math.floor((n.x+nodeW(n)/2)/BAY),0,3);
+/* Cards that belong together move together: a group with the cards inside it, and cards snapped to each other. */
+function zoneUnits(ns){
+  const live=board.nodes.filter(n=>!n.tombstone&&Number.isFinite(n.x)),ids=new Set(live.map(n=>n.id)),up=new Map();
+  const root=id=>{while(up.has(id)&&up.get(id)!==id)id=up.get(id);return id};
+  const join=(a,b)=>{const ra=root(a),rb=root(b);if(ra!==rb)up.set(ra,rb)};
+  for(const g of live)if(g.type==="group"){const x0=g.x,y0=g.y,x1=x0+nodeW(g),y1=y0+nodeH(g);
+    for(const c of live)if(c!==g&&c.type!=="group"){const cx=c.x+nodeW(c)/2,cy=c.y+nodeH(c)/2;if(cx>=x0&&cx<=x1&&cy>=y0&&cy<=y1)join(c.id,g.id)}}
+  for(const e of board.edges||[])if(ids.has(e.a)&&ids.has(e.b)&&isBonded(e))join(e.a,e.b);
+  const want=new Set(ns.map(n=>root(n.id))),out=new Map();
+  for(const n of live){const r=root(n.id);if(!want.has(r))continue;if(!out.has(r))out.set(r,[]);out.get(r).push(n)}
+  return [...out.values()];
+}
+/* How far a unit has to slide to sit inside one zone: none if it already does, if it is wider than a zone,
+   or if it lies wholly off the board (left of the first zone or right of the last), where it was put on purpose. */
+function zoneNudge(unit){
+  const b=bbox(unit);if(b.x1-b.x0>BAY-2*ZONE_IN)return 0;
+  if(b.x1<=ZONE_IN||b.x0>=4*BAY-ZONE_IN)return 0;
+  const z=clamp(Math.floor(((b.x0+b.x1)/2)/BAY),0,3),lo=z*BAY+ZONE_IN,hi=(z+1)*BAY-ZONE_IN;
+  return b.x0<lo?lo-b.x0:b.x1>hi?hi-b.x1:0;
+}
+/* After a drop or a new card: anything hanging over a zone's edge glides inside it, with what it is snapped to. */
+function settleInZones(ns){
+  const moved=[];
+  for(const u of zoneUnits(ns.filter(Boolean))){const dx=Math.round(zoneNudge(u));if(!dx)continue;for(const n of u){n.x+=dx;moved.push([n.id,dx])}}
+  if(!moved.length)return false;
+  requestAnimationFrame(()=>{if(calm())return;for(const [id,dx] of moved){const el=nodeEl(id);if(!el)continue;
+    el.style.transition="none";el.style.translate=`${-dx}px 0`;void el.offsetWidth;
+    el.style.transition="translate .24s var(--ease)";el.style.translate="0 0";
+    clearTimeout(el._zs);el._zs=setTimeout(()=>{el.style.transition="";el.style.translate=""},280)}});
+  return true;
+}
+/* Boards laid out in narrower zones: each unit moves with its zone, keeping its place inside it, and the camera
+   follows so the same zone is on screen. Runs once per board, before anything else reads the layout. */
+function fitZones(){
+  const from=board?.zoneW||ZONE_W0;if(!board||from===BAY||!Array.isArray(board.nodes))return;
+  const live=board.nodes.filter(n=>!n.tombstone&&Number.isFinite(n.x));
+  for(const u of zoneUnits(live)){const b=bbox(u),z=clamp(Math.floor(((b.x0+b.x1)/2)/from),0,3),dx=z*(BAY-from);if(dx)for(const n of u)n.x+=dx}
+  for(const u of zoneUnits(live)){const dx=Math.round(zoneNudge(u));if(dx)for(const n of u)n.x+=dx}
+  if(camOk(board.cam)){const s=board.cam.s,cx=(innerWidth/2-board.cam.x)/s,z=clamp(Math.floor(cx/from),0,3);board.cam={...board.cam,x:board.cam.x-z*(BAY-from)*s}}
+  board.zoneW=BAY;
+  if(changeShadow?.id===board.id)changeShadow=shadowOf(board); /* moving zones is not an edit of anyone's */
+}
 const SLUG_ACRONYMS=new Set(["ai","api","ar","css","faq","fps","gif","gta","hd","html","hud","id","ios","json","md","npc","os","pdf","png","qa","rag","rgb","rpg","sdk","svg","ui","url","ux","vfx","vr","xr","usa","us","uk","eu","gdp","csv","kpi","roi","sku","b2b","b2c","q1","q2","q3","q4"]);
 const SLUG_SMALL=new Set(["a","an","and","as","at","by","for","from","in","of","on","or","the","to","vs","with"]);
 function isMachineHashToken(s){
@@ -5313,7 +5366,7 @@ function revisionsOf(n){return [...(n?.versions||[]),...(n?[{rev:n.rev||1,t:n.up
 
 /* ── the seeded study: MOD WORK · restore ───────────────────────────── */
 function seed(){
-  const b=blank("MOD WORK · Restore study");b.id="modwork";board=b;
+  const b=blank("MOD WORK · Restore study");b.id="modwork";b.zoneW=ZONE_W0;board=b;
   const T=NOW(),min=60000;
   const at=(n,ago)=>{n.created=T-ago*min;return n};
   const rec=at(node("recording",{title:"Fit in motion",text:"A 22-second visualization of the headband inspection. It illustrates the product; it does not record a restore mistake or a creator prediction.",media:"V2",poster:"V2poster",dur:22,weight:"illustrative",path:"发带贴合剖析.mp4"},{x:80,y:40}),190);
@@ -5573,7 +5626,7 @@ async function ensureShowcaseAssets(){
 }
 
 function sampleShowcase(){
-  const b=blank("ASHEN CROWN · Faction HUD Showcase");b.id="showcase";b.rev=2;
+  const b=blank("ASHEN CROWN · Faction HUD Showcase");b.id="showcase";b.rev=2;b.zoneW=ZONE_W0;
   b.memory="Core Pillar: Zero pause-screen menu fatigue during Kowloon infiltration. Target: < 1.2s faction-delta comprehension inside 14° foveal gaze. Adopted Direction B (Diegetic Wrist Pager + Rim Glow) over Corner Toast (A) and Full Holo Overlay (C).";
   const prevBoard=board;board=b;
   const T=NOW(),min=60000;
@@ -5842,7 +5895,7 @@ function renderBays(){
   const has=[ink.some(isMaterial),ink.some(n=>n.type==="idea"||n.type==="synthesis"),ink.some(n=>n.type==="proof"),ink.some(n=>n.type==="print")];
   $("bays").innerHTML=BAYS.map((b,i)=>`<div class="bay bay-${i}" style="left:${i*BAY}px;width:${BAY}px">
     <div class="bay-zone" aria-hidden="true"></div>
-    <div class="bay-head"><span class="bay-ico" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24">${b.icon}</svg></span><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" title="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic("lock")}</button></div>
+    <div class="bay-head"><span class="bay-ico" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24">${b.icon}</svg></span><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" data-tip="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic(lockedBays().includes(i)?"lock":"unlock")}</button></div>
     ${used.has(i)||has[i]?"":bayStartHTML(i)}
   </div>`).join("");
 }
@@ -8783,7 +8836,7 @@ function renderLedger(){
    <ol>${items.map(e=>{const a=AGENTS[e.who];return `<li><button type="button" data-l="goto" data-id="${e.node||""}"><time>${clock(e.t)}</time><span class="mk ${a?"":"you"}">${a?a.mk:AV.you}</span><span class="tx">${e.html}</span></button></li>`}).join("")||'<li style="padding:12px;color:var(--faint)">Nothing decided yet.</li>'}</ol>`;
 }
 
-function renderAll(){if(board&&(!changeShadow||changeShadow.id!==board.id))changeShadow=shadowOf(board);
+function renderAll(){fitZones();if(board&&(!changeShadow||changeShadow.id!==board.id))changeShadow=shadowOf(board);
   litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();syncCopilotBoard?.();
   $("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";
   const archCount=board.nodes.filter(n=>!n.tombstone&&n.archived).length;
@@ -15874,7 +15927,7 @@ function createBoardFromTemplate(id="blank",{brief="",constraints="",variant="",
   if(def.id!=="blank")b.template={id:def.id,...(def.variants?{variant:def.variants[variant]?variant:Object.keys(def.variants)[0]}:{})};
   b.constraints=String(constraints||"").trim();
   board=b;sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();
-  renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY*1.6,y1:820},.85),0);
+  renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);
   if(String(brief||"").trim())pinCard("idea",String(brief).trim(),{kind:"Claim"});
   persist();renderCopilot?.();
   if(def.id!=="blank")log("you",`Started a <b>${esc(L(def.name[0],def.name[1]))}</b> board`);
@@ -18220,7 +18273,7 @@ $("ledgerBtn").onclick=()=>{const l=$("ledger");l.hidden=!l.hidden;$("ledgerBtn"
 function newNoteAt(pt){
   const v=viewRect(),hasPt=!!pt,p=pt||toWorld(v.w/2,v.h/2);checkpoint();
   const pos=hasPt?{x:p.x-W.note/2,y:p.y-40}:freeSpot(p.x-W.note/2,p.y-40,W.note,140);
-  const n=node("note",{text:""},pos);sfx("create");renderAll();select([],{menus:false});
+  const n=node("note",{text:""},pos);settleInZones([n]);sfx("create");renderAll();select([],{menus:false});
   const el=nodeEl(n.id);el?.classList.add("born");startEdit(n.id,"text");
 }
 let tidyAnim=0;
@@ -18726,13 +18779,13 @@ function endPointer(e){
     return;
   }
   if(g.type==="drag"&&g.writing){keepFocusOnPress=false;qsa(".dragging").forEach(c=>c.classList.remove("dragging","magnet"));document.body.classList.remove("is-dragging-card");
-    if(g.moved){const sr=snapOnDrop(g);g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();
+    if(g.moved){const sr=snapOnDrop(g);settleInZones(g.orig.map(o=>o.n));g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();
       /* nothing written yet: typing comes first, so the relation stays "related" without the type picker (change it from the clasp later) */
       if(g.writing.innerText.trim())afterSnapDrop(sr);else if(sr.torn.length)afterSnapDrop({made:null,torn:sr.torn})}
     else if(!g.inText){const a=g.target.closest("[data-a]");if(a&&!a.matches("button")&&a.dataset.a!=="edit-note"){act(a.dataset.a,byId(g.id),a);return}}
     requestAnimationFrame(()=>refocusWriting(g.writing));return}
   if(g.type==="drag"){qsa(".dragging").forEach(c=>c.classList.remove("dragging","magnet"));document.body.classList.remove("is-dragging-card");
-    if(g.moved){const sr=snapOnDrop(g);g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();afterSnapDrop(sr)}
+    if(g.moved){const sr=snapOnDrop(g);settleInZones(g.orig.map(o=>o.n));g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();afterSnapDrop(sr)}
     else if(g.fromClasp){selectEdge(g.fromClasp);return}
     else{const a=g.target.closest("[data-a]");if(a&&!a.matches("button")){act(a.dataset.a,byId(g.id),a);return}const hit=byId(g.id);if(!g.shift&&g.wasSel&&g.editHit&&hit?.type==="note"&&hit.status!=="sketch"){startEdit(g.id,"text",{clientX:g.cx,clientY:g.cy});return}select(g.shift?g.ids:[g.id])}}
   if(g.type==="marquee"){
@@ -18949,11 +19002,11 @@ function openingShot(animate=true){
   const focus=["claim","A","B","C","proof","q","fr"],vis=visibleNodes();
   const phone=innerWidth<=640;
   const ns=board.id==="modwork"?vis.filter(n=>(phone?["idea","direction"]:["idea","direction","proof","question","frame"]).includes(n.type)):vis;
-  if(!ns.length){cam={x:0,y:0,s:.85};flyTo(camFor({x0:0,y0:-160,x1:BAY*1.6,y1:820},.85),0);return}
+  if(!ns.length){cam={x:0,y:0,s:.85};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);return}
   // The sample opens on its first lane at a zoom you can read (the whole board was 34%, below the label-only zoom),
   // which also keeps its waiting draft tray off screen until you get there.
   const sample=board.id==="showcase"&&!phone;
-  const b=bbox(ns),target=sample?camFor({x0:0,y0:-140,x1:BAY,y1:880},.8):camFor({x0:b.x0-30,y0:phone?b.y0-30:Math.min(b.y0-30,-170),x1:b.x1+30,y1:b.y1+30},.95);
+  const b=bbox(ns),target=sample?camFor({x0:0,y0:-140,x1:clamp(bbox(ns.filter(n=>bayOf(n)===0).concat({x:0,y:0,type:'note'})).x1+60,700,BAY),y1:880},.8):camFor({x0:b.x0-30,y0:phone?b.y0-30:Math.min(b.y0-30,-170),x1:b.x1+30,y1:b.y1+30},.95);
   if(!animate||calm()){cam=target;paintCam();return}
   const all=bbox(vis);cam=camFor({x0:all.x0-200,y0:all.y0-300,x1:all.x1+800,y1:all.y1+200},.6);paintCam();
   setTimeout(()=>flyTo(target,1600).then(()=>{
@@ -19002,7 +19055,7 @@ function showWelcome(){
   </div>`,d=>{
     qs('[data-welcome="start"]',d).onclick=()=>{d.close();
       if(typeof newBoardDialog==="function")return newBoardDialog();
-      persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY*1.6,y1:820},.85),0);persist();setTimeout(()=>lineIn.focus(),100)};
+      persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);persist();setTimeout(()=>lineIn.focus(),100)};
     qs('[data-welcome="sample"]',d).onclick=()=>d.close();
     setTimeout(()=>qs('[data-welcome="start"]',d)?.focus(),0);
   });

@@ -87,6 +87,17 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
     await p.evaluate(() => { cloudUse().used = 20; renderCrew(); });
     check('C7d none left: the count turns red', await p.evaluate(() => document.querySelector('#crewSetBtn .hub-q')?.classList.contains('out')));
 
+    // C9. the participation switch: a clear selected fill, and one chime per change the person makes
+    const sel = await p.evaluate(() => getComputedStyle(document.querySelector('#partSw .part-b[aria-checked="true"]')).backgroundColor);
+    check('C9a the chosen level has a visible fill', !/rgba\(0, 0, 0, 0\)|transparent/.test(sel), sel);
+    await p.evaluate(() => { window.__snd = []; const o = sfx; window.sfx = k => { __snd.push(k); return o(k); }; });
+    await p.click('#partSw [data-part="often"]'); await p.waitForTimeout(200);
+    await p.click('#partSw [data-part="often"]'); await p.waitForTimeout(200);
+    await p.click('#partSw [data-part="never"]'); await p.waitForTimeout(200);
+    const snd = await p.evaluate(() => __snd.filter(k => k.startsWith('speak-')));
+    check('C9b one chime per change, its pitch by level; none when nothing changes', JSON.stringify(snd) === '["speak-often","speak-never"]', JSON.stringify(snd));
+    check('C9c sounds are on by default', await p.evaluate(() => sfxEnabled()));
+
     check('C8 no page errors', !errors.length, errors.join(' | '));
   } finally { await browser.close(); srv.close(); }
   console.log(results.join('\n')); console.log(failures ? `\n${failures} failed` : '\nall passed'); process.exit(failures ? 1 : 0);

@@ -3528,7 +3528,10 @@ body.snap-skip #wall{cursor:copy}
 /* the one entry: the crew's marks, and words only when something is wrong */
 /* Top-bar pills: one solid surface and one soft, wide shadow; no hairline, no blur (Mars, 2026-11-27). */
 header.top :is(.review,.part,.crew-hub,.copilot-btn,.arch-btn){height:40px;background:var(--pill);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:var(--pill-shadow)}
-header.top .part-b[aria-checked="true"]{background:var(--card-2);box-shadow:none}
+/* the chosen level: a clear tinted fill on the white pill, still no border (Mars: "稍微明显一点点") */
+header.top .part-b[aria-checked="true"]{background:color-mix(in srgb,var(--label) 8%,transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--label) 6%,transparent);font-weight:600}
+:root[data-theme="dark"] header.top .part-b[aria-checked="true"]{background:color-mix(in srgb,var(--label) 13%,transparent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) header.top .part-b[aria-checked="true"]{background:color-mix(in srgb,var(--label) 13%,transparent)}}
 header.top .part-b{height:32px}
 .crew-hub{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 14px 0 7px;border-radius:var(--radius-pill);color:var(--label);font:540 13px/1 var(--ui);transition:color var(--d-quick),transform var(--duration-press)}
 .crew-hub:active{transform:scale(.97)}
@@ -5052,6 +5055,7 @@ const speakOfBoard=b=>SPEAK_LEVELS.includes(b?.speak)?b.speak:crewSpeak;
 function setSpeak(level,{from="switch"}={}){
   const next=SPEAK_LEVELS.includes(level)?level:"matters",prev=crewSpeak;
   if(board){if(next==="never"&&prev!=="never"){board.focusAt=NOW();board.speakBefore=prev}board.speak=next}
+  if(next!==prev)sfx("speak-"+next);   // only from the person's own switch or shortcut: every caller is one
   crewSpeak=next;store.set(".crewSpeak",crewSpeak);
   advisorMode=crewSpeak!=="never";advisorAuto=crewSpeak==="often";advQuietMs=SPEAK_QUIET[crewSpeak];
   store.set(".advisor",advisorMode);store.set(".advisorAuto",advisorAuto);
@@ -19079,7 +19083,7 @@ let tool="select",spaceHeld=false,spacePanned=false;
 /* ── airy physical micro-acoustics (vellum, glass & felt UI sounds) ───── */
 let _sfxCtx=null,_sfxBus=null,_sfxGain=null,_sfxNoise=null;
 const _sfxLast=Object.create(null);
-const sfxEnabled=()=>store.get(".sfx","off")==="on";
+const sfxEnabled=()=>store.get(".sfx","on")==="on";   // on by default (Mars, 2026-11-27); Settings turns it off
 function sfxVolume(){const v=Number(store.get(".sfxVol",75));return Number.isFinite(v)?clamp(Math.round(v),0,100):75}
 function _sfxSetGain(v){
   if(!_sfxGain||!_sfxCtx)return;
@@ -19274,6 +19278,22 @@ function sfx(kind){
         bell(880,.135,.0115,.032,{over:2,overGain:.22,atk:.003});
         bell(1318.51,.165,.0105,.064,{over:2,overGain:.18,atk:.004});
         bell(1479.98,.21,.008,.098,{over:1,atk:.006});
+        break;
+      /* The participation switch: one airy glass chime whose pitch follows how much the crew joins in.
+         Focus settles down (a falling fifth), Listening is one clear note, Teamwork opens up (a rising fourth). */
+      case"speak-never":
+        air(2400,1300,1.1,.05,.009,0);
+        bell(987.77,.14,.0085,0,{over:3,overGain:.1,atk:.005});
+        bell(659.25,.22,.0085,.045,{over:3,overGain:.08,atk:.006});
+        break;
+      case"speak-matters":
+        air(2600,3600,1.2,.05,.009,0);
+        bell(987.77,.24,.0105,0,{over:3,overGain:.12,atk:.005});
+        break;
+      case"speak-often":
+        air(2800,4400,1.3,.05,.009,0);
+        bell(987.77,.14,.0085,0,{over:3,overGain:.1,atk:.005});
+        bell(1318.51,.24,.0095,.045,{over:3,overGain:.1,atk:.006});
         break;
       // Gentle silk inhalation into focus mode
       case"focus":

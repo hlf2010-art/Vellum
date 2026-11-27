@@ -878,20 +878,11 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .get-lede { margin-top: var(--s4); font-size: 17px; line-height: 1.5; color: var(--label-2); max-width: 30em; text-wrap: balance; }
 .get-lede span { display: block; }
 
-/* One line: the email and its button share a pill, the button inside it on the right. */
-.join { width: min(460px, 100%); margin: var(--s7) auto 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
-.pill { display: flex; align-items: center; gap: 8px; height: 56px; padding: 6px 6px 6px 22px; border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 82%, transparent); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
-  box-shadow: inset 0 0 0 1px var(--hair-2), var(--shadow-card); transition: box-shadow .2s; }
-.pill:focus-within { box-shadow: inset 0 0 0 1px var(--label-3), 0 0 0 5px var(--hover), var(--shadow-card); }
-.pill input { flex: 1; width: 0; min-width: 0; height: 100%; border: 0; padding: 0; margin: 0; background: none; font-size: 16px; color: var(--label); outline: none; -webkit-appearance: none; appearance: none; }
-.pill input::placeholder { color: var(--label-3); opacity: 1; }
-.pill:has(input[aria-invalid="true"]) { box-shadow: inset 0 0 0 1.5px var(--danger), var(--shadow-card); }
-.pill .btn { flex: none; height: 44px; padding: 0 20px; }
+/* One button; the form lives in the dialog below. */
+.join { width: min(460px, 100%); margin: var(--s7) auto 0; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 22px; }
+.get-go { height: 52px; padding: 0 28px; }
+.join.live .get-go { display: none; }
 .dl-go { justify-self: center; height: 52px; padding: 0 28px; }
-.join.live .pill { display: none; }
-.form-msg { font-size: 14px; line-height: 1.4; color: var(--danger-ink); margin: -10px 0 0; text-align: center; }
-.form-msg:empty { display: none; }
 .done-state { display: none; gap: 10px; align-items: flex-start; justify-content: center; text-align: left; }
 .done-state strong { display: block; font-size: 16px; font-weight: 600; line-height: 22px; }
 .done-state p { margin-top: 2px; font-size: 14.5px; line-height: 1.45; color: var(--label-2); }
@@ -899,12 +890,7 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .done-ic { width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; background: var(--label); color: var(--card); flex: none; }
 .done-ic svg.ic { width: 14px; height: 14px; stroke-width: 2.4; }
 .join.sent .done-state { display: flex; animation: rise .45s var(--ease); }
-.join.sent .pill, .join.sent .form-msg { display: none; }
-@media (max-width: 380px) {
-  .pill { flex-direction: column; align-items: stretch; height: auto; padding: 6px; border-radius: 24px; }
-  .pill input { width: auto; flex: none; height: 46px; padding: 0 14px; }
-  .pill .btn { width: 100%; }
-}
+.join.sent .get-go { display: none; }
 
 /* The last step before joining: which system, and what it's for. It rises over a soft blur of the page;
    Back, Esc or a click outside close it without joining. */

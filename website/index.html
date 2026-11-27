@@ -281,23 +281,24 @@
         <p class="get-lede"><span data-i18n="get.l1">Early builds for macOS and Windows are on the way.</span> <span data-i18n="get.l2">One email when yours is worth your time.</span></p>
       </div>
 
-      <!-- One line: the email and its button. Joining saves the email first, then a small dialog asks two optional
-           things: which system (already picked from the browser) and, in their own words, what it's for. -->
-      <form class="join" id="waitlist" novalidate>
-        <div class="pill" id="joinLine">
-          <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@studio.com" aria-label="Email">
-          <button class="btn btn-primary" type="submit" data-i18n="cta.waitlist">Join the waitlist</button>
-        </div>
+      <!-- One button. It opens a small form: email, which system (already picked from the browser on a computer)
+           and, in their own words, what it's for. All three are needed to join. -->
+      <div class="join" id="waitlist">
+        <button class="btn btn-primary get-go" id="joinOpen" type="button" aria-haspopup="dialog" data-i18n="cta.waitlist">Join the waitlist</button>
         <a class="btn btn-primary dl-go" id="dlGo" hidden></a>
-        <p class="form-msg" id="formMsg" role="alert"></p>
         <div class="done-state" role="status">
           <span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span>
           <div><strong id="doneText"></strong><p id="doneNote"></p></div>
         </div>
-      </form>
+      </div>
       <dialog class="more" id="more" aria-labelledby="moreTitle">
         <form method="dialog" id="moreForm">
-          <h3 id="moreTitle" data-i18n="get.step">One more step.</h3>
+          <h3 id="moreTitle" data-i18n="get.step">Get early access.</h3>
+          <label class="mrow">
+            <span class="mlabel" data-i18n="get.email">Email</span>
+            <input class="mfield" id="email" name="email" type="email" autocomplete="email" inputmode="email" aria-required="true" aria-describedby="emailHint" placeholder="you@studio.com">
+            <span class="mmsg" id="emailHint" role="alert"></span>
+          </label>
           <div class="mrow">
             <span class="mlabel" id="osLabel" data-i18n="get.os">Preferred system</span>
             <div class="chips" role="radiogroup" aria-labelledby="osLabel" aria-required="true" id="osChips">

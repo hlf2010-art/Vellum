@@ -60,13 +60,13 @@
       "how.lede": "Pick one to see what it rests on.",
       "out.title": "Then make it real.", "out.lede": "Whatever you ship remembers why.", "out.label": "Outputs",
       "out.plan": "Plan", "out.tasks": "Tasks", "out.table": "Table", "out.cut": "Cut", "out.site": "Site",
-      "doc.h": "Hook-first lantern", "doc.why": "Why", "doc.whyv": "8 of 10 campers hang it from the tent loop.",
-      "doc.rests": "Rests on", "doc.restsv": "3 sources, 2 of them observed", "doc.aside": "Set aside", "doc.asidev": "A shade dial, C glow ring",
-      "kb.todo": "To do", "kb.doing": "Doing", "kb.done": "Done", "kb.1": "Widen the hook mouth", "kb.2": "Glove test, 5 people",
-      "kb.3": "Order 2200K LEDs", "kb.4": "Foam mock-up", "kb.5": "Field test",
-      "tb.h": "Field test, 10 campers", "tb.table": "Table", "tb.chart": "Chart", "tb.r1": "Found it in the dark",
-      "tb.r2": "Hook held, thick line", "tb.r3": "Hook held, thin line", "tb.r4": "Too bright up close",
-      "cut.line": "Find it in the dark.", "site.h": "Find it in the dark.", "site.p": "Hook on top. 2200K at 40 lumens.", "site.cta": "Pre-order",
+      "doc.h": "Rough cut, moments marked", "doc.why": "Why", "doc.whyv": "Editors undo 6 of 10 auto cuts.",
+      "doc.rests": "Rests on", "doc.restsv": "3 sources, 2 of them observed", "doc.aside": "Set aside", "doc.asidev": "A one-click cut, C suggestions only",
+      "kb.todo": "To do", "kb.doing": "Doing", "kb.done": "Done", "kb.1": "Pre-mark top 5 moments", "kb.2": "Long-clip test, 10 editors",
+      "kb.3": "Moment markers on the timeline", "kb.4": "Undo-rate tracking", "kb.5": "Beta with 20 editors",
+      "tb.h": "Beta, 20 editors", "tb.table": "Table", "tb.chart": "Chart", "tb.r1": "Faster than by hand",
+      "tb.r2": "Kept the rough cut", "tb.r3": "Long clips felt slow", "tb.r4": "Agent missed a moment",
+      "cut.line": "Your moments. Its busywork.", "site.h": "Your moments. Its busywork.", "site.p": "A rough cut in minutes. You pick what stays.", "site.cta": "Try it free",
       "z.1": "Gather", "z.1d": "What people did and said",
       "z.2": "Explore", "z.2d": "Judgments, then directions",
       "z.3": "Prototype", "z.3d": "Built from one direction",
@@ -74,14 +74,14 @@
       "cases.t1": "Product design", "cases.t2": "Short video", "cases.t3": "AI products",
       "crew.title": "A crew that thinks with you, and sometimes against you.",
       "crew.scout": "Weighs the evidence", "crew.scoutq": "“Two of these seven sources are the same review.”",
-      "crew.strat": "Forks it into directions", "crew.stratq": "“If B is right, campers find it in five seconds.”",
-      "crew.wright": "Builds the proof", "crew.wrightq": "“The foam mock-up for B is ready. Keep it?”",
-      "crew.critic": "Checks it against the sources", "crew.criticq": "“Nothing here says campers want a dial.”",
+      "crew.strat": "Forks it into directions", "crew.stratq": "“If B is right, editors keep 9 in 10 rough cuts.”",
+      "crew.wright": "Builds the proof", "crew.wrightq": "“The moment-marker prototype for B is ready. Keep it?”",
+      "crew.critic": "Checks it against the sources", "crew.criticq": "“Nothing here says editors want one click.”",
       "crew.agency": "They can challenge your decision. Only you can make it.",
       "mode.focus": "Focus", "mode.listen": "Listening", "mode.team": "Teamwork",
       "mode.focusd": "Nothing interrupts you. What they notice waits until you're back.",
       "sc.wait": "waiting", "sc.backK": "While you focused", "sc.backT": "3 notes from the crew",
-      "sc.critic": "Nothing here says campers want a dial.", "sc.draftK": "Prototype · draft", "sc.draftT": "Foam mock-up", "sc.keep": "Keep", "sc.discard": "Discard",
+      "sc.critic": "Nothing here says editors want one click.", "sc.draftK": "Prototype · draft", "sc.draftT": "Moment-marker prototype", "sc.keep": "Keep", "sc.discard": "Discard",
       "mode.listend": "They speak up only when something doesn't add up.",
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
@@ -96,7 +96,7 @@
       "get.thankspreview": "This preview doesn't send sign-ups yet, so {email} stayed right here.",
       "get.bademail": "That doesn't look like an email address.",
       "get.fail": "That didn't go through. Try again in a moment.",
-      "board.label": "A Vellum board deciding how a camping lantern should work",
+      "board.label": "A Vellum board deciding how an AI video-editing agent should work",
       "lang.label": "Language", "theme.switch": "Switch theme", "steps.label": "Demo steps", "cases.label": "Use cases",
       "title": "Vellum: your best thinking deserves more than a chat box"
     },
@@ -119,13 +119,13 @@
       "how.lede": "选一张，看它建立在什么之上。",
       "out.title": "然后，把它做出来。", "out.lede": "做出来的每样东西，都记得为什么。", "out.label": "产出",
       "out.plan": "方案", "out.tasks": "任务", "out.table": "表格", "out.cut": "成片", "out.site": "网站",
-      "doc.h": "挂钩优先的营地灯", "doc.why": "为什么", "doc.whyv": "10 位露营者里，8 位把灯挂在帐篷挂环上。",
-      "doc.rests": "依据", "doc.restsv": "3 条依据，其中 2 条是观察", "doc.aside": "已搁置", "doc.asidev": "A 遮光旋钮，C 夜光定位环",
-      "kb.todo": "待办", "kb.doing": "进行中", "kb.done": "完成", "kb.1": "加宽挂钩开口", "kb.2": "5 人戴手套试用",
-      "kb.3": "订 2200K 灯珠", "kb.4": "泡沫手板", "kb.5": "实地测试",
-      "tb.h": "实地测试，10 位露营者", "tb.table": "表格", "tb.chart": "图表", "tb.r1": "黑暗里找得到",
-      "tb.r2": "挂钩稳，粗绳", "tb.r3": "挂钩稳，细绳", "tb.r4": "近看刺眼",
-      "cut.line": "在黑暗里，一眼找到。", "site.h": "在黑暗里，一眼找到。", "site.p": "挂钩在顶部。2200K，40 流明。", "site.cta": "预订",
+      "doc.h": "初剪 + 标出关键瞬间", "doc.why": "为什么", "doc.whyv": "自动剪的十刀里，剪辑师撤销了六刀。",
+      "doc.rests": "依据", "doc.restsv": "3 条依据，其中 2 条是观察", "doc.aside": "已搁置", "doc.asidev": "A 一键成片，C 只给建议",
+      "kb.todo": "待办", "kb.doing": "进行中", "kb.done": "完成", "kb.1": "预标 5 个候选瞬间", "kb.2": "长素材测试，10 位剪辑师",
+      "kb.3": "时间线上的瞬间标记", "kb.4": "撤销率统计", "kb.5": "20 位剪辑师内测",
+      "tb.h": "内测，20 位剪辑师", "tb.table": "表格", "tb.chart": "图表", "tb.r1": "比自己剪更快",
+      "tb.r2": "保留了初剪", "tb.r3": "长素材觉得慢", "tb.r4": "漏掉了关键瞬间",
+      "cut.line": "瞬间归你，杂活归它。", "site.h": "瞬间归你，杂活归它。", "site.p": "几分钟出初剪，留什么你说了算。", "site.cta": "免费试用",
       "z.1": "收集", "z.1d": "人们做了什么、说了什么",
       "z.2": "探索", "z.2d": "先下判断，再分方向",
       "z.3": "原型", "z.3d": "从一个方向做出来",
@@ -133,14 +133,14 @@
       "cases.t1": "产品设计", "cases.t2": "短视频", "cases.t3": "AI 产品",
       "crew.title": "和你一起想，\u200b有时也和你唱反调。",
       "crew.scout": "掂量证据", "crew.scoutq": "“这七条来源里，有两条是同一篇评论。”",
-      "crew.strat": "把判断分成方向", "crew.stratq": "“如果 B 是对的，露营者五秒就能找到灯。”",
-      "crew.wright": "做出能验证的东西", "crew.wrightq": "“B 的泡沫手板做好了，留下吗？”",
-      "crew.critic": "对照来源挑毛病", "crew.criticq": "“这里没有证据表明，露营者想要旋钮。”",
+      "crew.strat": "把判断分成方向", "crew.stratq": "“如果 B 是对的，初剪十个能留九个。”",
+      "crew.wright": "做出能验证的东西", "crew.wrightq": "“B 的瞬间标记原型好了，留下吗？”",
+      "crew.critic": "对照来源挑毛病", "crew.criticq": "“这里没有证据表明，剪辑师想要一键成片。”",
       "crew.agency": "它们可以质疑你的决定，但只有你能做决定。",
       "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
       "mode.focusd": "不打扰你。它们注意到的事，等你回来再说。",
       "sc.wait": "条待看", "sc.backK": "你专注的时候", "sc.backT": "伙伴记下了 3 条",
-      "sc.critic": "这里没有证据表明，露营者想要旋钮。", "sc.draftK": "原型 · 草稿", "sc.draftT": "泡沫手板", "sc.keep": "留下", "sc.discard": "丢掉",
+      "sc.critic": "这里没有证据表明，剪辑师想要一键成片。", "sc.draftK": "原型 · 草稿", "sc.draftT": "关键瞬间标记原型", "sc.keep": "留下", "sc.discard": "丢掉",
       "mode.listend": "只在有地方说不通时才开口。",
       "mode.teamd": "和你一起起草，好的你留下。",
       "modes.label": "AI 伙伴参与的程度",
@@ -155,13 +155,13 @@
       "get.thankspreview": "这是预览版，报名还没有接通，{email} 没有被发送出去。",
       "get.bademail": "这看起来不像邮箱地址。",
       "get.fail": "没有提交成功，请稍后再试。",
-      "board.label": "Vellum 白板演示：决定一盏露营灯该怎么设计",
+      "board.label": "Vellum 白板演示：决定一个 AI 剪辑 agent 该怎么工作",
       "lang.label": "语言 Language", "theme.switch": "切换深浅色", "steps.label": "演示步骤", "cases.label": "使用场景",
       "title": "Vellum：你的好想法，不该困在聊天框里"
     }
   };
 
-  // The hero board: a camping lantern, because product design is Vellum's first use case.
+  // The hero board: an AI video-editing agent deciding how much to cut on its own (Mars chose it, 2026-11-27).
   var BOARD = {
     en: {
       steps: ["Evidence", "Judgment", "Directions", "Decision", "New evidence"],
@@ -175,25 +175,25 @@
       reopened: "Reopened. Nothing was lost along the way.",
       held: "Still holds. Your reason now sits beside the counter-evidence.",
       cards: {
-        e1: { k: "Observed", t: "Field notes", b: "8 of 10 campers hung it from the tent loop.", by: "You" },
-        e2: { k: "Reported", t: "Reviews", b: "41 reviews call it blinding up close.", by: "Scout" },
-        e3: { k: "Quote", t: "Camper", b: "I just want to find it in the dark.", by: "You" },
-        j1: { k: "Judgment", t: "It's used hanging, up close, after dark.", b: "Rests on 3 sources, mostly observed.", by: "You + Scout" },
-        dA: { k: "Direction", t: "Shade dial", b: "Twist a hood to dim it.", by: "Strategist" },
-        dB: { k: "Direction", t: "Hook-first, warm low glow", b: "Hook on top. 2200K at 40 lumens.", by: "Strategist" },
-        dC: { k: "Direction", t: "Glow-ring locator", b: "A faint ring to find it at night.", by: "Strategist" },
-        st: { k: "Critic", b: "A dial is hard to turn in gloves. And nobody asked for one." },
-        n1: { k: "Observed · new", t: "Field test", b: "The hook slips on thin guylines.", by: "You" }
+        e1: { k: "Observed", t: "Session logs", b: "Editors undo 6 of 10 cuts the agent makes.", by: "You" },
+        e2: { k: "Reported", t: "Reviews", b: "34 reviews say it cut the best moment.", by: "Scout" },
+        e3: { k: "Quote", t: "Editor", b: "Give me a first pass. The moments are mine.", by: "You" },
+        j1: { k: "Judgment", t: "Editors want the busywork done and the moments left to them.", b: "Rests on 3 sources, mostly observed.", by: "You + Scout" },
+        dA: { k: "Direction", t: "One-click final cut", b: "Upload, get a finished video.", by: "Strategist" },
+        dB: { k: "Direction", t: "Rough cut, moments marked", b: "It trims the dead air. You pick the moments.", by: "Strategist" },
+        dC: { k: "Direction", t: "Suggestions only", b: "It comments. You make every cut.", by: "Strategist" },
+        st: { k: "Critic", b: "One click hides the cuts editors undo most. And nobody asked for it." },
+        n1: { k: "Observed · new", t: "Beta test", b: "On long clips, picking moments takes longer than cutting by hand.", by: "You" }
       },
-      adopted: "<strong>Chosen.</strong> It fits how 8 of 10 campers hang it.",
-      asideA: "<strong>Set aside.</strong> Hard to use in gloves.",
-      asideC: "<strong>Set aside.</strong> Finds the lantern, not the glare.",
+      adopted: "<strong>Chosen.</strong> It does the cuts editors keep, and leaves them the moments.",
+      asideA: "<strong>Set aside.</strong> Fast, but it chooses the moments for you.",
+      asideC: "<strong>Set aside.</strong> Keeps control, saves no time.",
       back: "Back in play",
       flagH: "New counter since you chose",
       reopen: "Reopen", holds: "Still holds",
-      heldNote: "Still holds. Fix: a wider hook mouth.",
+      heldNote: "Still holds. Fix: the agent pre-marks its top 5 moments.",
       // The reviews Scout read, as they sit in the spreadsheet. [[...]] marks what matched.
-      sheet: { head: ["Review", "★"], rows: [[118, "Lasts the whole weekend", 5], [119, "[[Blinding]] at arm's length", 2], [120, "Hook feels a bit flimsy", 3], [121, "[[Too bright]] up close", 2], [122, "[[Blinding]] inside the tent", 1]] },
+      sheet: { head: ["Review", "★"], rows: [[212, "Saved me an hour", 5], [213, "It [[cut the punchline]]", 2], [214, "Exports are quick", 4], [215, "[[Dropped my best take]]", 2], [216, "[[Cut the reaction shot]]", 1]] },
       reopenedNote: "Reopened. A and C are back in play.",
       supports: "supports", counters: "counters"
     },
@@ -209,24 +209,24 @@
       reopened: "已重新讨论。一路上什么都没丢。",
       held: "依然成立。你的理由和反驳证据放在了一起。",
       cards: {
-        e1: { k: "观察", t: "实地记录", b: "10 位露营者里，8 位把灯挂在帐篷挂环上。", by: "你" },
-        e2: { k: "转述", t: "用户评论", b: "41 条评论说它近看刺眼。", by: "Scout" },
-        e3: { k: "原话", t: "露营者", b: "我只想在黑暗里找得到它。", by: "你" },
-        j1: { k: "判断", t: "它是挂着用的：近距离，天黑以后。", b: "依据 3 条来源，大多是观察。", by: "你 + Scout" },
-        dA: { k: "方向", t: "遮光旋钮", b: "转动灯罩来调暗。", by: "Strategist" },
-        dB: { k: "方向", t: "挂钩优先，暖色低光", b: "顶部挂钩，2200K 暖光，40 流明。", by: "Strategist" },
-        dC: { k: "方向", t: "夜光定位环", b: "一圈微光，夜里也找得到。", by: "Strategist" },
-        st: { k: "Critic", b: "戴手套拧不动旋钮。而且，没人说想要它。" },
-        n1: { k: "观察 · 新", t: "实地测试", b: "挂钩挂在细防风绳上会滑脱。", by: "你" }
+        e1: { k: "观察", t: "操作日志", b: "剪辑师撤销了 agent 十刀里的六刀。", by: "你" },
+        e2: { k: "转述", t: "用户评论", b: "34 条评论说它剪掉了最好的瞬间。", by: "Scout" },
+        e3: { k: "原话", t: "剪辑师", b: "给我一个初剪就好，关键瞬间我自己定。", by: "你" },
+        j1: { k: "判断", t: "剪辑师要它干杂活，关键瞬间留给自己。", b: "依据 3 条来源，大多是观察。", by: "你 + Scout" },
+        dA: { k: "方向", t: "一键成片", b: "上传素材，直接出成片。", by: "Strategist" },
+        dB: { k: "方向", t: "初剪 + 标出关键瞬间", b: "它剪掉冗余，你来挑瞬间。", by: "Strategist" },
+        dC: { k: "方向", t: "只给建议", b: "它只提意见，每一刀都你来剪。", by: "Strategist" },
+        st: { k: "Critic", b: "一键成片藏起了剪辑师最常撤销的那些刀。而且，没人要它。" },
+        n1: { k: "观察 · 新", t: "内测", b: "长素材里，挑瞬间比自己剪还慢。", by: "你" }
       },
-      adopted: "<strong>已选定。</strong>顺着 10 位里 8 位的挂法。",
-      asideA: "<strong>已搁置。</strong>戴手套不好用。",
-      asideC: "<strong>已搁置。</strong>找得到灯，没解决刺眼。",
+      adopted: "<strong>已选定。</strong>它只做剪辑师会保留的那些刀，瞬间留给人。",
+      asideA: "<strong>已搁置。</strong>快，但替你决定了瞬间。",
+      asideC: "<strong>已搁置。</strong>掌控还在，时间没省。",
       back: "重新纳入考虑",
       flagH: "选定之后，出现 1 条反证",
       reopen: "重新讨论", holds: "依然成立",
-      heldNote: "依然成立。改法：把挂钩开口加宽。",
-      sheet: { head: ["评论", "★"], rows: [[118, "整个周末都够用", 5], [119, "近看太[[刺眼]]", 2], [120, "挂钩有点软", 3], [121, "离近了[[晃眼睛]]", 2], [122, "在帐篷里[[刺眼]]", 1]] },
+      heldNote: "依然成立。改法：agent 先预标出 5 个候选瞬间。",
+      sheet: { head: ["评论", "★"], rows: [[212, "帮我省了一小时", 5], [213, "把[[笑点剪没了]]", 2], [214, "导出很快", 4], [215, "[[最好的一条没了]]", 2], [216, "[[反应镜头被剪了]]", 1]] },
       reopenedNote: "已重新讨论。A 和 C 重新纳入考虑。",
       supports: "支持", counters: "反驳"
     }
@@ -307,27 +307,29 @@
     h.forEach(function (v, i) { o += '<i class="w' + (i < 7 ? " on" : "") + '" style="height:' + v + 'px"></i>'; });
     return o + "</span>";
   })();
-  // Evidence comes in whatever form it was captured: a photo from the field, an excerpt of a spreadsheet, a clip.
+  // Evidence comes in whatever form it was captured: a screenshot, an excerpt of a spreadsheet, a clip.
   // The label on the card still says where it came from; the picture only shows what it is.
-  // The lantern on its hook, sliding down a guyline in the clip: drawn once, ghosted twice behind itself.
-  var HOOK = '<path class="cl-hook" d="M134 52v-6.5a4 4 0 0 1 8 0v2"/><rect class="ph-cap" x="130" y="52" width="8" height="3" rx="1"/><rect class="cl-lamp" x="128.5" y="55" width="11" height="14" rx="3.5"/>';
   var MEDIA = {
+    // The agent's timeline as the editor saw it: the cuts they undid are left as dashed outlines.
     photo:
       '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<rect class="ph-bg" width="200" height="84"/><path class="ph-ground" d="M0 72c56-5 140-5 200 0v12H0Z"/>' +
-      '<path class="ph-tent" d="M0 0h200v27c-30 4-58 5-88 6-30-1-62-3-112-7Z"/><path class="ph-seam" d="M46 0l8 31M158 0l-8 32"/>' +
-      '<ellipse class="ph-wash" cx="112" cy="27" rx="54" ry="12"/><path class="ph-guy" d="M178 29l28 60"/>' +
-      '<circle class="ph-glow" cx="112" cy="52" r="22"/>' +
-      '<path class="ph-loop" d="M109.5 32v2.5a2.5 2.5 0 0 0 5 0V32"/><path class="ph-cord" d="M112 37v4"/>' +
-      '<rect class="ph-cap" x="106" y="41" width="12" height="4" rx="1.5"/><rect class="ph-lamp" x="104.5" y="44" width="15" height="19" rx="5"/></svg>',
+      '<rect class="ph-bg" width="200" height="84"/>' +
+      '<path class="tl-tick" d="M6 5v4"/><path class="tl-tick" d="M16 5v2"/><path class="tl-tick" d="M26 5v2"/><path class="tl-tick" d="M36 5v2"/><path class="tl-tick" d="M46 5v2"/><path class="tl-tick" d="M56 5v4"/><path class="tl-tick" d="M66 5v2"/><path class="tl-tick" d="M76 5v2"/><path class="tl-tick" d="M86 5v2"/><path class="tl-tick" d="M96 5v2"/><path class="tl-tick" d="M106 5v4"/><path class="tl-tick" d="M116 5v2"/><path class="tl-tick" d="M126 5v2"/><path class="tl-tick" d="M136 5v2"/><path class="tl-tick" d="M146 5v2"/><path class="tl-tick" d="M156 5v4"/><path class="tl-tick" d="M166 5v2"/><path class="tl-tick" d="M176 5v2"/><path class="tl-tick" d="M186 5v2"/><path class="tl-tick" d="M196 5v2"/>' +
+      '<rect class="tl-clip" x="6" y="16" width="40" height="18" rx="3"/><rect class="tl-undo" x="50" y="16.5" width="28" height="17" rx="3"/>' +
+      '<rect class="tl-clip" x="82" y="16" width="44" height="18" rx="3"/><rect class="tl-undo" x="130" y="16.5" width="20" height="17" rx="3"/>' +
+      '<rect class="tl-clip" x="154" y="16" width="40" height="18" rx="3"/>' +
+      '<rect class="tl-aud" x="6" y="40" width="72" height="10" rx="2.5"/><rect class="tl-aud" x="82" y="40" width="112" height="10" rx="2.5"/>' +
+      '<rect class="tl-clip dim" x="6" y="56" width="60" height="10" rx="2.5"/><rect class="tl-undo" x="70" y="56.5" width="34" height="9" rx="2.5"/><rect class="tl-clip dim" x="108" y="56" width="86" height="10" rx="2.5"/>' +
+      '<path class="tl-redo" d="M58 25.5a5 5 0 1 1 1.5 3.6M58 25.5v-3.2M58 25.5h3.2"/>' +
+      '<circle class="tl-glow" cx="104" cy="9" r="9"/><path class="tl-head" d="M104 7v74"/><path class="tl-cap" d="M100.5 4h7v4l-3.5 3-3.5-3Z"/></svg>',
+    // A long beta session: the strip is crowded with moments still waiting to be picked.
     clip:
       '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<rect class="ph-bg" width="200" height="84"/><path class="ph-ground" d="M0 72c56-5 140-5 200 0v12H0Z"/><path class="ph-guy" d="M-4 14 204 62"/>' +
-      '<g class="cl-ghost" style="opacity:.12" transform="translate(-30 -6.9)">' + HOOK + '</g>' +
-      '<g class="cl-ghost" style="opacity:.28" transform="translate(-15 -3.5)">' + HOOK + '</g>' + HOOK +
-      '<circle class="play" cx="70" cy="40" r="11"/><path class="play-ink" d="M66.6 34.6v10.8l9.2-5.4Z"/>' +
-      '<rect class="cl-track" x="0" y="81" width="200" height="3"/><rect class="cl-done" x="0" y="81" width="64" height="3"/>' +
-      '<rect class="cl-time" x="166" y="64" width="26" height="12" rx="6"/><text class="cl-tx" x="179" y="72.6" text-anchor="middle">0:12</text></svg>'
+      '<rect class="ph-bg" width="200" height="84"/><ellipse class="ph-wash" cx="100" cy="30" rx="70" ry="16"/>' +
+      '<rect class="tk" x="6" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="10" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="14" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="18" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="22" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="26" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="30" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="34" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="38" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="42" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="46" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="50" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="54" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="58" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="62" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="66" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="70" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="74" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="78" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="82" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="86" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="90" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="94" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="98" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="102" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="106" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="110" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="114" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="118" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="122" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="126" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="130" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="134" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="138" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="142" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="146" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="150" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="154" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="158" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="162" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="166" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="170" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="174" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="178" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="182" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="186" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="190" y="61" width="1.6" height="5" rx=".8"/>' +
+      '<circle class="play" cx="100" cy="30" r="11"/><path class="play-ink" d="M96.6 24.6v10.8l9.2-5.4Z"/>' +
+      '<rect class="cl-track" x="0" y="81" width="200" height="3"/><rect class="cl-done" x="0" y="81" width="22" height="3"/>' +
+      '<rect class="cl-time" x="162" y="8" width="30" height="12" rx="6"/><text class="cl-tx" x="177" y="16.6" text-anchor="middle">24:10</text></svg>'
   };
   function unquote(t) { return String(t).replace(/^[“"「『]|[”"」』]$/g, ""); }
   var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "观察": "eye", "转述": "msg", "原话": "quote" };

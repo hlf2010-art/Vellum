@@ -300,15 +300,18 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .bcard .media svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .bcard.has-media .b { margin-top: 0; color: var(--label); }
 .ill .ph-bg { fill: #121419; }
-.ill .ph-tent { fill: #24272e; }
-.ill .ph-ground { fill: #16181c; }
 .ill .ph-wash { fill: rgba(255,255,255,.1); filter: blur(7px); }
-.ill .ph-seam { fill: none; stroke: #2f333a; stroke-width: 1.2; }
-.ill .ph-guy { fill: none; stroke: rgba(255,255,255,.22); stroke-width: 1; }
-.ill .ph-glow { fill: rgba(255,255,255,.34); filter: blur(9px); }
-.ill .ph-loop, .ill .ph-cord { fill: none; stroke: rgba(255,255,255,.5); stroke-width: 1.4; stroke-linecap: round; }
-.ill .ph-cap { fill: #4a4e57; }
-.ill .ph-lamp { fill: #f4f5f7; }
+.ill .tl-tick { fill: none; stroke: rgba(255,255,255,.22); stroke-width: 1; }
+.ill .tl-clip { fill: #30333b; }
+.ill .tl-clip.dim { fill: #23262c; }
+.ill .tl-aud { fill: #1d2025; }
+.ill .tl-undo { fill: none; stroke: rgba(255,255,255,.34); stroke-width: 1; stroke-dasharray: 2.5 2; }
+.ill .tl-redo { fill: none; stroke: rgba(255,255,255,.55); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.ill .tl-glow { fill: rgba(255,255,255,.3); filter: blur(6px); }
+.ill .tl-head { fill: none; stroke: #f4f5f7; stroke-width: 1.2; }
+.ill .tl-cap { fill: #f4f5f7; }
+.ill .tk { fill: rgba(255,255,255,.28); }
+.ill .tk.on { fill: #f4f5f7; }
 /* The spreadsheet is a real table, so the words are real and it follows the theme. It is an excerpt: rows run off the bottom. */
 .bcard .xl-wrap { background: var(--card); }
 .bcard .xl-wrap::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 18px; background: linear-gradient(transparent, var(--card)); pointer-events: none; }
@@ -320,8 +323,6 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .xl tr.hit td { background: color-mix(in srgb, var(--label) 5%, transparent); color: var(--label-2); }
 .xl tr.hit .n { color: var(--label-4); }
 .xl mark { background: color-mix(in srgb, var(--label) 14%, transparent); color: var(--label); font-weight: 600; border-radius: 3px; padding: 0 2px; margin: 0 -1px; }
-.ill .cl-hook { fill: none; stroke: rgba(255,255,255,.82); stroke-width: 2; stroke-linecap: round; }
-.ill .cl-lamp { fill: #d9dbe0; }
 .ill .cl-track { fill: rgba(255,255,255,.16); }
 .ill .cl-done { fill: rgba(255,255,255,.75); }
 .ill .cl-time { fill: rgba(0,0,0,.55); }
@@ -733,16 +734,16 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .tb tr.warn td.v { color: var(--danger-ink); }
 .tb tr.warn td.bar i { background: linear-gradient(90deg, var(--danger) calc(var(--v) * 100%), var(--hover) 0); opacity: 1; }
 
-/* Cut and Site: the lantern lit, in a frame and in a browser. Light only, no new colour. */
+/* Cut and Site: the one moment you picked, lit among the rough cut, in a frame and in a browser. Light only, no new colour. */
 /* A dark frame on a light page reads louder than its neighbours when dimmed, so it steps back further. */
 :root[data-theme="light"] .ri.dark:not(.on) { opacity: .16; }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .ri.dark:not(.on) { opacity: .16; } }
 .ri.dark { background: #0d0e11; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), var(--shadow-card); }
-.lamp { position: absolute; width: 26px; height: 34px; border-radius: 9px; background: #f4f5f7; box-shadow: 0 0 30px 10px rgba(255,255,255,.28), 0 0 90px 30px rgba(255,255,255,.1); }
-.lamp::before { content: ""; position: absolute; left: 50%; top: -12px; width: 12px; height: 9px; margin-left: -6px; border: 2px solid rgba(255,255,255,.5); border-bottom: 0; border-radius: 6px 6px 0 0; }
+.mo { position: absolute; display: flex; align-items: center; gap: 5px; transform: translate(-50%, -50%); }
+.mo i { width: 20px; height: 28px; border-radius: 5px; background: rgba(255,255,255,.12); }
+.mo i.on { width: 30px; height: 42px; border-radius: 7px; background: #f4f5f7; box-shadow: 0 0 30px 10px rgba(255,255,255,.26), 0 0 90px 30px rgba(255,255,255,.1); }
 .cut { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; color: #f4f5f7; }
 .cut-glow { position: absolute; left: 50%; top: 38%; }
-.cut-glow .lamp { left: -13px; top: -17px; }
 .cut-line { position: relative; font: 600 24px/1.2 var(--display); letter-spacing: -.02em; margin-bottom: 18px; }
 .cut-bar { position: relative; display: flex; align-items: center; gap: 12px; font: 600 11.5px/1 var(--sans); color: rgba(244,245,247,.7); font-variant-numeric: tabular-nums; }
 .cut-bar svg { width: 16px; height: 16px; fill: #f4f5f7; }
@@ -759,7 +760,9 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .br-copy p { margin: 0 0 16px; font-size: 13px; line-height: 1.45; color: var(--label-3); }
 .br-cta { display: inline-block; padding: 7px 14px; border-radius: 999px; background: var(--label); color: var(--card); font-size: 12.5px; font-weight: 600; }
 .br-glow { position: relative; align-self: stretch; margin: 18px 0; border-radius: 14px; background: #0d0e11; overflow: hidden; }
-.br-glow .lamp { left: 50%; top: 50%; margin: -12px 0 0 -13px; }
+.br-glow .mo { left: 50%; top: 50%; gap: 4px; }
+.br-glow .mo i { width: 13px; height: 20px; border-radius: 4px; }
+.br-glow .mo i.on { width: 22px; height: 32px; border-radius: 6px; }
 :lang(zh) .doc-h, :lang(zh) .tb-h, :lang(zh) .cut-line, :lang(zh) .br-copy h5 { letter-spacing: 0; }
 @media (max-width: 620px) {
   .reel { -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 94%, transparent); }

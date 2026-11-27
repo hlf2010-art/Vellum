@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Right-click on empty canvas, the left toolbar without the upload button, and Search cards from the toolbar.
+/* Right-click on empty canvas (Upload…, Select all, Fit to screen; a sticky is a double-click), the left toolbar without the upload button, and Search cards from the toolbar.
  *   node tests/canvas-menu.cjs            (from the repo root)
  *   SHOTS=dir node tests/canvas-menu.cjs  (also saves light/dark, en/zh screenshots) */
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -67,46 +67,30 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
     check('found an empty spot on the canvas', !!pt);
     await p.mouse.click(pt.x, pt.y, { button: 'right' }); await p.waitForTimeout(250);
     let m = await menuState(p);
-    check('right-click on empty canvas opens the canvas menu', m.open && m.items.map(i => i.k).join() === 'note,paste,files,all,fit', JSON.stringify(m.items));
+    check('right-click on empty canvas opens the canvas menu', m.open && m.items.map(i => i.k).join() === 'files,all,fit', JSON.stringify(m.items));
     check('every canvas item shows its shortcut as a keycap', m.items.every(i => i.kbd), JSON.stringify(m.items));
     check('select all and fit are off on an empty board', m.items.filter(i => i.off).map(i => i.k).join() === 'all,fit');
     check('menu opens at the pointer', Math.abs(m.rect.left - pt.x) < 2 && Math.abs(m.rect.top - pt.y) < 2, JSON.stringify(m.rect));
     await shot(p, 'light-en-canvas-menu-empty', around(pt));
 
-    // New sticky here: lands under the pointer, ready to write
-    await p.click('[data-wm="note"]'); await p.waitForTimeout(400);
+    check('the menu has no New sticky or Paste (double-click and ⌘V already do those)', !m.items.some(i => /sticky|paste/i.test(i.t)));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+    // a sticky is a double-click
+    await p.mouse.dblclick(pt.x, pt.y); await p.waitForTimeout(400);
     let n = await p.evaluate(() => { const n = board.nodes[board.nodes.length - 1]; const r = nodeEl(n.id).getBoundingClientRect(); return { type: n.type, r: r.toJSON(), editing: document.activeElement?.isContentEditable || document.activeElement?.tagName }; });
-    check('New sticky here makes a sticky under the pointer', n.type === 'note' && pt.x > n.r.left && pt.x < n.r.right && pt.y > n.r.top - 4 && pt.y < n.r.bottom, JSON.stringify(n));
-    check('the new sticky is ready to write', n.editing === true || n.editing === 'TEXTAREA', String(n.editing));
-    // right-click inside the text being written keeps the system menu
+    check('double-click still makes a sticky under the pointer', n.type === 'note' && pt.x > n.r.left && pt.x < n.r.right, JSON.stringify(n));
     const nativeKept = await p.evaluate(() => { const el = document.activeElement; const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 10, clientY: 10 }); el.dispatchEvent(ev); return !ev.defaultPrevented && $('cardMenu').hidden; });
     check('right-click in text being written keeps the system menu', nativeKept);
     await p.keyboard.type('Battery lasts a weekend'); await p.mouse.click(pt.x + 300, pt.y + 260); await p.waitForTimeout(300);
 
-    // Paste here with copied text
-    await p.evaluate(() => navigator.clipboard.writeText('Users charge it in the car'));
+    // with a card on the board, select all and fit are on
     const pt2 = { x: pt.x + 360, y: pt.y - 40 };
     await p.mouse.click(pt2.x, pt2.y, { button: 'right' }); await p.waitForTimeout(200);
     m = await menuState(p);
     check('with a card on the board, select all and fit are on', m.open && !m.items.some(i => i.off), JSON.stringify(m.items));
-    const before = await p.evaluate(() => board.nodes.length);
-    await p.click('[data-wm="paste"]'); await p.waitForTimeout(500);
-    n = await p.evaluate(b => { const n = board.nodes.slice(b)[0]; if (!n) return null; const r = nodeEl(n.id).getBoundingClientRect(); return { text: n.text, title: titleOf(n), r: r.toJSON() }; }, before);
-    check('Paste here pastes the clipboard text as a card', n && /charge it in the car/.test((n.text || '') + (n.title || '')), JSON.stringify(n));
-    check('…at the pointer', n && Math.abs((n.r.left + n.r.right) / 2 - pt2.x) < 160 && n.r.top < pt2.y + 40 && n.r.bottom > pt2.y - 40, JSON.stringify(n && n.r));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(150);
 
-    // copied cards come back as cards at the pointer
-    await p.evaluate(() => { select([board.nodes[0].id]); });
-    await p.keyboard.press('Meta+c'); await p.keyboard.press('Control+c'); await p.waitForTimeout(150);
-    const pt3 = { x: pt.x + 80, y: pt.y + 200 };
-    await p.mouse.click(pt3.x, pt3.y, { button: 'right' }); await p.waitForTimeout(200);
-    const b3 = await p.evaluate(() => board.nodes.length);
-    await p.click('[data-wm="paste"]'); await p.waitForTimeout(500);
-    n = await p.evaluate(b => { const ns = board.nodes.slice(b); return ns.map(n => ({ type: n.type, text: n.text, r: nodeEl(n.id).getBoundingClientRect().toJSON() })); }, b3);
-    check('Paste here brings copied cards back as cards', n.length === 1 && /weekend/.test(n[0].text || ''), JSON.stringify(n));
-    check('…hanging from the pointer', n.length === 1 && Math.abs((n[0].r.left + n[0].r.right) / 2 - pt3.x) < 30 && Math.abs(n[0].r.top - pt3.y) < 60, JSON.stringify(n[0] && n[0].r));
-
-    // Upload files here: the picker opens and the file lands at the pointer
+    // Upload: the picker opens and the file lands at the pointer
     const pt4 = { x: pt.x + 420, y: pt.y + 160 };
     await p.mouse.click(pt4.x, pt4.y, { button: 'right' }); await p.waitForTimeout(200);
     const b4 = await p.evaluate(() => board.nodes.length);
@@ -114,7 +98,7 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
     await chooser.setFiles({ name: 'field-notes.txt', mimeType: 'text/plain', buffer: Buffer.from('Three people said the handle was too thin.') });
     await p.waitForTimeout(900);
     n = await p.evaluate(b => board.nodes.slice(b).map(n => ({ type: n.type, title: titleOf(n), r: nodeEl(n.id)?.getBoundingClientRect().toJSON() })), b4);
-    check('Upload files here adds the chosen file', n.length >= 1, JSON.stringify(n));
+    check('Upload adds the chosen file', n.length >= 1, JSON.stringify(n));
     check('…near the pointer', n.length >= 1 && n[0].r && n[0].r.left < pt4.x + 40 && n[0].r.right > pt4.x - 40 && n[0].r.top < pt4.y + 80 && n[0].r.bottom > pt4.y - 80, JSON.stringify(n[0]));
 
     // Select all, and ⌘A
@@ -122,7 +106,7 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
     await p.mouse.click(pt.x + 600, pt.y + 300, { button: 'right' }); await p.waitForTimeout(200);
     await p.click('[data-wm="all"]'); await p.waitForTimeout(200);
     const all = await p.evaluate(() => ({ sel: sel.length, vis: visibleNodes().length }));
-    check('Select all selects every card on the board', all.sel === all.vis && all.sel >= 4, JSON.stringify(all));
+    check('Select all selects every card on the board', all.sel === all.vis && all.sel >= 2, JSON.stringify(all));
     await p.evaluate(() => select([])); await p.mouse.click(pt.x + 600, pt.y + 300); await p.keyboard.press('ControlOrMeta+a'); await p.waitForTimeout(200);
     check('⌘A selects every card too', await p.evaluate(() => sel.length === visibleNodes().length));
 
@@ -148,6 +132,20 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
     s = await p.evaluate(() => ({ count: $('findCount').textContent, items: $('findPanel').querySelectorAll('.find-item').length }));
     check('Search cards finds cards on a board that has them', s.items >= 1, JSON.stringify(s));
     await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    // ⌘K: centred, every card kind one click away, footer only when there is something to move through
+    await p.evaluate(() => select([])); await p.keyboard.press('ControlOrMeta+k'); await p.waitForTimeout(450);
+    let pal = await p.evaluate(() => { const r = $('line').getBoundingClientRect(); return { l: Math.round(r.left), r: Math.round(innerWidth - r.right), kinds: [...document.querySelectorAll('#menu [data-pt]')].map(b => b.dataset.pt), foot: getComputedStyle(qs('#line .pal-foot')).display }; });
+    check('the palette is centred in the window', Math.abs(pal.l - pal.r) <= 1, JSON.stringify(pal));
+    check('the palette offers every card kind in one row of chips', ['claim', 'notepad', 'question', 'list', 'kanban', 'treemap', 'table', 'link', 'group', 'image'].every(k => pal.kinds.includes(k)), JSON.stringify(pal.kinds));
+    const kb0 = await p.evaluate(() => board.nodes.filter(n => n.type === 'kanban').length);
+    await p.click('#menu [data-pt="kanban"]'); await p.waitForTimeout(400);
+    check('a chip makes that card and puts the palette away', await p.evaluate(k => board.nodes.filter(n => n.type === 'kanban').length === k + 1 && !palOpen, kb0));
+    await p.keyboard.press('Escape'); await p.evaluate(() => select([])); await p.waitForTimeout(300);
+    await p.keyboard.press('ControlOrMeta+f'); await p.waitForTimeout(400); await p.keyboard.type('qqzzx'); await p.waitForTimeout(300);
+    pal = await p.evaluate(() => ({ foot: getComputedStyle(qs('#line .pal-foot')).display, arrows: qs('.find-ctrls [data-f="next"]').hidden, count: $('findCount').textContent }));
+    check('no matches: no key hints, no arrows, no "0 hits" beside "No matching cards"', pal.foot === 'none' && pal.arrows && !pal.count, JSON.stringify(pal));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    check('the canvas carries no gesture hint (taught once in the welcome)', await p.evaluate(() => !qs('#line .line-hint')?.textContent));
     check('no page errors (light, English)', !p.errors.length, p.errors.join(' | '));
     await p.context().close();
 
@@ -158,7 +156,7 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
       const q = await p.emptySpot();
       await p.mouse.click(q.x, q.y, { button: 'right' }); await p.waitForTimeout(250);
       m = await menuState(p);
-      const want = lang === 'zh' ? ['在这里新建便签', '粘贴到这里', '上传文件到这里…', '全选', '适应屏幕'] : ['New sticky here', 'Paste here', 'Upload files here…', 'Select all', 'Fit to screen'];
+      const want = lang === 'zh' ? ['上传…', '全选', '适应屏幕'] : ['Upload…', 'Select all', 'Fit to screen'];
       check(`${theme} ${lang}: menu labels`, want.every((w, i) => m.items[i] && m.items[i].t.startsWith(w)), JSON.stringify(m.items.map(i => i.t)));
       const fits = await p.evaluate(() => [...$('cardMenu').querySelectorAll('button')].every(b => b.scrollWidth <= b.clientWidth + 1));
       check(`${theme} ${lang}: nothing overflows in the menu`, fits);

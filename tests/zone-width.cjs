@@ -117,16 +117,16 @@ const insideAll = p => p.evaluate(() => visibleNodes().filter(n => n.type !== 'g
       check('a card dropped over the gap between zones settles inside one', z5.x + z5.w <= (z5.z + 1) * 1400 - 36 + 1 && z5.x >= z5.z * 1400 + 36 - 1, JSON.stringify(z5));
       check('no page errors (placement)', !p.errors.length, p.errors.join(' | '));
 
-      // Z6. the lane lock is a real button: the size of the lane icon, a clear state, a tooltip
+      // Z6. the lane lock is a real button: a bare icon with a 44px target, no frame, a clear state, a tooltip; the lane title has no decorative icon
       await p.evaluate(() => { cam = { x: 0, y: 320, s: 1 }; paintCam(); });
-      const lk = await p.evaluate(() => { const b = document.querySelector('[data-bay-lock="0"]'), i = document.querySelector('.bay-0 .bay-ico'); const r = b.getBoundingClientRect(), ri = i.getBoundingClientRect(); return { w: r.width, h: r.height, iw: ri.width, tip: b.dataset.tip, icon: b.querySelector('svg').innerHTML.includes('6.9-.9'), pressed: b.getAttribute('aria-pressed') }; });
-      check('the lane lock is as big as the lane icon (44 px at 100%)', lk.w >= 43 && Math.abs(lk.w - lk.iw) < 1 && lk.h === lk.w, JSON.stringify(lk));
+      const lk = await p.evaluate(() => { const b = document.querySelector('[data-bay-lock="0"]'), cs = getComputedStyle(b); const r = b.getBoundingClientRect(); return { w: r.width, h: r.height, deco: !!document.querySelector('.bay-head .bay-ico'), frame: cs.boxShadow !== 'none' || cs.backgroundColor !== 'rgba(0, 0, 0, 0)', color: cs.color, tip: b.dataset.tip, icon: b.querySelector('svg').innerHTML.includes('6.9-.9'), pressed: b.getAttribute('aria-pressed') }; });
+      check('the lane lock has a 44 px target, no frame at rest, and the lane title no decorative icon', lk.w >= 43 && lk.h === lk.w && !lk.frame && !lk.deco, JSON.stringify(lk));
       check('unlocked, it shows an open lock and says what locking does', lk.icon && lk.pressed === 'false' && /Lock this lane/.test(lk.tip || ''), JSON.stringify(lk));
       const lr = await p.evaluate(() => { const r = document.querySelector('[data-bay-lock="0"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, top: document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('[data-bay-lock]') ? 'lock' : document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.outerHTML.slice(0, 120) }; });
       check('nothing covers the lane lock', lr.top === 'lock', JSON.stringify(lr));
       await p.mouse.click(lr.x, lr.y); await p.waitForTimeout(300);
-      const lk2 = await p.evaluate(() => { const b = document.querySelector('[data-bay-lock="0"]'); const cs = getComputedStyle(b); return { pressed: b.getAttribute('aria-pressed'), on: b.classList.contains('on'), bg: cs.backgroundColor, tip: b.dataset.tip, locked: lockedBays().includes(0) }; });
-      check('locked, it fills in and says how to unlock', lk2.locked && lk2.on && lk2.pressed === 'true' && lk2.bg !== 'rgba(0, 0, 0, 0)' && /unlock/i.test(lk2.tip), JSON.stringify(lk2));
+      const lk2 = await p.evaluate(() => { const b = document.querySelector('[data-bay-lock="0"]'); const cs = getComputedStyle(b); return { pressed: b.getAttribute('aria-pressed'), on: b.classList.contains('on'), color: cs.color, tip: b.dataset.tip, locked: lockedBays().includes(0) }; });
+      check('locked, it is drawn in full ink and says how to unlock', lk2.locked && lk2.on && lk2.pressed === 'true' && lk2.color !== lk.color && /unlock/i.test(lk2.tip), JSON.stringify([lk.color, lk2]));
       await p.mouse.move(lr.x + 2, lr.y + 2); await p.waitForTimeout(600);
       const tipOp = await p.evaluate(() => getComputedStyle(document.querySelector('[data-bay-lock="0"]'), '::after').opacity);
       check('hovering the lock shows its tooltip', +tipOp > .9, tipOp);

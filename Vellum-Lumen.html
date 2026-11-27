@@ -131,20 +131,21 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);b
 .bay-head p{margin:0;font:500 calc(17px * var(--inv-s,1))/1.25 var(--ui);color:var(--label-2);letter-spacing:-.012em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bay-head .bay-lock{margin-left:auto;flex:none}
 /* the way into an empty lane */
-.bay-start{position:absolute;left:62px;top:300px;width:600px;box-sizing:border-box;pointer-events:auto;display:flex;gap:22px;align-items:flex-start;padding:30px 32px;border-radius:var(--radius-sheet);
+.bay-start{position:absolute;left:62px;top:300px;width:600px;box-sizing:border-box;pointer-events:auto;display:flex;flex-direction:column;gap:16px;align-items:stretch;padding:30px 32px;border-radius:var(--radius-sheet);
   background:color-mix(in srgb,var(--card) 72%,transparent);border:2px dashed var(--zone-dash);color:var(--label);text-align:left;
   transition:border-color var(--d-quick),background var(--d-quick),transform var(--t-bouncy) var(--bouncy),box-shadow var(--d-quick)}
 .bay-start[data-bay-go]{cursor:pointer}
 .bay-start[data-bay-go]:hover,.bay-start:focus-visible,.bay-start.bs-drop:hover{border-color:var(--focus);background:var(--card);box-shadow:0 14px 40px -18px rgba(11,12,14,.28)}
 .bay-start[data-bay-go]:active{transform:scale(.99)}
 .bay-start.bs-pick{border-style:solid;border-color:var(--zone-edge)}
-.bs-ico{width:56px;height:56px;flex:none;display:grid;place-items:center;border-radius:var(--radius-control);background:var(--card-2);color:var(--label-2)}
-.bs-ico .ico{width:28px;height:28px;stroke-width:1.6}
+/* the icon says what kind of thing goes here; it sits on top, bare, so the card reads icon, title, then what to do */
+.bs-ico{display:block;flex:none;line-height:0;color:var(--label-2)}
+.bs-ico .ico{width:34px;height:34px;stroke-width:1.5}
 .bay-start:hover .bs-ico,.bay-start:focus-visible .bs-ico{color:var(--focus)}
 .bs-txt{display:grid;gap:8px;min-width:0}
 .bs-txt h3{margin:0;font:650 26px/1.15 var(--ui);letter-spacing:-.03em;color:var(--label)}
 .bs-txt p{margin:0;font:450 17px/1.45 var(--ui);color:var(--label-2);max-width:38ch}
-.bs-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.bs-acts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:10px}
 .bs-btn,.bs-chip{font:550 16px/1 var(--ui);height:42px;padding:0 18px;border-radius:var(--radius-md);background:var(--card-2);color:var(--label);display:inline-flex;align-items:center;gap:8px;max-width:100%;box-sizing:border-box;
   transition:background var(--d-quick),transform var(--t-bouncy) var(--bouncy)}
 .bs-btn:hover,.bs-chip:hover{background:var(--hover);transform:translateY(-1px)}
@@ -2775,6 +2776,7 @@ body.is-resizing-w,body.is-resizing-w *{cursor:ew-resize!important;user-select:n
 .find-in{flex:1;min-width:0;height:36px;border:0;outline:0;background:transparent;font:450 16px/1.3 var(--ui);color:var(--label);padding:0 6px;letter-spacing:-.014em}
 .find-in::placeholder{color:var(--label-3)}
 .find-in::-webkit-search-cancel-button{-webkit-appearance:none}
+.find-ctrls [hidden]{display:none!important}
 .find-ctrls{display:inline-flex;align-items:center;align-self:center;gap:2px;flex:none}
 .find-cnt{font:550 12px/1 var(--mono);color:var(--label-3);padding:0 6px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .find-cnt:empty{display:none}
@@ -3362,7 +3364,7 @@ body.snap-skip #wall{cursor:copy}
     <button type="button" id="snapBtn" data-tact="snap" aria-pressed="true" aria-label="Smart snap (M)" data-tip="Smart snap · M · hold ⌥ to skip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h3.4v8a2.6 2.6 0 0 0 5.2 0V4H18v8a6 6 0 0 1-12 0z"/><path d="M6 8h3.4M14.6 8H18"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
     <button type="button" id="organizeBtn" data-tact="tidy" aria-label="Organize canvas (T)" data-tip="Organize canvas · T"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2"/></svg></button>
-    <button type="button" id="findBtn" onclick="openPalette({search:true})" aria-label="Search cards (⌘F)" data-tip="Search cards · ⌘F"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
+    <button type="button" id="findBtn" onclick="openPalette({search:true,from:this.getBoundingClientRect()})" aria-label="Search cards (⌘F)" data-tip="Search cards · ⌘F"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
     <button type="button" id="topUndoBtn" data-tact="undo" disabled aria-label="Undo (⌘Z)" data-tip="Undo · ⌘Z"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button type="button" id="topRedoBtn" data-tact="redo" disabled aria-label="Redo (⌘⇧Z)" data-tip="Redo · ⌘⇧Z"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
@@ -3645,7 +3647,7 @@ body.snap-skip #wall{cursor:copy}
 .crew-pop .crew-lock .ico{width:11px;height:11px}
 .crew-pop .crew-lock[aria-pressed="true"]{color:var(--on-act);background:var(--act);box-shadow:none}
 .crew-pop .crew-lock:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
-.crew-pop .crew-foot{display:flex;gap:8px;flex-wrap:wrap}
+.crew-pop .crew-foot{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .crew-pop .crew-foot .cbtn{height:var(--size-md);font-size:12px}
 .au-row .au-seg{width:auto;min-width:228px}
 :root{--seal-bg:var(--card);--seal-ink:var(--label-2);--seal-solid:var(--label)}  /* resolved at the root: a sticky's own ink colours must not reach the seal */
@@ -3729,13 +3731,15 @@ body.snap-skip #wall{cursor:copy}
 .card .lock-badge .ico{width:12px;height:12px}
 /* the lane lock: a tile the size of the lane's own icon, open when anyone may change kept cards, filled when only you may */
 .bay-lock{--bl:calc(44px * max(1, var(--inv-s,1) * .8));pointer-events:auto;position:relative;align-self:center;width:var(--bl);height:var(--bl);display:grid;place-items:center;border-radius:14px;
-  color:var(--label-3);background:transparent;box-shadow:inset 0 0 0 1.5px var(--zone-edge);cursor:pointer;
+  color:var(--label-3);background:transparent;cursor:pointer;
   transition:color var(--d-quick),background var(--d-quick),box-shadow var(--d-quick),transform var(--t-bouncy) var(--bouncy)}
 .bay-lock .ico{width:calc(var(--bl) * .48);height:calc(var(--bl) * .48);stroke-width:1.7}
-.bay-lock:hover,.bay-lock:focus-visible{color:var(--label);background:var(--card);box-shadow:inset 0 0 0 1.5px var(--zone-rule),0 6px 18px -10px rgba(11,12,14,.3)}
+/* a bare icon: no frame at rest, a soft wash under the pointer; locked, it is drawn in full ink */
+.bay-lock:hover,.bay-lock:focus-visible{color:var(--label-2);background:var(--hover)}
 .bay-lock:active{transform:scale(.94)}
-.bay-lock.on{color:var(--card);background:var(--label);box-shadow:none}
-.bay-lock.on:hover,.bay-lock.on:focus-visible{color:var(--card);background:var(--label-2)}
+.bay-lock.on{color:var(--label)}
+.bay-lock.on .ico{stroke-width:2.1}
+.bay-lock.on:hover,.bay-lock.on:focus-visible{color:var(--label);background:var(--hover)}
 .bay-lock::after{content:attr(data-tip);position:absolute;right:0;top:calc(100% + 10px);width:max-content;max-width:calc(260px * var(--inv-s,1));padding:calc(7px * var(--inv-s,1)) calc(11px * var(--inv-s,1));border-radius:calc(10px * var(--inv-s,1));
   font:560 calc(13px * var(--inv-s,1))/1.35 var(--ui);letter-spacing:-.01em;text-align:left;white-space:normal;color:var(--card);background:var(--label);
   opacity:0;transform:translateY(-4px);pointer-events:none;transition:opacity var(--d-quick),transform var(--d-quick);z-index:5}
@@ -3876,18 +3880,28 @@ body.snap-skip #wall{cursor:copy}
 .pal-foot{display:none}
 #palScrim{position:fixed;inset:0;z-index:68;background:color-mix(in srgb,var(--canvas) 34%,transparent)}
 #palScrim[hidden]{display:none}
-#line.palette{position:fixed;z-index:70;top:max(76px,17vh);bottom:auto;left:50%;right:auto;margin:0;transform:translateX(-50%);width:min(640px,calc(100vw - 32px));max-width:none;gap:0;border-radius:var(--radius-control);overflow:hidden;
+#line.palette{position:fixed;z-index:70;top:max(76px,17vh);bottom:auto;left:0;right:0;margin:0 auto;transform:none;width:min(640px,calc(100vw - 32px));max-width:none;gap:0;border-radius:var(--radius-control);overflow:hidden;
   background:var(--card);box-shadow:var(--card-shadow-up);transition:none;animation:palIn var(--t-snappy) var(--snappy) both}
-@keyframes palIn{from{opacity:0;transform:translateX(-50%) translateY(-6px) scale(.985)}}
-@media (min-width:961px){body.copilot-open #line.palette{left:calc((100vw - var(--copilot-w) - 16px) / 2)}}
+/* without an origin the vars fall back to a small settle in place (0.98 → 1) */
+@keyframes palIn{from{opacity:0;transform:translate(var(--pal-dx,0px),var(--pal-dy,0px)) scale(var(--pal-sx,.98),var(--pal-sy,.98))}40%{opacity:1}}
+@keyframes palOut{to{opacity:0;transform:translate(var(--pal-dx,0px),var(--pal-dy,0px)) scale(var(--pal-sx,.98),var(--pal-sy,.98))}}
+#line.palette{animation-duration:200ms;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
+#line.palette.pal-closing{animation:palOut 160ms cubic-bezier(.4,0,.8,.4) both;pointer-events:none}
+#line.palette.pal-measure{animation:none!important;transform:none!important}
+@media (prefers-reduced-motion:reduce){#line.palette,#line.palette.pal-closing{animation:none}}
+@media (min-width:961px){body.copilot-open #line.palette{right:calc(var(--copilot-w) + 16px)}}
 #line .line-field::before{display:none!important}
 #line.palette .line-row{order:1}
 #line.palette #lineCtx{order:2;padding:0 14px 10px}
 #line.palette #lineCtx:empty{display:none}
 #line.palette :is(#sharpen,#genOpts){order:3;margin:0 10px 10px}
-#line.palette :is(#menu,#plusMenu,#findPanel){order:4;position:static;margin:0;max-height:min(372px,52vh);border-radius:0;padding:6px;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:inset 0 .5px 0 var(--hair-2);animation:none;transform:none}
-#line.palette .pal-foot{order:5;display:flex;align-items:center;justify-content:flex-end;gap:14px;height:36px;padding:0 14px;box-shadow:inset 0 .5px 0 var(--hair-2);font:500 12px/1 var(--ui);color:var(--label-3);white-space:nowrap}
+#line.palette :is(#menu,#plusMenu,#findPanel){order:4;position:static;margin:0;max-height:min(372px,52vh);border-radius:0;padding:6px;background:var(--pal-tint);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;animation:none;transform:none}
+/* zones are told apart by space and one faint change of tone, not by rules: the field on the card, results and the key hints on a slightly deeper wash */
+#line.palette{--pal-tint:color-mix(in srgb,var(--label) 2.5%,transparent)}
+#line.palette .pal-foot{order:5;display:flex;align-items:center;justify-content:flex-end;gap:14px;height:32px;padding:0 14px 4px;background:var(--pal-tint);font:500 12px/1 var(--ui);color:var(--label-3);white-space:nowrap}
 #line.palette .pal-foot span{display:inline-flex;align-items:center;gap:5px}
+/* nothing to move through, nothing to say about moving */
+#line.palette:not(:has(#menu:not([hidden]) [data-mi],#findPanel:not([hidden]) .find-item)) .pal-foot{display:none}
 #line.palette .pal-foot kbd{min-width:18px;height:18px;font-size:11px}
 #line.palette .line-field{min-height:0;padding:8px 10px 8px 12px;border-radius:0;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none!important}
 #line.palette .line-main{align-items:center;min-height:40px}
@@ -3911,7 +3925,16 @@ body.snap-skip #wall{cursor:copy}
 .menu button.pal-row,#line.palette .menu button.pal-row{grid-template-columns:24px 1fr auto}
 .menu button.pal-row kbd{justify-self:end}
 .menu button.pal-row .cmd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wl-keys{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:2px 0 0;padding:10px 12px;border-radius:var(--radius-md);background:var(--hover);font:500 13px/1.35 var(--ui)}
+.wl-keys dt{color:var(--label);font-weight:600}.wl-keys dd{margin:0;color:var(--label-2)}
+.wl-keys kbd{font:550 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);background:var(--card);box-shadow:inset 0 0 0 .5px var(--hair-2)}
 .menu .pal-tip{padding:8px 10px 4px;font:450 12px/1.3 var(--ui);color:var(--label-3)}
+/* card kinds: one quiet row of small chips under the suggestions */
+.menu .pal-types{display:flex;flex-wrap:wrap;gap:4px;padding:0 6px 4px}
+#line .menu .pal-types button{min-height:0;width:auto;flex:none;justify-content:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px 0 7px;border-radius:var(--radius-sm);font:500 12.5px/1 var(--ui);color:var(--label-2);background:transparent;transition:background var(--d-quick),color var(--d-quick)}
+#line .menu .pal-types button:hover,#line .menu .pal-types button:focus-visible{background:var(--hover);color:var(--label)}
+#line .menu .pal-types .pal-ic{display:inline-grid;place-items:center;width:16px;height:16px;background:none;box-shadow:none}
+#line .menu .pal-types .ico{width:15px;height:15px;stroke-width:1.7}
 .menu .pal-tip kbd{display:inline-grid;place-items:center;min-width:16px;height:16px;margin:0 2px;padding:0 4px;border-radius:4px;font:600 11px/1 var(--ui);color:var(--label-2);background:var(--hover)}
 #line.palette.is-search .find-ctrls{align-self:center}
 #line.palette [data-f="close"]{display:none}
@@ -6678,7 +6701,7 @@ function renderBays(){
   const has=[ink.some(isMaterial),ink.some(n=>n.type==="idea"||n.type==="synthesis"),ink.some(n=>n.type==="proof"),ink.some(n=>n.type==="print")];
   $("bays").innerHTML=BAYS.map((b,i)=>`<div class="bay bay-${i}" style="left:${i*BAY}px;width:${BAY}px">
     <div class="bay-zone" aria-hidden="true"></div>
-    <div class="bay-head"><span class="bay-ico" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24">${b.icon}</svg></span><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" data-tip="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic(lockedBays().includes(i)?"lock":"unlock")}</button></div>
+    <div class="bay-head"><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" data-tip="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic(lockedBays().includes(i)?"lock":"unlock")}</button></div>
     ${used.has(i)||has[i]?"":bayStartHTML(i)}
   </div>`).join("");
 }
@@ -6689,7 +6712,7 @@ function bayStartHTML(i){
   const tile=(cls,act,ico,h,p,extra="")=>`<div class="bay-start ${cls}" ${act?`data-bay-go="${act}" role="button" tabindex="0"`:""} aria-label="${esc(h)}"><span class="bs-ico" aria-hidden="true">${ico}</span><div class="bs-txt"><h3>${esc(h)}</h3><p>${esc(p)}</p>${extra}</div></div>`;
   if(i===0)return tile("bs-drop","files",'<svg class="ico" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 14v4a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></svg>',
     L("Drop a recording, screenshot or note","拖入一条录音、截图或笔记"),L("Then say what it is: watched first-hand, or what someone told you.","再标明它是什么：亲眼看到的，还是别人告诉你的。"),
-    `<div class="bs-acts"><button type="button" class="bs-btn solid" data-bay-go="files">${esc(L("Choose files","选择文件"))}</button><button type="button" class="bs-btn" data-bay-go="note">${esc(L("Write a note","写一条笔记"))}</button></div>`);
+    `<div class="bs-acts"><button type="button" class="bs-btn" data-bay-go="note">${esc(L("Write a note","写一条笔记"))}</button><button type="button" class="bs-btn solid" data-bay-go="files">${esc(L("Choose files","选择文件"))}</button></div>`);
   if(i===1)return tile("bs-write","claim",'<svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>',
     L("Write your core judgment","写下你的核心判断"),L("One sentence you believe and could be wrong about. Evidence you drag beside it backs it or counters it.","一句你相信、但可能是错的话。拖到它旁边的证据会支持或反驳它。"));
   if(i===2){const ds=ink("direction").filter(d=>!setAsideFor(d)&&!outputsOf(d.id).some(o=>o.type==="proof")).slice(0,4);
@@ -13015,8 +13038,8 @@ function pointInSelection(e){
 function closeCardMenu(){
   const cm=$("cardMenu");if(cm&&!cm.hidden){cm.hidden=true;cardMenuOpen=false}
 }
-/* Right-click on empty canvas: what you can put there, then the board as a whole.
-   Things you add land where you clicked, not wherever the middle of the screen happens to be. */
+/* Right-click on empty canvas holds only what no pointer gesture already does (Mars, 27 Nov): a sticky is a double-click,
+   a paste is ⌘V. An upload lands where you clicked, not wherever the middle of the screen happens to be. */
 let canvasMenuAt=null;
 function openCanvasMenu(x,y){
   const cm=$("cardMenu");if(!cm)return;
@@ -13024,9 +13047,7 @@ function openCanvasMenu(x,y){
   const mac=/Mac|iP(hone|ad)/.test(navigator.platform||navigator.userAgent||""),mod=mac?"⌘":"Ctrl ";
   const empty=!visibleNodes().length;
   const acts=[
-    {k:"note",label:L("New sticky here","在这里新建便签"),ic:"note",key:"N"},
-    {k:"paste",label:L("Paste here","粘贴到这里"),ic:"copy",key:mod+"V"},
-    {k:"files",label:L("Upload files here…","上传文件到这里…"),ic:"upload",key:"U"},
+    {k:"files",label:L("Upload…","上传…"),ic:"upload",key:"U"},
     {sep:true},
     {k:"all",label:L("Select all","全选"),ic:"selAll",key:mod+"A",off:empty},
     {k:"fit",label:L("Fit to screen","适应屏幕"),ic:"fitView",key:"F",off:empty}];
@@ -13037,24 +13058,7 @@ function openCanvasMenu(x,y){
   cm.style.left=clamp(x,10,innerWidth-cw-12)+"px";cm.style.top=clamp(y,10,innerHeight-ch-12)+"px";
 }
 function selectAllCards(){const ids=visibleNodes().map(n=>n.id);if(ids.length)select(ids)}
-/* Paste here reads the clipboard itself, since a menu click is not a paste event. Cards copied in Vellum come back
-   as cards; images and files become cards; text goes through the same rules as ⌘V. */
-async function pasteAt(at){
-  const recent=internalCardClip&&Date.now()-internalCardClip.ts<300000?internalCardClip:null;
-  let files=[],text="";
-  try{
-    if(navigator.clipboard?.read){
-      for(const item of await navigator.clipboard.read()){
-        const img=item.types.find(t=>t.startsWith("image/"));
-        if(img){const b=await item.getType(img);files.push(new File([b],"Pasted image."+(img.split("/")[1]||"png").replace("svg+xml","svg"),{type:img}))}
-        else if(item.types.includes("text/plain"))text+=await (await item.getType("text/plain")).text();
-      }
-    }else if(navigator.clipboard?.readText)text=await navigator.clipboard.readText();
-  }catch{
-    if(!recent){toast(L(`The browser kept the clipboard to itself. Press ${/Mac/.test(navigator.platform||"")?"⌘":"Ctrl+"}V instead.`,`浏览器没有交出剪贴板。请改按 ${/Mac/.test(navigator.platform||"")?"⌘":"Ctrl+"}V。`));return}
-  }
-  pasteData({payload:!files.length&&recent&&(!text||text===recent.plain)?recent.payload:null,files,text},at);
-}
+/* ⌘V and anything else that pastes share one set of rules */
 function pasteData({payload=null,files=[],text=""},at=null){
   if(payload?.nodes?.length){
     const made=insertClonedPayload(payload,at?{at}:{centerInView:true});
@@ -13078,8 +13082,6 @@ function pasteData({payload=null,files=[],text=""},at=null){
 }
 function canvasMenuAct(k){
   const at=canvasMenuAt;
-  if(k==="note")return newNoteAt(at);
-  if(k==="paste")return pasteAt(at);
   if(k==="files"){filePickAt=at;return pickFilesFor("point")}
   if(k==="all")return selectAllCards();
   if(k==="fit")return fitAll();
@@ -13312,7 +13314,7 @@ function renderReviewPop(){
       const first=ns[0];if(!first)return "";
       const ag=AGENTS[first.by]||{mk:"✦",name:"Crew"};
       const sub=`${ag.name}${ns.length>1?` · ${ns.length} cards`:""}`;
-      return `<div class="rp-item"><button type="button" class="rp-go" data-rp-go="${esc(pid)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(titleOf(first))}</strong><span>${esc(sub)}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn keep" data-rp-keep="${esc(pid)}" title="${L("Keep draft","保留草稿")}" aria-label="${L("Keep draft","保留草稿")}">${ic("check")}</button><button type="button" class="rp-btn drop" data-rp-drop="${esc(pid)}" title="${L("Discard draft","丢弃草稿")}" aria-label="${L("Discard draft","丢弃草稿")}">${ic("close")}</button></div></div>`;
+      return `<div class="rp-item"><button type="button" class="rp-go" data-rp-go="${esc(pid)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(titleOf(first))}</strong><span>${esc(sub)}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn drop" data-rp-drop="${esc(pid)}" title="${L("Discard draft","丢弃草稿")}" aria-label="${L("Discard draft","丢弃草稿")}">${ic("close")}</button><button type="button" class="rp-btn keep" data-rp-keep="${esc(pid)}" title="${L("Keep draft","保留草稿")}" aria-label="${L("Keep draft","保留草稿")}">${ic("check")}</button></div></div>`;
     }).join("")}</div>`+(props.length?`<div class="rp-sub">${L("Suggested changes to your cards","对你卡片的修改建议")}</div><div class="rp-list">${props.map(pr=>{const n=byId(pr.target),ag=AGENTS[pr.who]||{mk:COPILOT_ICO,name:"Copilot"};return `<div class="rp-item"><button type="button" class="rp-go" data-rp-prop-go="${esc(pr.id)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(n?titleOf(n):L("Missing card","卡片已不存在"))}</strong><span>${esc(ag.name)} · ${pr.op==="delete"?L("delete","删除"):pr.op==="link"?L("link","连线"):L("edit","修改")}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn" data-rp-prop-reject="${esc(pr.id)}" title="${esc(L("Decline","拒绝"))}" aria-label="${esc(L("Decline","拒绝"))}">${ic("x")}</button><button type="button" class="rp-btn keep" data-rp-prop-accept="${esc(pr.id)}" title="${esc(L("Accept","接受"))}" aria-label="${esc(L("Accept","接受"))}">${ic("check")}</button></div></div>`}).join("")}</div>`:"");
 }
 function toggleReviewPop(force){
@@ -14818,7 +14820,7 @@ function renderLineHint(){
   if(selectedEdgeId){h.textContent=L("Click Ref / Live / Frozen above to control update tracking · Esc to deselect","点击上方「引用 / 活依赖 / 冻结」切换联动方式 · Esc 取消");return}
   const ns=ctxNodes();
   if(linePending.length&&!ns.length){h.textContent=L("Image staged in composer — type your prompt and press Enter / Send, or click × to remove","图片已挂载到输入框 — 输入指令后按回车或点击 Send 随指令发出，点击 × 可取消");return}
-  h.textContent=board.nodes.length?"":L("Double-click the canvas for a sticky","双击画布新建便签");
+  h.textContent="";  /* gestures are taught once, in the welcome, not on the canvas every day */
 }
 function syncStaticLang(){
   const mt=qs(".map-title");if(mt)mt.textContent=L("Overview","画板总览");
@@ -15439,8 +15441,8 @@ function mcpDialog(startProv="",opts={}){
             <input id="mcpManUrl" class="mcp-in mcp-mono" placeholder="Source URL (optional)">
             <textarea id="mcpManBody" rows="3" class="mcp-in" placeholder="Paste extracted notes, NotebookLM briefing guide, or doc excerpt…"></textarea>
             <div style="display:flex;gap:8px;justify-content:flex-end">
-              <button type="button" class="mcp-mini-btn pri" id="mcpManAdd">${ic("plus")} Attach to Copilot</button>
               <button type="button" class="mcp-mini-btn" id="mcpManPin">${ic("notepad")} Attach &amp; Pin</button>
+              <button type="button" class="mcp-mini-btn pri" id="mcpManAdd">${ic("plus")} Attach to Copilot</button>
             </div>
           </div>
         </details>
@@ -17575,7 +17577,7 @@ function roomImage(n,fr){
 function roomRecording(n){
   const st=$("stage");st.className="stage";
   const lifted=outputsOf(n.id).filter(o=>o.type==="frame"),sk=n.status==="sketch";
-  const rActs=`<button type="button" class="s-btn" data-s="download-attach">${ic("down")}Download</button><button type="button" class="s-btn" data-s="shot-split">${ic("frame")}Split Shots</button><button type="button" class="s-btn" data-s="to-gif">${ic("gif")}Make GIF</button><button type="button" class="s-btn solid" data-s="lift">${ic("frame")}Lift Frame</button>`+(sk?`<button type="button" class="s-btn" data-s="erase">Discard</button><button type="button" class="s-btn solid" data-s="ink">Keep</button>`:"");
+  const rActs=`<button type="button" class="s-btn" data-s="download-attach">${ic("down")}Download</button><button type="button" class="s-btn" data-s="shot-split">${ic("frame")}Split Shots</button><button type="button" class="s-btn" data-s="to-gif">${ic("gif")}Make GIF</button><button type="button" class="s-btn${sk?"":" solid"}" data-s="lift">${ic("frame")}Lift Frame</button>`+(sk?`<button type="button" class="s-btn" data-s="erase">Discard</button><button type="button" class="s-btn solid" data-s="ink">Keep</button>`:"");
   st.innerHTML=`<div class="s-bar"><button type="button" class="glass circle" data-s="close" aria-label="Close" title="Close (Esc)" style="width:48px;height:48px">${ic("x")}</button>
     <div class="s-title glass"><b>${esc(n.title)}</b><span class="mono">${n.gen?`${esc(n.gen.ratio||"16:9")} · ${esc(n.gen.model||"Motion")}`:(WEIGHTS[n.weight]?.label||"Unmarked")} · ${lifted.length} frame${lifted.length===1?"":"s"} lifted</span></div>
     <div class="s-grp glass">${rActs}</div></div>
@@ -18578,10 +18580,10 @@ function syncFindStatus(){
   findIdx=matches.length?clamp(findIdx,0,matches.length-1):0;
   const curId=hasQ?(matches[findIdx]?.id||null):null;
   const cnt=$("findCount");
-  if(cnt)cnt.textContent=hasQ?(matches.length?`${findIdx+1} / ${matches.length}`:L("0 hits","0 条")):"";
+  if(cnt)cnt.textContent=hasQ&&matches.length?`${findIdx+1} / ${matches.length}`:"";  /* no hits: the panel already says so */
   const prev=qs('.find-ctrls [data-f="prev"]',line),next=qs('.find-ctrls [data-f="next"]',line),clr=qs('.find-ctrls [data-f="clear"]',line);
-  if(prev)prev.disabled=matches.length<2;
-  if(next)next.disabled=matches.length<2;
+  if(prev){prev.disabled=matches.length<2;prev.hidden=!matches.length}
+  if(next){next.disabled=matches.length<2;next.hidden=!matches.length}
   if(clr)clr.hidden=!hasQ;
   const nothing=!visibleNodes().length;
   if(fp&&nothing){
@@ -19008,7 +19010,7 @@ function helpDialog(opts={}){
   <div class="principle"><i style="border:1.5px dashed var(--label-3)"></i><span><b>See before you send</b>As you type, the board shows where the work will land and which cards will be read.</span></div>
   <dl class="keys"><dt>Click / Pen</dt><dd>Select with V, draw with P (or ⌥+drag on the board, or a stylus): circle cards to select them, circle a direction to adopt it · ⇧+drag in Select draws a box · hold Space to pan · click wires to disconnect</dd><dt>↵ or double-click</dt><dd>Open a card in place · Esc closes</dd><dt>Space</dt><dd>Preview a proof, direction or recording</dd>
   <dt>/ and @</dt><dd>Actions and crew in the composer · ⇥ makes a request more specific</dd><dt>] </dt><dd>Next suggestion waiting for you</dd>
-  <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘A · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · select all · duplicate · copy &amp; paste selected cards</dd><dt>Right-click</dt><dd>On empty canvas: new sticky, paste or upload files right there</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
+  <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘A · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · select all · duplicate · copy &amp; paste selected cards</dd><dt>Right-click</dt><dd>On empty canvas: upload files to where you clicked, select all, fit the board · double-click for a sticky</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
   if(!onBack){openDialog("How Lumen Works",body);return}
   dlg.className="sheet mem-sheet in-settings";
   dlg.innerHTML=`<header class="sh-head">${onBack?shBackBtn(onBack):`<span class="sys-ico" aria-hidden="true">${ic("question")}</span>`}
@@ -20123,7 +20125,8 @@ $("lineQueue")?.addEventListener("click",e=>{
   if(e.target.closest("[data-lq-clear]")){lineQueue=[];lineQueuePaused=false;renderLineQueue();return}
   if(e.target.closest("[data-lq-run]")){lineQueuePaused=false;renderLineQueue();drainLineQueue();return}
 });
-$("menu").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-mi]");if(b){e.preventDefault();pickMenu(+b.dataset.mi,{run:true})}});
+$("menu").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-mi]");if(b){e.preventDefault();pickMenu(+b.dataset.mi,{run:true});return}const t=e.target.closest("[data-pt]");if(t){e.preventDefault();palType(t.dataset.pt)}});
+$("menu").addEventListener("keydown",e=>{const t=e.target.closest?.("[data-pt]");if(t&&(e.key==="Enter"||e.key===" ")){e.preventDefault();palType(t.dataset.pt)}});
 $("line").addEventListener("submit",e=>{e.preventDefault();sendLine()});
 $("micBtn").onclick=()=>toggleVoice(lineIn);
 addEventListener("keydown",e=>{
@@ -20382,6 +20385,11 @@ function showWelcome(){
   openDialog(L("Welcome to Vellum","欢迎使用 Vellum"),`<div class="welcome" style="display:grid;gap:12px;max-width:440px">
     <p style="margin:0;font:500 14px/1.5 var(--ui);color:var(--label)">${L("Turn an idea into directions you can test, a working prototype, and a snapshot to share. Four stages run left to right: Gather, Explore, Prototype, Snapshot.","把一个想法变成可验证的方向、可交互的原型和可分享的定稿快照。四个阶段从左到右：收集素材、探索方向、制作原型、定稿分享。")}</p>
     <p style="margin:0;font:500 13px/1.45 var(--ui);color:var(--label-2)">${L("A crew helps at each step: Scout finds sources, Strategist branches ideas, Wright builds, Critic tests. Without an AI model they fall back to simple built-in rules and say so. Connect one any time from the pill at the top right.","每一步都有成员协助：Scout 查资料，Strategist 发散想法，Wright 动手制作，Critic 负责检验。没有连接 AI 模型时，它们只能使用简单的内置规则，并会明确告诉你。随时可以从右上角的状态按钮连接模型。")}</p>
+    <dl class="wl-keys">
+      <dt>${L("Double-click","双击")}</dt><dd>${L("A sticky, right where you clicked","在点击处新建便签")}</dd>
+      <dt><kbd>⌘K</kbd></dt><dd>${L("Every command and kind of card","所有命令和卡片类型")}</dd>
+      <dt>${L("Right-click","右键")}</dt><dd>${L("Upload to that spot, select all, fit the board","上传到该处、全选、适应屏幕")}</dd>
+    </dl>
     <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px">
       <button type="button" class="sh-btn" data-welcome="sample">${L("Explore the sample","先看看示例")}</button>
       <button type="button" class="sh-btn" style="background:var(--act);color:var(--on-act)" data-welcome="start">${L("Start a board","新建画板")}</button>
@@ -20437,15 +20445,32 @@ Object.assign(ICONS,{
    outside puts it away, and so does running a command. Empty, it offers three next steps that fit what is
    selected, so the first click teaches the rest. Talking to the crew happens in the Copilot panel only. */
 let palOpen=false,palTok=0;
-function showPalette(){
+/* The panel grows out of whatever opened it: the ⌘K pill at the bottom rises into it, the toolbar's search button
+   pushes it out sideways. With the keyboard there is nothing on screen to come from, so it only settles in place.
+   Closing runs the same path back. */
+let palFrom=null,palCloseT=0;
+function palOriginVars(line,from){
+  line.style.removeProperty("--pal-dx");line.style.removeProperty("--pal-dy");line.style.removeProperty("--pal-sx");line.style.removeProperty("--pal-sy");
+  if(!from||calm())return;
+  line.classList.add("pal-measure");const r=line.getBoundingClientRect();line.classList.remove("pal-measure");
+  if(!r.width)return;
+  const dx=(from.left+from.width/2)-(r.left+r.width/2),dy=(from.top+from.height/2)-(r.top+r.height/2);
+  line.style.setProperty("--pal-dx",Math.round(dx)+"px");line.style.setProperty("--pal-dy",Math.round(dy)+"px");
+  line.style.setProperty("--pal-sx",clamp(from.width/r.width,.08,1).toFixed(3));line.style.setProperty("--pal-sy",clamp(from.height/r.height,.08,1).toFixed(3));
+}
+function showPalette(from=palFrom){
+  palFrom=null;
   if(palOpen)return;palOpen=true;palTok++;
-  const line=$("line");line.classList.add("palette");$("palScrim").hidden=false;document.body.classList.add("pal-open");
+  const line=$("line");clearTimeout(palCloseT);line.classList.remove("pal-closing");
+  line.classList.add("palette");palOriginVars(line,from);
+  line.style.animation="none";void line.offsetWidth;line.style.animation="";
+  $("palScrim").hidden=false;document.body.classList.add("pal-open");
   try{hideTip()}catch{}
   if(lineIn.value)requestAnimationFrame(()=>{if(document.activeElement===lineIn)lineIn.select()});
   syncLineClearance();
 }
-function openPalette({text=null,search=false}={}){
-  showPalette();
+function openPalette({text=null,search=false,from=null}={}){
+  showPalette(from);
   if(search){if(!findOpen)setOmniMode("search",{focus:true});else requestAnimationFrame(()=>{$("findIn")?.focus();$("findIn")?.select()});return}
   if(findOpen)setOmniMode("cmd",{focus:false,silent:true});
   if(text!=null){lineIn.value=text;autoGrow()}
@@ -20462,10 +20487,14 @@ function closePalette(){
   closeMenu();
   /* like Spotlight: a search you walked away from is gone next time; a prompt typed into a mode (an image, a search) waits */
   if(!lineMode&&lineIn.value){lineIn.value="";autoGrow();renderRoute()}
-  line.classList.remove("palette");$("palScrim").hidden=true;document.body.classList.remove("pal-open");
+  $("palScrim").hidden=true;document.body.classList.remove("pal-open");
   if(line.contains(document.activeElement))document.activeElement.blur();
-  syncLineClearance();
+  if(calm()){line.classList.remove("palette");syncLineClearance();return}
+  line.classList.add("pal-closing");clearTimeout(palCloseT);
+  palCloseT=setTimeout(()=>{if(!palOpen){line.classList.remove("palette","pal-closing");syncLineClearance()}},170);
 }
+/* clicking the ⌘K pill focuses the field inside it; remember the pill so the panel rises out of it */
+$("line").addEventListener("pointerdown",e=>{if(!palOpen&&e.target.closest?.(".line-row")){const h=qs("#line .pal-hint");if(h)palFrom=h.getBoundingClientRect()}},true);
 /* what to offer before anything is typed: three things, chosen for the selection */
 function paletteStarts(){
   const ns=selected().filter(n=>!n.archived),out=[],run=c=>()=>{lineIn.value=c;autoGrow();sendLine()};
@@ -20493,8 +20522,23 @@ function showStartMenu(){
   menuItems=items;menuIdx=clamp(menuIdx,0,items.length-1);
   const learned=(+store.get(".slashSeen",0)||0)>=3,el=$("menu");el.hidden=false;
   el.innerHTML=`<div class="mh">${L("Suggestions","建议")}</div>`+items.map((it,i)=>`<button type="button" role="option" class="pal-row" data-mi="${i}" aria-selected="${i===menuIdx}"><span class="pal-ic">${ic(it.ico)}</span><span class="cmd">${esc(it.t)}</span>${it.k?`<kbd>${it.k}</kbd>`:"<span></span>"}</button>`).join("")
+    +(selected().length?"":`<div class="mh">${L("New card","新建卡片")}</div><div class="pal-types" role="group" aria-label="${L("New card","新建卡片")}">${PAL_TYPES.map(t=>`<button type="button" data-pt="${t.k}" title="${esc(L(t.en,t.zh))}"><span class="pal-ic">${ic(t.ico)}</span><span>${esc(L(t.en,t.zh))}</span></button>`).join("")}</div>`)
     +(learned?"":`<div class="pal-tip">${L("Type <kbd>/</kbd> to see every command","输入 <kbd>/</kbd> 查看全部命令")}</div>`);
   syncLineClearance();
+}
+/* every kind of card you can start by hand, one click from ⌘K (a sticky is the double-click, so it stays in the suggestions) */
+const PAL_TYPES=[
+  {k:"claim",ico:"claim",en:"Idea",zh:"想法"},{k:"notepad",ico:"notepad",en:"Notepad",zh:"记事本"},{k:"question",ico:"question",en:"Question",zh:"问题"},
+  {k:"list",ico:"list",en:"Checklist",zh:"清单"},{k:"kanban",ico:"kanban",en:"Kanban",zh:"看板"},{k:"treemap",ico:"treemap",en:"Tree map",zh:"树状图"},
+  {k:"table",ico:"table",en:"Table",zh:"表格"},{k:"link",ico:"link",en:"Link",zh:"链接"},{k:"group",ico:"group",en:"Group",zh:"分组"},{k:"image",ico:"image",en:"Image",zh:"图片"}];
+function palType(k){
+  const typeCmd=c=>{lineIn.value=c;autoGrow();lineIn.focus();renderRoute();updateMenu()};
+  if(k==="claim")return typeCmd("/claim ");
+  if(k==="question")return typeCmd("/question ");
+  if(k==="table")return typeCmd("/table ");
+  if(k==="image"){lineIn.value="";setLineMode("image");lineIn.focus();return}
+  closePalette();
+  ({notepad:()=>createNotepadNode(),list:()=>createActionListNode(),kanban:()=>createKanbanNode(),treemap:()=>createTreeMapNode(),link:()=>openLinkDialog(),group:()=>createGroupNode()})[k]?.();
 }
 /* Ask Copilot: the panel opens (or stays open), the selection rides along as one removable chip, the cursor waits in the input */
 function askCopilotAbout(ns){

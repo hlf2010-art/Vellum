@@ -50,7 +50,7 @@ async function drawTouch(p, pts) {
   const t = (type, pts2) => p.cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts2.map(([x, y], id) => ({ x, y, id })) });
   await t('touchStart', [pts[0]]); for (let i = 1; i < pts.length; i++) await t('touchMove', [pts[i]]); await t('touchEnd', []);
 }
-const state = p => p.evaluate(() => ({ adopted: Object.values(board.adopted), sel: [...sel], marks: [...document.querySelectorAll('#inkMarks .ink-mark')].map(m => ({ id: m.dataset.mark, hot: m.classList.contains('hot'), w: getComputedStyle(m).strokeWidth, o: +getComputedStyle(m).opacity, d: m.getAttribute('d').length })), live: document.querySelectorAll('#lasso .ink-live').length, tip: document.querySelector('.ink-tip.on')?.textContent || '', bar: !!document.querySelector('#selbar:not([hidden])') && getComputedStyle(document.querySelector('#selbar')).display !== 'none', tool: [...document.querySelectorAll('#topTools [data-ttool]')].find(b => b.getAttribute('aria-pressed') === 'true')?.dataset.ttool }));
+const state = p => p.evaluate(() => ({ adopted: Object.values(board.adopted), sel: [...sel], marks: [...document.querySelectorAll('.card .ink-mark')].map(m => ({ id: m.dataset.mark, hot: m.classList.contains('hot'), w: getComputedStyle(m).strokeWidth, o: +getComputedStyle(m).opacity, d: m.getAttribute('d').length })), live: document.querySelectorAll('#lasso .ink-live').length, tip: document.querySelector('.ink-tip.on')?.textContent || '', bar: !!document.querySelector('#selbar:not([hidden])') && getComputedStyle(document.querySelector('#selbar')).display !== 'none', tool: [...document.querySelectorAll('#topTools [data-ttool]')].find(b => b.getAttribute('aria-pressed') === 'true')?.dataset.ttool }));
 
 (async () => {
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
@@ -82,11 +82,11 @@ const state = p => p.evaluate(() => ({ adopted: Object.values(board.adopted), se
       check(`[${tag}] pointing at the card brings the ink back`, s.marks[0]?.hot && parseFloat(s.marks[0].w) > 1.8, JSON.stringify(s.marks));
       await p.shot(`${tag}-3-hover`);
       // the mark follows the card
-      const bb = () => p.evaluate(() => { const r = document.querySelector('#inkMarks .ink-mark').getBBox(); return { x: r.x, y: r.y }; });
+      const bb = () => p.evaluate(() => { const r = document.querySelector('.card .ink-mark').getBoundingClientRect(); return { x: r.x, y: r.y }; });
       const d0 = await bb();
       await p.mouse.move(a2.x + a2.w / 2, a2.y + 20); await p.mouse.down(); await p.mouse.move(a2.x + a2.w / 2 - 60, a2.y - 20, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(200);
       const d1 = await bb();
-      check(`[${tag}] moving the card moves its mark`, Math.abs((d0.x - d1.x) - 60 / .9) < 12 && Math.abs((d0.y - d1.y) - 40 / .9) < 12, JSON.stringify([d0, d1]));
+      check(`[${tag}] moving the card moves its mark`, Math.abs((d0.x - d1.x) - 60) < 8 && Math.abs((d0.y - d1.y) - 40) < 8, JSON.stringify([d0, d1]));
       await p.keyboard.press('ControlOrMeta+z'); await p.waitForTimeout(150); await p.keyboard.press('ControlOrMeta+z'); await p.waitForTimeout(250);
       s = await state(p);
       check(`[${tag}] Undo takes back the adoption and the mark together`, s.adopted.includes(b0.id) && !s.adopted.includes(a.id) && s.marks.length === 0, JSON.stringify(s));
@@ -185,6 +185,58 @@ const state = p => p.evaluate(() => ({ adopted: Object.values(board.adopted), se
       await drawTouch(p, [e0, [e0[0] - 20, e0[1]], [e0[0] - 50, e0[1]], [e0[0] - 80, e0[1]]]); await p.waitForTimeout(100);
       const c1 = await p.evaluate(() => ({ ...cam }));
       check('in Select, a finger on empty board still pans', c1.x < c0b.x - 40, JSON.stringify([c0b, c1]));
+      check('no page errors', !p.errors.length, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    /* 6. hover comes from a pointer that moved, and a mark keeps to its card's state */
+    {
+      const p = await open(browser, base);
+      await p.keyboard.press('p');
+      const a = await rectOf(p, 'A');
+      await drawMouse(p, loop(a)); await p.waitForTimeout(200);
+      await p.keyboard.press('v'); await p.evaluate(() => select([])); await p.waitForTimeout(1300);
+      const markState = () => p.evaluate(() => { const m = document.querySelector('.card .ink-mark'); const c = m?.closest('.card'); return m && { card: c?.dataset.id, hot: m.classList.contains('hot'), eff: +getComputedStyle(m).opacity * +getComputedStyle(c).opacity, hoverOff: wall.classList.contains('hover-off') }; });
+      let m = await markState();
+      check('the mark lives inside its card', m && m.card === a.id, JSON.stringify(m));
+      // the card slides under a still cursor: no hover
+      { const r = await rectOf(p, 'A'); Object.assign(a, r); }
+      await p.mouse.move(a.x + a.w / 2, a.y + a.h + 150); await p.waitForTimeout(200);
+      await p.mouse.wheel(0, -200); await p.waitForTimeout(500);
+      const under = await p.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('.card')?.dataset.id, [a.x + a.w / 2, a.y + a.h + 150]);
+      m = await markState();
+      check('scrolling a card under a still cursor does not light its mark', under === a.id && !m.hot && m.hoverOff, JSON.stringify({ under, m }));
+      await p.mouse.move(a.x + a.w / 2 + 3, a.y + a.h + 150); await p.waitForTimeout(450);
+      m = await markState();
+      check('moving the pointer then lights it', m.hot && !m.hoverOff, JSON.stringify(m));
+      // the contributors' hover card
+      const g = await p.evaluate(() => { const e = document.querySelector('#nodes .by-group'); if (!e) return null; const r = wall.getBoundingClientRect(); let q = e.getBoundingClientRect(); cam.x += r.width * .55 - (q.left + q.width / 2); cam.y += r.height * .4 - (q.top + q.height / 2); paintCam(); q = e.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; });
+      if (g) {
+        await p.mouse.move(g.x, g.y - 160); await p.waitForTimeout(400);
+        await p.mouse.wheel(0, 160); await p.waitForTimeout(600);
+        const pop = await p.evaluate(() => !!byPop.el && !byPop.el.hidden);
+        const onIt = await p.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest('.by-group'), [g.x, g.y - 160]);
+        check('the contributors hover card does not open for avatars that pan under a still cursor', onIt && !pop, JSON.stringify({ onIt, pop }));
+        await p.mouse.move(g.x + 1, g.y - 159); await p.waitForTimeout(700);
+        check('it opens once the pointer moves onto them', await p.evaluate(() => !!byPop.el && !byPop.el.hidden));
+      } else check('found an avatar group to test the hover card on', false);
+      // the mark dims and hides with its card
+      await p.evaluate(() => { findOpen = true; findQuery = 'Wrist Pager'; renderNodes(); });
+      await p.waitForTimeout(400); m = await markState();
+      check('when search dims the card, its mark dims with it', m && m.eff < .2, JSON.stringify(m));
+      await p.evaluate(() => { findOpen = false; findQuery = ''; renderNodes(); });
+      await p.evaluate(() => adopt(board.nodes.find(n => n.type === 'direction' && n.letter === 'B'))); await p.waitForTimeout(300);
+      check('adopting another direction takes the mark off the card that is now passed over', !(await markState()));
+      await p.keyboard.press('ControlOrMeta+z'); await p.waitForTimeout(300);
+      m = await markState();
+      check('Undo puts the mark back with the adoption', m && m.card === a.id, JSON.stringify(m));
+      // dragging the card carries the mark (scaled with the card)
+      await p.evaluate(() => { const a = board.nodes.find(n => n.type === 'direction' && n.letter === 'A'); const r = wall.getBoundingClientRect(); cam.x = r.width * .45 - (a.x + nodeW(a) / 2) * cam.s; cam.y = r.height / 2 - (a.y + nodeH(a) / 2) * cam.s; paintCam(); });
+      const a3 = await rectOf(p, 'A');
+      await p.mouse.move(a3.x + a3.w / 2, a3.y + a3.h / 2); await p.mouse.down(); await p.mouse.move(a3.x + a3.w / 2 + 40, a3.y + a3.h / 2 + 30, { steps: 5 }); await p.waitForTimeout(150);
+      const dragging = await p.evaluate(() => { const m = document.querySelector('.card .ink-mark'); return m.closest('.card').classList.contains('dragging'); });
+      await p.mouse.up();
+      check('while the card is dragged its mark is part of it', dragging);
       check('no page errors', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }

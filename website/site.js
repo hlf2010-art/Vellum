@@ -55,7 +55,9 @@
       "crew.critic": "Checks it against the sources", "crew.criticq": "“Nothing here says campers want a dial.”",
       "crew.agency": "They can challenge your decision. Only you can make it.",
       "mode.focus": "Focus", "mode.listen": "Listening", "mode.team": "Teamwork",
-      "mode.focusd": "They stay quiet and catch up when you're back.",
+      "mode.focusd": "Nothing interrupts you. What they notice waits until you're back.",
+      "sc.crew": "Crew", "sc.you": "You", "sc.wait": "waiting", "sc.backK": "While you focused", "sc.backT": "3 notes from the crew",
+      "sc.critic": "Nothing here says campers want a dial.", "sc.draftK": "Prototype · draft", "sc.draftT": "Foam mock-up", "sc.keep": "Keep", "sc.discard": "Discard",
       "mode.listend": "They speak up only when something doesn't add up.",
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
@@ -103,7 +105,9 @@
       "crew.critic": "对照来源挑毛病", "crew.criticq": "“这里没有任何证据说露营者想要旋钮。”",
       "crew.agency": "它们可以质疑你的决定，但只有你能做决定。",
       "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
-      "mode.focusd": "它们保持安静，等你回来再跟上。",
+      "mode.focusd": "不打扰你。它们注意到的事，等你回来再说。",
+      "sc.crew": "伙伴", "sc.you": "你", "sc.wait": "条待看", "sc.backK": "你专注的时候", "sc.backT": "伙伴记下了 3 条",
+      "sc.critic": "这里没有任何证据说露营者想要旋钮。", "sc.draftK": "原型 · 草稿", "sc.draftT": "泡沫手板", "sc.keep": "留下", "sc.discard": "丢掉",
       "mode.listend": "只在有地方说不通时才开口。",
       "mode.teamd": "和你一起起草，好的你留下。",
       "modes.label": "AI 伙伴参与的程度",
@@ -279,6 +283,7 @@
     $("caseTabs").setAttribute("aria-label", t("cases.label"));
     $("modes").setAttribute("aria-label", t("modes.label"));
     board.relabel();
+    if (scene) scene.relabel();
     zones.render(false);
     renderMode(false);
     renderDownloads();
@@ -1134,6 +1139,135 @@
     layers.addEventListener("pointerleave", function () { layers.style.setProperty("--mx", "0"); layers.style.setProperty("--my", "0"); });
   }
 
+  // ---- The crew scene: the same moment on a small board, played three ways --------------------------
+  // You put down a direction and keep working. What the crew does about it, and when, is the whole
+  // difference between the modes: the board shows what you'd see, the timeline underneath shows when.
+  var scene = (function () {
+    var boxEl = $("sceneBox"), st = $("sceneStage"), tlCrew = $("tlCrew"), tlYou = $("tlYou");
+    var W = 560, H = 236, D = 5200, LAY = { wide: { W: 560, H: 236, mine: [40, 66], bubble: [272, 44, 248], back: [300, 92], draft: [304, 104] }, narrow: { W: 340, H: 300, mine: [18, 24], bubble: [44, 158, 272], back: [100, 166], draft: [116, 170] } }, timers = [], seen = false, running = false, raf = 0;
+    var TICKS = [0.06, 0.2, 0.34, 0.5, 0.66, 0.82];
+    // Each mode: what happens on the board, at a point along the timeline (0 to 1).
+    var PLAN = {
+      focus: [{ x: 0.27, mark: "held" }, { x: 0.5, mark: "held" }, { x: 0.73, mark: "held" }, { x: 0.96, mark: "bundle", show: "back" }],
+      listen: [{ x: 0.42, mark: "dot", show: "dot" }, { x: 0.54, show: "bubble" }],
+      team: [{ x: 0.24, show: "wright" }, { x: 0.34, mark: "dot", show: "draft" }, { x: 0.66, mark: "dot", show: "dot" }]
+    };
+    var av = function (c, l) { return '<b class="av" style="--c:' + c + '">' + l + "</b>"; };
+    st.innerHTML =
+      '<article class="vc ink sc-card" id="scMine" style="left:40px;top:66px;width:214px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-fork"/></svg><span data-sc="mk"></span><span class="by"><b style="background:var(--label);color:var(--card)" data-sc="me"></b></span></div>' +
+        '<div class="t"><span class="chip A">A</span><span data-sc="mt"></span></div><div class="b" data-sc="mb"></div><span class="sc-dot">' + av("var(--crew-critic)", "C") + "</span></article>" +
+      '<div class="sc-bubble" id="scBubble" style="left:272px;top:44px;width:248px">' + av("var(--crew-critic)", "C") + '<p data-sc="critic"></p></div>' +
+      '<article class="vc sc-card sc-back" id="scBack" style="left:300px;top:92px;width:222px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-tray"/></svg><span data-sc="backK"></span></div><div class="t" data-sc="backT"></div>' +
+        '<div class="sc-avs">' + av("var(--crew-scout)", "S") + av("var(--crew-critic)", "C") + av("var(--crew-wright)", "W") + "</div></article>" +
+      '<article class="vc sc-card sc-draft" id="scDraft" style="left:304px;top:104px;width:206px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-window"/></svg><span data-sc="draftK"></span><span class="by"><b style="background:var(--crew-wright)">W</b></span></div>' +
+        '<div class="t" data-sc="draftT"></div><div class="sc-acts"><span class="keep" data-sc="keep"></span><span data-sc="discard"></span></div></article>';
+    var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = mine.querySelector(".sc-dot");
+    TICKS.forEach(function (x) { var i = document.createElement("i"); i.className = "tk"; i.style.left = (x * 100) + "%"; tlYou.appendChild(i); });
+
+    var cur = {};
+    function cursorEl(name, color) {
+      if (cur[name]) return cur[name];
+      var c = document.createElement("div");
+      c.className = "cursor" + (name === "you" ? " you" : "");
+      c.style.setProperty("--c", color);
+      c.innerHTML = '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2.5 1.8 15 8.4l-5.6 1.5-2.4 5.4Z"/></svg><span class="who"></span>';
+      st.appendChild(c);
+      return (cur[name] = c);
+    }
+    function glide(c, x, y, ms) {
+      if (!c.classList.contains("on")) { c.style.setProperty("--mv", "0ms"); c.style.transform = "translate(" + (x + 50) + "px," + (y + 50) + "px)"; void c.offsetWidth; c.classList.add("on"); }
+      c.style.setProperty("--mv", (ms || 600) + "ms"); c.style.transform = "translate(" + x + "px," + y + "px)";
+    }
+    function land(card, ox, oy) {
+      var b = { x: card.offsetLeft, y: card.offsetTop, w: card.offsetWidth, h: card.offsetHeight };
+      card.style.transition = "none";
+      card.style.setProperty("--ox", ((ox - b.x - b.w / 2) * 0.32).toFixed(1) + "px");
+      card.style.setProperty("--oy", ((oy - b.y - b.h / 2) * 0.32).toFixed(1) + "px");
+      card.style.transformOrigin = (ox - b.x) + "px " + (oy - b.y) + "px";
+      void card.offsetWidth; card.style.transition = "";
+      card.classList.add("on");
+    }
+    function relabel() {
+      var d = BOARD[lang].cards.dA;
+      var txt = { mk: d.k, mt: d.t, mb: d.b, me: lang === "zh" ? "你" : "Y" };
+      st.querySelectorAll("[data-sc]").forEach(function (e) { var k = e.getAttribute("data-sc"); e.textContent = txt[k] != null ? txt[k] : t("sc." + k); });
+      if (cur.you) cur.you.querySelector(".who").textContent = lang === "zh" ? "你" : "You";
+      if (cur.wright) cur.wright.querySelector(".who").textContent = "Wright";
+    }
+    function mbox() { return { x: mine.offsetLeft, y: mine.offsetTop, w: mine.offsetWidth, h: mine.offsetHeight }; }
+    // Two layouts: side by side when there's room, stacked on a phone so the cards stay readable.
+    function fit() {
+      var L = LAY[boxEl.clientWidth < 480 ? "narrow" : "wide"];
+      W = L.W; H = L.H;
+      boxEl.style.aspectRatio = W + " / " + H;
+      st.style.width = W + "px"; st.style.height = H + "px";
+      var put = function (e, p) { e.style.left = p[0] + "px"; e.style.top = p[1] + "px"; if (p[2]) e.style.width = p[2] + "px"; };
+      put(mine, L.mine); put(bubble, L.bubble); put(back, L.back); put(draft, L.draft);
+      st.style.transform = "scale(" + (boxEl.clientWidth / W) + ")";
+    }
+
+    function reset() {
+      timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf);
+      [mine, bubble, back, draft, dot].forEach(function (e) { e.classList.remove("on"); });
+      Object.keys(cur).forEach(function (n) { cur[n].classList.remove("on"); });
+      tlCrew.innerHTML = ""; tlYou.querySelectorAll(".tk").forEach(function (k) { k.classList.remove("on"); });
+      tlYou.style.setProperty("--p", "0%");
+    }
+    function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+    function mark(e) {
+      var m = document.createElement("i");
+      m.className = "cm " + e.mark; m.style.left = (e.x * 100) + "%";
+      if (e.mark === "bundle") m.textContent = "3";
+      tlCrew.appendChild(m);
+      requestAnimationFrame(function () { m.classList.add("on"); });
+    }
+    function show(what, instant) {
+      if (what === "dot") dot.classList.add("on");
+      if (what === "bubble") bubble.classList.add("on");
+      if (what === "back") instant ? back.classList.add("on") : land(back, W - 30, H - 30);
+      if (what === "draft") { var mb = mbox(); instant ? draft.classList.add("on") : land(draft, mb.x + mb.w, mb.y + mb.h * 0.6); }
+      if (what === "wright" && !instant) {
+        var w = cursorEl("wright", "var(--crew-wright)"), m = mbox(); relabel();
+        glide(w, m.x + m.w - 10, m.y + m.h * 0.55, 520);
+        at(600, function () { glide(w, draft.offsetLeft + draft.offsetWidth - 40, draft.offsetTop + draft.offsetHeight - 8, 640); });
+        at(1500, function () { w.classList.remove("on"); });
+      }
+    }
+    // The end state of a mode, all at once: for reduced motion, and while the board is off screen.
+    function still(mode) {
+      reset(); mine.classList.add("on");
+      TICKS.forEach(function (x, i) { tlYou.querySelectorAll(".tk")[i].classList.add("on"); });
+      tlYou.style.setProperty("--p", "100%");
+      PLAN[mode].forEach(function (e) { if (e.mark) mark(e); if (e.show) show(e.show, true); });
+    }
+    function play(mode) {
+      if (reduced || !seen) { still(mode); return; }
+      reset(); running = true; relabel();
+      var you = cursorEl("you", "var(--label)"); relabel();
+      var m = mbox(), P = function (fx, fy) { return [m.x + m.w * fx, m.y + m.h * fy]; };
+      glide(you, P(.4, .3)[0], P(.4, .3)[1], 0);
+      at(240, function () { land(mine, P(.44, .32)[0], P(.44, .32)[1]); });
+      // You keep working: one small move per tick on your row.
+      var hops = [P(.5, .7), P(.75, .5), P(.25, .78), P(.65, .86), P(.45, .6), P(.8, .7)];
+      TICKS.forEach(function (x, i) {
+        at(x * D, function () { tlYou.querySelectorAll(".tk")[i].classList.add("on"); if (i) glide(you, hops[i][0], hops[i][1], 420); });
+      });
+      PLAN[mode].forEach(function (e) { at(e.x * D, function () { if (e.mark) mark(e); if (e.show) show(e.show); }); });
+      at(D + 300, function () { you.classList.remove("on"); running = false; });
+      var t0 = performance.now();
+      (function f(now) { var k = Math.min(1, (now - t0) / D); tlYou.style.setProperty("--p", (k * 100).toFixed(2) + "%"); if (k < 1) raf = requestAnimationFrame(f); })(t0);
+    }
+
+    fit(); relabel(); still("listen");
+    window.addEventListener("resize", fit);
+    boxEl.addEventListener("click", function () { play(crewMode); });
+    if ("IntersectionObserver" in window && !reduced) {
+      var sio = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting && !seen) { seen = true; sio.disconnect(); setTimeout(function () { play(crewMode); }, 300); } }); }, { threshold: 0.6 });
+      sio.observe(boxEl);
+    }
+    return { play: play, relabel: relabel, idle: function () { return !running; } };
+  })();
+
   // ---- Crew participation: the switch changes the crew above it --------------------------------
   var crewMode = "listen", modesEl = $("modes"), modeBtns = Array.prototype.slice.call(modesEl.querySelectorAll("button"));
   function renderMode(focus) {
@@ -1142,15 +1276,14 @@
       b.setAttribute("aria-checked", on ? "true" : "false"); b.tabIndex = on ? 0 : -1;
       if (on) { slide(modesEl, b); if (focus) b.focus(); }
     });
-    $("crewRow").setAttribute("data-mode", crewMode);
     $("modeDesc").textContent = t({ focus: "mode.focusd", listen: "mode.listend", team: "mode.teamd" }[crewMode]);
   }
   modeBtns.forEach(function (b, i) {
-    b.addEventListener("click", function () { crewMode = b.dataset.mode; renderMode(false); });
+    b.addEventListener("click", function () { var was = crewMode; crewMode = b.dataset.mode; renderMode(false); if (was !== crewMode || scene.idle()) scene.play(crewMode); });
     b.addEventListener("keydown", function (e) {
       var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
       if (!d) return;
-      e.preventDefault(); crewMode = modeBtns[(i + d + modeBtns.length) % modeBtns.length].dataset.mode; renderMode(true);
+      e.preventDefault(); crewMode = modeBtns[(i + d + modeBtns.length) % modeBtns.length].dataset.mode; renderMode(true); scene.play(crewMode);
     });
   });
   window.addEventListener("resize", function () { renderMode(false); });

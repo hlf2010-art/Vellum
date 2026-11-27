@@ -26,7 +26,12 @@ A relation is an edge with `by: "you"` and a `rel`:
 3. **Pulling apart keeps it.** Drag a snapped card away and the relation stays, drawn as a line with its type on it. A toast offers Unbind.
 4. **Unbinding is explicit.** A relation goes away only when the person deletes it (⌫ on the selected relation, Unbind, or the bin in its popover). Undo brings it back.
 5. **The type is optional.** After a snap or a new connector a small picker offers the four types (keys 1 to 4). Ignoring it leaves `related`.
-6. **Groups.** Cards snapped together, directly or through each other, are a snapped group. Dragging a clasp moves the whole group; dragging a card pulls just that card out. A connector dropped on a clasp relates the card to every card in the group. Each card can still be connected to others on its own.
+6. **Groups are a star and its planets.** Cards snapped together, directly or through each other, are a snapped group, and every group has one star: the focus of the topic. An idea, a claim, a direction or a project brief is a star; evidence, failure cases, eval sets, images, notes and links are planets (decided by Mars, 2026-11-27).
+   - **Which card is the star.** When two focus cards meet, the broader one wins: a brief over an idea, claim or direction. With no focus card, or a tie, the card that stayed still (the one snapped onto) is the star. "Set as focus" (设为焦点) in a card's menu overrides either way. The rule lives in one function, `pickStar`.
+   - **One level deep.** A card snapped onto a planet joins that planet's star. Each card orbits one star; every other relation it has is a line.
+   - **Dragging.** Drag the star and the whole group moves with it. Drag a planet and it comes out of orbit alone; its relations stay, drawn as lines, and a toast offers Unbind. A small tug (under 34px) springs back to the seam, so tidying a planet never detaches it. A clasp opens its relation; it no longer moves the group.
+   - **The cue.** The star wears a small orbit mark at its top-left corner.
+   - A connector dropped on a clasp relates the card to every card in the group. Each card can still be connected to others on its own.
 7. **On and off.** Smart snap is a toolbar toggle (M), on by default and remembered. Holding ⌥ while dragging skips it for that drag.
 8. **A note says the nuance.** Click a line or a clasp and write in Note; Enter saves, Esc cancels. The note shows on the line next to the type (a dot on a clasp, the full text on hover), and the crew reads it with the relation.
 9. **History.** Every change goes to the Activity log and to Undo: a new type is logged with what it was ("counters (was: supports)"), a note with its text.

@@ -3039,6 +3039,120 @@ body.snap-skip #wall{cursor:copy}
   .clasp.fresh::after{display:none}
 }
 .src-pill.rel-pill{color:var(--rc);background:color-mix(in srgb,var(--rc) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 38%,transparent)}
+/* ── decision view: what you decided, why, what it rests on, what you set aside, what has changed since ── */
+.dec-btn{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px 0 10px;margin-left:2px;border:0;border-radius:var(--radius-pill);background:none;color:var(--label-2);font:580 13px/1 var(--ui);cursor:pointer;position:relative;transition:background var(--d-quick),color var(--d-quick),transform var(--d-press)}
+.dec-btn:hover,.dec-btn[aria-expanded="true"]{background:var(--hover);color:var(--label)}
+.dec-btn:active{transform:scale(.96)}
+.dec-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.dec-btn .ico{width:15px;height:15px;stroke-width:1.8}
+.dec-btn .dec-n{font-variant-numeric:tabular-nums;color:var(--label-3);font-weight:600}
+.dec-btn .dec-dot{width:7px;height:7px;border-radius:50%;background:var(--A);box-shadow:0 0 0 2px var(--bg,transparent)}
+.dec-btn .dec-dot.ctr{background:var(--danger)}
+.dec-btn .dec-dot[hidden]{display:none}
+.dec-panel{position:absolute;z-index:47;top:calc(64px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));max-height:calc(100% - 64px - 16px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+  width:min(404px,calc(100% - 32px));border-radius:24px;display:flex;flex-direction:column;overflow:hidden;outline:none;
+  background:var(--chrome);-webkit-backdrop-filter:blur(32px) saturate(1.4);backdrop-filter:blur(32px) saturate(1.4);box-shadow:var(--chrome-shadow);
+  transform-origin:0 0;transition:transform .38s var(--smooth),opacity .22s var(--ease)}
+.dec-panel[hidden]{display:none!important}
+/* the panel sits where the tools and the map live; they step aside while it is open instead of showing through the glass */
+#app>.map,#app>.top-tools{transition:opacity .25s var(--ease),translate .35s var(--smooth)}
+#app.dv-on>.map,#app.dv-on>.top-tools{opacity:0;pointer-events:none;translate:-10px 0}
+.dec-panel.dv-enter,.dec-panel.dv-closing{opacity:0;transform:translateX(-22px) scale(.98)}
+.dec-panel.dv-closing{pointer-events:none}
+.dv-head{display:flex;align-items:flex-start;gap:10px;padding:18px 14px 12px 20px}
+.dv-head .dv-t{flex:1;min-width:0;display:grid;gap:4px}
+.dv-head b{font:650 19px/1.1 var(--ui);letter-spacing:-.025em;color:var(--label)}
+.dv-head small{font:450 13px/1.35 var(--ui);color:var(--label-3)}
+.dv-x{flex:none;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--label-3);cursor:pointer}
+.dv-x:hover{background:var(--hover);color:var(--label)}
+.dv-x .ico{width:15px;height:15px}
+.dv-body{flex:1;min-height:0;overflow:auto;padding:2px 10px 14px;overscroll-behavior:contain}
+.dv-dec{padding:14px 12px 12px;border-radius:18px;background:var(--card);box-shadow:0 0 0 1px var(--hair);margin:0 0 10px;animation:dvIn .34s var(--smooth) both;animation-delay:calc(var(--i,0) * 40ms)}
+@keyframes dvIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.dv-dec,.dec-panel{animation:none!important;transition:none!important}}
+.dv-q{display:block;width:100%;text-align:left;padding:0;margin:0 0 9px;border:0;background:none;font:450 12.5px/1.4 var(--ui);color:var(--label-3);cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dv-q:hover{color:var(--label-2)}
+.dv-chose{display:flex;align-items:flex-start;gap:9px;width:100%;padding:0;border:0;background:none;text-align:left;cursor:pointer;color:var(--label)}
+.dv-chose .chip{flex:none;margin-top:1px;width:22px;height:22px;font-size:12px}
+.dv-chose .dv-ct{flex:1;min-width:0;font:650 16px/1.3 var(--ui);letter-spacing:-.015em}
+.dv-chose:hover .dv-ct{text-decoration:underline;text-decoration-color:var(--hair-2);text-underline-offset:3px}
+.dv-st{flex:none;margin-top:1px;height:22px;display:inline-flex;align-items:center;gap:5px;padding:0 8px;border-radius:var(--radius-pill);font:600 11.5px/1 var(--ui);white-space:nowrap;color:var(--A);background:color-mix(in srgb,var(--A) 12%,transparent)}
+.dv-st.ctr,.dv-st.failed{color:var(--danger);background:color-mix(in srgb,var(--danger) 11%,transparent)}
+.dv-st.passed{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.dv-meta{margin:4px 0 0 31px;font:500 12px/1.3 var(--ui);color:var(--label-3)}
+.dv-sec{margin:12px 0 0 31px}
+.dv-k{display:block;margin:0 0 4px;font:600 11px/14px var(--ui);letter-spacing:.02em;color:var(--label-3)}
+:lang(zh) .dv-k{letter-spacing:0}
+.dv-why{display:block;width:100%;min-height:22px;margin:0;padding:3px 7px;margin-left:-7px;border:0;border-radius:var(--radius-xs);background:none;resize:none;overflow:hidden;font:14px/1.45 var(--ui);color:var(--label);outline:none;field-sizing:content}
+.dv-why::placeholder{color:var(--label-3)}
+.dv-why:hover{background:var(--hover)}
+.dv-why:focus{background:var(--hover);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--focus) 45%,transparent)}
+.dv-ev{border:0;padding:0;margin:0}
+.dv-ev>summary{list-style:none;display:flex;align-items:center;gap:6px;cursor:pointer;font:550 13px/20px var(--ui);color:var(--label);border-radius:var(--radius-xs);margin:0 -6px;padding:1px 6px;width:fit-content;max-width:calc(100% + 12px)}
+.dv-ev>summary::-webkit-details-marker{display:none}
+.dv-ev>summary:hover{background:var(--hover)}
+.dv-ev>summary:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.dv-ev>summary .ev-ico{width:14px;height:14px}
+.dv-ev>summary .dv-cnt{color:var(--label-3);font-weight:500}
+.dv-ev>summary .dv-tw{width:12px;height:12px;color:var(--label-3);transition:transform var(--d-quick)}
+.dv-ev[open]>summary .dv-tw{transform:rotate(180deg)}
+.dv-ev.thin>summary{color:var(--A)}
+.dv-ev.thin>summary .ev-ico{color:var(--A)}
+.dv-list{list-style:none;margin:4px 0 0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:1px}
+.dv-list>li{min-width:0}
+.dv-row{display:flex;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;margin:0 -6px;border:0;border-radius:var(--radius-xs);background:none;text-align:left;cursor:pointer;font:450 13px/18px var(--ui);color:var(--label-2)}
+.dv-row:hover{background:var(--hover);color:var(--label)}
+.dv-row .ev-ico{width:13px;height:13px}
+.dv-row .dv-rt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dv-row time{flex:none;font:500 11.5px/1 var(--ui);color:var(--label-3);font-variant-numeric:tabular-nums}
+.dv-row.ctr .dv-rt{color:var(--danger)}
+.dv-rel{flex:none;font:600 11px/1 var(--ui);color:var(--rc);padding:3px 6px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--rc) 11%,transparent)}
+.dv-sub{margin:8px 0 2px;font:600 11px/14px var(--ui);color:var(--danger)}
+.dv-aside{display:grid;gap:6px}
+.dv-al{display:grid;grid-template-columns:auto 1fr;column-gap:8px;align-items:start}
+.dv-al .chip{width:18px;height:18px;font-size:10px;margin-top:1px;background:var(--label-3);box-shadow:none}
+.dv-al .dv-at{min-width:0;border:0;padding:0;background:none;text-align:left;cursor:pointer;font:550 13px/20px var(--ui);color:var(--label-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dv-al .dv-at:hover{color:var(--label)}
+.dv-al .dv-why{grid-column:2;font-size:13px;line-height:19px;color:var(--label-2);padding-top:1px;padding-bottom:1px}
+.dv-since{margin-top:12px;margin-left:31px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--A) 7%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--A) 22%,transparent)}
+.dv-since.ctr{background:color-mix(in srgb,var(--danger) 6%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--danger) 22%,transparent)}
+.dv-since.calm{background:none;box-shadow:none;padding:0;margin-top:12px}
+.dv-since.calm>summary{font:600 11px/18px var(--ui);color:var(--label-3)}
+.dv-since .dv-k{color:var(--label-2)}
+.dv-since .dv-row{margin:0 -6px}
+.dv-since .dv-row.old{opacity:.62}
+.dv-since .dv-row{align-items:flex-start}
+.dv-since .dv-row .ev-ico,.dv-since .dv-row time{margin-top:3px}
+.dv-since .dv-row .dv-rt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.dv-since .dv-row.ctr .dv-rt{color:inherit}
+.dv-kept{margin:6px 0 0;font:450 12.5px/1.45 var(--ui);color:var(--label-2)}
+.dv-kept q{color:var(--label);quotes:"“" "”"}
+.dv-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.dv-act{height:30px;padding:0 12px;border:0;border-radius:var(--radius-sm);background:var(--hover);color:var(--label);font:560 13px/1 var(--ui);cursor:pointer;transition:background var(--d-quick),transform var(--duration-press)}
+.dv-act:hover{background:var(--press)}
+.dv-act:active{transform:scale(.97)}
+.dv-act.primary{background:var(--label);color:var(--card)}
+.dv-act.primary:hover{background:color-mix(in srgb,var(--label) 86%,var(--card))}
+.dv-act:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.dv-hold{display:grid;gap:8px;margin-top:10px}
+.dv-hold .dv-why{background:var(--card);box-shadow:inset 0 0 0 1px var(--hair-2);padding:6px 9px;margin:0}
+.dv-open-h{margin:16px 12px 6px;font:600 12px/1 var(--ui);color:var(--label-3)}
+.dv-open{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:0;border-radius:14px;background:none;text-align:left;cursor:pointer;color:var(--label-2)}
+.dv-open:hover{background:var(--hover);color:var(--label)}
+.dv-open .dv-ot{flex:1;min-width:0;font:500 13.5px/1.35 var(--ui);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dv-open .dv-on{flex:none;display:inline-flex;gap:3px}
+.dv-open .dv-on .chip{width:16px;height:16px;font-size:9.5px;box-shadow:none;background:none;color:var(--label-2);box-shadow:inset 0 0 0 1.25px var(--label-3)}
+.dv-empty{margin:28px 18px;text-align:center;color:var(--label-3);font:450 13.5px/1.5 var(--ui)}
+.dv-empty b{display:block;margin-bottom:6px;font:600 15px/1.3 var(--ui);color:var(--label-2)}
+.dv-dec.flash{animation:dvFlash 1.1s var(--ease)}
+@keyframes dvFlash{0%,100%{box-shadow:0 0 0 1px var(--hair)}30%{box-shadow:0 0 0 2px color-mix(in srgb,var(--focus) 60%,transparent)}}
+/* the adopted card keeps your reason too, the same way a set-aside one does */
+.card.direction .chose{margin-top:12px;padding-top:11px;border-top:1px solid var(--hair-2)}
+.card.direction .chose-k{font:600 12px/18px var(--ui);color:var(--label-2)}
+.card.direction .chose .aside-why{margin-top:4px}
+.card.direction .chose.empty:not(:has([contenteditable="true"])) .chose-k{display:none}
+.card.direction .chose.empty .aside-add{margin-top:0}
+@media (max-width:640px){.dec-btn .dec-l{display:none}.dec-panel{left:8px;right:8px;width:auto;bottom:8px}}
 </style>
 <div id="app">
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
@@ -3063,6 +3177,7 @@ body.snap-skip #wall{cursor:copy}
         <span class="nm"><b id="projectName">Untitled</b></span>
         <svg class="ico" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
       </button>
+      <button type="button" class="dec-btn" id="decBtn" aria-expanded="false" aria-controls="decPanel" title="Decisions (D)"></button>
     </div>
     <div class="top-right">
       <button type="button" class="arch-btn" id="archiveBtn" hidden title="Archived cards"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="4" rx="1.2"/><path d="M5 8.5v9.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5M10 13h4"/></svg><span id="archCount">0</span></button>
@@ -3167,6 +3282,7 @@ body.snap-skip #wall{cursor:copy}
     <span class="cp-ear-lbl"><span>Copilot</span><kbd>⌘.</kbd></span>
   </button>
   <aside id="copilotPanel" class="copilot-panel" hidden aria-label="Copilot"></aside>
+  <aside id="decPanel" class="dec-panel" hidden aria-label="Decisions" role="dialog" tabindex="-1"></aside>
   <section id="studioPop" class="studio-pop" hidden role="dialog" aria-label="Studio AI and local engines"></section>
   <section id="reviewPop" class="review-pop" hidden role="dialog" aria-label="Pending drafts"></section>
   <section id="crewPop" class="review-pop crew-pop" hidden role="dialog" aria-label="Crew"></section>
@@ -6071,6 +6187,9 @@ const proofView=new Map();
 function proofVersions(n){if(!n||n.type!=="proof"||n.status==="sketch")return[n];return board.nodes.filter(x=>x.type==="proof"&&!x.tombstone&&x.status!=="sketch"&&x.dir===n.dir&&(x.spec?.mode||"")===(n.spec?.mode||"")).sort((a,b)=>a.ver-b.ver)}
 /* A direction another one was chosen over stays readable: it says which one won, and keeps your reason for setting it aside */
 function setAsideFor(n){const w=n?.type==="direction"&&n.status==="ink"?board.adopted[n.idea]:null;return w&&w!==n.id?byId(w):null}
+/* the adopted direction keeps your reason for choosing it; the decision view shows the same words */
+function choseHTML(n){if(board.adopted[n.idea]!==n.id)return "";const zh=uiLang()==="zh",why=String(n.whyYes||"").trim();
+  return `<div class="chose${why?"":" empty"}"><span class="chose-k">${zh?"为什么选它":"Why this one"}</span><p class="aside-why" data-edit="whyYes" data-ph="${zh?"为什么选它？":"Why this one?"}">${esc(why)}</p><button type="button" class="aside-add" data-a="why-yes">${why?(zh?"改理由":"Edit reason"):(zh?"写下为什么选它":"Say why you chose it")}</button></div>`}
 function setAsideHTML(n){const w=setAsideFor(n);if(!w)return "";const zh=uiLang()==="zh",why=String(n.whyNot||"").trim();
   return `<div class="aside"><div class="aside-h"><span>${zh?"已搁置，选了":"Set aside for"}</span><span class="chip${lin(w)?" pg-"+lin(w):""}">${esc(w.letter||"")}</span><span class="aside-w">${esc(clip(w.title||"",48))}</span></div><p class="aside-why" data-edit="whyNot" data-ph="${zh?"为什么不选它？":"Why not this one?"}">${esc(why)}</p><button type="button" class="aside-add" data-a="why-not">${why?(zh?"改理由":"Edit reason"):(zh?"写下为什么不选它":"Add a reason")}</button></div>`}
 function proofResults(n){const items=(n?.spec?.items||[]).filter(it=>/^(passed|failed|waiting)$/i.test(String(it.tag||"").trim()));if(!items.length)return null;const t=k=>items.filter(it=>String(it.tag).trim().toLowerCase()===k);return {passed:t("passed").length,failed:t("failed").length,waiting:t("waiting").length,failedTitles:t("failed").map(it=>it.title)}}
@@ -6152,7 +6271,7 @@ function cardBody(n){
   case"question":{const on=byId(n.on);return `<div class="in"><span class="qmark" aria-hidden="true">?</span>${head(`${byline(n)}${L?`<span class="q-dot"></span>`:""}<span class="q-on">${uiLang()==="zh"?"追问":"Question"}${on?`${uiLang()==="zh"?" · ":" on "}${esc(titleOf(on))}`:""}</span>`)}<h4 data-edit="text">${esc(n.text)}</h4>${foot("",fR(threadCount(n)))}</div>`}
   case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode));
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
-    <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test?`<div class="test"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span></div>`:""}${sk?"":setAsideHTML(n)}
+    <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test?`<div class="test"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span></div>`:""}${sk?"":setAsideHTML(n)+choseHTML(n)}
     ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",mode&&!(adopted&&!hasProof)?`<span>${mode}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<span>${uiLang()==="zh"?"已生成原型":"Proof built"}</span>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
   case"proof":{
     /* A proof is an experiment that tests its direction: results first, thumbnail second, one next step. */
@@ -7130,7 +7249,7 @@ function nodeLineageSig(n){
 }
 
 function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(n.whyYes||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -8680,7 +8799,7 @@ function renderLedger(){
 }
 
 function renderAll(){if(board&&(!changeShadow||changeShadow.id!==board.id))changeShadow=shadowOf(board);
-  litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();syncCopilotBoard?.();
+  litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();syncCopilotBoard?.();if(typeof renderDecisions==="function")renderDecisions();
   $("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";
   const archCount=board.nodes.filter(n=>!n.tombstone&&n.archived).length;
   const hidCount=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived).length;
@@ -11356,11 +11475,11 @@ function adopt(d){
   if(!d||d.type!=="direction")return toast(L("Select a direction to adopt.","请先选中一个方向再采纳。"));const wasDraft=d.status==="sketch";
   // Adopting a draft keeps it too: the intent is clear, and "Keep this direction first" was a dead end
   if(wasDraft){ink([d.id],{quiet:true});if(d.status==="sketch")return}
-  if(board.adopted[d.idea]===d.id)return;checkpoint();board.adopted[d.idea]=d.id;
+  if(board.adopted[d.idea]===d.id)return;checkpoint();board.adopted[d.idea]=d.id;d.adoptedAt=NOW();d.adoptedBy="you";delete d.held;
   {const sibs=board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"&&!x.tombstone);board.declined=(board.declined||[]).filter(r=>!(r.kind==="passed-over"&&(r.target===d.idea||r.ref===d.id)));for(const x of sibs)declineRecord("passed-over",{title:`${x.letter} · ${x.title}`,text:[x.text,x.test].filter(Boolean).join(" Test: "),by:x.by,target:d.idea,reason:L(`Adopted ${d.letter} · ${d.title} instead`,`改为采纳 ${d.letter} · ${d.title}`),ref:x.id})}
   noteChange({op:"adopt",id:d.id,type:"direction",title:clip(`${d.letter} ${d.title}`,60),who:"you",engine:"human"});
   log("you",`Adopted <b>${d.letter} ${esc(d.title)}</b>`,d.id);sfx("keep");renderAll();persist();
-  for(const x of board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"))makeRoomBelow(x);
+  for(const x of board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"))makeRoomBelow(x);makeRoomBelow(d);
   const st=qs(`[data-stamp="${d.id}"]`);if(st&&!calm()){st.classList.add("slam")}
   toast(wasDraft?L(`Kept and adopted ${d.title}`,`已保留并采纳 ${d.title}`):L(`Adopted ${d.title}`,`已采纳 ${d.title}`),{undo:true});
 }
@@ -16493,6 +16612,7 @@ function act(a,n,el){
   if(!n)return;
   switch(a){
     case"why-not":return startEdit(n.id,"whyNot",{collapseEnd:true});
+    case"why-yes":return startEdit(n.id,"whyYes",{collapseEnd:true});
     case"ink":return ink(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);
     case"erase":return erase(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);
     case"try":return openStage(proofView.has(n.id)?byId(proofView.get(n.id))||n:n);
@@ -17261,7 +17381,10 @@ function renderBoardsPop(){
   const pop=$("boardsPop"),btn=$("projectBtn");if(!pop)return;
   if(btn){const r=btn.getBoundingClientRect();pop.style.top=Math.round(r.bottom+8)+"px";pop.style.left=Math.max(12,Math.round(r.left))+"px";pop.style.width=Math.max(292,Math.round(r.width))+"px"}
   const others=store.get(".list",[]).filter(b=>b.id!==board.id).map(b=>store.get(".board."+b.id,null)||b).filter(Boolean);
-  const count=b=>Array.isArray(b.nodes)?b.nodes.filter(n=>n.status==="ink").length:"";
+  /* each board says where its thinking stands (decided and still open), not how many cards it holds */
+  const count=b=>{if(!Array.isArray(b.nodes))return "";const ns=b.nodes.filter(n=>n.status==="ink"&&!n.tombstone&&!n.archived),byI=new Map(ns.map(n=>[n.id,n]));
+    let dec=0,open=0;for(const c of ns.filter(n=>n.type==="idea")){if(!ns.some(d=>d.type==="direction"&&d.idea===c.id))continue;if(byI.get((b.adopted||{})[c.id])?.type==="direction")dec++;else open++}
+    return [dec?L(`${dec} decided`,`${dec} 个已定`):"",open?L(`${open} open`,`${open} 个待定`):""].filter(Boolean).join(" · ")};
   const curRow=`<button type="button" class="bp-row cur" data-bp-close><span class="bp-chk">${ic("check")}</span><b>${esc(board.title||"Untitled board")}</b><small>${count(board)}</small></button>`;
   const row=b=>`<button type="button" class="bp-row" data-open="${esc(b.id)}"><span class="bp-chk"></span><b>${esc(b.title||"Untitled board")}</b><small>${count(b)}</small></button>`;
   const showcaseRow=board.id==="showcase"?`<button type="button" class="bp-row bp-sample" data-showcase title="${esc(L("Put the sample back the way it shipped","把示例画板恢复成初始状态"))}"><span class="bp-chk">${ic("redo")}</span><b>${L("Reset the sample","重置示例画板")}</b><small>${L("Sample","示例")}</small></button>`:`<button type="button" class="bp-row bp-sample" data-showcase><span class="bp-chk"></span><b>ASHEN CROWN</b><small>${L("Sample","示例")}</small></button>`;
@@ -17329,7 +17452,7 @@ function systemSettingsDialog(){
   if(!dlg.open)dlg.showModal();const d=dlg;d.focus();
   d.querySelectorAll("[data-th]").forEach(b=>b.onclick=()=>{const t=b.dataset.th;if(t==="auto"){store.del(".theme");delete document.documentElement.dataset.theme}else{store.set(".theme",t);document.documentElement.dataset.theme=t}
     d.querySelectorAll("[data-th]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));qsa("[data-id]",nodesEl).forEach(el=>el._sig="");renderNodes();paintMap()});
-  d.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{const lg=b.dataset.lang==="zh"?"zh":"en";store.set(".lang",lg);document.documentElement.lang=lg==="zh"?"zh-CN":"en";renderBays();renderRail();renderStages();renderCrew();renderNodes();renderLineCtx();renderWirePop();renderAdvPop();renderFindBar();syncStaticLang();if(studioPopOpen)renderStudioPop();if(agentPopKey)renderAgentPop();if(!$("genOpts")?.hidden){const rr=route(lineText());renderGenOpts(true,lineMode||rr?.kind||"image")}systemSettingsDialog()});
+  d.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{const lg=b.dataset.lang==="zh"?"zh":"en";store.set(".lang",lg);document.documentElement.lang=lg==="zh"?"zh-CN":"en";renderBays();renderRail();renderStages();renderCrew();renderNodes();renderLineCtx();renderWirePop();renderAdvPop();renderFindBar();syncStaticLang();renderDecisions();if(studioPopOpen)renderStudioPop();if(agentPopKey)renderAgentPop();if(!$("genOpts")?.hidden){const rr=route(lineText());renderGenOpts(true,lineMode||rr?.kind||"image")}systemSettingsDialog()});
   const sfxSw=qs("[data-sfx-sw]",d),sfxVolRow=qs("#sysSfxVolRow",d),sfxSl=qs("[data-sfx-vol]",d),sfxTxt=qs("[data-sfx-vol-txt]",d),sfxTst=qs("[data-sfx-test]",d);
   if(sfxSw)sfxSw.onclick=()=>{const on=sfxSw.getAttribute("aria-checked")!=="true";store.set(".sfx",on?"on":"off");sfxSw.setAttribute("aria-checked",String(on));sfxVolRow?.classList.toggle("is-dim",!on);if(sfxSl)sfxSl.disabled=!on;if(sfxTst)sfxTst.disabled=!on;if(on)sfx("pop")};
   if(sfxSl){const icoOn='<svg class="ico" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>',icoOff='<svg class="ico" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M3 3l18 18"/></svg>';sfxSl.oninput=()=>{const v=clamp(Number(sfxSl.value)||0,0,100);store.set(".sfxVol",v);sfxSl.style.setProperty("--p",v+"%");if(sfxTxt)sfxTxt.textContent=v+"%";if(sfxTst)sfxTst.innerHTML=v>0?icoOn:icoOff;_sfxSetGain(v)};sfxSl.onchange=()=>sfx("pop")}
@@ -17904,7 +18027,7 @@ function startEdit(id,field,opts){
     if(changed){checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;if(f==="tag"&&!nextVal)delete n.tag;else n[f]=nextVal;recordNodeEdit(n,prevD,prevT,prevTx);log("you",`Edited <b>${esc(titleOf(n))}</b>`,n.id);if(f==="whyNot")syncSetAsideReason(n)}
     if((n.type==="note"||n.type==="idea")&&f==="text"&&!n.text&&!hadText){dropEmptyNote(n,el)}
     else if(changed&&n.type!=="group"&&f!=="tag"&&v.length>=10)scheduleAdvisor(n.id,{delay:1400});
-    el._sig="";renderAll();persist();if(f==="whyNot")makeRoomBelow(n)};
+    el._sig="";renderAll();persist();if(f==="whyNot"||f==="whyYes")makeRoomBelow(n)};
   const multiline=(n.type==="notepad"||n.type==="note")&&f==="text";
   const onBlur=()=>done(true);const onKey=e=>{e.stopPropagation();if(e.key==="Enter"&&(!multiline&&!e.shiftKey||(multiline&&(e.metaKey||e.ctrlKey)))){e.preventDefault();t.blur()}if(e.key==="Escape"){if(f==="tag")t.innerText=n.tag||(n.type==="note"?(uiLang()==="zh"?"便签":"Sticky"):(uiLang()==="zh"?"记事本":"Notepad"));else if(n.type!=="note"||f!=="text")t.innerText=n[f]||"";t.blur()}};
   t.addEventListener("blur",onBlur);t.addEventListener("keydown",onKey);
@@ -18396,7 +18519,7 @@ addEventListener("keydown",e=>{
   if((e.metaKey||e.ctrlKey)&&e.shiftKey&&(e.code==="Period"||e.key==="."||e.key===">")){e.preventDefault();toggleFocus("key");return}
   if((e.metaKey||e.ctrlKey)&&e.key==="."){e.preventDefault();openCopilot();return}
   if(typing)return;
-  if(e.key==="Escape"){if(catchUpOpen){toggleCatchUp(false);return}if(relPickId){closeRelPick();return}if(cardMenuOpen){closeCardMenu();return}if($("wirePop")?.querySelector(".wp-dep-menu:not([hidden])")){closeWirePopMenu();return}if(openAdvNodeId){closeAdvPop();return}if(agentPopKey){toggleAgentPop(null);return}if(boardsPopOpen){toggleBoardsPop(false);$("projectBtn")?.focus();return}if(reviewPopOpen){toggleReviewPop(false);$("reviewBtn")?.focus();return}if(crewPopOpen){toggleCrewPop(false);$("crewSetBtn")?.focus();return}if(studioPopOpen){const wasKb=!!document.activeElement?.closest?.("#studioPop");toggleStudioPopover(false);if(wasKb)$("crewModeBtn")?.focus();return}if(genPop){const back=genPop==="ratio"?"genRatioBtn":"genModelBtn";const wasKb=!!document.activeElement?.closest?.(".go-drop");genPop=null;renderGenOpts(true);if(wasKb)$(back)?.focus();return}if(copilotOpen){openCopilot(false);return}if(findOpen){toggleFindBar(false);return}if(!$("ledger").hidden){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}if(focusId){e.preventDefault();closeFocus();return}selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();return}
+  if(e.key==="Escape"){if(catchUpOpen){toggleCatchUp(false);return}if(decOpen&&!relPickId&&!cardMenuOpen&&!openAdvNodeId){openDecisions(false);return}if(relPickId){closeRelPick();return}if(cardMenuOpen){closeCardMenu();return}if($("wirePop")?.querySelector(".wp-dep-menu:not([hidden])")){closeWirePopMenu();return}if(openAdvNodeId){closeAdvPop();return}if(agentPopKey){toggleAgentPop(null);return}if(boardsPopOpen){toggleBoardsPop(false);$("projectBtn")?.focus();return}if(reviewPopOpen){toggleReviewPop(false);$("reviewBtn")?.focus();return}if(crewPopOpen){toggleCrewPop(false);$("crewSetBtn")?.focus();return}if(studioPopOpen){const wasKb=!!document.activeElement?.closest?.("#studioPop");toggleStudioPopover(false);if(wasKb)$("crewModeBtn")?.focus();return}if(genPop){const back=genPop==="ratio"?"genRatioBtn":"genModelBtn";const wasKb=!!document.activeElement?.closest?.(".go-drop");genPop=null;renderGenOpts(true);if(wasKb)$(back)?.focus();return}if(copilotOpen){openCopilot(false);return}if(findOpen){toggleFindBar(false);return}if(!$("ledger").hidden){$("ledger").hidden=true;$("ledgerBtn").classList.remove("on");return}if(focusId){e.preventDefault();closeFocus();return}selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();return}
   if(onBtn&&(e.key===" "||e.key==="Enter"))return;
   if(e.key===" "&&!spaceHeld){spaceHeld=true;wall.classList.add("hand");e.preventDefault();return}
   const latest=groups().get(currentPid());
@@ -18411,12 +18534,174 @@ addEventListener("keydown",e=>{
   if(relPickId&&["1","2","3","4"].includes(k)){e.preventDefault();setRelType(relPickId,REL_TYPES[+k-1]);armRelPick(1300);return}
   if(k==="/"||k==="@"){e.preventDefault();lineIn.focus();lineIn.value=k;updateMenu();renderRoute();return}
   if(k==="v")setTool("select");else if(k==="s")setTool("lasso");else if(k==="h")setTool("hand");else if(k==="n"){e.preventDefault();newNoteAt()}else if(k==="u"){e.preventDefault();pickFilesFor("canvas")}else if(k==="t")tidy();else if(k==="m")setSnap(!snapOn);else if(k==="f")fitAll();
-  else if(k==="l")$("ledgerBtn").click();else if(k==="?")helpDialog();else if(["1","2","3","4"].includes(k))flyToBay(+k-1);
+  else if(k==="l")$("ledgerBtn").click();else if(k==="d")openDecisions();else if(k==="?")helpDialog();else if(["1","2","3","4"].includes(k))flyToBay(+k-1);
   else if(k==="="||k==="+"){const r=wall.getBoundingClientRect();zoomAt(1.2,r.width/2,r.height/2)}else if(k==="-"){const r=wall.getBoundingClientRect();zoomAt(1/1.2,r.width/2,r.height/2)}
   else if(k==="r"){const g=[...groups().keys()].pop();if(g)redraw(g)}
 });
 addEventListener("keyup",e=>{if(e.key===" "){const quick=spaceHeld&&!spacePanned;spaceHeld=false;spacePanned=false;wall.classList.toggle("hand",tool==="hand");
   if(quick&&!e.target.closest?.("textarea,input,[contenteditable='true'],button,a,[role='button'],summary,select")&&sel.length===1){const n=one();if(n&&(["proof","print","direction","recording","image","frame"].includes(n.type)||isHtmlSource(n)))openStage(n)}}});
+
+/* ── decision view ─────────────────────────────────────────────────────────
+   One place for every decision on the board: what you chose for each claim, your reason, the evidence it rests on (counters
+   apart), the options you set aside with their reasons, and what has turned up since. Nothing here is a model's output: it is
+   read straight off the board. New evidence never changes a decision; you either say it still holds or reopen the choice. */
+const DEC_ICON='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5v-6.2"/><path d="M12 14.3 6.6 8.4" stroke-dasharray="2.2 2.4"/><path d="M12 14.3l5.4-5.9"/><circle cx="18.2" cy="6.6" r="2.2"/><circle cx="5.8" cy="6.6" r="2.2" stroke-dasharray="2 1.8"/></svg>';
+let decOpen=false;const decEvOpen=new Set(),decHoldOpen=new Set();
+const decClaims=()=>board.nodes.filter(n=>n.type==="idea"&&n.status==="ink"&&!n.tombstone&&!n.archived&&!n.hidden);
+const decDirs=c=>board.nodes.filter(d=>d.type==="direction"&&d.idea===c.id&&d.status==="ink"&&!d.tombstone&&!d.archived&&!d.hidden).sort((a,b)=>String(a.letter||"").localeCompare(String(b.letter||"")));
+const keptAt=n=>Math.max(n?.created||0,n?.inked||0);
+function adoptedAt(dir){return dir.adoptedAt||(board.changes||[]).filter(c=>c.op==="adopt"&&c.id===dir.id).at(-1)?.t||0}
+/* everything that has turned up since you decided: material kept after the decision that bears on it, plus anything the
+   board checks flagged about it (they run on boards whose decision predates the record of when it was made) */
+function decSince(d){
+  const at=adoptedAt(d.dir),seen=new Map();
+  const add=(e,rel)=>{if(!e||!isMaterial(e)||seen.has(e.id))return;seen.set(e.id,{e,rel:rel||"related",t:keptAt(e)})};
+  if(at)for(const e of board.nodes)if(isMaterial(e)&&keptAt(e)>at){const b=bearsOn(e,d);if(b)add(e,b.rel)}
+  const W=board.watch||{};
+  for(const s of [...(W.done||[]),...(W.queue||[]).map(o=>o.sig)]){const m=/^rv:([^:]+):(.+)$/.exec(s||"");if(!m||m[2]!==d.dir.id)continue;const e=byId(m[1]);if(e&&!seen.has(e.id)){const b=bearsOn(e,d);add(e,b?.rel)}}
+  const held=d.dir.held?.t||0;
+  return [...seen.values()].map(x=>({...x,fresh:x.t>held})).sort((a,b)=>(b.fresh-a.fresh)||(b.t-a.t));
+}
+/* what the decision rests on: the chosen direction's and its claim's backing, once each; counters apart */
+function decRests(d){
+  const a=restsOn(d.dir),b=d.claim?restsOn(d.claim):{sup:[],ctr:[]};
+  const ctr=new Map([...a.ctr,...b.ctr].map(x=>[x.id,x]));
+  const sup=new Map();for(const x of [...a.sup,...b.sup])if(!ctr.has(x.id)&&isMaterial(x))sup.set(x.id,x);
+  return {sup:[...sup.values()].sort((x,y)=>(WEIGHTS[y.weight]?.n??-1)-(WEIGHTS[x.weight]?.n??-1)),ctr:[...ctr.values()]};
+}
+function decisionList(){
+  const out=[],open=[];
+  for(const c of decClaims()){
+    const dirs=decDirs(c);if(!dirs.length)continue;
+    const dir=byId(board.adopted?.[c.id]);
+    if(!dir||dir.tombstone||dir.status!=="ink"){open.push({claim:c,dirs});continue}
+    const d={claim:c,dir},since=decSince(d),fresh=since.filter(x=>x.fresh),outcome=dir.outcome?.result||null;
+    const st=outcome==="failed"?"failed":fresh.some(x=>x.rel==="conflicts")?"ctr":fresh.length?"new":outcome==="passed"?"passed":"";
+    out.push({...d,aside:dirs.filter(x=>x.id!==dir.id),since,fresh,rests:decRests(d),at:adoptedAt(dir),st});
+  }
+  const rank={failed:0,ctr:1,new:2};
+  out.sort((a,b)=>(rank[a.st]??3)-(rank[b.st]??3)||(b.at-a.at));
+  return {decided:out,open};
+}
+function decWhen(t){if(!t)return"";const d=new Date(t),same=new Date().toDateString()===d.toDateString();
+  return same?d.toLocaleTimeString(uiLang()==="zh"?"zh-CN":undefined,{hour:"numeric",minute:"2-digit"}):d.toLocaleDateString(uiLang()==="zh"?"zh-CN":undefined,{month:"short",day:"numeric"})}
+const DEC_ST={new:["New evidence","有新证据"],ctr:["Countered","被反驳"],failed:["Test failed","测试未通过"],passed:["Test passed","测试通过"]};
+function decRowHTML(e,{rel=null,t=0,old=false,ctr=false}={}){
+  const k=WEIGHTS[e.weight]?e.weight:"none";
+  return `<li><button type="button" class="dv-row ev-k-${k}${ctr?" ctr":""}${old?" old":""}" data-dv-go="${esc(e.id)}" title="${esc(titleOf(e))}">${evIconHTML(k,"ev-ico")}<span class="dv-rt">${esc(clip(titleOf(e),80))}</span>${rel?`<span class="dv-rel rel-${esc(rel)}">${esc(relName(rel))}</span>`:""}${t?`<time>${esc(decWhen(t))}</time>`:""}</button></li>`}
+function decCardHTML(x,i){
+  const {claim,dir,rests,since,fresh}=x,zh=uiLang()==="zh";
+  const who=dir.adoptedBy&&dir.adoptedBy!=="you"?(AGENTS[dir.adoptedBy]?.name||dir.adoptedBy):L("you","你");
+  const meta=x.at?L(`Decided ${decWhen(x.at)} by ${who}`,`${decWhen(x.at)} 由${who}决定`):L(`Decided by ${who}`,`由${who}决定`);
+  const t=tally(rests.sup),v=rests.sup.length?evidenceVerdict(t):null,thin=!rests.sup.length||!(t.observed||t.reported);
+  const evSum=rests.sup.length?`${evIconHTML(v.ico,"ev-ico")}<span>${esc(thin?L("Proposals only","只靠设想"):v.txt)}</span><span class="dv-cnt">· ${esc(L(`${rests.sup.length} source${rests.sup.length>1?"s":""}`,`${rests.sup.length} 个来源`))}</span>`
+    :`${evIconHTML("none","ev-ico")}<span>${esc(L("Nothing behind it yet","还没有依据"))}</span>`;
+  const ctrN=rests.ctr.length?`<span class="dv-cnt" style="color:var(--danger)">· ${esc(L(`${rests.ctr.length} counter${rests.ctr.length>1?"s":""}`,`${rests.ctr.length} 条反驳`))}</span>`:"";
+  const evOpen=decEvOpen.has(dir.id);
+  const ev=`<div class="dv-sec"><span class="dv-k">${L("Rests on","依据")}</span><details class="dv-ev${thin?" thin":""}" data-dv-ev="${esc(dir.id)}"${evOpen?" open":""}><summary>${evSum}${ctrN}${ic("chev","ico dv-tw")}</summary>
+    ${rests.sup.length?`<ul class="dv-list">${rests.sup.map(e=>decRowHTML(e)).join("")}</ul>`:`<p class="dv-kept">${esc(L("Drag a piece of evidence beside the claim or this direction to back it.","把一条证据拖到论点或这个方向旁边来支持它。"))}</p>`}
+    ${rests.ctr.length?`<p class="dv-sub">${L("Counters it","反驳它的")}</p><ul class="dv-list">${rests.ctr.map(e=>decRowHTML(e,{ctr:true})).join("")}</ul>`:""}</details></div>`;
+  const why=`<div class="dv-sec"><span class="dv-k">${L("Why this one","为什么选它")}</span><textarea class="dv-why" rows="1" data-dv-why="${esc(dir.id)}" placeholder="${esc(L("Add your reason. One line is enough.","写下理由，一句话就够。"))}" aria-label="${esc(L("Why this one","为什么选它"))}">${esc(dir.whyYes||"")}</textarea></div>`;
+  const aside=x.aside.length?`<div class="dv-sec"><span class="dv-k">${L("Set aside","搁置的")}</span><div class="dv-aside">${x.aside.map(a=>`<div class="dv-al"><span class="chip">${esc(a.letter||"")}</span><button type="button" class="dv-at" data-dv-go="${esc(a.id)}" title="${esc(a.title||"")}">${esc(clip(a.title||titleOf(a),60))}</button><textarea class="dv-why" rows="1" data-dv-whynot="${esc(a.id)}" placeholder="${esc(L("Why not this one?","为什么不选它？"))}" aria-label="${esc(L(`Why not ${a.letter||"this one"}`,`为什么不选 ${a.letter||"它"}`))}">${esc(a.whyNot||"")}</textarea></div>`).join("")}</div></div>`:"";
+  let sinceH="";
+  if(since.length){
+    const kept=dir.held?`<p class="dv-kept">${esc(L(`You kept it ${decWhen(dir.held.t)}`,`你在 ${decWhen(dir.held.t)} 保留了它`))}${dir.held.why?`: <q>${esc(dir.held.why)}</q>`:""}</p>`:"";
+    const ctr=fresh.some(s=>s.rel==="conflicts");
+    const holdOpen=decHoldOpen.has(dir.id);
+    const acts=fresh.length?(holdOpen?`<div class="dv-hold"><textarea class="dv-why" rows="2" data-dv-heldwhy="${esc(dir.id)}" placeholder="${esc(L("What makes it still hold? (optional)","为什么它仍然成立？（可不填）"))}"></textarea><div class="dv-acts"><button type="button" class="dv-act" data-dv-hold-cancel="${esc(dir.id)}">${L("Cancel","取消")}</button><button type="button" class="dv-act primary" data-dv-hold-save="${esc(dir.id)}">${L("Keep the decision","保留决定")}</button></div></div>`
+      :`<div class="dv-acts"><button type="button" class="dv-act" data-dv-reopen="${esc(claim.id)}">${L("Reopen the choice","重新选择")}</button><button type="button" class="dv-act primary" data-dv-hold="${esc(dir.id)}">${L("Still holds","仍然成立")}</button></div>`):"";
+    const lede=fresh.length?L("The decision stays as you made it until you change it.","除非你改，决定保持不变。"):"";
+    const rows=`<ul class="dv-list">${since.map(s=>decRowHTML(s.e,{rel:s.rel,t:s.t,old:!s.fresh})).join("")}</ul>`;
+    sinceH=fresh.length?`<div class="dv-since${ctr?" ctr":""}"><span class="dv-k">${L(`New since you decided · ${fresh.length}`,`决定之后新增 · ${fresh.length} 条`)}</span><p class="dv-kept" style="margin:0 0 4px">${esc(lede)}</p>${rows}${kept}${acts}</div>`
+      :`<details class="dv-since calm dv-ev" data-dv-ev="s:${esc(dir.id)}"${decEvOpen.has("s:"+dir.id)?" open":""}><summary><span>${esc(L(`Since you decided · ${since.length} weighed`,`决定之后 · 已权衡 ${since.length} 条`))}</span>${ic("chev","ico dv-tw")}</summary>${rows}</details>${kept?`<div class="dv-sec" style="margin-top:6px">${kept}</div>`:""}`;
+  }
+  const res=dir.outcome?.result?`<div class="dv-sec"><span class="dv-k">${L("Test","测试")}</span><p class="dv-kept" style="margin:0">${esc(dir.outcome.result==="failed"?L("Failed","未通过"):L("Passed","通过"))}${dir.outcome.note?` · ${esc(dir.outcome.note)}`:""}</p></div>`:"";
+  return `<article class="dv-dec" data-dv-dec="${esc(dir.id)}" style="--i:${i}">
+    <button type="button" class="dv-q" data-dv-go="${esc(claim.id)}" title="${esc(L("The claim this decides","这个决定回答的论点"))}">${esc(clip(claim.text||claim.title||"",200))}</button>
+    <button type="button" class="dv-chose" data-dv-go="${esc(dir.id)}"><span class="chip${lin(dir)?" pg-"+lin(dir):""}">${esc(dir.letter||"")}</span><span class="dv-ct">${esc(dir.title||titleOf(dir))}</span>${x.st?`<span class="dv-st ${x.st}">${esc(L(...DEC_ST[x.st]))}</span>`:""}</button>
+    <p class="dv-meta">${esc(meta)}</p>${why}${ev}${res}${aside}${sinceH}</article>`;
+}
+function renderDecBtn(){
+  const b=$("decBtn");if(!b||!board)return;const {decided}=decisionList(),n=decided.length;
+  const alert=crewSpeak!=="never"&&decided.find(x=>x.st==="ctr"||x.st==="new"||x.st==="failed");
+  const lbl=n?L(`${n} decision${n>1?"s":""}`,`${n} 个决定`):L("Decisions","决定");
+  const sig=[lbl,alert?.st||"",decOpen].join("|");if(b._sig===sig)return;b._sig=sig;
+  b.innerHTML=`${DEC_ICON}<span class="dec-l">${esc(lbl)}</span><i class="dec-dot${alert&&alert.st!=="new"?" ctr":""}"${alert?"":" hidden"}></i>`;
+  const tip=L("Decisions: what you chose and why","决定：你选了什么，为什么")+(alert?" · "+L(...DEC_ST[alert.st]):"")+" (D)";
+  b.title=tip;b.setAttribute("aria-label",tip);b.setAttribute("aria-expanded",String(decOpen));
+}
+function renderDecisions(){
+  renderDecBtn();const pane=$("decPanel");if(!pane||!decOpen)return;
+  const {decided,open}=decisionList();
+  /* don't rebuild under the person's cursor: a reason being typed is saved first */
+  const act=document.activeElement;if(act&&pane.contains(act)&&act.matches("textarea"))return;
+  const sub=decided.length?L("What you chose, why, and what has turned up since.","你选了什么、为什么，以及之后出现了什么。"):"";
+  const empty=!decided.length?`<div class="dv-empty"><b>${L("Nothing decided yet","还没有做出决定")}</b>${open.length?L("When you adopt a direction, it shows up here with the evidence it rests on and the options you set aside.","采纳一个方向后，它会出现在这里，连同它依据的证据和你搁置的选项。"):L("Write a claim, branch it into directions, then adopt one. Each decision is kept here with its reasons.","写下一个论点，分出几个方向，再采纳其中一个。每个决定和理由都会留在这里。")}</div>`:"";
+  const openH=open.length?`<p class="dv-open-h">${L("Still open","尚未决定")}</p>${open.map(o=>`<button type="button" class="dv-open" data-dv-go="${esc(o.claim.id)}"><span class="dv-ot">${esc(clip(o.claim.text||o.claim.title||"",160))}</span><span class="dv-on" aria-label="${esc(L(`${o.dirs.length} directions`,`${o.dirs.length} 个方向`))}">${o.dirs.map(d=>`<span class="chip">${esc(d.letter||"")}</span>`).join("")}</span></button>`).join("")}`:"";
+  pane.innerHTML=`<header class="dv-head"><div class="dv-t"><b>${L("Decisions","决定")}</b>${sub?`<small>${esc(sub)}</small>`:""}</div><button type="button" class="dv-x" data-dv-close aria-label="${esc(L("Close","关闭"))}" title="${esc(L("Close (Esc)","关闭（Esc）"))}">${ic("x")}</button></header>
+    <div class="dv-body">${decided.map(decCardHTML).join("")}${empty}${openH}</div>`;
+}
+function openDecisions(force,{focusWhy=null}={}){
+  const next=force===undefined?!decOpen:!!force,pane=$("decPanel");if(!pane)return;
+  if(next===decOpen&&!focusWhy)return;
+  decOpen=next;$("app")?.classList.toggle("dv-on",decOpen);
+  if(decOpen){pane.hidden=false;if(!calm()){pane.classList.add("dv-enter");requestAnimationFrame(()=>requestAnimationFrame(()=>pane.classList.remove("dv-enter")))}renderDecisions();sfx?.("pop");
+    if(focusWhy)requestAnimationFrame(()=>{const t=qs(`[data-dv-why="${focusWhy}"]`,pane);if(t){t.closest(".dv-dec")?.scrollIntoView({block:"nearest"});t.focus()}});
+    else requestAnimationFrame(()=>pane.focus({preventScroll:true}))}
+  else{if(calm()){pane.hidden=true}else{pane.classList.add("dv-closing");setTimeout(()=>{if(!decOpen){pane.hidden=true}pane.classList.remove("dv-closing")},240)}}
+  renderDecBtn();
+}
+function decSaveText(n,f,val){
+  if(!n)return;val=clip(String(val||"").replace(/\s+/g," ").trim(),300);if((n[f]||"")===val)return;
+  checkpoint();const prevD=digest(n),prevT=n.title,prevTx=n.text;if(val)n[f]=val;else delete n[f];recordNodeEdit(n,prevD,prevT,prevTx);
+  if(f==="whyYes")noteChange({op:"decision-why",id:n.id,type:"direction",title:clip(`${n.letter||""} ${n.title||""}`,60),who:"you",engine:"human",...(val?{reason:clip(val,120)}:{})});
+  if(f==="whyNot")syncSetAsideReason(n);
+  const el=nodeEl(n.id);if(el)el._sig="";renderNodes();persist();renderDecBtn();makeRoomBelow(n);
+}
+function holdDecision(dir,why){
+  if(!dir)return;checkpoint();const t=NOW();why=clip(String(why||"").replace(/\s+/g," ").trim(),300);
+  dir.held={t,...(why?{why}:{})};
+  for(const p of board.pins?.[dir.id]||[])if(p.check==="revisit")p.seen=1;
+  noteChange({op:"hold",id:dir.id,type:"direction",title:clip(`${dir.letter||""} ${dir.title||""}`,60),who:"you",engine:"human",...(why?{reason:clip(why,120)}:{})});
+  log("you",`Kept the decision <b>${esc(dir.letter||"")} ${esc(dir.title||"")}</b> after new evidence`,dir.id);
+  decHoldOpen.delete(dir.id);const el=nodeEl(dir.id);if(el)el._sig="";renderAll();persist();
+  toast(L(`Kept ${dir.letter||""} ${dir.title||""}`,`已保留 ${dir.letter||""} ${dir.title||""}`).trim(),{undo:true});
+}
+function reopenDecision(claim){
+  if(!claim)return;
+  if(typeof goBack==="function")return goBack(claim);
+  const cur=byId(board.adopted[claim.id]);if(!cur)return;
+  checkpoint();delete board.adopted[claim.id];
+  board.declined=(board.declined||[]).filter(r=>!(r.kind==="passed-over"&&r.target===claim.id));
+  noteChange({op:"reopen",id:claim.id,type:"idea",title:clip(titleOf(claim),60),who:"you",engine:"human"});
+  log("you",`Reopened the choice on <b>${esc(clip(titleOf(claim),60))}</b>`,claim.id);
+  renderAll();persist();toast(L("The choice is open again","选择已重新打开"),{undo:true});
+}
+function decGo(id){
+  const n=byId(id);if(!n)return;if(n.hidden&&typeof revealNode==="function")revealNode(n);
+  select([n.id],{menus:false});focusNodes([n],.9);
+  if(innerWidth<=640)openDecisions(false);
+}
+{
+  const pane=$("decPanel"),btn=$("decBtn");
+  btn?.addEventListener("click",()=>openDecisions());
+  pane?.addEventListener("click",e=>{
+    const t=e.target.closest("[data-dv-close],[data-dv-go],[data-dv-hold],[data-dv-hold-save],[data-dv-hold-cancel],[data-dv-reopen]");if(!t)return;
+    if(t.hasAttribute("data-dv-close"))return openDecisions(false);
+    if(t.dataset.dvGo)return decGo(t.dataset.dvGo);
+    if(t.dataset.dvHold){decHoldOpen.add(t.dataset.dvHold);renderDecisions();requestAnimationFrame(()=>qs(`[data-dv-heldwhy="${t.dataset.dvHold}"]`,pane)?.focus());return}
+    if(t.dataset.dvHoldCancel){decHoldOpen.delete(t.dataset.dvHoldCancel);renderDecisions();return}
+    if(t.dataset.dvHoldSave){const id=t.dataset.dvHoldSave,ta=qs(`[data-dv-heldwhy="${id}"]`,pane);const v=ta?.value||"";if(ta)ta.blur();holdDecision(byId(id),v);return}
+    if(t.dataset.dvReopen)return reopenDecision(byId(t.dataset.dvReopen));
+  });
+  pane?.addEventListener("toggle",e=>{const d=e.target.closest?.("[data-dv-ev]");if(!d)return;if(d.open)decEvOpen.add(d.dataset.dvEv);else decEvOpen.delete(d.dataset.dvEv)},true);
+  const fieldOf=ta=>ta.dataset.dvWhy?[byId(ta.dataset.dvWhy),"whyYes"]:ta.dataset.dvWhynot?[byId(ta.dataset.dvWhynot),"whyNot"]:null;
+  pane?.addEventListener("focusout",e=>{const ta=e.target;if(!ta.matches?.("textarea"))return;const f=fieldOf(ta);if(f)decSaveText(f[0],f[1],ta.value);
+    setTimeout(()=>{if(!pane.contains(document.activeElement)||!document.activeElement.matches("textarea"))renderDecisions()},0)});
+  pane?.addEventListener("keydown",e=>{const ta=e.target;
+    if(e.key==="Escape"){e.stopPropagation();if(ta.matches?.("textarea")){const f=fieldOf(ta);if(f)ta.value=f[0]?.[f[1]]||"";ta.blur();return}openDecisions(false);btn?.focus();return}
+    if(ta.matches?.("textarea")&&e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(ta.dataset.dvHeldwhy){qs(`[data-dv-hold-save="${ta.dataset.dvHeldwhy}"]`,pane)?.click();return}ta.blur()}});
+}
 
 /* ── theme ──────────────────────────────────────────────────────────── */
 function applyTheme(){const t=store.get(".theme",null);if(t)document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme}

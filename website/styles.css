@@ -13,7 +13,7 @@
    system. Re-subset when the copy adds new characters (see README). unicode-range keeps it off Latin text. */
 @font-face {
   font-family: "Vellum Sans SC";
-  src: url("fonts/VellumSansSC-subset.woff2?v=3") format("woff2");
+  src: url("fonts/VellumSansSC-subset.woff2?v=4") format("woff2");
   font-weight: 400 700;
   font-display: swap;
   unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+2018-201D, U+2026, U+00B7;
@@ -310,7 +310,11 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .vc .by b.me { background: var(--card-3); color: var(--label); font-weight: 650; box-shadow: 0 0 0 1.5px var(--card), inset 0 0 0 1px var(--hair-2); }
 :lang(zh) .vc .by b.me { font-size: 9.5px; }
 /* Crew avatars carry the role icon, not a letter. */
-b.ai svg { width: 66%; height: 66%; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+/* As in the app: the member's icon on its own pale plate, one hue each (--h). Hue lives only on the plate. */
+b.ai, .vc .by b.ai { background: oklch(.955 .026 var(--h)); color: oklch(.48 .085 var(--h)); }
+:root[data-theme="dark"] b.ai, :root[data-theme="dark"] .vc .by b.ai { background: oklch(.33 .045 var(--h)); color: oklch(.86 .07 var(--h)); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) b.ai, :root:not([data-theme="light"]) .vc .by b.ai { background: oklch(.33 .045 var(--h)); color: oklch(.86 .07 var(--h)); } }
+b.ai svg { width: 62%; height: 62%; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
 b.ai svg .dot { fill: currentColor; stroke: none; }
 .vc.ink { box-shadow: 0 0 0 1px var(--ink-rule), var(--shadow-card); }
 /* Evidence with a picture: the picture sits on top, bleeding into the padding the way the How board's media does,
@@ -829,18 +833,19 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 :root[data-theme="light"] .ri.dark:not(.on) { opacity: .16; }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .ri.dark:not(.on) { opacity: .16; } }
 .ri.dark { background: #0d0e11; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), var(--shadow-card); }
-.mo { position: absolute; display: flex; align-items: center; gap: 5px; transform: translate(-50%, -50%); }
-.mo i { width: 20px; height: 28px; border-radius: 5px; background: rgba(255,255,255,.12); }
-.mo i.on { width: 30px; height: 42px; border-radius: 7px; background: #f4f5f7; box-shadow: 0 0 30px 10px rgba(255,255,255,.26), 0 0 90px 30px rgba(255,255,255,.1); }
 .cut { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; color: #f4f5f7; }
-.cut-glow { position: absolute; left: 50%; top: 38%; }
+.ri.dark { overflow: hidden; }
+.cut-vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cut::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 38%, rgba(5,6,8,.72)); }
+.cut-line, .cut-bar { z-index: 1; }
 .cut-line { position: relative; font: 600 24px/1.2 var(--display); letter-spacing: -.02em; margin-bottom: 18px; }
 .cut-bar { position: relative; display: flex; align-items: center; gap: 12px; font: 600 11.5px/1 var(--sans); color: rgba(244,245,247,.7); font-variant-numeric: tabular-nums; }
 .cut-bar svg { width: 16px; height: 16px; fill: #f4f5f7; }
 .cut-bar i { flex: 1; height: 3px; border-radius: 2px; background: rgba(255,255,255,.18); overflow: hidden; }
-.cut-bar i b { display: block; width: 0; height: 100%; background: #f4f5f7; }
-.ri.on .cut-bar i b { animation: cutplay 3.8s linear forwards; }
-@keyframes cutplay { to { width: 100%; } }
+.cut-bar i b { display: block; width: 89%; height: 100%; background: #f4f5f7; }
+/* The clip is the last 1.7 s of the 15 s cut, so the bar runs its last stretch. */
+.ri.on .cut-bar i b { animation: cutplay 1.7s linear forwards; }
+@keyframes cutplay { from { width: 89%; } to { width: 100%; } }
 .br { position: absolute; inset: 0; display: flex; flex-direction: column; }
 .br-top { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-bottom: 1px solid var(--hair-2); }
 .br-top i { width: 9px; height: 9px; border-radius: 50%; background: var(--label-4); opacity: .6; }
@@ -849,10 +854,8 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .br-copy h5 { margin: 0 0 8px; font: 600 22px/1.15 var(--display); letter-spacing: -.025em; color: var(--label); }
 .br-copy p { margin: 0 0 16px; font-size: 13px; line-height: 1.45; color: var(--label-3); }
 .br-cta { display: inline-block; padding: 7px 14px; border-radius: 999px; background: var(--label); color: var(--card); font-size: 12.5px; font-weight: 600; }
-.br-glow { position: relative; align-self: stretch; margin: 18px 0; border-radius: 14px; background: #0d0e11; overflow: hidden; }
-.br-glow .mo { left: 50%; top: 50%; gap: 4px; }
-.br-glow .mo i { width: 13px; height: 20px; border-radius: 4px; }
-.br-glow .mo i.on { width: 22px; height: 32px; border-radius: 6px; }
+.br-shot { position: relative; align-self: stretch; margin: 18px 0; border-radius: 14px; background: #0d0e11; overflow: hidden; box-shadow: inset 0 0 0 1px var(--hair); }
+.br-shot img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 50% 42%; }
 :lang(zh) .doc-h, :lang(zh) .tb-h, :lang(zh) .cut-line, :lang(zh) .br-copy h5 { letter-spacing: 0; }
 @media (max-width: 620px) {
   .reel { -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 94%, transparent); }
@@ -863,9 +866,9 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
   .kb-card { padding: 9px 10px; font-size: 12.5px; }
   .tb td.bar { width: 26%; }
   .br-page { grid-template-columns: 1fr; padding: 16px 18px; }
-  .br-glow { display: none; }
+  .br-shot { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .reel-track, .ri { transition: none; } .ri.on .cut-bar i b { animation: none; width: 30%; } }
+@media (prefers-reduced-motion: reduce) { .reel-track, .ri { transition: none; } .ri.on .cut-bar i b { animation: none; width: 100%; } }
 
 /* ---------- Crew ---------- */
 .crew { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--hair-2); }
@@ -875,9 +878,11 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .who h3 { font-size: 18px; }
 .who p { font-size: 14px; line-height: 1.35; color: var(--label-3); }
 .orb { position: relative; width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center;
-  color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, transparent);
+  color: oklch(.48 .085 var(--h)); background: oklch(.955 .026 var(--h));
   transition: background-color .4s var(--ease), color .4s var(--ease), box-shadow .5s var(--ease), transform .5s var(--spring); }
-.orb svg.ic { width: 21px; height: 21px; }
+.orb svg.ic { width: 23px; height: 23px; stroke-width: 1.9; }
+:root[data-theme="dark"] .orb { color: oklch(.86 .07 var(--h)); background: oklch(.33 .045 var(--h)); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .orb { color: oklch(.86 .07 var(--h)); background: oklch(.33 .045 var(--h)); } }
 .agent:hover .orb { transform: scale(1.06); }
 .agent blockquote {
   margin-top: var(--s5); font-family: var(--display); font-size: 19px; line-height: 1.36; font-weight: 500; letter-spacing: -.016em;
@@ -992,7 +997,7 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .join.sent .get-go { display: none; }
 
 /* The last step before joining: which system, and what it's for. It rises over a soft blur of the page;
-   Back, Esc or a click outside close it without joining. */
+   The ×, Esc or a click outside close it without joining. */
 .more { width: min(420px, calc(100% - 32px)); padding: 0; border: 0; border-radius: var(--r-panel); background: var(--card); color: var(--label);
   box-shadow: inset 0 0 0 .5px var(--hair-2), var(--shadow-up); overflow: visible; }
 .more[open] { animation: more-in .42s var(--settle); }
@@ -1001,6 +1006,11 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 @keyframes fade { from { opacity: 0; } }
 .more form { display: grid; gap: 22px; padding: 26px 26px 22px; }
 .more h3 { font-size: 18px; line-height: 1.3; font-weight: 600; }
+.mhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -4px -10px -4px 0; }
+.mclose { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--label-3); cursor: pointer; flex: none; transition: background-color .2s, color .2s; }
+.mclose:hover { background: var(--hover); color: var(--label); }
+.mclose svg.ic { width: 20px; height: 20px; stroke-width: 1.7; }
+.macts .btn:disabled { opacity: .38; cursor: default; box-shadow: none; transform: none; }
 .mrow { display: grid; gap: 10px; }
 .mlabel { font-size: 14px; line-height: 1.3; color: var(--label-2); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -1055,3 +1065,48 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- Hero board: real footage, the decision record, B's first proof ---------- */
+.bcard .media.vid { background: #121419; }
+.bcard .media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bcard .media.vid::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,.22), transparent 34%, transparent 52%, rgba(0,0,0,.58)); }
+.bcard .media.vid svg { z-index: 1; }
+.ill .mk { fill: var(--B-fill); }
+.ill .mk-l { fill: none; stroke: var(--B-fill); stroke-width: 1.2; opacity: .75; }
+.bcard .rec { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 10px; align-items: start; margin: 11px 0 1px; padding-top: 10px; border-top: 1px solid var(--hair); }
+.bcard .rec dt { font-size: 12px; line-height: 20px; font-weight: 560; color: var(--label-3); }
+.bcard .rec dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.bcard .rec .pill { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; height: 20px; padding: 0 7px; border-radius: 6px; background: var(--hover); color: var(--label-2); font-size: 12px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bcard .rec .pill svg.ki { width: 11px; height: 11px; stroke-width: 1.8; color: var(--label-3); }
+.bcard .rec .pill.off { color: var(--label-3); }
+.bcard .rec .chip { width: 13px; height: 13px; border-radius: 4px; font-size: 8.5px; margin: 0; vertical-align: 0; opacity: .55; }
+.board:not([data-layout="wide"]) .bcard .rec { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.board:not([data-layout="wide"]) .bcard .rec dt { line-height: 16px; }
+.board:not([data-layout="wide"]) .bcard .rec dd + dt { margin-top: 5px; }
+.board:not([data-layout="wide"]) .bcard .rec .pill { white-space: normal; height: auto; min-height: 20px; padding: 2px 7px; line-height: 16px; }
+/* Zones board prototypes: a real photo, or the three storyboard frames with the opening framed in B. */
+.zc .media img.ph { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; }
+.zc .media .sb { position: absolute; inset: 0; display: grid; grid-template-columns: 1.85fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; padding: 10px; }
+.sb figure { position: relative; margin: 0; min-height: 0; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--hair); }
+.sb figure.on { grid-row: 1 / 3; box-shadow: 0 0 0 1.5px var(--card-2), 0 0 0 3px var(--B-fill); }
+.sb img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; }
+.sb figcaption { position: absolute; left: 6px; bottom: 6px; padding: 3px 6px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font: 600 9.5px/1 var(--sans); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: no-preference) {
+  .proto.alive .media img.ph { animation: settlep 1.1s var(--spring); }
+  .proto.alive .sb figure img { animation: settlep 1s var(--spring) both; }
+  .proto.alive .sb figure:nth-child(2) img { animation-delay: 70ms; } .proto.alive .sb figure:nth-child(3) img { animation-delay: 140ms; }
+}
+@keyframes settlep { 0% { transform: scale(1.05) translateY(-5px); opacity: .5; } 45% { opacity: 1; } }
+/* Crew scene: the source already on the board, your sticky (typed), and the line between them. */
+.sc-src .b { margin-top: 0; font-size: 13.5px; line-height: 1.45; color: var(--label); }
+.sc-note { background: var(--note); color: #1d1a10; border-radius: 4px; padding: 12px 14px 10px; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 16px 28px -16px rgba(80,60,0,.5); }
+.sc-note.on { transform: rotate(-1.6deg); }
+.sc-note p { margin: 0; min-height: 1.36em; font-size: 14.5px; line-height: 1.36; font-weight: 600; letter-spacing: -.01em; }
+.sc-note .by { justify-content: flex-end; padding: 0; margin-top: 8px; }
+.sc-note .by b.me { box-shadow: 0 0 0 1.5px var(--note), inset 0 0 0 1px rgba(0,0,0,.08); background: rgba(255,255,255,.55); color: #1d1a10; }
+.sc-note.typing p::after { content: ""; display: inline-block; width: 1.5px; height: 1.05em; margin-left: 1px; vertical-align: -.16em; background: currentColor; animation: sc-caret 1s steps(1) infinite; }
+@keyframes sc-caret { 50% { opacity: 0; } }
+.sc-lines { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; opacity: 0; transition: opacity .25s var(--e-out); }
+.sc-lines.on { opacity: 1; }
+.sc-lines path { fill: none; stroke: var(--thread); stroke-width: 1.5; stroke-linecap: round; }
+.sc-lines path.draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .6s cubic-bezier(.45,.05,.2,1) forwards; }

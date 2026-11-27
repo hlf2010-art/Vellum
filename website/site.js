@@ -44,10 +44,11 @@
   }
 
   // An AI crew member signs with its role icon, a person with their initial, so who's who reads at a glance.
-  var CREWC = { scout: "var(--crew-scout)", strategist: "var(--crew-strategist)", wright: "var(--crew-wright)", critic: "var(--crew-critic)" };
+  // Crew avatars match the app: the member's icon on its own pale plate, one hue each. People keep a letter.
+  var CREWH = { scout: 200, strategist: 305, wright: 100, critic: 262 };
   function crewAv(name, cls) {
     var k = name.toLowerCase();
-    return '<b class="' + (cls == null ? "av" : cls) + ' ai" style="--c:' + CREWC[k] + ";background:" + CREWC[k] + '" title="' + name + '"><svg aria-hidden="true"><use href="#i-' + k + '"/></svg></b>';
+    return '<b class="' + (cls == null ? "av" : cls) + ' ai" style="--h:' + CREWH[k] + '" title="' + name + '"><svg aria-hidden="true"><use href="#i-' + k + '"/></svg></b>';
   }
 
   // The product name, in one place: the public name may still change.
@@ -93,18 +94,20 @@
       "crew.strat": "Forks it into directions", "crew.stratq": "“If B is right, editors keep 9 in 10 rough cuts.”",
       "crew.wright": "Builds the proof", "crew.wrightq": "“The moment-marker prototype for B is ready. Keep it?”",
       "crew.critic": "Checks it against the sources", "crew.criticq": "“Nothing here says editors want one click.”",
-      "crew.agency": "They can challenge your decision. Only you can make it.",
+      "crew.agency": "Constructive challenges. Faster decisions.",
       "mode.focus": "Focus", "mode.listen": "Listening", "mode.team": "Teamwork",
       "mode.focusd": "Nothing interrupts you. What they notice waits until you're back.",
       "sc.wait": "waiting", "sc.backK": "While you focused", "sc.backT": "3 notes from the crew",
-      "sc.critic": "Nothing here says editors want one click.", "sc.draftK": "Prototype · draft", "sc.draftT": "Moment-marker prototype", "sc.keep": "Keep", "sc.discard": "Discard",
+      "sc.srcK": "Quote · Editor interview", "sc.srcB": "“Most of my time goes to finding the good shots the AI cut.”",
+      "sc.note": "Editing is too slow. Ship one-click final cut.",
+      "sc.critic": "The interview is about good shots getting cut, not speed. One click would cut more. Let editors pick the moments first?", "sc.draftK": "Prototype · draft", "sc.draftT": "One-click flow prototype", "sc.keep": "Keep", "sc.discard": "Discard",
       "mode.listend": "They speak up only when something doesn't add up.",
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
       "get.title": "Get {brand}.",
       "get.l1": "Early builds for Mac and Windows are on the way.", "get.l2": "We'll email you the day yours is ready.",
       "get.os": "Preferred system", "get.mac": "macOS", "get.win": "Windows", "get.use": "What will you use it for?", "get.email": "Email",
-      "get.useph": "A product launch, a short film…", "get.step": "Request early access", "get.back": "Back", "get.join": "Join",
+      "get.useph": "A product launch, a short film…", "get.step": "Request early access", "get.close": "Close", "get.join": "Join",
       "get.needos": "Pick a system first.", "get.needemail": "Where should we write to?", "get.needuse": "A few words on what it's for.",
       "cta.waitlist": "Join the waitlist", "cta.demo": "Try the demo", "get.dlfor": "Download for {os}",
       "get.thanks": "You're on the list.", "get.thanksos": "You're on the list for {os}.",
@@ -153,18 +156,20 @@
       "crew.strat": "拆出几个方向", "crew.stratq": "“如果 B 成立，10 个粗剪能留下 9 个。”",
       "crew.wright": "做原型验证", "crew.wrightq": "“B 方案的原型好了，要保留吗？”",
       "crew.critic": "对照来源挑刺", "crew.criticq": "“没有任何证据说明，剪辑师想要一键成片。”",
-      "crew.agency": "它们可以质疑，拍板的始终是你。",
+      "crew.agency": "提出建设性的质疑，让决定更快落地。",
       "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
       "mode.focusd": "绝不打扰。有发现先记下，等你回来再说。",
       "sc.wait": "条待看", "sc.backK": "专注期间", "sc.backT": "团队记下了 3 条",
-      "sc.critic": "没有任何证据说明，剪辑师想要一键成片。", "sc.draftK": "原型 · 草稿", "sc.draftT": "高光标记原型", "sc.keep": "保留", "sc.discard": "丢弃",
+      "sc.srcK": "原话 · 剪辑师访谈", "sc.srcB": "“最花时间的，是把 AI 剪掉的好镜头一个个找回来。”",
+      "sc.note": "剪辑太费时间，那就做一键成片。",
+      "sc.critic": "访谈说的是好镜头被剪掉，不是剪得慢。一键成片只会剪掉更多。先让剪辑师自己挑高光？", "sc.draftK": "原型 · 草稿", "sc.draftT": "一键成片流程原型", "sc.keep": "保留", "sc.discard": "丢弃",
       "mode.listend": "平时不出声，发现不对劲才开口。",
       "mode.teamd": "和你一起起草，好的留下就行。",
       "modes.label": "AI 团队的参与程度",
       "get.title": "抢先体验 {brand}。",
       "get.l1": "Mac 和 Windows 内测版即将推出。", "get.l2": "留下邮箱，上线第一时间通知你。",
       "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "打算用它做什么？", "get.email": "邮箱",
-      "get.useph": "比如：新品立项、短视频脚本……", "get.step": "申请内测资格", "get.back": "返回", "get.join": "提交",
+      "get.useph": "比如：新品立项、短视频脚本……", "get.step": "申请内测资格", "get.close": "关闭", "get.join": "提交",
       "get.needos": "请先选择系统。", "get.needemail": "请填写邮箱。", "get.needuse": "简单说说你的用途。",
       "cta.waitlist": "加入内测", "cta.demo": "在线体验", "get.dlfor": "下载 {os} 版",
       "get.thanks": "你已加入内测名单。", "get.thanksos": "你已加入 {os} 版内测名单。",
@@ -200,6 +205,9 @@
         dB: { k: "Direction", t: "Rough cut, moments marked", b: "It trims the dead air. You pick the moments.", by: "Strategist" },
         dC: { k: "Direction", t: "Suggestions only", b: "It comments. You make every cut.", by: "Strategist" },
         st: { k: "Critic", b: "One click hides the cuts editors undo most. And nobody asked for it." },
+        dc: { k: "Decision", t: "Ship the rough cut. Editors mark the moments.", by: "You", rests: "Rests on", aside: "Not chosen",
+              ev: ["6 of 10 cuts undone", "“The moments are mine.”"], A: "One-click final cut", C: "Suggestions only" },
+        pB: { k: "Prototype", b: "24 minutes of footage, rough-cut to 6. You mark the moments.", by: "Wright" },
         n1: { k: "Observed · new", t: "Beta test", b: "On long clips, picking moments takes longer than cutting by hand.", by: "You" }
       },
       adopted: "<strong>Chosen.</strong> It does the cuts editors keep, and leaves them the moments.",
@@ -234,6 +242,9 @@
         dB: { k: "方向", t: "粗剪 + 高光标记", b: "它剪掉冗余，高光由你来挑。", by: "Strategist" },
         dC: { k: "方向", t: "只给建议", b: "它只提意见，每一刀都由你剪。", by: "Strategist" },
         st: { k: "Critic", b: "一键成片恰好藏起了剪辑师最常撤回的那几刀。况且，根本没人提过这个需求。" },
+        dc: { k: "决策", t: "先上线粗剪，高光交给剪辑师标。", by: "你", rests: "依据", aside: "没选",
+              ev: ["10 刀撤回 6 刀", "“高光我自己挑。”"], A: "一键成片", C: "只给建议" },
+        pB: { k: "原型", b: "24 分钟素材，粗剪到 6 分钟。高光由你来标。", by: "Wright" },
         n1: { k: "实测 · 新", t: "内测", b: "素材一长，挑高光比自己剪还慢。", by: "你" }
       },
       adopted: "<strong>已选定。</strong>剪辑师会保留的刀它来剪，高光留给人挑。",
@@ -345,14 +356,25 @@
       '<rect class="tl-clip dim" x="6" y="56" width="60" height="10" rx="2.5"/><rect class="tl-undo" x="70" y="56.5" width="34" height="9" rx="2.5"/><rect class="tl-clip dim" x="108" y="56" width="86" height="10" rx="2.5"/>' +
       '<path class="tl-redo" d="M58 25.5a5 5 0 1 1 1.5 3.6M58 25.5v-3.2M58 25.5h3.2"/>' +
       '<circle class="tl-glow" cx="104" cy="9" r="9"/><path class="tl-head" d="M104 7v74"/><path class="tl-cap" d="M100.5 4h7v4l-3.5 3-3.5-3Z"/></svg>',
-    // A long beta session: the strip is crowded with moments still waiting to be picked.
+    // A long beta session, as it was recorded. The strip below is crowded with moments still waiting to be picked.
     clip:
+      '<video muted loop playsinline preload="none" poster="assets/beta-clip-poster.jpg" src="assets/beta-clip.mp4"></video>' +
       '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<rect class="ph-bg" width="200" height="84"/><ellipse class="ph-wash" cx="100" cy="30" rx="70" ry="16"/>' +
-      '<rect class="tk" x="6" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="10" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="14" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="18" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="22" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="26" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="30" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="34" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="38" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="42" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="46" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="50" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="54" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="58" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="62" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="66" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="70" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="74" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="78" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="82" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="86" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="90" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="94" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="98" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="102" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="106" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="110" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="114" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="118" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="122" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="126" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="130" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="134" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="138" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="142" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="146" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="150" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="154" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="158" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="162" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="166" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="170" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="174" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="178" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="182" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="186" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="190" y="61" width="1.6" height="5" rx=".8"/>' +
-      '<circle class="play" cx="100" cy="30" r="11"/><path class="play-ink" d="M96.6 24.6v10.8l9.2-5.4Z"/>' +
+      '<rect class="tk" x="6" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="10" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="14" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="18" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="22" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="26" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="30" y="63" width="1.6" height="5" rx=".8"/><rect class="tk on" x="34" y="60" width="1.6" height="10" rx=".8"/><rect class="tk" x="38" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="42" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="46" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="50" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="54" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="58" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="62" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="66" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="70" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="74" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="78" y="63" width="1.6" height="5" rx=".8"/><rect class="tk on" x="82" y="60" width="1.6" height="10" rx=".8"/><rect class="tk" x="86" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="90" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="94" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="98" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="102" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="106" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="110" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="114" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="118" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="122" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="126" y="63" width="1.6" height="5" rx=".8"/><rect class="tk on" x="130" y="60" width="1.6" height="10" rx=".8"/><rect class="tk" x="134" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="138" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="142" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="146" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="150" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="154" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="158" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="162" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="166" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="170" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="174" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="178" y="63" width="1.6" height="5" rx=".8"/><rect class="tk on" x="182" y="60" width="1.6" height="10" rx=".8"/><rect class="tk" x="186" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="190" y="63" width="1.6" height="5" rx=".8"/>' +
       '<rect class="cl-track" x="0" y="81" width="200" height="3"/><rect class="cl-done" x="0" y="81" width="22" height="3"/>' +
-      '<rect class="cl-time" x="162" y="8" width="30" height="12" rx="6"/><text class="cl-tx" x="177" y="16.6" text-anchor="middle">24:10</text></svg>'
+      '<rect class="cl-time" x="162" y="8" width="30" height="12" rx="6"/><text class="cl-tx" x="177" y="16.6" text-anchor="middle">24:10</text></svg>',
+    // B's first proof: the dead air is gone, the track is one tight run of clips, and the moments you marked sit on it.
+    proto:
+      '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+      '<rect class="ph-bg" width="200" height="84"/>' +
+      (function () { var t = ""; for (var x = 6; x <= 196; x += 10) t += '<path class="tl-tick" d="M' + x + ' 9v' + ((x - 6) % 50 ? 2 : 4) + '"/>'; return t; })() +
+      '<rect class="tl-clip" x="6" y="22" width="33" height="20" rx="3"/><rect class="tl-clip" x="40" y="22" width="27" height="20" rx="3"/>' +
+      '<rect class="tl-clip" x="68" y="22" width="41" height="20" rx="3"/><rect class="tl-clip" x="110" y="22" width="22" height="20" rx="3"/>' +
+      '<rect class="tl-clip" x="133" y="22" width="31" height="20" rx="3"/><rect class="tl-clip" x="165" y="22" width="29" height="20" rx="3"/>' +
+      '<rect class="tl-aud" x="6" y="47" width="188" height="10" rx="2.5"/>' +
+      '<path class="mk-l" d="M53 19v26M88 19v26M149 19v26"/>' +
+      '<path class="mk" d="M53 14.5l3.4 3.4-3.4 3.4-3.4-3.4Z"/><path class="mk" d="M88 14.5l3.4 3.4-3.4 3.4-3.4-3.4Z"/><path class="mk" d="M149 14.5l3.4 3.4-3.4 3.4-3.4-3.4Z"/>' +
+      '<rect class="cl-time" x="164" y="64" width="30" height="12" rx="6"/><text class="cl-tx" x="179" y="72.6" text-anchor="middle">6:02</text></svg>'
   };
   function unquote(t) { return String(t).replace(/^[“"「『]|[”"」』]$/g, ""); }
   var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "实测": "eye", "反馈": "msg", "原话": "quote" };
@@ -463,23 +485,24 @@
 
     // Card positions in board units: [x, y, width]. Wide reads left to right; mid and narrow read top to bottom.
     var LAYOUT = {
-      wide: { w: 1180, h: 736, loop: 20, max: 1.2, pos: {
-        e1: [28, 40, 212], e2: [28, 266, 212], e3: [28, 498, 212],
-        j1: [320, 270, 240], st: [342, 50, 196],
-        dA: [626, 40, 236], dC: [626, 456, 236],
-        dB: [904, 150, 248], n1: [926, 516, 204]
+      wide: { w: 1180, h: 768, loop: 18, max: 1.2, pos: {
+        e1: [28, 36, 212], e2: [28, 262, 212], e3: [28, 520, 212],
+        st: [312, 36, 200], j1: [300, 284, 232],
+        dA: [584, 36, 236], dB: [584, 284, 244], dC: [584, 590, 236],
+        dc: [880, 36, 284], pB: [880, 284, 252], n1: [880, 512, 236]
       } },
-      mid: { w: 760, h: 1000, loop: 15, max: 1.1, pos: {
+      mid: { w: 760, h: 1060, loop: 15, max: 1.1, pos: {
         e1: [20, 24, 228], e2: [266, 24, 228], e3: [512, 24, 228],
         st: [40, 254, 196], j1: [266, 262, 228],
         dA: [20, 480, 228], dB: [266, 480, 228], dC: [512, 480, 228],
-        n1: [266, 780, 228]
+        dc: [20, 790, 228], pB: [266, 790, 228], n1: [512, 790, 228]
       } },
-      narrow: { w: 380, h: 1118, loop: 9, max: 1.12, pos: {
-        e1: [12, 14, 172], e2: [196, 14, 172], e3: [12, 216, 172],
-        j1: [196, 216, 172], st: [20, 372, 158],
-        dA: [196, 396, 172], dB: [12, 598, 356],
-        dC: [12, 892, 172], n1: [196, 892, 172]
+      narrow: { w: 380, h: 1360, loop: 9, max: 1.12, pos: {
+        e1: [12, 14, 172], e2: [196, 14, 172], e3: [12, 196, 172],
+        j1: [196, 196, 172], st: [20, 356, 158],
+        dA: [196, 404, 172], dB: [12, 628, 356],
+        dC: [12, 864, 172], dc: [196, 864, 172],
+        pB: [12, 1092, 172], n1: [196, 1164, 172]
       } }
     };
     var RELS = [
@@ -490,12 +513,15 @@
       { a: "j1", b: "dB", type: "related", at: 2 },
       { a: "j1", b: "dC", type: "related", at: 2 },
       { a: "st", b: "dA", type: "counters", at: 2 },
+      { a: "dB", b: "dc", type: "related", at: 3 },
+      { a: "dB", b: "pB", type: "related", at: 3 },
+      { a: "pB", b: "n1", type: "related", at: 4 },
       { a: "n1", b: "dB", type: "counters", at: 4, tag: true }
     ];
-    var SHOW = { e1: 0, e2: 0, e3: 0, j1: 1, dA: 2, dB: 2, dC: 2, st: 2, n1: 4 };
+    var SHOW = { e1: 0, e2: 0, e3: 0, j1: 1, dA: 2, dB: 2, dC: 2, st: 2, dc: 3, pB: 3, n1: 4 };
     // Spotlight: each step lights only what it is about. What those cards touch stays half lit, so you still
     // see where they sit; everything else steps back but stays readable. Pointing at a card overrides it.
-    var LIT = { 0: ["e1", "e2", "e3"], 1: ["j1"], 2: ["dA", "dB", "dC", "st"], 3: ["dB"], 4: ["n1"] };
+    var LIT = { 0: ["e1", "e2", "e3"], 1: ["j1"], 2: ["dA", "dB", "dC", "st"], 3: ["dB", "dc", "pB"], 4: ["n1"] };
     var CTX = { 3: ["dA", "dC"] };
     var litSet = {}, spotOne = null, spotT = 0;
     // While a step is being built, the light follows the card that just landed; once it is all down, the
@@ -521,9 +547,19 @@
       svg.querySelectorAll("path[data-a]").forEach(function (p) { p.classList.toggle("lit", !!(lit[p.dataset.a] || lit[p.dataset.b])); });
       stage.querySelectorAll(".rel-tag[data-a]").forEach(function (g) { g.classList.toggle("lit", !!(lit[g.dataset.a] || lit[g.dataset.b])); });
       el.classList.add("spotlit");
+      clip();
     }
-    var KI = { e1: "eye", e2: "msg", e3: "quote", j1: "judge", dA: "fork", dB: "fork", dC: "fork", st: "critic", n1: "eye" };
-    var CREW = { "Scout": "var(--crew-scout)", "Strategist": "var(--crew-strategist)" };
+    // The beta footage plays only while its card is on the board and the board is on screen; still under reduced motion.
+    var inView = false;
+    function clip() {
+      var v = cards.n1 && cards.n1.querySelector("video");
+      if (!v) return;
+      if (inView && !reduced && cards.n1.classList.contains("on")) { if (v.paused) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } }
+      else if (!v.paused) v.pause();
+    }
+    if (window.IntersectionObserver) new IntersectionObserver(function (en) { inView = en[0].isIntersecting; clip(); }).observe(el);
+    var KI = { e1: "eye", e2: "msg", e3: "quote", j1: "judge", dA: "fork", dB: "fork", dC: "fork", st: "critic", dc: "decide", pB: "window", n1: "eye" };
+    var CREW = { "Scout": 1, "Strategist": 1, "Wright": 1 };
     var mode = null, scale = 1, step = -1, timer = null, playing = false, played = false, resolved = null, dragged = false;
     var cards = {}, moved = {}, paths = {}, loop = null, later = [];
     // Choreography: cards the director is still holding back, and who is on the board right now.
@@ -539,13 +575,16 @@
         var c = document.createElement("div");
         c.className = "vc bcard";
         if (id === "j1" || id[0] === "d") c.classList.add("ink");
+        if (id === "dc") c.classList.add("dec");
         if (id === "st") c.classList.add("sticky");
         if (id === "e3") c.classList.add("quote");
-        var pic = { e1: MEDIA.photo, e2: '<table class="xl" aria-hidden="true"></table>', n1: MEDIA.clip }[id];
+        var pic = { e1: MEDIA.photo, e2: '<table class="xl" aria-hidden="true"></table>', pB: MEDIA.proto, n1: MEDIA.clip }[id];
         if (pic) c.classList.add("has-media");
         c.dataset.id = id;
-        c.innerHTML = (pic ? '<div class="media' + (id === "e2" ? " xl-wrap" : "") + '">' + pic + "</div>" : "") + '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI[id] + '"/></svg><span class="kk"></span>' + (id === "st" ? "" : '<span class="by"></span>') + "</div>" +
+        c.innerHTML = (pic ? '<div class="media' + (id === "e2" ? " xl-wrap" : id === "n1" ? " vid" : "") + '">' + pic + "</div>" : "") + '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI[id] + '"/></svg><span class="kk"></span>' + (id === "st" ? "" : '<span class="by"></span>') + "</div>" +
           (id === "e3" ? '<div class="b"></div><div class="cite"><div class="t"></div>' + WAVE + "</div>" :
+          // The decision record: what was decided, what it rests on, what was not chosen. Reasons stay on A and C.
+          id === "dc" ? '<div class="t"></div><dl class="rec"><dt class="r1"></dt><dd class="ev"></dd><dt class="r2"></dt><dd class="ns"></dd></dl>' :
           (id === "st" || pic ? "" : '<div class="t"></div>') + '<div class="b"></div>') +
           (id === "dA" || id === "dC" ? '<div class="veil"></div><div class="note"></div><span class="back-chip"><svg class="ki" aria-hidden="true"><use href="#i-retry"/></svg><span></span></span>' : "") +
           // The chosen card shows one line; why it was chosen and what you can do open on hover, focus or tap.
@@ -576,11 +615,11 @@
       var l = L();
       Object.keys(cards).forEach(function (id) {
         var c = cards[id], d = l.cards[id];
-        var letter = { dA: "A", dB: "B", dC: "C" }[id];
+        var letter = { dA: "A", dB: "B", dC: "C", dc: "B" }[id];
         c.querySelector(".kk").textContent = d.k;
         var tt = c.querySelector(".t");
         if (tt) tt.innerHTML = (letter ? '<span class="chip ' + letter + '">' + letter + "</span>" : "") + '<span class="tt">' + esc(d.t) + "</span>";
-        c.querySelector(".b").textContent = d.b;
+        var bb = c.querySelector(".b"); if (bb) bb.textContent = d.b;
         var by = c.querySelector(".by");
         if (by) {
           var who = d.by.split(" + ");
@@ -591,6 +630,11 @@
           by.title = d.by; by.setAttribute("role", "img"); by.setAttribute("aria-label", d.by);
         }
       });
+      var dc = l.cards.dc, ek = ["eye", "quote"];
+      cards.dc.querySelector(".r1").textContent = dc.rests;
+      cards.dc.querySelector(".r2").textContent = dc.aside;
+      cards.dc.querySelector(".ev").innerHTML = dc.ev.map(function (e, i) { return '<span class="pill"><svg class="ki" aria-hidden="true"><use href="#i-' + ek[i] + '"/></svg>' + esc(e) + "</span>"; }).join("");
+      cards.dc.querySelector(".ns").innerHTML = ["A", "C"].map(function (k) { return '<span class="pill off"><span class="chip ' + k + '">' + k + "</span>" + esc(dc[k]) + "</span>"; }).join("");
       cards.e2.querySelector(".xl").innerHTML = '<tr><th></th><th>' + esc(l.sheet.head[0]) + "</th><th>" + l.sheet.head[1] + "</th></tr>" +
         l.sheet.rows.map(function (r) {
           var hit = r[1].indexOf("[[") > -1, tx = esc(r[1]).replace(/\[\[(.+?)\]\]/g, "<mark>$1</mark>");
@@ -741,8 +785,8 @@
       })(t0);
     }
 
-    var CREWMADE = { dA: 1, dB: 1, dC: 1, st: 1 };   // written by the crew, so it streams in
-    var WHO = { you: "var(--label)", scout: "var(--crew-scout)", strategist: "var(--crew-strategist)", critic: "var(--crew-critic)" };
+    var CREWMADE = { dA: 1, dB: 1, dC: 1, st: 1, pB: 1 };   // written by the crew, so it streams in
+    var WHO = { you: "var(--label)", scout: "var(--crew-scout)", strategist: "var(--crew-strategist)", critic: "var(--crew-critic)", wright: "var(--crew-wright)" };
     function cursor(name) {
       if (cursors[name]) return cursors[name];
       var c = document.createElement("div");
@@ -864,10 +908,19 @@
         moveTo("critic", spot("st")[0], spot("st")[1], function () { press("critic", function () { reveal("st", spot("st")); spotlight("st", 1900); leave("critic", 1100); }); });
       }, 1250);
     }
+    // You circle B. The decision is written down beside it, then the Wright builds the first proof.
     function decision() {
-      holdDecide = true; go(3, true);
+      holdDecide = true; held = { dc: 1, pB: 1 }; go(3, true);
       moveTo("you", spot("dB")[0], spot("dB")[1], function () {
-        press("you", function () { holdDecide = false; go(3, true); leave("you", 1700); });
+        press("you", function () {
+          holdDecide = false; go(3, true);
+          soon(function () { reveal("dc", mid("dB")); spotlight("dc"); leave("you", 300); }, 1250);
+          soon(function () {
+            moveTo("wright", spot("pB")[0], spot("pB")[1], function () {
+              press("wright", function () { reveal("pB", spot("pB")); spotlight("pB", 1500); leave("wright", 1000); });
+            });
+          }, 1900);
+        });
       });
     }
     function news() {
@@ -917,7 +970,7 @@
       });
       replayBtn.hidden = !(n === 4 && !playing) || pinned;
     }
-    function stagger(id) { return { e1: 0, e2: 1, e3: 2, j1: 0, dA: 0, dB: 1, dC: 2, st: 4, n1: 0 }[id] || 0; }
+    function stagger(id) { return { e1: 0, e2: 1, e3: 2, j1: 0, dA: 0, dB: 1, dC: 2, st: 4, dc: 0, pB: 2, n1: 0 }[id] || 0; }
 
     function resolve(kind) {
       resolved = kind;
@@ -938,7 +991,7 @@
       }, 2200);
     }
 
-    var DWELL = [4300, 2900, 4400, 3500];
+    var DWELL = [4300, 2900, 4400, 5200];
     function play() {
       if (playing) return;
       playing = true; played = true;
@@ -1072,23 +1125,12 @@
     var EDGES = [["e1", "j", "supports"], ["e2", "j", "supports"], ["j", "A", "aside"], ["j", "B", ""], ["j", "C", "aside"], ["B", "P", "lineB"], ["P", "S", "lineB"]];
 
     var ILL = {
-      product: // the 32 g prototype set down on a scale: it settles when you reach it, the battery tips in B
-        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true"><ellipse cx="100" cy="134" rx="56" ry="5" fill="currentColor" opacity=".07"/>' +
-        '<rect class="fill-card line" x="44" y="108" width="112" height="20" rx="6"/><rect class="fill-2" x="82" y="112" width="36" height="12" rx="3"/>' +
-        '<text x="100" y="121" text-anchor="middle">32 g</text>' +
-        '<g class="drop">' +
-        '<path class="line" d="M48 70H34l-4 6M152 70h14l4 6"/>' +
-        '<rect class="b-ink" x="24" y="74" width="12" height="9" rx="4.5"/><rect class="b-ink" x="164" y="74" width="12" height="9" rx="4.5"/>' +
-        '<rect class="fill-card line" x="48" y="62" width="44" height="34" rx="14"/><rect class="fill-card line" x="108" y="62" width="44" height="34" rx="14"/>' +
-        '<path class="soft" d="M58 72c6-4 14-5 20-3M118 72c6-4 14-5 20-3"/><path class="line" d="M92 74c4-6 12-6 16 0"/>' +
-        '<circle class="line fill-2" cx="53" cy="67" r="2.4"/></g></svg>',
-      video: // a storyboard with the chosen opening framed in B
-        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true">' +
-        '<g><rect class="fill-card" x="12" y="42" width="54" height="40" rx="5"/><rect class="b-stroke" x="12" y="42" width="54" height="40" rx="5"/><circle class="b-ink" cx="39" cy="62" r="9" opacity=".9"/><path class="line" d="M28 75h22" opacity=".5"/></g>' +
-        '<g><rect class="fill-card line" x="73" y="42" width="54" height="40" rx="5" opacity=".9"/><path class="soft" d="M84 70l10-12 8 8 6-6 9 10"/></g>' +
-        '<g><rect class="fill-card line" x="134" y="42" width="54" height="40" rx="5" opacity=".9"/><path class="soft" d="M144 56h34M144 63h24M144 70h28"/></g>' +
-        '<text x="12" y="98">0s</text><text x="73" y="98">1s</text><text x="134" y="98">3s</text>' +
-        '<path class="soft" d="M12 112h176"/><path class="playhead b-stroke" d="M40 106v12"/></svg>',
+      product: // the 32 g prototype, on the scale
+        '<img class="ph" src="assets/glasses-prototype.jpg" alt="" loading="lazy" decoding="async">',
+      video: // the storyboard: it opens on the result (framed in B), then shows how it was made
+        '<div class="sb">' + [["1-result", "0s"], ["2-process", "1s"], ["3-start", "3s"]].map(function (f, i) {
+          return '<figure' + (i ? "" : ' class="on"') + '><img src="assets/storyboard-' + f[0] + '.jpg" alt="" loading="lazy" decoding="async"><figcaption>' + f[1] + "</figcaption></figure>";
+        }).join("") + "</div>",
       ai: // fifty eval cases, forty-six pass
         (function () {
           var s = '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true">', fails = { 7: 1, 19: 1, 33: 1, 44: 1 };
@@ -1421,6 +1463,15 @@
       slide(tabsEl, tabs[at]);
       center();
       if (user) { touched = true; clearTimeout(timer); } else tick();
+      play();
+    }
+    // The finished cut plays its last seconds once each time it comes to the front, and rests on the landing.
+    var vid = track.querySelector(".cut-vid");
+    function play() {
+      if (!vid) return;
+      var on = items[at].contains(vid) && seen && !reduced;
+      if (on) { try { vid.currentTime = 0; } catch (e) {} var pr = vid.play(); if (pr && pr.catch) pr.catch(function () {}); }
+      else vid.pause();
     }
     function tick() {
       clearTimeout(timer);
@@ -1447,7 +1498,7 @@
     root.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") hold = true; });
     root.addEventListener("pointerleave", function () { hold = false; });
     if ("IntersectionObserver" in window) new IntersectionObserver(function (es) {
-      es.forEach(function (en) { seen = en.isIntersecting; if (seen) tick(); else clearTimeout(timer); });
+      es.forEach(function (en) { var was = seen; seen = en.isIntersecting; if (seen) tick(); else clearTimeout(timer); if (seen !== was) play(); });
     }, { threshold: 0.5 }).observe(root);
     var rz = 0;
     window.addEventListener("resize", function () { cancelAnimationFrame(rz); rz = requestAnimationFrame(function () { slide(tabsEl, tabs[at]); center(); }); });
@@ -1533,27 +1584,34 @@
   // difference between the modes, so the board plays it out in time.
   var scene = (function () {
     var boxEl = $("sceneBox"), st = $("sceneStage");
-    var W = 560, H = 236, D = 5200, L, LAY = { wide: { W: 560, H: 236, mine: [40, 48], bubble: [272, 44, 248], back: [300, 92], draft: [304, 104], tip: "bl", wr: [1.01, .15],
-        hops: [[.88, .86], [.2, 1.18], [.45, 1.32], [.3, 1.42], [.62, 1.25], [.4, 1.38]] }, narrow: { W: 340, H: 300, mine: [18, 24], bubble: [44, 158, 272], back: [100, 166], draft: [116, 170], tip: "tl", wr: [.6, 1.06],
-        hops: [[.88, .86], [1.08, .3], [1.2, .55], [1.1, .8], [1.22, .4], [1.12, .62]] } }, timers = [], seen = false, running = false;
-    var TICKS = [0.06, 0.2, 0.34, 0.5, 0.66, 0.82];
+    // The source is already on the board. You read it, write your take on a sticky beside it, and the crew answers that.
+    // hops: where your pointer goes. The first is relative to your sticky (where you type), the rest are board points
+    // in a patch the crew never uses, so name tags never sit on words or on each other.
+    var W = 560, H = 252, D = 5600, L, LAY = {
+      wide: { W: 560, H: 262, src: [22, 20, 236], mine: [46, 136, 214], bubble: [280, 118, 258], back: [300, 124], draft: [326, 108], tip: "bl", wr: [1.01, .2],
+        hops: [[.9, .82], [318, 46], [376, 64], [344, 82], [430, 52], [398, 74]] },
+      narrow: { W: 340, H: 394, src: [16, 16, 250], mine: [36, 128, 214], bubble: [40, 250, 280], back: [96, 256], draft: [116, 260], tip: "tl", wr: [.62, 1.04],
+        hops: [[.9, .82], [72, 368], [150, 374], [112, 378], [222, 370], [186, 376]] } }, timers = [], seen = false, running = false;
+    var TICKS = [0.06, 0.4, 0.52, 0.64, 0.76, 0.88];   // your pointer rests while you type, then keeps working
     // Each mode: what shows on the board, and when (as a share of the run).
     var PLAN = {
       focus: [{ x: 0.96, show: "back" }],
       listen: [{ x: 0.42, show: "dot" }, { x: 0.54, show: "bubble" }],
-      team: [{ x: 0.24, show: "wright" }, { x: 0.34, show: "draft" }, { x: 0.66, show: "dot" }]
+      team: [{ x: 0.4, show: "wright" }, { x: 0.5, show: "draft" }, { x: 0.74, show: "dot" }]
     };
     var av = function (c, l) { return '<b class="av" style="--c:' + c + '">' + l + "</b>"; };
     st.innerHTML =
-      '<article class="vc ink sc-card" id="scMine" style="left:40px;top:66px;width:214px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-fork"/></svg><span data-sc="mk"></span><span class="by"><b class="me" data-sc="me"></b></span></div>' +
-        '<div class="t"><span class="chip A">A</span><span data-sc="mt"></span></div><div class="b" data-sc="mb"></div></article>' +
+      '<svg class="sc-lines" aria-hidden="true"><path id="scRel" pathLength="1"/></svg>' +
+      '<article class="vc sc-card sc-src on" id="scSrc"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-quote"/></svg><span data-sc="srcK"></span></div><div class="b" data-sc="srcB"></div></article>' +
+      // Your sticky note: you type your take on the source, and the crew answers what it says.
+      '<article class="vc sc-card sc-note" id="scMine"><p data-sc="note"></p><span class="by"><b class="me" data-sc="me"></b></span></article>' +
       '<span class="sc-dot" id="scDot">' + crewAv("Critic") + "</span>" +
       '<div class="sc-bubble" id="scBubble" style="left:272px;top:44px;max-width:248px">' + crewAv("Critic") + '<p data-sc="critic"></p></div>' +
       '<article class="vc sc-card sc-back" id="scBack" style="left:300px;top:92px;width:222px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-tray"/></svg><span data-sc="backK"></span></div><div class="t" data-sc="backT"></div>' +
         '<div class="sc-avs">' + crewAv("Scout") + crewAv("Critic") + crewAv("Wright") + "</div></article>" +
       '<article class="vc sc-card sc-draft" id="scDraft" style="left:304px;top:104px;width:206px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-window"/></svg><span data-sc="draftK"></span><span class="by">' + crewAv("Wright", "") + '</span></div>' +
         '<div class="t"><span data-sc="draftT"></span></div><div class="sc-acts"><span data-sc="discard"></span><span class="keep" data-sc="keep"></span></div></article>';
-    var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = $("scDot");
+    var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = $("scDot"), src = $("scSrc"), rel = $("scRel"), relSvg = st.querySelector(".sc-lines");
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { snug(bubble.querySelector("p")); });
 
     var cur = {};
@@ -1580,9 +1638,9 @@
       card.classList.add("on");
     }
     function relabel() {
-      var d = BOARD[lang].cards.dA;
-      var txt = { mk: d.k, mt: d.t, mb: d.b, me: lang === "zh" ? "你" : "Y" };
-      st.querySelectorAll("[data-sc]").forEach(function (e) { var k = e.getAttribute("data-sc"); setCopy(e, txt[k] != null ? txt[k] : t("sc." + k), k === "critic"); });
+      var txt = { me: lang === "zh" ? "你" : "Y" };
+      st.querySelectorAll("[data-sc]").forEach(function (e) { var k = e.getAttribute("data-sc"); if (k === "note" && typing) return; setCopy(e, txt[k] != null ? txt[k] : t("sc." + k), k === "critic" || k === "note" || k === "srcB"); });
+      requestAnimationFrame(link);
       snug(bubble.querySelector("p"));
       if (cur.you) cur.you.querySelector(".who").textContent = lang === "zh" ? "你" : "You";
       if (cur.wright) cur.wright.querySelector(".who").textContent = "Wright";
@@ -1595,15 +1653,35 @@
       boxEl.style.aspectRatio = W + " / " + H;
       st.style.width = W + "px"; st.style.height = H + "px";
       var put = function (e, p) { e.style.left = p[0] + "px"; e.style.top = p[1] + "px"; if (p[2]) e.style.width = p[2] + "px"; };
-      put(mine, L.mine); put(bubble, L.bubble.slice(0, 2)); bubble.style.maxWidth = L.bubble[2] + "px"; snug(bubble.querySelector("p")); put(back, L.back); put(draft, L.draft);
+      put(src, L.src); put(mine, L.mine); put(bubble, L.bubble.slice(0, 2)); bubble.style.maxWidth = L.bubble[2] + "px"; snug(bubble.querySelector("p")); put(back, L.back); put(draft, L.draft);
       // The Critic's pin sits exactly where its note's avatar will be, so the note opens out of it.
       put(dot, [L.bubble[0] + 2, L.bubble[1] + 3]); dot.setAttribute("data-tip", L.tip);
+      relSvg.setAttribute("viewBox", "0 0 " + W + " " + H); relSvg.setAttribute("width", W); relSvg.setAttribute("height", H);
       st.style.transform = "scale(" + (boxEl.clientWidth / W) + ")";
+      link();
+    }
+    // The line from the source to your sticky: drawn once the sticky is down.
+    function link(draw) {
+      var a = { x: src.offsetLeft, y: src.offsetTop, w: src.offsetWidth, h: src.offsetHeight }, b = mbox();
+      // From under the source to the top of the sticky, a little in from their left edges.
+      var x1 = a.x + 44, y1 = a.y + a.h, x2 = b.x + 34, y2 = b.y, k = Math.max(14, (y2 - y1) * 0.55);
+      rel.setAttribute("d", "M" + x1 + " " + y1 + " C" + x1 + " " + (y1 + k) + "," + x2 + " " + (y2 - k) + "," + x2 + " " + y2);
+      if (draw && !reduced) { rel.classList.remove("draw"); void rel.getBoundingClientRect(); rel.classList.add("draw"); }
     }
 
+    // Typing into the sticky, one character at a time, with a caret; the finished line keeps its clause breaks.
+    var typing = false, noteP = mine.querySelector("p");
+    function type(startMs) {
+      var full = t("sc.note"), chars = Array.from(full), step = lang === "zh" ? 85 : 34;
+      typing = true; noteP.textContent = ""; mine.classList.add("typing");
+      chars.forEach(function (c, i) { at(startMs + i * step, function () { noteP.textContent = chars.slice(0, i + 1).join(""); }); });
+      at(startMs + chars.length * step + 380, function () { typing = false; mine.classList.remove("typing"); setCopy(noteP, full, true); });
+    }
     function reset() {
       timers.forEach(clearTimeout); timers = [];
+      if (typing) { typing = false; mine.classList.remove("typing"); setCopy(noteP, t("sc.note"), true); }
       [mine, bubble, back, draft, dot].forEach(function (e) { e.classList.remove("on"); });
+      relSvg.classList.remove("on");
       Object.keys(cur).forEach(function (n) { cur[n].classList.remove("on"); });
     }
     function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
@@ -1620,7 +1698,7 @@
     }
     // The end state of a mode, all at once: for reduced motion, and while the board is off screen.
     function still(mode) {
-      reset(); mine.classList.add("on");
+      reset(); mine.classList.add("on"); relSvg.classList.add("on"); rel.classList.remove("draw");
       PLAN[mode].forEach(function (e) { show(e.show, true); });
     }
     function play(mode) {
@@ -1630,9 +1708,12 @@
       var m = mbox(), P = function (fx, fy) { return [m.x + m.w * fx, m.y + m.h * fy]; };
       // You put the card down from its corner, then keep working on the empty board beside it: one small move
       // per tick, in a patch the crew never uses, so name tags never sit on words or on each other.
-      var hops = L.hops.map(function (h) { return P(h[0], h[1]); });
+      var hops = L.hops.map(function (h, i) { return i ? h : P(h[0], h[1]); });
       glide(you, hops[0][0], hops[0][1], 0);
+      noteP.textContent = ""; typing = true;
       at(240, function () { land(mine, hops[0][0], hops[0][1]); });
+      at(420, function () { relSvg.classList.add("on"); link(true); });
+      type(620);
       TICKS.forEach(function (x, i) {
         if (i) at(x * D, function () { glide(you, hops[i][0], hops[i][1], 420); });
       });
@@ -1678,7 +1759,7 @@
   // ---- Get the app: one button, then a short form ---------------------------------------------------------
   // "Join the waitlist" opens a small dialog: email, which system (picked for you from the browser; a phone or
   // tablet can't tell, so nothing is picked there) and, in their own words, what it's for. All three are needed.
-  // Back, Esc or a click outside closes it without joining and keeps what was typed. Once a build is live for
+  // The ×, Esc or a click outside closes it without joining and keeps what was typed. Once a build is live for
   // the visitor's system, the button becomes its download.
   var form = $("waitlist"), email = $("email"), dlGo = $("dlGo"), openBtn = $("joinOpen");
   var dlg = $("more"), moreForm = $("moreForm"), useText = $("useText"), moreMsg = $("moreMsg"), osChips = $("osChips");
@@ -1708,6 +1789,8 @@
     $("useHint").textContent = need === "get.needuse" ? t(need) : "";
     moreMsg.textContent = need === "get.fail" || need === "get.closed" ? t(need) : "";
     moreMsg.classList.toggle("info", need === "get.closed");
+    $("moreClose").setAttribute("aria-label", t("get.close"));
+    ready();
   }
   function setNeed(key) {
     need = key;
@@ -1729,16 +1812,23 @@
       e.preventDefault(); var n = osBtns[(i + d + osBtns.length) % osBtns.length]; pick.os = n.dataset.os; if (need === "get.needos") setNeed(""); renderPicks(); n.focus();
     });
   });
-  email.addEventListener("input", function () { if (need === "get.bademail" || need === "get.needemail") setNeed(""); });
-  useText.addEventListener("input", function () { if (need === "get.needuse" && useText.value.trim()) setNeed(""); });
+  // Join stays off until all three are there: a real-looking email, a system, and what it's for.
+  function okEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  function ready() { joinBtn.disabled = busy || !(okEmail(email.value.trim()) && pick.os && useText.value.trim()); }
+  var busy = false;
+  email.addEventListener("input", function () { if ((need === "get.bademail" && okEmail(email.value.trim())) || need === "get.needemail") setNeed(""); ready(); });
+  // A typo is pointed out when you leave the field, not while you're still typing.
+  email.addEventListener("blur", function () { var v = email.value.trim(); if (v && !okEmail(v)) setNeed("get.bademail"); });
+  useText.addEventListener("input", function () { if (need === "get.needuse" && useText.value.trim()) setNeed(""); ready(); });
+  $("moreClose").addEventListener("click", function () { dlg.close("back"); });
   openBtn.addEventListener("click", function () {
     if (typeof dlg.showModal !== "function") return;
     setNeed(""); dlg.returnValue = ""; dlg.showModal(); email.focus();
   });
-  // The dialog's own buttons: Back just closes; Join checks all three answers, then signs up.
+  // Join checks all three answers again, then signs up. The × in the corner, Esc or a click outside just close.
   moreForm.addEventListener("submit", function (e) {
     e.preventDefault();
-    if (!e.submitter || e.submitter.value !== "join") { dlg.close("back"); return; }
+    if (joinBtn.disabled) return;
     var use = useText.value.trim(), v = email.value.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { setNeed(v ? "get.bademail" : "get.needemail"); email.focus(); return; }
     if (!pick.os) { setNeed("get.needos"); (osBtns[0]).focus(); return; }
@@ -1746,15 +1836,15 @@
     setNeed("");
     function joined(note) { sent = { os: pick.os, email: v, note: note }; dlg.close("join"); form.classList.add("sent"); renderPicks(); }
     if (!CONFIG.waitlistEndpoint) { setNeed("get.closed"); return; }
-    joinBtn.disabled = true;
+    busy = true; ready();
     post({ email: v, os: pick.os, use: use, lang: lang })
       .then(function () { joined("get.thanksd"); })
       .catch(function (err) { setNeed(err && err.message === "closed" ? "get.closed" : "get.fail"); })
-      .then(function () { joinBtn.disabled = false; });
+      .then(function () { busy = false; ready(); });
   });
   dlg.addEventListener("close", function () { if (!sent) setNeed(""); });
-  // Enter in a text field means Join (the form's first button is Back).
-  [email, useText].forEach(function (f) { f.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); moreForm.requestSubmit(joinBtn); } }); });
+  // Enter in a text field means Join, once Join is on.
+  [email, useText].forEach(function (f) { f.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); if (!joinBtn.disabled) moreForm.requestSubmit(joinBtn); } }); });
   dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close("back"); });
 
   applyCopy();

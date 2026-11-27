@@ -211,7 +211,7 @@
         </figure>
         <figure class="ri dark" data-k="cut">
           <div class="cut">
-            <div class="cut-glow" aria-hidden="true"><span class="mo"><i></i><i></i><i class="on"></i><i></i><i></i></span></div>
+            <video class="cut-vid" muted playsinline preload="none" poster="assets/output-landing-poster.jpg" src="assets/output-landing.mp4" aria-hidden="true"></video>
             <div class="cut-line" data-i18n="cut.line">Your moments. Its busywork.</div>
             <div class="cut-bar" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5Z"/></svg><i><b></b></i><span>0:15</span></div>
           </div>
@@ -220,8 +220,8 @@
           <div class="br">
             <div class="br-top" aria-hidden="true"><i></i><i></i><i></i><span>roughcut.example</span></div>
             <div class="br-page">
-              <div class="br-copy"><h5 data-i18n="site.h">Your moments. Its busywork.</h5><p data-i18n="site.p">A rough cut in minutes. You pick what stays.</p><span class="br-cta" data-i18n="site.cta">Try it free</span></div>
-              <div class="br-glow" aria-hidden="true"><span class="mo"><i></i><i></i><i class="on"></i><i></i><i></i></span></div>
+              <div class="br-copy"><h5 data-i18n="site.h" data-clauses>Your moments. Its busywork.</h5><p data-i18n="site.p">A rough cut in minutes. You pick what stays.</p><span class="br-cta" data-i18n="site.cta">Try it free</span></div>
+              <div class="br-shot" aria-hidden="true"><img src="assets/hero-skate.jpg" alt="" loading="lazy" decoding="async"></div>
             </div>
           </div>
         </figure>
@@ -236,19 +236,19 @@
         <h2 id="crew-title" data-i18n="crew.title">A crew that thinks with you, and sometimes against you.</h2>
       </div>
       <div class="crew">
-        <figure class="agent" style="--c: var(--crew-scout)">
+        <figure class="agent" style="--c: var(--crew-scout); --h: 200">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-scout"/></svg></span><div><h3>Scout</h3><p data-i18n="crew.scout">Weighs the evidence</p></div></div>
           <blockquote data-i18n="crew.scoutq" data-clauses>“Two of these seven sources are the same review.”</blockquote>
         </figure>
-        <figure class="agent" style="--c: var(--crew-strategist)">
+        <figure class="agent" style="--c: var(--crew-strategist); --h: 305">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-strategist"/></svg></span><div><h3>Strategist</h3><p data-i18n="crew.strat">Forks it into directions</p></div></div>
           <blockquote data-i18n="crew.stratq" data-clauses>“If B is right, editors keep 9 in 10 rough cuts.”</blockquote>
         </figure>
-        <figure class="agent" style="--c: var(--crew-wright)">
+        <figure class="agent" style="--c: var(--crew-wright); --h: 100">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-wright"/></svg></span><div><h3>Wright</h3><p data-i18n="crew.wright">Builds the proof</p></div></div>
           <blockquote data-i18n="crew.wrightq" data-clauses>“The moment-marker prototype for B is ready. Keep it?”</blockquote>
         </figure>
-        <figure class="agent" style="--c: var(--crew-critic)">
+        <figure class="agent" style="--c: var(--crew-critic); --h: 262">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-critic"/></svg></span><div><h3>Critic</h3><p data-i18n="crew.critic">Checks it against the sources</p></div></div>
           <blockquote data-i18n="crew.criticq" data-clauses>“Nothing here says editors want one click.”</blockquote>
         </figure>
@@ -301,7 +301,8 @@
       </div>
       <dialog class="more" id="more" aria-labelledby="moreTitle">
         <form method="dialog" id="moreForm">
-          <h3 id="moreTitle" data-i18n="get.step">Get early access.</h3>
+          <div class="mhead"><h3 id="moreTitle" data-i18n="get.step">Get early access.</h3>
+            <button class="mclose" type="button" id="moreClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
           <label class="mrow">
             <span class="mlabel" data-i18n="get.email">Email</span>
             <input class="mfield" id="email" name="email" type="email" autocomplete="email" inputmode="email" aria-required="true" aria-describedby="emailHint" placeholder="you@studio.com">
@@ -322,7 +323,6 @@
           </label>
           <p class="mmsg" id="moreMsg" role="alert"></p>
           <div class="macts">
-            <button class="btn btn-quiet" type="submit" value="back" formnovalidate data-i18n="get.back">Back</button>
             <button class="btn btn-primary" type="submit" value="join" data-i18n="get.join">Join</button>
           </div>
         </form>

@@ -131,7 +131,7 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);b
 .bay-head p{margin:0;font:500 calc(17px * var(--inv-s,1))/1.25 var(--ui);color:var(--label-2);letter-spacing:-.012em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bay-head .bay-lock{margin-left:auto;flex:none}
 /* the way into an empty lane */
-.bay-start{position:absolute;left:62px;top:300px;width:600px;box-sizing:border-box;pointer-events:auto;display:flex;flex-direction:column;gap:16px;align-items:stretch;padding:30px 32px;border-radius:var(--radius-sheet);
+.bay-start{position:absolute;left:62px;top:300px;width:max-content;max-width:600px;box-sizing:border-box;pointer-events:auto;display:flex;flex-direction:column;gap:16px;align-items:stretch;padding:30px 32px;border-radius:var(--radius-sheet);
   background:color-mix(in srgb,var(--card) 72%,transparent);border:2px dashed var(--zone-dash);color:var(--label);text-align:left;
   transition:border-color var(--d-quick),background var(--d-quick),transform var(--t-bouncy) var(--bouncy),box-shadow var(--d-quick)}
 .bay-start[data-bay-go]{cursor:pointer}
@@ -2071,7 +2071,7 @@ dialog::backdrop{background:color-mix(in srgb,var(--canvas) 50%,transparent);-we
 .d-head .ibtn{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--hover);color:var(--label-2)}
 .d-head .ibtn .ico{width:14px;height:14px;stroke-width:2.2}
 .d-body{padding:6px 14px 14px;display:grid;gap:12px}
-.d-body>p{margin:0 6px;color:var(--label-3);font:14px/1.5 var(--ui)}
+.d-body>p{margin:0;color:var(--label-3);font:14px/1.5 var(--ui)}
 .boards{display:grid;border-radius:var(--radius-control);background:var(--card-2);overflow:hidden}
 .boards button{display:flex;align-items:center;gap:12px;padding:13px 16px;text-align:left;border-bottom:0}
 .boards button:last-child{border-bottom:0}
@@ -2365,7 +2365,8 @@ kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 
 .toast.timed::after{content:"";position:absolute;left:14px;right:14px;bottom:3px;height:2px;border-radius:2px;background:var(--label-4);transform-origin:left;animation:countdown var(--life,6s) linear forwards}
 @keyframes countdown{to{transform:scaleX(0)}}
 .m-body{scrollbar-width:thin;scrollbar-color:var(--label-4) transparent}
-.d-head{padding:20px 14px 8px 22px}
+/* one edge on each side: the title, the body and the buttons start where the body starts and end where the close button ends */
+.d-head{padding:20px 14px 8px 14px}
 .d-body{gap:14px}
 
 /* motion: light travels, matter settles */
@@ -3942,7 +3943,13 @@ body.snap-skip #wall{cursor:copy}
 .find-item-k{font:500 12px/1 var(--ui);color:var(--label-3)}
 .find-item[aria-selected="true"]{box-shadow:none}
 .find-item-dot{background:var(--fi-c,var(--label-4))}
-.find-item mark,.find-item-t mark{background:none;color:inherit;font-weight:650;padding:0;border-radius:0;box-shadow:inset 0 -1.5px 0 color-mix(in srgb,var(--label) 34%,transparent)}
+.find-item mark,.find-item-t mark{background:color-mix(in srgb,var(--A) 34%,transparent);color:var(--label);font-weight:inherit;padding:0 1px;margin:0 -1px;border-radius:3px;box-shadow:none}
+.find-item{grid-template-columns:40px minmax(0,1fr);column-gap:12px;align-items:center}
+.find-item .find-th{grid-row:1 / span 2;width:40px;height:40px;border-radius:8px;overflow:hidden;display:grid;place-items:center;background:var(--hover);color:var(--label-3)}
+.find-item .find-th img{width:100%;height:100%;object-fit:cover;display:block}
+.find-item .find-th .ico{width:18px;height:18px;stroke-width:1.6}
+.find-item .find-item-top,.find-item .find-item-sn{grid-column:2}
+.find-item .find-item-sn{padding-left:0}
 @media (max-width:640px){#line.palette{top:max(64px,10vh)}#line.palette .pal-foot{display:none}}
 .pal-foot b{font-weight:500}
 /* "/" in the Copilot input lists the same commands, right above the field */
@@ -13047,7 +13054,7 @@ function openCanvasMenu(x,y){
   const mac=/Mac|iP(hone|ad)/.test(navigator.platform||navigator.userAgent||""),mod=mac?"⌘":"Ctrl ";
   const empty=!visibleNodes().length;
   const acts=[
-    {k:"files",label:L("Upload…","上传…"),ic:"upload",key:"U"},
+    {k:"files",label:L("Upload files","上传文件"),ic:"upload",key:"U"},
     {sep:true},
     {k:"all",label:L("Select all","全选"),ic:"selAll",key:mod+"A",off:empty},
     {k:"fit",label:L("Fit to screen","适应屏幕"),ic:"fitView",key:"F",off:empty}];
@@ -18477,6 +18484,14 @@ function duplicateSelection(){
   const made=insertClonedPayload(cloneNodesPayload(ns),{offsetX:36,offsetY:36});
   if(made.length){log("you",`Duplicated ${made.length>1?made.length+" cards":"<b>"+esc(titleOf(made[0]))+"</b>"}`,made[0].id);toast(made.length>1?`Duplicated ${made.length} cards`:`Duplicated ${titleOf(made[0])}`,{undo:true})}
 }
+/* each result leads with a small picture of the card: the image itself for visual cards, its kind otherwise */
+const FIND_KIND_IC={note:"note",notepad:"notepad",idea:"claim",question:"question",direction:"fork",link:"link",table:"table",list:"list",kanban:"kanban",treemap:"treemap",group:"group",synthesis:"synth",proof:"build",print:"stamp",audio:"audio",recording:"video",video:"video"};
+function findThumb(n){
+  const key=n.poster||(["image","frame"].includes(n.type)?n.media:"");const src=key?mediaSrc(key)||(/^(data:image|https?:|blob:)/.test(key)?key:""):"";
+  const Ltr=lin(n);
+  if(src)return `<span class="find-th"><img src="${esc(src)}" alt="" loading="lazy" decoding="async"></span>`;
+  return `<span class="find-th kind"${Ltr?` style="color:var(--${Ltr})"`:""}>${ic(FIND_KIND_IC[n.type]||"note")}</span>`;
+}
 function highlightFindHTML(text,q){
   const s=String(text||"");if(!q)return esc(s);
   const ek=q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
@@ -18596,10 +18611,8 @@ function syncFindStatus(){
         fp.innerHTML=`<div class="find-list" role="listbox" aria-label="Search matches">${matches.map((n,i)=>{
           const selRow=n.id===curId;
           const sn=findSnippetFor(n,q);
-          const Ltr=lin(n);
-          const fiCol=Ltr?`var(--${Ltr})`:"var(--label-4)";
           return `<button type="button" class="find-item" role="option" aria-selected="${selRow}" data-fid="${esc(n.id)}" data-fidx="${i}">
-            <div class="find-item-top"><span class="find-item-dot" style="--fi-c:${fiCol}"></span><span class="find-item-t">${highlightFindHTML(titleOf(n)||kindLabel(n),q)}</span><span class="find-item-k">${esc(kindLabel(n))}</span></div>
+            ${findThumb(n)}<div class="find-item-top"><span class="find-item-t">${highlightFindHTML(titleOf(n)||kindLabel(n),q)}</span><span class="find-item-k">${esc(kindLabel(n))}</span></div>
             ${sn?`<div class="find-item-sn">${sn}</div>`:""}
           </button>`;
         }).join("")}</div>`;
@@ -20382,7 +20395,7 @@ function initGlass(){
 function showWelcome(){
   let force=false;try{force=new URLSearchParams(location.search).get("welcome")==="1"}catch{}
   if((navigator.webdriver&&!force)||dlg.open)return;
-  openDialog(L("Welcome to Vellum","欢迎使用 Vellum"),`<div class="welcome" style="display:grid;gap:12px;max-width:440px">
+  openDialog(L("Welcome to Vellum","欢迎使用 Vellum"),`<div class="welcome" style="display:grid;gap:12px">
     <p style="margin:0;font:500 14px/1.5 var(--ui);color:var(--label)">${L("Turn an idea into directions you can test, a working prototype, and a snapshot to share. Four stages run left to right: Gather, Explore, Prototype, Snapshot.","把一个想法变成可验证的方向、可交互的原型和可分享的定稿快照。四个阶段从左到右：收集素材、探索方向、制作原型、定稿分享。")}</p>
     <p style="margin:0;font:500 13px/1.45 var(--ui);color:var(--label-2)">${L("A crew helps at each step: Scout finds sources, Strategist branches ideas, Wright builds, Critic tests. Without an AI model they fall back to simple built-in rules and say so. Connect one any time from the pill at the top right.","每一步都有成员协助：Scout 查资料，Strategist 发散想法，Wright 动手制作，Critic 负责检验。没有连接 AI 模型时，它们只能使用简单的内置规则，并会明确告诉你。随时可以从右上角的状态按钮连接模型。")}</p>
     <dl class="wl-keys">

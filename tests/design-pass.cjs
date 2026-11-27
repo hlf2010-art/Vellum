@@ -64,13 +64,13 @@ const grey = c => { const m = String(c).match(/[\d.]+/g); if (!m) return false; 
     /* 1. the command palette */
     {
       const p = await open(browser, base);
-      const st = () => p.evaluate(() => { const l = $('line'), r = l.getBoundingClientRect(), h = document.querySelector('#line .pal-hint').getBoundingClientRect(); return { open: l.classList.contains('palette'), cx: r.left + r.width / 2, top: r.top, w: r.width, hint: h.width > 0 && h.height > 0, hintH: h.height, rows: [...document.querySelectorAll('#menu button')].map(b => b.textContent.replace(/\s+/g, ' ').trim()), head: [...document.querySelectorAll('#menu .mh')].map(x => x.textContent.trim()), font: getComputedStyle(lineIn).fontFamily, focus: document.activeElement?.id }; });
+      const st = () => p.evaluate(() => { const l = $('line'), r = l.getBoundingClientRect(), h = document.querySelector('#line .pal-hint').getBoundingClientRect(); return { open: l.classList.contains('palette'), cx: r.left + r.width / 2, top: r.top, w: r.width, hint: h.width > 0 && h.height > 0, hintH: h.height, rows: [...document.querySelectorAll('#menu button[data-mi]')].map(b => b.textContent.replace(/\s+/g, ' ').trim()), head: [...document.querySelectorAll('#menu .mh')].map(x => x.textContent.trim()), font: getComputedStyle(lineIn).fontFamily, focus: document.activeElement?.id }; });
       let s = await st();
       check('closed, there is only a small ⌘K hint at the bottom (no always-on command bar)', !s.open && s.hint && s.hintH <= 32, JSON.stringify(s));
       await p.keyboard.press('ControlOrMeta+k'); await p.waitForTimeout(300);
       s = await st();
       check('⌘K opens one field in the middle of the screen, focused', s.open && Math.abs(s.cx - 720) < 4 && s.top < 260 && s.w <= 642 && s.focus === 'lineInput', JSON.stringify(s));
-      check('empty, it offers three common actions to start from', s.rows.length === 3 && /Suggestions/.test(s.head.join()), JSON.stringify(s));
+      check('empty, it offers three common actions to start from, then every card kind as small chips', s.rows.length === 3 && /Suggestions/.test(s.head.join()) && await p.evaluate(() => document.querySelectorAll('#menu [data-pt]').length === 10), JSON.stringify(s));
       check('it uses the interface font, not a terminal face', !/mono/i.test(s.font), s.font);
       await p.shot('palette-empty-en-light');
       await p.keyboard.press('Escape'); await p.waitForTimeout(250);

@@ -641,7 +641,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('right-click on the empty gap inside the selection opens the same menu', m.open && /^2 /.test(m.head) && m.sm.includes('copilot'), JSON.stringify(m));
       await p.keyboard.press('Escape'); await p.waitForTimeout(150);
       m = await right(r2.cx, Math.min(r2.b + 160, 760));
-      check('right-click on empty canvas away from the selection opens the canvas menu, not the selection menu', m.open && !m.sm.length && !m.cm && await p.evaluate(() => !!document.querySelector('#cardMenu [data-wm="note"]')), JSON.stringify(m));
+      check('right-click on empty canvas away from the selection opens the canvas menu, not the selection menu', m.open && !m.sm.length && !m.cm && await p.evaluate(() => !!document.querySelector('#cardMenu [data-wm="files"]')), JSON.stringify(m));
       m = await right(r2.cx, r2.cy);
       check('right-click on a card outside the selection still selects just it and opens its own menu', m.open && m.cm > 0 && m.sm.length === 0 && await p.evaluate(id => sel.length === 1 && sel[0] === id, ids[2]), JSON.stringify(m));
       await p.keyboard.press('Escape'); await p.waitForTimeout(150);

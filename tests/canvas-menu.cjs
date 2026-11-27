@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Right-click on empty canvas (Upload…, Select all, Fit to screen; a sticky is a double-click), the left toolbar without the upload button, and Search cards from the toolbar.
+/* Right-click on empty canvas (Upload files, Select all, Fit to screen; a sticky is a double-click), the left toolbar without the upload button, and Search cards from the toolbar.
  *   node tests/canvas-menu.cjs            (from the repo root)
  *   SHOTS=dir node tests/canvas-menu.cjs  (also saves light/dark, en/zh screenshots) */
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -156,7 +156,7 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
       const q = await p.emptySpot();
       await p.mouse.click(q.x, q.y, { button: 'right' }); await p.waitForTimeout(250);
       m = await menuState(p);
-      const want = lang === 'zh' ? ['上传…', '全选', '适应屏幕'] : ['Upload…', 'Select all', 'Fit to screen'];
+      const want = lang === 'zh' ? ['上传文件', '全选', '适应屏幕'] : ['Upload files', 'Select all', 'Fit to screen'];
       check(`${theme} ${lang}: menu labels`, want.every((w, i) => m.items[i] && m.items[i].t.startsWith(w)), JSON.stringify(m.items.map(i => i.t)));
       const fits = await p.evaluate(() => [...$('cardMenu').querySelectorAll('button')].every(b => b.scrollWidth <= b.clientWidth + 1));
       check(`${theme} ${lang}: nothing overflows in the menu`, fits);

@@ -37,6 +37,7 @@
   --field-focus: 0 0 0 4px rgba(255,190,120,.16), 0 4px 20px -2px rgba(255,165,80,.34);
 
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   --display: "Bricolage", "Inter", -apple-system, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
 
   /* type scale: 108 / 54 / 24 / 19 / 16 / 14 / 12.5 */
@@ -581,7 +582,7 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .lane-head p { font-size: 12.5px; line-height: 1.3; color: var(--label-3); }
 .lane-cards { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 10px; }
 
-.zc { cursor: pointer; transition: opacity .35s var(--ease), transform .5s var(--spring), box-shadow .25s var(--ease), filter .35s; outline-offset: 3px; }
+.zc { min-width: 0; cursor: pointer; transition: opacity .35s var(--ease), transform .5s var(--spring), box-shadow .25s var(--ease), filter .35s; outline-offset: 3px; }
 .zc:hover, .zc.lit { transform: translateY(-2px); }
 /* No hover lifts while the page is moving under a resting pointer. */
 html.scrolling .zc:not(.lit):hover { transform: none; }
@@ -605,6 +606,26 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 /* prototype card: a picture of the thing, in a well like the app's media */
 .zc .media { position: relative; margin: -7px -9px 11px; border-radius: 11px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--card-2); box-shadow: inset 0 0 0 1px var(--hair); }
 .zc .media svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* Evidence in its own form (a link, a chart, a slice of logs): a short well on top, then what it shows. */
+.zc.has-media .media:not(.lp) { aspect-ratio: auto; height: 84px; }
+.zc.has-media .b { margin-top: 0; color: var(--label); }
+.zc .media.lp { aspect-ratio: auto; height: auto; display: flex; align-items: center; gap: 10px; padding: 10px 11px; }
+.lp-ic { flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--card); box-shadow: inset 0 0 0 1px var(--hair-2); color: var(--label-3); }
+.zc .media.lp .lp-ic svg { position: static; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.lp-tx { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lp-d { font-size: 11.5px; line-height: 14px; color: var(--label-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lp-t { font-size: 13px; line-height: 16px; font-weight: 600; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zc .cb { padding: 8px 0 0 10px; font: 500 11px/16px var(--mono); color: var(--label-3); white-space: nowrap;
+  -webkit-mask-image: linear-gradient(90deg, #000 80%, transparent), linear-gradient(#000 62%, transparent); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, #000 80%, transparent), linear-gradient(#000 62%, transparent); mask-composite: intersect; }
+.zc .cb i { font-style: normal; color: var(--label-4); margin-right: 10px; }
+.zc .cb mark { background: color-mix(in srgb, var(--label) 14%, transparent); color: var(--label); border-radius: 3px; padding: 0 2px; margin: 0 -2px; }
+.ill .rt-grid { fill: none; stroke: var(--hair-2); stroke-width: 1; }
+.ill .rt-area { fill: var(--label); opacity: .06; }
+.ill .rt-line { fill: none; stroke: var(--label); stroke-width: 1.6; opacity: .8; stroke-linecap: round; }
+.ill .rt-cut { fill: none; stroke: var(--label-3); stroke-width: 1; stroke-dasharray: 2 3; }
+.ill .rt-dot { fill: var(--label); }
+.ill .rt-tx { fill: var(--label-3); font: 600 9px/1 var(--sans); }
 .zc .meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; color: var(--label-3); font-variant-numeric: tabular-nums; }
 .zc .meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok-fill); }
 /* What ships: a picture of the output, drawn with the same three facts as the board (B, its sources, A and C set aside). */
@@ -660,6 +681,8 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
   .lane-cards > [data-id="B"] { order: 1; }
   .lane-cards > .aside { order: 2; }
   .zc .media { aspect-ratio: auto; height: clamp(150px, 34vw, 240px); }
+  .zc.has-media .media:not(.lp) { height: 84px; }
+  .zc .media.lp { height: auto; }
 }
 @media (max-width: 620px) {
   .zb { padding: var(--s2); }

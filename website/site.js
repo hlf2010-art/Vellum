@@ -217,7 +217,7 @@
   var CASES = {
     en: {
       product: {
-        e1: { k: "Reported", t: "Returns", b: "“Too loud for calls.” 38 of them." },
+        e1: { k: "Reported", t: "Returns", b: "“Too loud for calls.” 38 of them.", page: "Returns, last 90 days" },
         e2: { k: "Observed", t: "Sound test", b: "48 dB on the lowest setting." },
         j: { t: "Noise, not airflow, is why people send it back." },
         A: { t: "Bigger, slower blades", why: "Won't fit on a desk." },
@@ -250,7 +250,7 @@
     },
     zh: {
       product: {
-        e1: { k: "转述", t: "退货原因", b: "“开会时太吵。”38 条。" },
+        e1: { k: "转述", t: "退货原因", b: "“开会时太吵。”38 条。", page: "退货记录，近 90 天" },
         e2: { k: "观察", t: "噪音测试", b: "最低档也有 48 分贝。" },
         j: { t: "退货是因为噪音，不是风量。" },
         A: { t: "加大扇叶、降低转速", why: "放不进桌面。" },
@@ -1058,10 +1058,28 @@
         '<circle class="ring" cx="148" cy="88" r="20"/><circle class="ring-b" cx="148" cy="88" r="20" pathLength="100" stroke-dasharray="10 90" transform="rotate(-90 148 88)"/></svg>'
     };
 
+    // Each case brings in evidence in a different form, so between the three you see what a board can hold:
+    // a link from the store, a retention chart, a slice of the logs. The claim under it is still the card.
+    var FORM = { product: { e1: "link" }, video: { e1: "chart" }, ai: { e1: "code" } };
+    var LOG = [["1041", "rewritten"], ["1042", "sent"], ["1043", "rewritten"], ["1044", "rewritten"], ["1045", "sent"]];
+    function formHTML(form, d) {
+      if (form === "link") return '<div class="media lp"><span class="lp-ic"><svg class="ki" aria-hidden="true"><use href="#i-link"/></svg></span>' +
+        '<span class="lp-tx"><span class="lp-d">admin.yourstore.com</span><span class="lp-t">' + esc(d.page) + "</span></span></div>";
+      if (form === "code") return '<div class="media cb" aria-hidden="true">' + LOG.map(function (l) {
+        return '<div><i>' + l[0] + "</i>draft → " + (l[1] === "rewritten" ? "<mark>rewritten</mark>" : l[1]) + "</div>"; }).join("") + "</div>";
+      return '<div class="media"><svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+        '<path class="rt-grid" d="M12 16h176M12 40h176M12 64h176"/>' +
+        '<path class="rt-area" d="M12 16C24 17 32 24 40 44c10 6 30 8 60 10s60 4 88 6V76H12Z"/>' +
+        '<path class="rt-line" d="M12 16C24 17 32 24 40 44c10 6 30 8 60 10s60 4 88 6"/>' +
+        '<path class="rt-cut" d="M40 10v66"/><circle class="rt-dot" cx="40" cy="44" r="3"/><text class="rt-tx" x="45" y="74">3s</text></svg></div>';
+    }
+
     function cardHTML(id, d, k, c) {
       var kind = function (icon, label) { return '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + icon + '"/></svg><span>' + esc(label) + "</span></div>"; };
       if ((id === "e1" || id === "e2") && KIND_ICON[d.k] === "quote")
         return '<article class="vc zc quote" data-id="' + id + '" tabindex="0"><div class="k"></div><div class="b">' + esc(unquote(d.b)) + '</div><div class="cite"><div class="t">' + esc(d.t) + "</div>" + WAVE + "</div></article>";
+      var form = FORM[c][id];
+      if (form) return '<article class="vc zc has-media" data-id="' + id + '" tabindex="0" aria-label="' + esc(d.t) + '">' + formHTML(form, d) + kind(KIND_ICON[d.k] || "eye", d.k) + '<div class="b">' + esc(d.b) + "</div></article>";
       if (id === "e1" || id === "e2") return '<article class="vc zc" data-id="' + id + '" tabindex="0">' + kind(KIND_ICON[d.k] || "eye", d.k) + '<div class="t">' + esc(d.t) + '</div><div class="b">' + esc(d.b) + "</div></article>";
       if (id === "j") return '<article class="vc zc ink wide" data-id="j" tabindex="0">' + kind("judge", k.judgment) + '<div class="t">' + esc(d.t) + "</div></article>";
       if (id === "A" || id === "C") return '<article class="vc zc ink dir aside" data-id="' + id + '" tabindex="0"><div class="t"><span class="chip ' + id + '">' + id + "</span><span>" + esc(d.t) + '</span></div><div class="veil"></div><div class="note">' + esc(d.why) + "</div></article>";

@@ -356,13 +356,9 @@
       '<rect class="tl-clip dim" x="6" y="56" width="60" height="10" rx="2.5"/><rect class="tl-undo" x="70" y="56.5" width="34" height="9" rx="2.5"/><rect class="tl-clip dim" x="108" y="56" width="86" height="10" rx="2.5"/>' +
       '<path class="tl-redo" d="M58 25.5a5 5 0 1 1 1.5 3.6M58 25.5v-3.2M58 25.5h3.2"/>' +
       '<circle class="tl-glow" cx="104" cy="9" r="9"/><path class="tl-head" d="M104 7v74"/><path class="tl-cap" d="M100.5 4h7v4l-3.5 3-3.5-3Z"/></svg>',
-    // A long beta session, as it was recorded. The strip below is crowded with moments still waiting to be picked.
+    // The beta session as it was recorded, full frame, with a real progress line under it.
     clip:
-      '<video muted loop playsinline preload="none" poster="assets/beta-clip-poster.jpg" src="assets/beta-clip.mp4"></video>' +
-      '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<rect class="tk" x="6" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="10" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="14" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="18" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="22" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="26" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="30" y="63" width="1.6" height="5" rx=".8"/><rect class="tk on" x="34" y="60" width="1.6" height="10" rx=".8"/><rect class="tk" x="38" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="42" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="46" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="50" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="54" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="58" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="62" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="66" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="70" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="74" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="78" y="63" width="1.6" height="5" rx=".8"/><rect class="tk on" x="82" y="60" width="1.6" height="10" rx=".8"/><rect class="tk" x="86" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="90" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="94" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="98" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="102" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="106" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="110" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="114" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="118" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="122" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="126" y="63" width="1.6" height="5" rx=".8"/><rect class="tk on" x="130" y="60" width="1.6" height="10" rx=".8"/><rect class="tk" x="134" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="138" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="142" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="146" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="150" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="154" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="158" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="162" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="166" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="170" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="174" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="178" y="63" width="1.6" height="5" rx=".8"/><rect class="tk on" x="182" y="60" width="1.6" height="10" rx=".8"/><rect class="tk" x="186" y="63" width="1.6" height="5" rx=".8"/><rect class="tk" x="190" y="63" width="1.6" height="5" rx=".8"/>' +
-      '<rect class="cl-track" x="0" y="81" width="200" height="3"/><rect class="cl-done" x="0" y="81" width="22" height="3"/>' +
-      '<rect class="cl-time" x="162" y="8" width="30" height="12" rx="6"/><text class="cl-tx" x="177" y="16.6" text-anchor="middle">24:10</text></svg>',
+      '<video muted loop playsinline preload="none" poster="assets/beta-clip-poster.jpg" src="assets/beta-clip.mp4"></video><i class="vprog"><b></b></i>',
     // B's first proof: the dead air is gone, the track is one tight run of clips, and the moments you marked sit on it.
     proto:
       '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
@@ -489,7 +485,7 @@
         e1: [28, 36, 212], e2: [28, 262, 212], e3: [28, 520, 212],
         st: [312, 36, 200], j1: [300, 284, 232],
         dA: [584, 36, 236], dB: [584, 284, 244], dC: [584, 590, 236],
-        dc: [880, 36, 284], pB: [880, 284, 252], n1: [880, 512, 236]
+        dc: [880, 36, 284], pB: [880, 284, 252], n1: [880, 478, 236]
       } },
       mid: { w: 760, h: 1060, loop: 15, max: 1.1, pos: {
         e1: [20, 24, 228], e2: [266, 24, 228], e3: [512, 24, 228],
@@ -497,7 +493,7 @@
         dA: [20, 480, 228], dB: [266, 480, 228], dC: [512, 480, 228],
         dc: [20, 790, 228], pB: [266, 790, 228], n1: [512, 790, 228]
       } },
-      narrow: { w: 380, h: 1360, loop: 9, max: 1.12, pos: {
+      narrow: { w: 380, h: 1400, loop: 9, max: 1.12, pos: {
         e1: [12, 14, 172], e2: [196, 14, 172], e3: [12, 196, 172],
         j1: [196, 196, 172], st: [20, 356, 158],
         dA: [196, 404, 172], dB: [12, 628, 356],
@@ -554,6 +550,7 @@
     function clip() {
       var v = cards.n1 && cards.n1.querySelector("video");
       if (!v) return;
+      if (!v._prog) { v._prog = 1; var bar = cards.n1.querySelector(".vprog b"); v.addEventListener("timeupdate", function () { if (v.duration) bar.style.transform = "scaleX(" + (v.currentTime / v.duration).toFixed(3) + ")"; }); }
       if (inView && !reduced && cards.n1.classList.contains("on")) { if (v.paused) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } }
       else if (!v.paused) v.pause();
     }

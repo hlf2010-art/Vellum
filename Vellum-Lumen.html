@@ -238,6 +238,8 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .ev-wrap{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:100%}
 .ev-empty .ev-txt{color:var(--label-3)}
 .dir-flag{animation:dirFlagIn .42s var(--ease-out,cubic-bezier(.2,.8,.2,1)) both}
+.dir-flag.pulse{animation:dirFlagPulse .9s var(--ease-out,cubic-bezier(.2,.8,.2,1)) .25s both}
+@keyframes dirFlagPulse{0%{background:transparent}35%{background:color-mix(in srgb,var(--B) 22%,transparent)}100%{background:transparent}}
 @keyframes dirFlagIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.dir-flag{animation:none}}
 .ev-test{display:grid;gap:3px;margin:8px 0 0;padding:8px 10px;border-radius:var(--radius-xs);background:color-mix(in srgb,var(--label) 5%,transparent);font:12.5px/1.45 var(--ui);color:var(--label-2)}
@@ -6117,7 +6119,8 @@ const byPop={el:null,for:null,openT:0,closeT:0};
 function byPopEl(){if(byPop.el)return byPop.el;const d=document.createElement("div");d.id="byPop";d.className="by-pop";d.setAttribute("role","dialog");d.hidden=true;document.body.appendChild(d);
   d.addEventListener("pointerenter",()=>clearTimeout(byPop.closeT));
   d.addEventListener("click",e=>{const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for),ro=n?backingOf(n):{sup:[],ctr:[]},ns=[...ro.sup,...ro.ctr];closeByPop(0);
-    if(b.dataset.evAct==="rate"){const s=ns.find(x=>!x.weight);if(s){select([s.id]);focusNodes([s],Math.max(cam.s,.9))}}
+    if(b.dataset.evAct==="result"){if(n)resultDialog(n)}
+    else if(b.dataset.evAct==="rate"){const s=ns.find(x=>!x.weight);if(s){select([s.id]);focusNodes([s],Math.max(cam.s,.9))}}
     else if(ns.length){select(ns.map(x=>x.id));focusNodes(ns,Math.max(Math.min(cam.s,1),.5))}});d.addEventListener("pointerleave",()=>closeByPop());return byPop.el=d}
 function openByPop(grp,{now=false}={}){
   clearTimeout(byPop.closeT);clearTimeout(byPop.openT);
@@ -7356,6 +7359,8 @@ function evidencePopHTML(n){
   const u=t.none||0,acts=[];   // secondary first, primary last: the primary action sits bottom-right, where the eye lands
   if(ns.length||ctr.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("View","查看"))}</button>`);
   if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(L("Rate","评估"))}</button>`);
+  /* a flagged direction: running its test settles it, so the way to say how it went sits here */
+  else if(n.type==="direction"&&n.status==="ink"&&groundOf(n).flag)acts.push(`<button type="button" class="ev-act primary" data-ev-act="result">${esc(L("Record result","记录结果"))}</button>`);
   const testH=dirTestHTML(n);
   if(!ns.length&&!(n.of||[]).length)return `<header class="ev-head ev-none">${evIconHTML("none","ev-ico")}<b>${esc(L("Nothing behind it yet","还没有依据"))}</b></header><p class="ev-sent">${esc(n.type==="direction"?L("No evidence is tied to this direction or its claim. Drag a piece of evidence beside either one to back it.","这个方向和它的论点都还没有连上证据。把一条证据拖到其中一张卡旁边来支持它。"):L("Drag a piece of evidence beside this card to back it, or say it counters it. You can also draw a line from any card.","把一条证据拖到这张卡旁边来支持它，或标明它是反驳。也可以从任意卡片拉一条线过来。"))}</p>${testH}${ctrRow?`<ul>${ctrRow}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
   return `<header class="ev-head ev-${v.k}">${evIconHTML(v.ico,"ev-ico")}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows||ctrRow?`<ul>${rows}${ctrRow}</ul>`:""}${testH}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
@@ -11642,6 +11647,8 @@ function adopt(d){
   log("you",`Adopted <b>${d.letter} ${esc(d.title)}</b>`,d.id);sfx("keep");renderAll();persist();
   for(const x of board.nodes.filter(x=>x.type==="direction"&&x.idea===d.idea&&x.id!==d.id&&x.status==="ink"))makeRoomBelow(x);makeRoomBelow(d);
   const st=qs(`[data-stamp="${d.id}"]`);if(st&&!calm()){st.classList.add("slam")}
+  /* deciding on assumptions: the flag on its test pulses once, no extra words (the Critic says it once, after a pause) */
+  const fl=nodeEl(d.id)?.querySelector(".dir-flag");if(fl&&!calm())fl.classList.add("pulse");
   toast(wasDraft?L(`Kept and adopted ${d.title}`,`已保留并采纳 ${d.title}`):L(`Adopted ${d.title}`,`已采纳 ${d.title}`),{undo:true});
 }
 /* ── paths: a test's result, going back to a choice, new rounds ──────────
@@ -15877,13 +15884,16 @@ function stageBrief(){
   const lead=st.claims.slice().sort((a,b)=>(b.round||1)-(a.round||1))[0];
   /* how real tests came out: the designer records these, and a failed path is not offered again */
   const res=k=>st.dirs.filter(d=>d.outcome?.result===k).map(d=>`${t(d)}${d.outcome.note?` (${clip(d.outcome.note,80)})`:""}`).join("; ");
-  const tested=[res("failed")?`Ruled out by a real test: ${res("failed")}.`:"",res("passed")?`Passed a real test: ${res("passed")}.`:""].filter(Boolean).map(s=>s+" ").join("");
+  let tested=[res("failed")?`Ruled out by a real test: ${res("failed")}.`:"",res("passed")?`Passed a real test: ${res("passed")}.`:""].filter(Boolean).map(s=>s+" ").join("");
   const open=st.stage==="gather"?"a claim to work on"
     :st.stage==="explore"?(st.dirs.length?`which direction to adopt for “${t(lead||st.dirs[0])}”`:`directions for “${t(lead)}”`)
     :st.stage==="prototype"?(st.adopted.every(d=>d.outcome?.result==="failed")?"the adopted direction failed its test; the designer decides whether to go back to the claim, revise it or start a new round":st.adopted.some(d=>outputsOf(d.id).some(o=>o.type==="proof"))?"what the proofs show":"no proof built yet for the adopted direction")
     :"what the snapshot does not cover";
   const ev=WEIGHT_ORDER.filter(w=>st.evidence[w]).map(w=>`${st.evidence[w]} ${WEIGHTS[w].label.toLowerCase()}`).join(", ")||"none yet";
   const tb=templateBrief(st.stage);
+  /* the same reading as the flag on the cards: directions in play with nothing observed or reported behind them */
+  const thin=st.dirs.filter(d=>d.status==="ink"&&!setAsideFor(d)&&groundOf(d).flag).map(t).join("; ");
+  if(thin)tested+=`Resting on proposals only, with nothing observed or reported behind them: ${thin}. `;
   return `STAGE: ${name}. Decided: ${decided}. ${tested}Open: ${open}. Evidence on the wall: ${ev} (proposals and illustrations are not evidence of behaviour).\n${STAGE_HERE[st.stage]} Anything you create is a draft the designer keeps or discards; add to what exists instead of starting again.${tb?"\n"+tb:""}`;
 }
 /* ── workflow templates ──────────────────────────────────────────────────

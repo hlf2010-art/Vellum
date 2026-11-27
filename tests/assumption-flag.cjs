@@ -63,12 +63,14 @@ async function hoverFlag(p, id) { await p.locator(`.card[data-id="${id}"] .dir-f
     check('a better-backed sibling makes the flag useful: B says "Proposals only" on its test, A says nothing', s2.ga === 'grounded' && !s2.fa && s2.fb === 'Proposals only' && s2.inTest, JSON.stringify(s2));
     await hoverFlag(p, B);
     const pop = await p.evaluate(() => ({ head: $('byPop').querySelector('.ev-head b')?.textContent, test: $('byPop').querySelector('.ev-test')?.textContent, acts: [...$('byPop').querySelectorAll('[data-ev-act]')].map(x => x.textContent).join(',') }));
-    check('the flag opens the evidence card: the same verdict, what it rests on, and its own test as the way to find out', pop.head === 'Proposals only' && /quickest way to find out/.test(pop.test) && pop.acts === 'View', JSON.stringify(pop));
+    check('the flag opens the evidence card: the same verdict, what it rests on, its test as the way to find out, and Record result', pop.head === 'Proposals only' && /quickest way to find out/.test(pop.test) && pop.acts === 'View,Record result', JSON.stringify(pop));
     await p.mouse.move(700, 850); await p.waitForTimeout(300);
 
     /* 3. adopt B anyway: allowed, flagged, and the Critic speaks once after a pause */
     await p.evaluate(r => { lastUserAct = NOW(); select([r.b]); adopt(byId(r.b)); }, p.ids); await p.waitForTimeout(600);
-    const s3 = await p.evaluate(r => ({ adopted: board.adopted[r.claim] === r.b, fb: nodeEl(r.b).querySelector('.dir-flag .ev-txt')?.textContent, stamp: !!nodeEl(r.b).querySelector('.stamp'), fa: !!nodeEl(r.a).querySelector('.dir-flag'), aside: !!nodeEl(r.a).querySelector('.aside') }), p.ids);
+    const s3 = await p.evaluate(r => ({ pulse: nodeEl(r.b).querySelector('.dir-flag')?.classList.contains('pulse'), brief: stageBrief(), adopted: board.adopted[r.claim] === r.b, fb: nodeEl(r.b).querySelector('.dir-flag .ev-txt')?.textContent, stamp: !!nodeEl(r.b).querySelector('.stamp'), fa: !!nodeEl(r.a).querySelector('.dir-flag'), aside: !!nodeEl(r.a).querySelector('.aside') }), p.ids);
+    check('deciding on assumptions: the flag pulses once, with no extra words in the toast', s3.pulse && await p.evaluate(() => !/assumption|proposals/i.test(document.querySelector('.toast')?.textContent || '')), JSON.stringify(s3));
+    check('Copilot\'s brief names the decision resting on proposals only', /Resting on proposals only[^.]*Spoken countdown/.test(s3.brief), s3.brief);
     check('adopting a direction that rests on proposals is never blocked; the decision keeps the flag beside its stamp', s3.adopted && s3.stamp && s3.fb === 'Proposals only', JSON.stringify(s3));
     check('the direction set aside carries no flag', s3.aside && !s3.fa, JSON.stringify(s3));
     check('nothing lands while you are still working', (await p.pins()).length === 0);
@@ -93,6 +95,9 @@ async function hoverFlag(p, id) { await p.locator(`.card[data-id="${id}"] .dir-f
     await hoverFlag(p, B); await shot(p, 'light-en-1-flag-and-decision-view');
     await p.mouse.move(900, 860); await p.evaluate(() => openDecisions(false)); await p.waitForTimeout(400);
 
+    await hoverFlag(p, B); await p.click('#byPop [data-ev-act="result"]'); await p.waitForTimeout(400);
+    check('Record result opens the result dialog for that direction', await p.evaluate(() => !!document.querySelector('#resForm')));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
     /* 5. evidence arrives: the flag and the note come down, the decision stays */
     await p.evaluate(r => { const e = node('source', { title: 'Trail log: hikers asked for the countdown on 3 of 4 nights', text: '', weight: 'reported' }, { x: 900, y: 600 }); makeRelation(e.id, r.b, { rel: 'supports' }); renderAll(); persist(); runBoardChecks(); renderAll(); }, p.ids); await p.waitForTimeout(400);
     const s5 = await p.evaluate(r => ({ k: groundOf(byId(r.b)).k, fb: !!nodeEl(r.b).querySelector('.dir-flag'), adopted: board.adopted[r.claim] === r.b }), p.ids);

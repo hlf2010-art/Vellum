@@ -36,14 +36,13 @@ Run it before committing a change to `Vellum-Lumen.html`.
 
 Group 5m checks that every path stays on one board. A result the designer records (Failed, with what happened) stays on the direction: the card shows it, the cards built on it are dimmed as a closed path, it joins decision memory with its reason, it is logged as a decision, the stage brief names it, and Undo takes it back. Failing the adopted direction offers Go back. Go back clears the adoption, keeps the failed direction, makes the directions passed over candidates again, puts the board back in Explore, and can be undone. A discarded direction keeps its letter, plan and test, the claim's sheet lists every path and how it ended, and Bring back restores a discarded direction as a draft. With four directions, Explore offers a new round instead of asking you to discard one. A new round is a kept claim of yours, linked to the one it came from, resting on the same evidence and labelled with its round. Strategist in round 2 is told what round 1 tried and how each test came out, and a repeat of the failed direction is held back. A direction's sheet and the Record Result dialog both record a result, and the result is legible in both themes.
 
-## The bar and the panel
+## The palette and the panel
 
-The bottom bar is a command bar and search box, and the conversation lives in the side panel (group 5i). Plain words in the bar also list matching cards (and name matching commands); nothing is picked until ↓, so Enter still does what it did (the words become an idea, a command, or a question for the panel). `@scout`, `@strategist`, `@wright` or `@critic` in the bar (typed, or chosen from the chip) opens the panel with that member preselected ("Asking Critic", dropped with the ×), and the message goes to them; the exception is a draft that member made, where `@name` in the bar still revises it. With the panel open, the selected cards are shown there once and not in the bar too.
+There is no command bar on the board any more, only a small `⌘K` hint at the bottom (group 5l). `⌘K`, or `/` on the canvas, opens one field in the middle of the screen, like Spotlight: it is in the interface font, lists commands with an icon and a key cap, moves with ↑↓ and runs with ↵, and offers three things for the current selection before anything is typed. Esc or a click outside closes it, and whatever was typed is gone next time. A sheet opened from it (`/template`, Memory) takes its place, so closing the sheet goes back to the board, not to the palette.
 
-It also looks like one (group 5l): a prompt glyph (`›`) on the left, a quiet `+` for adding things, and on the right a key cap that says what Enter will do (`↵ Ask in panel`, `↵ Strategist · fork into 3`, `↵ Add to canvas`). There is no send button, microphone, enhance star or "Command" chip with the AI mark. The send button comes back only on phone width (no hardware Enter) and as the stop button while the crew is working. Enhance (Tab or ⌘E) works only on picture, video and GIF prompts; for ordinary words Tab does nothing special. The bar's corners are those of a bar, not a pill.
-When the words match cards, the key cap says `↓ open card` next to what Enter does; after ↓ it says `↵ Open card`, and closing the list brings the ordinary hint back.
+The conversation lives in the side panel (group 5i). Plain words in the palette also list matching cards (and name matching commands); nothing is picked until ↓, so Enter still does what it did (the words become an idea, a command, or a question for the panel). `@scout`, `@strategist`, `@wright` or `@critic` (typed, or chosen from the chip) opens the panel with that member preselected ("Asking Critic", dropped with the ×), and the message goes to them; the exception is a draft that member made, where `@name` still revises it. `/` commands work in the Copilot input too. When the words match cards, the key cap says `↓ open card` next to what Enter does; after ↓ it says `↵ Open card`, and closing the list brings the ordinary hint back.
 
-With several cards selected (group 5j), right-click on one of them, or on the gap inside the selection, opens a menu for the whole selection (it used to open one card's menu whose items did nothing). Ask Copilot there, and as the first button of the selection bar, opens the panel with the selection as context and the cursor in the input, and sends nothing; the menu and the bar share one set of actions.
+With several cards selected (group 5j), right-click on one of them, or on the gap inside the selection, opens a menu for the whole selection (it used to open one card's menu whose items did nothing). Ask Copilot there, and as the first button of the selection bar, opens the panel with the selection as one removable chip ("2 cards ×") and the cursor in the input, and sends nothing; the menu and the bar share one set of actions.
 
 The suggestions under an empty Copilot conversation follow the stage (group 5k): three at most, each short enough to read at a glance. An empty board gets help putting the idea in one sentence, what evidence is needed, who it is for; a kept claim with no directions gets "propose 2 directions to test"; with directions, compare them and choose; once one is adopted, the cheapest real test, a two-week plan and questions for five real people; with a frozen proof, what it does not cover and what to decide next. With a card selected the first one is "Critique" that card (by its letter for a direction). Suggestions about images, keyframes, reference photos or web references appear only when an image or frame is selected, so an idea that is not visual is never nudged toward pictures. They follow the interface language.
 
@@ -233,3 +232,20 @@ node tests/workflow-templates.cjs --only=C   # one part (A, B, C, or P for the p
 ```
 
 Each template runs with a scripted model and with no model at all. Nothing calls a real model or generator. Lines marked `KNOWN` are recorded gaps (offline Copilot answering with another project's advice, a stand-in clip not marked as a preview, no Figma export, one hard-wired video provider, no eval-set card); they print but do not fail the run, and turn into `PASS … (gap closed)` once fixed.
+
+## The design pass (27 Nov 2026)
+
+`tests/design-pass.cjs` checks the fixes from the app audit against the design bar, in both languages and both themes:
+
+- **Palette:** closed, only the `⌘K` hint; `⌘K` opens one centred, focused field in the UI font with three suggestions; `/` lists every command with icons; ↑↓ move, Esc and a click outside close.
+- **Selection bar:** with two or more cards, a horizontal bar 8–12 px above the selection that follows a pan, with Ask Copilot and its menu (Synthesize, Action list, Kanban, Tree map, Critique), Relate, Group, Hide, Delete and ⋯, and no "2 selected" label. Ask Copilot adds the selection to the panel as one removable chip.
+- **Thinking:** against a slow streaming endpoint, the answering member's avatar breathes on the shared 2.4 s rhythm with one quiet status line and no caret, stops when the answer lands, and holds still with reduced motion.
+- **First screen:** the sample's lane title sits clear of the top bar, and no two cards overlap or sit closer than 24 px, in English and Chinese.
+- **Chinese:** card eyebrows are one word (custom kinds stay as written), a format shows once, the card menu, draft tray, tool tips, an untitled board and the Copilot panel's controls are in Chinese.
+- **Colour and light:** the crew's avatars are grey, A–D only on directions, no glow on snapshots, the kanban is grey, the focus ring is a thin line, menus are solid.
+- **Copilot:** its button sits in the top bar and says whether the panel is open; the panel is solid with a hairline only once scrolled, and its empty state is one heading and one sentence.
+- **Lines:** a line leaves from the side that faces its target.
+
+```bash
+node tests/design-pass.cjs
+```

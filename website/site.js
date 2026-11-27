@@ -10,8 +10,7 @@
       mac: "",   // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-mac.dmg"
       win: ""    // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-Setup.exe"
     },
-    waitlistEndpoint: "" // POST {email, os, lang} as JSON (Formspree, Buttondown, a Worker…); os is "mac", "win" or "".
-                         // If they then change the system or say what it's for, a second POST adds {use, update: true}.
+    waitlistEndpoint: "" // One POST {email, os, use, lang} as JSON (Formspree, Buttondown, a Worker…); os is "mac" or "win".
   };
 
   var root = document.documentElement;
@@ -88,7 +87,8 @@
       "get.title": "Get Vellum.",
       "get.l1": "Early builds for macOS and Windows are on the way.", "get.l2": "One email when yours is worth your time.",
       "get.os": "Preferred system", "get.mac": "macOS", "get.win": "Windows", "get.use": "What will you use it for?", "get.email": "Email",
-      "get.useph": "A product launch, a short film…", "get.skip": "Skip", "get.done": "Done",
+      "get.useph": "A product launch, a short film…", "get.step": "One more step.", "get.back": "Back",
+      "get.needos": "Pick a system first.", "get.needuse": "A few words on what it's for.",
       "cta.waitlist": "Join the waitlist", "get.dlfor": "Download for {os}",
       "get.thanks": "You're on the list.", "get.thanksos": "You're on the list for {os}.",
       "get.thanksd": "We'll write to {email} when it's ready.",
@@ -146,7 +146,8 @@
       "get.title": "获取 Vellum。",
       "get.l1": "macOS 和 Windows 早期版本快来了。", "get.l2": "你的那一版值得一试时，发你一封邮件。",
       "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "你打算用它来做什么？", "get.email": "邮箱",
-      "get.useph": "比如：一款新产品、一支短片…", "get.skip": "跳过", "get.done": "完成",
+      "get.useph": "比如：一款新产品、一支短片…", "get.step": "还差一步。", "get.back": "返回",
+      "get.needos": "先选一个系统。", "get.needuse": "写几个字，说说用来做什么。",
       "cta.waitlist": "加入等候名单", "get.dlfor": "下载 {os} 版",
       "get.thanks": "已加入名单。", "get.thanksos": "已加入 {os} 名单。",
       "get.thanksd": "准备好后，我们会写信到 {email}。",
@@ -1549,14 +1550,15 @@
   window.addEventListener("resize", function () { renderMode(false); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { renderMode(false); });
 
-  // ---- Get Vellum: one line, then two optional questions ---------------------------------------
-  // Joining saves the email straight away. Then a small dialog asks which system (picked for you from the
+  // ---- Get Vellum: email, then system and use, then you're on the list --------------------------------
+  // The email line opens a small dialog. Joining needs both answers: which system (picked for you from the
   // browser; a phone or tablet can't tell, so nothing is picked there) and, in their own words, what it's for.
-  // Skip, Esc or a click outside closes it and the sign-up still stands. Once a build is live for the visitor's
-  // system, the line becomes its download.
+  // Back, Esc or a click outside closes it without joining; the email stays in the line. Once a build is live
+  // for the visitor's system, the line becomes its download.
   var form = $("waitlist"), email = $("email"), msg = $("formMsg"), dlGo = $("dlGo");
-  var dlg = $("more"), moreForm = $("moreForm"), useText = $("useText");
-  var pick = { os: guessOS() }, sent = null;
+  var dlg = $("more"), moreForm = $("moreForm"), useText = $("useText"), moreMsg = $("moreMsg"), osChips = $("osChips");
+  var joinBtn = moreForm.querySelector("button[value=join]");
+  var pick = { os: guessOS() }, sent = null, need = "";
   function guessOS() {
     var ua = navigator.userAgent || "", pf = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
     if (/iPhone|iPad|iPod|Android/i.test(ua) || (/Mac/i.test(pf) && navigator.maxTouchPoints > 1)) return "";
@@ -1572,9 +1574,18 @@
     dlGo.hidden = !url || !!sent;
     if (url) { dlGo.href = url; dlGo.textContent = t("get.dlfor").replace("{os}", t("get." + pick.os)); }
     if (sent) {
-      $("doneText").textContent = sent.os ? t("get.thanksos").replace("{os}", t("get." + sent.os)) : t("get.thanks");
+      $("doneText").textContent = t("get.thanksos").replace("{os}", t("get." + sent.os));
       $("doneNote").textContent = t(sent.note).replace("{email}", sent.email);
     }
+    $("osHint").textContent = need === "get.needos" ? t(need) : "";
+    $("useHint").textContent = need === "get.needuse" ? t(need) : "";
+    moreMsg.textContent = need === "get.fail" ? t(need) : "";
+  }
+  function setNeed(key) {
+    need = key;
+    osChips.toggleAttribute("aria-invalid", key === "get.needos");
+    if (key === "get.needuse") useText.setAttribute("aria-invalid", "true"); else useText.removeAttribute("aria-invalid");
+    renderPicks();
   }
   function post(data) {
     return fetch(CONFIG.waitlistEndpoint, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(data) })
@@ -1582,14 +1593,15 @@
   }
   var osBtns = Array.prototype.slice.call(dlg.querySelectorAll(".pick"));
   osBtns.forEach(function (b, i) {
-    b.addEventListener("click", function () { pick.os = b.dataset.os; renderPicks(); });
+    b.addEventListener("click", function () { pick.os = b.dataset.os; if (need === "get.needos") setNeed(""); renderPicks(); });
     b.addEventListener("keydown", function (e) {
       var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
       if (!d) return;
-      e.preventDefault(); var n = osBtns[(i + d + osBtns.length) % osBtns.length]; pick.os = n.dataset.os; renderPicks(); n.focus();
+      e.preventDefault(); var n = osBtns[(i + d + osBtns.length) % osBtns.length]; pick.os = n.dataset.os; if (need === "get.needos") setNeed(""); renderPicks(); n.focus();
     });
   });
   email.addEventListener("input", function () { email.removeAttribute("aria-invalid"); msg.textContent = ""; });
+  useText.addEventListener("input", function () { if (need === "get.needuse" && useText.value.trim()) setNeed(""); });
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     var v = email.value.trim();
@@ -1599,30 +1611,31 @@
       email.focus();
       return;
     }
-    var btn = form.querySelector("button[type=submit]");
-    function ask(note) {
-      sent = { os: pick.os, email: v, note: note, first: pick.os };
-      renderPicks(); useText.value = "";
-      if (typeof dlg.showModal === "function") { dlg.returnValue = ""; dlg.showModal(); useText.focus(); } else finish();
-    }
-    if (!CONFIG.waitlistEndpoint) { ask("get.thankspreview"); return; }
-    btn.disabled = true;
-    post({ email: v, os: pick.os, lang: lang })
-      .then(function () { ask("get.thanksd"); })
-      .catch(function () { msg.textContent = t("get.fail"); })
-      .then(function () { btn.disabled = false; });
+    setNeed("");
+    if (typeof dlg.showModal !== "function") { msg.textContent = t("get.fail"); return; }
+    dlg.returnValue = ""; dlg.showModal();
+    (pick.os ? useText : osBtns[0]).focus();
   });
-  // Closing the dialog, however it happens, ends at the same quiet line. Only answers that add something are sent.
-  function finish() {
-    var use = dlg.returnValue === "done" ? useText.value.trim() : "";
-    sent.os = pick.os;
-    if (CONFIG.waitlistEndpoint && (use || pick.os !== sent.first)) post({ email: sent.email, os: pick.os, use: use, lang: lang, update: true }).catch(function () {});
-    form.classList.add("sent"); renderPicks();
-  }
-  dlg.addEventListener("close", finish);
-  // Enter in the text field means Done (the form's first button is Skip, which would drop what was typed).
-  useText.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); dlg.close("done"); } });
-  dlg.addEventListener("click", function (e) { if (e.target === dlg) { dlg.returnValue = "skip"; dlg.close(); } });
+  // The dialog's own buttons: Back just closes; Join checks both answers, then signs up.
+  moreForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!e.submitter || e.submitter.value !== "join") { dlg.close("back"); return; }
+    var use = useText.value.trim(), v = email.value.trim();
+    if (!pick.os) { setNeed("get.needos"); (osBtns[0]).focus(); return; }
+    if (!use) { setNeed("get.needuse"); useText.focus(); return; }
+    setNeed("");
+    function joined(note) { sent = { os: pick.os, email: v, note: note }; dlg.close("join"); form.classList.add("sent"); renderPicks(); }
+    if (!CONFIG.waitlistEndpoint) { joined("get.thankspreview"); return; }
+    joinBtn.disabled = true;
+    post({ email: v, os: pick.os, use: use, lang: lang })
+      .then(function () { joined("get.thanksd"); })
+      .catch(function () { setNeed("get.fail"); })
+      .then(function () { joinBtn.disabled = false; });
+  });
+  dlg.addEventListener("close", function () { if (!sent) setNeed(""); });
+  // Enter in the text field means Join (the form's first button is Back).
+  useText.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); moreForm.requestSubmit(joinBtn); } });
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close("back"); });
 
   applyCopy();
 })();

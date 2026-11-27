@@ -297,21 +297,24 @@
       </form>
       <dialog class="more" id="more" aria-labelledby="moreTitle">
         <form method="dialog" id="moreForm">
-          <h3 id="moreTitle"><span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span><span data-i18n="get.thanks">You're on the list.</span></h3>
+          <h3 id="moreTitle" data-i18n="get.step">One more step.</h3>
           <div class="mrow">
             <span class="mlabel" id="osLabel" data-i18n="get.os">Preferred system</span>
-            <div class="chips" role="radiogroup" aria-labelledby="osLabel" id="osChips">
+            <div class="chips" role="radiogroup" aria-labelledby="osLabel" aria-required="true" id="osChips">
               <button type="button" class="pick" role="radio" data-os="mac" aria-checked="false"><svg class="ic" aria-hidden="true"><use href="#i-apple"/></svg><span data-i18n="get.mac">macOS</span></button>
               <button type="button" class="pick" role="radio" data-os="win" aria-checked="false"><svg class="ic" aria-hidden="true"><use href="#i-windows"/></svg><span data-i18n="get.win">Windows</span></button>
             </div>
+            <p class="mmsg" id="osHint" role="alert"></p>
           </div>
           <label class="mrow">
             <span class="mlabel" data-i18n="get.use">What will you use it for?</span>
-            <input class="mfield" id="useText" name="use" type="text" maxlength="200" autocomplete="off" placeholder="A product launch, a short film…">
+            <input class="mfield" id="useText" name="use" type="text" maxlength="200" autocomplete="off" aria-required="true" aria-describedby="useHint" placeholder="A product launch, a short film…">
+            <span class="mmsg" id="useHint" role="alert"></span>
           </label>
+          <p class="mmsg" id="moreMsg" role="alert"></p>
           <div class="macts">
-            <button class="btn btn-quiet" type="submit" value="skip" data-i18n="get.skip">Skip</button>
-            <button class="btn btn-primary" type="submit" value="done" data-i18n="get.done">Done</button>
+            <button class="btn btn-quiet" type="submit" value="back" formnovalidate data-i18n="get.back">Back</button>
+            <button class="btn btn-primary" type="submit" value="join" data-i18n="cta.waitlist">Join the waitlist</button>
           </div>
         </form>
       </dialog>

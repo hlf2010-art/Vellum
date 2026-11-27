@@ -249,3 +249,7 @@ Each template runs with a scripted model and with no model at all. Nothing calls
 ```bash
 node tests/design-pass.cjs
 ```
+
+## Ink
+
+`tests/ink-gestures.cjs` checks the pen. The Pen tool (P, S still works), ⌥+drag on empty board, or a stylus on empty board puts down ink whose width follows pressure (or speed, for a mouse or finger). A loop is read when the pen lifts: around cards it selects them (two or more bring the selection bar); around one direction it adopts it, says so at the nib before you lift ("Adopt B", or "Switch to B" when another is adopted), and keeps the stroke on the card as a hairline mark that follows the card, comes back on hover, and goes with Undo. Circling the adopted direction again only redraws the mark. A stroke that is not a loop dries away and changes nothing; a tap selects like a click; Esc or a second finger drops the stroke. A plain drag, and a finger in Select, still pan. It runs in English and Chinese, light and dark, with mouse, CDP pen events with pressure, touch, and reduced motion.

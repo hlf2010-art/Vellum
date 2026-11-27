@@ -181,16 +181,25 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);b
 .card.link .card-link-url{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 10px;border-radius:var(--radius-sm);background:var(--card-2);box-shadow:none;font:500 12px/1.3 var(--mono);color:var(--label-2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;transition:background var(--d-quick),color var(--d-quick)}
 .card.link .card-link-url:hover{background:var(--hover);color:var(--label)}
 .card.link .card-link-url .ico{width:12px;height:12px;flex:none}
-#wall.lasso{cursor:crosshair}
+/* ink: the pen's nib is a dot of ink; the live stroke is solid ink, a mark at rest is a hairline */
+#wall{--pen-cur:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle cx='8' cy='8' r='2.6' fill='%231d1d1f'/%3E%3Ccircle cx='8' cy='8' r='4.6' fill='none' stroke='%23fff' stroke-opacity='.9' stroke-width='1.4'/%3E%3C/svg%3E") 8 8,crosshair}
+:root[data-theme="dark"] #wall{--pen-cur:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle cx='8' cy='8' r='2.6' fill='%23f2f2f4'/%3E%3Ccircle cx='8' cy='8' r='4.6' fill='none' stroke='%23000' stroke-opacity='.6' stroke-width='1.4'/%3E%3C/svg%3E") 8 8,crosshair}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #wall{--pen-cur:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle cx='8' cy='8' r='2.6' fill='%23f2f2f4'/%3E%3Ccircle cx='8' cy='8' r='4.6' fill='none' stroke='%23000' stroke-opacity='.6' stroke-width='1.4'/%3E%3C/svg%3E") 8 8,crosshair}}
+#wall.lasso,#wall.lasso .card,body.alt-ink #wall:not(.hand):not(.panning),body.is-inking #wall,body.is-inking #wall *{cursor:var(--pen-cur)}
 #lasso{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:12;overflow:visible}
-#lasso .lasso-fill{fill:color-mix(in srgb,var(--B) 11%,transparent);stroke:none}
-#lasso .lasso-glow{fill:none;stroke:color-mix(in srgb,var(--B-fill) 36%,transparent);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;filter:blur(5px)}
-#lasso .lasso-stroke{fill:none;stroke:var(--label);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;opacity:.88}
-#lasso .lasso-close{fill:none;stroke:color-mix(in srgb,var(--B-fill) 55%,transparent);stroke-width:1.15;stroke-dasharray:4 5;stroke-linecap:round}
-#lasso .lasso-anchor{fill:var(--card);stroke:var(--label);stroke-width:1.5}
-#lasso .lasso-head{fill:var(--B-fill);stroke:#fff;stroke-width:1.5;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--B) 75%,transparent))}
-#lasso .lasso-badge-bg{fill:var(--card);stroke:var(--hair-2);stroke-width:1}
-#lasso .lasso-badge-txt{fill:var(--label);font:600 11px/1 var(--mono);letter-spacing:.03em}
+#lasso .ink-live{fill:var(--label);opacity:.9}
+#lasso .ink-live.dry{opacity:0;transition:opacity .48s cubic-bezier(.3,0,.2,1)}
+#lasso .ink-live.handed{opacity:0;transition:opacity .24s linear}
+#inkMarks{position:absolute;left:0;top:0;z-index:22;overflow:visible;pointer-events:none}
+#inkMarks .ink-mark{fill:none;stroke:var(--label);stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;stroke-width:1.15;opacity:.42;
+  transition:stroke-width .32s cubic-bezier(.2,.8,.2,1),opacity .32s cubic-bezier(.2,.8,.2,1)}
+#inkMarks .ink-mark.hot{stroke-width:2.1;opacity:.8}
+#inkMarks .ink-mark.fresh{stroke-width:2.8;opacity:.9;transition:none}
+#inkMarks .ink-mark:not(.fresh):not(.hot){transition-duration:1.1s}
+.ink-tip{position:absolute;z-index:13;pointer-events:none;font:600 12px/24px var(--ui);padding:0 10px;border-radius:999px;white-space:nowrap;
+  color:var(--label);background:var(--card);box-shadow:0 0 0 .5px var(--hair-2),0 4px 12px -4px rgba(0,0,0,.18);
+  opacity:0;transform:translateY(4px) scale(.94);transform-origin:0 100%;transition:opacity .16s linear,transform .32s cubic-bezier(.3,1.4,.5,1)}
+.ink-tip.on{opacity:1;transform:none}
 .card .in{padding:16px 18px 16px}
 .card-k{display:flex;align-items:center;gap:6px;color:var(--label-3);font:550 12px/1.2 var(--ui);letter-spacing:-.003em;min-height:18px}
 .card-k .sp{flex:1}
@@ -3102,6 +3111,7 @@ body.snap-skip #wall{cursor:copy}
       <div id="relLayer"></div>
       <div id="preview" aria-hidden="true"></div>
       <svg id="sketchpad" aria-hidden="true"></svg>
+      <svg id="inkMarks" aria-hidden="true"></svg>
     </div>
     <div id="marquee" hidden style="position:absolute;z-index:12;border-radius:var(--radius-sm);border:1.5px solid color-mix(in srgb,var(--focus) 55%,transparent);background:color-mix(in srgb,var(--focus) 7%,transparent);pointer-events:none"></div>
     <svg id="lasso" aria-hidden="true"></svg>
@@ -3129,7 +3139,7 @@ body.snap-skip #wall{cursor:copy}
 
   <div class="top-tools" id="topTools" role="toolbar" aria-label="Canvas tools" aria-orientation="vertical">
     <button type="button" data-ttool="select" aria-pressed="true" aria-label="Select / Pan (V)" data-tip="Select / Pan · V"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l12.5 7.2-5.6 1.9-1.9 5.6z"/></svg></button>
-    <button type="button" data-ttool="lasso" aria-pressed="false" aria-label="Lasso select (S)" data-tip="Lasso select · S"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5c4.7 0 8.5 3.1 8.5 6.9s-3.8 6.9-8.5 6.9-8.5-3.1-8.5-6.9c0-2.6 1.7-4.8 4.3-6"/><circle cx="7.5" cy="17.8" r="1.6"/></svg></button>
+    <button type="button" data-ttool="lasso" aria-pressed="false" aria-label="Pen (P)" data-tip="Pen · P · circle to select"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.6 5.4l4 4L9 19H5v-4z"/><path d="M12.6 7.4l4 4"/></svg></button>
     <button type="button" data-ttool="hand" aria-pressed="false" aria-label="Hand / Pan (H)" data-tip="Hand / Pan · H"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 13V6.8a1.3 1.3 0 0 1 2.6 0V11m0-4.2V5.3a1.3 1.3 0 0 1 2.6 0V11m0-3.7a1.3 1.3 0 0 1 2.6 0V12c0 4-2.5 6.8-6.1 6.8-2.3 0-4.1-1.1-5-3l-1.5-3.1a1.3 1.3 0 0 1 2.2-1.3L8.5 13"/></svg></button>
     <button type="button" id="snapBtn" data-tact="snap" aria-pressed="true" aria-label="Smart snap (M)" data-tip="Smart snap · M · hold ⌥ to skip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h3.4v8a2.6 2.6 0 0 0 5.2 0V4H18v8a6 6 0 0 1-12 0z"/><path d="M6 8h3.4M14.6 8H18"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
@@ -7537,6 +7547,7 @@ function drawWires(){
   });
   paintRelLayer(bonds,tags);
   placeWirePop();placeRelPick();
+  drawInkMarks();
 }
 function renderWirePop(){
   const pop=$("wirePop");if(!pop)return;
@@ -18110,7 +18121,7 @@ function helpDialog(opts={}){
   <div class="principle">${orb}<span><b>Light is alive</b>Only an agent at work, or something waiting for you, glows. Idle crew members are unlit. Work happening off-screen lights the edge of the screen.</span></div>
   <div class="principle"><i style="background:conic-gradient(var(--A),var(--B),var(--C),var(--D),var(--A))"></i><span><b>Colour is lineage</b>The crew is white light; each direction is one colour of its spectrum. Proofs and prints keep the colour of the direction they came from.</span></div>
   <div class="principle"><i style="border:1.5px dashed var(--label-3)"></i><span><b>See before you send</b>As you type, the board shows where the work will land and which cards will be read.</span></div>
-  <dl class="keys"><dt>Click / Lasso</dt><dd>Select with V, circle with S (or ⇧+drag in Select) · hold Space to pan · click wires to disconnect</dd><dt>↵ or double-click</dt><dd>Open a card in place · Esc closes</dd><dt>Space</dt><dd>Preview a proof, direction or recording</dd>
+  <dl class="keys"><dt>Click / Pen</dt><dd>Select with V, draw with P (or ⌥+drag on the board, or a stylus): circle cards to select them, circle a direction to adopt it · ⇧+drag in Select draws a box · hold Space to pan · click wires to disconnect</dd><dt>↵ or double-click</dt><dd>Open a card in place · Esc closes</dd><dt>Space</dt><dd>Preview a proof, direction or recording</dd>
   <dt>/ and @</dt><dd>Actions and crew in the composer · ⇥ makes a request more specific</dd><dt>] </dt><dd>Next suggestion waiting for you</dd>
   <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · duplicate · copy &amp; paste selected cards</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
   if(!onBack){openDialog("How Lumen Works",body);return}
@@ -18346,6 +18357,7 @@ function sfx(kind){
     }
   }catch{}
 }
+{const _sel=select;select=function(...a){const r=_sel.apply(this,a);syncInkHot();return r}}
 function setTool(t){
   if(tool!==t)sfx("tick");
   tool=t;
@@ -18353,6 +18365,7 @@ function setTool(t){
   qsa("#topTools [data-ttool]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.ttool===t)));
   wall.classList.toggle("hand",t==="hand");
   wall.classList.toggle("lasso",t==="lasso");
+  if(t==="lasso")penFirstTip();
 }
 $("tools").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.tool)return setTool(b.dataset.tool);
   ({note:()=>newNoteAt(),files:()=>pickFilesFor("canvas"),tidy,undo,help:helpDialog})[b.dataset.act]?.()});
@@ -18718,32 +18731,174 @@ function smoothSvgPath(pts){
   }
   const last=pts[pts.length-1];return d+" L"+last.x.toFixed(1)+" "+last.y.toFixed(1);
 }
-function paintLasso(pts,count=0){
-  const svg=$("lasso");if(!svg)return;
-  if(!pts||pts.length<2){svg.innerHTML="";return}
-  const r=wall.getBoundingClientRect();
-  const local=pts.map(p=>({x:p.x-r.left,y:p.y-r.top})),first=local[0],last=local[local.length-1];
-  let badge="";
-  if(count>0){
-    const lbl=`${count} selected`,bw=Math.max(70,lbl.length*6.8+18);
-    const bx=clamp(last.x+14,8,r.width-bw-8),by=clamp(last.y-28,8,r.height-28);
-    badge='<rect class="lasso-badge-bg" x="'+bx.toFixed(1)+'" y="'+by.toFixed(1)+'" width="'+bw+'" height="22" rx="11"/>'
-      +'<text class="lasso-badge-txt" x="'+(bx+bw/2).toFixed(1)+'" y="'+(by+14.5).toFixed(1)+'" text-anchor="middle">'+esc(lbl)+'</text>';
+/* ── ink: the pen draws, and a loop means something ─────────────────────
+   The Pen (P), ⌥+drag on empty board, or a stylus on empty board puts down ink. Ink is read when you lift the pen:
+   a loop around cards selects them; a loop around one direction adopts it, and that stroke stays on the card as
+   your mark (a hairline at rest, back to full ink on hover). A stroke that means nothing yet dries away.
+   While drawing, cards light up the moment the loop closes around them, and a loop that would adopt says so at the
+   nib before you lift, so a decision is never a surprise. Undo takes back the adoption and the mark together. */
+const PEN={size:3.2};
+let penTipEl=null,penHoverId=null;
+const penEase=k=>1-Math.pow(1-Math.min(1,Math.max(0,k)),2);
+function penLocal(e){const r=wall.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function penStart(e){
+  const p=penLocal(e);
+  gesture={type:"pen",pointerType:e.pointerType||"mouse",sx:e.clientX,sy:e.clientY,raw:[],len:0,add:e.shiftKey||e.metaKey,base:(e.shiftKey||e.metaKey)?[...sel]:[],
+    card:e.target.closest?.(".card")?.dataset.id||null,path:null,state:null};
+  penPush(gesture,{x:p.x,y:p.y,t:e.timeStamp,pressure:e.pressure,pointerType:e.pointerType});
+  const svg=$("lasso");gesture.path=document.createElementNS("http://www.w3.org/2000/svg","path");gesture.path.setAttribute("class","ink-live");svg.appendChild(gesture.path);
+  document.body.classList.add("is-inking");
+  wall.setPointerCapture(e.pointerId);penPaint(gesture);
+}
+function penPush(g,ev){
+  const last=g.raw[g.raw.length-1];
+  if(last&&Math.hypot(ev.x-last.x,ev.y-last.y)<.75)return;
+  // a little streamlining takes the jitter out of a mouse or a finger without making the nib lag
+  const k=g.pointerType==="pen"?.78:.6,x=last?last.x+(ev.x-last.x)*k:ev.x,y=last?last.y+(ev.y-last.y)*k:ev.y;
+  let p;
+  if(g.pointerType==="pen"&&ev.pressure>0)p=last?last.p+(ev.pressure-last.p)*.5:ev.pressure;
+  else{ // no pressure to read: a marker lays down less ink the faster it moves
+    if(!last)p=.62;else{const dt=Math.max(1,ev.t-last.t),v=Math.hypot(x-last.x,y-last.y)/dt,target=1-Math.min(1,v/2.4)*.55;p=last.p+(target-last.p)*.22}
   }
-  if(lassoIsMarquee(local)){
-    const x=Math.min(first.x,last.x),y=Math.min(first.y,last.y),w=Math.abs(last.x-first.x),h=Math.abs(last.y-first.y);
-    svg.innerHTML='<rect class="lasso-fill" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="12"/>'
-      +'<rect class="lasso-glow" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="12"/>'
-      +'<rect class="lasso-stroke" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="12" stroke-dasharray="6 5"/>'
-      +'<circle class="lasso-head" cx="'+last.x.toFixed(1)+'" cy="'+last.y.toFixed(1)+'" r="4"/>'+badge;
+  if(last)g.len+=Math.hypot(x-last.x,y-last.y);
+  g.raw.push({x,y,p,t:ev.t});
+}
+function penMove(e){
+  const g=gesture,evs=e.getCoalescedEvents?.()||[];
+  const r=wall.getBoundingClientRect();
+  for(const ce of evs.length?evs:[e])penPush(g,{x:ce.clientX-r.left,y:ce.clientY-r.top,t:ce.timeStamp,pressure:ce.pressure});
+  // the predicted points only draw ahead of the nib; they are never kept
+  const pred=(e.getPredictedEvents?.()||[]).slice(0,2).map(pe=>{const l=g.raw[g.raw.length-1];return {x:pe.clientX-r.left,y:pe.clientY-r.top,p:l?.p??.6}});
+  if(!g.raf)g.raf=requestAnimationFrame(()=>{g.raf=0;if(gesture===g){penRead(g);penPaint(g,pred)}});
+}
+/* the outline of a stroke whose width follows pressure, tapered at both ends like a felt tip */
+function penOutline(pts,size){
+  const n=pts.length;if(!n)return "";const f=v=>v.toFixed(1);
+  if(n<3){const p=pts[n-1],r=size*.5*(.4+.6*p.p);return `M${f(p.x-r)} ${f(p.y)}a${f(r)} ${f(r)} 0 1 0 ${f(2*r)} 0a${f(r)} ${f(r)} 0 1 0 ${f(-2*r)} 0Z`}
+  const L=[0];for(let i=1;i<n;i++)L[i]=L[i-1]+Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);
+  const tot=L[n-1],ts=Math.min(16,tot*.22),te=Math.min(22,tot*.28),lt=[],rt=[],rad=[];
+  for(let i=0;i<n;i++){
+    const a=pts[Math.max(0,i-2)],b=pts[Math.min(n-1,i+2)];let dx=b.x-a.x,dy=b.y-a.y;const ln=Math.hypot(dx,dy)||1;dx/=ln;dy/=ln;
+    const r=size*.5*(.36+.64*pts[i].p)*(.42+.58*penEase(ts?L[i]/ts:1))*(.28+.72*penEase(te?(tot-L[i])/te:1));
+    rad.push(r);lt.push({x:pts[i].x-dy*r,y:pts[i].y+dx*r});rt.push({x:pts[i].x+dy*r,y:pts[i].y-dx*r});
+  }
+  let d=`M${f(lt[0].x)} ${f(lt[0].y)}`;
+  for(let i=1;i<n-1;i++)d+=`Q${f(lt[i].x)} ${f(lt[i].y)} ${f((lt[i].x+lt[i+1].x)/2)} ${f((lt[i].y+lt[i+1].y)/2)}`;
+  d+=`L${f(lt[n-1].x)} ${f(lt[n-1].y)}A${f(rad[n-1])} ${f(rad[n-1])} 0 0 0 ${f(rt[n-1].x)} ${f(rt[n-1].y)}`;
+  for(let i=n-2;i>0;i--)d+=`Q${f(rt[i].x)} ${f(rt[i].y)} ${f((rt[i].x+rt[i-1].x)/2)} ${f((rt[i].y+rt[i-1].y)/2)}`;
+  return d+`L${f(rt[0].x)} ${f(rt[0].y)}A${f(rad[0])} ${f(rad[0])} 0 0 0 ${f(lt[0].x)} ${f(lt[0].y)}Z`;
+}
+function penPaint(g,pred=[]){if(g.path)g.path.setAttribute("d",penOutline(pred.length?g.raw.concat(pred):g.raw,PEN.size))}
+/* a loop: the pen came back near where it started, or crossed its own line on the way round */
+function penLoop(pts){
+  if(pts.length<6)return null;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,len=0;
+  for(let i=0;i<pts.length;i++){const p=pts[i];x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);if(i)len+=Math.hypot(p.x-pts[i-1].x,p.y-pts[i-1].y)}
+  const w=x1-x0,h=y1-y0;if(len<90||Math.min(w,h)<22)return null;
+  const a=pts[0],b=pts[pts.length-1],gap=Math.hypot(b.x-a.x,b.y-a.y);
+  if(gap<=Math.max(32,Math.min(w,h)*.3)&&len>gap*3.2)return pts;
+  const q=[];for(const p of pts)if(!q.length||Math.hypot(p.x-q[q.length-1].x,p.y-q[q.length-1].y)>=5)q.push(p);
+  const cross=(p1,p2,p3,p4)=>{const d=(p2.x-p1.x)*(p4.y-p3.y)-(p2.y-p1.y)*(p4.x-p3.x);if(Math.abs(d)<1e-9)return false;
+    const t=((p3.x-p1.x)*(p4.y-p3.y)-(p3.y-p1.y)*(p4.x-p3.x))/d,u=((p3.x-p1.x)*(p2.y-p1.y)-(p3.y-p1.y)*(p2.x-p1.x))/d;return t>0&&t<1&&u>0&&u<1};
+  for(let j=q.length-2;j>=Math.floor(q.length*.45);j--)for(let i=0;i<j-2;i++)if(cross(q[i],q[i+1],q[j],q[j+1])){
+    const loop=q.slice(i+1,j+1);let L2=0;for(let k=1;k<loop.length;k++)L2+=Math.hypot(loop[k].x-loop[k-1].x,loop[k].y-loop[k-1].y);
+    if(L2>=90)return loop;
+  }
+  return null;
+}
+function penEncloses(n,poly){
+  const x=n.x,y=n.y,w=nodeW(n),h=nodeH(n);
+  if(!pointInPoly(x+w/2,y+h/2,poly))return false;
+  let k=0;for(const [u,v] of [[.5,.5],[.12,.12],[.5,.08],[.88,.12],[.08,.5],[.92,.5],[.12,.88],[.5,.92],[.88,.88]])if(pointInPoly(x+w*u,y+h*v,poly))k++;
+  return n.type==="group"?k===9:k>=5;
+}
+/* what lifting the pen now would do */
+function penRead(g){
+  const loop=penLoop(g.raw);
+  if(!loop){g.state=null;penPreview(g,[]);penTip(null);return null}
+  const wpoly=loop.map(p=>toWorld(p.x,p.y));
+  const hits=visibleNodes().filter(n=>penEncloses(n,wpoly)).map(n=>n.id);
+  const cards=hits.map(byId).filter(n=>n&&n.type!=="group");
+  let act="select",d=null;
+  if(cards.length===1&&cards[0].type==="direction"&&!g.add){
+    d=cards[0];const cur=board.adopted[d.idea];
+    act=cur===d.id&&d.status==="ink"?"remark":cur&&byId(cur)&&!byId(cur).tombstone?"switch":"adopt";
+  }
+  g.state={loop,hits,act,d};
+  penPreview(g,act==="select"?hits:[d.id]);
+  penTip(act==="adopt"||act==="switch"?{text:act==="switch"?L(`Switch to ${d.letter}`,`改选 ${d.letter}`):L(`Adopt ${d.letter}`,`采纳 ${d.letter}`),at:g.raw[g.raw.length-1]}:null);
+  return g.state;
+}
+function penPreview(g,ids){const hit=new Set(g.add?[...g.base,...ids]:ids.length?ids:sel);qsa(".card",nodesEl).forEach(el=>el.classList.toggle("sel",hit.has(el.dataset.id)))}
+function penTip(t){
+  if(!t){if(penTipEl)penTipEl.classList.remove("on");return}
+  if(!penTipEl){penTipEl=document.createElement("div");penTipEl.className="ink-tip";penTipEl.setAttribute("aria-live","polite");wall.appendChild(penTipEl)}
+  if(penTipEl.textContent!==t.text)penTipEl.textContent=t.text;
+  const r=wall.getBoundingClientRect(),w=penTipEl.offsetWidth||80;
+  penTipEl.style.left=clamp(t.at.x+16,8,r.width-w-8)+"px";penTipEl.style.top=clamp(t.at.y-34,8,r.height-30)+"px";
+  penTipEl.classList.add("on");
+}
+/* the live stroke leaves: dries away, or hands over to the mark it became */
+function penLift(g,how){
+  const p=g.path;g.path=null;document.body.classList.remove("is-inking");penTip(null);
+  if(!p)return;
+  if(calm()){p.remove();return}
+  p.classList.add(how==="keep"?"handed":"dry");setTimeout(()=>p.remove(),how==="keep"?260:520);
+}
+function penCancel(){const g=gesture;if(g?.type!=="pen")return;if(g.raf)cancelAnimationFrame(g.raf);gesture=null;penLift(g,"dry");penPreview(g,[])}
+function penEnd(g,e){
+  if(g.raf){cancelAnimationFrame(g.raf);g.raf=0}
+  const moved=Math.hypot(e.clientX-g.sx,e.clientY-g.sy)>5||g.len>8;
+  if(!moved){ // a tap with the pen: select what is under it, like a click
+    penLift(g,"dry");
+    if(g.card&&byId(g.card))select(g.add?(sel.includes(g.card)?sel.filter(x=>x!==g.card):[...sel,g.card]):[g.card]);
+    else if(!g.add){selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();closeMenu()}
     return;
   }
-  const hull=convexHull(local),hullPath="M"+hull.map(p=>p.x.toFixed(1)+" "+p.y.toFixed(1)).join(" L")+" Z";
-  const trail=smoothSvgPath(local),closeLine="M"+last.x.toFixed(1)+" "+last.y.toFixed(1)+" L"+first.x.toFixed(1)+" "+first.y.toFixed(1);
-  svg.innerHTML='<path class="lasso-fill" d="'+hullPath+'"/><path class="lasso-glow" d="'+trail+'"/><path class="lasso-close" d="'+closeLine+'"/><path class="lasso-stroke" d="'+trail+'"/><circle class="lasso-anchor" cx="'+first.x.toFixed(1)+'" cy="'+first.y.toFixed(1)+'" r="3.5"/><circle class="lasso-head" cx="'+last.x.toFixed(1)+'" cy="'+last.y.toFixed(1)+'" r="4.5"/>'+badge;
+  const st=penRead(g);
+  if(!st||(!st.hits.length&&!st.d)){penLift(g,"dry");penPreview(g,[]);penFirstTip();return}
+  if(st.act==="select"){penLift(g,"dry");select(g.add?[...new Set([...g.base,...st.hits])]:st.hits);return}
+  const d=st.d,box={x:d.x,y:d.y,w:nodeW(d)||1,h:nodeH(d)||1}; // the card as it was circled: adopting can change its height
+  if(st.act==="adopt"||st.act==="switch"){adopt(d);if(board.adopted[d.idea]!==d.id||d.status!=="ink"){penLift(g,"dry");penPreview(g,[]);return}}
+  else checkpoint();
+  penSaveMark(d,st.loop,box);d.updated=NOW();persist();
+  select([d.id]);penLift(g,"keep");drawInkMarks({fresh:d.id});
+  if(st.act==="remark")toast(L(`Redrew your mark on ${d.letter}`,`已重画 ${d.letter} 上的标记`),{undo:true});
 }
+function penSaveMark(n,loop,box){
+  const w=box.w,h=box.h,out=[];
+  for(const p of loop){const wp=toWorld(p.x,p.y);if(!out.length||Math.hypot(wp.x-out[out.length-1].x,wp.y-out[out.length-1].y)>=4/cam.s||p===loop[loop.length-1])out.push({x:wp.x,y:wp.y,p:p.p})}
+  n.inkMark={pts:out.slice(0,240).map(p=>[+((p.x-box.x)/w).toFixed(4),+((p.y-box.y)/h).toFixed(4),+p.p.toFixed(2)]),at:NOW()};
+}
+/* marks live in the world, follow their card when it moves or resizes, and show only while it is the adopted one */
+const penMarks=new Map();
+function drawInkMarks({fresh=null}={}){
+  const svg=$("inkMarks");if(!svg||!board)return;const keep=new Set();
+  for(const n of board.nodes){
+    if(n.type!=="direction"||!n.inkMark?.pts?.length||n.status!=="ink"||board.adopted[n.idea]!==n.id||isNodeHidden(n))continue;
+    keep.add(n.id);const w=nodeW(n),h=nodeH(n);
+    let el=penMarks.get(n.id);
+    if(!el||!el.isConnected){el=document.createElementNS("http://www.w3.org/2000/svg","path");el.setAttribute("class","ink-mark");el.dataset.mark=n.id;svg.appendChild(el);penMarks.set(n.id,el)}
+    el.setAttribute("d",smoothSvgPath(n.inkMark.pts.map(([u,v])=>({x:n.x+u*w,y:n.y+v*h}))));
+    if(fresh===n.id&&!calm()){el.classList.add("fresh");el.getBoundingClientRect();requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.remove("fresh")))}
+  }
+  for(const [id,el] of penMarks)if(!keep.has(id)){el.remove();penMarks.delete(id)}
+  syncInkHot();
+}
+function syncInkHot(){for(const [id,el] of penMarks)el.classList.toggle("hot",penHoverId===id||sel.includes(id))}
+nodesEl.addEventListener("pointerover",e=>{const id=e.target.closest?.(".card")?.dataset.id||null;if(id!==penHoverId){penHoverId=id;syncInkHot()}});
+nodesEl.addEventListener("pointerleave",()=>{if(penHoverId){penHoverId=null;syncInkHot()}});
+/* the first stroke that means nothing says, once, what ink can do */
+function penFirstTip(){
+  try{if(localStorage.getItem("vellum-lumen.v1.penTip"))return;localStorage.setItem("vellum-lumen.v1.penTip","1")}catch{return}
+  toast(L("Circle cards to select them. Circle a direction to adopt it.","圈住卡片即可选中，圈住一个方向就是采纳它。"));
+}
+/* holding ⌥ over the board shows the pen, since ⌥+drag on empty board draws */
+addEventListener("keydown",e=>{if(e.key==="Alt")document.body.classList.add("alt-ink");if(e.key==="Escape"&&gesture?.type==="pen"){e.stopImmediatePropagation();penCancel()}},true);
+addEventListener("keyup",e=>{if(e.key==="Alt")document.body.classList.remove("alt-ink")});
+addEventListener("blur",()=>document.body.classList.remove("alt-ink"));
 
-/* ── pointer: pan, drag, resize, lasso, wire, pinch ─────────────────── */
+/* ── pointer: pan, drag, resize, ink, wire, pinch ───────────────────── */
 let gesture=null;const pointers=new Map();let wireDrag=null;
 function cardAt(x,y){const el=document.elementsFromPoint(x,y).find(e=>e.closest?.(".card"));return el?el.closest(".card"):null}
 function snapCardWidth(n,rawW,bypass){
@@ -18779,7 +18934,7 @@ wall.addEventListener("pointerdown",e=>{
   closeCardMenu();
   closeWirePopMenu();closeRelPick();
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(pointers.size===2){const [a,b]=[...pointers.values()];gesture={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y),c:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};return}
+  if(pointers.size===2){if(gesture?.type==="pen")penCancel();const [a,b]=[...pointers.values()];gesture={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y),c:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};return}
   {const rl=e.target.closest(".clasp,.rel-tag");if(rl&&e.button===0&&tool!=="hand"&&!spaceHeld){stopCam();if(relPointerDown(e,rl))return}}
   if(writingNoteDrag(e))return;
   if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop,.tbl-block tbody td,.tbl-chart"))return;
@@ -18793,13 +18948,9 @@ wall.addEventListener("pointerdown",e=>{
     return;
   }
   const isGrpBg=card&&byId(card.dataset.id)?.type==="group"&&!e.target.closest(".card-k,h4,.grp-resize");
-  const startLasso=e.button===0&&tool==="lasso"&&!spaceHeld&&(!card||isGrpBg);
+  const startPen=e.button===0&&!spaceHeld&&(tool==="lasso"||(tool==="select"&&(e.altKey||e.pointerType==="pen")&&(!card||isGrpBg)));
   const startMarquee=e.button===0&&tool==="select"&&!spaceHeld&&e.shiftKey&&!card;
-  if(startLasso){
-    const r=wall.getBoundingClientRect(),wp=toWorld(e.clientX-r.left,e.clientY-r.top);
-    gesture={type:"lasso",sx:e.clientX,sy:e.clientY,pts:[{x:e.clientX,y:e.clientY}],wPts:[wp],add:e.shiftKey||e.metaKey,base:(e.shiftKey||e.metaKey)?[...sel]:[]};
-    wall.setPointerCapture(e.pointerId);return;
-  }
+  if(startPen){penStart(e);return}
   if(startMarquee){
     const r=wall.getBoundingClientRect(),wp=toWorld(e.clientX-r.left,e.clientY-r.top);
     gesture={type:"marquee",sx:e.clientX,sy:e.clientY,w0:wp,w1:wp,base:[...sel]};
@@ -18897,18 +19048,7 @@ wall.addEventListener("pointermove",e=>{
     qsa(".card",nodesEl).forEach(el=>el.classList.toggle("sel",hitSet.has(el.dataset.id)));
     return;
   }
-  if(gesture.type==="lasso"){
-    const last=gesture.pts[gesture.pts.length-1];
-    if(Math.hypot(e.clientX-last.x,e.clientY-last.y)<3)return;
-    const r=wall.getBoundingClientRect();
-    gesture.pts.push({x:e.clientX,y:e.clientY});
-    gesture.wPts.push(toWorld(e.clientX-r.left,e.clientY-r.top));
-    const hits=visibleNodes().filter(n=>nodeInLasso(n,gesture.wPts,gesture.pts)).map(n=>n.id);
-    const merged=gesture.add?[...new Set([...gesture.base,...hits])]:hits;
-    paintLasso(gesture.pts,merged.length);
-    const hitSet=new Set(merged);qsa(".card",nodesEl).forEach(el=>el.classList.toggle("sel",hitSet.has(el.dataset.id)));
-    return;
-  }
+  if(gesture.type==="pen"){penMove(e);return}
   if(gesture.type==="wire"){const a=wireDrag.from,p=toWorld(e.clientX,e.clientY),p1=portPoint(a,wireDrag.side),d=Math.max(48,Math.hypot(p.x-p1.x,p.y-p1.y)*.42);
     wireDrag.d=`M${p1.x},${p1.y} C${p1.x+p1.vx*d},${p1.y+p1.vy*d} ${p.x-p1.vx*d},${p.y-p1.vy*d} ${p.x},${p.y}`;paintWireTarget(a,e.clientX,e.clientY);drawWires()}
 });
@@ -18917,6 +19057,7 @@ function endPointer(e){
   if(g.type==="pinch"){if(pointers.size<2)gesture=null;return}
   gesture=null;wall.classList.remove("panning");
   if(g.type==="relsel"){selectEdge(g.id);return}
+  if(g.type==="pen"){if(e.type==="pointercancel"){gesture=g;penCancel()}else penEnd(g,e);return}
   if(g.type==="pan"&&!g.moved&&!e.target.closest(".card")){selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();closeMenu()}
   if(g.type==="resize"){
     document.body.classList.remove("is-resizing-w");
@@ -18945,13 +19086,6 @@ function endPointer(e){
     if(Math.hypot(e.clientX-g.sx,e.clientY-g.sy)<5)return;
     const hits=visibleNodes().filter(n=>nodeInMarquee(n,g.w0,g.w1)).map(n=>n.id);
     select([...new Set([...g.base,...hits])]);
-    return;
-  }
-  if(g.type==="lasso"){
-    paintLasso(null,0);$("marquee").hidden=true;
-    if(g.pts.length<3&&Math.hypot(e.clientX-g.sx,e.clientY-g.sy)<5){if(!g.add){selectedEdgeId=null;select([]);lineExtras=[];renderLineCtx();closeMenu()}return}
-    const hits=visibleNodes().filter(n=>nodeInLasso(n,g.wPts,g.pts)).map(n=>n.id);
-    select(g.add?[...new Set([...g.base,...hits])]:hits);
     return;
   }
   if(g.type==="wire"){const a=wireDrag.from,isIn=wireDrag.role==="in";wireDrag=null;wireDrop(a,isIn,e.clientX,e.clientY)}
@@ -19136,7 +19270,7 @@ addEventListener("keydown",e=>{
   const k=e.key.toLowerCase();
   if(relPickId&&["1","2","3","4"].includes(k)){e.preventDefault();setRelType(relPickId,REL_TYPES[+k-1]);armRelPick(1300);return}
   if(k==="/"||k==="@"){e.preventDefault();lineIn.focus();lineIn.value=k;updateMenu();renderRoute();return}
-  if(k==="v")setTool("select");else if(k==="s")setTool("lasso");else if(k==="h")setTool("hand");else if(k==="n"){e.preventDefault();newNoteAt()}else if(k==="u"){e.preventDefault();pickFilesFor("canvas")}else if(k==="t")tidy();else if(k==="m")setSnap(!snapOn);else if(k==="f")fitAll();
+  if(k==="v")setTool("select");else if(k==="p"||k==="s")setTool("lasso");else if(k==="h")setTool("hand");else if(k==="n"){e.preventDefault();newNoteAt()}else if(k==="u"){e.preventDefault();pickFilesFor("canvas")}else if(k==="t")tidy();else if(k==="m")setSnap(!snapOn);else if(k==="f")fitAll();
   else if(k==="l")$("ledgerBtn").click();else if(k==="?")helpDialog();else if(["1","2","3","4"].includes(k))flyToBay(+k-1);
   else if(k==="="||k==="+"){const r=wall.getBoundingClientRect();zoomAt(1.2,r.width/2,r.height/2)}else if(k==="-"){const r=wall.getBoundingClientRect();zoomAt(1/1.2,r.width/2,r.height/2)}
   else if(k==="r"){const g=[...groups().keys()].pop();if(g)redraw(g)}
@@ -19365,7 +19499,7 @@ function syncPaletteLang(){
 }
 /* Tool tips and labels written into the page itself, said in Chinese when the interface is Chinese (and put back for English) */
 const ZH_ATTR={
-  "Select / Pan (V)":"选择 / 平移 (V)","Select / Pan · V":"选择 / 平移 · V","Lasso select (S)":"套索选择 (S)","Lasso select · S":"套索选择 · S",
+  "Select / Pan (V)":"选择 / 平移 (V)","Select / Pan · V":"选择 / 平移 · V","Pen (P)":"画笔 (P)","Pen · P · circle to select":"画笔 · P · 圈住即选中",
   "Hand / Pan (H)":"抓手 (H)","Hand / Pan · H":"抓手 · H","Smart snap (M)":"智能吸附 (M)","Smart snap · M · hold ⌥ to skip":"智能吸附 · M · 按住 ⌥ 临时关闭",
   "Upload file or media (U)":"上传文件或媒体 (U)","Upload file or media · U":"上传文件或媒体 · U","Organize canvas (T)":"整理画布 (T)","Organize canvas · T":"整理画布 · T",
   "Search cards (⌘F)":"搜索卡片 (⌘F)","Search cards · ⌘F":"搜索卡片 · ⌘F","Undo (⌘Z)":"撤销 (⌘Z)","Undo · ⌘Z":"撤销 · ⌘Z","Redo (⌘⇧Z)":"重做 (⌘⇧Z)","Redo · ⌘⇧Z":"重做 · ⌘⇧Z",

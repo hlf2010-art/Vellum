@@ -104,6 +104,11 @@
       "mode.listend": "They speak up only when something doesn't add up.",
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
+      "any.soon": "Coming soon", "any.title": "Keep thinking, wherever you are.",
+      "any.lede": "Scan the code on your Mac with your iPad and the board opens. Nothing to install, no cloud in between.",
+      "any.mac": "Lay out the whole argument.", "any.pad": "Circle a direction with the pen.", "any.phone": "Phone", "any.ph": "Decisions in your pocket.",
+      "any.dirs": "Directions", "any.a": "One-click final cut", "any.b": "Rough cut, you mark the moments", "any.c": "Suggestions only",
+      "any.decs": "Decisions", "any.dk": "Decided", "any.dt": "Ship the rough cut.", "any.dm": "On iPad · just now",
       "get.title": "Get {brand}.",
       "get.l1": "Early builds for Mac and Windows are on the way.", "get.l2": "We'll email you the day yours is ready.",
       "get.os": "Preferred system", "get.mac": "macOS", "get.win": "Windows", "get.use": "What will you use it for?", "get.email": "Email",
@@ -166,6 +171,11 @@
       "mode.listend": "平时不出声，发现不对劲才开口。",
       "mode.teamd": "和你一起起草，好的留下就行。",
       "modes.label": "AI 团队的参与程度",
+      "any.soon": "即将推出", "any.title": "在哪儿，都能接着想。",
+      "any.lede": "用 iPad 扫一下 Mac 上的码，白板就打开了。不用装 App，也不经过云端。",
+      "any.mac": "摆开整个论证。", "any.pad": "拿笔圈出一个方向。", "any.phone": "手机", "any.ph": "决定随身带着。",
+      "any.dirs": "方向", "any.a": "一键成片", "any.b": "粗剪，高光由你来标", "any.c": "只给建议",
+      "any.decs": "决策", "any.dk": "已决定", "any.dt": "先上线粗剪。", "any.dm": "刚刚 · 在 iPad 上",
       "get.title": "抢先体验 {brand}。",
       "get.l1": "Mac 和 Windows 内测版即将推出。", "get.l2": "留下邮箱，上线第一时间通知你。",
       "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "打算用它做什么？", "get.email": "邮箱",
@@ -1843,6 +1853,26 @@
   // Enter in a text field means Join, once Join is on.
   [email, useText].forEach(function (f) { f.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); if (!joinBtn.disabled) moreForm.requestSubmit(joinBtn); } }); });
   dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close("back"); });
+
+  // ---- Anywhere: the pen circles B on the iPad, then the same card lights on all three screens at once. ----------
+  // One beat, repeated while the section is on screen. Reduced motion shows the lit state, still.
+  (function () {
+    var box = $("devices"); if (!box) return;
+    if (reduced || !window.IntersectionObserver) { box.classList.add("lit", "drawn"); return; }
+    var timers = [], on = false;
+    function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+    function beat() {
+      box.classList.remove("drawing", "drawn", "lit");
+      later(function () { box.classList.add("drawing"); }, 700);
+      later(function () { box.classList.add("drawn", "lit"); }, 2050);
+      later(beat, 8200);
+    }
+    new IntersectionObserver(function (en) {
+      var vis = en[0].isIntersecting;
+      if (vis && !on) { on = true; beat(); }
+      else if (!vis && on) { on = false; timers.forEach(clearTimeout); timers = []; box.classList.remove("drawing"); box.classList.add("drawn", "lit"); }
+    }, { threshold: 0.45 }).observe(box);
+  })();
 
   applyCopy();
 })();

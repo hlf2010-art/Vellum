@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PROJECT: vellum
+  PROJECT: sympoai
   ACCOUNT_ID: d8cb67a08c3ed7d61518210e061b2d86
 
 jobs:

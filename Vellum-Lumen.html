@@ -3209,6 +3209,14 @@ body.snap-skip #wall{cursor:copy}
 .dv-since .dv-row{margin:0 -6px}
 .dv-since .dv-row.old{opacity:.62}
 .dv-since .dv-row{align-items:flex-start}
+.dv-rc{margin:8px 0 2px;padding:8px 0 0;border-top:1px solid color-mix(in srgb,var(--label) 8%,transparent);display:grid;gap:4px}
+.dv-rc p{margin:0;font:500 12.5px/1.45 var(--ui);color:var(--label)}
+.dv-rc-h{display:flex;align-items:center;gap:8px;font:600 11px/16px var(--ui);color:var(--label-2)}
+.dv-rc-v{font:600 11px/16px var(--ui);padding:0 7px;border-radius:999px;background:color-mix(in srgb,var(--label) 7%,transparent);color:var(--label)}
+.dv-rc.rc-stronger .dv-rc-v{background:color-mix(in srgb,var(--ok,#2f9e61) 14%,transparent);color:var(--ok,#2f9e61)}
+.dv-rc.rc-weaker .dv-rc-v,.dv-rc.rc-reopen .dv-rc-v{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}
+.dv-rc .dv-rc-c b{font-weight:600;margin-right:4px}
+.dv-rc .dv-rc-c span,.dv-rc .dv-rc-n{color:var(--label-2)}
 .dv-since .dv-row .ev-ico,.dv-since .dv-row time{margin-top:3px}
 .dv-since .dv-row .dv-rt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .dv-since .dv-row.ctr .dv-rt{color:inherit}
@@ -4629,11 +4637,22 @@ function deliverChecks({all=false}={}){
   let room=all?Infinity:Math.max(0,(SPEAK_UNREAD[crewSpeak]||0)-unreadPins());
   W.queue.sort((a,b)=>(a.kind==="revisit"?0:1)-(b.kind==="revisit"?0:1)||(a.at||0)-(b.at||0));
   const out=[];
+  const hold=[];
   while(W.queue.length&&room>0){
-    const o=W.queue.shift(),pin=checkPin(o);W.done.push(o.sig);if(!pin)continue;
-    board.pins=board.pins||{};board.pins[o.target]=[...(board.pins[o.target]||[]).filter(p=>p.sig!==o.sig),pin];
+    const o=W.queue.shift();
+    if(rcWaiting(o)){hold.push(o);continue}   // the crew is still re-checking it: it waits, the board check doesn't jump ahead
+    const job=o.kind==="revisit"?rcJobFor(o):null;
+    let pin;
+    if(job?.status==="done"){
+      /* one note for everything the re-check covered */
+      const mates=[o,...W.queue.filter(x=>job.sigs.includes(x.sig))];W.queue=W.queue.filter(x=>!job.sigs.includes(x.sig));
+      pin=recheckPin(job,mates);mates.forEach(x=>{if(x!==o)W.done.push(x.sig)});
+    }
+    pin=pin||checkPin(o);W.done.push(o.sig);if(!pin)continue;
+    board.pins=board.pins||{};board.pins[o.target]=[...(board.pins[o.target]||[]).filter(p=>p.sig!==pin.sig&&!(pin.sigs||[]).includes(p.sig)),pin];
     const el=nodeEl(o.target);if(el)el._sig="";out.push({o,pin});room--;
   }
+  if(hold.length)W.queue.unshift(...hold);
   if(out.length){renderNodes();persist();renderCrew()}
   return out;
 }
@@ -4645,7 +4664,7 @@ for(const ev of ["pointerdown","keydown","wheel"])addEventListener(ev,()=>{lastU
 function scheduleChecks(ms=1500){clearTimeout(checksT);checksT=setTimeout(tickChecks,ms)}
 function tickChecks(){
   if(!board)return;
-  runBoardChecks();
+  runBoardChecks();rcPrune();kickRechecks();
   if(crewSpeak==="never"){paintPart();return}
   if(!board.watch?.queue?.length)return;
   const need=IDLE_NEED[crewSpeak]||4000;
@@ -4653,6 +4672,181 @@ function tickChecks(){
   deliverChecks();
 }
 const dragging=()=>document.body.classList.contains("is-dragging-card");
+
+/* ── crew re-check: new evidence on a decision gets reasoned about, not only noticed ──
+   Board checks (above) are the fast path: no model, they find evidence that bears on a decision. With a model connected,
+   the decision's subscribers then re-check it (the slow path). Strategist weighs the new evidence against what the
+   decision rests on; Critic reviews that reading when it matters (a counter, or a verdict that moves). Both work from one
+   pack of numbered cards (the decision D, its claim C, what it rests on S…, existing counters X…, options set aside A…, the
+   new evidence N…) and must cite them. A rule check, the watchdog, keeps only answers that cite the pack, use an allowed
+   verdict and leave the decision to the designer; an objection without evidence and a fix is dropped. When the model fails
+   or the watchdog rejects the answer, the board check's own words are shown instead. Several pieces of evidence on one
+   decision are re-checked together and shown as one note. Results wait for the same pause, unread limit and Focus rules as
+   board checks, and the decision never changes unless the designer changes it. */
+const RC_VERDICTS=["stronger","holds","weaker","reopen"];
+const RC_TIMEOUT=240000;   // a re-check that has not finished by then gives way to the board check's own words
+let rcRunning=null,rcT=0;
+const rcLive=()=>connSummary().engine!=="rules";
+const rcState=()=>{const W=board.watch||(board.watch={});return W.rc&&typeof W.rc==="object"?W.rc:(W.rc={})};
+/* the job for one decision: which observations it covers, its status, and the result */
+function rcJobFor(o){const R=rcState();return Object.values(R).find(j=>j.sigs?.includes(o.sig))||null}
+function rcPending(){
+  const W=board?.watch;if(!W?.queue?.length)return [];
+  return W.queue.filter(o=>o.kind==="revisit"&&!rcJobFor(o));
+}
+/* the numbered pack the crew reasons from: ids map back to cards, so every claim can be traced */
+function recheckPack(dir,obs){
+  const claim=byId(dir.idea),r=decRests({dir,claim}),ids={},lines=[],zh=uiLang()==="zh";
+  const newIds=new Set(obs.map(o=>o.about));
+  const w=n=>WEIGHTS[n.weight]?WEIGHTS[n.weight].label.toLowerCase():"unrated";
+  const body=n=>{const t=titleOf(n),f=String(fullTextOf(n)||"").replace(/\s+/g," ").trim();return f&&f!==t?clip(f.startsWith(t)?f.slice(t.length).replace(/^[\s:.-]+/,""):f,260):""};
+  const put=(k,n,tag)=>{ids[k]=n.id;const b=body(n);lines.push(`[${k}] ${tag?tag+" · ":""}${clip(titleOf(n),100)}${b?" — "+b:""}`)};
+  lines.push("DECISION");
+  put("D",dir,"chosen direction");
+  if(dir.test)lines.push(`    its test: ${clip(dir.test,160)}`);
+  if(dir.whyYes)lines.push(`    designer's reason: ${clip(dir.whyYes,160)}`);
+  if(dir.held?.why)lines.push(`    designer kept it before, saying: ${clip(dir.held.why,160)}`);
+  if(claim)put("C",claim,"the claim it answers");
+  const sup=r.sup.filter(n=>!newIds.has(n.id)).slice(0,6),ctr=r.ctr.filter(n=>!newIds.has(n.id)).slice(0,3);
+  if(sup.length){lines.push("WHAT IT RESTS ON");sup.forEach((n,i)=>put("S"+(i+1),n,w(n)))}
+  if(ctr.length){lines.push("ALREADY COUNTERED BY");ctr.forEach((n,i)=>put("X"+(i+1),n,w(n)))}
+  const aside=claim?board.nodes.filter(n=>n.type==="direction"&&n.idea===claim.id&&n.id!==dir.id&&n.status==="ink"&&!n.tombstone&&!n.archived).slice(0,3):[];
+  if(aside.length){lines.push("OPTIONS SET ASIDE");aside.forEach((n,i)=>{put("A"+(i+1),n,"set aside");if(n.whyNot)lines.push(`    why set aside: ${clip(n.whyNot,140)}`)})}
+  lines.push("NEW EVIDENCE (kept after the decision)");
+  obs.forEach((o,i)=>{const e=byId(o.about);if(!e)return;const how=o.how==="relation"?(o.rel==="conflicts"?"designer marked it as countering":o.rel==="supports"?"designer marked it as supporting":"designer linked it"):o.how==="wire"?"wired into the decision":"not linked, shares the topic";put("N"+(i+1),e,`${w(e)} · ${how}`)});
+  return {ids,text:lines.join("\n"),zh,newKeys:Object.keys(ids).filter(k=>k[0]==="N")};
+}
+/* the watchdog: rules, no model. Returns what is wrong with an answer (empty when it may be shown) */
+const RC_ACTED=/\b(I|we)\s+(have\s+)?(changed|reopened|replaced|removed|deleted|switched|updated)\b|我(已|已经)?(改|重新打开|替换|删除)/i;
+function rcLangOff(s,zh){const t=String(s||"");if(!t.trim())return false;const cjk=(t.match(/[\u4e00-\u9fff]/g)||[]).length;return zh?cjk<4:cjk>t.length*.3}
+function rcCiteKeys(v){return (Array.isArray(v?.cites)?v.cites:[]).map(x=>String(x).trim().replace(/^\[|\]$/g,"").toUpperCase())}
+function rcStratProblems(v,pack){
+  const p=[];
+  if(!v||typeof v!=="object")return ["not a JSON object"];
+  if(!RC_VERDICTS.includes(String(v.verdict||"").toLowerCase()))p.push(`"verdict" must be one of ${RC_VERDICTS.join(", ")}`);
+  const why=String(v.why||"").trim();
+  if(!why)p.push('"why" is empty');else if(why.length>(pack.zh?160:420))p.push('"why" is too long: one or two short sentences');
+  const cites=rcCiteKeys(v);
+  if(!cites.length)p.push('"cites" must list the ids of the cards the reading rests on');
+  const bad=cites.filter(k=>!pack.ids[k]);if(bad.length)p.push(`"cites" names ids not in the pack: ${bad.join(", ")}`);
+  if(!cites.some(k=>pack.newKeys.includes(k)))p.push(`"cites" must include the new evidence it weighs (${pack.newKeys.join(", ")})`);
+  if(RC_ACTED.test(why))p.push("the decision is the designer's: say what the evidence means, never that you changed anything");
+  if(rcLangOff(why,pack.zh))p.push(pack.zh?'write "why" in Chinese':'write "why" in English');
+  return p;
+}
+function rcCriticProblems(v,pack){
+  if(!v||typeof v!=="object")return ["not a JSON object"];
+  if(v.agree===true||String(v.agree).toLowerCase()==="true")return [];
+  const p=[],cites=rcCiteKeys(v);
+  if(!String(v.objection||"").trim())p.push('an objection needs "objection"');
+  if(!cites.length||cites.some(k=>!pack.ids[k]))p.push('an objection must cite the pack ids it rests on');
+  if(!String(v.fix||"").trim())p.push('an objection needs "fix": what to do about it');
+  if(RC_ACTED.test(String(v.objection||"")))p.push("never say you changed the decision");
+  if(rcLangOff(v.objection,pack.zh))p.push(pack.zh?"write it in Chinese":"write it in English");
+  return p;
+}
+const RC_RULES=`Rules: judge only from the cards in the pack. Observed evidence (someone watched it happen) outweighs reported (someone said it), which outweighs proposals; an unrated card could be either. One anecdote does not overturn observed evidence. Evidence that only shares a topic may not bear on the decision at all: say so when it doesn't. The decision belongs to the designer: you never change it, you only say what the new evidence means for it.`;
+async function rcStrategist(pack,signal){
+  const lang=pack.zh?"Chinese (简体中文)":"English";
+  const system=`${ROLE.muse}\nRight now you are re-checking a decision the designer already made, because new evidence was kept after it. ${RC_RULES}\nReply in ${lang}. Return only JSON:\n{"verdict":"stronger|holds|weaker|reopen","why":"one or two short sentences (max 40 words) on what the new evidence shows and how it bears on the decision's reason","cites":["N1","S2"],"next":"the cheapest check that would settle any doubt (max 18 words), or \\"\\""}\nverdict: stronger = the new evidence backs the decision; holds = it is relevant but does not change the case, or it does not really bear on it; weaker = it undercuts part of the case but the choice can still be right; reopen = it undercuts the decision's core reason, or favors an option set aside.`;
+  const prompt=`${pack.text}\n\nRe-check the decision D against the new evidence.`;
+  return rcAsk({system,prompt,maxTokens:420,signal},v=>rcStratProblems(v,pack));
+}
+/* one model call with one repair, whichever engine answers: the watchdog's problems go back once, and the answer with
+   fewer problems is kept (the caller's watchdog then decides whether it may be shown) */
+async function rcAsk({system,prompt,maxTokens,signal},problems){
+  const ask=pr=>askAI({system,prompt:pr,json:true,maxTokens,quiet:true,memoryMode:"compact",signal},()=>null);
+  const r=await ask(prompt);if(!r.live)return null;
+  let v=r.v;const probs=problems(v);
+  if(probs.length){
+    const f=await ask(`${prompt}\n\nYour previous answer: ${JSON.stringify(v)}\nFix only these problems and return the whole JSON again: ${probs.join("; ")}.`);
+    if(f.live&&problems(f.v).length<probs.length)v=f.v;
+  }
+  return {v,engine:r.engine};
+}
+async function rcCritic(pack,strat,signal){
+  const lang=pack.zh?"Chinese (简体中文)":"English";
+  const system=`${ROLE.critic}\nStrategist has re-checked a decision against new evidence. Review that reading. ${RC_RULES}\nObject only when the cards give you a reason: an objection must cite the pack ids it rests on and come with a concrete fix the designer can act on. Research before objecting: read every card first. Never argue for its own sake; when the reading is sound, agree.\nReply in ${lang}. Return only JSON, one of:\n{"agree":true}\n{"agree":false,"objection":"max 35 words","cites":["N1"],"fix":"max 22 words"}`;
+  const prompt=`${pack.text}\n\nStrategist's reading: verdict "${strat.verdict}". ${strat.why}${strat.next?` Cheapest check: ${strat.next}`:""} (cites ${rcCiteKeys(strat).join(", ")})\n\nReview it.`;
+  const r=await rcAsk({system,prompt,maxTokens:300,signal},v=>rcCriticProblems(v,pack));
+  return r?r.v:null;
+}
+/* run one re-check: all waiting evidence on one decision, together */
+async function runRecheck(dirId,obs){
+  const dir=byId(dirId),R=rcState(),job={id:"rc-"+uid(),dir:dirId,sigs:obs.map(o=>o.sig),status:"run",at:NOW()};
+  R[job.id]=job;
+  if(!dir)return finishRc(job,"fail","gone");
+  const pack=recheckPack(dir,obs),ac=new AbortController(),t0=performance.now();
+  rcRunning={job,ac};
+  try{
+    const s=await rcStrategist(pack,ac.signal);
+    if(!s)return finishRc(job,"fail","no model answered");
+    const sp=rcStratProblems(s.v,pack);
+    if(sp.length)return finishRc(job,"fail","watchdog: "+sp[0],{dropped:sp});
+    const strat={verdict:String(s.v.verdict).toLowerCase(),why:String(s.v.why).trim(),next:String(s.v.next||"").trim(),cites:rcCiteKeys(s.v)};
+    const ctr=obs.some(o=>o.rel==="conflicts");
+    let critic=null,dropped=[];
+    if(ctr||strat.verdict!=="holds"){
+      const c=await rcCritic(pack,strat,ac.signal);
+      const cp=c?rcCriticProblems(c,pack):["no answer"];
+      if(c&&!cp.length&&!(c.agree===true||String(c.agree).toLowerCase()==="true"))critic={objection:String(c.objection).trim(),fix:String(c.fix).trim(),cites:rcCiteKeys(c)};
+      else if(c&&cp.length)dropped=cp;
+      job.critic=critic?"objects":c&&!cp.length?"agrees":"none";
+    }
+    const cites=[...new Set([...strat.cites,...(critic?.cites||[])])].map(k=>pack.ids[k]).filter(Boolean);
+    return finishRc(job,"done","",{strat,crit:critic,cites,engine:s.engine,ms:Math.round(performance.now()-t0),dropped});
+  }catch(e){
+    if(e?.name==="AbortError"||ac.signal.aborted){delete R[job.id];return null}   // preempted: it runs again later
+    return finishRc(job,"fail",String(e?.message||e));
+  }finally{if(rcRunning?.job===job)rcRunning=null}
+}
+function finishRc(job,status,why,res={}){
+  Object.assign(job,{status,why:why||undefined,done:NOW()},res);
+  if(status==="done"){const d=byId(job.dir);if(d)d.recheck={verdict:job.strat.verdict,why:job.strat.why,next:job.strat.next,critic:job.critic&&job.critic!=="none"?job.critic:undefined,objection:job.crit?.objection,fix:job.crit?.fix,at:job.done,about:job.sigs.length}}
+  persist();scheduleChecks(200);return job;
+}
+/* drop finished jobs nobody points at any more */
+function rcPrune(){
+  const R=rcState(),live=new Set((board.watch?.queue||[]).map(o=>o.sig));
+  for(const [k,j] of Object.entries(R))if(j.status!=="run"&&!j.sigs.some(s=>live.has(s))&&NOW()-(j.done||0)>3600e3)delete R[k];
+}
+/* start the next re-check when the board is quiet: no crew move, no Copilot answer, and the designer has paused */
+function kickRechecks(){
+  clearTimeout(rcT);
+  if(!board||rcRunning||!rcLive())return;
+  const pend=rcPending();if(!pend.length)return;
+  const need=Math.min(IDLE_NEED[crewSpeak]||4000,4000);
+  if(crewBusy()||copilotStreaming||userIdleFor()<need||dragging()){rcT=setTimeout(kickRechecks,Math.max(600,need-userIdleFor()));return}
+  const dirId=pend[0].target,obs=pend.filter(o=>o.target===dirId).slice(0,4);
+  const b=board;runRecheck(dirId,obs).then(()=>{if(board===b)kickRechecks()});
+}
+function abortRecheck(){if(rcRunning){try{rcRunning.ac.abort()}catch{}rcRunning=null}}
+/* is this observation still waiting for its re-check? (a model is connected, and the job is pending or running in time) */
+function rcWaiting(o){
+  if(o.kind!=="revisit"||!rcLive())return false;
+  const j=rcJobFor(o);
+  if(!j)return true;
+  return j.status==="run"&&NOW()-j.at<RC_TIMEOUT;
+}
+/* the note on the decision: the crew's reading of all the evidence it covered, in one pin */
+function recheckPin(job,obsList){
+  const d=byId(job.dir);if(!d)return null;
+  const es=obsList.map(o=>byId(o.about)).filter(e=>e&&isEvidenceCard(e));if(!es.length)return null;
+  const s=job.strat,c=job.crit||null;
+  const ev=es.length>1?L(`${qTitle(es[0])} and ${es.length-1} more`,`${qTitle(es[0])} 等 ${es.length} 条`):qTitle(es[0]);
+  const head={
+    stronger:L(`New evidence ${ev} makes your decision ${qTitle(d)} **stronger**.`,`新证据 ${ev} 让你的决定 ${qTitle(d)} **更站得住**。`),
+    holds:L(`Re-checked ${qTitle(d)} against new evidence ${ev}: it **still holds**.`,`对照新证据 ${ev} 重新检验了 ${qTitle(d)}：它**仍然成立**。`),
+    weaker:L(`New evidence ${ev} **weakens** part of the case for ${qTitle(d)}.`,`新证据 ${ev} **削弱**了 ${qTitle(d)} 的部分理由。`),
+    reopen:L(`New evidence ${ev} may be reason to **reopen** ${qTitle(d)}.`,`新证据 ${ev} 也许值得你**重新考虑** ${qTitle(d)}。`)
+  }[s.verdict];
+  const parts=[head,s.why];
+  if(c)parts.push(L(`Critic: ${c.objection} Fix: ${c.fix}`,`Critic：${c.objection} 建议：${c.fix}`));
+  if(s.next)parts.push(L(`Cheapest check: ${s.next}`,`最省事的验证：${s.next}`));
+  parts.push(L("The decision stays as you made it.","决定仍按你定的来。"));
+  const basis=job.cites.map(byId).filter(Boolean).slice(0,5).map(n=>({id:n.id,rev:n.rev||1,relation:"related",why:es.some(e=>e.id===n.id)?L("new evidence","新证据"):weightLabel(n.weight)||L("cited","引用")}));
+  return {id:"pin-"+uid(),agent:c||s.verdict==="weaker"||s.verdict==="reopen"?"critic":"muse",t:NOW(),note:parts.filter(Boolean).join(" "),check:"revisit",sig:job.id,sigs:job.sigs,engine:"model",recheck:{verdict:s.verdict,critic:job.critic||"none",model:job.engine},basis};
+}
 
 /* ── leaving Focus: one short catch-up instead of a burst ────────────────── */
 function focusCatchUp(){
@@ -9422,6 +9616,7 @@ Include 1 or at most 2 pins.`;
 }
 const advAborts=new Map();
 function preemptBackgroundAdvisors(){
+  abortRecheck?.();
   for(const [id,tid] of advTimers){clearTimeout(tid);advTimers.delete(id)}
   for(const [id,ctrl] of advAborts){try{ctrl.abort()}catch{}advAborts.delete(id)}
 }
@@ -19157,6 +19352,13 @@ const DEC_ST={new:["New evidence","有新证据"],ctr:["Countered","被反驳"],
 function decRowHTML(e,{rel=null,t=0,old=false,ctr=false}={}){
   const k=WEIGHTS[e.weight]?e.weight:"none";
   return `<li><button type="button" class="dv-row ev-k-${k}${ctr?" ctr":""}${old?" old":""}" data-dv-go="${esc(e.id)}" title="${esc(titleOf(e))}">${evIconHTML(k,"ev-ico")}<span class="dv-rt">${esc(clip(titleOf(e),80))}</span>${rel?`<span class="dv-rel rel-${esc(rel)}">${esc(relName(rel))}</span>`:""}${t?`<time>${esc(decWhen(t))}</time>`:""}</button></li>`}
+/* the crew's re-check of the new evidence, when a model read it: the verdict, the reason, and Critic's objection if any */
+const RC_LABEL={stronger:["Stronger","更站得住"],holds:["Still holds","仍然成立"],weaker:["Weaker","被削弱"],reopen:["Worth reopening","值得重新考虑"]};
+function decRecheckHTML(dir,fresh){
+  const r=dir.recheck;if(!r||!RC_LABEL[r.verdict])return "";
+  const latest=Math.max(...fresh.map(s=>s.t||0));if(latest&&r.at+1000<latest)return "";   // newer evidence than the re-check: it is not the reading of these
+  return `<div class="dv-rc rc-${esc(r.verdict)}"><span class="dv-rc-h"><b>${esc(L("Crew re-check","成员复核"))}</b><span class="dv-rc-v">${esc(L(...RC_LABEL[r.verdict]))}</span></span><p>${esc(r.why)}</p>${r.objection?`<p class="dv-rc-c"><b>Critic</b> ${esc(r.objection)}${r.fix?` <span>${esc(L("Fix: ","建议："))}${esc(r.fix)}</span>`:""}</p>`:""}${r.next?`<p class="dv-rc-n">${esc(L("Cheapest check: ","最省事的验证："))}${esc(r.next)}</p>`:""}</div>`;
+}
 function decCardHTML(x,i){
   const {claim,dir,rests,since,fresh}=x,zh=uiLang()==="zh";
   const who=dir.adoptedBy&&dir.adoptedBy!=="you"?(AGENTS[dir.adoptedBy]?.name||dir.adoptedBy):L("you","你");
@@ -19180,7 +19382,7 @@ function decCardHTML(x,i){
       :`<div class="dv-acts"><button type="button" class="dv-act" data-dv-reopen="${esc(claim.id)}">${L("Reopen the choice","重新选择")}</button><button type="button" class="dv-act primary" data-dv-hold="${esc(dir.id)}">${L("Still holds","仍然成立")}</button></div>`):"";
     const lede=fresh.length?L("The decision stays as you made it until you change it.","除非你改，决定保持不变。"):"";
     const rows=`<ul class="dv-list">${since.map(s=>decRowHTML(s.e,{rel:s.rel,t:s.t,old:!s.fresh})).join("")}</ul>`;
-    sinceH=fresh.length?`<div class="dv-since${ctr?" ctr":""}"><span class="dv-k">${L(`New since you decided · ${fresh.length}`,`决定之后新增 · ${fresh.length} 条`)}</span><p class="dv-kept" style="margin:0 0 4px">${esc(lede)}</p>${rows}${kept}${acts}</div>`
+    sinceH=fresh.length?`<div class="dv-since${ctr?" ctr":""}"><span class="dv-k">${L(`New since you decided · ${fresh.length}`,`决定之后新增 · ${fresh.length} 条`)}</span><p class="dv-kept" style="margin:0 0 4px">${esc(lede)}</p>${rows}${decRecheckHTML(dir,fresh)}${kept}${acts}</div>`
       :`<details class="dv-since calm dv-ev" data-dv-ev="s:${esc(dir.id)}"${decEvOpen.has("s:"+dir.id)?" open":""}><summary><span>${esc(L(`Since you decided · ${since.length} weighed`,`决定之后 · 已权衡 ${since.length} 条`))}</span>${ic("chev","ico dv-tw")}</summary>${rows}</details>${kept?`<div class="dv-sec" style="margin-top:6px">${kept}</div>`:""}`;
   }
   /* the real-world test's result, recorded on the direction; a failed one offers the two ways on (paths work) */

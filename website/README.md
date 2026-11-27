@@ -10,6 +10,7 @@ website/
   site.js        copy for EN/中文, the live board, the zones board, crew modes, waitlist, downloads
   fonts/         Bricolage Grotesque (display) and Inter (body), both OFL, self-hosted
   assets/        the logo
+  lab/           parked pieces kept for later polish, not linked from the page
 ```
 
 Preview locally: `cd website && python3 -m http.server 8080`, then open http://localhost:8080 (add `?lang=zh` for Chinese).

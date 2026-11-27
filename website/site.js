@@ -35,6 +35,7 @@
       "board.hint": "Drag any card", "board.replay": "Play again",
       "why.t1": "Most AI canvases help you make more.", "why.t2": "Vellum helps you think it through.",
       "why.lede": "The best meetings skip the slides and go to the whiteboard. Then someone wipes it.",
+      "why.l1": "Evidence", "why.l2": "Directions", "why.l3": "Decision",
       "why.h1": "A generator canvas", "why.h2": "Vellum",
       "why.a1": "Forty images and a vague feeling", "why.b1": "Three directions, each showing what it rests on",
       "why.a2": "Cards that just happen to be close", "why.b2": "Relations with names: supports, counters, refines",
@@ -58,9 +59,8 @@
       "mode.listend": "They speak up only when something doesn't add up.",
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
-      "get.title": "Why it's called Vellum.",
-      "get.story": "Vellum is the translucent paper designers lay over a drawing. You trace the next idea on top, and the earlier lines still show through.",
-      "get.dl": "Get the app", "get.dld": "Early builds for macOS and Windows.",
+      "get.title": "Get Vellum.",
+      "get.dl": "Download", "get.dld": "Early builds for macOS and Windows.",
       "get.mac": "macOS", "get.win": "Windows", "get.soon": "Soon",
       "get.wl": "Hear about new builds", "get.wld": "One email when a build is worth your time. That's the whole newsletter.",
       "get.email": "Email", "get.use": "Mostly for", "get.other": "Something else",
@@ -83,6 +83,7 @@
       "board.hint": "卡片可以拖动", "board.replay": "再看一遍",
       "why.t1": "多数 AI\u00a0画布\u200b帮你做得更多。", "why.t2": "Vellum\u00a0帮你\u200b想得更清楚。",
       "why.lede": "最好的讨论不放 PPT，直接上白板。然后，有人把白板擦了。",
+      "why.l1": "证据", "why.l2": "方向", "why.l3": "决定",
       "why.h1": "生成式画布", "why.h2": "Vellum",
       "why.a1": "四十张图，和一种说不清的感觉", "why.b1": "三个方向，各自写明依据",
       "why.a2": "碰巧挨在一起的卡片", "why.b2": "叫得出名字的关系：支持、反驳、细化",
@@ -106,9 +107,8 @@
       "mode.listend": "只在有地方说不通时才开口。",
       "mode.teamd": "和你一起起草，好的你留下。",
       "modes.label": "AI 伙伴参与的程度",
-      "get.title": "为什么叫 Vellum。",
-      "get.story": "Vellum 是设计师覆在图纸上的半透明描图纸。新的想法描在上面，底下的旧线条依然透得出来。",
-      "get.dl": "下载应用", "get.dld": "macOS 和 Windows 早期版本。",
+      "get.title": "获取 Vellum。",
+      "get.dl": "下载", "get.dld": "macOS 和 Windows 早期版本。",
       "get.mac": "macOS", "get.win": "Windows", "get.soon": "即将推出",
       "get.wl": "新版本通知", "get.wld": "有值得一试的版本时，发你一封邮件。仅此而已。",
       "get.email": "邮箱", "get.use": "主要用来做", "get.other": "其他",
@@ -203,7 +203,7 @@
         B: { t: "Brushless motor, call mode", b: "Chosen. Quiet enough for a meeting." },
         C: { t: "Bladeless tower", why: "Quiet, and twice the price." },
         P: { t: "Call-mode prototype", meta: "31 dB at full speed" },
-        S: { t: "Spec for the tooling review", meta: "Includes the decision, its 2 sources, and why A and C were set aside." }
+        S: { t: "Spec for the tooling review" }
       },
       video: {
         e1: { k: "Observed", t: "Retention", b: "Half the viewers leave at second 3." },
@@ -213,7 +213,7 @@
         B: { t: "Open on the result", b: "Chosen. The payoff lands in second one." },
         C: { t: "Text card intro", why: "Reads as an ad." },
         P: { t: "Storyboard, three takes", meta: "From your own video model" },
-        S: { t: "Final cut, 15 seconds", meta: "Includes the decision, its 2 sources, and why A and C were set aside." }
+        S: { t: "Final cut, 15 seconds" }
       },
       ai: {
         e1: { k: "Observed", t: "Logs", b: "Users rewrite 6 of 10 drafted replies." },
@@ -223,9 +223,9 @@
         B: { t: "Mirror the sender", b: "Chosen. Writes the way they write." },
         C: { t: "Reply templates", why: "Fixes tone by removing it." },
         P: { t: "Eval, 50 real cases", meta: "46 pass" },
-        S: { t: "Ship to 10% of users", meta: "Includes the decision, its 2 sources, and why A and C were set aside." }
+        S: { t: "Ship to 10% of users" }
       },
-      kinds: { judgment: "Judgment", direction: "Direction", prototype: "Prototype", snapshot: "Snapshot", by: "Wright" }
+      kinds: { judgment: "Judgment", direction: "Direction", prototype: "Prototype", snapshot: "Snapshot", sources: "2 sources", aside: "A and C set aside, with reasons", by: "Wright" }
     },
     zh: {
       product: {
@@ -236,7 +236,7 @@
         B: { t: "无刷电机 + 通话模式", b: "已选定。安静到可以开会。" },
         C: { t: "无叶塔扇", why: "很安静，价格翻倍。" },
         P: { t: "通话模式样机", meta: "最高档 31 分贝" },
-        S: { t: "给开模评审的规格书", meta: "附带这个决定、2 条依据，以及 A 和 C 被搁置的原因。" }
+        S: { t: "给开模评审的规格书" }
       },
       video: {
         e1: { k: "观察", t: "留存数据", b: "一半观众在第 3 秒离开。" },
@@ -246,7 +246,7 @@
         B: { t: "成品画面开场", b: "已选定。第一秒就给结果。" },
         C: { t: "文字卡开场", why: "一看就像广告。" },
         P: { t: "分镜，三个版本", meta: "用你自己的视频模型生成" },
-        S: { t: "15 秒最终剪辑", meta: "附带这个决定、2 条依据，以及 A 和 C 被搁置的原因。" }
+        S: { t: "15 秒最终剪辑" }
       },
       ai: {
         e1: { k: "观察", t: "日志", b: "10 条草稿回复，用户改写了 6 条。" },
@@ -256,9 +256,9 @@
         B: { t: "跟随发件人的语气", b: "已选定。对方怎么写，它就怎么写。" },
         C: { t: "回复模板", why: "用去掉语气来解决语气。" },
         P: { t: "评测集，50 条真实案例", meta: "46 条通过" },
-        S: { t: "先开放给 10% 的用户", meta: "附带这个决定、2 条依据，以及 A 和 C 被搁置的原因。" }
+        S: { t: "先开放给 10% 的用户" }
       },
-      kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", by: "Wright" }
+      kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", sources: "2 条依据", aside: "A、C 已搁置，附理由", by: "Wright" }
     }
   };
   var KIND_ICON = { Observed: "eye", Reported: "msg", Said: "quote", "观察": "eye", "转述": "msg", "原话": "quote" };
@@ -357,15 +357,18 @@
         if (id === "j1" || id[0] === "d") c.classList.add("ink");
         if (id === "st") c.classList.add("sticky");
         c.dataset.id = id;
-        c.innerHTML = '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI[id] + '"/></svg><span class="kk"></span></div>' +
+        c.innerHTML = '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI[id] + '"/></svg><span class="kk"></span>' + (id === "st" ? "" : '<span class="by"></span>') + "</div>" +
           (id === "st" ? "" : '<div class="t"></div>') + '<div class="b"></div>' +
-          (id === "st" ? "" : '<div class="by"></div>') +
-          (id[0] === "d" ? '<div class="veil"></div><div class="note"></div><span class="back-chip"><svg class="ki" aria-hidden="true"><use href="#i-retry"/></svg><span></span></span>' : "") +
-          (id === "dB" ? '<div class="flag" role="group"><div class="fh"></div><div class="fb"><button type="button" class="reopen"></button><button type="button" class="holds"></button></div></div>' : "");
+          (id === "dA" || id === "dC" ? '<div class="veil"></div><div class="note"></div><span class="back-chip"><svg class="ki" aria-hidden="true"><use href="#i-retry"/></svg><span></span></span>' : "") +
+          // The chosen card shows one line; why it was chosen and what you can do open on hover, focus or tap.
+          (id === "dB" ? '<div class="flag"><div class="fh"></div></div><div class="more"><div class="mi"><div class="note"></div><div class="fb" role="group"><button type="button" class="reopen"></button><button type="button" class="holds"></button></div></div></div>' : "");
         stage.appendChild(c);
         cards[id] = c;
         drag(c);
       });
+      // Touch has no hover: a tap opens the chosen card. Lines and the loop follow it as it grows.
+      cards.dB.addEventListener("click", function (e) { if (!canHover && !e.target.closest("button")) cards.dB.classList.toggle("open"); });
+      if (window.ResizeObserver) new ResizeObserver(function () { requestAnimationFrame(function () { drawLines(false); }); }).observe(cards.dB);
       cards.dB.querySelector(".reopen").addEventListener("click", function (e) { e.stopPropagation(); resolve("reopen"); });
       cards.dB.querySelector(".holds").addEventListener("click", function (e) { e.stopPropagation(); resolve("holds"); });
       var icons = ["eye", "judge", "fork", "decide", "retry"];
@@ -393,7 +396,8 @@
           by.innerHTML = who.map(function (w) {
             var col = CREW[w];
             return '<b style="background:' + (col || "var(--label)") + (col ? "" : ";color:var(--card)") + '">' + esc(w === "你" ? "你" : w.charAt(0)) + "</b>";
-          }).join("") + "<span>" + esc(d.by) + "</span>";
+          }).join("");
+          by.title = d.by; by.setAttribute("role", "img"); by.setAttribute("aria-label", d.by);
         }
       });
       cards.dB.querySelector(".fh").textContent = resolved === "holds" ? l.heldNote : resolved === "reopen" ? l.reopenedNote : l.flagH;
@@ -518,6 +522,7 @@
       cards.dB.classList.toggle("show-flag", n >= 4);
       var flag = cards.dB.querySelector(".flag");
       flag.classList.toggle("resolved", !!resolved);
+      cards.dB.classList.toggle("resolved", !!resolved);
       if (resolved || n < 4) flag.classList.remove("waiting");
       if (n === 4 && prev < 4 && animate && !reduced) { cards.n1.classList.remove("fresh"); void cards.n1.offsetWidth; cards.n1.classList.add("fresh"); }
       relabel();
@@ -679,7 +684,13 @@
       if (id === "A" || id === "C") return '<article class="vc zc ink dir aside" data-id="' + id + '" tabindex="0"><div class="t"><span class="chip ' + id + '">' + id + "</span><span>" + esc(d.t) + '</span></div><div class="veil"></div><div class="note">' + esc(d.why) + "</div></article>";
       if (id === "B") return '<article class="vc zc ink dir adopted wide" data-id="B" tabindex="0">' + kind("fork", k.direction) + '<div class="t"><span class="chip B">B</span><span>' + esc(d.t) + '</span></div><div class="b">' + esc(d.b) + "</div></article>";
       if (id === "P") return '<article class="vc zc wide proto" data-id="P" tabindex="0"><div class="media">' + ILL[c] + "</div>" + kind("window", k.prototype) + '<div class="t">' + esc(d.t) + '</div><div class="meta"><i></i><span>' + esc(d.meta) + "</span></div></article>";
-      return '<article class="vc zc wide snap" data-id="S" tabindex="0">' + kind("snap", k.snapshot) + '<div class="t">' + esc(d.t) + '</div><div class="b">' + esc(d.meta) + "</div></article>";
+      // The snapshot is a small page: what was decided, what it rests on, and what was set aside (with reasons).
+      return '<article class="vc zc wide snap" data-id="S" tabindex="0">' + kind("snap", k.snapshot) + '<div class="t">' + esc(d.t) + "</div>" +
+        '<div class="page">' +
+          '<div class="r"><span class="chip B">B</span><span>' + esc(CASES[lang][c].B.t) + "</span></div>" +
+          '<div class="r">' + esc(k.sources) + "</div>" +
+          '<div class="r">' + esc(k.aside) + "</div>" +
+        "</div></article>";
     }
 
     function render(animate) {
@@ -865,6 +876,22 @@
     return { d: "M" + q1.x + " " + q1.y + " C" + q1.x + " " + (q1.y + v * kk) + "," + q2.x + " " + (q2.y - v * kk) + "," + q2.x + " " + q2.y, m: { x: (q1.x + q2.x) / 2, y: (q1.y + q2.y) / 2 } };
   }
 
+  // ---- The vellum layers: stacked flat until seen, then they fan out so each step shows through ----
+  var layers = $("layers");
+  if (reduced || !("IntersectionObserver" in window)) layers.classList.add("open");
+  else {
+    var lio = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { setTimeout(function () { layers.classList.add("open"); }, 250); lio.disconnect(); } }); }, { threshold: 0.6 });
+    lio.observe(layers);
+  }
+  if (!reduced && canHover) {
+    layers.addEventListener("pointermove", function (e) {
+      var r = layers.getBoundingClientRect();
+      layers.style.setProperty("--mx", Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 1.2))).toFixed(3));
+      layers.style.setProperty("--my", Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 1.2))).toFixed(3));
+    });
+    layers.addEventListener("pointerleave", function () { layers.style.setProperty("--mx", "0"); layers.style.setProperty("--my", "0"); });
+  }
+
   // ---- Crew participation: the switch changes the crew above it --------------------------------
   var crewMode = "listen", modesEl = $("modes"), modeBtns = Array.prototype.slice.call(modesEl.querySelectorAll("button"));
   function renderMode(focus) {
@@ -886,19 +913,6 @@
   });
   window.addEventListener("resize", function () { renderMode(false); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { renderMode(false); });
-
-  // ---- The vellum sheets: light moves with the pointer ------------------------------------------
-  var sheets = $("sheets");
-  if (!reduced && canHover) {
-    var story = sheets.parentNode;
-    story.addEventListener("pointermove", function (e) {
-      var r = sheets.getBoundingClientRect();
-      var mx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 1.2)));
-      var my = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 1.2)));
-      sheets.style.setProperty("--mx", mx.toFixed(3)); sheets.style.setProperty("--my", my.toFixed(3));
-    });
-    story.addEventListener("pointerleave", function () { sheets.style.setProperty("--mx", "0"); sheets.style.setProperty("--my", "0"); });
-  }
 
   // ---- Downloads: one primary per card ----------------------------------------------------------
   function renderDownloads() {

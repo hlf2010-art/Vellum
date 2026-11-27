@@ -104,7 +104,21 @@
     <div class="wrap">
       <h2 class="why-title" id="why-title"><span class="quiet" data-i18n="why.t1">Most AI canvases help you make more.</span><span data-i18n="why.t2">Vellum helps you think it through.</span></h2>
       <div class="why-body">
-        <p class="lede" data-i18n="why.lede">The best meetings skip the slides and go to the whiteboard. Then someone wipes it.</p>
+        <div class="why-side">
+          <p class="lede" data-i18n="why.lede">The best meetings skip the slides and go to the whiteboard. Then someone wipes it.</p>
+          <!-- Nothing gets wiped: each step of the thinking is a sheet of vellum, and the earlier ones show through. -->
+          <figure class="layers" id="layers" aria-hidden="true">
+            <div class="sheets">
+              <div class="sheet s1"><svg viewBox="0 0 320 180"><g class="ink-3"><rect x="34" y="40" width="58" height="34" rx="7"/><rect x="34" y="88" width="58" height="34" rx="7"/><rect x="34" y="136" width="58" height="22" rx="7"/></g></svg></div>
+              <div class="sheet s2"><svg viewBox="0 0 320 180"><path class="ink-3" d="M92 57c26 0 30 34 56 34M92 105c26 0 30-14 56-14M92 147c26 0 30-56 56-56"/><path class="ink-1" d="m160 74 17 30h-34Z"/><path class="ink-a" d="M182 84c30-6 40-30 74-34"/><path class="ink-c" d="M182 98c30 6 40 30 74 36"/></svg></div>
+              <div class="sheet s3"><svg viewBox="0 0 320 180"><path class="ink-b" d="M184 91c30 0 46 1 80 1"/><ellipse class="ink-1 loop" cx="276" cy="92" rx="22" ry="15" transform="rotate(-6 276 92)"/></svg></div>
+              <!-- Each label rides with its own sheet but sits above them all, so it stays sharp. -->
+              <div class="sheet ghost s1"><svg viewBox="0 0 320 180"><text class="tag" x="34" y="28" data-i18n="why.l1">Evidence</text></svg></div>
+              <div class="sheet ghost s2"><svg viewBox="0 0 320 180"><text class="tag" x="186" y="36" data-i18n="why.l2">Directions</text></svg></div>
+              <div class="sheet ghost s3"><svg viewBox="0 0 320 180"><text class="tag" x="276" y="128" text-anchor="middle" data-i18n="why.l3">Decision</text></svg></div>
+            </div>
+          </figure>
+        </div>
         <table class="contrast">
           <thead><tr><th scope="col" data-i18n="why.h1">A generator canvas</th><th scope="col" data-i18n="why.h2">Vellum</th></tr></thead>
           <tbody>
@@ -180,21 +194,15 @@
 
   <!-- 5. Get Vellum. -->
   <section class="get" id="get" aria-labelledby="get-title">
-    <div class="wrap get-grid">
-      <div class="story">
-        <div class="sheets" id="sheets" aria-hidden="true">
-          <div class="sheet s1"><svg viewBox="0 0 320 180"><g class="ink-3"><rect x="34" y="40" width="58" height="34" rx="7"/><rect x="34" y="88" width="58" height="34" rx="7"/><rect x="34" y="136" width="58" height="22" rx="7"/></g></svg></div>
-          <div class="sheet s2"><svg viewBox="0 0 320 180"><path class="ink-3" d="M92 57c26 0 30 34 56 34M92 105c26 0 30-14 56-14M92 147c26 0 30-56 56-56"/><path class="ink-1" d="m160 74 17 30h-34Z"/><path class="ink-a" d="M182 84c30-6 40-30 74-34"/><path class="ink-c" d="M182 98c30 6 40 30 74 36"/></svg></div>
-          <div class="sheet s3"><svg viewBox="0 0 320 180"><path class="ink-b" d="M184 91c30 0 46 1 80 1"/><ellipse class="ink-1 loop" cx="276" cy="92" rx="22" ry="15" transform="rotate(-6 276 92)"/></svg></div>
-        </div>
-        <h2 id="get-title" data-i18n="get.title">Why it's called Vellum.</h2>
-        <p class="lede" data-i18n="get.story">Vellum is the translucent paper designers lay over a drawing. You trace the next idea on top, and the earlier lines still show through.</p>
+    <div class="wrap get-wrap">
+      <div class="sec-head">
+        <h2 id="get-title" data-i18n="get.title">Get Vellum.</h2>
       </div>
 
       <div class="panel">
         <div class="pblock">
           <div class="phead">
-            <h3 data-i18n="get.dl">Get the app</h3>
+            <h3 data-i18n="get.dl">Download</h3>
             <p data-i18n="get.dld">Early builds for macOS and Windows.</p>
           </div>
           <div class="pgrid">

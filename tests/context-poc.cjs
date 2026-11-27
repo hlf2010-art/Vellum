@@ -102,6 +102,8 @@ function check(group, name, ok, detail = '', kind = 'PASS') {
 async function openPage(browser, base, ctx) {
   ctx = ctx || await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark', deviceScaleFactor: SHOTS ? 2 : 1 });
   const p = await ctx.newPage();
+  // a real Studio AI or Image Service running on this machine must not answer instead of the scripted model
+  await p.route(/^http:\/\/127\.0\.0\.1:5963[19]\//, r => r.abort());
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2500);
   await p.evaluate(url => { apiCfg = { enabled: true, baseUrl: url + '/v1', model: 'poc', key: 'poc' }; }, base);

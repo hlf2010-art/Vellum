@@ -139,7 +139,7 @@ async function open(browser, base) {
   if (args.timeout) await p.evaluate(ms => { AI_TIMEOUT_MS = ms; LOCAL_AI_MS = ms; }, Math.round(+args.timeout * 1000));
   if (args.search === 'keenable') await p.evaluate(key => { searchCfg = { provider: 'keenable', key, mode: 'pro' }; }, process.env.KEENABLE_API_KEY || 'proxy-injected');
   await p.evaluate(() => { window.__toasts = []; const t = toast; toast = (m, ...a) => { __toasts.push(String(m)); return t(m, ...a); }; });
-  p.type = async t => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); await p.keyboard.press('Enter'); };
+  p.type = async t => { await p.click('#lineInput'); await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); await p.keyboard.press('Enter'); };
   p.idle = async (max = 600000) => { const t0 = Date.now(); await p.waitForTimeout(600); while (Date.now() - t0 < max && await p.evaluate(() => crewBusy() || copilotStreaming || !!document.querySelector('dialog[open][data-clarify]'))) { await p.evaluate(answerClarify => { if (window.__answerClarify) window.__answerClarify(); }, null); await p.waitForTimeout(500); } await p.waitForTimeout(400); };
   p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(800); };
   // a designer who clicks the options closest to what they said they want (used if Strategist asks first)

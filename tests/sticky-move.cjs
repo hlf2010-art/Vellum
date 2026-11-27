@@ -88,7 +88,7 @@ async function open(browser, base) {
       await p.drag(card.x + card.w / 2, card.y + card.h - 6, card.x + card.w / 2 + 120, card.y + card.h - 6);
       s = await p.state();
       check('dragging the bottom edge moves it too', Math.abs(s.notes[0].x - at.x - 120) <= 2 && s.focusInWriting, JSON.stringify(s));
-      await p.keyboard.press('End'); await p.keyboard.type(' now');
+      await p.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowRight' : 'End'); await p.keyboard.type(' now'); // End does not move the caret on macOS
       await p.mouse.click(1300, 820); await p.waitForTimeout(400);
       s = await p.state();
       check('the edit carries on after moving: text typed after the drop is kept', /now$/.test(s.notes[0].text), JSON.stringify(s));
@@ -110,7 +110,7 @@ async function open(browser, base) {
       check('moved but never written in: still removed on click-away', s.notes.length === 0, JSON.stringify(s));
       const id = await p.evaluate(() => { const n = node('note', { text: 'Keep me' }, { x: 300, y: 300 }); n.status = 'ink'; renderAll(); return n.id; });
       await p.evaluate(id => startEdit(id, 'text'), id); await p.waitForTimeout(150);
-      await p.keyboard.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A'); await p.keyboard.press('Backspace');
+      await p.keyboard.press('ControlOrMeta+A'); await p.keyboard.press('Backspace');
       await p.mouse.click(1200, 760); await p.waitForTimeout(450);
       s = await p.state();
       check('a sticky that had words is kept even if you clear it', s.notes.some(n => n.id === id), JSON.stringify(s));

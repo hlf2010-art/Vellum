@@ -24,122 +24,122 @@
   var T = {
     en: {
       "skip": "Skip to content",
-      "nav.how": "How it works", "nav.why": "Why Vellum", "nav.crew": "The crew", "nav.get": "Download",
-      "cta.waitlist": "Join the waitlist", "cta.download": "Download Vellum",
+      "nav.how": "How it works", "nav.why": "Why Vellum", "nav.crew": "The crew",
+      "cta.waitlist": "Join the waitlist", "cta.get": "Get Vellum", "cta.how": "See how it works",
       "hero.title": "The whiteboard that remembers why.",
-      "hero.lede": "Vellum is a shared thinking space for you and AI. Lay out what you know, let agents argue the directions from different expert views, and keep every decision with the reason behind it.",
+      "hero.lede": "Vellum is a shared thinking space for you and AI. Put the evidence on the board, let a crew of agents argue about it, and keep every decision with the reason it was made.",
       "board.hint": "Drag the cards around", "board.replay": "Play again",
       "why.title": "Most AI canvases help you make more. Vellum helps you think it through.",
-      "why.p1": "The best product meetings skip the slides and go straight to the whiteboard. You draw what you know, argue about what it means, and leave with a decision.",
-      "why.p2": "Vellum is that whiteboard, with a memory. It keeps the context, the options you turned down and why, and it brings a decision back to you when the facts change.",
+      "why.p1": "The best product meetings skip the slides and go straight to the whiteboard. Then someone wipes the whiteboard.",
+      "why.p2": "Vellum keeps what usually gets wiped: the context, the options you turned down and why, and the decision itself. When the facts change, it brings that decision back instead of letting it quietly expire.",
       "why.h1": "A generator canvas", "why.h2": "Vellum",
-      "why.a1": "Forty images, no idea which one is right", "why.b1": "Three directions, each with what it rests on",
-      "why.a2": "An assistant that agrees with you", "why.b2": "A crew that argues from different expert views",
-      "why.a3": "Rejected ideas deleted or buried", "why.b3": "Set-aside ideas kept, with the reason",
-      "why.a4": "A decision you can't explain next month", "why.b4": "A decision log that speaks up when new evidence lands",
+      "why.a1": "Forty images and a vague feeling", "why.b1": "Three directions, each showing what it rests on",
+      "why.a2": "An assistant that loves every idea you have", "why.b2": "A crew that disagrees, from different expert views",
+      "why.a3": "Rejected ideas, lost in a folder called final_v3", "why.b3": "Set-aside ideas kept, reason attached",
+      "why.a4": "A decision nobody remembers making", "why.b4": "A decision log that speaks up when new evidence lands",
       "how.title": "One board, four zones, left to right.",
-      "how.lede": "Every board reads like a line of reasoning. Evidence on the left, a decision you can ship on the right, and every card in between linked to what it came from.",
-      "how.l1": "Gather", "how.l1d": "Drop in what people did and said: interviews, reviews, photos, playtests. Scout reads it and marks how strong each piece is.",
-      "how.l2": "Explore", "how.l2d": "Turn evidence into judgments, then fork a judgment into directions you can test. Pick one and the others stay, with why.",
-      "how.l3": "Prototype", "how.l3d": "Branch prototypes from the direction you chose, using the image, video or code tools you already like.",
-      "how.l4": "Snapshot", "how.l4d": "Freeze an edition to share. It carries the decision, the reasons and the evidence trail with it.",
+      "how.lede": "Every board reads like an argument you could defend. Evidence on the left, something you can ship on the right, and every card in between linked to where it came from.",
+      "how.l1": "Gather", "how.l1d": "Drop in what people actually did and said: interviews, reviews, photos, playtests. Scout reads it all and tells you which parts are evidence and which are vibes.",
+      "how.l2": "Explore", "how.l2d": "Turn evidence into judgments, then fork a judgment into directions you can test. Pick one. The others stay, with a note on why they lost.",
+      "how.l3": "Prototype", "how.l3d": "Branch prototypes from the direction you chose, with the image, video or code tools you already use. Vellum remembers why each one exists.",
+      "how.l4": "Snapshot", "how.l4d": "Freeze an edition to share. The reasons travel with it, so nobody has to ask why you did this in the review.",
       "p.title": "Built for thinking clearly, not for making more.",
-      "p.1t": "Spatial context", "p.1d": "Where you put something is part of what it means. Snap cards together or draw a line between them, and the relation is recorded: supports, counters or refines.",
-      "p.2t": "Collective intelligence", "p.2d": "Agents reason from distinct expert views instead of echoing you. The Strategist forks, the Critic objects, and you see the disagreement on the board.",
-      "p.3t": "Decision memory", "p.3d": "Every decision keeps what you chose, why, what it rests on and what you set aside. Months later, you can still explain it.",
-      "p.4t": "Continuous reasoning", "p.4d": "When new evidence lands, Vellum shows which decisions it touches and whether it supports or counters them. Reopen the choice, or note why it still holds.",
-      "p.5t": "Human agency", "p.5d": "Agents can challenge a direction you confirmed. They never replace it. Nothing they draft lands on the board until you keep it.",
-      "p.cap": "Snap two cards together and they're related. Pull them apart and the relation stays, drawn as a line.",
-      "crew.title": "A crew that thinks with you, and sometimes against you.",
-      "crew.lede": "Four agents with different jobs work on the same board you do. Each card shows who worked on it, so you always know where an idea came from.",
-      "crew.scout": "Reads your sources and weighs the evidence: observed, reported, or just a guess.",
+      "p.1t": "Spatial context", "p.1d": "Where you put something is part of what it means. Snap two cards together or draw a line, and Vellum records the relation: supports, counters or refines.",
+      "p.2t": "Collective intelligence", "p.2d": "The agents reason from distinct expert views, so they don't just agree with you. The Strategist forks, the Critic objects, and the disagreement stays on the board where you can use it.",
+      "p.3t": "Decision memory", "p.3d": "Every decision keeps what you chose, why, what it rests on and what you passed over. Six months later you can still explain it, even to yourself.",
+      "p.4t": "Continuous reasoning", "p.4d": "When new evidence arrives, Vellum shows which decisions it touches and whether it supports or counters them. Reopen the choice, or write down why it still holds.",
+      "p.5t": "Human agency", "p.5d": "Agents can challenge a direction you confirmed. They can't overrule it. Nothing they draft lands on the board until you keep it.",
+      "p.cap": "Snap two cards together and they're related. Pull them apart and they stay related. Vellum draws the line for you.",
+      "crew.title": "A crew that thinks with you, and occasionally against you.",
+      "crew.lede": "Four agents with different jobs share your board. Every card shows who worked on it, so you always know whose idea it was. Including the bad ones.",
+      "crew.scout": "Reads your sources and sorts the evidence: observed, reported, or somebody's hunch.",
       "crew.scoutq": "Two of these seven sources are the same review, quoted twice.",
       "crew.strat": "Forks a judgment into directions you can actually test, and says what each one is betting on.",
       "crew.stratq": "If B is right, testers should find the lantern in under five seconds.",
       "crew.wright": "Builds the proof: a page, a storyboard, a render brief, an action list. Drafts wait for your OK.",
       "crew.wrightq": "Here's a foam mock-up plan for B. Keep or retry?",
-      "crew.critic": "Checks the work against its sources and flags a direction that rests only on assumptions.",
-      "crew.criticq": "Nothing on the board shows campers want a dial.",
+      "crew.critic": "Checks the work against its sources. Politely at first.",
+      "crew.criticq": "Nothing on the board says campers want a dial.",
       "crew.agency": "They can challenge your decision. Only you can make it.",
       "mode.focus": "Focus", "mode.listen": "Listening", "mode.team": "Teamwork",
-      "mode.focusd": "Focus: the crew stays quiet while you think. They catch up when you're back.",
-      "mode.listend": "Listening: the crew follows along and speaks up when something on the board doesn't add up.",
-      "mode.teamd": "Teamwork: the crew drafts directions and proofs alongside you. Drafts wait for your OK.",
+      "mode.focusd": "Focus: the crew stays quiet while you think, and catches up when you're back.",
+      "mode.listend": "Listening: the crew follows along and speaks up only when something doesn't add up.",
+      "mode.teamd": "Teamwork: the crew drafts directions and proofs with you. Every draft waits for your OK.",
       "cases.title": "From evidence to prototype, whatever you make.",
       "cases.t1": "Product design", "cases.t2": "Short video", "cases.t3": "AI products",
       "get.title": "Why it's called Vellum.",
-      "get.story": "Vellum is the translucent paper designers lay over a drawing. You trace the next idea on top, and the earlier lines stay visible underneath. That's how decisions work here.",
-      "get.dl": "Get the app", "get.dld": "Early builds for macOS and Windows.",
+      "get.story": "Vellum is the translucent paper designers lay over a drawing. You trace the next idea on top, and the earlier lines still show through. Decisions work the same way here. Nothing underneath gets thrown away.",
+      "get.dl": "Get the app", "get.dld": "Early builds for macOS and Windows. Expect rough edges, and tell us where they are.",
       "get.mac": "Download for macOS", "get.win": "Windows",
-      "get.dlpending": "The first public build isn't out yet. These buttons open the releases page on GitHub.",
+      "get.dlpending": "The first public build isn't out yet. For now, these buttons open the releases page on GitHub.",
       "get.dlready": "Opens the latest release.",
-      "get.wl": "Join the waitlist", "get.wld": "We'll write when there's a new build worth trying. No newsletter.",
+      "get.wl": "Hear about new builds", "get.wld": "We'll write when there's a build worth your time. That's the whole newsletter.",
       "get.email": "Email", "get.use": "Mostly for", "get.other": "Something else",
       "get.thanks": "You're on the list.",
-      "get.thanksd": "We'll email {email} when a build is ready.",
-      "get.thankspreview": "This is a preview, so {email} wasn't sent anywhere. Sign-ups go live once the waitlist is connected.",
-      "get.bademail": "Enter an email address like name@example.com.",
+      "get.thanksd": "We'll email {email} when there's a build worth trying.",
+      "get.thankspreview": "This is a preview, so {email} went nowhere. Sign-ups start working once the waitlist is connected.",
+      "get.bademail": "That doesn't look like an email address. Try something like name@example.com.",
       "get.fail": "That didn't go through. Check your connection and try again.",
       "get.placeholder": "Preview: sign-ups aren't sent anywhere yet.",
       "foot.tag": "A shared thinking space for humans and AI."
     },
     zh: {
       "skip": "跳到正文",
-      "nav.how": "怎么用", "nav.why": "为什么是 Vellum", "nav.crew": "AI 伙伴", "nav.get": "下载",
-      "cta.waitlist": "加入等候名单", "cta.download": "下载 Vellum",
+      "nav.how": "怎么用", "nav.why": "为什么是 Vellum", "nav.crew": "AI 伙伴",
+      "cta.waitlist": "加入等候名单", "cta.get": "获取 Vellum", "cta.how": "看看怎么用",
       "hero.title": "会记住「为什么」的白板。",
-      "hero.lede": "Vellum 是人类与 AI 共同思考的空间。把你知道的摆上白板，让不同专业视角的 AI 伙伴推演方向，每个决定都连同它的理由一起留下。",
+      "hero.lede": "Vellum 是人类与 AI 共同思考的空间。把证据摆上白板，让 AI 伙伴们各抒己见，每个决定都附上当初的理由。",
       "board.hint": "卡片可以随意拖动", "board.replay": "再看一遍",
       "why.title": "多数 AI 画布帮你产出更多。Vellum 帮你想得更清楚。",
-      "why.p1": "最好的产品讨论不放 PPT，直接上白板。把已知的画出来，争论它意味着什么，最后带着决定离开。",
-      "why.p2": "Vellum 就是这块白板，而且它有记忆。它留住上下文、你放弃的选项和放弃的理由；事实变了，它会把相关的决定重新摆到你面前。",
+      "why.p1": "最好的产品讨论不放 PPT，直接上白板。然后散会，有人把白板擦了。",
+      "why.p2": "Vellum 留下的，正是常被擦掉的部分：上下文、被放弃的选项和放弃的理由，还有决定本身。事实变了，它会把相关的决定重新摆到你面前，而不是任它悄悄过期。",
       "why.h1": "生成式画布", "why.h2": "Vellum",
-      "why.a1": "四十张图，不知道哪张对", "why.b1": "三个方向，每个都写明依据",
-      "why.a2": "一个总附和你的助手", "why.b2": "一组从不同专业视角争论的伙伴",
-      "why.a3": "被否的想法删掉或埋没", "why.b3": "搁置的想法留着，附上理由",
-      "why.a4": "下个月就说不清的决定", "why.b4": "新证据出现时会主动提醒的决策记录",
+      "why.a1": "四十张图，外加一种说不清的感觉", "why.b1": "三个方向，每个都写明依据",
+      "why.a2": "一个对你每个想法都说好的助手", "why.b2": "一组从不同专业视角提出异议的伙伴",
+      "why.a3": "被否的想法，躺在「最终版_v3」文件夹里", "why.b3": "搁置的想法留着，理由附上",
+      "why.a4": "一个没人记得是怎么拍板的决定", "why.b4": "新证据出现时会主动提醒的决策记录",
       "how.title": "一块白板，四个区域，从左到右。",
-      "how.lede": "每块白板读起来都是一条推理线：左边是证据，右边是可以交付的决定，中间每张卡片都连着它的来处。",
-      "how.l1": "收集", "how.l1d": "放进人们做了什么、说了什么：访谈、评论、照片、试玩记录。Scout 会读完并标出每条证据有多可靠。",
-      "how.l2": "探索", "how.l2d": "把证据变成判断，再把判断分叉成可以验证的方向。选定一个，其余的连同理由一起保留。",
-      "how.l3": "原型", "how.l3d": "从选定的方向分出原型，用你习惯的图像、视频或代码工具。",
-      "how.l4": "定稿", "how.l4d": "冻结一个版本拿去分享。决定、理由和证据链都跟着它走。",
+      "how.lede": "每块白板读起来都是一段经得起追问的推理：左边是证据，右边是能交付的东西，中间每张卡片都连着它的来处。",
+      "how.l1": "收集", "how.l1d": "放进人们真实做了什么、说了什么：访谈、评论、照片、试玩记录。Scout 会读完，告诉你哪些是证据，哪些只是感觉。",
+      "how.l2": "探索", "how.l2d": "把证据变成判断，再把判断分叉成可以验证的方向。选定一个，落选的也留着，附上落选原因。",
+      "how.l3": "原型", "how.l3d": "从选定的方向分出原型，用你本来就在用的图像、视频或代码工具。每个原型为什么存在，Vellum 都记着。",
+      "how.l4": "定稿", "how.l4d": "冻结一个版本拿去分享。理由跟着它走，评审会上就不会有人问「当初为什么这么定」。",
       "p.title": "为想清楚而做，不为产出更多。",
-      "p.1t": "空间语境", "p.1d": "东西放在哪，本身就是含义的一部分。把卡片吸附在一起或连一条线，关系就被记下来：支持、反驳或细化。",
-      "p.2t": "集体智能", "p.2d": "AI 伙伴从各自的专业视角推理，而不是附和你。Strategist 分叉方向，Critic 提出反对，分歧就摆在白板上。",
-      "p.3t": "决策记忆", "p.3d": "每个决定都记着选了什么、为什么、依据是什么、搁置了哪些。几个月后你依然讲得清楚。",
+      "p.1t": "空间语境", "p.1d": "东西放在哪，本身就是含义的一部分。把两张卡片吸在一起或连一条线，Vellum 会记下它们的关系：支持、反驳或细化。",
+      "p.2t": "集体智能", "p.2d": "AI 伙伴从各自的专业视角推理，所以不会只顺着你说。Strategist 负责分叉，Critic 负责唱反调，分歧留在白板上，随时可用。",
+      "p.3t": "决策记忆", "p.3d": "每个决定都记着选了什么、为什么、依据是什么、放弃了哪些。半年后你依然讲得清楚，包括讲给自己听。",
       "p.4t": "持续推理", "p.4d": "新证据进来时，Vellum 会指出它影响哪些决定，是支持还是反驳。你可以重新讨论，或写下为什么依然成立。",
-      "p.5t": "人的主导", "p.5d": "AI 伙伴可以质疑你确认过的方向，但永远不会替你改掉它。它们起草的任何内容，都要你点头才会留在白板上。",
-      "p.cap": "两张卡片吸附在一起，就建立了关系。拉开它们，关系仍在，以连线显示。",
-      "crew.title": "和你一起想的伙伴，有时也会和你唱反调。",
-      "crew.lede": "四个分工不同的 AI 伙伴和你在同一块白板上工作。每张卡片都标着谁参与过，你总能知道一个想法从哪来。",
-      "crew.scout": "阅读你的资料并衡量证据：是亲眼观察、他人转述，还是只是猜测。",
+      "p.5t": "人的主导", "p.5d": "AI 伙伴可以质疑你确认过的方向，但推翻不了它。它们起草的任何东西，都要你点头才会留在白板上。",
+      "p.cap": "两张卡片吸在一起，就有了关系。拉开它们，关系还在。这条线，Vellum 替你画。",
+      "crew.title": "和你一起想的伙伴，偶尔也和你唱反调。",
+      "crew.lede": "四个分工不同的 AI 伙伴和你共用一块白板。每张卡片都标着谁参与过，好主意是谁出的一目了然，馊主意也是。",
+      "crew.scout": "阅读你的资料并给证据分类：亲眼所见、他人转述，还是某人的直觉。",
       "crew.scoutq": "这七条来源里有两条是同一篇评论，被引用了两次。",
       "crew.strat": "把一个判断分叉成真正能验证的方向，并说明每个方向押注的是什么。",
       "crew.stratq": "如果 B 是对的，测试者应该能在五秒内找到营灯。",
       "crew.wright": "把方向做成可以看的东西：页面、分镜、渲染需求、行动清单。草稿等你确认。",
       "crew.wrightq": "这是 B 的泡沫手板方案。保留还是重来？",
-      "crew.critic": "对照来源检查成果，并指出只建立在假设上的方向。",
+      "crew.critic": "对照来源检查成果。一开始会很客气。",
       "crew.criticq": "白板上没有任何证据表明露营者想要旋钮。",
       "crew.agency": "它们可以质疑你的决定，但只有你能做决定。",
       "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
       "mode.focusd": "专注：你思考时伙伴们保持安静，等你回来再同步。",
-      "mode.listend": "旁听：伙伴们跟着看，发现白板上有说不通的地方时才开口。",
-      "mode.teamd": "协作：伙伴们和你一起起草方向和原型，草稿等你确认。",
+      "mode.listend": "旁听：伙伴们跟着看，只在有地方说不通时才开口。",
+      "mode.teamd": "协作：伙伴们和你一起起草方向和原型，每份草稿都等你确认。",
       "cases.title": "从证据到原型，不管你做什么。",
       "cases.t1": "产品设计", "cases.t2": "短视频", "cases.t3": "AI 产品",
       "get.title": "为什么叫 Vellum。",
-      "get.story": "Vellum 是设计师覆在图纸上的半透明描图纸。你在上面描下一个想法，下面原来的线条依然看得见。这里的决定也是这样。",
-      "get.dl": "下载应用", "get.dld": "macOS 和 Windows 早期版本。",
+      "get.story": "Vellum 是设计师覆在图纸上的半透明描图纸。你在上面描下一个想法，下面原来的线条依然透得出来。这里的决定也一样，底下的东西一样都不扔。",
+      "get.dl": "下载应用", "get.dld": "macOS 和 Windows 早期版本。难免有毛边，哪里扎手请告诉我们。",
       "get.mac": "下载 macOS 版", "get.win": "Windows",
-      "get.dlpending": "第一个公开版本还没发布。这两个按钮会打开 GitHub 上的发布页。",
+      "get.dlpending": "第一个公开版本还没发布。目前这两个按钮会打开 GitHub 上的发布页。",
       "get.dlready": "打开最新版本。",
-      "get.wl": "加入等候名单", "get.wld": "有值得一试的新版本时我们会写信给你。不发通讯。",
+      "get.wl": "新版本通知", "get.wld": "有值得你花时间的新版本时，我们才写信。这就是全部的通讯内容。",
       "get.email": "邮箱", "get.use": "主要用来做", "get.other": "其他",
       "get.thanks": "你已在名单上。",
-      "get.thanksd": "版本准备好后，我们会发邮件到 {email}。",
-      "get.thankspreview": "这是预览版，{email} 没有被发送到任何地方。接入等候名单服务后才会真正登记。",
-      "get.bademail": "请输入邮箱地址，例如 name@example.com。",
+      "get.thanksd": "有值得一试的版本时，我们会发邮件到 {email}。",
+      "get.thankspreview": "这是预览版，{email} 哪儿也没去。接入等候名单服务后才会真正登记。",
+      "get.bademail": "这看起来不像邮箱地址。试试 name@example.com 这样的格式。",
       "get.fail": "提交没有成功。请检查网络后再试一次。",
       "get.placeholder": "预览：报名信息暂不会发送到任何地方。",
       "foot.tag": "人类与 AI 共同思考的空间。"
@@ -151,14 +151,14 @@
     en: {
       steps: ["Evidence", "Judgment", "Directions", "Decision", "New evidence"],
       captions: [
-        "Start with what you know. Field notes, reviews and quotes go on the board as evidence.",
-        "Say what it means. A judgment rests on the evidence under it, and you can see exactly which.",
-        "The Strategist forks it into directions you can test. The Critic pushes back on one.",
-        "You choose B. The directions you set aside stay readable, each with its reason.",
-        "New evidence counters B. Vellum flags it on the decision. Reopen the choice, or say why it still holds."
+        "Start with what you know. Field notes, reviews and quotes go on the board as evidence. Opinions can wait their turn.",
+        "Say what it means. A judgment rests on the evidence under it, and you can see exactly which pieces.",
+        "The Strategist forks it into directions you can test. The Critic has notes.",
+        "You choose B. The others are set aside, not deleted, each with the reason it lost.",
+        "New evidence counters B. Vellum flags the decision instead of hoping you won't notice. Reopen it, or say why it still holds."
       ],
       reopened: "Reopened. Nothing was lost: A and C still carry the reasons you set them aside, and B keeps its history.",
-      held: "Still holds. Your reason is saved next to the counter-evidence, so the next person sees both.",
+      held: "Still holds. Your reason sits next to the counter-evidence, so the next person sees both sides.",
       cards: {
         e1: { k: "Observed", t: "Field notes", b: "8 of 10 campers hung the lantern from the tent loop.", by: "You" },
         e2: { k: "Reported", t: "Reviews", b: "“Blinding at arm's length.” 41 mentions.", by: "Scout" },
@@ -167,7 +167,7 @@
         dA: { k: "Direction", t: "Shade dial", b: "Twist a hood to dim it.", by: "Strategist" },
         dB: { k: "Direction", t: "Hook-first, warm low glow", b: "Hook on top, 2200K glow at 40 lumens.", by: "Strategist" },
         dC: { k: "Direction", t: "Glow-ring locator", b: "A faint ring so you can find it at night.", by: "Strategist" },
-        st: { k: "Critic", b: "A dial is hard to turn in gloves, and nothing here says people want one." },
+        st: { k: "Critic", b: "A dial is hard to turn in gloves. Also, nobody here asked for one." },
         n1: { k: "Observed · new", t: "Field test", b: "The hook slips on thin guylines.", by: "You" }
       },
       adopted: "<strong>Adopted by you.</strong> Why: it fits how 8 of 10 campers actually hang it.",
@@ -183,11 +183,11 @@
     zh: {
       steps: ["证据", "判断", "方向", "决定", "新证据"],
       captions: [
-        "从你知道的开始。实地记录、用户评论和访谈原话，都作为证据放上白板。",
+        "从你知道的开始。实地记录、用户评论和访谈原话，作为证据放上白板。观点请稍后排队。",
         "说出它意味着什么。判断建立在下面的证据上，具体是哪几条一目了然。",
-        "Strategist 把判断分叉成可验证的方向，Critic 对其中一个提出反对。",
-        "你选了 B。被搁置的方向依然清晰可读，每个都附着理由。",
-        "新证据反驳了 B，Vellum 在决定上标了出来。你可以重新讨论，或写下为什么依然成立。"
+        "Strategist 把判断分叉成可验证的方向。Critic 有话要说。",
+        "你选了 B。其余方向是搁置，不是删除，每个都写着落选原因。",
+        "新证据反驳了 B。Vellum 会在决定上标出来，而不是指望你没注意到。重新讨论，或写下为什么依然成立。"
       ],
       reopened: "已重新讨论。什么都没丢：A 和 C 还带着当初被搁置的理由，B 也保留着它的历史。",
       held: "依然成立。你的理由和反驳证据保存在一起，下一个人能同时看到两者。",
@@ -199,7 +199,7 @@
         dA: { k: "方向", t: "遮光旋钮", b: "转动灯罩来调暗。", by: "Strategist" },
         dB: { k: "方向", t: "挂钩优先，暖色低光", b: "顶部挂钩，2200K 暖光，40 流明。", by: "Strategist" },
         dC: { k: "方向", t: "夜光定位环", b: "一圈微光，夜里也能找到它。", by: "Strategist" },
-        st: { k: "Critic", b: "戴手套很难拧旋钮，而且这里没有证据表明有人想要旋钮。" },
+        st: { k: "Critic", b: "戴手套很难拧旋钮。另外，这里也没人说想要旋钮。" },
         n1: { k: "观察 · 新", t: "实地测试", b: "挂钩在细的防风绳上会滑脱。", by: "你" }
       },
       adopted: "<strong>由你采纳。</strong>理由：它符合 10 位露营者中 8 位的真实挂法。",
@@ -217,8 +217,8 @@
   var CASES = {
     en: {
       product: {
-        lede: "From field notes to a hardware or app concept. Interviews, teardown photos and usability notes become directions you can sketch, render and put in someone's hands.",
-        also: "Works for physical products and digital ones, and the launch content that goes with them.",
+        lede: "From field notes to a hardware or app concept. Interviews, teardown photos and usability notes become directions you can sketch, render and hand to a real person.",
+        also: "Physical products, digital ones, and the launch content that follows them around.",
         trail: [
           ["Evidence", "8 of 10 campers hang the lantern", "Field notes and 41 reviews", ""],
           ["Judgment", "It's used up close, after dark", "Rests on 3 sources", "ink"],
@@ -228,8 +228,8 @@
         ]
       },
       video: {
-        lede: "A 10 to 20 second piece, from concept to cut. Audience notes and references become a hook worth testing, shots come from the video models you already use, and the cut you keep has a reason.",
-        also: "Vellum orchestrates the generators. It doesn't try to replace them.",
+        lede: "A 10 to 20 second piece, from concept to cut. Audience notes and references become a hook worth testing, shots come from the video models you already use, and the cut you keep has a better reason than \u201cit felt right.\u201d",
+        also: "Vellum directs the generators. It doesn't try to out-generate them.",
         trail: [
           ["Evidence", "Comments say the intro drags", "Retention drops at second 3", ""],
           ["Judgment", "People need the payoff first", "Rests on analytics and 60 comments", "ink"],
@@ -253,7 +253,7 @@
     zh: {
       product: {
         lede: "从实地记录到硬件或 App 概念。访谈、拆解照片和可用性记录，变成可以画草图、做渲染、交到用户手里的方向。",
-        also: "实体产品和数字产品都适用，配套的发布内容也一样。",
+        also: "实体产品、数字产品，以及跟着它们一起上线的内容。",
         trail: [
           ["证据", "10 位露营者中 8 位会把营灯挂起来", "实地记录和 41 条评论", ""],
           ["判断", "它是近距离、天黑后使用的", "依据 3 条来源", "ink"],
@@ -263,8 +263,8 @@
         ]
       },
       video: {
-        lede: "10 到 20 秒的作品，从概念到成片。观众反馈和参考素材变成值得验证的开头，镜头来自你已经在用的视频模型，最终留下的剪辑有它的理由。",
-        also: "Vellum 负责编排生成模型，而不是取代它们。",
+        lede: "10 到 20 秒的作品，从概念到成片。观众反馈和参考素材变成值得验证的开头，镜头来自你已经在用的视频模型，最终留下的剪辑，理由比「感觉对了」更站得住。",
+        also: "Vellum 负责调度生成模型，不跟它们比谁生成得多。",
         trail: [
           ["证据", "评论说开头太拖", "第 3 秒留存明显下降", ""],
           ["判断", "观众要先看到结果", "依据数据和 60 条评论", "ink"],
@@ -379,7 +379,8 @@
         if (id === "j1" || id[0] === "d") c.classList.add("ink");
         if (id === "st") c.classList.add("sticky");
         c.dataset.id = id;
-        c.innerHTML = '<div class="k"><i></i><span class="kk"></span></div>' +
+        var KI = { e1: "eye", e2: "msg", e3: "quote", j1: "judge", dA: "fork", dB: "fork", dC: "fork", st: "critic", n1: "eye" }[id];
+        c.innerHTML = '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI + '"/></svg><span class="kk"></span></div>' +
           (id === "st" ? "" : '<div class="t"></div>') + '<div class="b"></div>' +
           (id === "st" ? "" : '<div class="by"></div>') +
           (id[0] === "d" ? '<div class="note"></div><span class="back-chip"></span>' : "") +
@@ -392,7 +393,7 @@
       cards.dB.querySelector(".holds").addEventListener("click", function (e) { e.stopPropagation(); resolve("holds"); });
       L().steps.forEach(function (_, i) {
         var li = document.createElement("li");
-        li.innerHTML = '<button type="button"><span class="n">' + (i + 1) + '</span><span class="lbl"></span></button>';
+        li.innerHTML = '<button type="button"><svg class="ic" aria-hidden="true"><use href="#i-' + ["eye", "judge", "fork", "decide", "retry"][i] + '"/></svg><span class="lbl"></span></button>';
         li.firstChild.addEventListener("click", function () { stop(); played = true; resolved = null; go(i, true); });
         stepsEl.appendChild(li);
       });
@@ -524,7 +525,7 @@
     function drawLoop(animate) {
       var want = step >= 3 && resolved !== "reopen";
       if (!want) { if (loop) { loop.remove(); loop = null; } return; }
-      var b = box("dB"), cx = b.x + b.w / 2, cy = b.y + b.h / 2, rx = b.w / 2 + 17, ry = b.h / 2 + 17;
+      var b = box("dB"), cx = b.x + b.w / 2, cy = b.y + b.h / 2, m = mode === "narrow" ? 9 : 17, rx = b.w / 2 + m, ry = b.h / 2 + m;
       var pts = [], N = 64;
       for (var i = 0; i <= N + 7; i++) {
         var a = -2.2 + (i / N) * Math.PI * 2;

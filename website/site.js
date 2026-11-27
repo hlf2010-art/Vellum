@@ -3,15 +3,16 @@
   "use strict";
 
   // ---- Go-live settings -------------------------------------------------------------------
-  // Fill these in to make Download and the waitlist real. Until a build is live, everyone joins the waitlist;
-  // without an endpoint, a sign-up only tells the visitor that this is a preview.
+  // Fill these in to make Download real. Until a build is live, everyone joins the waitlist. Sign-ups go to
+  // functions/api/waitlist.js on Cloudflare Pages; anywhere that can't take them (a local preview, or Pages with
+  // no KV bound yet), Join says sign-ups aren't open and sends nothing. It never claims a sign-up it didn't make.
   var CONFIG = {
     downloads: {
       mac: "",   // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-mac.dmg"
       win: ""    // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-Setup.exe"
     },
     demo: "",            // The in-browser demo, built from the repo. Until it's set, the Try the demo button stays hidden.
-    waitlistEndpoint: "" // One POST {email, os, use, lang} as JSON (Formspree, Buttondown, a Worker…); os is "mac" or "win".
+    waitlistEndpoint: "/api/waitlist" // One POST {email, os, use, lang} as JSON; os is "mac" or "win". 404/405/501/503 = not open yet.
   };
 
   var root = document.documentElement;
@@ -93,7 +94,7 @@
       "cta.waitlist": "Join the waitlist", "cta.demo": "Try the demo", "get.dlfor": "Download for {os}",
       "get.thanks": "You're on the list.", "get.thanksos": "You're on the list for {os}.",
       "get.thanksd": "We'll write to {email} when it's ready.",
-      "get.thankspreview": "This preview doesn't send sign-ups yet, so {email} stayed right here.",
+      "get.closed": "Sign-ups open soon. Nothing was sent this time.",
       "get.bademail": "That doesn't look like an email address.",
       "get.fail": "That didn't go through. Try again in a moment.",
       "board.label": "A Vellum board deciding how an AI video-editing agent should work",
@@ -152,7 +153,7 @@
       "cta.waitlist": "加入等候名单", "cta.demo": "在线试玩", "get.dlfor": "下载 {os} 版",
       "get.thanks": "已加入名单。", "get.thanksos": "已加入 {os} 名单。",
       "get.thanksd": "准备好后，我们会写信到 {email}。",
-      "get.thankspreview": "这是预览版，报名还没有接通，{email} 没有被发送出去。",
+      "get.closed": "报名即将开放，这次什么都没有发送。",
       "get.bademail": "这看起来不像邮箱地址。",
       "get.fail": "没有提交成功，请稍后再试。",
       "board.label": "Vellum 白板演示：决定一个 AI 剪辑 agent 该怎么工作",
@@ -1586,7 +1587,8 @@
     $("emailHint").textContent = need === "get.bademail" || need === "get.needemail" ? t(need) : "";
     $("osHint").textContent = need === "get.needos" ? t(need) : "";
     $("useHint").textContent = need === "get.needuse" ? t(need) : "";
-    moreMsg.textContent = need === "get.fail" ? t(need) : "";
+    moreMsg.textContent = need === "get.fail" || need === "get.closed" ? t(need) : "";
+    moreMsg.classList.toggle("info", need === "get.closed");
   }
   function setNeed(key) {
     need = key;
@@ -1597,7 +1599,7 @@
   }
   function post(data) {
     return fetch(CONFIG.waitlistEndpoint, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(data) })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); });
+      .then(function (r) { if (!r.ok) throw new Error(r.status === 404 || r.status === 405 || r.status === 501 || r.status === 503 ? "closed" : r.status); });
   }
   var osBtns = Array.prototype.slice.call(dlg.querySelectorAll(".pick"));
   osBtns.forEach(function (b, i) {
@@ -1624,11 +1626,11 @@
     if (!use) { setNeed("get.needuse"); useText.focus(); return; }
     setNeed("");
     function joined(note) { sent = { os: pick.os, email: v, note: note }; dlg.close("join"); form.classList.add("sent"); renderPicks(); }
-    if (!CONFIG.waitlistEndpoint) { joined("get.thankspreview"); return; }
+    if (!CONFIG.waitlistEndpoint) { setNeed("get.closed"); return; }
     joinBtn.disabled = true;
     post({ email: v, os: pick.os, use: use, lang: lang })
       .then(function () { joined("get.thanksd"); })
-      .catch(function () { setNeed("get.fail"); })
+      .catch(function (err) { setNeed(err && err.message === "closed" ? "get.closed" : "get.fail"); })
       .then(function () { joinBtn.disabled = false; });
   });
   dlg.addEventListener("close", function () { if (!sent) setNeed(""); });

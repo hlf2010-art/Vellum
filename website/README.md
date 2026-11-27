@@ -11,6 +11,8 @@ website/
   fonts/         Bricolage Grotesque (display) and Inter (body), both OFL, self-hosted
   assets/        the logo
   lab/           parked pieces kept for later polish, not linked from the page
+  functions/     api/waitlist.js, the waitlist endpoint as a Cloudflare Pages Function
+  _headers       security and cache headers for Cloudflare Pages
 ```
 
 Preview locally: `cd website && python3 -m http.server 8080`, then open http://localhost:8080 (add `?lang=zh` for Chinese).
@@ -20,9 +22,9 @@ Preview locally: `cd website && python3 -m http.server 8080`, then open http://l
 Everything that isn't real yet lives in `CONFIG` at the top of `site.js`.
 
 1. **Downloads.** Publish a GitHub release with a macOS build and a Windows build, then set `CONFIG.downloads.mac` and `.win` to the asset URLs (`releases/latest/download/<file>` always points at the newest release). Until then everyone joins the waitlist. Once a build is live for the visitor's system (guessed from the browser), the button becomes "Download for macOS" (or Windows); a visitor whose build isn't out yet still gets the waitlist button.
-2. **Waitlist.** Point `CONFIG.waitlistEndpoint` at anything that accepts a JSON POST, such as Formspree, Buttondown, Loops, or a small Cloudflare Worker. "Join the waitlist" (the section's one button) opens a small dialog that asks for an email, the preferred system (macOS or Windows, preselected from the browser on a computer) and, in their own words, what it's for. All three are required; joining sends one POST of `{email, os, use, lang}`. Back, Esc or a click outside closes the dialog without joining. Until the endpoint is set, a sign-up tells the visitor it's a preview and sends nothing.
+2. **Waitlist.** "Join the waitlist" (the section's one button) opens a small dialog that asks for an email, the preferred system (macOS or Windows, preselected from the browser on a computer) and, in their own words, what it's for. All three are required; joining sends one POST of `{email, os, use, lang}` to `CONFIG.waitlistEndpoint` (`/api/waitlist`). On Cloudflare Pages that's `functions/api/waitlist.js`, which saves each sign-up in the `WAITLIST` KV namespace, one key per email (joining twice keeps the first date). Wherever nothing can take the sign-up (a local preview, or Pages before the KV is bound) the server answers 404/405/501/503 and the dialog says sign-ups open soon and that nothing was sent. It never shows "You're on the list" unless the sign-up was saved. To download the list, set an `ADMIN_TOKEN` secret and run `curl -H "Authorization: Bearer $ADMIN_TOKEN" https://<site>/api/waitlist -o waitlist.csv`, or browse the KV namespace in the Cloudflare dashboard.
 3. **Demo.** Once the in-browser demo is deployed (built from this repo, so it updates with `main`), set `CONFIG.demo` to its URL. A "Try the demo" button then appears to the left of "Join the waitlist". Never link an unsigned download here: the system security warning is the wrong first impression.
-4. **Hosting.** Any static host works: GitHub Pages (serve `/website`), Cloudflare Pages or Vercel. Fonts and assets are self-hosted, so the page doesn't depend on Google Fonts and loads in mainland China.
+4. **Hosting (Cloudflare Pages).** Workers & Pages → Create → Pages → Connect to Git → this repo. Production branch `main`, framework preset None, build command empty, build output directory `.`, root directory `website`. Then Storage & Databases → KV → create `vellum-waitlist`; in the Pages project, Settings → Bindings → add KV namespace, variable name `WAITLIST`, pointing at it; optionally Settings → Variables and Secrets → add secret `ADMIN_TOKEN`. Redeploy once so the binding applies. Every merge to `main` publishes. Fonts and assets are self-hosted, so the page doesn't depend on Google Fonts. Any other static host serves the page too, but the waitlist then needs its own endpoint.
 5. **Domain and sharing.** Add the domain, then an `og:image` (a 1200×630 crop of the board) and a canonical URL in `<head>`.
 
 ## Design rules

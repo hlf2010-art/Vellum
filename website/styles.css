@@ -934,6 +934,7 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .macts { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; }
 .mmsg { display: block; margin: -2px 0 0; font-size: 13.5px; line-height: 1.35; color: var(--danger-ink); }
 .mmsg:empty { display: none; }
+.mmsg.info { color: var(--label-2); }
 .macts .btn { height: 42px; padding: 0 18px; }
 @media (prefers-reduced-motion: reduce) { .more[open], .more::backdrop { animation: none; } }
 

@@ -44,7 +44,7 @@
       "skip": "Skip to content",
       "nav.why": "Why Vellum", "nav.how": "How it works", "nav.crew": "The crew",
       "cta.get": "Get Vellum",
-      "hero.title": "Big decisions deserve more than a chat box.", "hero.t1": "Big decisions deserve more than ", "hero.kw": "a chat box", "hero.t2": ".",
+      "hero.title": "Your best thinking deserves more than a chat box.", "hero.t1": "Your best thinking deserves more than ", "hero.kw": "a chat box", "hero.t2": ".",
       "hero.lede": "Put the whole problem on one board. Let an AI crew argue it out. Every choice keeps its reasons.",
       "board.hint": "Drag any card", "board.replay": "Play again",
       "why.t1": "Most AI canvases help you make more.", "why.t2": "Vellum helps you think it through.",
@@ -88,13 +88,13 @@
       "get.fail": "That didn't go through. Try again in a moment.",
       "board.label": "A Vellum board deciding how a camping lantern should work",
       "lang.label": "Language", "theme.switch": "Switch theme", "steps.label": "Demo steps", "cases.label": "Use cases",
-      "title": "Vellum: big decisions deserve more than a chat box"
+      "title": "Vellum: your best thinking deserves more than a chat box"
     },
     zh: {
       "skip": "跳到正文",
       "nav.why": "为什么是 Vellum", "nav.how": "怎么用", "nav.crew": "AI 伙伴",
       "cta.get": "获取 Vellum",
-      "hero.title": "重要的决定，不该困在一个聊天框里。", "hero.t1": "重要的决定，不该困在一个", "hero.kw": "聊天框", "hero.t2": "里。",
+      "hero.title": "你的好想法，不该困在一个聊天框里。", "hero.t1": "你的好想法，不该困在一个", "hero.kw": "聊天框", "hero.t2": "里。",
       "hero.lede": "把整个问题摊在一张白板上，让 AI 团队把它辩清楚。每个选择，都留着理由。",
       "board.hint": "卡片可以拖动", "board.replay": "再看一遍",
       "why.t1": "多数 AI\u00a0画布\u200b帮你做得更多。", "why.t2": "Vellum\u00a0帮你\u200b想得更清楚。",
@@ -138,7 +138,7 @@
       "get.fail": "没有提交成功，请稍后再试。",
       "board.label": "Vellum 白板演示：决定一盏露营灯该怎么设计",
       "lang.label": "语言 Language", "theme.switch": "切换深浅色", "steps.label": "演示步骤", "cases.label": "使用场景",
-      "title": "Vellum：重要的决定，不该困在聊天框里"
+      "title": "Vellum：你的好想法，不该困在聊天框里"
     }
   };
 

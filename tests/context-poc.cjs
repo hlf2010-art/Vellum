@@ -55,6 +55,7 @@ function serve() {
             rsp.writeHead(200, { 'Content-Type': 'application/json' }); return rsp.end(out);
           }
           if (embed.mode === 'fail') { rsp.writeHead(503); return rsp.end(); }
+          if (embed.mode === 'credits') { rsp.writeHead(402, { 'Content-Type': 'application/json' }); return rsp.end(JSON.stringify({ error: { code: 402, message: 'Insufficient credits' } })); }
           rsp.writeHead(200, { 'Content-Type': 'application/json' });
           return rsp.end(JSON.stringify({ data: input.map((t, i) => ({ index: i, embedding: fakeVec(t) })) }));
         });
@@ -73,6 +74,7 @@ function serve() {
             const i = queue.findIndex(e => new RegExp(e.match, 's').test(flat));
             const hit = i >= 0 ? queue.splice(i, 1)[0] : null;
             if (hit && !hit.status) { txt = typeof hit.text === 'string' ? hit.text : JSON.stringify(hit.text); matched = hit.id; finish = hit.finish || ''; }
+            if (hit && hit.status) { requests.push({ matched: hit.id, full: flat, reply: null, max: parsed.max_tokens, status: hit.status }); rsp.writeHead(hit.status, { 'Content-Type': 'application/json' }); return rsp.end(JSON.stringify({ error: { code: hit.status, message: hit.status === 402 ? 'Insufficient credits' : 'error' } })); }
           }
           requests.push({ matched, full: flat, reply: txt, max: parsed.max_tokens });
           if (txt == null) { rsp.writeHead(503); return rsp.end(); }
@@ -141,7 +143,7 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
   let ids;
   try {
     const { p, ctx } = await openPage(browser, base);
-    await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(800);
+    await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(800);
     await p.evaluate(() => { setCrew({ speak: 'never', act: 'drafts' }); }); // no unasked looks while the fixture is built
     ids = await buildFixture(p);
     const name = Object.fromEntries(Object.entries(ids).map(([k, v]) => [v, k]));
@@ -358,7 +360,7 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
     /* ── P0: visible fallbacks, held-back repeats you can see, the remaining rejection signals (fresh board) ── */
     {
       const { p: q, ctx: c2 } = await openPage(browser, base);
-      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.waitForTimeout(800);
+      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.click('[data-tpl="blank"]'); await q.click('[data-tpl-go]'); await q.waitForTimeout(800);
       await q.evaluate(() => setCrew({ speak: 'never', act: 'drafts' }));
       const I = await buildFixture(q);
       const ADV = 'Include 1 or at most 2 pins';
@@ -463,7 +465,7 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
     /* ── M: meaning (embeddings) as a recall layer — fresh board, scripted vectors ── */
     {
       const { p: q, ctx: c3 } = await openPage(browser, base);
-      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.waitForTimeout(800);
+      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.click('[data-tpl="blank"]'); await q.click('[data-tpl-go]'); await q.waitForTimeout(800);
       await q.evaluate(() => { setCrew({ speak: 'never', act: 'drafts' }); apiCfg.embedModel = 'poc-embed'; ctxVec.clear(); ctxEmbedFailSig = null; });
       embed.mode = 'ok';
       const I = await buildFixture(q);
@@ -513,6 +515,78 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
       check('M', 'with no embedding model for the endpoint, nothing is fetched', await q.evaluate(() => embedModel() === ''));
       check('M', 'no page errors', q.errors.length === 0, q.errors.join(' | '));
       await c3.close();
+    }
+    /* ── F: when the model can't be reached (no credits, no key) everything still works, and says why ── */
+    {
+      const ADV = 'Include 1 or at most 2 pins';
+      const fresh = async () => {
+        const o = await openPage(browser, base);
+        await o.p.click('#projectBtn'); await o.p.waitForTimeout(300); await o.p.getByText('New board', { exact: true }).click(); await o.p.click('[data-tpl="blank"]'); await o.p.click('[data-tpl-go]'); await o.p.waitForTimeout(800);
+        await o.p.evaluate(() => { setCrew({ speak: 'never', act: 'drafts' }); apiCfg.embedModel = 'poc-embed'; ctxVec.clear(); ctxEmbedFailSig = null; });
+        return { ...o, I: await buildFixture(o.p) };
+      };
+      const look = (q, t) => q.evaluate(t => { board.pins = {}; return runAdvisorOnNode(t, { force: true }); }, t).then(() => q.idle()).then(() => q.evaluate(t => (board.pins[t] || [])[0] || null, t));
+      const chatCalls = id => requests.filter(r => r.matched === id).length;
+
+      // 1. the Cloud API answers 402 (an account with no credits)
+      {
+        const { p: q, ctx: c, I } = await fresh();
+        const e0 = embed.calls.length, r0 = requests.length;
+        queue = [{ id: 'nocredit', match: ADV, status: 402 }, { id: 'nocredit-b', match: ADV, status: 402 }];
+        let pin = await look(q, I.T);
+        check('F', 'a 402 on the thought: a thought still arrives, from built-in rules', pin && pin.engine === 'rules' && !!pin.note, JSON.stringify(pin));
+        check('F', '…and it keeps the reason: "out of credits"', /out of credits/i.test(pin?.engineWhy || ''), pin?.engineWhy);
+        await q.evaluate(t => { closeAdvPop(); toggleAdvPop(t); }, I.T); await q.waitForTimeout(250);
+        const tag = await q.evaluate(() => { const e = document.querySelector('#advPop .adv-eng'); return e ? e.innerText + ' | ' + e.title : ''; });
+        check('F', 'the thought shows the "built-in rules" tag, and its tooltip says the Cloud API is out of credits', /built-in rules/.test(tag) && /out of credits \(HTTP 402\)/.test(tag), tag);
+        await q.evaluate(() => closeAdvPop());
+        check('F', 'a 402 is not retried like a cut-off reply (one chat request)', chatCalls('nocredit') === 1, `${chatCalls('nocredit')} calls`);
+        check('F', 'the connection is marked out of credits', await q.evaluate(() => apiHealthNow().k === 'credits' && !apiRoutable()));
+        pin = await look(q, I.T);
+        check('F', 'after that, later looks send nothing to the Cloud API (no chat, no embeddings)', chatCalls('nocredit-b') === 0 && embed.calls.length - e0 <= 1, `chat ${chatCalls('nocredit-b')}, embeddings ${embed.calls.length - e0}`);
+        check('F', '…and still say why the thought came from built-in rules', pin && pin.engine === 'rules' && /out of credits/i.test(pin.engineWhy || ''), JSON.stringify(pin && pin.engineWhy));
+        await q.evaluate(() => document.querySelectorAll('#toasts > *').forEach(t => t.remove()));
+        queue = [];
+        await q.evaluate(t => fork(byId(t), 2), I.T); await q.idle();
+        const dirs = await q.evaluate(() => board.nodes.filter(n => n.type === 'direction' && n.status === 'sketch').length);
+        check('F', 'Strategist still forks (built-in rules), and the toast says the Cloud API is out of credits', dirs === 2 && /out of credits/i.test(await q.toast()) && /built-in rules/.test(await q.toast()), `${dirs} drafts; ${await q.toast()}`);
+        await q.evaluate(t => openFocus(t), I.T); await q.waitForTimeout(400);
+        check('F', 'the card sheet still opens with its Related section from links and topic', await q.evaluate(() => !!document.querySelector('#margin .m-related .src-row')));
+        await q.evaluate(() => closeFocus?.());
+        check('F', 'no page errors', q.errors.length === 0, q.errors.join(' | '));
+        await c.close();
+      }
+
+      // 1b. the embeddings endpoint is the first to answer 402: one call, then the look runs on links and topic, and says why
+      {
+        const { p: q, ctx: c, I } = await fresh();
+        embed.mode = 'credits';
+        const e0 = embed.calls.length;
+        queue = [{ id: 'emb-credit', match: ADV, status: 402 }];
+        const pin = await look(q, I.T);
+        check('F', 'embeddings that answer 402 are tried once, and the connection is marked out of credits', embed.calls.length - e0 === 1 && await q.evaluate(() => apiHealthNow().k === 'credits'), `${embed.calls.length - e0} calls`);
+        check('F', '…so the chat call is not made, and the thought from built-in rules says why', chatCalls('emb-credit') === 0 && pin && pin.engine === 'rules' && /out of credits/i.test(pin.engineWhy || ''), JSON.stringify({ chat: chatCalls('emb-credit'), why: pin && pin.engineWhy }));
+        check('F', 'no page errors', q.errors.length === 0, q.errors.join(' | '));
+        embed.mode = 'ok'; queue = [];
+        await c.close();
+      }
+
+      // 2. no key at all: nothing is sent anywhere, and the crew works on built-in rules
+      {
+        const { p: q, ctx: c, I } = await fresh();
+        await q.evaluate(() => { apiCfg.key = ''; });
+        const e0 = embed.calls.length, r0 = requests.length;
+        queue = [{ id: 'nokey', match: ADV, text: { keywords: ['k'], thoughts: ['a', 'b', 'c'], basis: [], pins: [{ agent: 'critic', note: 'should never be asked' }] } }];
+        const pin = await look(q, I.T);
+        check('F', 'with no key, a thought still arrives from built-in rules', pin && pin.engine === 'rules' && !!pin.note, JSON.stringify(pin));
+        check('F', '…and no request leaves the page (no chat, no embeddings)', requests.length === r0 && embed.calls.length === e0, `chat ${requests.length - r0}, embeddings ${embed.calls.length - e0}`);
+        await q.evaluate(t => fork(byId(t), 2), I.T); await q.idle();
+        check('F', 'with no key, Strategist forks from built-in rules', await q.evaluate(() => board.nodes.filter(n => n.type === 'direction' && n.status === 'sketch').length === 2));
+        check('F', 'decision memory still works without a model: discarding a draft records it', await q.evaluate(async () => { const d = board.nodes.find(n => n.type === 'direction' && n.status === 'sketch'); await erase([d.id], { reason: 'not now' }); await new Promise(r => setTimeout(r, 450)); return (board.declined || []).some(x => x.kind === 'draft' && x.ref === d.id && x.reason === 'not now'); }));
+        check('F', 'no page errors', q.errors.length === 0, q.errors.join(' | '));
+        queue = [];
+        await c.close();
+      }
     }
   } finally {
     await browser.close(); srv.close();

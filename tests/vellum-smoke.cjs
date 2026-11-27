@@ -131,7 +131,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
   p.type = async (t, enter = true) => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); if (enter) await p.keyboard.press('Enter'); };
   p.idle = async () => { await p.waitForTimeout(400); for (let i = 0; i < 100 && await p.evaluate(() => crewBusy()); i++) await p.waitForTimeout(250); await p.waitForTimeout(500); };
   p.toast = () => p.evaluate(() => [...document.querySelectorAll('#toasts > *')].map(t => t.innerText.replace(/\s+/g, ' ')).join(' / '));
-  p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(800); };
+  p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(800); };
   return p;
 }
 
@@ -863,7 +863,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
     {
       const p = await page(browser, base);
       await p.newBoard();
-      await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; });
+      await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; IDLE_NEED.matters = 200; IDLE_NEED.often = 200; });
       const advReqs = () => requests.filter(r => r.full && /Include 1 or at most 2 pins/.test(r.full));
       const add = async list => { for (const t of list) { await p.evaluate(() => select([])); await p.type('note: ' + t); await p.waitForTimeout(120); } await p.waitForTimeout(1400); await p.idle(); };
       check('defaults: speaks up when it matters, acts only with drafts', await p.evaluate(() => crewSpeak === 'matters' && crewAct === 'drafts' && perm('create') === 'suggest' && perm('edit') === 'suggest' && perm('delete') === 'suggest' && advisorMode && !advisorAuto));
@@ -900,48 +900,50 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('the two axes are independent: silent but can create', await p.evaluate(() => !advisorMode && perm('create') === 'direct' && perm('delete') === 'suggest'));
       // the crew entry and popover
       await p.evaluate(() => { setCrew({ speak: 'matters', act: 'drafts' }); board.pins = {}; advHeld = 0; renderCrew(); });
-      check('the crew settings button belongs to the crew group', await p.evaluate(() => !!document.querySelector('.crew-group .crew-seats') && !!document.querySelector('.crew-group #crewSetBtn')));
-      check('it shows connection health as a dot', await p.evaluate(() => document.querySelector('#crewSetBtn .conn-dot')?.classList.contains('ok')));
-      check('its label names both settings', /When it matters/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))) && /Only drafts/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))));
+      check('the crew, the model and settings are one entry in the top bar (no separate seats, chip or gear)', await p.evaluate(() => $('crew').children.length === 1 && !!$('crew').querySelector('#crewSetBtn') && $('settingsBtn').hidden && !document.querySelector('#crew .seat') && !!document.querySelector('#crewPop #crewModeBtn') && document.querySelectorAll('#crewPop .seat[data-agent]').length === 4 && !!document.querySelector('#crewPop [data-crew-settings]')));
+      check('connection health shows once: with a working model the entry has no words, the model row inside names it', await p.evaluate(() => !document.querySelector('#crewSetBtn .conn-dot') && !document.querySelector('#crewSetBtn .hub-l') && document.querySelector('#crewModeBtn small').textContent.trim() === apiModelName()), await p.evaluate(() => document.getElementById('crewModeBtn').outerHTML.slice(0, 200)));
+      check('its label names what the crew may do, not the participation level (that is the top-bar switch)', !/Listening|Joins in/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))) && /Only drafts/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))));
       const pinCard = await p.evaluate(() => { const id = board.nodes.find(n => n.type === 'note').id; board.pins = { [id]: [{ id: 'pin-show', agent: 'critic', note: 'Read me', t: NOW(), seen: false }] }; renderAll(); renderCrew(); return id; });
-      check('the avatars show the crew is waiting for you', await p.evaluate(() => { const g = document.querySelector('.crew-group'); return g.classList.contains('quiet-pacing') && /read the last thought/.test(g.title); }));
+      check('the entry shows the crew is waiting for you', await p.evaluate(() => { const g = $('crewSetBtn'); return g.classList.contains('quiet-pacing') && /read the last thought/.test(g.title); }));
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
       const segs = await p.evaluate(() => ['speak', 'act'].map(a => [...document.querySelectorAll(`#crewPop [data-crew-${a}]`)].map(b => b.dataset['crew' + a[0].toUpperCase() + a.slice(1)] + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(',')).join(' | '));
-      check('the popover has two segmented axes', segs === 'never,matters*,often | drafts*,create' && await p.evaluate(() => document.querySelectorAll('#crewPop .sp-seg').length === 2), segs);
+      check('the popover has one segmented axis (acts on the board); participation lives only in the top-bar switch', segs === ' | drafts*,create' && await p.evaluate(() => document.querySelectorAll('#crewPop .sp-seg').length === 1 && !/Focus|Listening|Teamwork/.test($('crewPop').innerText)), segs);
       check('no Copilot shortcut in the popover', await p.evaluate(() => !document.querySelector('#crewPop [data-crew-copilot]')));
       await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
       check('lanes can be locked from the popover', await p.evaluate(() => lockedBays().includes(1) && document.querySelector('#crewPop [data-crew-lock="1"]').getAttribute('aria-pressed') === 'true'));
       await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
       check('Crew popover: title only unless the crew is held back, the waiting thought comes first, lock icons only on locked lanes', await p.evaluate(() => { const pop = document.getElementById('crewPop'); const kids = [...pop.children]; const locks = [...pop.querySelectorAll('.crew-lock')]; return pop.querySelector('.cp-pop-head').textContent.trim() === 'Crew' && kids[1]?.classList.contains('crew-wait') && locks.every(b => !!b.querySelector('.ico') === (b.getAttribute('aria-pressed') === 'true')) && !!pop.querySelector('.crew-axis-h [data-crew-custom]'); }));
       await p.click('#crewPop [data-crew-show]'); await p.waitForTimeout(500);
-      check('Show opens the waiting thought and marks it read', await p.evaluate(id => openAdvNodeId === id && board.pins[id][0].seen === true && !document.querySelector('.crew-group').classList.contains('quiet-pacing'), pinCard));
+      check('Show opens the waiting thought and marks it read', await p.evaluate(id => openAdvNodeId === id && board.pins[id][0].seen === true && !$('crewSetBtn').classList.contains('quiet-pacing'), pinCard));
       await p.evaluate(() => closeAdvPop());
+      await p.click('#partSw [data-part="often"]'); await p.waitForTimeout(200);
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
-      await p.click('#crewPop [data-crew-speak="often"]'); await p.waitForTimeout(200);
       await p.click('#crewPop [data-crew-act="create"]'); await p.waitForTimeout(200);
-      check('choosing on each axis takes effect and is remembered', await p.evaluate(() => crewSpeak === 'often' && crewAct === 'create' && store.get('.crewSpeak') === 'often' && store.get('.crewAct') === 'create' && perm('create') === 'direct' && /Often/.test(document.getElementById('crewSetBtn').getAttribute('aria-label'))));
+      check('choosing on each axis takes effect and is remembered', await p.evaluate(() => crewSpeak === 'often' && crewAct === 'create' && store.get('.crewSpeak') === 'often' && store.get('.crewAct') === 'create' && perm('create') === 'direct' && /Can create cards/.test(document.getElementById('crewSetBtn').getAttribute('aria-label')) && board.speak === 'often'));
       await p.keyboard.press('Escape'); await p.waitForTimeout(200);
-      // the connection popover is only about the connection
+      // the connection popover is only about the connection (reached from the model row in the one entry)
+      if (!(await p.evaluate(() => crewPopOpen))) await p.click('#crewSetBtn');
       await p.click('#crewModeBtn'); await p.waitForTimeout(400);
+      check('the model row opens Connection and closes the entry', await p.evaluate(() => studioPopOpen && !crewPopOpen));
       const conn = await p.evaluate(() => document.getElementById('studioPop').innerText);
       check('the connection popover is only about the connection, and says nothing twice', /Connection/.test(conn) && !/Unasked thoughts|Agent permissions|Auto follow-up/.test(conn) && (conn.match(/gpt-5|smoke/g) || []).length <= 1 && !/Runs on this computer|OpenAI-compatible key/.test(conn), conn.slice(0, 200));
       // honest connection status: a real test request, not "On"; the header answers what is in use
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="ok"]'), null, { timeout: 4000 }).catch(() => {});
-      const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, headTxt: document.querySelector('#studioPop .sp-head').textContent.trim(), sub: document.querySelector('#studioPop .sp-ai small')?.textContent || '', acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.querySelector('#crewSetBtn .conn-dot').className, sw: document.querySelector('#studioPop .sp-ai [role="switch"]')?.getAttribute('aria-checked'), first: !!document.querySelector('#studioPop .sp-first'), order: [...document.querySelectorAll('#studioPop .sp-svc-top > span:first-child')].map(s => s.textContent), apiDetail: [...document.querySelectorAll('#studioPop .sp-svc')][1]?.querySelector('.sp-svc-sub')?.textContent }));
+      const ok = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, headTxt: document.querySelector('#studioPop .sp-head').textContent.trim(), sub: document.querySelector('#studioPop .sp-ai small')?.textContent || '', acts: [...document.querySelectorAll('#studioPop .sp-mini')].map(b => b.textContent), dot: document.getElementById('crewModeBtn').className, sw: document.querySelector('#studioPop .sp-ai [role="switch"]')?.getAttribute('aria-checked'), first: !!document.querySelector('#studioPop .sp-first'), order: [...document.querySelectorAll('#studioPop .sp-svc-top > span:first-child')].map(s => s.textContent), apiDetail: [...document.querySelectorAll('#studioPop .sp-svc')][1]?.querySelector('.sp-svc-sub')?.textContent }));
       check('opening Connection tests the Cloud API for real; the engine in use says "In use" once, the header is just the title', ok.h === 'In use' && ok.headTxt === 'Connection' && ok.sub === '' && ok.apiDetail === 'smoke' && probes.length >= 1 && probes.at(-1).auth === 'Bearer smoke' && requests.every(r => !/^ping$/.test(r.full)), JSON.stringify(ok));
       check('actions match real state (no Start while Studio AI is closed), the AI switch leads the engines, no "Use first" with one engine, Scout search and media are grouped apart', ok.acts.join() === 'Edit,Set up' && ok.sw === 'true' && !ok.first && ok.order.join() === 'Local AI,Cloud API,Scout search,Media Studio', JSON.stringify(ok));
       probe.status = 401;
       await p.click('#studioPop [data-sp="refresh"]');
       await p.waitForFunction(() => document.querySelector('#studioPop [data-api-health="auth"]'), null, { timeout: 4000 }).catch(() => {});
-      const bad = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, cls: document.querySelector('#studioPop [data-api-health]')?.className, headTxt: document.querySelector('#studioPop .sp-head').textContent.trim(), sub: document.querySelector('#studioPop .sp-ai small')?.textContent || '', fix: document.querySelector('#studioPop [data-sp="api"]').outerHTML, dot: document.querySelector('#crewSetBtn .conn-dot').className }));
-      check('a rejected key: said once on its row (red, Fix key next), the fallback said once under the switch, dot is red', bad.h === 'Authentication failed' && /err/.test(bad.cls) && bad.headTxt === 'Connection' && bad.sub === 'Using built-in rules for now' && /primary/.test(bad.fix) && /Fix key/.test(bad.fix) && /error/.test(bad.dot), JSON.stringify(bad));
+      const bad = await p.evaluate(() => ({ h: document.querySelector('#studioPop [data-api-health]')?.textContent, cls: document.querySelector('#studioPop [data-api-health]')?.className, headTxt: document.querySelector('#studioPop .sp-head').textContent.trim(), sub: document.querySelector('#studioPop .sp-ai small')?.textContent || '', fix: document.querySelector('#studioPop [data-sp="api"]').outerHTML, dot: document.getElementById('crewModeBtn').className }));
+      check('a rejected key: said once on its row (red, Fix key next), the fallback said once under the switch, dot is red', bad.h === 'Authentication failed' && /err/.test(bad.cls) && bad.headTxt === 'Connection' && bad.sub === 'Using built-in rules for now' && /primary/.test(bad.fix) && /Fix key/.test(bad.fix) && /\berr\b/.test(bad.dot), JSON.stringify(bad));
       check('routing agrees with the header: a rejected key is skipped, no API request is made', await p.evaluate(async () => { const before = performance.getEntriesByType('resource').filter(e => /chat\/completions/.test(e.name)).length; const r = await viaClaude(() => null, () => 'rules', { studio: () => null, prompt: 'x' }); const after = performance.getEntriesByType('resource').filter(e => /chat\/completions/.test(e.name)).length; return !apiRoutable() && aiSource().kind !== 'api' && r.engine === 'local' && after === before; }));
       check('Test all connections never loads the local model', await p.evaluate(async () => { const urls = []; const f = window.fetch; window.fetch = (u, o) => { urls.push(String(u)); return f(u, o); }; connManualCheck = true; try { await refreshStudioFromPop({ wake: false }); } finally { connManualCheck = false; window.fetch = f; } return !urls.some(u => /studio\/start/.test(u)) && urls.some(u => /chat\/completions/.test(u)); }));
       probe.status = 200;
       queue.push({ id: 'heal', match: 'heal-me', text: 'fine' });
       await p.evaluate(() => apiChat({ prompt: 'heal-me' }));
       await p.waitForTimeout(200);
-      check('a real successful call clears the error', await p.evaluate(() => apiHealthNow().k === 'ok' && /ok/.test(document.querySelector('#crewSetBtn .conn-dot').className)));
+      check('a real successful call clears the error', await p.evaluate(() => apiHealthNow().k === 'ok' && document.getElementById('crewModeBtn').classList.contains('claude')));
       check('while Local AI is starting, the header and the trigger both name the engine actually answering (Cloud API)', await p.evaluate(() => { const s = studioState; studioState = { ...s, status: 'loading' }; const c = connSummary(), h = connHealth(), src = aiSource(); studioState = s; return c.engine === 'api' && src.kind === 'api' && src.live && c.mode.startsWith('Using Cloud API') && /Local AI starting/.test(c.issue) && h.k === 'ok'; }));
       await p.evaluate(() => { apiCfg = { ...apiCfg, baseUrl: 'http://127.0.0.1:9/v1' }; });
       await p.click('#studioPop [data-sp="refresh"]');
@@ -949,12 +951,12 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('an unreachable host reads "Unreachable" with Edit as the next step', await p.evaluate(() => document.querySelector('#studioPop [data-api-health]')?.textContent === 'Unreachable' && /primary/.test(document.querySelector('#studioPop [data-sp="api"]').className)));
       check('after the retry window the header and routing agree again (Using Cloud API · Retrying, no red)', await p.evaluate(() => { const h0 = apiHealth; const before = connSummary(); apiHealth = { ...h0, at: Date.now() - 61000 }; const after = connSummary(); apiHealth = h0; return before.engine === 'rules' && before.tone === 'err' && after.engine === 'api' && after.tone === 'busy' && /Retrying/.test(after.issue); }));
       await p.click('#studioPop [data-sp="ai"]'); await p.waitForTimeout(200);
-      check('AI off: the switch says it, with no extra text; the engines step back', await p.evaluate(() => document.querySelector('#studioPop .sp-head').textContent.trim() === 'Connection' && !document.querySelector('#studioPop .sp-ai small') && document.querySelector('#studioPop [data-sp="ai"]').getAttribute('aria-checked') === 'false' && document.querySelector('#studioPop .sp-services').classList.contains('idle') && /rules/.test(document.querySelector('#crewSetBtn .conn-dot').className)));
+      check('AI off: the switch says it, with no extra text; the engines step back', await p.evaluate(() => document.querySelector('#studioPop .sp-head').textContent.trim() === 'Connection' && !document.querySelector('#studioPop .sp-ai small') && document.querySelector('#studioPop [data-sp="ai"]').getAttribute('aria-checked') === 'false' && document.querySelector('#studioPop .sp-services').classList.contains('idle') && /Rules only/.test(document.getElementById('crewModeBtn').innerText)));
       check('turning AI back on restores the previous preference; "Use first" appears once both engines exist and sets it', await p.evaluate(async () => { setAiPref('api'); setAiPref('local'); document.querySelector('#studioPop [data-sp="ai"]').click(); const restored = aiPref === 'api'; setAiPref('auto'); studioState = { ...studioState, reachable: true }; renderStudioPop(); const seg = document.querySelector('#studioPop .sp-first'); seg?.querySelector('[data-val="api"]').click(); const chose = aiPref === 'api'; setAiPref('auto'); studioState = { ...studioState, reachable: false }; renderStudioPop(); return restored && !!seg && chose && !document.querySelector('#studioPop .sp-first'); }));
       // Local AI Start: a button when the local server can open Studio AI, the instruction otherwise
       check('without a launcher, Local AI explains how to open it and offers no Start', await p.evaluate(() => { const r = [...document.querySelectorAll('#studioPop .sp-svc')][0]; return /Start Studio AI\.command/.test(r.textContent) && !r.querySelector('[data-sp="launch-studio"],[data-sp="wake"]'); }));
       launcher.on = true;
-      await p.evaluate(() => { studioLauncher = null; toggleStudioPopover(false); });
+      await p.evaluate(() => { studioLauncher = null; toggleStudioPopover(false); toggleCrewPop(true); });
       await p.click('#crewModeBtn');
       await p.waitForSelector('#studioPop [data-sp="launch-studio"]', { timeout: 3000 }).catch(() => {});
       check('with a launcher, Local AI offers Start instead of the command line', await p.evaluate(() => { const r = [...document.querySelectorAll('#studioPop .sp-svc')][0]; return !!r.querySelector('[data-sp="launch-studio"]') && !/\.command/.test(r.textContent); }));
@@ -1218,14 +1220,48 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('and says so in a toast', broke.toasts.includes('Cloud API is out of credits (HTTP 402), so built-in rules answered instead.'), JSON.stringify(broke.toasts));
       check('the island says built-in rules answered', broke.note === 'Built-in rules answered', JSON.stringify(broke.note));
       check('the header stops claiming the Cloud API is in use', broke.health === 'credits' && !broke.routable && broke.issue === 'Cloud API out of credits' && broke.label === 'Out of credits', JSON.stringify(broke));
+      // with no model to answer, Try again and typed revisions do not pretend: nothing is replaced, your words are kept
+      {
+        const n0 = requests.length;
+        const ids = () => p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.id).join());
+        const before = await ids();
+        await p.evaluate(() => { __toasts.splice(0); return redraw(board.nodes.find(n => n.type === 'direction').pid); });
+        const rt = await p.evaluate(() => __toasts.splice(0));
+        check('Try again with no model and the same rules output replaces nothing and says so', (await ids()) === before && rt.some(t => /built-in rules give the same drafts again\. Nothing was replaced/.test(t)) && !rt.some(t => /New version/.test(t)), JSON.stringify(rt));
+        const b = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'B').id);
+        await p.evaluate(id => select([id]), b);
+        const words = 'Make it about guest checkout and Apple Pay';
+        await p.type(words); await p.idle();
+        const rv = await p.evaluate(([id, w]) => ({ toasts: __toasts.splice(0), kept: (board.threads[id] || []).some(m => m.who === 'you' && m.text === w) }), [b, words]);
+        check('a typed revision with no model leaves the drafts, says why, and keeps your words on the draft you picked', (await ids()) === before && rv.kept && rv.toasts.some(t => /^Cloud API is out of credits \(HTTP 402\), so your note couldn't be applied/.test(t)) && !rv.toasts.some(t => /New version/.test(t)), JSON.stringify(rv));
+        check('and neither one sends a request to the broken Cloud API', requests.length === n0, `${requests.length - n0} requests`);
+        // Copilot with no model says so first, and only says what the board shows (no leftovers from another project)
+        await p.evaluate(() => sendCopilotMessage('Suggest the next 3 moves for this idea'));
+        const cm = await p.evaluate(() => { const m = board.copilot.at(-1); return { text: m.text, route: m.route, kinds: (m.proposals || []).map(x => x.kind), trace: !!m.trace }; });
+        check('Copilot with no model opens by saying no model answered, and why', /^\*\*No AI model answered\.\*\* Cloud API is out of credits \(HTTP 402\)\./.test(cm.text) && cm.route === 'Built-in rules', JSON.stringify(cm).slice(0, 300));
+        check('it invents no directions and nothing from another project, and does not pretend to delegate', !cm.kinds.includes('direction') && !/hair sync|creators|fit-check|headband/i.test(cm.text + JSON.stringify(cm.kinds)) && !cm.trace, JSON.stringify(cm).slice(0, 400));
+        await p.evaluate(() => sendCopilotMessage('Draw an image of a quiet street at dusk'));
+        const ci = await p.evaluate(() => board.copilot.at(-1).proposals?.find(x => x.kind === 'image')?.prompt || '');
+        check('an image prompt Copilot drafts without a model uses what you described', /quiet street at dusk/.test(ci) && !/headband|hair sync/.test(ci), ci);
+        await p.evaluate(() => { const c = document.querySelector('[data-cp=close]'); c && c.click(); });
+        // with no image service, /image makes one empty frame that says so, not pictures that could pass for results
+        const im0 = await p.evaluate(() => board.nodes.filter(n => n.type === 'image').length);
+        await p.evaluate(() => { __toasts.splice(0); return generateImages('a quiet street at dusk'); });
+        const im = await p.evaluate(n0 => { const made = board.nodes.filter(n => n.type === 'image').slice(n0); const el = made[0] && document.querySelector(`[data-id="${made[0].id}"]`); return { n: made.length, standIn: made.every(n => n.gen?.preview), badge: el ? el.innerText : '', toasts: __toasts.splice(0) }; }, im0);
+        check('/image with no image service makes one empty frame, labelled Not generated, and says no image was made', im.n === 1 && im.standIn && /Not generated/.test(im.badge) && im.toasts.some(t => /so no image was made/.test(t)), JSON.stringify(im));
+        await p.evaluate(n0 => { const ids = new Set(board.nodes.filter(n => n.type === 'image').slice(n0).map(n => n.id)); board.nodes = board.nodes.filter(n => !ids.has(n.id)); renderAll(); }, im0);
+      }
       check('a passing re-check brings the Cloud API back', await p.evaluate(async () => { await testApi({ quiet: true }); return apiRoutable() && apiHealthNow().k === 'ok'; }));
       // free tiers cap requests per minute: wait as long as the server asks and try again; a daily cap is said plainly
       {
         const n0 = requests.length;
         queue = [{ id: 'busy', match: 'ping429', status: 429, body: JSON.stringify({ error: { code: 429, details: [{ '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '1s' }] } }) }, { id: 'pong', match: 'ping429', text: 'pong' }];
         const r = await p.evaluate(async () => { const t = performance.now(); const v = await apiChat({ prompt: 'ping429' }); return { v, ms: performance.now() - t }; });
-        check('a per-minute 429 waits the retryDelay and tries again', r.v === 'pong' && r.ms >= 1000 && requests.length - n0 === 2, JSON.stringify(r));
-        check('and leaves room for a thinking model (max_tokens + 4096)', requests.at(-1).max === 2200 + 4096, String(requests.at(-1).max));
+        /* count only this call's requests: a crew member's own look at a card can land inside the one-second wait */
+        const asked = requests.slice(n0).filter(q => /ping429/.test(q.full)).map(q => q.matched);
+        check('a per-minute 429 waits the retryDelay and tries again', r.v === 'pong' && r.ms >= 1000 && asked.join() === 'busy,pong', JSON.stringify({ ...r, asked }));
+        const last429 = requests.slice(n0).filter(q => /ping429/.test(q.full)).at(-1);
+        check('and leaves room for a thinking model (max_tokens + 4096)', last429?.max === 2200 + 4096, String(last429?.max));
         queue = [{ id: 'short1', match: 'short-check', text: 'ok' }];
         await p.evaluate(() => apiChat({ prompt: 'short-check', maxTokens: 300 }));
         check('a short reply keeps its limit as a length cap', requests.at(-1).max === 300, String(requests.at(-1).max));
@@ -1250,9 +1286,9 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         check('on a fresh draft direction, adopt and build words adopt and build; other words still revise; a question still asks', kinds.adopt === 'adopt' && kinds.go === 'adopt' && kinds.zh === 'adopt' && kinds.build === 'build' && kinds.revise === 'revise' && kinds.ask !== 'adopt' && kinds.ask !== 'revise', JSON.stringify(kinds));
         await p.evaluate(id => select([id]), d0);
         await p.type('Adopt this direction'); await p.waitForTimeout(800);
-        const st = await p.evaluate(id => ({ adopted: board.adopted[byId(id).idea] === id, titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(), toast: [...document.querySelectorAll('#toasts > *')].map(x => x.innerText).join(' / ') }), d0);
-        check('typing "Adopt this direction" on a fresh draft asks to keep it first and leaves the drafts as they were (no revision)', !st.adopted && /Keep this direction first/.test(st.toast) && st.titles === 'W A,W B,W C', JSON.stringify(st));
-        await p.evaluate(id => { delete board.adopted[byId(id).idea]; renderAll(); }, d0);
+        const st = await p.evaluate(id => ({ adopted: board.adopted[byId(id).idea] === id, kept: byId(id).status === 'ink', titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(), toast: [...document.querySelectorAll('#toasts > *')].map(x => x.innerText).join(' / ') }), d0);
+        check('typing "Adopt this direction" on a fresh draft keeps and adopts it in one step, and revises nothing', st.adopted && st.kept && /Kept and adopted W A/.test(st.toast) && st.titles === 'W A,W B,W C', JSON.stringify(st));
+        await p.evaluate(id => { delete board.adopted[byId(id).idea]; byId(id).status = 'sketch'; renderAll(); }, d0);
       }
       await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').forEach(n => { n.status = 'ink'; })); await p.evaluate(() => { renderAll(); persist(); });
       const dirA = await p.evaluate(() => board.nodes.find(n => n.type === 'direction' && n.letter === 'A').id);
@@ -1559,6 +1595,48 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('no page errors around cut-off and timed-out replies', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
+    // 13. first run and the no-credit state, as a first-time user with an OpenRouter key and $0 credit meets them
+    {
+      const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' };
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      await ctx.route('http://127.0.0.1:59631/**', r => r.abort()); await ctx.route('http://127.0.0.1:59639/**', r => r.abort()); await ctx.route(/wikipedia\.org/, r => r.abort());
+      await ctx.route(/openrouter\.ai/, r => r.request().method() === 'OPTIONS' ? r.fulfill({ status: 204, headers: cors }) : r.fulfill({ status: 402, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: { message: 'Insufficient credits', code: 402 } }) }));
+      const p = await ctx.newPage(); p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
+      await p.goto(base + '/Vellum-Lumen.html?welcome=1'); await p.waitForTimeout(2600);
+      const w = await p.evaluate(() => ({ open: dlg.open, txt: dlg.innerText, s: cam.s, far: world.classList.contains('far'), tray: [...document.querySelectorAll('.pbar')].filter(e => e.style.visibility !== 'hidden').length }));
+      check('first run: a welcome says what Vellum is and offers Start a board or Explore the sample', w.open && /Start a board/.test(w.txt) && /Explore the sample/.test(w.txt) && /Gather, Explore, Prototype, Snapshot/.test(w.txt), w.txt.slice(0, 160));
+      check('first run: the sample opens on its first lane at a readable zoom (not label-only), with no draft tray waiting', w.s >= 0.6 && !w.far && w.tray === 0, JSON.stringify(w));
+      await p.click('[data-welcome="sample"]'); await p.waitForTimeout(300);
+      const g = await p.evaluate(() => board.nodes.filter(n => n.type === 'group').map(n => n.title).join(' | '));
+      check('the sample has no lane-wide groups repeating the lane names (the lanes are the zones), and none uses Diverge / Make / Release', !/^\d\d · (Gather|Explore|Prototype|Snapshot) · /m.test(g.split(' | ').join('\n')) && !/Diverge|Make ·|Release/.test(g), g);
+      check('the /claim command is described with the same words', await p.evaluate(() => /Add an idea to Explore/.test(JSON.stringify(CMDS))));
+      const pill = () => p.evaluate(() => ({ t: document.querySelector('#crewModeBtn small').textContent, c: document.querySelector('#crewModeBtn').className, entry: document.querySelector('#crewSetBtn .hub-l')?.textContent || '' }));
+      check('no key: the entry and its model row say "No AI connected", not "Offline"', (await pill()).t === 'No AI connected' && (await pill()).entry === 'No AI connected', JSON.stringify(await pill()));
+      await p.evaluate(() => { studioPopOpen = true; renderStudioPop(); }); await p.waitForTimeout(200);
+      const ms = await p.evaluate(() => { const r = [...document.querySelectorAll('#studioPop .sp-svc')].find(e => /Media Studio/.test(e.innerText)); return { txt: r.innerText, tip: r.querySelector('.sp-svc-sub')?.title || '' }; });
+      check('Media Studio says what it is and what it needs, and never sends a Mac user to "your Windows PC"', !/Windows/.test(ms.txt + ms.tip) && /images and video/.test(ms.txt) && /NVIDIA GPU/.test(ms.tip), JSON.stringify(ms));
+      await p.evaluate(() => { studioPopOpen = false; renderStudioPop(); openApiDialog(); }); await p.waitForTimeout(200);
+      await p.click('dialog[open] [data-ap="openrouter"]'); await p.fill('#apiKeyIn', 'sk-or-zero'); await p.click('dialog[open] [data-api-test]'); await p.waitForTimeout(800);
+      const t = await p.evaluate(() => ({ txt: $('apiTestOut').innerText, href: $('apiTestOut').querySelector('a')?.href || '' }));
+      check('Test connection on a 402 says the key works but the account is out of credits, with a link to add credits', /Key works, but the account is out of credits/.test(t.txt) && /openrouter\.ai\/settings\/credits/.test(t.href), JSON.stringify(t));
+      check('Test connection has a message for every status the classifier can return', await p.evaluate(() => [200, 401, 402, 404, 429, 500].map(classifyApiStatus).concat(['unreachable']).every(k => !!apiTestMessage({ k, ms: 1, detail: 'HTTP 500' }, { baseUrl: 'https://openrouter.ai/api/v1' }).txt)));
+      await p.click('dialog[open] [data-api-save]'); await p.waitForTimeout(500);
+      let pl = await pill();
+      check('after the 402 the entry says "Out of credits" (a red dot on the model row), not "API error"', pl.t === 'Out of credits' && pl.entry === 'Out of credits' && /\berr\b/.test(pl.c), JSON.stringify(pl));
+      await p.evaluate(() => { studioPopOpen = true; renderStudioPop(); }); await p.waitForTimeout(200);
+      check('and the Connection popover says the same', /Out of credits/.test(await p.evaluate(() => $('studioPop').innerText)) && !/\bauto\b/.test(await p.evaluate(() => $('studioPop').innerText)));
+      await p.reload(); await p.waitForTimeout(2600);
+      check('a reload remembers it (no healthy-looking pill until the next check), and the welcome does not come back', (await pill()).t === 'Out of credits' && !(await p.evaluate(() => dlg.open)), JSON.stringify(await pill()));
+      check('the key itself is not stored with the remembered status', await p.evaluate(() => !JSON.stringify(store.get('.apiHealth', {})).includes('sk-or-zero')));
+      await p.evaluate(() => { store.set('.apiHealth', null); apiHealth = { k: 'unknown', sig: '', at: 0, ms: null, detail: '' }; apiCfg = { ...apiCfg, model: 'openrouter/auto' }; renderCrew(); });
+      pl = await pill();
+      check('a key not checked yet shows the model\'s own name ("OpenRouter Auto", not "auto") without a healthy dot', pl.t === 'OpenRouter Auto' && !/claude|live/.test(pl.c), JSON.stringify(pl));
+      const a = await p.evaluate(() => { const d = board.nodes.find(n => n.type === 'direction' && n.status === 'sketch'); select([d.id]); const ph = placeholderFor([d]); adopt(d); return { ph, st: d.status, ad: board.adopted[d.idea] === d.id }; });
+      check('the hint on a draft direction says /adopt keeps and adopts it, and it does', /keep and adopt/.test(a.ph) && a.st === 'ink' && a.ad, JSON.stringify(a));
+      check('the same toast twice in a row shows once', await p.evaluate(() => { toast('Twice'); toast('Twice'); return [...document.querySelectorAll('#toasts > *')].filter(x => x.innerText.includes('Twice')).length === 1; }));
+      check('no page errors on first run and in the no-credit state', p.errors.length === 0, p.errors.join(' | '));
+      await ctx.close();
+    }
   } finally {
     // 9. legibility: light and dark are designed separately, so both are measured, in the states that change colour
     for (const theme of ['light', 'dark']) {
@@ -1566,7 +1644,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       const bad = [];
       for (const [pref, status] of [['auto', 200], ['auto', 401], ['local', 200]]) {
         probe.status = status;
-        await p.evaluate(pr => { setAiPref(pr); apiHealth = { k: 'unknown', sig: '', at: 0 }; toggleStudioPopover(false); }, pref);
+        await p.evaluate(pr => { setAiPref(pr); apiHealth = { k: 'unknown', sig: '', at: 0 }; toggleStudioPopover(false); toggleCrewPop(true); }, pref);
         await p.click('#crewModeBtn'); await p.waitForTimeout(900);
         bad.push(...(await p.evaluate(LEGIBILITY, '#studioPop')).map(x => `${pref}/${status}: ${x}`));
       }

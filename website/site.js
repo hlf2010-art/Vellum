@@ -43,6 +43,13 @@
     return total;
   }
 
+  // An AI crew member signs with its role icon, a person with their initial, so who's who reads at a glance.
+  var CREWC = { scout: "var(--crew-scout)", strategist: "var(--crew-strategist)", wright: "var(--crew-wright)", critic: "var(--crew-critic)" };
+  function crewAv(name, cls) {
+    var k = name.toLowerCase();
+    return '<b class="' + (cls == null ? "av" : cls) + ' ai" style="--c:' + CREWC[k] + ";background:" + CREWC[k] + '" title="' + name + '"><svg aria-hidden="true"><use href="#i-' + k + '"/></svg></b>';
+  }
+
   // The product name, in one place: the public name may still change.
   var BRAND = "Sympo";
 
@@ -111,22 +118,22 @@
     },
     zh: {
       "skip": "跳到正文",
-      "nav.why": "为什么选 {brand}", "nav.how": "怎么用", "nav.crew": "AI 团队",
+      "nav.why": "为什么选 {brand}", "nav.how": "工作方式", "nav.crew": "AI 团队",
       "cta.get": "抢先体验",
-      "hero.title": "聊天框装不下你的好想法。", "hero.t1": "", "hero.kw": "聊天框", "hero.t2": "装不下你的好想法。",
-      "hero.lede": "把问题整个摊开，让 AI 团队帮你辩个明白。每个决定，理由都在。",
+      "hero.title": "好想法，何必挤在对话框里。", "hero.t1": "好想法，何必挤在", "hero.kw": "对话框", "hero.t2": "里。",
+      "hero.lede": "把问题摊在白板上，让 AI 陪你聊透。怎么定的、为什么，都有据可查。",
       "board.hint": "试试拖动卡片", "board.replay": "重播",
-      "why.t1": "多数 AI 画布，​让你做得更多。", "why.t2": "{brand}，​让你想得更透。",
-      "why.lede": "最好的讨论不靠 PPT，直接上白板。可惜，白板总会被擦掉。",
+      "why.t1": "别的 AI 帮你​多做一点。", "why.t2": "{brand} 帮你​想透一点。",
+      "why.lede": "最好的讨论，不放 PPT，只用白板。可白板，迟早要擦。",
       "why.l1": "证据", "why.l2": "方向", "why.l3": "决策",
       "why.h1": "生成式画布", "why.h2": "{brand}",
       "why.a1": "生成四十张图，还是说不清哪张好", "why.b1": "三个方向，依据一目了然",
-      "why.a2": "卡片挨着放，关系全靠猜", "why.b2": "关系说得清：支持、反驳还是细化",
-      "why.a3": "否掉的方案，淹没在一堆“最终版”里", "why.b3": "没选的方案，连同理由一起留着",
-      "why.a4": "当初为什么这么定，没人记得", "why.b4": "情况一变，它会提醒你回头再看",
+      "why.a2": "卡片挨着放，关系全靠猜", "why.b2": "支持、反驳、细化，关系一清二楚",
+      "why.a3": "否掉的方案，埋在一堆“最终版”里", "why.b3": "没选的方案，理由也留着",
+      "why.a4": "当初为什么这么定，没人记得", "why.b4": "情况一变，它提醒你回头看看",
       "how.title": "每张卡片，​都有出处。",
-      "how.lede": "点开一张，看看它的依据。",
-      "out.title": "想清楚了，就动手做。", "out.lede": "每一份产出，都带着来龙去脉。", "out.label": "产出",
+      "how.lede": "点开任意一张，来龙去脉都在。",
+      "out.title": "想透了，再动手。", "out.lede": "做出什么，都说得清为什么。", "out.label": "产出",
       "out.plan": "方案", "out.tasks": "任务", "out.table": "表格", "out.cut": "成片", "out.site": "网站",
       "doc.h": "粗剪 + 高光标记", "doc.why": "为什么选它", "doc.whyv": "剪辑师只想让 AI 干杂活，高光要自己挑。",
       "doc.rests": "证据", "doc.k1": "实测", "doc.e1": "AI 剪的 10 刀，剪辑师撤回了 6 刀", "doc.k2": "原话", "doc.e2": "“先给我个粗剪，高光我自己挑。”",
@@ -139,27 +146,27 @@
       "z.1": "收集", "z.1d": "用户怎么做、怎么说",
       "z.2": "探索", "z.2d": "先下判断，再分方向",
       "z.3": "原型", "z.3d": "挑一个方向，做出来",
-      "z.4": "定稿", "z.4d": "可分享的版本，附带理由",
+      "z.4": "定稿", "z.4d": "附上理由，随时分享",
       "cases.t1": "产品设计", "cases.t2": "短视频", "cases.t3": "AI 产品",
-      "crew.title": "陪你一起想，​也敢跟你唱反调。",
+      "crew.title": "肯唱反调，​才算好搭档。",
       "crew.scout": "核查证据", "crew.scoutq": "“这两条差评，其实是同一个人发的。”",
       "crew.strat": "拆出几个方向", "crew.stratq": "“如果 B 成立，10 个粗剪能留下 9 个。”",
       "crew.wright": "做原型验证", "crew.wrightq": "“B 方案的原型好了，要保留吗？”",
       "crew.critic": "对照来源挑刺", "crew.criticq": "“没有任何证据说明，剪辑师想要一键成片。”",
-      "crew.agency": "它们可以质疑，拍板的永远是你。",
+      "crew.agency": "它们可以质疑，拍板的始终是你。",
       "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
       "mode.focusd": "绝不打扰。有发现先记下，等你回来再说。",
       "sc.wait": "条待看", "sc.backK": "专注期间", "sc.backT": "团队记下了 3 条",
       "sc.critic": "没有任何证据说明，剪辑师想要一键成片。", "sc.draftK": "原型 · 草稿", "sc.draftT": "高光标记原型", "sc.keep": "保留", "sc.discard": "丢弃",
       "mode.listend": "平时不出声，发现不对劲才开口。",
-      "mode.teamd": "和你同步起草，好的留下就行。",
+      "mode.teamd": "和你一起起草，好的留下就行。",
       "modes.label": "AI 团队的参与程度",
       "get.title": "抢先体验 {brand}。",
-      "get.l1": "Mac 和 Windows 内测版即将推出。", "get.l2": "上线第一时间，邮件通知你。",
+      "get.l1": "Mac 和 Windows 内测版即将推出。", "get.l2": "留下邮箱，上线第一时间通知你。",
       "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "打算用它做什么？", "get.email": "邮箱",
       "get.useph": "比如：新品立项、短视频脚本……", "get.step": "申请内测资格", "get.back": "返回", "get.join": "提交",
       "get.needos": "请先选择系统。", "get.needemail": "请填写邮箱。", "get.needuse": "简单说说你的用途。",
-      "cta.waitlist": "加入内测名单", "cta.demo": "在线体验", "get.dlfor": "下载 {os} 版",
+      "cta.waitlist": "加入内测", "cta.demo": "在线体验", "get.dlfor": "下载 {os} 版",
       "get.thanks": "你已加入内测名单。", "get.thanksos": "你已加入 {os} 版内测名单。",
       "get.thanksd": "上线后，我们会第一时间发邮件到 {email}。",
       "get.closed": "报名通道即将开放，本次信息未提交。",
@@ -167,7 +174,7 @@
       "get.fail": "提交失败，请稍后再试。",
       "board.label": "{brand} 白板演示：AI 剪辑助手该怎么工作",
       "lang.label": "语言 Language", "theme.switch": "切换深色或浅色外观", "steps.label": "演示步骤", "cases.label": "使用场景",
-      "title": "{brand} 思波：聊天框装不下你的好想法"
+      "title": "{brand} 思波：好想法，何必挤在对话框里"
     }
   };
 
@@ -213,8 +220,8 @@
         "先摆出已知的事实。",
         "得出判断，标明依据。",
         "Strategist 拆出方向，Critic 提出质疑。",
-        "你选了 B。没选的也留着，理由写得清清楚楚。",
-        "新证据与 B 相悖：重新讨论，或写明为何仍然成立。"
+        "你选了 B。没选的也留着，理由都在。",
+        "新证据不利于 B。重新讨论，或写下它为何仍然成立。"
       ],
       reopened: "已重新讨论，之前的思路一条没丢。",
       held: "仍然成立。你的理由已和反证放在一起。",
@@ -242,6 +249,12 @@
     }
   };
 
+  // Labels for the note a card opens on the zones board.
+  var POPL = {
+    en: { label: "Why this card", src: "Source", why: "Why this one", whyNot: "Why not", rests: "Rests on", led: "Led to", tested: "Tested", notChosen: "Not chosen" },
+    zh: { label: "这张卡片的来龙去脉", src: "来源", why: "为什么选它", whyNot: "为什么没选", rests: "依据", led: "带出了", tested: "测试结果", notChosen: "没选" }
+  };
+
   // The zones board: the same four zones, filled in for three kinds of work.
   var CASES = {
     en: {
@@ -262,7 +275,7 @@
         A: { t: "Voice-over hook", why: "Still slow to the payoff." },
         B: { t: "Open on the result", b: "Chosen. The payoff lands in second one." },
         C: { t: "Text card intro", why: "Reads as an ad." },
-        P: { t: "Storyboard, three takes", meta: "From your own video model" },
+        P: { t: "Storyboard, three takes", meta: "Take 2 holds 70% past second 3" },
         S: { t: "Final cut, 15 seconds" }
       },
       ai: {
@@ -295,7 +308,7 @@
         A: { t: "口播开场", why: "结果还是来得太慢。" },
         B: { t: "结果前置", b: "已选定。第一秒就亮出结果。" },
         C: { t: "字幕卡开场", why: "一看就像广告。" },
-        P: { t: "分镜脚本，三个版本", meta: "由你自己的视频模型生成" },
+        P: { t: "分镜脚本，三个版本", meta: "第 2 版过了 3 秒还留住七成观众" },
         S: { t: "15 秒成片" }
       },
       ai: {
@@ -572,8 +585,8 @@
         if (by) {
           var who = d.by.split(" + ");
           by.innerHTML = who.map(function (w) {
-            var col = CREW[w];
-            return '<b style="background:' + (col || "var(--label)") + (col ? "" : ";color:var(--card)") + '">' + esc(w === "你" ? "你" : w.charAt(0)) + "</b>";
+            if (CREW[w]) return crewAv(w, "");
+            return '<b class="me">' + esc(w === "你" ? "你" : w.charAt(0)) + "</b>";
           }).join("");
           by.title = d.by; by.setAttribute("role", "img"); by.setAttribute("aria-label", d.by);
         }
@@ -981,9 +994,10 @@
     // Cards are paper: they lift, tilt with the drag, and settle when you let go.
     function drag(c) {
       var sx, sy, ox, oy, lx, id = c.dataset.id, active = false, tilt = 0, raf = 0;
-      c.addEventListener("pointerenter", function () { hot(id, true); });
-      c.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse" && !el.classList.contains("focus") && !active) hot(id, true); });
-      c.addEventListener("pointerleave", function () { if (!active) hot(id, false); });
+      // The card under the pointer is always at full strength, whatever the story is lighting at that moment.
+      c.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") c.classList.add("hov"); hot(id, true); });
+      c.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { c.classList.add("hov"); if (!el.classList.contains("focus") && !active) hot(id, true); } });
+      c.addEventListener("pointerleave", function () { c.classList.remove("hov"); if (!active) hot(id, false); });
       c.addEventListener("pointerdown", function (e) {
         if (e.button !== 0 || e.pointerType === "touch" || e.target.closest("button")) return;
         active = true; c.setPointerCapture(e.pointerId);
@@ -1267,7 +1281,51 @@
         })(performance.now());
       });
     }
+    // Opening a card: a small note beside it that says, in the board's own words, what it rests on, why it was
+    // or wasn't chosen, and what it led to. Hover only traces; a click (or tap, or Enter) opens the note.
+    var pop = document.createElement("div");
+    pop.className = "zpop"; pop.setAttribute("role", "dialog"); pop.hidden = true;
+    zb.appendChild(pop);
+    function said(id) {
+      var d = CASES[lang][current][id];
+      if (id === "A" || id === "B" || id === "C") return '<b class="chip ' + id + '">' + id + "</b>" + esc(d.t);
+      if (id === "e1" || id === "e2") return '<i class="zk">' + esc(d.k) + "</i>" + esc(d.page ? d.b : d.b || d.t);
+      return esc(d.t);
+    }
+    function row(label, items) { return items.length ? '<div class="zr"><span class="zl">' + esc(label) + '</span><ul>' + items.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul></div>" : ""; }
+    function showPop(id) {
+      var d = CASES[lang][current][id], P = POPL[lang], up = [], down = [];
+      EDGES.forEach(function (e) { if (e[1] === id) up.push(e[0]); if (e[0] === id) down.push(e[1]); });
+      var h = "";
+      if (id === "e1" || id === "e2") h += row(P.src, [esc(d.page || d.t)]);
+      if (id === "B") h += row(P.why, [esc(String(d.b).replace(/^(Chosen\.|已选定。)\s*/, ""))]);
+      if (id === "A" || id === "C") h += row(P.whyNot, [esc(d.why)]);
+      var data = CASES[lang][current];
+      if (id === "S") up = ["B"].map(said).concat([esc(data.P.t) + '<span class="zm"> · ' + esc(data.P.meta) + "</span>"]);
+      else up = up.map(said);
+      h += row(P.rests, up);
+      if (id === "P") h += row(P.tested, [esc(d.meta)]);
+      if (id === "S") h += row(P.notChosen, ["A", "C"].map(function (k) { return said(k) + '<span class="zm">' + (lang === "zh" ? "：" : ": ") + esc(data[k].why) + "</span>"; }));
+      if (id !== "A" && id !== "C") h += row(P.led, down.map(said));
+      pop.innerHTML = h;
+      pop.setAttribute("aria-label", P.label);
+      pop.hidden = false;
+      place(id);
+      pop.classList.remove("in"); void pop.offsetWidth; pop.classList.add("in");
+    }
+    // Beside the card where there is room (right, else left); stacked boards put it under the card.
+    function place(id) {
+      var b = box(id), W = zb.clientWidth, pw = Math.min(280, W - 24), gap = 12, x, y;
+      pop.style.width = pw + "px";
+      var ph = pop.offsetHeight;
+      if (b.x + b.w + gap + pw <= W - 8) { x = b.x + b.w + gap; y = b.y; pop.dataset.side = "r"; }
+      else if (b.x - gap - pw >= 8) { x = b.x - gap - pw; y = b.y; pop.dataset.side = "l"; }
+      else { x = Math.max(8, Math.min(W - pw - 8, b.x + (b.w - pw) / 2)); y = b.y + b.h + gap; pop.dataset.side = "b"; }
+      y = Math.max(8, Math.min(y, zb.clientHeight - ph - 8));
+      pop.style.left = Math.round(x) + "px"; pop.style.top = Math.round(y) + "px";
+    }
     function clearTrace() {
+      pop.hidden = true; pop.classList.remove("in");
       flowRun++; svg.querySelectorAll(".spark").forEach(function (d) { d.remove(); });
       zb.classList.remove("tracing");
       zb.querySelectorAll(".lit").forEach(function (n) { n.classList.remove("lit"); });
@@ -1288,12 +1346,13 @@
       c.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse" && !pinned && !scrollingNow()) { interacted = true; trace(id); } });
       c.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse" && !pinned && !c.classList.contains("lit") && !scrollingNow()) { interacted = true; trace(id); } });
       c.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse" && !pinned) clearTrace(); });
-      c.addEventListener("click", function () { interacted = true; if (pinned === id) { pinned = null; clearTrace(); } else { pinned = id; trace(id); if (id === "P") wake(); } });
+      c.addEventListener("click", function () { interacted = true; if (pinned === id) { pinned = null; clearTrace(); } else { pinned = id; trace(id); showPop(id); if (id === "P") wake(); } });
       c.addEventListener("focus", function () { if (!pinned) trace(id); });
       c.addEventListener("blur", function () { if (!pinned) clearTrace(); });
       c.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } if (e.key === "Escape") { pinned = null; clearTrace(); } });
     }
-    document.addEventListener("click", function (e) { if (pinned && !e.target.closest(".zc")) { pinned = null; clearTrace(); } });
+    document.addEventListener("click", function (e) { if (pinned && !e.target.closest(".zc") && !e.target.closest(".zpop")) { pinned = null; clearTrace(); } });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && pinned) { var n = nodes[pinned]; pinned = null; clearTrace(); if (n) n.focus({ preventScroll: true }); } });
 
     // The first time the board is seen, trace the snapshot back to its evidence once, then let go.
     function demo() {
@@ -1453,13 +1512,14 @@
   var layers = $("layers");
   if (reduced || !("IntersectionObserver" in window)) layers.classList.add("open");
   else {
-    var lio = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { setTimeout(function () { layers.classList.add("open"); }, 250); lio.disconnect(); } }); }, { threshold: 0.6 });
+    // Arriving: the sheets land one after another; after that, no delays, so hover answers at once.
+    var lio = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { layers.classList.add("arriving"); setTimeout(function () { layers.classList.add("open"); setTimeout(function () { layers.classList.remove("arriving"); }, 1400); }, 250); lio.disconnect(); } }); }, { threshold: 0.6 });
     lio.observe(layers);
   }
   // Point at the stack and it opens into an exploded view; leave and it settles back. On touch, a tap toggles it.
   var sheetsEl = layers.querySelector(".sheets");
   if (canHover) {
-    sheetsEl.addEventListener("pointerenter", function () { layers.classList.add("apart"); });
+    sheetsEl.addEventListener("pointerenter", function () { layers.classList.remove("arriving"); layers.classList.add("apart"); });
     sheetsEl.addEventListener("pointerleave", function () { layers.classList.remove("apart"); layers.style.setProperty("--mx", "0"); layers.style.setProperty("--my", "0"); });
     if (!reduced) sheetsEl.addEventListener("pointermove", function (e) {
       var r = sheetsEl.getBoundingClientRect();
@@ -1485,13 +1545,13 @@
     };
     var av = function (c, l) { return '<b class="av" style="--c:' + c + '">' + l + "</b>"; };
     st.innerHTML =
-      '<article class="vc ink sc-card" id="scMine" style="left:40px;top:66px;width:214px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-fork"/></svg><span data-sc="mk"></span><span class="by"><b style="background:var(--label);color:var(--card)" data-sc="me"></b></span></div>' +
+      '<article class="vc ink sc-card" id="scMine" style="left:40px;top:66px;width:214px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-fork"/></svg><span data-sc="mk"></span><span class="by"><b class="me" data-sc="me"></b></span></div>' +
         '<div class="t"><span class="chip A">A</span><span data-sc="mt"></span></div><div class="b" data-sc="mb"></div></article>' +
-      '<span class="sc-dot" id="scDot">' + av("var(--crew-critic)", "C") + "</span>" +
-      '<div class="sc-bubble" id="scBubble" style="left:272px;top:44px;max-width:248px">' + av("var(--crew-critic)", "C") + '<p data-sc="critic"></p></div>' +
+      '<span class="sc-dot" id="scDot">' + crewAv("Critic") + "</span>" +
+      '<div class="sc-bubble" id="scBubble" style="left:272px;top:44px;max-width:248px">' + crewAv("Critic") + '<p data-sc="critic"></p></div>' +
       '<article class="vc sc-card sc-back" id="scBack" style="left:300px;top:92px;width:222px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-tray"/></svg><span data-sc="backK"></span></div><div class="t" data-sc="backT"></div>' +
-        '<div class="sc-avs">' + av("var(--crew-scout)", "S") + av("var(--crew-critic)", "C") + av("var(--crew-wright)", "W") + "</div></article>" +
-      '<article class="vc sc-card sc-draft" id="scDraft" style="left:304px;top:104px;width:206px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-window"/></svg><span data-sc="draftK"></span><span class="by"><b style="background:var(--crew-wright)">W</b></span></div>' +
+        '<div class="sc-avs">' + crewAv("Scout") + crewAv("Critic") + crewAv("Wright") + "</div></article>" +
+      '<article class="vc sc-card sc-draft" id="scDraft" style="left:304px;top:104px;width:206px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-window"/></svg><span data-sc="draftK"></span><span class="by">' + crewAv("Wright", "") + '</span></div>' +
         '<div class="t"><span data-sc="draftT"></span></div><div class="sc-acts"><span data-sc="discard"></span><span class="keep" data-sc="keep"></span></div></article>';
     var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = $("scDot");
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { snug(bubble.querySelector("p")); });

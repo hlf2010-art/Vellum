@@ -13,7 +13,7 @@
    system. Re-subset when the copy adds new characters (see README). unicode-range keeps it off Latin text. */
 @font-face {
   font-family: "Vellum Sans SC";
-  src: url("fonts/VellumSansSC-subset.woff2?v=2") format("woff2");
+  src: url("fonts/VellumSansSC-subset.woff2?v=3") format("woff2");
   font-weight: 400 700;
   font-display: swap;
   unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+2018-201D, U+2026, U+00B7;
@@ -247,6 +247,7 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .board-lines path.dim { opacity: .3; }
 .board.focus .board-lines path:not(.hot):not(.marker) { opacity: .22; }
 .board.focus .bcard.on:not(.near) { opacity: .5; transition: opacity .3s var(--e-out), transform .62s var(--settle), filter .42s var(--e-out), box-shadow .25s var(--ease); }
+.board .bcard.on.hov { opacity: 1 !important; filter: none !important; }
 .board.focus .rel-tag.on:not(.hot) { opacity: .3; }
 /* Spotlight: the step's own cards are lit, what they touch is half lit, the rest steps back but stays legible.
    Pointing at a card (.focus) takes over. */
@@ -305,6 +306,12 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .vc .by { display: flex; align-items: center; margin-left: auto; padding-left: 8px; }
 .vc .by b { width: 16px; height: 16px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 9px; font-weight: 700; color: #fff; box-shadow: 0 0 0 1.5px var(--card); }
 .vc .by b + b { margin-left: -6px; }
+/* You: a soft neutral plate with a crisp initial, so a person never looks like one of the crew. */
+.vc .by b.me { background: var(--card-3); color: var(--label); font-weight: 650; box-shadow: 0 0 0 1.5px var(--card), inset 0 0 0 1px var(--hair-2); }
+:lang(zh) .vc .by b.me { font-size: 9.5px; }
+/* Crew avatars carry the role icon, not a letter. */
+b.ai svg { width: 66%; height: 66%; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+b.ai svg .dot { fill: currentColor; stroke: none; }
 .vc.ink { box-shadow: 0 0 0 1px var(--ink-rule), var(--shadow-card); }
 /* Evidence with a picture: the picture sits on top, bleeding into the padding the way the How board's media does,
    and the claim under it carries the card, so there is no separate title. Photos and clips stay dark in both themes. */
@@ -504,13 +511,16 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .layers { margin: 0; width: min(100%, 400px); --mx: 0; --my: 0;
   --spring: linear(0, 0.039, 0.133, 0.256, 0.388, 0.518, 0.635, 0.737, 0.821, 0.888, 0.939, 0.976, 1.002, 1.018, 1.027, 1.031, 1.031, 1.029, 1.026, 1.022, 1.018, 1.014, 1.01, 1.007, 1.005, 1.003, 1.001, 1, 1, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 1); }
 .sheets { position: relative; width: 100%; aspect-ratio: 320 / 196; }
-.sheet { position: absolute; inset: 4% 4% 4% 4%; transform: translate(0, -10px); opacity: 0;
-  transition: transform .9s var(--settle), opacity .35s var(--e-out), translate .5s var(--e-out); }
-@supports (transition-timing-function: linear(0, 1)) { .sheet { transition: transform .9s var(--spring), opacity .35s var(--e-out), translate .5s var(--e-out); } }
+/* Sheets never take the pointer: the hover zone is the resting stack, so an opened sheet can't keep it open.
+   Closing is quick and plain (it starts from wherever the sheets are); opening and arriving ride the spring. */
+.sheet { position: absolute; inset: 4% 4% 4% 4%; transform: translate(0, -10px); opacity: 0; pointer-events: none;
+  transition: transform .24s var(--e-out), opacity .35s var(--e-out), translate .3s var(--e-out); }
+.layers.arriving .sheet, .layers.apart .sheet { transition: transform .8s var(--settle), opacity .35s var(--e-out), translate .3s var(--e-out); }
+@supports (transition-timing-function: linear(0, 1)) { .layers.arriving .sheet, .layers.apart .sheet { transition: transform .8s var(--spring), opacity .35s var(--e-out), translate .3s var(--e-out); } }
 .sheet .paper { position: absolute; inset: 0; border-radius: 12px; background: var(--sheet);
   box-shadow: inset 0 1px 0 var(--sheet-edge), 0 0 0 .5px var(--hair-2), 0 1px 2px rgba(0,0,0,.05), 0 12px 22px -18px rgba(0,0,0,.35);
-  transition: transform .9s var(--settle), box-shadow .6s var(--e-out); }
-@supports (transition-timing-function: linear(0, 1)) { .sheet .paper { transition: transform .9s var(--spring), box-shadow .6s var(--e-out); } }
+  transition: transform .24s var(--e-out), box-shadow .24s var(--e-out); }
+.layers.apart .sheet .paper { transition: transform .8s var(--settle), box-shadow .5s var(--e-out); }
 .sheet .paper::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(120% 90% at calc(18% + var(--mx) * 30%) calc(0% + var(--my) * 20%), var(--sheet-edge), transparent 58%); opacity: .5; }
 /* The papers sit a little askew; the drawings on them stay registered. */
 .sheet.s1 .paper { transform: rotate(-2.2deg) translate(-1.5%, -1%); }
@@ -533,15 +543,13 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .sheet .pen { stroke: var(--label); stroke-width: 1.7; }
 /* The paper above already softens what is below; only the bottom sheet gets a touch quieter. */
 .sheet.s1 svg > * { opacity: .9; }
-.sheet.ghost { pointer-events: none; }
 .sheet.ghost svg > * { opacity: 1; }
 .sheet .tag { font: 600 11px/1 var(--sans); fill: var(--label-2); letter-spacing: .01em; }
 :lang(zh) .sheet .tag { letter-spacing: .04em; }
 /* Arriving: the sheets land one after another. */
 .layers.open .sheet { transform: none; opacity: 1; }
-.layers.open .s2 { transition-delay: .22s; } .layers.open .s3 { transition-delay: .44s; }
+.layers.arriving .s2 { transition-delay: .22s; } .layers.arriving .s3 { transition-delay: .44s; }
 /* Opened: an exploded view. Pointer position adds a little parallax, more for the higher sheets. */
-.layers.open.apart .sheet { transition-delay: 0s; }
 .layers.open.apart .s1 { transform: translate(-6%, -7%); }
 .layers.open.apart .s3 { transform: translate(6%, 7%); }
 .layers.open.apart .s2 .paper { box-shadow: inset 0 1px 0 var(--sheet-edge), 0 0 0 .5px var(--hair-2), 0 2px 4px rgba(0,0,0,.05), 0 18px 30px -20px rgba(0,0,0,.38); }
@@ -637,6 +645,22 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .lane-cards { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 10px; }
 
 .zc { min-width: 0; cursor: pointer; transition: opacity .35s var(--ease), transform .5s var(--spring), box-shadow .25s var(--ease), filter .35s; outline-offset: 3px; }
+/* The note a card opens: what it rests on, why, and what it led to, in the board's own words. */
+.zpop { position: absolute; z-index: 5; padding: 12px 14px 13px; border-radius: 12px; background: var(--card); color: var(--label);
+  box-shadow: 0 0 0 .5px var(--hair-2), 0 2px 4px rgba(0,0,0,.05), 0 18px 36px -16px rgba(0,0,0,.28); font-size: 13px; line-height: 1.45;
+  opacity: 0; transform: translateX(-4px) scale(.98); transform-origin: 0 16px; pointer-events: none; } /* clicks pass through to the cards under it */
+.zpop[data-side="l"] { transform: translateX(4px) scale(.98); transform-origin: 100% 16px; }
+.zpop[data-side="b"] { transform: translateY(-4px) scale(.98); transform-origin: 50% 0; }
+.zpop.in { opacity: 1; transform: none; transition: opacity .16s var(--e-out), transform .28s var(--e-out); }
+.zpop[hidden] { display: none; }
+.zr + .zr { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hair); }
+.zl { display: block; font-size: 11.5px; font-weight: 600; color: var(--label-3); margin-bottom: 5px; }
+.zpop ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.zpop li { text-wrap: pretty; }
+.zpop .zm { color: var(--label-3); }
+.zpop .chip { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4.5px; font: 700 10px/1 var(--sans); color: var(--chip-ink); margin-right: 6px; vertical-align: -2px; }
+.zpop .zk { font-style: normal; font-size: 11px; font-weight: 600; line-height: 17px; display: inline-block; padding: 0 6px; margin-right: 6px; border-radius: 5px; color: var(--label-2); background: var(--card-3); vertical-align: 1px; }
+@media (prefers-reduced-motion: reduce) { .zpop.in { transition: none; } }
 .zc:hover, .zc.lit { transform: translateY(-2px); }
 /* No hover lifts while the page is moving under a resting pointer. */
 html.scrolling .zc:not(.lit):hover { transform: none; }

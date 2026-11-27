@@ -26,8 +26,8 @@ Everything that isn't real yet lives in `CONFIG` at the top of `site.js`.
 3. **Demo.** Once the in-browser demo is deployed (built from this repo, so it updates with `main`), set `CONFIG.demo` to its URL. A "Try the demo" button then appears to the left of "Join the waitlist". Never link an unsigned download here: the system security warning is the wrong first impression.
 4. **Hosting (Cloudflare Pages).** `.github/workflows/deploy-website.yml` publishes `website/` with Wrangler on every merge to `main` that touches it (or from Actions → Deploy website → Run workflow). It doesn't use Cloudflare's GitHub app, which looped on sign-in for us. One-time setup:
    - Cloudflare → My Profile → API Tokens → Create Token → Custom token, permission **Account · Cloudflare Pages · Edit**, limited to your account. In the GitHub repo: Settings → Secrets and variables → Actions → Secrets → New repository secret, Name `CLOUDFLARE_API_TOKEN`, Secret = that token. The account ID is in the workflow (it isn't secret).
-   - Run the workflow once. It creates the Pages project `vellum` and publishes; the address (`vellum….pages.dev`) is in the run log and under Workers & Pages.
-   - Storage & Databases → KV → create `vellum-waitlist`. In the `vellum` Pages project: Settings → Bindings → add KV namespace, variable `WAITLIST`. Optionally add the secret `ADMIN_TOKEN`. Run the workflow again so the binding applies.
+   - Run the workflow once. It creates the Pages project `sympoai` and publishes; the address (`sympoai.pages.dev`) is in the run log and under Workers & Pages.
+   - Storage & Databases → KV → create `vellum-waitlist`. In the `sympoai` Pages project: Settings → Bindings → add KV namespace, variable `WAITLIST`. Optionally add the secret `ADMIN_TOKEN`. Run the workflow again so the binding applies.
 
    Fonts and assets are self-hosted, so the page doesn't depend on Google Fonts. Don't use the dashboard's drag-and-drop upload: it skips `functions/`, so the waitlist wouldn't work.
 5. **Domain and sharing.** Add the domain, then an `og:image` (a 1200×630 crop of the board) and a canonical URL in `<head>`.

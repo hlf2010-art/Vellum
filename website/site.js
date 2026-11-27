@@ -57,6 +57,15 @@
       "why.a4": "A decision nobody remembers making", "why.b4": "A decision that speaks up when the facts change",
       "how.title": "Every card knows where it came from.",
       "how.lede": "Pick one to see what it rests on.",
+      "out.title": "Then make it real.", "out.lede": "Whatever you ship remembers why.", "out.label": "Outputs",
+      "out.plan": "Plan", "out.tasks": "Tasks", "out.table": "Table", "out.cut": "Cut", "out.site": "Site",
+      "doc.h": "Hook-first lantern", "doc.why": "Why", "doc.whyv": "8 of 10 campers hang it from the tent loop.",
+      "doc.rests": "Rests on", "doc.restsv": "3 sources, 2 of them observed", "doc.aside": "Set aside", "doc.asidev": "A shade dial, C glow ring",
+      "kb.todo": "To do", "kb.doing": "Doing", "kb.done": "Done", "kb.1": "Widen the hook mouth", "kb.2": "Glove test, 5 people",
+      "kb.3": "Order 2200K LEDs", "kb.4": "Foam mock-up", "kb.5": "Field test",
+      "tb.h": "Field test, 10 campers", "tb.table": "Table", "tb.chart": "Chart", "tb.r1": "Found it in the dark",
+      "tb.r2": "Hook held, thick line", "tb.r3": "Hook held, thin line", "tb.r4": "Too bright up close",
+      "cut.line": "Find it in the dark.", "site.h": "Find it in the dark.", "site.p": "Hook on top. 2200K at 40 lumens.", "site.cta": "Pre-order",
       "z.1": "Gather", "z.1d": "What people did and said",
       "z.2": "Explore", "z.2d": "Judgments, then directions",
       "z.3": "Prototype", "z.3d": "Built from one direction",
@@ -107,6 +116,15 @@
       "why.a4": "没人记得是怎么定下的决定", "why.b4": "事实一变，决定会自己站出来",
       "how.title": "每张卡片\u200b都知道自己从哪来。",
       "how.lede": "选一张，看它建立在什么之上。",
+      "out.title": "然后，把它做出来。", "out.lede": "做出来的每样东西，都记得为什么。", "out.label": "产出",
+      "out.plan": "方案", "out.tasks": "任务", "out.table": "表格", "out.cut": "成片", "out.site": "网站",
+      "doc.h": "挂钩优先的营地灯", "doc.why": "为什么", "doc.whyv": "10 位露营者里，8 位把灯挂在帐篷挂环上。",
+      "doc.rests": "依据", "doc.restsv": "3 条依据，其中 2 条是观察", "doc.aside": "已搁置", "doc.asidev": "A 遮光旋钮，C 夜光定位环",
+      "kb.todo": "待办", "kb.doing": "进行中", "kb.done": "完成", "kb.1": "加宽挂钩开口", "kb.2": "5 人戴手套试用",
+      "kb.3": "订 2200K 灯珠", "kb.4": "泡沫手板", "kb.5": "实地测试",
+      "tb.h": "实地测试，10 位露营者", "tb.table": "表格", "tb.chart": "图表", "tb.r1": "黑暗里找得到",
+      "tb.r2": "挂钩稳，粗绳", "tb.r3": "挂钩稳，细绳", "tb.r4": "近看刺眼",
+      "cut.line": "在黑暗里，一眼找到。", "site.h": "在黑暗里，一眼找到。", "site.p": "挂钩在顶部。2200K，40 流明。", "site.cta": "预订",
       "z.1": "收集", "z.1d": "人们做了什么、说了什么",
       "z.2": "探索", "z.2d": "先下判断，再分方向",
       "z.3": "原型", "z.3d": "从一个方向做出来",
@@ -327,12 +345,14 @@
     $("themeBtn").setAttribute("aria-label", t("theme.switch"));
     $("steps").setAttribute("aria-label", t("steps.label"));
     $("caseTabs").setAttribute("aria-label", t("cases.label"));
+    $("reelTabs").setAttribute("aria-label", t("out.label"));
     $("modes").setAttribute("aria-label", t("modes.label"));
     board.relabel();
     if (scene) scene.relabel();
     $("hero-title").setAttribute("aria-label", t("hero.title"));
     headline.type(true);
     zones.render(false);
+    reel.relabel();
     renderMode(false);
     renderDownloads();
   }
@@ -1281,6 +1301,63 @@
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { align(); draw(false); });
 
     return { render: function (animate) { render(animate); } };
+  })();
+
+  // ---- What it becomes --------------------------------------------------------------------
+  // One decision, five things you could ship. Only the one in front is lit; the rest wait at the edges.
+  // It moves on by itself while you watch, and stops for good the moment you pick one.
+  var reel = (function () {
+    var root = $("reel"), track = $("reelTrack"), tabsEl = $("reelTabs");
+    var items = Array.prototype.slice.call(track.children), tabs = Array.prototype.slice.call(tabsEl.querySelectorAll("[role=tab]"));
+    var at = 0, timer = 0, seen = false, hold = false, touched = false;
+    // The one in front lines up with the text column above it; the next ones wait to its right.
+    var col = root.parentNode.querySelector(".wrap");
+    function center() {
+      var it = items[at], cs = getComputedStyle(col), left = col.getBoundingClientRect().left - root.getBoundingClientRect().left + parseFloat(cs.paddingLeft);
+      root.style.setProperty("--fl", Math.max(2, Math.min(14, (left - 8) / root.clientWidth * 100)).toFixed(1) + "%");
+      track.style.transform = "translateX(" + Math.round(left - it.offsetLeft) + "px)";
+    }
+    function go(i, user) {
+      at = (i + items.length) % items.length;
+      items.forEach(function (it, k) { var on = k === at; it.classList.toggle("on", on); it.setAttribute("aria-hidden", on ? "false" : "true"); });
+      tabs.forEach(function (b, k) { var on = k === at; b.setAttribute("aria-selected", on ? "true" : "false"); b.tabIndex = on ? 0 : -1; });
+      root.setAttribute("aria-labelledby", tabs[at].id);
+      slide(tabsEl, tabs[at]);
+      center();
+      if (user) { touched = true; clearTimeout(timer); } else tick();
+    }
+    function tick() {
+      clearTimeout(timer);
+      if (touched || reduced || !seen) return;
+      timer = setTimeout(function () { if (!hold && seen && !touched) go(at + 1); else tick(); }, 3800);
+    }
+    tabs.forEach(function (b, i) {
+      b.addEventListener("click", function () { go(i, true); });
+      b.addEventListener("keydown", function (e) {
+        var n = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : null;
+        if (n === null) return;
+        e.preventDefault(); n = (n + tabs.length) % tabs.length; go(n, true); tabs[n].focus();
+      });
+    });
+    items.forEach(function (it, k) { it.addEventListener("click", function () { if (k !== at && !swiped) go(k, true); }); });
+    // A swipe moves one step; a tap on a side card brings it to the front.
+    var x0 = null, swiped = false;
+    root.addEventListener("pointerdown", function (e) { x0 = e.clientX; swiped = false; });
+    root.addEventListener("pointerup", function (e) {
+      if (x0 === null) return;
+      var dx = e.clientX - x0; x0 = null;
+      if (Math.abs(dx) > 40) { swiped = true; go(at + (dx < 0 ? 1 : -1), true); }
+    });
+    root.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") hold = true; });
+    root.addEventListener("pointerleave", function () { hold = false; });
+    if ("IntersectionObserver" in window) new IntersectionObserver(function (es) {
+      es.forEach(function (en) { seen = en.isIntersecting; if (seen) tick(); else clearTimeout(timer); });
+    }, { threshold: 0.5 }).observe(root);
+    var rz = 0;
+    window.addEventListener("resize", function () { cancelAnimationFrame(rz); rz = requestAnimationFrame(function () { slide(tabsEl, tabs[at]); center(); }); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { slide(tabsEl, tabs[at]); center(); });
+    root.classList.add("still"); go(0); requestAnimationFrame(function () { requestAnimationFrame(function () { root.classList.remove("still"); }); });
+    return { relabel: function () { slide(tabsEl, tabs[at]); center(); } };
   })();
 
   // Shared: an S-curve from the side of A that faces B to the side of B that faces A.

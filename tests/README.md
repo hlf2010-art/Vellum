@@ -166,7 +166,7 @@ node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a
 
 ## Relations
 
-`tests/relations.cjs` checks `relations-contract.md` with real mouse drags: the snap previews before it happens and makes one `related` relation shown as a clasp; the type picker (keys 1 to 4); a connector between snapped cards opens the same relation instead of adding one; Show line and Hide line; pulling apart keeps the relation as a line with its type and offers Unbind; ⌥ skips the snap, M and the toolbar toggle it (remembered); one Undo takes back the move and the relation; nudging a snapped card asks nothing again; a snapped group moves by its clasp and a connector dropped on the clasp relates to every card in it; the crew reads relations with their type and direction, ranks them first and never changes them; reduced motion and dark mode.
+`tests/relations.cjs` checks `relations-contract.md` with real mouse drags: the snap previews before it happens and makes one `related` relation shown as a clasp; the type picker (keys 1 to 4); a note on a relation (saved with Enter, shown on the line, read by the crew, undoable) and type changes logged with the old type; a connector between snapped cards opens the same relation instead of adding one; Show line and Hide line; pulling apart keeps the relation as a line with its type and offers Unbind; ⌥ skips the snap, M and the toolbar toggle it (remembered); one Undo takes back the move and the relation; nudging a snapped card asks nothing again; a snapped group moves by its clasp and a connector dropped on the clasp relates to every card in it; the crew reads relations with their type and direction, ranks them first and never changes them; reduced motion and dark mode.
 
 ```bash
 node tests/relations.cjs

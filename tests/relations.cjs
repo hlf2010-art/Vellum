@@ -18,7 +18,7 @@ async function open(browser, base, theme = 'light') {
   const p = await ctx.newPage();
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2200);
-  await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(700);
+  await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(700);
   p.cards = specs => p.evaluate(specs => {
     const ids = specs.map(([type, f, x, y]) => { const n = node(type, f, { x, y }); n.status = 'ink'; return n.id; });
     cam = { x: 0, y: 0, s: 1 }; paintCam(); renderAll(); return ids;
@@ -92,7 +92,7 @@ async function open(browser, base, theme = 'light') {
       check('Show line draws the snapped relation as a line', await p.evaluate(id => !!document.querySelector(`#wires .w-hit[data-edge="${id}"]`) && !document.querySelector(`#relLayer .clasp:not(.gone)[data-clasp="${id}"]`), es[0].id));
       await p.click('#wirePop [data-wire-line]'); await p.waitForTimeout(200);
       check('Hide line puts the clasp back', await p.evaluate(id => !!document.querySelector(`#relLayer .clasp:not(.gone)[data-clasp="${id}"]`), es[0].id));
-      await p.evaluate(() => select([]));
+      await p.evaluate(() => { selectedEdgeId = null; select([]); });
 
       // R3. pulling apart keeps the relation, drawn as a line; Unbind deletes it
       await p.clearToasts();
@@ -200,6 +200,37 @@ async function open(browser, base, theme = 'light') {
       const plain = await p.evaluate(() => { const x = node('note', { text: 'Alpha probe' }, { x: 0, y: 900 }), y = node('note', { text: 'Beta probe' }, { x: 300, y: 900 }); x.status = y.status = 'ink'; makeRelation(x.id, y.id, { via: 'snap' }); return ctxWhyText(contextFor(y).picks.find(p => p.n.id === x.id).why); });
       check('"related" reaches the crew as related, not agreement', /not agreement/.test(plain), plain);
       check('no page errors (R6)', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // R8. a note on a relation, and history that says what the type was
+    {
+      const p = await open(browser, base);
+      const [a, b] = await p.cards([['note', { text: 'Trail app: offline maps' }, 200, 200], ['note', { text: 'Hikers want group sharing' }, 700, 240]]);
+      const A = await p.box(a), B = await p.box(b);
+      await p.wire(a, B.x + B.w / 2, B.y + B.h / 2);
+      let es = await p.edges();
+      await p.keyboard.press('2'); await p.waitForTimeout(150); await p.keyboard.press('Escape');
+      await p.evaluate(id => selectEdge(id), es[0].id); await p.waitForTimeout(200);
+      const hasInput = await p.evaluate(() => !!document.querySelector('#wirePop [data-wire-note]'));
+      check('the relation popover has a note field', hasInput);
+      await p.click('#wirePop [data-wire-note]');
+      await p.keyboard.type('but only for solo hikers');
+      await p.keyboard.press('Backspace'); await p.keyboard.type('s');
+      check('typing in the note does not delete the relation (Backspace stays in the field)', (await p.edges()).length === 1);
+      await p.keyboard.press('Enter'); await p.waitForTimeout(250);
+      const n = await p.evaluate(([a, b]) => { const e = relBetween(a, b); const tag = document.querySelector(`#relLayer .rel-tag[data-reltag="${e.id}"]`); const pick = contextFor(byId(b)).picks.find(x => x.n.id === a);
+        return { note: e.note, tag: tag && tag.textContent, title: tag && tag.title, ctx: pick ? ctxWhyText(pick.why) : '', log: board.log.slice(-1)[0].html }; }, [a, b]);
+      check('Enter saves the note on the relation', n.note === 'but only for solo hikers', JSON.stringify(n));
+      check('the line shows the type and the note', /^Supports · but only for solo/.test(n.tag) && /solo hikers$/.test(n.title), JSON.stringify(n));
+      check('the crew reads the note with the relation', /your note: “but only for solo hikers”/.test(n.ctx), n.ctx);
+      check('the note is in the Activity log', /Note on/.test(n.log) && /solo hikers/.test(n.log), n.log);
+      await p.evaluate(() => undo()); await p.waitForTimeout(250);
+      check('Undo takes the note back', !(await p.evaluate(([a, b]) => relBetween(a, b).note, [a, b])));
+      await p.evaluate(id => selectEdge(id), es[0].id); await p.waitForTimeout(150);
+      await p.click('#wirePop [data-wire-rel="conflicts"]'); await p.waitForTimeout(200);
+      const lg = await p.evaluate(() => board.log.slice(-1)[0].html);
+      check('changing the type is logged with what it was', /counters/.test(lg) && /was: supports/.test(lg), lg);
+      check('no page errors (R8)', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
     // R7. reduced motion and dark mode

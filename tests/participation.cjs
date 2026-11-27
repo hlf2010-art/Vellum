@@ -52,7 +52,7 @@ async function open(browser, base, { theme = 'light', live = false } = {}) {
   if (live) await p.evaluate(url => { SCOUT_GROUNDING = false; apiCfg = { enabled: true, baseUrl: url + '/v1', model: 'smoke', key: 'smoke' }; renderCrew(); }, base);
   /* short pauses so the test does not wait for real ones */
   await p.evaluate(() => { IDLE_NEED.matters = 250; IDLE_NEED.often = 150; SPEAK_QUIET.matters = 200; SPEAK_QUIET.often = 150; advQuietMs = 200; advMaxWaitMs = 1500; advSpent = []; });
-  p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.locator('#boardsPop [data-new]').click(); await p.waitForTimeout(700); };
+  p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.locator('#boardsPop [data-new]').click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(700); };
   p.openBoard = async title => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.locator('#boardsPop .bp-row', { hasText: title }).first().click(); await p.waitForTimeout(700); };
   p.rename = t => p.evaluate(t => { board.title = t; renderAll(); persistNow(); }, t);
   p.sw = () => p.evaluate(() => [...document.querySelectorAll('#partSw [data-part]')].map(b => b.dataset.part + (b.getAttribute('aria-checked') === 'true' ? '*' : '')).join(','));

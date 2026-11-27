@@ -36,6 +36,10 @@ Run it before committing a change to `Vellum-Lumen.html`.
 
 `stage-role-contract.md` says who does what at each stage. Group 5h checks that the stage is derived from what the designer kept (drafts do not count; adopting moves Explore to Prototype; a frozen proof makes it Snapshot), that the brief counts evidence by weight and names what is decided and open, and that Copilot, the advisor and a pin reply are each told it.
 
+## Paths
+
+Group 5m checks that every path stays on one board. A result the designer records (Failed, with what happened) stays on the direction: the card shows it, the cards built on it are dimmed as a closed path, it joins decision memory with its reason, it is logged as a decision, the stage brief names it, and Undo takes it back. Failing the adopted direction offers Go back. Go back clears the adoption, keeps the failed direction, makes the directions passed over candidates again, puts the board back in Explore, and can be undone. A discarded direction keeps its letter, plan and test, the claim's sheet lists every path and how it ended, and Bring back restores a discarded direction as a draft. With four directions, Explore offers a new round instead of asking you to discard one. A new round is a kept claim of yours, linked to the one it came from, resting on the same evidence and labelled with its round. Strategist in round 2 is told what round 1 tried and how each test came out, and a repeat of the failed direction is held back. A direction's sheet and the Record Result dialog both record a result, and the result is legible in both themes.
+
 ## The bar and the panel
 
 The bottom bar is a command bar and search box, and the conversation lives in the side panel (group 5i). Plain words in the bar also list matching cards (and name matching commands); nothing is picked until ↓, so Enter still does what it did (the words become an idea, a command, or a question for the panel). `@scout`, `@strategist`, `@wright` or `@critic` in the bar (typed, or chosen from the chip) opens the panel with that member preselected ("Asking Critic", dropped with the ×), and the message goes to them; the exception is a draft that member made, where `@name` in the bar still revises it. With the panel open, the selected cards are shown there once and not in the bar too.
@@ -166,7 +170,7 @@ node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a
 
 ## Relations
 
-`tests/relations.cjs` checks `relations-contract.md` with real mouse drags: the snap previews before it happens and makes one `related` relation shown as a clasp; the type picker (keys 1 to 4); a connector between snapped cards opens the same relation instead of adding one; Show line and Hide line; pulling apart keeps the relation as a line with its type and offers Unbind; ⌥ skips the snap, M and the toolbar toggle it (remembered); one Undo takes back the move and the relation; nudging a snapped card asks nothing again; a snapped group moves by its clasp and a connector dropped on the clasp relates to every card in it; the crew reads relations with their type and direction, ranks them first and never changes them; reduced motion and dark mode.
+`tests/relations.cjs` checks `relations-contract.md` with real mouse drags: the snap previews before it happens and makes one `related` relation shown as a clasp; the type picker (keys 1 to 4); a note on a relation (saved with Enter, shown on the line, read by the crew, undoable) and type changes logged with the old type; a connector between snapped cards opens the same relation instead of adding one; Show line and Hide line; pulling apart keeps the relation as a line with its type and offers Unbind; ⌥ skips the snap, M and the toolbar toggle it (remembered); one Undo takes back the move and the relation; nudging a snapped card asks nothing again; a snapped group moves by its clasp and a connector dropped on the clasp relates to every card in it; the crew reads relations with their type and direction, ranks them first and never changes them; reduced motion and dark mode.
 
 ```bash
 node tests/relations.cjs
@@ -218,3 +222,18 @@ SHOTS=/some/dir node tests/copilot-per-board.cjs   # also saves screenshots
 ```
 node tests/reasoning-ink.cjs
 ```
+
+## Workflow templates (the ideal designer workflows, end to end)
+
+`tests/workflow-templates.cjs` walks the lead workflows from a brief to something a designer can hand on, in the real page, through the stages Vellum is built around (Gather → Explore → Prototype → Snapshot). Each one starts from its template in the New board picker (`product`, `video`, `aiproduct`), with constraints typed there, and checks that the template's test standard, deliverable, Critic focus, Copilot suggestions and constraints reach the prompts, and that with no model the drafts come from the template instead of generic rules. A fourth part, `P`, covers the picker itself: four choices, physical or digital, Escape keeps your board, `/constraint`, `/template` on an existing board, the Memory sheet and the Chinese UI.
+
+- **A. Product design (a physical product):** brief → evidence by weight → fork three directions → keep two, discard one with a reason → Critic answers the designer's question against the sources → adopt (the other is recorded as passed over) → Wright's proof (a test kit) → task board → Snapshot → the exported file carries the decision trail and a reload keeps it.
+- **C. AI product, with Copilot alongside (an email-reply assistant for freelance designers):** Copilot's starter suggestions follow each step (one sentence → propose directions → compare → cheapest real test); it pins a thought on a new failure case unasked, told the stage, ending in one action; in the panel it compares the directions with the stage, directions and failure cases in hand, creates an eval set as a draft, and only suggests a change to a kept direction; Critic asks what happens when the model is wrong; the proof designs the four states (normal, wrong, unsure, no model). With no model, Copilot stays quiet rather than pin an invented thought.
+- **B. Short video (10–20 s):** brief → fork three hooks (nothing is rendered while choosing) → Critic → adopt → the hook becomes a timed beat-by-beat script page → one beat is sent to the video provider (MiniMax H3 through Media Studio, mocked at `127.0.0.1:59639`) with its own words → the approved script is frozen.
+
+```bash
+node tests/workflow-templates.cjs            # from the repo root
+node tests/workflow-templates.cjs --only=C   # one part (A, B, C, or P for the picker)
+```
+
+Each template runs with a scripted model and with no model at all. Nothing calls a real model or generator. Lines marked `KNOWN` are recorded gaps (offline Copilot answering with another project's advice, a stand-in clip not marked as a preview, no Figma export, one hard-wired video provider, no eval-set card); they print but do not fail the run, and turn into `PASS … (gap closed)` once fixed.

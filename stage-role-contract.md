@@ -42,6 +42,20 @@ The stage comes from what is on the board, not from where cards sit. Only what t
 4. Options are suggestions, never the only answers: every question has a row for the designer's own words.
 5. The crew's opinions are Proposal or Illustration, never Observed. Real-world evidence comes from the designer, so the crew prepares the test (outreach, a landing page, the questions) and the designer runs it.
 6. Decisions are logged and survive the change log's cap; every board is backed up (see tests/README.md).
+7. Every path stays on the board. Nobody gets it right the first time, so a direction that failed its test is kept, marked Failed with what happened, and can always be gone back to. Only the designer records a result.
+
+## Paths: going back and trying again
+
+All of a claim's paths stay on one board, side by side, dead ends included. There are no hidden versions to switch between.
+
+| Act | What happens |
+|---|---|
+| **Record a result** (a direction's sheet, or Record Result on its card) | The designer marks the test Passed or Failed, with one line on what happened. A failed direction stays on the board with its result at the foot of its test box. The cards built on it are dimmed and read as a closed path. A failed result also joins decision memory with its reason, so the crew holds back repeats. |
+| **Go back here** (a claim) | The adoption is cleared and the claim's choice is open again. The direction you leave keeps its result, and the directions passed over for it become candidates again. If you fail the adopted direction, the toast offers this. |
+| **New round** (a claim) | A new claim card of yours, "Round 2", linked to the claim it came from and resting on the same evidence. It has its own letters A–D, so the four-direction limit no longer blocks you; when a claim has four directions, Explore offers a new round instead of asking you to discard one. Strategist is told what every earlier round tried and how each test came out. |
+| **Bring back** (the claim's Paths list) | A direction you discarded comes back as a draft with its letter, plan and test, and stops counting as turned down. |
+
+The claim's sheet has a Paths section: each round under its own heading, each direction as a neutral grey block whose monochrome letter chip says where it stands (outlined while open, solid once adopted, crossed through when its test failed, dashed for a draft or a discarded one), with at most one word on the right (Passed or Failed in its ink, with the reason beneath, or Draft). The adopted direction carries Go back, a discarded one Bring back, and a dashed "New round N" block at the foot shows where the next round will appear. Related leaves out the claim's own rounds and directions, since Paths lists them. Each of these acts is one undoable step and is logged as a decision. The stage brief tells every agent what a real test ruled out or passed, and when the adopted direction failed, that the designer decides what comes next.
 
 ## Where the designer talks to the crew
 
@@ -56,11 +70,14 @@ The stage comes from what is on the board, not from where cards sit. Only what t
 - Drafts by default; kanban merge and `add_cards`; proposals reconciled with actions; options that are really directions become direction cards while nothing is adopted.
 - Decisions kept past the log cap; adopting is logged; automatic backups.
 - Copilot's starter suggestions follow the stage and the selection, and are visual only for a selected image or frame.
-- Checked in `tests/vellum-smoke.cjs` (groups 5d, 5e, 5g, 5h, 5k).
+- Paths: `setOutcome()`, `goBack()`, `newRound()` and `bringBack()`, the claim sheet's Paths section and the direction sheet's Result section; `roundFamily()` lets every round of a claim share its turned-down ideas; `earlierRoundsBlock()` in Strategist's fork prompt.
+- Checked in `tests/vellum-smoke.cjs` (groups 5d, 5e, 5g, 5h, 5k, 5m).
 
 ## Not built yet
 
 - Gates in code by stage. Today this is the brief in the prompts plus the draft default and a few safety nets.
+- A view of every path across the board with its test results (the lineage braid). Today the claim's sheet lists one claim's paths.
+- Results imported from outside (ad performance, eval pass rates) onto the direction they belong to; today the designer types the result.
 - The Critic recording its strongest objection and the designer's reason for overriding it.
 - A briefing when the designer comes back ("since Tuesday: …").
 - An eval set built from what an OPC thinks through (what to sell, to whom, how to reach them, price, first version) and scored on stage, not only on errors.

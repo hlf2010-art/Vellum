@@ -55,7 +55,6 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
     check('evidence kept after the decision shows as new, with how it bears on it', n1.k === 'New since you decided · 2' && n1.rows.join() === 'Counters,Supports', JSON.stringify(n1));
     check('a counter marks the decision Countered, in the panel and as a dot on the entry', n1.st === 'Countered' && n1.ctrBox && n1.dot && n1.ctrInRests, JSON.stringify(n1));
     check('nothing about the decision changed on its own', await p.evaluate(r => board.adopted[r.claim] === r.dir, ids));
-    await p.evaluate(() => setSpeak ? setSpeak('never') : null).catch(() => {});
     const focusDot = await p.evaluate(() => { const prev = crewSpeak; crewSpeak = 'never'; $('decBtn')._sig = ''; renderDecBtn(); const hid = $('decBtn').querySelector('.dec-dot').hidden; crewSpeak = prev; $('decBtn')._sig = ''; renderDecBtn(); return hid; });
     check('in Focus the entry shows no dot', focusDot);
     await p.click('[data-dv-hold]'); await p.waitForTimeout(250); await p.keyboard.type('Rain is fixable with a haptic pulse.'); await p.keyboard.press('Enter'); await p.waitForTimeout(500);
@@ -69,6 +68,10 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
     await p.evaluate(r => { select([r.a]); adopt(byId(r.a)); }, ids); await p.waitForTimeout(500);
     const ad = await p.evaluate(r => ({ at: byId(r.a).adoptedAt > 0, meta: document.querySelector('.dv-meta')?.textContent, card: nodeEl(r.a).querySelector('.chose .aside-add')?.textContent, since: !!document.querySelector('.dv-since') }), ids);
     check('adopting records when and by whom, and the card offers to say why', ad.at && /^Decided .+ by you$/.test(ad.meta) && ad.card === 'Say why you chose it', JSON.stringify(ad));
+    await p.evaluate(r => setOutcome(byId(r.a), 'failed', '5 of 6 never saw the corner toast.'), ids); await p.waitForTimeout(400);
+    const fo = await p.evaluate(() => ({ st: document.querySelector('.dv-dec .dv-st')?.textContent, note: [...document.querySelectorAll('.dv-dec .dv-kept')].map(x => x.textContent).join('|'), acts: [...document.querySelectorAll('.dv-dec [data-dv-round],.dv-dec [data-dv-reopen]')].map(x => x.textContent).join(','), dot: !$('decBtn').querySelector('.dec-dot').hidden }));
+    check('a failed test marks the decision Test failed, shows what happened, and offers New round or Reopen the choice', fo.st === 'Test failed' && /5 of 6 never saw/.test(fo.note) && fo.acts === 'New round,Reopen the choice' && fo.dot, JSON.stringify(fo));
+    await p.evaluate(() => undo()); await p.waitForTimeout(300);
     await p.keyboard.press('Escape'); await p.waitForTimeout(350);
     check('Esc closes the panel and the tools come back', await p.evaluate(() => $('decPanel').hidden && !$('app').classList.contains('dv-on')));
     await p.click('#decBtn'); await p.waitForTimeout(350); await p.click('[data-dv-go]'); await p.waitForTimeout(700);

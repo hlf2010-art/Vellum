@@ -21,7 +21,7 @@ async function open(browser, base, { theme = 'light', scale = 1 } = {}) {
   const p = await ctx.newPage();
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/x.html'); await p.waitForTimeout(2200);
-  await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(700);
+  await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(700);
   await p.evaluate(t => { document.documentElement.dataset.theme = t; cam = { x: 0, y: 0, s: 1 }; paintCam(); renderAll(); }, theme);
   return p;
 }

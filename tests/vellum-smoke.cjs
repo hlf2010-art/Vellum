@@ -131,7 +131,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
   p.type = async (t, enter = true) => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); if (enter) await p.keyboard.press('Enter'); };
   p.idle = async () => { await p.waitForTimeout(400); for (let i = 0; i < 100 && await p.evaluate(() => crewBusy()); i++) await p.waitForTimeout(250); await p.waitForTimeout(500); };
   p.toast = () => p.evaluate(() => [...document.querySelectorAll('#toasts > *')].map(t => t.innerText.replace(/\s+/g, ' ')).join(' / '));
-  p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(800); };
+  p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(800); };
   return p;
 }
 
@@ -737,6 +737,124 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('Enter still works with no send button', await p.evaluate(() => lineIn.value === ''));
       await p.setViewportSize({ width: 560, height: 820 }); await p.click('#lineInput'); await p.keyboard.type('hello there'); await p.waitForTimeout(250);
       check('on a phone the send button comes back, since there is no hardware Enter', await p.evaluate(() => { const e = document.getElementById('sendBtn'); return e.offsetParent !== null && e.getBoundingClientRect().width > 0; }));
+      check('no page errors', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // 5m. paths on one board: record how a test came out, go back to the choice, start a new round, bring back a discarded direction
+    {
+      const p = await page(browser, base);
+      await p.newBoard();
+      const ids = await p.evaluate(() => {
+        const claim = node('idea', { text: 'Solo accountants need receipt chasing', status: 'ink', by: 'you' }, { x: 100, y: 100 });
+        const src = node('source', { title: 'Accountant call 1', text: 'Chasing receipts takes two days a month', weight: 'observed', status: 'ink', by: 'you' }, { x: -400, y: 100 });
+        edge(src.id, claim.id, 'derive', 'live');
+        const d = {};
+        [['A', 'Copilot drafts', 'An assistant drafts the receipt reminder and waits for approval'], ['B', 'Concierge chasing', 'The founder chases receipts by hand for three accountants'], ['C', 'Weekly digest', 'One weekly email lists every missing receipt']].forEach(([l, t, x], i) => { d[l] = node('direction', { idea: claim.id, _src: claim.id, letter: l, title: t, text: x, test: 'Three of five accountants keep using it after two weeks', status: 'ink', by: 'muse' }, { x: 600, y: 100 + i * 420 }).id; edge(claim.id, d[l], 'derive', 'live'); });
+        d.D = node('direction', { idea: claim.id, _src: claim.id, letter: 'D', title: 'Narrow to Xero', text: 'Only Xero users, pulling missing receipts from bank feeds', test: 'Two of three Xero users connect it', mode: 'desk', status: 'sketch', by: 'muse', pid: 'p-d' }, { x: 600, y: 1360 }).id;
+        edge(claim.id, d.D, 'derive', 'live');
+        renderAll();
+        return { claim: claim.id, src: src.id, ...d };
+      });
+      await p.evaluate(id => adopt(byId(id)), ids.B);
+
+      // the designer records the result; the crew never does
+      await p.evaluate(() => document.querySelectorAll('#toasts > *').forEach(t => t.remove()));
+      await p.evaluate(id => setOutcome(byId(id), 'failed', '1 of 5 kept using it'), ids.B);
+      let r = await p.evaluate(id => { const d = byId(id), el = document.querySelector(`.card[data-id="${id}"]`); return { out: d.outcome, rec: (board.declined || []).find(x => x.kind === 'failed' && x.ref === id), change: (board.changes || []).find(c => c.op === 'outcome' && c.id === id), cls: el.className, res: el.querySelector('.test .res')?.innerText.replace(/\s+/g, ' ') }; }, ids.B);
+      check('a failed result is kept on the direction with what happened', r.out && r.out.result === 'failed' && r.out.note === '1 of 5 kept using it', JSON.stringify(r.out));
+      check('the card stays on the board and says it failed and why', /res-failed/.test(r.cls) && /Failed · 1 of 5 kept using it/.test(r.res || ''), r.cls + ' | ' + r.res);
+      check('a failed test joins decision memory with its reason, and is logged as a decision that outlasts the cap', !!r.rec && r.rec.reason === '1 of 5 kept using it' && !!r.change && await p.evaluate(c => isKeyChange(c), r.change));
+      check('failing the adopted direction offers to go back to the claim', /failed its test/.test(await p.toast()) && /Go back/.test(await p.toast()), await p.toast());
+      r = await p.evaluate(() => stageBrief());
+      check('every agent is told what a real test ruled out, and that the designer decides what next', /Ruled out by a real test: B · Concierge chasing \(1 of 5 kept using it\)/.test(r) && /the adopted direction failed its test; the designer decides/.test(r), r.slice(0, 320));
+      await p.evaluate(() => undo());
+      check('Undo takes the result and its decision record back', await p.evaluate(id => !byId(id).outcome && !(board.declined || []).some(x => x.kind === 'failed' && x.ref === id), ids.B));
+      await p.evaluate(id => setOutcome(byId(id), 'failed', '1 of 5 kept using it'), ids.B);
+      const proof = await p.evaluate(id => { const pf = node('proof', { dir: id, _src: id, title: 'Concierge script', spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1100, y: 520 }); edge(id, pf.id, 'derive', 'live'); renderAll(); return pf.id; }, ids.B);
+      check('what was built on a failed direction stays visible but reads as a closed path', await p.evaluate(id => document.querySelector(`.card[data-id="${id}"]`).classList.contains('closed'), proof));
+
+      // going back reopens the choice and keeps the failed path
+      const passedBefore = await p.evaluate(id => (board.declined || []).filter(x => x.kind === 'passed-over' && x.target === id).length, ids.claim);
+      await p.evaluate(id => goBack(byId(id)), ids.claim);
+      r = await p.evaluate(i => ({ adopted: board.adopted[i.claim] || null, b: !!byId(i.B) && byId(i.B).outcome?.result, passed: (board.declined || []).filter(x => x.kind === 'passed-over' && x.target === i.claim).length, failedRec: (board.declined || []).some(x => x.kind === 'failed' && x.ref === i.B), change: (board.changes || []).some(c => c.op === 'go-back' && c.id === i.claim && c.from === i.B), log: board.log.slice(-1)[0]?.html || '', stage: boardStage().stage }), ids);
+      check('Go back clears the adoption and leaves the failed direction on the board', r.adopted === null && r.b === 'failed', JSON.stringify(r));
+      check('the directions that were passed over are candidates again; the failed one stays turned down', passedBefore === 2 && r.passed === 0 && r.failedRec, `${passedBefore} → ${r.passed}, failed record ${r.failedRec}`);
+      check('going back is logged as a decision and the board is back in Explore', r.change && /Went back to/.test(r.log) && r.stage === 'explore', r.log + ' | ' + r.stage);
+      await p.evaluate(() => undo());
+      check('Undo restores the adoption', await p.evaluate(i => board.adopted[i.claim] === i.B, ids));
+      await p.evaluate(id => goBack(byId(id)), ids.claim);
+
+      // the claim's sheet shows every path; a discarded direction can be brought back
+      await p.evaluate(id => erase([id]), ids.D); await p.waitForTimeout(500);
+      const rec = await p.evaluate(id => (board.declined || []).find(x => x.kind === 'draft' && x.ref === id), ids.D);
+      check('a discarded direction keeps its letter, plan and test in the record', rec && rec.meta && rec.meta.letter === 'D' && rec.meta.test === 'Two of three Xero users connect it' && rec.meta.mode === 'desk', JSON.stringify(rec && rec.meta));
+      await p.evaluate(id => { select([id]); openFocus(id); }, ids.claim); await p.waitForTimeout(600);
+      r = await p.evaluate(() => { const s = document.querySelector('#margin .m-paths'); return s ? { text: s.innerText.replace(/\s+/g, ' '), back: !!s.querySelector('[data-m="bring-back"]'), goBack: !!s.querySelector('[data-m="go-back"]'), round: !!s.querySelector('[data-m="new-round"]') } : null; });
+      check('the claim\'s sheet lists every path and how it ended', !!r && /Paths/.test(r.text) && /3 directions · 1 failed/.test(r.text) && /Concierge chasing 1 of 5 kept using it Failed/.test(r.text) && /Narrow to Xero/.test(r.text) && !/Not adopted|Adopted/.test(r.text), r && r.text);
+      check('it offers Bring back and New round, and no Go back while nothing is adopted', r && r.back && r.round && !r.goBack, JSON.stringify(r));
+      {
+        const bad = await p.evaluate(LEGIBILITY, '#margin .m-paths');
+        check('the Paths list (grey blocks, letter chips, results) is legible in dark mode', bad.length === 0, bad.join(' | '));
+        const q = await page(browser, base, { theme: 'light' });
+        await q.newBoard();
+        await q.evaluate(() => {
+          const c = node('idea', { text: 'Solo accountants need receipt chasing', status: 'ink', by: 'you' }, { x: 100, y: 100 });
+          [['A', 'Copilot drafts', 'passed', '4 of 5 approved the draft'], ['B', 'Concierge chasing', 'failed', '1 of 5 kept using it'], ['C', 'Weekly digest', null, '']].forEach(([l, t, res, note], i) => { const d = node('direction', { idea: c.id, _src: c.id, letter: l, title: t, text: 'x', test: 'y', status: 'ink', by: 'muse' }, { x: 600, y: 100 + i * 420 }); edge(c.id, d.id, 'derive', 'live'); if (res) setOutcome(d, res, note); });
+          const dd = node('direction', { idea: c.id, _src: c.id, letter: 'D', title: 'Narrow to Xero', text: 'x', test: 'y', status: 'sketch', by: 'muse', pid: 'p-q' }, { x: 600, y: 1400 }); edge(c.id, dd.id, 'derive', 'live');
+          return erase([dd.id]).then(() => { select([c.id]); openFocus(c.id); });
+        });
+        await q.waitForTimeout(800);
+        const badL = await q.evaluate(LEGIBILITY, '#margin .m-paths');
+        check('the Paths list is legible in light mode', badL.length === 0, badL.join(' | '));
+        const badC = await q.evaluate(LEGIBILITY, '.card.direction .test .res');
+        check('a result on a card is legible in light mode', badC.length === 0, badC.join(' | '));
+        await q.context().close();
+      }
+      await p.click('#margin .m-paths [data-m="bring-back"]'); await p.waitForTimeout(500);
+      r = await p.evaluate(i => { const d = board.nodes.find(n => n.type === 'direction' && n.idea === i.claim && n.letter === 'D'); return { d: d && { title: d.title, test: d.test, mode: d.mode, status: d.status, by: d.by }, rec: (board.declined || []).some(x => x.kind === 'draft' && x.ref === i.D), change: (board.changes || []).some(c => c.op === 'bring-back') }; }, ids);
+      check('Bring back restores the direction as a draft, with its letter, plan and test', r.d && r.d.title === 'Narrow to Xero' && r.d.test === 'Two of three Xero users connect it' && r.d.mode === 'desk' && r.d.status === 'sketch' && r.d.by === 'muse', JSON.stringify(r.d));
+      check('a direction brought back no longer counts as turned down, and the act is logged as a decision', !r.rec && r.change, JSON.stringify(r));
+      await p.evaluate(() => { closeFocus(); board.nodes.filter(n => n.type === 'direction').forEach(n => { n.status = 'ink'; }); renderAll(); });
+
+      // with all four letters used, Strategist offers a new round instead of asking you to discard
+      await p.evaluate(() => document.querySelectorAll('#toasts > *').forEach(t => t.remove()));
+      await p.evaluate(id => fork(byId(id), 3), ids.claim); await p.waitForTimeout(300);
+      check('a claim with four directions offers a new round; the four stay on the board', /four directions/.test(await p.toast()) && /New round/.test(await p.toast()) && !/Discard one/.test(await p.toast()), await p.toast());
+      const r2 = await p.evaluate(id => newRound(byId(id))?.id, ids.claim); await p.waitForTimeout(300);
+      r = await p.evaluate(i => { const n = byId(i.r2); return { round: n.round, roundOf: n.roundOf, prev: n.prevRound, text: n.text, status: n.status, by: n.by, link: board.edges.some(e => e.a === i.claim && e.b === i.r2), srcs: sourcesFor(n).map(s => s.id), head: document.querySelector(`.card[data-id="${i.r2}"] .in`)?.textContent || '', change: (board.changes || []).some(c => c.op === 'new-round' && c.id === i.r2), fam: roundFamily(n).map(x => x.id) }; }, { ...ids, r2 });
+      check('a new round is a kept claim of yours, round 2, linked to the claim it came from', r.round === 2 && r.roundOf === ids.claim && r.prev === ids.claim && r.status === 'ink' && r.by === 'you' && r.link && r.text === 'Solo accountants need receipt chasing', JSON.stringify(r));
+      check('the new round rests on the same evidence and says which round it is', r.srcs.includes(ids.src) && /Round 2/.test(r.head), r.head);
+      check('starting a round is logged as a decision, and the rounds are one family', r.change && r.fam.join() === [ids.claim, r2].join(), JSON.stringify(r.fam));
+      check('the card menus offer the ways back', await p.evaluate(i => { const k = n => stripActs(byId(n)).map(a => a.k); return k(i.B).includes('result') && k(i.claim).includes('new-round') && !k(i.claim).includes('go-back'); }, ids));
+
+      // Strategist in round 2 knows what round 1 tried and how it came out, and holds back a repeat of the failed path
+      queue = [{ id: 'round2', match: 'This is round 2 of the claim', text: { directions: [{ title: 'Concierge chasing', plan: 'The founder chases receipts by hand for three accountants', test: 'x', mode: 'story' }, { title: 'Inbox agent', plan: 'Reads the accountant inbox and asks clients for the missing receipt', test: 'Four of five clients reply within two days', mode: 'story' }, { title: 'Accountant-only portal', plan: 'A portal accountants share with clients', test: 'Two of three accountants share it', mode: 'desk' }] } }];
+      await p.evaluate(id => fork(byId(id), 3), r2); await p.idle();
+      const req = requests.find(x => x.matched === 'round2');
+      check('round 2 is told every earlier direction and how its test came out', !!req && /Round 1, B · Concierge chasing: .*\(test failed: 1 of 5 kept using it\)/.test(req.full) && /Round 1, A · Copilot drafts: .*\(not adopted\)/.test(req.full), req ? req.full.slice(req.full.indexOf('This is round'), req.full.indexOf('This is round') + 400) : 'no request');
+      check('and that a failed real-world test is a turned-down idea', !!req && /a direction whose real-world test failed/.test(req.full));
+      r = await p.evaluate(id => ({ made: board.nodes.filter(n => n.type === 'direction' && n.idea === id).map(n => n.letter + ' ' + n.title), held: (board.held || []).map(h => h.text) }), r2);
+      check('a repeat of the failed direction is held back; the new ones arrive as A and B of round 2', r.made.join() === 'A Inbox agent,B Accountant-only portal' && r.held.some(t => /Concierge chasing/.test(t)), JSON.stringify(r));
+
+      // a direction's sheet records the result in place
+      await p.evaluate(id => { select([id]); openFocus(id); }, ids.A); await p.waitForTimeout(600);
+      check('a kept direction\'s sheet has a Result section with Passed and Failed', (await p.locator('#margin .m-result [data-m="outcome"]').count()) === 2);
+      await p.fill('#margin #mResNote', '4 of 5 approved the draft'); await p.click('#margin .m-result [data-r="passed"]'); await p.waitForTimeout(400);
+      check('choosing Passed records it with the line you wrote', await p.evaluate(id => { const o = byId(id).outcome; return o && o.result === 'passed' && o.note === '4 of 5 approved the draft'; }, ids.A));
+      await p.click('#margin .m-result [data-r="passed"]'); await p.waitForTimeout(400);
+      check('choosing it again clears the result', await p.evaluate(id => !byId(id).outcome, ids.A));
+      await p.evaluate(() => closeFocus());
+
+      // the Record Result dialog from the card menu
+      await p.evaluate(id => { select([id]); act('result', byId(id)); }, ids.C); await p.waitForTimeout(300);
+      await p.click('#resForm [data-r="failed"]'); await p.fill('#resForm [name="note"]', 'Nobody opened the digest'); await p.click('#resForm [type="submit"]'); await p.waitForTimeout(400);
+      check('the Record Result dialog records a result and its reason', await p.evaluate(id => { const o = byId(id).outcome; return o && o.result === 'failed' && o.note === 'Nobody opened the digest'; }, ids.C));
+      for (const theme of ['dark', 'light']) {
+        await p.evaluate(t => { document.documentElement.dataset.theme = t; }, theme); await p.waitForTimeout(150);
+        const bad = await p.evaluate(LEGIBILITY, `.card[data-id="${ids.C}"] .test .res b`);
+        check(`a failed result is legible in ${theme} mode`, bad.length === 0, bad.join(' | '));
+      }
       check('no page errors', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }

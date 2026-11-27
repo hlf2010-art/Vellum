@@ -216,7 +216,8 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);b
 .card .foot .sp{flex:1 1 0;min-width:0}
 .card .foot-l,.card .foot-r{display:inline-flex;align-items:center;gap:6px;min-width:0}
 .card .foot-l{flex:0 1 auto}
-.card .foot-r{flex:0 0 auto;justify-content:flex-end}   /* who and when never get squeezed; the left side gives way */
+.card .foot-r{flex:0 0 auto;justify-content:flex-end}
+.card .foot-r>.foot-link+.foot-by,.card .foot-r>.foot-branch+.foot-by{margin-left:4px}   /* who and when never get squeezed; the left side gives way */
 .card .foot-l,.card .foot>span:first-child{overflow:hidden}
 .card .foot-l>.weight{flex:none}
 .card .foot-l>.foot-txt{min-width:0;overflow:hidden;text-overflow:ellipsis}   /* a count beside the weight gives way first */
@@ -7168,7 +7169,7 @@ function cardBody(n){
   const head=k=>sk?sketchHead(n):`<div class="card-k">${k}<span class="sp"></span>${cardVotesHTML(n)}</div>`;
   const group=(cls,...xs)=>{const a=xs.filter(Boolean);return a.length?`<span class="${cls}">${a.join('<span class="foot-sep" aria-hidden="true">·</span>')}</span>`:""};
   const fL=(...xs)=>group("foot-l",...xs);
-  const fR=(...xs)=>group("foot-r",...xs,sk?"":tm);
+  const fR=(...xs)=>{const g=group("foot-r",...xs);const t=sk?"":tm;return t?(g?g.replace(/<\/span>$/,t+"</span>"):`<span class="foot-r">${t}</span>`):g};   // the byline needs no dot: the avatars already set it apart
   const foot=(left="",right=fR())=>(left||right)?`<div class="foot">${left}<span class="sp"></span>${right}</div>`:"";
   const fmt=fileFormatOf(n);
   const thumbBadge=f=>f?`<span class="badge">${ic(f.icon)}${esc(f.id==="link"?Lang("Link","链接"):f.label)}</span>`:"";
@@ -7245,7 +7246,7 @@ function cardBody(n){
     const res=!sk&&n.outcome?.result,resHTML=res?`<span class="res ${res}"><b>${outcomeWord(res)}</b>${n.outcome.note?` · ${esc(n.outcome.note)}`:""}</span>`:"";
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
     <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test||resHTML?`<div class="test">${n.test?`${flagH?`<div class="test-h"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b>${flagH}</div>`:`<b>${uiLang()==="zh"?"验证标准":"The Test"}</b>`}<span data-edit="test">${esc(n.test)}</span>`:""}${resHTML}</div>`:""}${flagH&&!flagInTest?`<div class="dir-flag-row">${flagH}</div>`:""}${sk?"":setAsideHTML(n)+choseHTML(n)}
-    ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<button type="button" class="foot-link" data-a="goto-proof" title="${uiLang()==="zh"?"跳到这个方向的原型":"Go to this direction's proof"}">${uiLang()==="zh"?"原型":"Proof"}${ic("arrow")}</button>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
+    ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<button type="button" class="foot-link" data-a="goto-proof" title="${uiLang()==="zh"?"跳到这个方向的原型":"Go to this direction's proof"}">${uiLang()==="zh"?"看原型":"See proof"}${ic("arrow")}</button>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
   case"proof":{
     /* A proof is an experiment that tests its direction: results first, thumbnail second, one next step. */
     const zh=uiLang()==="zh",L_=(e,z)=>zh?z:e,fx=n.fixed||[],dr=driftOf(n),dir=byId(n.dir);

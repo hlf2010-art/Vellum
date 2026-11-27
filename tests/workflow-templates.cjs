@@ -324,7 +324,7 @@ async function aiProduct(browser, base, live) {
   await p.newBoard('aiproduct', { constraints: AIPROD.constraints });
   check(`[C ${tag}] the board is made from the AI product template`, await p.evaluate(() => board.template?.id === 'aiproduct' && /price/.test(board.constraints)));
   // the crew speaks when it matters (the default level), quickly, for the test
-  await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; });
+  await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; IDLE_NEED.matters = 200; IDLE_NEED.often = 200; });
   const chips = () => p.evaluate(() => copilotStarterChips());
   check(`[C ${tag}] on an empty board Copilot offers to put the idea in one sentence`, /one sentence/.test((await chips())[0] || ''), (await chips()).join(' | '));
   check(`[C ${tag}] and asks what the AI must never do on its own`, (await chips()).includes('What must it never do on its own?'), (await chips()).join(' | '));

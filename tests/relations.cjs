@@ -18,7 +18,7 @@ async function open(browser, base, theme = 'light') {
   const p = await ctx.newPage();
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2200);
-  await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(700);
+  await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(700);
   p.cards = specs => p.evaluate(specs => {
     const ids = specs.map(([type, f, x, y]) => { const n = node(type, f, { x, y }); n.status = 'ink'; return n.id; });
     cam = { x: 0, y: 0, s: 1 }; paintCam(); renderAll(); return ids;

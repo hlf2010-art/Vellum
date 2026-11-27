@@ -52,7 +52,7 @@ async function open(browser, base, { theme = 'light', ctx = null } = {}) {
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2200);
   await p.evaluate(url => { SCOUT_GROUNDING = false; apiCfg = { enabled: true, baseUrl: url + '/v1', model: 'smoke', key: 'smoke' }; }, base);
-  p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.locator('#boardsPop [data-new]').click(); await p.waitForTimeout(700); };
+  p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.locator('#boardsPop [data-new]').click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(700); };
   p.openBoard = async title => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.locator('#boardsPop .bp-row', { hasText: title }).first().click(); await p.waitForTimeout(700); };
   p.rename = t => p.evaluate(t => { board.title = t; renderAll(); persistNow(); }, t);
   p.ask = async (text, wait = true) => {

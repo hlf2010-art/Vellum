@@ -521,7 +521,7 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
       const ADV = 'Include 1 or at most 2 pins';
       const fresh = async () => {
         const o = await openPage(browser, base);
-        await o.p.click('#projectBtn'); await o.p.waitForTimeout(300); await o.p.getByText('New board', { exact: true }).click(); await o.p.waitForTimeout(800);
+        await o.p.click('#projectBtn'); await o.p.waitForTimeout(300); await o.p.getByText('New board', { exact: true }).click(); await o.p.click('[data-tpl="blank"]'); await o.p.click('[data-tpl-go]'); await o.p.waitForTimeout(800);
         await o.p.evaluate(() => { setCrew({ speak: 'never', act: 'drafts' }); apiCfg.embedModel = 'poc-embed'; ctxVec.clear(); ctxEmbedFailSig = null; });
         return { ...o, I: await buildFixture(o.p) };
       };

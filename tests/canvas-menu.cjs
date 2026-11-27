@@ -168,6 +168,24 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
       check(`no page errors (${theme}, ${lang})`, !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
+    {
+      // every search row shows why it matched, even when the words sit in a field the card doesn't show (a synthesis card's points)
+      const p = await open(browser, base);
+      await p.keyboard.press('ControlOrMeta+f'); await p.waitForTimeout(300); await p.keyboard.type('neon'); await p.waitForTimeout(400);
+      const rows = await p.evaluate(() => [...document.querySelectorAll('.find-item')].map(e => ({ t: e.querySelector('.find-item-t').textContent, marks: e.querySelectorAll('mark').length, th: !!e.querySelector('.find-th') })));
+      check('every search row highlights the matched words', rows.length > 1 && rows.every(r => r.marks > 0), JSON.stringify(rows));
+      check('every search row has a thumbnail or kind icon', rows.every(r => r.th), JSON.stringify(rows));
+      check('a synthesis card matched by its points shows that point', rows.some(r => /Evidence Audit/.test(r.t) && r.marks > 0), JSON.stringify(rows));
+      await p.keyboard.press('Escape');
+      // the welcome's primary takes focus without a ring; the ring appears once the keyboard is used
+      await p.goto(base + '/Vellum-Lumen.html?welcome=1'); await p.waitForTimeout(1500); await p.evaluate(() => showWelcome()); await p.waitForTimeout(300);
+      const fv = () => p.evaluate(() => ({ k: document.activeElement?.dataset?.welcome, fv: document.activeElement?.matches(':focus-visible') }));
+      const a = await fv(); await p.keyboard.press('Tab'); await p.keyboard.press('Shift+Tab'); const b = await fv();
+      check('welcome opens focused on Start a board with no focus ring', a.k === 'start' && !a.fv, JSON.stringify(a));
+      check('the focus ring comes back once the keyboard is used', b.k === 'start' && b.fv, JSON.stringify(b));
+      check('no page errors (search snippet, welcome)', !p.errors.length, p.errors.join(' | '));
+      await p.context().close();
+    }
   } catch (e) { check('test ran to the end', false, e.stack); }
   await browser.close(); srv.close();
   console.log(results.join('\n'));

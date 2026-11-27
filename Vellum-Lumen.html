@@ -18498,10 +18498,14 @@ function highlightFindHTML(text,q){
   return s.split(new RegExp(`(${ek})`,"gi")).map((p,i)=>i%2===1?`<mark>${esc(p)}</mark>`:esc(p)).join("");
 }
 function findSnippetFor(n,q){
-  const candidates=[n.quote,n.text,n.full,n.test,...(n.items||[]).map(i=>i.t),...(n.cards||[]).map(c=>c.title),...(board.pins?.[n.id]||[]).flatMap(p=>[p.note,...(p.replies||[]).map(r=>r.text)]),n.url,n.path].filter(Boolean).map(x=>String(x).replace(/\s+/g," ").trim());
+  const flat=x=>String(x).replace(/\*\*|__/g,"").replace(/\s+/g," ").trim();
+  const candidates=[n.quote,n.text,n.full,n.test,...(n.items||[]).map(i=>i.t),...(n.cards||[]).map(c=>c.title),...(board.pins?.[n.id]||[]).flatMap(p=>[p.note,...(p.replies||[]).map(r=>r.text)]),n.url,n.path].filter(Boolean).map(flat);
   const lq=(q||"").toLowerCase();
   if(lq){
-    const hit=candidates.find(c=>c.toLowerCase().includes(lq));
+    /* the row must show why it matched: when the title doesn't hold the words, fall back to every searched field (points, tree, threads…) */
+    const title=String(titleOf(n)||"");
+    const rest=title.toLowerCase().includes(lq)?[]:findSearchParts(n).filter(x=>x!==title).map(flat);
+    const hit=candidates.find(c=>c.toLowerCase().includes(lq))||rest.find(c=>c.toLowerCase().includes(lq));
     if(hit){
       const idx=hit.toLowerCase().indexOf(lq);
       const start=Math.max(0,idx-26);
@@ -20412,7 +20416,7 @@ function showWelcome(){
       if(typeof newBoardDialog==="function")return newBoardDialog();
       persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);persist();setTimeout(()=>lineIn.focus(),100)};
     qs('[data-welcome="sample"]',d).onclick=()=>d.close();
-    setTimeout(()=>qs('[data-welcome="start"]',d)?.focus(),0);
+    setTimeout(()=>qs('[data-welcome="start"]',d)?.focus({focusVisible:false}),0);  /* Enter still starts; the ring only appears once the keyboard is used */
   });
 }
 function boot(){

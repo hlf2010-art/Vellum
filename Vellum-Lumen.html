@@ -1425,7 +1425,9 @@ dialog.sheet.mem-sheet[open]{display:flex;flex-direction:column}
 .copilot-panel.cp-board-in .cp-titles small{animation:cpBoardIn .3s var(--smooth) both}
 .cp-empty h3{margin:0;font:650 17px/1.25 var(--ui);letter-spacing:-.025em;color:var(--label)}
 .cp-empty p{margin:0;font:14px/1.5 var(--ui);color:var(--label-2)}
-.cp-msg{display:flex;flex-direction:column;gap:8px;animation:rise .22s var(--ease)}
+/* only a message that has just arrived rises in; reopening the panel or redrawing it leaves the history still */
+.cp-msg{display:flex;flex-direction:column;gap:8px}
+.cp-msg.cp-new{animation:rise .22s var(--ease) both}
 .cp-msg.user{align-items:flex-end}
 .cp-msg.user .cp-bubble{background:var(--label);color:var(--canvas);border-radius:18px 18px 6px 18px;padding:9px 13px;max-width:88%;font:450 14px/1.48 var(--ui);overflow-wrap:anywhere}
 .cp-msg.ai{align-items:flex-start}
@@ -1599,7 +1601,8 @@ th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
 @media (prefers-reduced-motion:reduce){.uv{animation:none}}
 .cp-thumbs{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
 .cp-thumbs img{width:42px;height:32px;object-fit:cover;border-radius:var(--radius-xs);box-shadow:0 0 0 .5px var(--hair-2)}
-.cp-actions-summary{display:flex;flex-direction:column;gap:5px;padding:8px 10px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--card-2) 92%,transparent);box-shadow:none;margin-top:2px;font:500 12px/1.4 var(--ui);color:var(--label-2);animation:rise .2s var(--ease)}
+.cp-actions-summary{display:flex;flex-direction:column;gap:5px;padding:8px 10px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--card-2) 92%,transparent);box-shadow:none;margin-top:2px;font:500 12px/1.4 var(--ui);color:var(--label-2)}
+.cp-msg.cp-new .cp-actions-summary{animation:rise .2s var(--ease) both;animation-delay:inherit}
 .cp-act-pill{display:inline-flex;align-items:center;gap:6px;color:var(--pg,var(--label));font-weight:650;font-size:12px;letter-spacing:-.01em}
 .cp-act-pill .cp-act-ico{display:grid;place-items:center;width:14px;height:14px}
 .cp-act-pill .cp-act-ico svg{width:13px;height:13px;stroke-width:2}
@@ -14784,6 +14787,24 @@ function saveBoardQuiet(b){
 function copilotEmptyHTML(){
   return `<div class="cp-empty"><span class="cp-empty-board">${esc(board.title||L("Untitled board","未命名画板"))}</span><h3>${L("A conversation for this board","这块画板的对话")}</h3><p>${L("Copilot reads only this board. The conversation stays with it, so you can come back and pick up where you left off.","Copilot 只读这块画板。对话跟着画板走，回来时可以接着聊。")}</p><p class="cp-empty-src">${L("Selected cards and images go along with your question. Live context from <b>GitHub</b>, <b>NotebookLM</b>, <b>Notion</b> or <b>Figma</b> comes in through MCP.","提问时会带上选中的卡片和图片。也可以通过 MCP 引入 <b>GitHub</b>、<b>NotebookLM</b>、<b>Notion</b> 或 <b>Figma</b> 的实时内容。")}</p></div>`;
 }
+/* Which messages the panel has already shown, and when each was first drawn. A message rises in once, when it arrives;
+   the history a board opens with, and every later redraw (reopening the panel, placing a proposal, undo), just sits there.
+   A redraw while a rise is still under way picks it up where it was instead of starting over.
+   Kept per board, by message id, so a conversation restored from a snapshot does not replay either. */
+const CP_RISE_MS=220;
+let cpShown=new Map(),cpShownBoard=null;
+const cpShownKey=m=>m.id||m;
+function cpRiseAt(m){ /* ms into its entrance, or -1 when it should simply be there */
+  if(cpShownBoard!==board.id)return -1;
+  const t=cpShown.get(cpShownKey(m));if(t===undefined)return 0;
+  const d=performance.now()-t;return d<CP_RISE_MS?d:-1;
+}
+function cpRemember(msgs){
+  const now=performance.now();
+  if(cpShownBoard!==board.id){cpShown=new Map();cpShownBoard=board.id;for(const m of msgs)cpShown.set(cpShownKey(m),-1e9);return}
+  for(const m of msgs)if(!cpShown.has(cpShownKey(m)))cpShown.set(cpShownKey(m),now);
+}
+function cpMarkNew(html,at){return at<0?html:html.replace('class="cp-msg ',`style="animation-delay:-${Math.round(at)}ms" class="cp-msg cp-new `)}
 function renderCopilot(){
   const p=$("copilotPanel");if(!p)return;
   const prevInp=$("cpInput"),draft=prevInp?prevInp.value:"",hadFocus=prevInp===document.activeElement;
@@ -14802,7 +14823,7 @@ function renderCopilot(){
         <div class="cp-more-pop" role="menu" hidden><button type="button" role="menuitem" data-cp="mcp">${ic("plug")}${L("Sources","数据源")}</button><button type="button" role="menuitem" class="danger" data-cp="clear">${ic("trash")}${L("Clear chat","清空对话")}</button><small>${esc(src.label)}</small>${/(^|[^\d.])(0\.\d+|[1-4](\.\d+)?)\s*b\b/i.test(src.label)?`<small class="cp-hint">${L("Small models often miss card formats. A larger model gives more reliable suggestion cards.","小模型常常输出不了正确的卡片格式，换更大的模型会更可靠。")}</small>`:""}</div></span>
       <button type="button" class="cp-iconbtn" data-cp="close" title="Close Copilot (⌘.)" aria-label="Close Copilot">${ic("x")}</button>
     </header>
-    <div class="cp-msgs" id="cpMsgs">${msgs.length?msgs.map(renderCopilotMsg).join(""):copilotEmptyHTML()}</div>
+    <div class="cp-msgs" id="cpMsgs">${msgs.length?msgs.map(m=>cpMarkNew(renderCopilotMsg(m),cpRiseAt(m))).join(""):copilotEmptyHTML()}</div>
     <div class="cp-chips">${chips.map(c=>`<button type="button" class="cp-chip" data-cp-chip="${esc(c)}">${esc(c)}</button>`).join("")}</div>
     <footer class="cp-foot">${cpTarget?`<div class="cp-target" id="cpTarget"><span class="mk">${AGENTS[cpTarget].mk}</span><span>${L("Asking","正在问")} <b>${esc(AGENTS[cpTarget].name)}</b></span><button type="button" data-cp-untarget aria-label="${L("Ask Copilot instead","改问 Copilot")}" title="${L("Ask Copilot instead","改问 Copilot")}">${ic("x")}</button></div>`:""}${compCards}${extPills}<div id="cpQueue" class="q-list cp-q" aria-live="polite"></div><form id="cpForm" class="cp-box" autocomplete="off">
       <span class="cp-plus-wrap"><button type="button" class="lbtn" id="cpFileBtn" title="Add" aria-label="Add files or sources" aria-haspopup="menu">${ic("plus")}</button>
@@ -14813,6 +14834,7 @@ function renderCopilot(){
       <button type="button" class="stop-mini" id="cpStopBtn" title="Stop response" aria-label="Stop response" hidden></button>
       <button type="submit" class="send" id="cpSendBtn" aria-label="Send" disabled>${UP_SVG}</button>
     </form></footer>`;
+  cpRemember(msgs);
   paintCopilotHeader();renderCopilotQueue();syncCpSend();
   const box=$("cpMsgs");if(box)box.scrollTop=box.scrollHeight;
   const inp=$("cpInput");
@@ -15381,7 +15403,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
     renderCopilotQueue();syncCpSend();return;
   }
   const ctx=Array.isArray(ctxOverride)?ctxOverride.map(byId).filter(Boolean):ctxNodes();
-  board.copilot=board.copilot||[];
+  board.copilot=board.copilot||[];cpRemember(board.copilot);
   const userMsg={id:uid(),role:"user",text,t:NOW(),...(forced?{to:forced}:{}),ctxIds:ctx.slice(0,3).map(n=>n.id),extCtx:mcpActiveItems().map(x=>({provider:x.provider,title:x.title}))};
   const aiMsg={id:uid(),role:"ai",agent:forced||null,text:"",visuals:[],proposals:[],chips:[],streaming:true,t:NOW()};
   board.copilot.push(userMsg,aiMsg);

@@ -167,7 +167,8 @@ const grey = c => { const m = String(c).match(/[\d.]+/g); if (!m) return false; 
       check('every card eyebrow is one word in Chinese (custom kinds you wrote stay as written)', builtIn.length > 8 && builtIn.every(x => /^[㐀-鿿]+$/.test(x.w)), JSON.stringify(builtIn.filter(x => !/^[㐀-鿿]+$/.test(x.w))));
       check('a format shows once: on the picture, never again in the eyebrow', await p.evaluate(() => [...document.querySelectorAll('.card .badge')].every(b => { const k = b.closest('.card').querySelector('.card-k')?.textContent || ''; const f = b.textContent.trim(); return !f || !k.includes(f); })));
       check('the zone is called 探索方向 and the card 方向, not the same words', await p.evaluate(() => [...document.querySelectorAll('.card.direction:not(.sketch) .pgname')].every(x => x.textContent === '方向')));
-      const r = await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'idea' && n.status === 'ink'); const el = nodeEl(n.id); const b = el.getBoundingClientRect(); return { x: b.x + 60, y: b.y + 60 }; });
+      /* zones are 1400 wide now, so bring the card on screen before right-clicking it */
+      const r = await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'idea' && n.status === 'ink'); cam = { s: 1, x: 720 - (n.x + nodeW(n) / 2), y: 450 - (n.y + nodeH(n) / 2) }; paintCam(); renderAll(); const el = nodeEl(n.id); const b = el.getBoundingClientRect(); return { x: b.x + 60, y: b.y + 60 }; });
       await p.mouse.click(r.x, r.y, { button: 'right' }); await p.waitForTimeout(300);
       const menu = await p.evaluate(() => [...document.querySelectorAll('#cardMenu button')].map(b => b.textContent.trim()));
       check('the card menu speaks Chinese', menu.length > 5 && menu.every(t => /[㐀-鿿]/.test(t)), JSON.stringify(menu.filter(t => !/[㐀-鿿]/.test(t))));

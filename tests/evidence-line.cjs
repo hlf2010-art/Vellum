@@ -95,7 +95,7 @@ async function open(browser, base, opts = {}) {
       await p.evaluate(() => { cam = { s: 1, x: 0, y: 0 }; paintCam(); sel = []; renderAll(); });
       const dir = await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'direction' && board.adopted[n.idea] === n.id && outputsOf(n.id).some(o => o.type === 'proof')); return n && { id: n.id, foot: document.querySelector(`[data-id="${n.id}"] .foot`)?.innerText.replace(/\s+/g, ' ') || '' }; });
       check('an adopted direction says Adopted and links to its proof, with no page-type label', dir && /Adopted/.test(dir.foot) && /Proof/.test(dir.foot) && !/Explore Desk|Guided Tour|Slide Deck|Proof built/.test(dir.foot), JSON.stringify(dir));
-      if (dir) { await p.frame(dir.id); await p.click(`[data-id="${dir.id}"] .foot-link`); await p.waitForTimeout(800); }
+      if (dir) { await p.frame(dir.id); /* a crew draft's bar can float over the card's bottom row once the card grows (decision line, flag); press the link itself */ await p.locator(`[data-id="${dir.id}"] .foot-link`).dispatchEvent('click'); await p.waitForTimeout(800); }
       const went = await p.evaluate(() => sel.length === 1 && byId(sel[0])?.type === 'proof');
       check('"Proof →" selects the proof and flies to it', went);
       check('E no page errors', !p.errors.length, p.errors.join(' | '));

@@ -45,7 +45,7 @@
       "z.1": "Gather", "z.1d": "What people did and said",
       "z.2": "Explore", "z.2d": "Judgments, then directions",
       "z.3": "Prototype", "z.3d": "Built from one direction",
-      "z.4": "Snapshot", "z.4d": "Frozen, reasons included",
+      "z.4": "Snapshot", "z.4d": "A version to share, reasons attached",
       "cases.t1": "Product design", "cases.t2": "Short video", "cases.t3": "AI products",
       "crew.title": "A crew that thinks with you, and sometimes against you.",
       "crew.scout": "Weighs the evidence", "crew.scoutq": "“Two of these seven sources are the same review.”",
@@ -93,7 +93,7 @@
       "z.1": "收集", "z.1d": "人们做了什么、说了什么",
       "z.2": "探索", "z.2d": "先下判断，再分方向",
       "z.3": "原型", "z.3d": "从一个方向做出来",
-      "z.4": "定稿", "z.4d": "定格成版本，理由随行",
+      "z.4": "定稿", "z.4d": "可以分享的版本，理由附在里面",
       "cases.t1": "产品设计", "cases.t2": "短视频", "cases.t3": "AI 产品",
       "crew.title": "和你一起想，\u200b有时也和你唱反调。",
       "crew.scout": "掂量证据", "crew.scoutq": "“这七条来源里，有两条是同一篇评论。”",
@@ -203,7 +203,7 @@
         B: { t: "Brushless motor, call mode", b: "Chosen. Quiet enough for a meeting." },
         C: { t: "Bladeless tower", why: "Quiet, and twice the price." },
         P: { t: "Call-mode prototype", meta: "31 dB at full speed" },
-        S: { t: "Spec for the tooling review", meta: "1 decision · 2 sources · 2 set aside" }
+        S: { t: "Spec for the tooling review", meta: "Includes the decision, its 2 sources, and why A and C were set aside." }
       },
       video: {
         e1: { k: "Observed", t: "Retention", b: "Half the viewers leave at second 3." },
@@ -213,7 +213,7 @@
         B: { t: "Open on the result", b: "Chosen. The payoff lands in second one." },
         C: { t: "Text card intro", why: "Reads as an ad." },
         P: { t: "Storyboard, three takes", meta: "From your own video model" },
-        S: { t: "Final cut, 15 seconds", meta: "1 decision · 2 sources · 2 set aside" }
+        S: { t: "Final cut, 15 seconds", meta: "Includes the decision, its 2 sources, and why A and C were set aside." }
       },
       ai: {
         e1: { k: "Observed", t: "Logs", b: "Users rewrite 6 of 10 drafted replies." },
@@ -223,7 +223,7 @@
         B: { t: "Mirror the sender", b: "Chosen. Writes the way they write." },
         C: { t: "Reply templates", why: "Fixes tone by removing it." },
         P: { t: "Eval, 50 real cases", meta: "46 pass" },
-        S: { t: "Ship to 10% of users", meta: "1 decision · 2 sources · 2 set aside" }
+        S: { t: "Ship to 10% of users", meta: "Includes the decision, its 2 sources, and why A and C were set aside." }
       },
       kinds: { judgment: "Judgment", direction: "Direction", prototype: "Prototype", snapshot: "Snapshot", by: "Wright" }
     },
@@ -236,7 +236,7 @@
         B: { t: "无刷电机 + 通话模式", b: "已选定。安静到可以开会。" },
         C: { t: "无叶塔扇", why: "很安静，价格翻倍。" },
         P: { t: "通话模式样机", meta: "最高档 31 分贝" },
-        S: { t: "给开模评审的规格书", meta: "1 个决定 · 2 条依据 · 2 个搁置" }
+        S: { t: "给开模评审的规格书", meta: "附带这个决定、2 条依据，以及 A 和 C 被搁置的原因。" }
       },
       video: {
         e1: { k: "观察", t: "留存数据", b: "一半观众在第 3 秒离开。" },
@@ -246,7 +246,7 @@
         B: { t: "成品画面开场", b: "已选定。第一秒就给结果。" },
         C: { t: "文字卡开场", why: "一看就像广告。" },
         P: { t: "分镜，三个版本", meta: "用你自己的视频模型生成" },
-        S: { t: "15 秒最终剪辑", meta: "1 个决定 · 2 条依据 · 2 个搁置" }
+        S: { t: "15 秒最终剪辑", meta: "附带这个决定、2 条依据，以及 A 和 C 被搁置的原因。" }
       },
       ai: {
         e1: { k: "观察", t: "日志", b: "10 条草稿回复，用户改写了 6 条。" },
@@ -256,7 +256,7 @@
         B: { t: "跟随发件人的语气", b: "已选定。对方怎么写，它就怎么写。" },
         C: { t: "回复模板", why: "用去掉语气来解决语气。" },
         P: { t: "评测集，50 条真实案例", meta: "46 条通过" },
-        S: { t: "先开放给 10% 的用户", meta: "1 个决定 · 2 条依据 · 2 个搁置" }
+        S: { t: "先开放给 10% 的用户", meta: "附带这个决定、2 条依据，以及 A 和 C 被搁置的原因。" }
       },
       kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", by: "Wright" }
     }
@@ -311,23 +311,23 @@
 
     // Card positions in board units: [x, y, width]. Wide reads left to right; mid and narrow read top to bottom.
     var LAYOUT = {
-      wide: { w: 1180, h: 736, loop: 16, max: 1.2, pos: {
+      wide: { w: 1180, h: 736, loop: 20, max: 1.2, pos: {
         e1: [28, 40, 212], e2: [28, 266, 212], e3: [28, 498, 212],
         j1: [320, 270, 240], st: [342, 50, 196],
         dA: [626, 40, 236], dC: [626, 456, 236],
         dB: [904, 150, 248], n1: [926, 560, 204]
       } },
-      mid: { w: 760, h: 966, loop: 12, max: 1.1, pos: {
+      mid: { w: 760, h: 966, loop: 15, max: 1.1, pos: {
         e1: [20, 24, 228], e2: [266, 24, 228], e3: [512, 24, 228],
         st: [40, 214, 196], j1: [266, 222, 228],
         dA: [20, 440, 228], dB: [266, 440, 228], dC: [512, 440, 228],
         n1: [266, 806, 228]
       } },
-      narrow: { w: 380, h: 1048, loop: 9, max: 1.12, pos: {
+      narrow: { w: 380, h: 1062, loop: 9, max: 1.12, pos: {
         e1: [12, 14, 172], e2: [196, 14, 172], e3: [12, 160, 172],
         j1: [196, 160, 172], st: [20, 316, 158],
-        dA: [196, 340, 172], dB: [12, 528, 356],
-        dC: [12, 822, 172], n1: [196, 822, 172]
+        dA: [196, 340, 172], dB: [12, 542, 356],
+        dC: [12, 836, 172], n1: [196, 836, 172]
       } }
     };
     var RELS = [
@@ -679,7 +679,7 @@
       if (id === "A" || id === "C") return '<article class="vc zc ink dir aside" data-id="' + id + '" tabindex="0"><div class="t"><span class="chip ' + id + '">' + id + "</span><span>" + esc(d.t) + '</span></div><div class="veil"></div><div class="note">' + esc(d.why) + "</div></article>";
       if (id === "B") return '<article class="vc zc ink dir adopted wide" data-id="B" tabindex="0">' + kind("fork", k.direction) + '<div class="t"><span class="chip B">B</span><span>' + esc(d.t) + '</span></div><div class="b">' + esc(d.b) + "</div></article>";
       if (id === "P") return '<article class="vc zc wide proto" data-id="P" tabindex="0"><div class="media">' + ILL[c] + "</div>" + kind("window", k.prototype) + '<div class="t">' + esc(d.t) + '</div><div class="meta"><i></i><span>' + esc(d.meta) + "</span></div></article>";
-      return '<article class="vc zc wide snap" data-id="S" tabindex="0">' + kind("snap", k.snapshot) + '<div class="no">No. 1</div><div class="t">' + esc(d.t) + '</div><div class="meta">' + esc(d.meta) + "</div></article>";
+      return '<article class="vc zc wide snap" data-id="S" tabindex="0">' + kind("snap", k.snapshot) + '<div class="t">' + esc(d.t) + '</div><div class="b">' + esc(d.meta) + "</div></article>";
     }
 
     function render(animate) {

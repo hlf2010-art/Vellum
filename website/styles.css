@@ -209,7 +209,7 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .board-lines path.draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .75s cubic-bezier(.45,.05,.2,1) forwards; }
 .board-lines path.dim { opacity: .3; }
 .board-lines path.hot { stroke-width: 2.2; }
-.board-lines path.marker { stroke: var(--label); stroke-width: 2.1; opacity: .42; stroke-linejoin: round; }
+.board-lines path.marker { stroke: var(--label); stroke-width: 1.6; opacity: .5; stroke-linejoin: round; }
 .board-lines path.draw-slow { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.15s cubic-bezier(.55,.1,.25,1) .3s forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 .rel-tag {
@@ -236,6 +236,7 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .chip { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5.5px; font: 700 11.5px/1 var(--sans); color: var(--chip-ink); flex: none; vertical-align: 1.5px; margin-right: 7px; }
 .chip.A { background: var(--A-fill); } .chip.B { background: var(--B-fill); } .chip.C { background: var(--C-fill); }
 .vc.adopted { box-shadow: 0 0 0 2px var(--B-fill), var(--shadow-card); }
+.bcard.adopted { box-shadow: 0 0 0 1px var(--ink-rule), var(--shadow-card); }
 :lang(zh) .vc .t { letter-spacing: 0; }
 
 /* Set aside = under a sheet of vellum. Still readable, and the reason is written on top. */
@@ -258,10 +259,10 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .bcard.on { opacity: 1; transform: none; }
 .bcard.on:hover { transform: translateY(-2px); box-shadow: var(--shadow-up); }
 .bcard.ink.on:hover { box-shadow: 0 0 0 1px var(--ink-rule), var(--shadow-up); }
-.bcard.adopted.on:hover { box-shadow: 0 0 0 2px var(--B-fill), var(--shadow-up); }
+.bcard.adopted.on:hover { box-shadow: 0 0 0 1px var(--ink-rule), var(--shadow-up); }
 .bcard.dragging, .bcard.dragging:hover { cursor: grabbing; z-index: 6; transition: box-shadow .2s, transform .12s linear; transform: translateY(-3px) scale(1.025) rotate(var(--tilt, 0deg)); box-shadow: var(--shadow-up); }
 .bcard.ink.dragging { box-shadow: 0 0 0 1px var(--ink-rule), var(--shadow-up); }
-.bcard.adopted.dragging { box-shadow: 0 0 0 2px var(--B-fill), var(--shadow-up); }
+.bcard.adopted.dragging { box-shadow: 0 0 0 1px var(--ink-rule), var(--shadow-up); }
 .bcard.nudge { animation: nudge 1.1s var(--ease) 1; }
 @keyframes nudge { 0%, 100% { translate: 0 0; rotate: 0deg; } 22% { translate: 6px -3px; rotate: 1.4deg; } 46% { translate: -3px 0; rotate: -.8deg; } 70% { translate: 1px 0; rotate: .2deg; } }
 
@@ -273,21 +274,21 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .bcard.fresh { animation: fresh 1.8s var(--ease) 1; }
 @keyframes fresh { 0% { box-shadow: 0 0 0 0 var(--bloom), var(--shadow-card); } 35% { box-shadow: 0 0 0 12px transparent, 0 0 30px 6px var(--bloom), var(--shadow-card); } 100% { box-shadow: 0 0 0 0 transparent, var(--shadow-card); } }
 
-.flag { display: none; position: relative; z-index: 1; margin-top: 10px; padding: 10px 11px 11px; border-radius: var(--r-ctl);
-  background: color-mix(in srgb, var(--danger) 8%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 30%, transparent);
-  font-size: 13px; line-height: 1.4; }
+/* The flag is part of the card, not a box inside it: a hairline, one red line of text, two buttons. */
+.flag { display: none; position: relative; z-index: 1; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hair-2); font-size: 13px; line-height: 1.4; }
 .bcard.show-flag .flag { display: block; animation: rise .45s var(--ease); }
-.flag .fh { font-weight: 600; color: var(--danger-ink); text-wrap: balance; }
+.flag .fh { display: flex; align-items: baseline; gap: 7px; font-weight: 600; color: var(--danger-ink); text-wrap: balance; }
+.flag .fh::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); transform: translateY(-1px); }
 .flag .fb { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
-.flag button { min-height: 30px; padding: 5px 12px; border: 0; border-radius: 999px; font-size: 13px; line-height: 1.2; font-weight: 600; cursor: pointer; transition: transform .45s var(--spring), box-shadow .2s, background-color .15s; }
+.flag button { min-height: 28px; padding: 4px 12px; border: 0; border-radius: 999px; font-size: 13px; line-height: 1.2; font-weight: 600; cursor: pointer; transition: transform .45s var(--spring), box-shadow .2s, background-color .15s; }
 .flag button:active { transform: scale(.95); }
-.flag .reopen { background: var(--card); box-shadow: inset 0 0 0 1px var(--hair-2); }
-.flag .reopen:hover { box-shadow: inset 0 0 0 1px var(--label-3); }
+.flag .reopen { background: transparent; color: var(--label); box-shadow: inset 0 0 0 1px var(--hair-2); }
+.flag .reopen:hover { background: var(--hover); }
 .flag .holds { background: var(--act); color: var(--on-act); }
-.flag.waiting { animation: waiting 2.4s var(--ease) 2; }
-@keyframes waiting { 0%, 100% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 30%, transparent), 0 0 0 0 transparent; } 45% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 30%, transparent), 0 0 22px 2px var(--bloom); } }
-.flag.resolved { background: var(--card-2); box-shadow: inset 0 0 0 1px var(--hair); }
-.flag.resolved .fh { color: var(--label); }
+.flag.waiting .fh::before { animation: waiting 1.6s var(--ease) 3; }
+@keyframes waiting { 50% { transform: translateY(-1px) scale(1.6); opacity: .45; } }
+.flag.resolved .fh { color: var(--label-2); }
+.flag.resolved .fh::before { background: var(--label-4); }
 .flag.resolved .fb { display: none; }
 @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 .back-chip { display: none; position: relative; z-index: 1; margin-top: 9px; font-size: 12px; font-weight: 600; color: var(--label-2); }
@@ -421,7 +422,6 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 /* Cards off the traced line fade their ink but keep their paper, so lines behind them stay hidden. */
 .zb.tracing .zc:not(.lit) { box-shadow: 0 0 0 1px var(--hair); }
 .zb.tracing .zc:not(.lit) > * { opacity: .34; filter: saturate(.3); transition: opacity .35s var(--ease), filter .35s; }
-.zb.tracing .zc.snap:not(.lit) { background: color-mix(in srgb, var(--B-fill) 22%, var(--card)); }
 .zb.tracing .zc.lit { opacity: 1; filter: none; box-shadow: var(--shadow-up); }
 .zb.tracing .zc.ink.lit { box-shadow: 0 0 0 1px var(--ink-rule), var(--shadow-up); }
 .zb.tracing .zc.adopted.lit { box-shadow: 0 0 0 2px var(--B-fill), var(--shadow-up); }
@@ -435,14 +435,6 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .zc .media svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .zc .meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; color: var(--label-3); font-variant-numeric: tabular-nums; }
 .zc .meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok-fill); }
-/* snapshot: a frozen edition, in B's ink because it was built from B */
-.zc.snap { background: var(--B-fill); color: var(--chip-ink); box-shadow: 0 1px 2px rgba(0,0,0,.1), 0 18px 34px -18px color-mix(in srgb, var(--B-fill) 80%, transparent); overflow: hidden; }
-.zc.snap::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(155deg, rgba(255,255,255,.26), rgba(255,255,255,0) 46%); }
-.zc.snap .k { color: color-mix(in srgb, var(--chip-ink) 78%, transparent); }
-.zc.snap .no { font-family: var(--display); font-size: 40px; line-height: 1; font-weight: 560; letter-spacing: -.04em; font-variant-numeric: tabular-nums; font-variation-settings: "opsz" 40; margin: 4px 0 10px; }
-.zc.snap .t { color: var(--chip-ink); }
-.zc.snap .meta { color: color-mix(in srgb, var(--chip-ink) 80%, transparent); }
-.zb.tracing .zc.snap.lit { box-shadow: 0 1px 2px rgba(0,0,0,.1), 0 26px 44px -18px color-mix(in srgb, var(--B-fill) 90%, transparent); }
 
 /* illustrations inside prototype cards */
 .ill .line { fill: none; stroke: var(--label); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }

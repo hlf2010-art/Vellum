@@ -1,4 +1,4 @@
-/* Vellum website: copy (EN / 中文), theme, the live board, the zones board, the crew switch and the waitlist. No dependencies. */
+/* Sympo website (the name lives in BRAND below): copy (EN / 中文), theme, the live board, the zones board, the crew switch and the waitlist. No dependencies. */
 (function () {
   "use strict";
 
@@ -30,41 +30,49 @@
   // Your own cards never stream: you put them down whole.
   function stream(el, delay, done) {
     if (!el || reduced) { if (done) done(); return 0; }
-    var text = el.textContent, parts = text.match(/[⺀-鿿＀-￯]|[^\s⺀-鿿＀-￯]+\s*|\s+/g) || [text];
-    el.innerHTML = parts.map(function (p) { return '<span class="tok">' + esc(p) + "</span>"; }).join("");
+    // Clause spans (Chinese line breaks) stay in place: words stream in inside each clause.
+    var orig = el.innerHTML, text = el.textContent, cls = el.querySelectorAll(".cl");
+    Array.prototype.forEach.call(cls.length ? cls : [el], function (box) {
+      var s = box.textContent, parts = s.match(/[⺀-鿿＀-￯]|[^\s⺀-鿿＀-￯]+\s*|\s+/g) || [s];
+      box.innerHTML = parts.map(function (p) { return '<span class="tok">' + esc(p) + "</span>"; }).join("");
+    });
     var toks = el.querySelectorAll(".tok"), cjk = /[⺀-鿿]/.test(text), step = cjk ? 34 : 62;
     toks.forEach(function (t, i) { setTimeout(function () { t.classList.add("in"); }, (delay || 0) + i * step); });
     var total = (delay || 0) + toks.length * step + 260;
-    setTimeout(function () { if (el.querySelector(".tok")) el.textContent = text; if (done) done(); }, total);
+    setTimeout(function () { if (el.querySelector(".tok")) el.innerHTML = orig; if (done) done(); }, total);
     return total;
   }
+
+  // The product name, in one place: the public name may still change.
+  var BRAND = "Sympo";
 
   // ---- Copy -------------------------------------------------------------------------------
   // Written in each language, not translated. One idea per line; small print only where it prevents a mistake.
   var T = {
     en: {
       "skip": "Skip to content",
-      "nav.why": "Why Vellum", "nav.how": "How it works", "nav.crew": "The crew",
-      "cta.get": "Get Vellum",
+      "nav.why": "Why {brand}", "nav.how": "How it works", "nav.crew": "The crew",
+      "cta.get": "Get {brand}",
       "hero.title": "Your best thinking deserves more than a chat box.", "hero.t1": "Your best thinking deserves more than ", "hero.kw": "a chat box", "hero.t2": ".",
       "hero.lede": "Put the whole problem on one board. Let an AI crew argue it out. Every choice keeps its reasons.",
       "board.hint": "Drag any card", "board.replay": "Play again",
-      "why.t1": "Most AI canvases help you make more.", "why.t2": "Vellum helps you think it through.",
+      "why.t1": "Most AI canvases help you make more.", "why.t2": "{brand} helps you think it through.",
       "why.lede": "The best meetings skip the slides and go to the whiteboard. Then someone wipes it.",
       "why.l1": "Evidence", "why.l2": "Directions", "why.l3": "Decision",
-      "why.h1": "A generator canvas", "why.h2": "Vellum",
+      "why.h1": "A generator canvas", "why.h2": "{brand}",
       "why.a1": "Forty images and a vague feeling", "why.b1": "Three directions, each showing what it rests on",
-      "why.a2": "Cards that just happen to be close", "why.b2": "Relations with names: supports, counters, refines",
-      "why.a3": "Rejected ideas, lost in final_v3", "why.b3": "Set-aside ideas, kept with the reason",
+      "why.a2": "Cards that just happen to sit close", "why.b2": "Relations with names: supports, counters, refines",
+      "why.a3": "Rejected ideas, lost in final_v3", "why.b3": "Ideas you passed on, kept with the reason",
       "why.a4": "A decision nobody remembers making", "why.b4": "A decision that speaks up when the facts change",
       "how.title": "Every card knows where it came from.",
-      "how.lede": "Pick one to see what it rests on.",
+      "how.lede": "Pick a card to see what it rests on.",
       "out.title": "Then make it real.", "out.lede": "Whatever you ship remembers why.", "out.label": "Outputs",
       "out.plan": "Plan", "out.tasks": "Tasks", "out.table": "Table", "out.cut": "Cut", "out.site": "Site",
-      "doc.h": "Rough cut, moments marked", "doc.why": "Why", "doc.whyv": "Editors undo 6 of 10 auto cuts.",
-      "doc.rests": "Rests on", "doc.restsv": "3 sources, 2 of them observed", "doc.aside": "Set aside", "doc.asidev": "A one-click cut, C suggestions only",
+      "doc.h": "Rough cut, moments marked", "doc.why": "Why this", "doc.whyv": "Editors want the busywork done and the moments left to them.",
+      "doc.rests": "Evidence", "doc.k1": "Observed", "doc.e1": "Editors undo 6 of every 10 cuts the AI makes", "doc.k2": "Quote", "doc.e2": "“Give me a first pass. The moments are mine.”",
+      "doc.aside": "Not chosen", "doc.a1": "A, one-click cut: it picks the moments for you", "doc.a2": "C, suggestions only: saves almost no time",
       "kb.todo": "To do", "kb.doing": "Doing", "kb.done": "Done", "kb.1": "Pre-mark top 5 moments", "kb.2": "Long-clip test, 10 editors",
-      "kb.3": "Moment markers on the timeline", "kb.4": "Undo-rate tracking", "kb.5": "Beta with 20 editors",
+      "kb.3": "Moment markers on the timeline", "kb.4": "Undo-rate tracking", "kb.5": "Beta with 20 editors", "kb.t1": "2h ago", "kb.t2": "Yesterday", "kb.t3": "40m ago", "kb.t4": "Done Tue", "kb.t5": "Done Mon",
       "tb.h": "Beta, 20 editors", "tb.table": "Table", "tb.chart": "Chart", "tb.r1": "Faster than by hand",
       "tb.r2": "Kept the rough cut", "tb.r3": "Long clips felt slow", "tb.r4": "Agent missed a moment",
       "cut.line": "Your moments. Its busywork.", "site.h": "Your moments. Its busywork.", "site.p": "A rough cut in minutes. You pick what stays.", "site.cta": "Try it free",
@@ -74,7 +82,7 @@
       "z.4": "Snapshot", "z.4d": "A version to share, reasons attached",
       "cases.t1": "Product design", "cases.t2": "Short video", "cases.t3": "AI products",
       "crew.title": "A crew that thinks with you, and sometimes against you.",
-      "crew.scout": "Weighs the evidence", "crew.scoutq": "“Two of these seven sources are the same review.”",
+      "crew.scout": "Weighs the evidence", "crew.scoutq": "“These two bad reviews came from the same person.”",
       "crew.strat": "Forks it into directions", "crew.stratq": "“If B is right, editors keep 9 in 10 rough cuts.”",
       "crew.wright": "Builds the proof", "crew.wrightq": "“The moment-marker prototype for B is ready. Keep it?”",
       "crew.critic": "Checks it against the sources", "crew.criticq": "“Nothing here says editors want one click.”",
@@ -86,79 +94,80 @@
       "mode.listend": "They speak up only when something doesn't add up.",
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
-      "get.title": "Get Vellum.",
-      "get.l1": "Early builds for macOS and Windows are on the way.", "get.l2": "One email when yours is worth your time.",
+      "get.title": "Get {brand}.",
+      "get.l1": "Early builds for Mac and Windows are on the way.", "get.l2": "We'll email you the day yours is ready.",
       "get.os": "Preferred system", "get.mac": "macOS", "get.win": "Windows", "get.use": "What will you use it for?", "get.email": "Email",
-      "get.useph": "A product launch, a short film…", "get.step": "Get early access.", "get.back": "Back", "get.join": "Join",
+      "get.useph": "A product launch, a short film…", "get.step": "Request early access", "get.back": "Back", "get.join": "Join",
       "get.needos": "Pick a system first.", "get.needemail": "Where should we write to?", "get.needuse": "A few words on what it's for.",
       "cta.waitlist": "Join the waitlist", "cta.demo": "Try the demo", "get.dlfor": "Download for {os}",
       "get.thanks": "You're on the list.", "get.thanksos": "You're on the list for {os}.",
-      "get.thanksd": "We'll write to {email} when it's ready.",
-      "get.closed": "Sign-ups open soon. Nothing was sent this time.",
+      "get.thanksd": "We'll email {email} the day it's ready.",
+      "get.closed": "Sign-ups open soon. Nothing was sent.",
       "get.bademail": "That doesn't look like an email address.",
       "get.fail": "That didn't go through. Try again in a moment.",
-      "board.label": "A Vellum board deciding how an AI video-editing agent should work",
+      "board.label": "A {brand} board deciding how an AI video-editing agent should work",
       "lang.label": "Language", "theme.switch": "Switch theme", "steps.label": "Demo steps", "cases.label": "Use cases",
-      "title": "Vellum: your best thinking deserves more than a chat box"
+      "title": "{brand}: your best thinking deserves more than a chat box"
     },
     zh: {
       "skip": "跳到正文",
-      "nav.why": "理念", "nav.how": "用法", "nav.crew": "AI 伙伴",
-      "cta.get": "获取 Vellum",
-      "hero.title": "你的好想法，不该困在一个聊天框里。", "hero.t1": "你的好想法，不该困在一个", "hero.kw": "聊天框", "hero.t2": "里。",
-      "hero.lede": "把整个问题摊在一张白板上，让 AI 团队把它辩清楚。每个选择，都留着理由。",
-      "board.hint": "卡片可以拖动", "board.replay": "再看一遍",
-      "why.t1": "多数 AI\u00a0画布\u200b帮你做得更多。", "why.t2": "Vellum\u00a0帮你\u200b想得更清楚。",
-      "why.lede": "最好的讨论不放 PPT，直接上白板。然后，有人把白板擦了。",
-      "why.l1": "证据", "why.l2": "方向", "why.l3": "决定",
-      "why.h1": "生成式画布", "why.h2": "Vellum",
-      "why.a1": "四十张图，和一种说不清的感觉", "why.b1": "三个方向，各自写明依据",
-      "why.a2": "碰巧挨在一起的卡片", "why.b2": "叫得出名字的关系：支持、反驳、细化",
-      "why.a3": "被否的想法，埋在 final_v3 里", "why.b3": "搁置的想法，连同理由一起留着",
-      "why.a4": "没人记得是怎么定下的决定", "why.b4": "事实一变，决定会自己站出来",
-      "how.title": "每张卡片\u200b都知道自己从哪来。",
-      "how.lede": "选一张，看它建立在什么之上。",
-      "out.title": "然后，把它做出来。", "out.lede": "做出来的每样东西，都记得为什么。", "out.label": "产出",
+      "nav.why": "为什么选 {brand}", "nav.how": "怎么用", "nav.crew": "AI 团队",
+      "cta.get": "抢先体验",
+      "hero.title": "聊天框装不下你的好想法。", "hero.t1": "", "hero.kw": "聊天框", "hero.t2": "装不下你的好想法。",
+      "hero.lede": "把问题整个摊开，让 AI 团队帮你辩个明白。每个决定，理由都在。",
+      "board.hint": "试试拖动卡片", "board.replay": "重播",
+      "why.t1": "多数 AI 画布，​让你做得更多。", "why.t2": "{brand}，​让你想得更透。",
+      "why.lede": "最好的讨论不靠 PPT，直接上白板。可惜，白板总会被擦掉。",
+      "why.l1": "证据", "why.l2": "方向", "why.l3": "决策",
+      "why.h1": "生成式画布", "why.h2": "{brand}",
+      "why.a1": "生成四十张图，还是说不清哪张好", "why.b1": "三个方向，依据一目了然",
+      "why.a2": "卡片挨着放，关系全靠猜", "why.b2": "关系说得清：支持、反驳还是细化",
+      "why.a3": "否掉的方案，淹没在一堆“最终版”里", "why.b3": "没选的方案，连同理由一起留着",
+      "why.a4": "当初为什么这么定，没人记得", "why.b4": "情况一变，它会提醒你回头再看",
+      "how.title": "每张卡片，​都有出处。",
+      "how.lede": "点开一张，看看它的依据。",
+      "out.title": "想清楚了，就动手做。", "out.lede": "每一份产出，都带着来龙去脉。", "out.label": "产出",
       "out.plan": "方案", "out.tasks": "任务", "out.table": "表格", "out.cut": "成片", "out.site": "网站",
-      "doc.h": "初剪 + 标出关键瞬间", "doc.why": "为什么", "doc.whyv": "自动剪的十刀里，剪辑师撤销了六刀。",
-      "doc.rests": "依据", "doc.restsv": "3 条依据，其中 2 条是观察", "doc.aside": "已搁置", "doc.asidev": "A 一键成片，C 只给建议",
-      "kb.todo": "待办", "kb.doing": "进行中", "kb.done": "完成", "kb.1": "预标 5 个候选瞬间", "kb.2": "长素材测试，10 位剪辑师",
-      "kb.3": "时间线上的瞬间标记", "kb.4": "撤销率统计", "kb.5": "20 位剪辑师内测",
-      "tb.h": "内测，20 位剪辑师", "tb.table": "表格", "tb.chart": "图表", "tb.r1": "比自己剪更快",
-      "tb.r2": "保留了初剪", "tb.r3": "长素材觉得慢", "tb.r4": "漏掉了关键瞬间",
-      "cut.line": "瞬间归你，杂活归它。", "site.h": "瞬间归你，杂活归它。", "site.p": "几分钟出初剪，留什么你说了算。", "site.cta": "免费试用",
-      "z.1": "收集", "z.1d": "人们做了什么、说了什么",
+      "doc.h": "粗剪 + 高光标记", "doc.why": "为什么选它", "doc.whyv": "剪辑师只想让 AI 干杂活，高光要自己挑。",
+      "doc.rests": "证据", "doc.k1": "实测", "doc.e1": "AI 剪的 10 刀，剪辑师撤回了 6 刀", "doc.k2": "原话", "doc.e2": "“先给我个粗剪，高光我自己挑。”",
+      "doc.aside": "没选", "doc.a1": "A 一键成片：高光被它替你挑了", "doc.a2": "C 只给建议：省不了多少时间",
+      "kb.todo": "待办", "kb.doing": "进行中", "kb.done": "已完成", "kb.1": "预标 5 个高光", "kb.2": "10 人长素材测试",
+      "kb.3": "时间线高光标记", "kb.4": "撤回率统计", "kb.5": "20 位剪辑师内测", "kb.t1": "2 小时前", "kb.t2": "昨天", "kb.t3": "40 分钟前", "kb.t4": "周二完成", "kb.t5": "周一完成",
+      "tb.h": "内测：20 位剪辑师", "tb.table": "表格", "tb.chart": "图表", "tb.r1": "比手动剪更快",
+      "tb.r2": "保留了粗剪", "tb.r3": "长素材偏慢", "tb.r4": "漏掉了高光",
+      "cut.line": "高光你来挑，杂活它来干。", "site.h": "高光你来挑，杂活它来干。", "site.p": "几分钟出粗剪，留什么你说了算。", "site.cta": "免费试用",
+      "z.1": "收集", "z.1d": "用户怎么做、怎么说",
       "z.2": "探索", "z.2d": "先下判断，再分方向",
-      "z.3": "原型", "z.3d": "从一个方向做出来",
-      "z.4": "定稿", "z.4d": "可以分享的版本，理由附在里面",
+      "z.3": "原型", "z.3d": "挑一个方向，做出来",
+      "z.4": "定稿", "z.4d": "可分享的版本，附带理由",
       "cases.t1": "产品设计", "cases.t2": "短视频", "cases.t3": "AI 产品",
-      "crew.title": "和你一起想，\u200b有时也和你唱反调。",
-      "crew.scout": "掂量证据", "crew.scoutq": "“这七条来源里，有两条是同一篇评论。”",
-      "crew.strat": "把判断分成方向", "crew.stratq": "“如果 B 是对的，初剪十个能留九个。”",
-      "crew.wright": "做出能验证的东西", "crew.wrightq": "“B 的瞬间标记原型好了，留下吗？”",
-      "crew.critic": "对照来源挑毛病", "crew.criticq": "“这里没有证据表明，剪辑师想要一键成片。”",
-      "crew.agency": "它们可以质疑你的决定，但只有你能做决定。",
+      "crew.title": "陪你一起想，​也敢跟你唱反调。",
+      "crew.scout": "核查证据", "crew.scoutq": "“这两条差评，其实是同一个人发的。”",
+      "crew.strat": "拆出几个方向", "crew.stratq": "“如果 B 成立，10 个粗剪能留下 9 个。”",
+      "crew.wright": "做原型验证", "crew.wrightq": "“B 方案的原型好了，要保留吗？”",
+      "crew.critic": "对照来源挑刺", "crew.criticq": "“没有任何证据说明，剪辑师想要一键成片。”",
+      "crew.agency": "它们可以质疑，拍板的永远是你。",
       "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
-      "mode.focusd": "不打扰你。它们注意到的事，等你回来再说。",
-      "sc.wait": "条待看", "sc.backK": "你专注的时候", "sc.backT": "伙伴记下了 3 条",
-      "sc.critic": "这里没有证据表明，剪辑师想要一键成片。", "sc.draftK": "原型 · 草稿", "sc.draftT": "关键瞬间标记原型", "sc.keep": "留下", "sc.discard": "丢掉",
-      "mode.listend": "只在有地方说不通时才开口。",
-      "mode.teamd": "和你一起起草，好的你留下。",
-      "modes.label": "AI 伙伴参与的程度",
-      "get.title": "获取 Vellum。",
-      "get.l1": "macOS 和 Windows 早期版本快来了。", "get.l2": "你的那一版值得一试时，发你一封邮件。",
-      "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "你打算用它来做什么？", "get.email": "邮箱",
-      "get.useph": "比如：一款新产品、一支短片…", "get.step": "抢先体验 Vellum。", "get.back": "返回", "get.join": "加入",
-      "get.needos": "先选一个系统。", "get.needemail": "先留个邮箱。", "get.needuse": "写几个字，说说用来做什么。",
-      "cta.waitlist": "加入等候名单", "cta.demo": "在线试玩", "get.dlfor": "下载 {os} 版",
-      "get.thanks": "已加入名单。", "get.thanksos": "已加入 {os} 名单。",
-      "get.thanksd": "准备好后，我们会写信到 {email}。",
-      "get.closed": "报名即将开放，这次什么都没有发送。",
-      "get.bademail": "这看起来不像邮箱地址。",
-      "get.fail": "没有提交成功，请稍后再试。",
-      "board.label": "Vellum 白板演示：决定一个 AI 剪辑 agent 该怎么工作",
-      "lang.label": "语言 Language", "theme.switch": "切换深浅色", "steps.label": "演示步骤", "cases.label": "使用场景",
-      "title": "Vellum：你的好想法，不该困在聊天框里"
+      "mode.focusd": "绝不打扰。有发现先记下，等你回来再说。",
+      "sc.wait": "条待看", "sc.backK": "专注期间", "sc.backT": "团队记下了 3 条",
+      "sc.critic": "没有任何证据说明，剪辑师想要一键成片。", "sc.draftK": "原型 · 草稿", "sc.draftT": "高光标记原型", "sc.keep": "保留", "sc.discard": "丢弃",
+      "mode.listend": "平时不出声，发现不对劲才开口。",
+      "mode.teamd": "和你同步起草，好的留下就行。",
+      "modes.label": "AI 团队的参与程度",
+      "get.title": "抢先体验 {brand}。",
+      "get.l1": "Mac 和 Windows 内测版即将推出。", "get.l2": "上线第一时间，邮件通知你。",
+      "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "打算用它做什么？", "get.email": "邮箱",
+      "get.useph": "比如：新品立项、短视频脚本……", "get.step": "申请内测资格", "get.back": "返回", "get.join": "提交",
+      "get.needos": "请先选择系统。", "get.needemail": "请填写邮箱。", "get.needuse": "简单说说你的用途。",
+      "cta.waitlist": "加入内测名单", "cta.demo": "在线体验", "get.dlfor": "下载 {os} 版",
+      "get.thanks": "你已加入内测名单。", "get.thanksos": "你已加入 {os} 版内测名单。",
+      "get.thanksd": "上线后，我们会第一时间发邮件到 {email}。",
+      "get.closed": "报名通道即将开放，本次信息未提交。",
+      "get.bademail": "邮箱格式好像不对。",
+      "get.fail": "提交失败，请稍后再试。",
+      "board.label": "{brand} 白板演示：AI 剪辑助手该怎么工作",
+      "lang.label": "语言 Language", "theme.switch": "切换深色或浅色外观", "steps.label": "演示步骤", "cases.label": "使用场景",
+      "title": "{brand} 思波：聊天框装不下你的好想法"
     }
   };
 
@@ -179,7 +188,7 @@
         e1: { k: "Observed", t: "Session logs", b: "Editors undo 6 of 10 cuts the agent makes.", by: "You" },
         e2: { k: "Reported", t: "Reviews", b: "34 reviews say it cut the best moment.", by: "Scout" },
         e3: { k: "Quote", t: "Editor", b: "Give me a first pass. The moments are mine.", by: "You" },
-        j1: { k: "Judgment", t: "Editors want the busywork done and the moments left to them.", b: "Rests on 3 sources, mostly observed.", by: "You + Scout" },
+        j1: { k: "Judgment", t: "Editors want the busywork done and the moments left to them.", b: "Logs, reviews and an editor's own words all point here.", by: "You + Scout" },
         dA: { k: "Direction", t: "One-click final cut", b: "Upload, get a finished video.", by: "Strategist" },
         dB: { k: "Direction", t: "Rough cut, moments marked", b: "It trims the dead air. You pick the moments.", by: "Strategist" },
         dC: { k: "Direction", t: "Suggestions only", b: "It comments. You make every cut.", by: "Strategist" },
@@ -187,8 +196,8 @@
         n1: { k: "Observed · new", t: "Beta test", b: "On long clips, picking moments takes longer than cutting by hand.", by: "You" }
       },
       adopted: "<strong>Chosen.</strong> It does the cuts editors keep, and leaves them the moments.",
-      asideA: "<strong>Set aside.</strong> Fast, but it chooses the moments for you.",
-      asideC: "<strong>Set aside.</strong> Keeps control, saves no time.",
+      asideA: "<strong>Not chosen.</strong> Fast, but it picks the moments for you.",
+      asideC: "<strong>Not chosen.</strong> You keep control, but save no time.",
       back: "Back in play",
       flagH: "New counter since you chose",
       reopen: "Reopen", holds: "Still holds",
@@ -199,36 +208,36 @@
       supports: "supports", counters: "counters"
     },
     zh: {
-      steps: ["证据", "判断", "方向", "决定", "新证据"],
+      steps: ["证据", "判断", "方向", "决策", "新证据"],
       captions: [
-        "从你知道的开始。",
-        "说出它意味着什么，以及依据是什么。",
-        "Strategist 分出方向，Critic 提出反对。",
-        "你选了 B。其余的留着，各自带着理由。",
-        "新证据反驳了 B。重新讨论，或写下它为何依然成立。"
+        "先摆出已知的事实。",
+        "得出判断，标明依据。",
+        "Strategist 拆出方向，Critic 提出质疑。",
+        "你选了 B。没选的也留着，理由写得清清楚楚。",
+        "新证据与 B 相悖：重新讨论，或写明为何仍然成立。"
       ],
-      reopened: "已重新讨论。一路上什么都没丢。",
-      held: "依然成立。你的理由和反驳证据放在了一起。",
+      reopened: "已重新讨论，之前的思路一条没丢。",
+      held: "仍然成立。你的理由已和反证放在一起。",
       cards: {
-        e1: { k: "观察", t: "操作日志", b: "剪辑师撤销了 agent 十刀里的六刀。", by: "你" },
-        e2: { k: "转述", t: "用户评论", b: "34 条评论说它剪掉了最好的瞬间。", by: "Scout" },
-        e3: { k: "原话", t: "剪辑师", b: "给我一个初剪就好，关键瞬间我自己定。", by: "你" },
-        j1: { k: "判断", t: "剪辑师要它干杂活，关键瞬间留给自己。", b: "依据 3 条来源，大多是观察。", by: "你 + Scout" },
+        e1: { k: "实测", t: "操作日志", b: "AI 剪的 10 刀，剪辑师撤回了 6 刀。", by: "你" },
+        e2: { k: "反馈", t: "用户评价", b: "34 条评价说，最精彩的部分被剪掉了。", by: "Scout" },
+        e3: { k: "原话", t: "剪辑师", b: "先给我个粗剪，高光我自己挑。", by: "你" },
+        j1: { k: "判断", t: "剪辑师希望 AI 干杂活，高光留给自己挑。", b: "日志、评价和剪辑师原话，都指向这一点。", by: "你 + Scout" },
         dA: { k: "方向", t: "一键成片", b: "上传素材，直接出成片。", by: "Strategist" },
-        dB: { k: "方向", t: "初剪 + 标出关键瞬间", b: "它剪掉冗余，你来挑瞬间。", by: "Strategist" },
-        dC: { k: "方向", t: "只给建议", b: "它只提意见，每一刀都你来剪。", by: "Strategist" },
-        st: { k: "Critic", b: "一键成片藏起了剪辑师最常撤销的那些刀。而且，没人要它。" },
-        n1: { k: "观察 · 新", t: "内测", b: "长素材里，挑瞬间比自己剪还慢。", by: "你" }
+        dB: { k: "方向", t: "粗剪 + 高光标记", b: "它剪掉冗余，高光由你来挑。", by: "Strategist" },
+        dC: { k: "方向", t: "只给建议", b: "它只提意见，每一刀都由你剪。", by: "Strategist" },
+        st: { k: "Critic", b: "一键成片恰好藏起了剪辑师最常撤回的那几刀。况且，根本没人提过这个需求。" },
+        n1: { k: "实测 · 新", t: "内测", b: "素材一长，挑高光比自己剪还慢。", by: "你" }
       },
-      adopted: "<strong>已选定。</strong>它只做剪辑师会保留的那些刀，瞬间留给人。",
-      asideA: "<strong>已搁置。</strong>快，但替你决定了瞬间。",
-      asideC: "<strong>已搁置。</strong>掌控还在，时间没省。",
-      back: "重新纳入考虑",
-      flagH: "选定之后，出现 1 条反证",
-      reopen: "重新讨论", holds: "依然成立",
-      heldNote: "依然成立。改法：agent 先预标出 5 个候选瞬间。",
-      sheet: { head: ["评论", "★"], rows: [[212, "帮我省了一小时", 5], [213, "把[[笑点剪没了]]", 2], [214, "导出很快", 4], [215, "[[最好的一条没了]]", 2], [216, "[[反应镜头被剪了]]", 1]] },
-      reopenedNote: "已重新讨论。A 和 C 重新纳入考虑。",
+      adopted: "<strong>已选定。</strong>剪辑师会保留的刀它来剪，高光留给人挑。",
+      asideA: "<strong>没选。</strong>快是快，但高光它替你挑了。",
+      asideC: "<strong>没选。</strong>掌控感有了，时间没省下。",
+      back: "重新考虑",
+      flagH: "选定后出现 1 条新反证",
+      reopen: "重新讨论", holds: "仍然成立",
+      heldNote: "仍然成立。改进：AI 先预标 5 个高光。",
+      sheet: { head: ["评价", "★"], rows: [[212, "帮我省了一小时", 5], [213, "[[笑点被剪没了]]", 2], [214, "导出挺快", 4], [215, "[[最好的一条没了]]", 2], [216, "[[反应镜头被剪掉了]]", 1]] },
+      reopenedNote: "已重新讨论，A 和 C 也重新考虑。",
       supports: "支持", counters: "反驳"
     }
   };
@@ -266,40 +275,40 @@
         P: { t: "Eval, 50 real cases", meta: "46 pass" },
         S: { t: "Ship to 10% of users" }
       },
-      kinds: { judgment: "Judgment", direction: "Direction", prototype: "Prototype", snapshot: "Snapshot", sources: "2 sources", aside: "A, C set aside", by: "Wright" }
+      kinds: { judgment: "Judgment", direction: "Direction", prototype: "Prototype", snapshot: "Snapshot", sources: "Reasons attached", aside: "Not chosen: A, C", by: "Wright" }
     },
     zh: {
       product: {
-        e1: { k: "转述", t: "退货原因", b: "“戴一小时就压鼻梁。”38 条。", page: "退货记录，近 90 天" },
-        e2: { k: "观察", t: "佩戴时长", b: "第一周之后，每天只戴 2 小时。" },
-        j: { t: "大家摘下它，是因为重量，不是功能。" },
+        e1: { k: "反馈", t: "退货原因", b: "“戴一小时，鼻梁就疼。”共 38 条。", page: "退货记录 · 近 90 天" },
+        e2: { k: "实测", t: "佩戴时长", b: "第一周过后，每天只戴 2 小时。" },
+        j: { t: "让人摘下它的是重量，不是功能。" },
         A: { t: "加大电池，镜框不变", why: "只会更重。" },
-        B: { t: "32 克镜框，电池放进镜腿尾端", b: "已选定。轻到忘了戴着。" },
-        C: { t: "去掉摄像头", why: "轻了，但丢了最主要的用途。" },
-        P: { t: "32 克样机", meta: "测试中连续戴了 6 小时" },
-        S: { t: "给开模评审的规格书" }
+        B: { t: "32 克镜框，电池移到镜腿末端", b: "已选定。轻到忘了自己戴着。" },
+        C: { t: "去掉摄像头", why: "轻是轻了，核心用途也没了。" },
+        P: { t: "32 克样机", meta: "实测连续佩戴 6 小时" },
+        S: { t: "开模评审规格书" }
       },
       video: {
-        e1: { k: "观察", t: "留存数据", b: "一半观众在第 3 秒离开。" },
-        e2: { k: "转述", t: "评论区", b: "“说重点。”60 条。" },
-        j: { t: "观众要先看到结果。" },
-        A: { t: "口播开场", why: "离结果还是太远。" },
-        B: { t: "成品画面开场", b: "已选定。第一秒就给结果。" },
-        C: { t: "文字卡开场", why: "一看就像广告。" },
-        P: { t: "分镜，三个版本", meta: "用你自己的视频模型生成" },
-        S: { t: "15 秒最终剪辑" }
+        e1: { k: "实测", t: "完播数据", b: "一半观众在第 3 秒划走。" },
+        e2: { k: "反馈", t: "评论区", b: "“说重点！”共 60 条。" },
+        j: { t: "观众想先看到结果。" },
+        A: { t: "口播开场", why: "结果还是来得太慢。" },
+        B: { t: "结果前置", b: "已选定。第一秒就亮出结果。" },
+        C: { t: "字幕卡开场", why: "一看就像广告。" },
+        P: { t: "分镜脚本，三个版本", meta: "由你自己的视频模型生成" },
+        S: { t: "15 秒成片" }
       },
       ai: {
-        e1: { k: "观察", t: "日志", b: "10 条草稿回复，用户改写了 6 条。" },
-        e2: { k: "原话", t: "访谈", b: "“读起来像机器人。”" },
-        j: { t: "问题出在语气，不在事实。" },
-        A: { t: "语气滑块", why: "又一个没人会动的设置。" },
-        B: { t: "跟随发件人的语气", b: "已选定。对方怎么写，它就怎么写。" },
-        C: { t: "回复模板", why: "用去掉语气来解决语气。" },
-        P: { t: "评测集，50 条真实案例", meta: "46 条通过" },
-        S: { t: "先开放给 10% 的用户" }
+        e1: { k: "实测", t: "日志", b: "AI 起草的回复，用户改写了六成。" },
+        e2: { k: "原话", t: "用户访谈", b: "“读起来像机器人。”" },
+        j: { t: "问题出在语气，不在内容。" },
+        A: { t: "语气滑块", why: "又多一个没人动的设置。" },
+        B: { t: "模仿发件人的语气", b: "已选定。对方怎么写，它就怎么回。" },
+        C: { t: "回复模板", why: "用消灭语气来解决语气问题。" },
+        P: { t: "评测集：50 条真实案例", meta: "通过 46 条" },
+        S: { t: "先灰度 10% 用户" }
       },
-      kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", sources: "2 条依据", aside: "A、C 已搁置", by: "Wright" }
+      kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", sources: "附理由和证据", aside: "没选 A、C", by: "Wright" }
     }
   };
   // A quote shows where it came from: who said it, and the recording it was transcribed from.
@@ -333,19 +342,35 @@
       '<rect class="cl-time" x="162" y="8" width="30" height="12" rx="6"/><text class="cl-tx" x="177" y="16.6" text-anchor="middle">24:10</text></svg>'
   };
   function unquote(t) { return String(t).replace(/^[“"「『]|[”"」』]$/g, ""); }
-  var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "观察": "eye", "转述": "msg", "原话": "quote" };
+  var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "实测": "eye", "反馈": "msg", "原话": "quote" };
 
   var lang = root.lang === "zh-CN" ? "zh" : "en";
-  function t(key) { return (T[lang] && T[lang][key]) || T.en[key] || ""; }
+  // A language may leave a slot empty on purpose ("" is a value, not a gap), so only a missing key falls back to English.
+  function has(key) { return !!T[lang] && Object.prototype.hasOwnProperty.call(T[lang], key); }
+  function t(key) { var v = has(key) ? T[lang][key] : T.en[key]; return (v == null ? "" : String(v)).replace(/\{brand\}/g, BRAND); }
+  // Chinese may break between any two characters, which in a short line can split a word (剪/辑师).
+  // With clauses on, each clause stays whole and lines break between clauses; a clause too long for the line still wraps.
+  function setCopy(el, v, clauses) {
+    if (lang === "zh" && clauses) el.innerHTML = v.replace(/([，；：])/g, "$1\u0001").split("\u0001").map(function (c) { return '<span class="cl">' + esc(c) + "</span>"; }).join("");
+    else el.textContent = v;
+  }
+  // Shrink a wrapped block to its longest line, so a balanced paragraph leaves no empty strip on the right.
+  // Works inside scaled boards: line boxes and the element are measured in the same (scaled) space.
+  function snug(el) {
+    el.style.width = "";
+    var box = el.getBoundingClientRect();
+    if (!box.width) return;
+    var r = document.createRange(); r.selectNodeContents(el);
+    var right = 0, rects = r.getClientRects();
+    for (var i = 0; i < rects.length; i++) right = Math.max(right, rects[i].right - box.left);
+    if (right > 0 && right < box.width - 1) el.style.width = Math.ceil(right * el.offsetWidth / box.width + 1) + "px";
+  }
 
   function applyCopy() {
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
-      var v = t(el.getAttribute("data-i18n"));
-      if (!v) return;
-      // Chinese may break between any two characters, which in a short display line can split a word (决/定).
-      // Here each clause stays whole and lines break between clauses; a clause too long for the line still wraps.
-      if (lang === "zh" && el.hasAttribute("data-clauses")) el.innerHTML = v.replace(/([，；])/g, "$1\u0001").split("\u0001").map(function (c) { return '<span class="cl">' + esc(c) + "</span>"; }).join("");
-      else el.textContent = v;
+      var k = el.getAttribute("data-i18n"), v = t(k);
+      if (!v && !has(k)) return;
+      setCopy(el, v, el.hasAttribute("data-clauses"));
     });
     $("langSel").value = lang;
     document.title = t("title");
@@ -1399,21 +1424,49 @@
     return { d: "M" + q1.x + " " + q1.y + " C" + q1.x + " " + (q1.y + v * kk) + "," + q2.x + " " + (q2.y - v * kk) + "," + q2.x + " " + q2.y, m: { x: (q1.x + q2.x) / 2, y: (q1.y + q2.y) / 2 } };
   }
 
-  // ---- The vellum layers: stacked flat until seen, then they fan out so each step shows through ----
+  // ---- The contrast table: as you scroll, each row resolves in turn ---------------------------
+  // The old way gets struck through, then the new way arrives beside it. A row resolves when it is well inside
+  // the screen; rows that arrive together queue up so they still go one by one. Rows already scrolled past on
+  // load (a reload halfway down) just show their final state. No JS or reduced motion: the final state.
+  (function () {
+    var table = document.querySelector(".contrast");
+    if (!table || reduced || !("IntersectionObserver" in window)) return;
+    var rows = Array.prototype.slice.call(table.tBodies[0].rows), queue = [], busy = false;
+    table.classList.add("reveal");
+    function pump() {
+      if (busy || !queue.length) return;
+      busy = true;
+      queue.shift().classList.add("done");
+      setTimeout(function () { busy = false; pump(); }, 340);
+    }
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        var row = en.target;
+        if (en.isIntersecting) { io.unobserve(row); queue.push(row); queue.sort(function (a, b) { return rows.indexOf(a) - rows.indexOf(b); }); pump(); }
+        else if (en.boundingClientRect.bottom < 0) { io.unobserve(row); row.classList.add("done"); }
+      });
+    }, { rootMargin: "0px 0px -18% 0px", threshold: 1 });
+    rows.forEach(function (r) { io.observe(r); });
+  })();
+
+  // ---- The layers: stacked flat until seen, then they fan out so each step shows through ----
   var layers = $("layers");
   if (reduced || !("IntersectionObserver" in window)) layers.classList.add("open");
   else {
     var lio = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { setTimeout(function () { layers.classList.add("open"); }, 250); lio.disconnect(); } }); }, { threshold: 0.6 });
     lio.observe(layers);
   }
-  if (!reduced && canHover) {
-    layers.addEventListener("pointermove", function (e) {
-      var r = layers.getBoundingClientRect();
-      layers.style.setProperty("--mx", Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 1.2))).toFixed(3));
-      layers.style.setProperty("--my", Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 1.2))).toFixed(3));
+  // Point at the stack and it opens into an exploded view; leave and it settles back. On touch, a tap toggles it.
+  var sheetsEl = layers.querySelector(".sheets");
+  if (canHover) {
+    sheetsEl.addEventListener("pointerenter", function () { layers.classList.add("apart"); });
+    sheetsEl.addEventListener("pointerleave", function () { layers.classList.remove("apart"); layers.style.setProperty("--mx", "0"); layers.style.setProperty("--my", "0"); });
+    if (!reduced) sheetsEl.addEventListener("pointermove", function (e) {
+      var r = sheetsEl.getBoundingClientRect();
+      layers.style.setProperty("--mx", Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2))).toFixed(3));
+      layers.style.setProperty("--my", Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 2))).toFixed(3));
     });
-    layers.addEventListener("pointerleave", function () { layers.style.setProperty("--mx", "0"); layers.style.setProperty("--my", "0"); });
-  }
+  } else sheetsEl.addEventListener("click", function () { layers.classList.toggle("apart"); });
 
   // ---- The crew scene: the same moment on a small board, played three ways --------------------------
   // You put down a direction and keep working. What the crew does about it, and when, is the whole
@@ -1435,12 +1488,13 @@
       '<article class="vc ink sc-card" id="scMine" style="left:40px;top:66px;width:214px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-fork"/></svg><span data-sc="mk"></span><span class="by"><b style="background:var(--label);color:var(--card)" data-sc="me"></b></span></div>' +
         '<div class="t"><span class="chip A">A</span><span data-sc="mt"></span></div><div class="b" data-sc="mb"></div></article>' +
       '<span class="sc-dot" id="scDot">' + av("var(--crew-critic)", "C") + "</span>" +
-      '<div class="sc-bubble" id="scBubble" style="left:272px;top:44px;width:248px">' + av("var(--crew-critic)", "C") + '<p data-sc="critic"></p></div>' +
+      '<div class="sc-bubble" id="scBubble" style="left:272px;top:44px;max-width:248px">' + av("var(--crew-critic)", "C") + '<p data-sc="critic"></p></div>' +
       '<article class="vc sc-card sc-back" id="scBack" style="left:300px;top:92px;width:222px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-tray"/></svg><span data-sc="backK"></span></div><div class="t" data-sc="backT"></div>' +
         '<div class="sc-avs">' + av("var(--crew-scout)", "S") + av("var(--crew-critic)", "C") + av("var(--crew-wright)", "W") + "</div></article>" +
       '<article class="vc sc-card sc-draft" id="scDraft" style="left:304px;top:104px;width:206px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-window"/></svg><span data-sc="draftK"></span><span class="by"><b style="background:var(--crew-wright)">W</b></span></div>' +
         '<div class="t"><span data-sc="draftT"></span></div><div class="sc-acts"><span data-sc="discard"></span><span class="keep" data-sc="keep"></span></div></article>';
     var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = $("scDot");
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { snug(bubble.querySelector("p")); });
 
     var cur = {};
     function cursorEl(name, color) {
@@ -1468,7 +1522,8 @@
     function relabel() {
       var d = BOARD[lang].cards.dA;
       var txt = { mk: d.k, mt: d.t, mb: d.b, me: lang === "zh" ? "你" : "Y" };
-      st.querySelectorAll("[data-sc]").forEach(function (e) { var k = e.getAttribute("data-sc"); e.textContent = txt[k] != null ? txt[k] : t("sc." + k); });
+      st.querySelectorAll("[data-sc]").forEach(function (e) { var k = e.getAttribute("data-sc"); setCopy(e, txt[k] != null ? txt[k] : t("sc." + k), k === "critic"); });
+      snug(bubble.querySelector("p"));
       if (cur.you) cur.you.querySelector(".who").textContent = lang === "zh" ? "你" : "You";
       if (cur.wright) cur.wright.querySelector(".who").textContent = "Wright";
     }
@@ -1480,7 +1535,7 @@
       boxEl.style.aspectRatio = W + " / " + H;
       st.style.width = W + "px"; st.style.height = H + "px";
       var put = function (e, p) { e.style.left = p[0] + "px"; e.style.top = p[1] + "px"; if (p[2]) e.style.width = p[2] + "px"; };
-      put(mine, L.mine); put(bubble, L.bubble); put(back, L.back); put(draft, L.draft);
+      put(mine, L.mine); put(bubble, L.bubble.slice(0, 2)); bubble.style.maxWidth = L.bubble[2] + "px"; snug(bubble.querySelector("p")); put(back, L.back); put(draft, L.draft);
       // The Critic's pin sits exactly where its note's avatar will be, so the note opens out of it.
       put(dot, [L.bubble[0] + 2, L.bubble[1] + 3]); dot.setAttribute("data-tip", L.tip);
       st.style.transform = "scale(" + (boxEl.clientWidth / W) + ")";
@@ -1543,7 +1598,11 @@
       b.setAttribute("aria-checked", on ? "true" : "false"); b.tabIndex = on ? 0 : -1;
       if (on) { slide(modesEl, b); if (focus) b.focus(); }
     });
-    $("modeDesc").textContent = t({ focus: "mode.focusd", listen: "mode.listend", team: "mode.teamd" }[crewMode]);
+    var desc = $("modeDesc"), next = t({ focus: "mode.focusd", listen: "mode.listend", team: "mode.teamd" }[crewMode]);
+    if (desc.textContent === next) return;
+    if (reduced || !desc.textContent) { desc.textContent = next; return; }
+    clearTimeout(desc._swap); desc.classList.add("swap");
+    desc._swap = setTimeout(function () { desc.textContent = next; desc.classList.remove("swap"); }, 110);
   }
   modeBtns.forEach(function (b, i) {
     b.addEventListener("click", function () { var was = crewMode; crewMode = b.dataset.mode; renderMode(false); if (was !== crewMode || scene.idle()) scene.play(crewMode); });
@@ -1556,7 +1615,7 @@
   window.addEventListener("resize", function () { renderMode(false); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { renderMode(false); });
 
-  // ---- Get Vellum: one button, then a short form ---------------------------------------------------------
+  // ---- Get the app: one button, then a short form ---------------------------------------------------------
   // "Join the waitlist" opens a small dialog: email, which system (picked for you from the browser; a phone or
   // tablet can't tell, so nothing is picked there) and, in their own words, what it's for. All three are needed.
   // Back, Esc or a click outside closes it without joining and keeps what was typed. Once a build is live for

@@ -13,7 +13,7 @@
    system. Re-subset when the copy adds new characters (see README). unicode-range keeps it off Latin text. */
 @font-face {
   font-family: "Vellum Sans SC";
-  src: url("fonts/VellumSansSC-subset.woff2") format("woff2");
+  src: url("fonts/VellumSansSC-subset.woff2?v=2") format("woff2");
   font-weight: 400 700;
   font-display: swap;
   unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+2018-201D, U+2026, U+00B7;
@@ -121,7 +121,10 @@ a { color: inherit; }
 button, input, select { font: inherit; color: inherit; letter-spacing: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 p, h1, h2, h3, h4, figure, blockquote { margin: 0; }
-:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 3px; }
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--focus) 70%, transparent); outline-offset: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+/* Chinese breaks between any two characters; "pretty" keeps a lone character off the last line. */
+:lang(zh) body { text-wrap: pretty; }
 ::selection { background: color-mix(in srgb, var(--B-fill) 26%, transparent); }
 
 .wrap { width: 100%; max-width: calc(var(--max) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
@@ -494,33 +497,59 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .why-body .lede { max-width: 18em; }
 .why-side { display: grid; gap: clamp(var(--s6), 5vw, var(--s8)); align-content: start; }
 
-/* Nothing gets wiped: three sheets of vellum, lit from the top left. They sit flat as one drawing until
-   you reach them, then fan out so each step of the thinking shows through the one above it. */
-.layers { margin: 0; width: min(100%, 400px); --mx: 0; --my: 0; }
+/* Nothing gets wiped: each step of the thinking is a translucent sheet laid on the last. At rest the three
+   drawings register as one board (only the paper edges peek out); point at it and the stack opens into an
+   exploded view, each layer on a spring, the top ones lifting higher. One line language: hand-drawn, one
+   stroke width, round caps, every connector computed to end exactly on a shape's edge. */
+.layers { margin: 0; width: min(100%, 400px); --mx: 0; --my: 0;
+  --spring: linear(0, 0.039, 0.133, 0.256, 0.388, 0.518, 0.635, 0.737, 0.821, 0.888, 0.939, 0.976, 1.002, 1.018, 1.027, 1.031, 1.031, 1.029, 1.026, 1.022, 1.018, 1.014, 1.01, 1.007, 1.005, 1.003, 1.001, 1, 1, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999, 1); }
 .sheets { position: relative; width: 100%; aspect-ratio: 320 / 196; }
-.sheet { position: absolute; inset: 0 8% 8% 0; border-radius: 10px; overflow: hidden;
-  background: var(--sheet);
-  box-shadow: inset 0 1px 0 var(--sheet-edge), 0 0 0 .5px var(--hair-2), 0 18px 30px -22px rgba(0,0,0,.4);
-  transform: translate(4%, 5%) rotate(.6deg); transition: transform 1.1s var(--settle); }
-/* Depth without blur: the further down a sheet is, the fainter its ink reads through the ones above. */
-.sheet.s1 svg > :not(.tag) { opacity: .5; } .sheet.s2 svg > :not(.tag) { opacity: .78; }
-.sheet::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at calc(18% + var(--mx) * 30%) calc(0% + var(--my) * 20%), var(--sheet-edge), transparent 58%); opacity: .55; }
+.sheet { position: absolute; inset: 4% 4% 4% 4%; transform: translate(0, -10px); opacity: 0;
+  transition: transform .9s var(--settle), opacity .35s var(--e-out), translate .5s var(--e-out); }
+@supports (transition-timing-function: linear(0, 1)) { .sheet { transition: transform .9s var(--spring), opacity .35s var(--e-out), translate .5s var(--e-out); } }
+.sheet .paper { position: absolute; inset: 0; border-radius: 12px; background: var(--sheet);
+  box-shadow: inset 0 1px 0 var(--sheet-edge), 0 0 0 .5px var(--hair-2), 0 1px 2px rgba(0,0,0,.05), 0 12px 22px -18px rgba(0,0,0,.35);
+  transition: transform .9s var(--settle), box-shadow .6s var(--e-out); }
+@supports (transition-timing-function: linear(0, 1)) { .sheet .paper { transition: transform .9s var(--spring), box-shadow .6s var(--e-out); } }
+.sheet .paper::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(120% 90% at calc(18% + var(--mx) * 30%) calc(0% + var(--my) * 20%), var(--sheet-edge), transparent 58%); opacity: .5; }
+/* The papers sit a little askew; the drawings on them stay registered. */
+.sheet.s1 .paper { transform: rotate(-2.2deg) translate(-1.5%, -1%); }
+.sheet.s2 .paper { transform: rotate(.8deg); }
+.sheet.s3 .paper { transform: rotate(2.4deg) translate(1.5%, 1.5%); }
 .sheet svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.sheet path, .sheet rect, .sheet ellipse { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sheet path { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.sheet .thin { stroke-width: 1.3; }
+.sheet .fillish { fill: color-mix(in srgb, var(--label-3) 22%, transparent); }
 .sheet .ink-1 { stroke: var(--label); }
 .sheet .ink-3 { stroke: var(--label-3); }
-.sheet .ink-a { stroke: var(--A-fill); }
-.sheet .ink-b { stroke: var(--B-fill); stroke-width: 2.6; }
-.sheet .ink-c { stroke: var(--C-fill); }
-.sheet .loop { opacity: .5; }
-.sheet.ghost { background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; overflow: visible; pointer-events: none; }
-.sheet.ghost::before { content: none; }
-.sheet .tag { font: 560 11px/1 var(--sans); fill: var(--label-2); letter-spacing: .01em; opacity: 0; transition: opacity .6s var(--ease); }
-.layers.open .s1 { transform: translate(calc(var(--mx) * 3px), calc(var(--my) * 2px)) rotate(-2.5deg); }
-.layers.open .s2 { transform: translate(calc(4% + var(--mx) * 7px), calc(5% + var(--my) * 5px)) rotate(.6deg); }
-.layers.open .s3 { transform: translate(calc(8% + var(--mx) * 12px), calc(9% + var(--my) * 8px)) rotate(2.8deg); transition-delay: .08s; }
-.layers.open .tag { opacity: 1; }
-.layers.open .s1 .tag { transition-delay: .5s; } .layers.open .s2 .tag { transition-delay: .7s; } .layers.open .s3 .tag { transition-delay: .9s; }
+.sheet .ink-b { stroke: var(--B-fill); }
+.sheet .knot { fill: var(--label); stroke: none; }
+.sheet .br-a { stroke: color-mix(in srgb, var(--A-fill) 70%, var(--label-3)); }
+.sheet .br-b { stroke: color-mix(in srgb, var(--B-fill) 70%, var(--label-3)); }
+.sheet .br-c { stroke: color-mix(in srgb, var(--C-fill) 70%, var(--label-3)); }
+.sheet .chipf { stroke-width: 1.4; }
+.sheet .chipf.A { fill: var(--A-fill); stroke: var(--A-fill); } .sheet .chipf.B { fill: var(--B-fill); stroke: var(--B-fill); } .sheet .chipf.C { fill: var(--C-fill); stroke: var(--C-fill); }
+.sheet .chipl { font: 700 12px/1 var(--sans); fill: var(--chip-ink); text-anchor: middle; }
+.sheet .pen { stroke: var(--label); stroke-width: 1.7; }
+/* The paper above already softens what is below; only the bottom sheet gets a touch quieter. */
+.sheet.s1 svg > * { opacity: .9; }
+.sheet.ghost { pointer-events: none; }
+.sheet.ghost svg > * { opacity: 1; }
+.sheet .tag { font: 600 11px/1 var(--sans); fill: var(--label-2); letter-spacing: .01em; }
+:lang(zh) .sheet .tag { letter-spacing: .04em; }
+/* Arriving: the sheets land one after another. */
+.layers.open .sheet { transform: none; opacity: 1; }
+.layers.open .s2 { transition-delay: .22s; } .layers.open .s3 { transition-delay: .44s; }
+/* Opened: an exploded view. Pointer position adds a little parallax, more for the higher sheets. */
+.layers.open.apart .sheet { transition-delay: 0s; }
+.layers.open.apart .s1 { transform: translate(-6%, -7%); }
+.layers.open.apart .s3 { transform: translate(6%, 7%); }
+.layers.open.apart .s2 .paper { box-shadow: inset 0 1px 0 var(--sheet-edge), 0 0 0 .5px var(--hair-2), 0 2px 4px rgba(0,0,0,.05), 0 18px 30px -20px rgba(0,0,0,.38); }
+.layers.open.apart .s3 .paper { box-shadow: inset 0 1px 0 var(--sheet-edge), 0 0 0 .5px var(--hair-2), 0 3px 6px rgba(0,0,0,.06), 0 26px 40px -22px rgba(0,0,0,.42); }
+.layers .s1 { translate: calc(var(--mx) * -2px) calc(var(--my) * -1.5px); }
+.layers .s2 { translate: calc(var(--mx) * 2px) calc(var(--my) * 1.5px); }
+.layers .s3 { translate: calc(var(--mx) * 6px) calc(var(--my) * 4px); }
+@media (prefers-reduced-motion: reduce) { .sheet, .sheet .paper { transition: none !important; } .layers .sheet { translate: none; } }
 
 .contrast { width: 100%; border-collapse: collapse; font-size: 15.5px; line-height: 1.42; }
 .contrast th { text-align: left; font-size: 12.5px; font-weight: 560; color: var(--label-3); padding: 0 var(--s4) var(--s3) 0; }
@@ -528,13 +557,28 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .contrast td { vertical-align: top; padding: var(--s4) var(--s4) var(--s4) 0; border-top: 1px solid var(--hair-2); width: 50%; }
 .contrast td > * { vertical-align: top; }
 .contrast td { position: relative; }
-.contrast td span { display: block; padding-left: 26px; text-wrap: pretty; }
-.contrast td svg.mk { position: absolute; width: 16px; height: 16px; margin-top: 2.5px; }
+.contrast td > span { display: block; padding-left: 26px; text-wrap: pretty; }
+/* The marks: one 16px grid, one stroke family, centred on the first line. The cross is a size smaller than the
+   check so the two weigh the same; it stays quiet grey, the check carries the colour. */
+.contrast td svg.mk { position: absolute; width: 16px; height: 16px; margin-top: 3px; stroke-linecap: round; stroke-linejoin: round; }
 .contrast td + td svg.mk { left: var(--s5); }
+.contrast svg.no { color: var(--label-3); stroke-width: 1.4; opacity: .8; }
+.contrast svg.yes { color: var(--ok); stroke-width: 1.75; }
 .contrast td:first-child { color: var(--label-3); }
-.contrast td:first-child span { text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: color-mix(in srgb, var(--label-3) 55%, transparent); }
+/* The strike is drawn, not a text decoration, so it can sweep across, line by line. */
+.contrast .st { background: linear-gradient(color-mix(in srgb, var(--label-3) 60%, transparent), color-mix(in srgb, var(--label-3) 60%, transparent)) no-repeat 0 56% / 100% 1px; -webkit-box-decoration-break: slice; box-decoration-break: slice; }
 .contrast td + td { font-weight: 500; }
-.contrast td + td svg.mk { color: var(--ok); stroke-width: 2; }
+/* On scroll each row resolves in turn: the old way is struck out, then the new one arrives (site.js adds .reveal). */
+.contrast.reveal td:first-child { color: var(--label-2); transition: color .34s var(--e-out); }
+.contrast.reveal .st { background-size: 0% 1px; transition: background-size .34s var(--e-out); }
+.contrast.reveal svg.no { opacity: .45; transition: opacity .34s var(--e-out); }
+.contrast.reveal svg.yes { stroke-dasharray: 1 2; stroke-dashoffset: 1; opacity: 0; transition: stroke-dashoffset .32s var(--e-out) .26s, opacity .08s linear .26s; }
+.contrast.reveal td + td > span { opacity: 0; transform: translateY(3px); transition: opacity .3s var(--e-out) .3s, transform .4s var(--e-out) .3s; }
+.contrast.reveal tr.done td:first-child { color: var(--label-3); }
+.contrast.reveal tr.done .st { background-size: 100% 1px; }
+.contrast.reveal tr.done svg.no { opacity: .8; }
+.contrast.reveal tr.done svg.yes { stroke-dashoffset: 0; opacity: 1; }
+.contrast.reveal tr.done td + td > span { opacity: 1; transform: none; }
 .contrast tbody tr:last-child td { border-bottom: 1px solid var(--hair-2); }
 @media (max-width: 900px) {
   .why-body { grid-template-columns: 1fr; }
@@ -718,9 +762,9 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .doc dt { color: var(--label-3); font-weight: 500; }
 .doc dd { margin: 0; color: var(--label); }
 .doc dd.aside { color: var(--label-3); }
-.doc-more { display: grid; gap: 9px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--hair-2); }
-.doc-more i { display: block; height: 6px; border-radius: 3px; background: var(--label-4); opacity: .55; }
-.doc-more i:nth-child(1) { width: 92%; } .doc-more i:nth-child(2) { width: 78%; } .doc-more i:nth-child(3) { width: 54%; }
+.doc-ev { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.doc-ev li { text-wrap: pretty; }
+.doc-ev i { font-style: normal; font-size: 11px; font-weight: 600; line-height: 17px; display: inline-block; padding: 0 6px; margin-right: 7px; border-radius: 5px; color: var(--label-2); background: var(--card-3); vertical-align: 1px; }
 
 /* Tasks: the same decision broken into work. */
 .kb { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; height: 100%; }
@@ -728,7 +772,20 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .kb-col h5 { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--label-3); }
 .kb-col h5 b { font-weight: 500; color: var(--label-4); }
 .kb-card { padding: 11px 12px; border-radius: 11px; background: var(--card-2); box-shadow: inset 0 0 0 1px var(--hair); font-size: 13.5px; line-height: 1.4; color: var(--label); }
-.kb-col.done .kb-card { color: var(--label-3); text-decoration: line-through; text-decoration-color: var(--label-4); }
+.kb-col.done .kb-card { color: var(--label-3); }
+.kb-col.done .kb-card span { text-decoration: line-through; text-decoration-color: var(--label-4); }
+.kb-card span { display: block; }
+.kb-card time { display: block; margin-top: 5px; font-size: 11.5px; line-height: 1.3; color: var(--label-3); font-variant-numeric: tabular-nums; }
+/* Status code: an empty ring to do, a half-filled amber ring doing, a filled green dot done. Shape carries it
+   as much as colour, so it still reads without colour. */
+.kb-col h5::before { content: ""; flex: none; width: 10px; height: 10px; box-sizing: border-box; border-radius: 50%; padding: 1.75px;
+  box-shadow: inset 0 0 0 1.4px var(--st, var(--label-3)); background-clip: content-box; }
+.kb-col.doing { --st: var(--A-fill); }
+.kb-col.doing h5::before { background-image: conic-gradient(var(--st) 0 180deg, transparent 0); }
+.kb-col.done { --st: var(--ok-fill); }
+.kb-col.done h5::before { background: var(--st); padding: 0; }
+.kb-col.doing .kb-card { background: color-mix(in srgb, var(--st) 8%, var(--card-2)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--st) 24%, transparent); }
+.kb-card { text-wrap: pretty; }
 
 /* Table: the field test, with the row that became a counter marked the way counters are marked on the board. */
 .tb-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; font: 600 16px/1.3 var(--display); letter-spacing: -.015em; color: var(--label); }
@@ -808,11 +865,15 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .agency { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s6) clamp(var(--s6), 5vw, var(--s9)); align-items: center; margin-top: var(--s8); padding-top: var(--s7); border-top: 1px solid var(--hair-2); }
 .agency-line { font-family: var(--display); font-size: clamp(22px, 2.3vw, 30px); line-height: 1.2; font-weight: 560; letter-spacing: -.024em; font-variation-settings: "opsz" 32; max-width: 16em; text-wrap: balance; }
 :lang(zh) .agency-line { letter-spacing: 0; font-weight: 600; }
-/* The switch sits on the board it changes (same place as the tabs above the How board), the caption under it. */
+/* The switch sits on the board it changes (same place as the tabs above the How board). Its caption sits right
+   under it, so switch, caption and board read as one group and the words change where you tapped. */
 .scene-col { display: grid; justify-items: start; min-width: 0; }
-.scene-col .modes { margin-bottom: var(--s5); }
+.scene-col .modes { margin-bottom: var(--s3); }
 .scene-col .scene-wrap { width: 100%; }
-.mode-desc { font-size: 15px; line-height: 1.45; color: var(--label-2); min-height: 2.9em; max-width: 34em; text-wrap: pretty; margin-top: var(--s4); }
+.mode-desc { font-size: 15px; line-height: 1.45; color: var(--label-2); min-height: 1.45em; max-width: 34em; text-wrap: pretty; margin: 0 0 var(--s4) 4px;
+  transition: opacity .16s var(--e-out), transform .16s var(--e-out); }
+.mode-desc.swap { opacity: 0; transform: translateY(-2px); transition-duration: .1s; }
+@media (max-width: 560px) { .mode-desc { min-height: 2.9em; } }
 
 /* The crew scene: a small board where the same moment plays out in each mode, with a timeline of when. */
 .scene-wrap { margin: 0; min-width: 0; }
@@ -838,7 +899,7 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
   opacity: 0; transform: scale(.4); transform-origin: 19px 20px; transition: opacity .2s var(--e-out), transform .24s var(--e-out); }
 .sc-bubble.on { opacity: 1; transform: none; transition: opacity .3s var(--e-out), transform .55s var(--settle); }
 .sc-bubble .av { margin-top: 1px; }
-.sc-bubble p { text-wrap: balance; }
+.sc-bubble p { text-wrap: balance; } /* site.js then shrinks it to its longest line, so no empty space on the right */
 .sc-avs { display: flex; margin-top: 10px; }
 .sc-avs .av { box-shadow: 0 0 0 1.5px var(--card); }
 .sc-avs .av + .av { margin-left: -3px; }

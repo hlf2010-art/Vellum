@@ -23,6 +23,20 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]; }); }
 
+  // What the crew writes arrives as it's written: word by word (character by character in Chinese),
+  // each piece settling in from a soft blur. Layout is fixed from the start, so nothing around it moves.
+  // Your own cards never stream: you put them down whole.
+  function stream(el, delay, done) {
+    if (!el || reduced) { if (done) done(); return 0; }
+    var text = el.textContent, parts = text.match(/[⺀-鿿＀-￯]|[^\s⺀-鿿＀-￯]+\s*|\s+/g) || [text];
+    el.innerHTML = parts.map(function (p) { return '<span class="tok">' + esc(p) + "</span>"; }).join("");
+    var toks = el.querySelectorAll(".tok"), cjk = /[⺀-鿿]/.test(text), step = cjk ? 34 : 62;
+    toks.forEach(function (t, i) { setTimeout(function () { t.classList.add("in"); }, (delay || 0) + i * step); });
+    var total = (delay || 0) + toks.length * step + 260;
+    setTimeout(function () { if (el.querySelector(".tok")) el.textContent = text; if (done) done(); }, total);
+    return total;
+  }
+
   // ---- Copy -------------------------------------------------------------------------------
   // Written in each language, not translated. One idea per line; small print only where it prevents a mistake.
   var T = {
@@ -56,7 +70,7 @@
       "crew.agency": "They can challenge your decision. Only you can make it.",
       "mode.focus": "Focus", "mode.listen": "Listening", "mode.team": "Teamwork",
       "mode.focusd": "Nothing interrupts you. What they notice waits until you're back.",
-      "sc.crew": "Crew", "sc.you": "You", "sc.wait": "waiting", "sc.backK": "While you focused", "sc.backT": "3 notes from the crew",
+      "sc.wait": "waiting", "sc.backK": "While you focused", "sc.backT": "3 notes from the crew",
       "sc.critic": "Nothing here says campers want a dial.", "sc.draftK": "Prototype · draft", "sc.draftT": "Foam mock-up", "sc.keep": "Keep", "sc.discard": "Discard",
       "mode.listend": "They speak up only when something doesn't add up.",
       "mode.teamd": "They draft alongside you. You keep what's good.",
@@ -106,7 +120,7 @@
       "crew.agency": "它们可以质疑你的决定，但只有你能做决定。",
       "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
       "mode.focusd": "不打扰你。它们注意到的事，等你回来再说。",
-      "sc.crew": "伙伴", "sc.you": "你", "sc.wait": "条待看", "sc.backK": "你专注的时候", "sc.backT": "伙伴记下了 3 条",
+      "sc.wait": "条待看", "sc.backK": "你专注的时候", "sc.backT": "伙伴记下了 3 条",
       "sc.critic": "这里没有任何证据说露营者想要旋钮。", "sc.draftK": "原型 · 草稿", "sc.draftT": "泡沫手板", "sc.keep": "留下", "sc.discard": "丢掉",
       "mode.listend": "只在有地方说不通时才开口。",
       "mode.teamd": "和你一起起草，好的你留下。",
@@ -399,7 +413,7 @@
         var letter = { dA: "A", dB: "B", dC: "C" }[id];
         c.querySelector(".kk").textContent = d.k;
         var tt = c.querySelector(".t");
-        if (tt) tt.innerHTML = (letter ? '<span class="chip ' + letter + '">' + letter + "</span>" : "") + esc(d.t);
+        if (tt) tt.innerHTML = (letter ? '<span class="chip ' + letter + '">' + letter + "</span>" : "") + '<span class="tt">' + esc(d.t) + "</span>";
         c.querySelector(".b").textContent = d.b;
         var by = c.querySelector(".by");
         if (by) {
@@ -554,6 +568,7 @@
       })(t0);
     }
 
+    var CREWMADE = { dA: 1, dB: 1, dC: 1, st: 1 };   // written by the crew, so it streams in
     var WHO = { you: "var(--label)", scout: "var(--crew-scout)", strategist: "var(--crew-strategist)", critic: "var(--crew-critic)" };
     function cursor(name) {
       if (cursors[name]) return cursors[name];
@@ -609,6 +624,7 @@
       setTimeout(function () { c.classList.remove("landing"); }, 360);
       setTimeout(function () { c.classList.remove("landed"); }, 1300);
       if (id === "n1") { c.classList.remove("fresh"); void c.offsetWidth; c.classList.add("fresh"); }
+      if (CREWMADE[id]) { stream(c.querySelector(".t .tt"), 120); stream(c.querySelector(".b"), id === "st" ? 160 : 420); }
       requestAnimationFrame(function () { drawLines(true); });
     }
 
@@ -1141,16 +1157,16 @@
 
   // ---- The crew scene: the same moment on a small board, played three ways --------------------------
   // You put down a direction and keep working. What the crew does about it, and when, is the whole
-  // difference between the modes: the board shows what you'd see, the timeline underneath shows when.
+  // difference between the modes, so the board plays it out in time.
   var scene = (function () {
-    var boxEl = $("sceneBox"), st = $("sceneStage"), tlCrew = $("tlCrew"), tlYou = $("tlYou");
-    var W = 560, H = 236, D = 5200, LAY = { wide: { W: 560, H: 236, mine: [40, 66], bubble: [272, 44, 248], back: [300, 92], draft: [304, 104] }, narrow: { W: 340, H: 300, mine: [18, 24], bubble: [44, 158, 272], back: [100, 166], draft: [116, 170] } }, timers = [], seen = false, running = false, raf = 0;
+    var boxEl = $("sceneBox"), st = $("sceneStage");
+    var W = 560, H = 236, D = 5200, LAY = { wide: { W: 560, H: 236, mine: [40, 66], bubble: [272, 44, 248], back: [300, 92], draft: [304, 104] }, narrow: { W: 340, H: 300, mine: [18, 24], bubble: [44, 158, 272], back: [100, 166], draft: [116, 170] } }, timers = [], seen = false, running = false;
     var TICKS = [0.06, 0.2, 0.34, 0.5, 0.66, 0.82];
-    // Each mode: what happens on the board, at a point along the timeline (0 to 1).
+    // Each mode: what shows on the board, and when (as a share of the run).
     var PLAN = {
-      focus: [{ x: 0.27, mark: "held" }, { x: 0.5, mark: "held" }, { x: 0.73, mark: "held" }, { x: 0.96, mark: "bundle", show: "back" }],
-      listen: [{ x: 0.42, mark: "dot", show: "dot" }, { x: 0.54, show: "bubble" }],
-      team: [{ x: 0.24, show: "wright" }, { x: 0.34, mark: "dot", show: "draft" }, { x: 0.66, mark: "dot", show: "dot" }]
+      focus: [{ x: 0.96, show: "back" }],
+      listen: [{ x: 0.42, show: "dot" }, { x: 0.54, show: "bubble" }],
+      team: [{ x: 0.24, show: "wright" }, { x: 0.34, show: "draft" }, { x: 0.66, show: "dot" }]
     };
     var av = function (c, l) { return '<b class="av" style="--c:' + c + '">' + l + "</b>"; };
     st.innerHTML =
@@ -1162,7 +1178,6 @@
       '<article class="vc sc-card sc-draft" id="scDraft" style="left:304px;top:104px;width:206px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-window"/></svg><span data-sc="draftK"></span><span class="by"><b style="background:var(--crew-wright)">W</b></span></div>' +
         '<div class="t" data-sc="draftT"></div><div class="sc-acts"><span class="keep" data-sc="keep"></span><span data-sc="discard"></span></div></article>';
     var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = mine.querySelector(".sc-dot");
-    TICKS.forEach(function (x) { var i = document.createElement("i"); i.className = "tk"; i.style.left = (x * 100) + "%"; tlYou.appendChild(i); });
 
     var cur = {};
     function cursorEl(name, color) {
@@ -1207,25 +1222,16 @@
     }
 
     function reset() {
-      timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf);
+      timers.forEach(clearTimeout); timers = [];
       [mine, bubble, back, draft, dot].forEach(function (e) { e.classList.remove("on"); });
       Object.keys(cur).forEach(function (n) { cur[n].classList.remove("on"); });
-      tlCrew.innerHTML = ""; tlYou.querySelectorAll(".tk").forEach(function (k) { k.classList.remove("on"); });
-      tlYou.style.setProperty("--p", "0%");
     }
     function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
-    function mark(e) {
-      var m = document.createElement("i");
-      m.className = "cm " + e.mark; m.style.left = (e.x * 100) + "%";
-      if (e.mark === "bundle") m.textContent = "3";
-      tlCrew.appendChild(m);
-      requestAnimationFrame(function () { m.classList.add("on"); });
-    }
     function show(what, instant) {
       if (what === "dot") dot.classList.add("on");
-      if (what === "bubble") bubble.classList.add("on");
+      if (what === "bubble") { bubble.classList.add("on"); if (!instant) stream(bubble.querySelector("p"), 180); }
       if (what === "back") instant ? back.classList.add("on") : land(back, W - 30, H - 30);
-      if (what === "draft") { var mb = mbox(); instant ? draft.classList.add("on") : land(draft, mb.x + mb.w, mb.y + mb.h * 0.6); }
+      if (what === "draft") { var mb = mbox(); if (instant) draft.classList.add("on"); else { land(draft, mb.x + mb.w, mb.y + mb.h * 0.6); stream(draft.querySelector(".t"), 260); } }
       if (what === "wright" && !instant) {
         var w = cursorEl("wright", "var(--crew-wright)"), m = mbox(); relabel();
         glide(w, m.x + m.w - 10, m.y + m.h * 0.55, 520);
@@ -1236,9 +1242,7 @@
     // The end state of a mode, all at once: for reduced motion, and while the board is off screen.
     function still(mode) {
       reset(); mine.classList.add("on");
-      TICKS.forEach(function (x, i) { tlYou.querySelectorAll(".tk")[i].classList.add("on"); });
-      tlYou.style.setProperty("--p", "100%");
-      PLAN[mode].forEach(function (e) { if (e.mark) mark(e); if (e.show) show(e.show, true); });
+      PLAN[mode].forEach(function (e) { show(e.show, true); });
     }
     function play(mode) {
       if (reduced || !seen) { still(mode); return; }
@@ -1250,12 +1254,10 @@
       // You keep working: one small move per tick on your row.
       var hops = [P(.5, .7), P(.75, .5), P(.25, .78), P(.65, .86), P(.45, .6), P(.8, .7)];
       TICKS.forEach(function (x, i) {
-        at(x * D, function () { tlYou.querySelectorAll(".tk")[i].classList.add("on"); if (i) glide(you, hops[i][0], hops[i][1], 420); });
+        if (i) at(x * D, function () { glide(you, hops[i][0], hops[i][1], 420); });
       });
-      PLAN[mode].forEach(function (e) { at(e.x * D, function () { if (e.mark) mark(e); if (e.show) show(e.show); }); });
+      PLAN[mode].forEach(function (e) { at(e.x * D, function () { show(e.show); }); });
       at(D + 300, function () { you.classList.remove("on"); running = false; });
-      var t0 = performance.now();
-      (function f(now) { var k = Math.min(1, (now - t0) / D); tlYou.style.setProperty("--p", (k * 100).toFixed(2) + "%"); if (k < 1) raf = requestAnimationFrame(f); })(t0);
     }
 
     fit(); relabel(); still("listen");

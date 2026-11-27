@@ -880,9 +880,11 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 
 /* One button; the form lives in the dialog below. */
 .join { width: min(460px, 100%); margin: var(--s7) auto 0; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 22px; }
-.get-go { height: 52px; padding: 0 28px; }
+.get-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.get-acts .btn { height: 52px; padding: 0 28px; }
+.get-acts .btn[hidden] { display: none; }
+@media (max-width: 380px) { .get-acts { flex-direction: column-reverse; align-self: stretch; width: 100%; } .get-acts .btn { width: 100%; } }
 .join.live .get-go { display: none; }
-.dl-go { justify-self: center; height: 52px; padding: 0 28px; }
 .done-state { display: none; gap: 10px; align-items: flex-start; justify-content: center; text-align: left; }
 .done-state strong { display: block; font-size: 16px; font-weight: 600; line-height: 22px; }
 .done-state p { margin-top: 2px; font-size: 14.5px; line-height: 1.45; color: var(--label-2); }

@@ -284,8 +284,11 @@
       <!-- One button. It opens a small form: email, which system (already picked from the browser on a computer)
            and, in their own words, what it's for. All three are needed to join. -->
       <div class="join" id="waitlist">
-        <button class="btn btn-primary get-go" id="joinOpen" type="button" aria-haspopup="dialog" data-i18n="cta.waitlist">Join the waitlist</button>
-        <a class="btn btn-primary dl-go" id="dlGo" hidden></a>
+        <div class="get-acts">
+          <a class="btn btn-quiet get-demo" id="demoGo" target="_blank" rel="noopener" hidden data-i18n="cta.demo">Try the demo</a>
+          <button class="btn btn-primary get-go" id="joinOpen" type="button" aria-haspopup="dialog" data-i18n="cta.waitlist">Join the waitlist</button>
+          <a class="btn btn-primary dl-go" id="dlGo" hidden></a>
+        </div>
         <div class="done-state" role="status">
           <span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span>
           <div><strong id="doneText"></strong><p id="doneNote"></p></div>

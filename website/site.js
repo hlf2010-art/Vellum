@@ -10,6 +10,7 @@
       mac: "",   // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-mac.dmg"
       win: ""    // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-Setup.exe"
     },
+    demo: "",            // The in-browser demo, built from the repo. Until it's set, the Try the demo button stays hidden.
     waitlistEndpoint: "" // One POST {email, os, use, lang} as JSON (Formspree, Buttondown, a Worker…); os is "mac" or "win".
   };
 
@@ -89,7 +90,7 @@
       "get.os": "Preferred system", "get.mac": "macOS", "get.win": "Windows", "get.use": "What will you use it for?", "get.email": "Email",
       "get.useph": "A product launch, a short film…", "get.step": "Get early access.", "get.back": "Back", "get.join": "Join",
       "get.needos": "Pick a system first.", "get.needemail": "Where should we write to?", "get.needuse": "A few words on what it's for.",
-      "cta.waitlist": "Join the waitlist", "get.dlfor": "Download for {os}",
+      "cta.waitlist": "Join the waitlist", "cta.demo": "Try the demo", "get.dlfor": "Download for {os}",
       "get.thanks": "You're on the list.", "get.thanksos": "You're on the list for {os}.",
       "get.thanksd": "We'll write to {email} when it's ready.",
       "get.thankspreview": "This preview doesn't send sign-ups yet, so {email} stayed right here.",
@@ -148,7 +149,7 @@
       "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "你打算用它来做什么？", "get.email": "邮箱",
       "get.useph": "比如：一款新产品、一支短片…", "get.step": "抢先体验 Vellum。", "get.back": "返回", "get.join": "加入",
       "get.needos": "先选一个系统。", "get.needemail": "先留个邮箱。", "get.needuse": "写几个字，说说用来做什么。",
-      "cta.waitlist": "加入等候名单", "get.dlfor": "下载 {os} 版",
+      "cta.waitlist": "加入等候名单", "cta.demo": "在线试玩", "get.dlfor": "下载 {os} 版",
       "get.thanks": "已加入名单。", "get.thanksos": "已加入 {os} 名单。",
       "get.thanksd": "准备好后，我们会写信到 {email}。",
       "get.thankspreview": "这是预览版，报名还没有接通，{email} 没有被发送出去。",
@@ -1557,6 +1558,7 @@
   var form = $("waitlist"), email = $("email"), dlGo = $("dlGo"), openBtn = $("joinOpen");
   var dlg = $("more"), moreForm = $("moreForm"), useText = $("useText"), moreMsg = $("moreMsg"), osChips = $("osChips");
   var joinBtn = moreForm.querySelector("button[value=join]");
+  if (CONFIG.demo) { $("demoGo").href = CONFIG.demo; $("demoGo").hidden = false; }
   var pick = { os: guessOS() }, sent = null, need = "";
   function guessOS() {
     var ua = navigator.userAgent || "", pf = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";

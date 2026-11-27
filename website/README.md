@@ -21,8 +21,9 @@ Everything that isn't real yet lives in `CONFIG` at the top of `site.js`.
 
 1. **Downloads.** Publish a GitHub release with a macOS build and a Windows build, then set `CONFIG.downloads.mac` and `.win` to the asset URLs (`releases/latest/download/<file>` always points at the newest release). Until then everyone joins the waitlist. Once a build is live for the visitor's system (guessed from the browser), the button becomes "Download for macOS" (or Windows); a visitor whose build isn't out yet still gets the waitlist button.
 2. **Waitlist.** Point `CONFIG.waitlistEndpoint` at anything that accepts a JSON POST, such as Formspree, Buttondown, Loops, or a small Cloudflare Worker. "Join the waitlist" (the section's one button) opens a small dialog that asks for an email, the preferred system (macOS or Windows, preselected from the browser on a computer) and, in their own words, what it's for. All three are required; joining sends one POST of `{email, os, use, lang}`. Back, Esc or a click outside closes the dialog without joining. Until the endpoint is set, a sign-up tells the visitor it's a preview and sends nothing.
-3. **Hosting.** Any static host works: GitHub Pages (serve `/website`), Cloudflare Pages or Vercel. Fonts and assets are self-hosted, so the page doesn't depend on Google Fonts and loads in mainland China.
-4. **Domain and sharing.** Add the domain, then an `og:image` (a 1200×630 crop of the board) and a canonical URL in `<head>`.
+3. **Demo.** Once the in-browser demo is deployed (built from this repo, so it updates with `main`), set `CONFIG.demo` to its URL. A "Try the demo" button then appears to the left of "Join the waitlist". Never link an unsigned download here: the system security warning is the wrong first impression.
+4. **Hosting.** Any static host works: GitHub Pages (serve `/website`), Cloudflare Pages or Vercel. Fonts and assets are self-hosted, so the page doesn't depend on Google Fonts and loads in mainland China.
+5. **Domain and sharing.** Add the domain, then an `og:image` (a 1200×630 crop of the board) and a canonical URL in `<head>`.
 
 ## Design rules
 

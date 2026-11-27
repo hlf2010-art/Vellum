@@ -75,3 +75,9 @@ Left to right: the `EvidenceLine` on judgment cards (idea, synthesis, direction,
 - **Don't** fill any card except a snapshot with lineage colour, don't add coloured left borders or tint kanban columns by position, and don't hide evidence weight.
 
 Wrap renders in `Vellum.Root`.
+
+## Pasted blocks (notepad)
+
+A paste is drawn as what it is, by local rules and with no model: a **quote** (left rule, the words, the speaker in `label-3` under them), **code** (`card-2` well, mono, a small language tag top right) and plain text. One card can hold several blocks, so an interviewee's words with the code they showed stay one card. The kind line names what it holds (`Quote · JS`, `引用 · JS`). The text is stored as plain words with light markdown (```` ``` ```` fences, `> ` quote lines, `> — who`), and editing the body shows those words.
+
+When a paste holds two points that would carry different weight (a quote next to a measured number), a **dashed seam** marks where Scout would cut, and *Split into 2 cards* appears on hover. Splitting is only ever offered, never done on its own: the halves stay snapped (one relation), each gets its own suggested label, and Undo puts the original back.

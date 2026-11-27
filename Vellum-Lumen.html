@@ -345,6 +345,73 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .card.notepad h4{font:650 17px/1.28 var(--ui);letter-spacing:-.02em;margin-top:8px}
 .card.notepad [data-edit="title"]:empty::before{content:"Untitled notepad";color:var(--label-3);font-weight:500}
 .card.notepad .notepad-body{margin-top:10px;padding-top:10px;border-top:0;font:430 14px/1.55 var(--ui);color:var(--label-2);white-space:pre-wrap;overflow-wrap:anywhere;min-height:84px;max-height:260px;overflow-y:auto;cursor:text}
+/* pasted blocks: a quote looks like a quote, code like code. Format only; the label in the footer says what it counts as */
+.card.notepad .notepad-body.pb{white-space:normal;display:flex;flex-direction:column;gap:10px}
+.pb-text{margin:0;white-space:pre-wrap}
+.pb-quote{margin:0;padding:1px 0 1px 12px;border-left:2px solid var(--hair-2)}
+.pb-quote p{margin:0;font:450 14.5px/1.5 var(--ui);color:var(--label);white-space:pre-wrap;text-wrap:pretty}
+.pb-quote cite{display:block;margin-top:4px;font:var(--text-meta);font-style:normal;color:var(--label-3)}
+.pb-code{position:relative;margin:0;padding:10px 12px;border-radius:var(--radius-sm);background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair);font:var(--text-mono-small);color:var(--label-2);white-space:pre;overflow-x:auto;tab-size:2;cursor:text}
+.pb-code[data-lang]::after{content:attr(data-lang);position:absolute;top:8px;right:10px;font:600 10px/1 var(--ui);letter-spacing:.03em;color:var(--label-3)}
+.pb-code code{font:inherit}
+/* where Scout would cut a paste holding two points: a dashed seam at rest, the action on hover */
+.pb-seam{position:relative;height:16px;margin:-3px 0}
+.pb-seam::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed color-mix(in srgb,var(--label) 22%,transparent)}
+.pb-split{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px 0 8px;border:0;border-radius:var(--radius-pill);background:var(--chrome);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:var(--chrome-shadow);font:560 12px/1 var(--ui);color:var(--label);cursor:pointer;opacity:0;transition:opacity var(--d-quick),transform var(--d-quick) var(--ease)}
+.pb-split svg{width:13px;height:13px}
+.card:hover .pb-split,.pb-split:focus-visible{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.pb-split:hover{background:var(--card)}
+/* Scout's suggested label: the same pill, not yet inked. Dashed ring = not decided; Scout's mark = who suggests */
+.weight.w-sug{background:transparent;color:var(--label-2);box-shadow:none;outline:1px dashed color-mix(in srgb,var(--label) 26%,transparent);outline-offset:-1px;padding-left:4.5px;gap:4px}
+.weight.w-sug:hover,.weight.w-sug.is-open{background:var(--hover);color:var(--label)}
+.weight.w-sug .w-sc{display:inline-flex;width:12px;height:12px;color:#2066DB}
+:root[data-theme="dark"] .weight.w-sug .w-sc{color:#7AB3FF}
+.weight.w-sug .w-sc svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.9}
+.weight.w-sug .w-sc svg .f{fill:currentColor;stroke:none}
+.weight.w-sug .w-sg{display:inline-flex}
+.weight.w-sug .w-sg.observed{color:color-mix(in srgb,var(--C) var(--ink-mix),var(--ink-to))}
+.weight.w-sug .w-sg.reported{color:color-mix(in srgb,var(--A) var(--ink-mix),var(--ink-to))}
+.weight.w-sug .w-sg.proposed{color:color-mix(in srgb,var(--B) var(--ink-mix),var(--ink-to))}
+/* applied by Scout (Edit = Do it): one soft glow so you notice, then it is an ordinary label */
+.weight.w-glow{animation:wGlow 1.6s var(--ease) 1}
+@keyframes wGlow{0%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 0%,transparent)}25%{box-shadow:0 0 0 4px color-mix(in srgb,currentColor 16%,transparent),0 0 16px 2px color-mix(in srgb,currentColor 28%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.weight.w-glow{animation:none;outline:1.5px solid color-mix(in srgb,currentColor 40%,transparent);outline-offset:1px}}
+/* the hover card for a suggestion: what Scout thinks, why in one line, Keep as the one primary */
+.by-pop.is-lp{width:272px;padding:12px 12px 10px}
+.by-pop .lp-head{display:flex;align-items:center;gap:7px;font:600 13.5px/18px var(--ui);color:var(--label)}
+.by-pop .lp-ico{width:15px;height:15px}
+.by-pop .lp-ico.observed{color:color-mix(in srgb,var(--C) var(--ink-mix),var(--ink-to))}
+.by-pop .lp-ico.reported{color:color-mix(in srgb,var(--A) var(--ink-mix),var(--ink-to))}
+.by-pop .lp-ico.proposed{color:color-mix(in srgb,var(--B) var(--ink-mix),var(--ink-to))}
+.by-pop .lp-by{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font:500 11.5px/1 var(--ui);color:var(--label-3)}
+.by-pop .lp-by svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.9}
+.by-pop .lp-by svg .f{fill:currentColor;stroke:none}
+.by-pop .lp-why{margin:6px 0 10px;font:400 12.5px/18px var(--ui);color:var(--label-2)}
+.by-pop .lp-acts{display:flex;justify-content:flex-end;gap:6px}
+.by-pop .ev-act.pri{background:var(--act);color:var(--on-act)}
+.by-pop .ev-act.pri:hover{background:color-mix(in srgb,var(--act) 86%,var(--on-act))}
+/* the label menu */
+.w-menu{position:fixed;z-index:var(--z-popover);width:292px;padding:6px;border-radius:14px;background:var(--chrome);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);box-shadow:var(--chrome-shadow);opacity:0;transform:translateY(-4px) scale(.98);transform-origin:top left;transition:opacity var(--d-quick),transform var(--d-quick) var(--ease)}
+.w-menu.in{opacity:1;transform:none}
+.wm-i{display:flex;align-items:flex-start;gap:10px;width:100%;padding:7px 10px;border:0;border-radius:9px;background:none;color:var(--label);text-align:left;cursor:pointer;font:inherit}
+.wm-i:hover,.wm-i:focus-visible{background:var(--hover);outline:none}
+.wm-i.on{background:var(--hover)}
+.wm-g{flex:none;width:18px;height:18px;display:grid;place-items:center;margin-top:1px;color:var(--label-3)}
+.wm-g .wm-ico,.wm-g svg{width:14px;height:14px}
+.wm-g.observed{color:color-mix(in srgb,var(--C) var(--ink-mix),var(--ink-to))}
+.wm-g.reported{color:color-mix(in srgb,var(--A) var(--ink-mix),var(--ink-to))}
+.wm-g.proposed{color:color-mix(in srgb,var(--B) var(--ink-mix),var(--ink-to))}
+.wm-t{min-width:0;flex:1}
+.wm-t b{display:block;font:560 13px/18px var(--ui)}
+.wm-t small{display:block;font:400 12px/16px var(--ui);color:var(--label-3)}
+.wm-s{flex:none;align-self:center;display:inline-flex;align-items:center;gap:4px;font:500 11.5px/1 var(--ui);color:#2066DB}
+:root[data-theme="dark"] .wm-s{color:#7AB3FF}
+.wm-s.on{color:var(--label-2)}
+.wm-s svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.9}
+.wm-s svg .f{fill:currentColor;stroke:none}
+.wm-s.on svg{width:14px;height:14px;stroke-width:2}
+.wm-sep{height:.5px;background:var(--hair);margin:5px 8px}
+.wm-fmt b,.wm-clear b{font-weight:500;color:var(--label-2)}
 .card.notepad .notepad-body:empty::before{content:"Write a brief, outline, spec, or long-form notes…";color:var(--label-3)}
 .card.notepad .notepad-body[contenteditable="true"]{background:transparent;box-shadow:none;outline:none;min-height:112px;color:var(--label);user-select:text;-webkit-user-select:text}
 .card.source .path{font:450 11px/1.35 var(--mono);color:var(--label-3);margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:5px 8px;border-radius:var(--radius-xs);background:var(--card-2)}
@@ -3999,6 +4066,8 @@ const MEDIA=window.VELLUM_MEDIA||{};
 const FONT_CSS=window.VELLUM_FONT_CSS||"";
 
 const ICONS={
+  cut:'<circle cx="6" cy="7" r="2.6"/><circle cx="6" cy="17" r="2.6"/><path d="M8.3 8.4 20 16M8.3 15.6 20 8"/>',
+  check:'<path d="M5 12.5l4.3 4.2L19 7.5"/>',
   more:'<circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/>',
   x:'<path d="M7 7l10 10M17 7 7 17"/>',check:'<path d="m5.5 12.5 4 4 9-9.5"/>',chev:'<path d="m7 9.5 5 5 5-5"/>',lineage:'<circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7.2 6c6.3 0 3.3 12 9.6 12"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   play:'<path d="M8 5.7v12.6a1 1 0 0 0 1.53.85l10.07-6.3a1 1 0 0 0 0-1.7L9.53 4.85A1 1 0 0 0 8 5.7z" fill="currentColor" stroke="none"/>',
@@ -4409,6 +4478,184 @@ const WEIGHTS={
 const WEIGHT_ORDER=["observed","reported","proposed","illustrative"];
 function weightLabel(w){const o=WEIGHTS[w];return o?(uiLang()==="zh"?o.zh:o.label):""}
 function weightDesc(w){const o=WEIGHTS[w];return o?(uiLang()==="zh"?o.zhDesc:o.desc):""}
+/* ── pasted text: format per block, one source label per card ─────────────────────
+   Two axes, never mixed. Format (quote, code, text) is how a block looks: read from the paste by local rules,
+   drawn automatically, never asked. The source label (WEIGHTS) is how much the card can carry: Scout suggests
+   it and the Edit row of the crew's autonomy decides whether it is applied (Do it), offered (Ask first) or left
+   alone (Never). Stored in n.text as light markdown (```lang fences, "> " quote lines, "> — who" for the
+   speaker) so the words stay plain text for Copilot, search and editing. */
+const CODE_KW=/\b(function|const|let|var|return|import|export|from|def|class|async|await|elif|lambda|self|SELECT|FROM|WHERE|INSERT|UPDATE|public|private|static|void|fn|func|package|struct|println|console|print)\b/;
+const QUOTE_OPEN=/^[“"「『‘']/,QUOTE_CLOSE=/[”"」』’'][.。!！?？]?$/;
+const SPEAKER=/^((?:P|U|R)\d{1,3}|Interviewer|Interviewee|Participant(?: \d+)?|User(?: \d+)?|Customer|Q|A|受访者[\w一-龥]{0,4}|用户[\w一-龥]{0,4}|访谈者|采访者)\s*[:：]\s*/i;
+const STAMP=/^\[?\d{1,2}:\d{2}(?::\d{2})?\]?\s+/;
+const CITE=/^[—–]{1,2}\s*|^-{1,2}\s+(?=\S)/;
+function codeScore(par){
+  const ls=par.split("\n").filter(l=>l.trim());if(!ls.length)return 0;
+  let hit=0;
+  for(const l of ls){const t=l.trim();if(/[;{}]$|^[}\])]|=>|^\s*(#include|<\/?[a-z][\w-]*[\s>])|^\s*(def|class|import|from|return|if|for|while|const|let|var|function)\b.*[:({=]|^\$ |\w+\([^)]*\)\s*[;{]?$/.test(t)||/^( {2,}|\t)/.test(l))hit++}
+  const kw=CODE_KW.test(par)?1:0,sym=(par.match(/[{}();=<>\[\]]/g)||[]).length/Math.max(par.length,1);
+  return hit/ls.length+(kw?.25:0)+(sym>.06?.25:0);
+}
+function isCode(par){const ls=par.split("\n").filter(l=>l.trim()).length;return ls>=2?codeScore(par)>=.9:codeScore(par)>=1.3&&/[;{}]/.test(par)}
+function guessLang(s){
+  if(/^\s*[{\[][\s\S]*[}\]]\s*$/.test(s)&&/"\s*:/.test(s))return"JSON";
+  if(/\b(SELECT|INSERT|UPDATE|DELETE)\b[\s\S]*\b(FROM|INTO|SET)\b/.test(s))return"SQL";
+  if(/<\/?(div|span|html|body|p|a|section|button)\b/i.test(s))return"HTML";
+  if(/\bdef\s+\w+\(|\bimport\s+\w+$|\bself\b|\belif\b|:\s*$/m.test(s)&&!/[;{}]\s*$/m.test(s))return"Python";
+  if(/\b(fn\s+\w+|let\s+mut|println!)/.test(s))return"Rust";
+  if(/\bfunc\s+\w+\(|\bpackage\s+\w+/.test(s))return"Go";
+  if(/^\s*[.#]?[\w-]+\s*\{[\s\S]*:[^;]+;/m.test(s)&&!/\bfunction\b|=>/.test(s))return"CSS";
+  if(/^\s*(\$ |sudo |npm |git |cd |brew )/m.test(s))return"Shell";
+  if(/\b(interface|type)\s+\w+\s*[={]|:\s*(string|number|boolean)\b/.test(s))return"TS";
+  if(/\b(function|const|let|var|=>|console\.|await|async)\b/.test(s))return"JS";
+  return"";
+}
+/* stored text → blocks */
+function parseBlocks(text){
+  const out=[],ls=String(text||"").replace(/\r\n?/g,"\n").split("\n");let i=0;
+  while(i<ls.length){
+    const l=ls[i];
+    const f=l.match(/^```\s*([\w+#.-]*)\s*$/);
+    if(f){const body=[];i++;while(i<ls.length&&!/^```\s*$/.test(ls[i])){body.push(ls[i]);i++}i++;out.push({k:"code",lang:f[1]||"",text:body.join("\n")});continue}
+    if(/^>\s?/.test(l)){const body=[];let cite="";while(i<ls.length&&/^>\s?/.test(ls[i])){const t=ls[i].replace(/^>\s?/,"");if(CITE.test(t)&&body.length)cite=t.replace(CITE,"").trim();else body.push(t);i++}out.push({k:"quote",text:body.join("\n").trim(),cite});continue}
+    if(!l.trim()){i++;continue}
+    const body=[];while(i<ls.length&&ls[i].trim()&&!/^```/.test(ls[i])&&!/^>\s?/.test(ls[i])){body.push(ls[i]);i++}
+    out.push({k:"text",text:body.join("\n")});
+  }
+  return out;
+}
+const hasBlocks=text=>/^```|^>\s?/m.test(String(text||""));
+function blocksToText(bs){return bs.map(b=>b.k==="code"?"```"+(b.lang||"")+"\n"+b.text+"\n```":b.k==="quote"?b.text.split("\n").map(x=>"> "+x).join("\n")+(b.cite?"\n> — "+b.cite:""):b.text).join("\n\n")}
+function unquote(s){s=s.trim();if(QUOTE_OPEN.test(s)&&QUOTE_CLOSE.test(s)){const m=s.match(/^[“"「『‘']([\s\S]*?)[”"」』’']([.。!！?？]?)$/);if(m)return (m[1]+m[2]).trim()}return s}
+/* a raw paste → blocks, or null when it is just text */
+function parsePaste(raw){
+  const s=String(raw||"").replace(/\r\n?/g,"\n").trim();if(!s)return null;
+  if(/^```/m.test(s)){const bs=parseBlocks(s);return bs.some(b=>b.k!=="text")?bs:null}
+  const pars=s.split(/\n[ \t]*\n/),bs=[];
+  for(const par0 of pars){
+    const par=par0.replace(/\s+$/,"");if(!par.trim())continue;
+    const prev=bs[bs.length-1],t=par.trim();
+    if(isCode(par)){if(prev?.k==="code")prev.text+="\n\n"+par;else bs.push({k:"code",lang:"",text:par.replace(/^\n+/,"")});continue}
+    if(prev?.k==="quote"&&!prev.cite&&CITE.test(t)&&t.length<=80&&!t.includes("\n")){prev.cite=t.replace(CITE,"").trim();continue}
+    const ls=t.split("\n"),last=ls[ls.length-1].trim();
+    const sp=t.match(SPEAKER),st=STAMP.test(t);
+    if(sp&&!/^(Q|A)$/i.test(sp[1])||st){const who=sp?sp[1]:"";const body=t.replace(STAMP,"").replace(SPEAKER,"");bs.push({k:"quote",text:unquote(body),cite:who});continue}
+    if(QUOTE_OPEN.test(t)){
+      if(ls.length>1&&CITE.test(last)&&last.length<=80){const body=ls.slice(0,-1).join("\n");if(QUOTE_CLOSE.test(body.trim())){bs.push({k:"quote",text:unquote(body),cite:last.replace(CITE,"").trim()});continue}}
+      const m=t.match(/^([“"「『][\s\S]+?[”"」』][.。]?)\s*[—–-]{1,2}\s*([^\n]{1,60})$/);if(m){bs.push({k:"quote",text:unquote(m[1]),cite:m[2].trim()});continue}
+      if(QUOTE_CLOSE.test(t)){bs.push({k:"quote",text:unquote(t),cite:""});continue}
+    }
+    if(prev?.k==="text")prev.text+="\n\n"+par;else bs.push({k:"text",text:par});
+  }
+  for(const b of bs)if(b.k==="code"&&!b.lang)b.lang=guessLang(b.text);
+  return bs.some(b=>b.k!=="text")?bs:null;
+}
+/* what each block says about where the words came from; code goes with the block it illustrates */
+const OBS_CUE=/\b\d+(\.\d+)?\s*%|\b\d+\s+(of|out of)\s+\d+\b|\bn\s*=\s*\d+|\b\d+(\.\d+)?\s*(ms|s|sec|seconds|minutes)\b|\b(logs?|measured|observed|watched|recorded|telemetry|analytics|session|playtest|clicked|tapped|timed? out)\b|\d+\s*(位|个|名|次)?\s*(中|里)\s*(有\s*)?\d+|\d+(\.\d+)?\s*(秒|毫秒)|实测|观察到|日志|埋点|录屏|测试中/i;
+const PRO_CUE=/\b(we (could|should|might)|what if|let'?s|idea:|proposal:|i propose|maybe we)\b|我们(可以|应该|不如)|不如|设想|提议|或许可以/i;
+function blockWeight(b){if(b.k==="quote")return"reported";if(b.k==="code")return null;if(OBS_CUE.test(b.text))return"observed";if(PRO_CUE.test(b.text))return"proposed";return null}
+function weightSuggestion(bs){
+  if(!bs?.length)return null;
+  const ws=[];let last=null;
+  bs.forEach((b,i)=>{const w=blockWeight(b)||(b.k==="code"?last:null);ws.push(w);if(w)last=w});
+  const kinds=[...new Set(ws.filter(Boolean))];
+  if(!kinds.length)return null;
+  if(kinds.length>1){const at=ws.findIndex((w,i)=>i>0&&w&&ws.slice(0,i).filter(Boolean).some(x=>x!==w));return at>0?{split:at}:null}
+  const w=kinds[0],q=bs.find(b=>b.k==="quote"),who=q?.cite?.split(/\s*[·,，]\s*/)[0]||"";
+  const why=w==="reported"?(who?L(`${who}'s own words. Nobody has watched it happen yet.`,`${who} 的原话，还没有人亲眼看到。`):L("Someone's own words. Nobody has watched it happen yet.","别人的原话，还没有人亲眼看到。"))
+    :w==="observed"?L("It has numbers from real use: counted or measured, not told.","里面有真实使用中数出来或测出来的数字，不是转述。")
+    :L("It reads as an idea of ours, not something people did.","读起来是我们自己的想法，不是用户做过的事。");
+  return {w,why};
+}
+function formatTagOf(n){if(!n||n.fmtOff||!hasBlocks(n.text))return"";const bs=parseBlocks(n.text),seen=[];for(const b of bs){const t=b.k==="quote"?L("Quote","引用"):b.k==="code"?(b.lang||L("Code","代码")):"";if(t&&!seen.includes(t))seen.push(t)}return seen.join(" · ")}
+function blocksHTML(n){
+  const bs=parseBlocks(n.text),split=n.splitSug&&!n.weight?n.splitSug.at:-1;
+  return bs.map((b,i)=>{
+    const seam=i===split?`<div class="pb-seam"><button type="button" class="pb-split" data-a="split-paste" title="${esc(L("One card, one point: each half gets its own label","一张卡只讲一件事：拆开后各自标注"))}">${ic("cut")}<span>${esc(L("Split into 2 cards","拆成 2 张卡"))}</span></button></div>`:"";
+    if(b.k==="code")return `${seam}<pre class="pb-code"${b.lang?` data-lang="${esc(b.lang)}"`:""}><code>${esc(b.text)}</code></pre>`;
+    if(b.k==="quote")return `${seam}<blockquote class="pb-quote"><p>${esc(b.text)}</p>${b.cite?`<cite>${esc(b.cite)}</cite>`:""}</blockquote>`;
+    return `${seam}<p class="pb-text">${esc(b.text)}</p>`}).join("");
+}
+function pasteTitle(bs,raw){
+  const first=bs.find(b=>b.k!=="code")||bs[0];
+  const line=String(first?.text||raw).split("\n")[0].replace(/\s+/g," ").trim();
+  const q=bs.find(b=>b.k==="quote"),who=q?.cite?.split(/\s*[·,，]\s*/)[0]||"";
+  const sent=(line.match(/^.{8,}?[.!?。！？](\s|$)/)||[line])[0].trim();
+  const base=sent.length>48?sent.slice(0,47).replace(/\s+\S*$/,"")+"…":sent;
+  return first?.k==="quote"&&who?`${who}${/[一-龥]/.test(base)?"：":": "}“${base.replace(/[.。]$/,"")}”`:base;
+}
+/* apply, offer or skip Scout's label, per the Edit row; split is always only offered (the original card goes away) */
+function offerLabel(n,sug,{toastIt=true}={}){
+  if(!n||!sug||n.weight)return false;
+  const p=perm("edit");if(p==="never")return false;
+  if(sug.split!=null){n.splitSug={at:sug.split};return false}
+  if(p==="direct"){
+    checkpoint();n.weight=sug.w;n.wBy={who:"scout",t:NOW(),why:sug.why};n.updated=NOW();delete n.wSug;
+    log("scout",`Labelled <b>${esc(titleOf(n))}</b> as ${WEIGHTS[sug.w].label.toLowerCase()}`,n.id);
+    if(toastIt)setTimeout(()=>toast(L(`Scout labelled it ${WEIGHTS[sug.w].label}`,`Scout 标为「${WEIGHTS[sug.w].zh}」`),{undo:true}),60);
+    return true;
+  }
+  n.wSug={w:sug.w,why:sug.why,t:NOW()};return false;
+}
+function keepLabel(n,w){
+  if(!n)return;const s=n.wSug;checkpoint();n.weight=w||s?.w||null;n.updated=NOW();
+  if(s&&n.weight===s.w)n.wBy={who:"scout",t:NOW(),why:s.why,kept:true};
+  delete n.wSug;delete n.splitSug;sfx("tick");
+  log("you",`Marked <b>${esc(titleOf(n))}</b> as ${WEIGHTS[n.weight]?.label?.toLowerCase()||"unrated"}`,n.id);
+  renderAll();persist();
+}
+function splitPaste(n){
+  if(!n||!n.splitSug)return;const bs=parseBlocks(n.text),at=n.splitSug.at;if(!(at>0&&at<bs.length))return;
+  checkpoint();
+  const halves=[bs.slice(0,at),bs.slice(at)],w=nodeW(n),h1=nodeH(n);
+  const a=n;a.text=blocksToText(halves[0]);a.title=pasteTitle(halves[0],a.text);delete a.splitSug;delete a.wSug;
+  const b=node("notepad",{title:pasteTitle(halves[1],""),text:blocksToText(halves[1]),pasted:true},{x:a.x,y:a.y+Math.round(h1*.6)});
+  if(a.tag)b.tag=a.tag;
+  renderAll();
+  b.y=a.y+nodeH(a)+BOND_GAP;/* snapped: one relation, kept when the halves are pulled apart */
+  makeRelation(a.id,b.id,{via:"snap"});
+  for(const x of [a,b]){const s=weightSuggestion(parseBlocks(x.text));if(s&&s.w)x.wSug={w:s.w,why:s.why,t:NOW()}}
+  log("you",`Split <b>${esc(titleOf(a))}</b> into two cards`,a.id);
+  select([a.id,b.id],{menus:false});renderAll();persist();
+  toast(L("Split into 2 cards","已拆成 2 张卡"),{undo:true});
+}
+function createPastedCard(raw){
+  const bs=parsePaste(raw),text=bs?blocksToText(bs):String(raw).trim();
+  const sug=weightSuggestion(bs||parseBlocks(text));
+  const n=createNotepadNode(text,null,{title:bs?pasteTitle(bs,raw):null,props:{pasted:true},before:n=>offerLabel(n,sug)});
+  return n;
+}
+/* the label menu: the four kinds, Scout's pick marked (not pre-applied), and one way out of formatting */
+let wMenu=null;
+function closeWeightMenu(){if(!wMenu)return;const m=wMenu;wMenu=null;m.el.classList.remove("in");setTimeout(()=>m.el.remove(),140);document.removeEventListener("pointerdown",m.away,true);document.removeEventListener("keydown",m.key,true);m.anchor?.focus?.({preventScroll:true})}
+function openWeightMenu(n,anchor){
+  closeWeightMenu();closeByPop(0);if(!n||n.status==="sketch")return;
+  const pick=n.wSug?.w,cur=n.weight||pick||WEIGHT_ORDER[0];
+  const row=w=>`<button type="button" role="menuitemradio" class="wm-i${n.weight===w?" on":""}" data-w="${w}" aria-checked="${n.weight===w}"><span class="wm-g ${w}">${evIconHTML(w,"wm-ico")}</span><span class="wm-t"><b>${esc(weightLabel(w))}</b><small>${esc(L(...{observed:["Watched in real use or a test","亲眼看到或测出来"],reported:["Someone told us","别人告诉我们的"],proposed:["Our own idea","我们自己的想法"],illustrative:["Shows the product, not people","只展示产品，不代表用户"]}[w]))}</small></span>${pick===w?`<span class="wm-s">${AV.scout}<span>Scout</span></span>`:n.weight===w?`<span class="wm-s on">${ic("check")}</span>`:""}</button>`;
+  const fmt=hasBlocks(n.text)?`<div class="wm-sep" role="separator"></div><button type="button" role="menuitem" class="wm-i wm-fmt" data-fmt="1"><span class="wm-g">${ic(n.fmtOff?"sparkles":"notepad")}</span><span class="wm-t"><b>${esc(n.fmtOff?L("Show formatting","显示格式"):L("Show as plain text","显示为纯文本"))}</b></span></button>`:"";
+  const clear=n.weight?`<button type="button" role="menuitemradio" class="wm-i wm-clear" data-w=""><span class="wm-g">${evIconHTML("none","wm-ico")}</span><span class="wm-t"><b>${esc(L("Unrated","未标注"))}</b></span></button>`:"";
+  const el=document.createElement("div");el.className="w-menu";el.setAttribute("role","menu");el.setAttribute("aria-label",L("How much can this carry?","这张卡能算多少分量？"));
+  el.innerHTML=WEIGHT_ORDER.map(row).join("")+clear+fmt;document.body.appendChild(el);
+  const r=anchor.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight;
+  let x=clamp(r.left-6,8,innerWidth-w-8),y=r.bottom+8;if(y+h>innerHeight-8)y=Math.max(8,r.top-h-8);
+  el.style.left=x+"px";el.style.top=y+"px";
+  const items=()=>[...el.querySelectorAll(".wm-i")];
+  const away=e=>{if(!el.contains(e.target)&&e.target!==anchor)closeWeightMenu()};
+  const key=e=>{const its=items(),i=its.indexOf(document.activeElement);
+    if(e.key==="Escape"){e.preventDefault();e.stopPropagation();closeWeightMenu()}
+    else if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();e.stopPropagation();its[(i+(e.key==="ArrowDown"?1:-1)+its.length)%its.length].focus()}
+    else if(e.key==="Tab"){closeWeightMenu()}};
+  el.addEventListener("click",e=>{const b=e.target.closest(".wm-i");if(!b)return;e.stopPropagation();
+    if(b.dataset.fmt){checkpoint();n.fmtOff=!n.fmtOff;n.updated=NOW();closeWeightMenu();renderAll();persist();return}
+    const v=b.dataset.w||null;closeWeightMenu();keepLabel(n,v);if(v)toast(`${weightLabel(v)} · ${weightDesc(v)}`)});
+  wMenu={el,away,key,anchor,id:n.id};
+  document.addEventListener("pointerdown",away,true);document.addEventListener("keydown",key,true);
+  requestAnimationFrame(()=>{el.classList.add("in");(el.querySelector(`.wm-i[data-w="${cur}"]`)||items()[0])?.focus({preventScroll:true})});
+}
+function labelPopHTML(n){
+  const s=n.wSug;if(!s)return"";
+  return `<div class="lp-head">${evIconHTML(s.w,"ev-ico lp-ico "+s.w)}<b>${esc(weightLabel(s.w))}</b><span class="lp-by">${AV.scout}Scout</span></div><p class="lp-why">${esc(s.why||weightDesc(s.w))}</p><div class="lp-acts"><button type="button" class="ev-act" data-lp-act="change">${esc(L("Change","更改"))}</button><button type="button" class="ev-act pri" data-lp-act="keep">${esc(L("Keep","保留"))}</button></div>`;
+}
 const W={table:480,note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
 const HGUESS={table:260,note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,direction:330,proof:390,print:300,list:260,kanban:280,treemap:280,synthesis:300,group:440};
 const visibleNodes=()=>board.nodes.filter(n=>n&&!n.hidden&&!n.archived&&!n.tombstone);
@@ -6487,7 +6734,7 @@ const EV_ICON={
 };
 function evIconHTML(k,cls="w-ico"){return EV_ICON[k]?`<svg class="${cls}" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${EV_ICON[k]}</svg>`:""}
 function weightGlyphHTML(w){return WEIGHTS[w]?evIconHTML(w):""}
-function weightHTML(w,staticBadge=false){if(!w||!WEIGHTS[w])return staticBadge?"":`<button type="button" class="weight unrated" data-a="cycle-weight" title="${esc(L("Unrated — click to say how much this source can carry","未标注 — 点击标注这条来源的证据等级"))}" aria-label="${esc(L("Evidence: unrated. Click to rate","证据：未标注。点击标注"))}">${esc(L("Unrated","未标注"))}</button>`;const lbl=weightLabel(w),desc=weightDesc(w),hint=staticBadge?desc:`${desc} — ${L("Click to change","点击切换证据等级")}`;return staticBadge?`<span class="weight ${w}" title="${esc(hint)}">${weightGlyphHTML(w)}${esc(lbl)}</span>`:`<button type="button" class="weight ${w}" data-a="cycle-weight" title="${esc(hint)}" aria-label="${esc(`${lbl}: ${desc}`)}">${weightGlyphHTML(w)}${esc(lbl)}</button>`}
+function weightHTML(w,staticBadge=false,n=null){const sg=!staticBadge&&(!w||!WEIGHTS[w])&&n?.wSug&&WEIGHTS[n.wSug.w]?n.wSug.w:null;if(sg)return `<button type="button" class="weight w-sug" data-a="cycle-weight" aria-haspopup="menu" aria-label="${esc(L(`Scout suggests ${WEIGHTS[sg].label}. Open to keep or change`,`Scout 建议标为「${WEIGHTS[sg].zh}」。打开以保留或更改`))}"><span class="w-sc">${AV.scout}</span><span class="w-sg ${sg}">${weightGlyphHTML(sg)}</span>${esc(weightLabel(sg))}${uiLang()==="zh"?"？":"?"}</button>`;if(!w||!WEIGHTS[w])return staticBadge?"":`<button type="button" class="weight unrated" data-a="cycle-weight" aria-haspopup="menu" title="${esc(L("Unrated — say how much this can carry","未标注 — 标注它能算多少分量"))}" aria-label="${esc(L("Evidence: unrated. Click to rate","证据：未标注。点击标注"))}">${esc(L("Unrated","未标注"))}</button>`;const glow=n?.wBy&&!n.wBy.kept&&Date.now()-n.wBy.t<1800?" w-glow":"",lbl=weightLabel(w),desc=weightDesc(w),hint=staticBadge?desc:`${desc} — ${L("Click to change","点击更改")}`;return staticBadge?`<span class="weight ${w}" title="${esc(hint)}">${weightGlyphHTML(w)}${esc(lbl)}</span>`:`<button type="button" class="weight ${w}${glow}" data-a="cycle-weight" aria-haspopup="menu" title="${esc(hint)}" aria-label="${esc(`${lbl}: ${desc}`)}">${weightGlyphHTML(w)}${esc(lbl)}</button>`}
 function cardAuthorAgent(n){
   if(!n)return null;
   if(n.by&&n.by!=="you"&&AGENTS[n.by])return AGENTS[n.by];
@@ -6575,7 +6822,8 @@ function contribGroupHTML(n){
 const byPop={el:null,for:null,openT:0,closeT:0};
 function byPopEl(){if(byPop.el)return byPop.el;const d=document.createElement("div");d.id="byPop";d.className="by-pop";d.setAttribute("role","dialog");d.hidden=true;document.body.appendChild(d);
   d.addEventListener("pointerenter",()=>clearTimeout(byPop.closeT));
-  d.addEventListener("click",e=>{const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for),ro=n?backingOf(n):{sup:[],ctr:[]},ns=[...ro.sup,...ro.ctr];closeByPop(0);
+  d.addEventListener("click",e=>{const lp=e.target.closest("[data-lp-act]");if(lp){const n=byId(d.dataset.for),g=byPop.for;closeByPop(0);if(!n)return;if(lp.dataset.lpAct==="keep")keepLabel(n);else if(g)openWeightMenu(n,g);return}
+    const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for),ro=n?backingOf(n):{sup:[],ctr:[]},ns=[...ro.sup,...ro.ctr];closeByPop(0);
     if(b.dataset.evAct==="result"){if(n)resultDialog(n)}
     else if(b.dataset.evAct==="rate"){const s=ns.find(x=>!x.weight);if(s){select([s.id]);focusNodes([s],Math.max(cam.s,.9))}}
     else if(ns.length){select(ns.map(x=>x.id));focusNodes(ns,Math.max(Math.min(cam.s,1),.5))}});d.addEventListener("pointerleave",()=>closeByPop());return byPop.el=d}
@@ -6583,7 +6831,8 @@ function openByPop(grp,{now=false}={}){
   clearTimeout(byPop.closeT);clearTimeout(byPop.openT);
   const go=()=>{
     const card=grp.closest(".card"),n=card&&byId(card.dataset.id);if(!n)return;
-    const d=byPopEl(),isEv=grp.classList.contains("ev-line");d.classList.toggle("is-ev",isEv);
+    const d=byPopEl(),isEv=grp.classList.contains("ev-line"),isLp=grp.classList.contains("w-sug");d.classList.toggle("is-ev",isEv||isLp);d.classList.toggle("is-lp",isLp);
+    if(isLp){if(!n.wSug||wMenu)return;d.innerHTML=labelPopHTML(n);d.dataset.for=n.id}else
     if(isEv){d.innerHTML=evidencePopHTML(n);d.dataset.for=n.id}else{
     const cs=contributorsOf(n),kept=creatorKept(n)&&cs[0].who!=="you";
     const rows=cs.slice(0,8).map((c,i)=>`<li style="--i:${i}"><span class="by-pop-av">${contribAvatar(c,{kept:i===0&&kept})}</span><span class="by-pop-txt"><b>${esc(contribName(c))}</b><small>${esc(contribRoles(c))}</small></span><time>${esc(c.t?relDate(c.t):"")}</time></li>`).join("");
@@ -6606,11 +6855,11 @@ function closeByPop(delay=120){
   byPop.closeT=setTimeout(()=>{const d=byPop.el;if(!d||d.hidden)return;d.classList.remove("in");byPop.for?.classList.remove("is-open");byPop.for=null;setTimeout(()=>{if(!d.classList.contains("in"))d.hidden=true},140)},delay);
 }
 /* the hover card opens for a pointer that moved onto the avatars, not for a card that panned under a still one */
-for(const t of ["pointerover","pointermove"])document.addEventListener(t,e=>{const g=e.target.closest?.(".by-group,.ev-line");if(!g)return;if(byPop.for===g){clearTimeout(byPop.closeT);return}if(!e.buttons&&!(wall.classList.contains("hover-off")&&wall.contains(g)))openByPop(g)});
-document.addEventListener("pointerout",e=>{const g=e.target.closest?.(".by-group,.ev-line");if(g&&!g.contains(e.relatedTarget)&&!byPop.el?.contains(e.relatedTarget))closeByPop()});
-document.addEventListener("focusin",e=>{const g=e.target.closest?.(".by-group,.ev-line");if(g)openByPop(g,{now:true})});
-document.addEventListener("focusout",e=>{if(e.target.closest?.(".by-group,.ev-line"))closeByPop()});
-document.addEventListener("pointerdown",e=>{if(byPop.el&&!byPop.el.hidden&&!byPop.el.contains(e.target)&&!e.target.closest?.(".by-group,.ev-line"))closeByPop(0)},true);
+for(const t of ["pointerover","pointermove"])document.addEventListener(t,e=>{const g=e.target.closest?.(".by-group,.ev-line,.w-sug");if(!g)return;if(byPop.for===g){clearTimeout(byPop.closeT);return}if(!e.buttons&&!(wall.classList.contains("hover-off")&&wall.contains(g)))openByPop(g)});
+document.addEventListener("pointerout",e=>{const g=e.target.closest?.(".by-group,.ev-line,.w-sug");if(g&&!g.contains(e.relatedTarget)&&!byPop.el?.contains(e.relatedTarget))closeByPop()});
+document.addEventListener("focusin",e=>{const g=e.target.closest?.(".by-group,.ev-line,.w-sug");if(g)openByPop(g,{now:true})});
+document.addEventListener("focusout",e=>{if(e.target.closest?.(".by-group,.ev-line,.w-sug"))closeByPop()});
+document.addEventListener("pointerdown",e=>{if(byPop.el&&!byPop.el.hidden&&!byPop.el.contains(e.target)&&!e.target.closest?.(".by-group,.ev-line,.w-sug"))closeByPop(0)},true);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&byPop.el&&!byPop.el.hidden){closeByPop(0);byPop.for?.focus?.()}});
 function byline(n){return ""}   // superseded by creatorBadgeHTML: one mark per card, beside its time
 function threadCount(n){
@@ -6763,11 +7012,11 @@ function cardBody(n){
   case"note":{const defNoteTag=uiLang()==="zh"?"便签":"Sticky",tagTxt=esc(n.tag||defNoteTag),tagTitle=esc(uiLang()==="zh"?"点击编辑便签标签":"Click to edit tag");
     const noteHead=sk?head(`${byline(n)}<span class="note-tag"><span>${tagTxt}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag" data-a="edit-tag" title="${tagTitle}"><span data-edit="tag" spellcheck="false">${tagTxt}</span></span><span class="sp"></span>${cardVotesHTML(n)}</div>`;
     return `<div class="in">${sk?"":'<span class="note-grain" aria-hidden="true"></span><span class="note-grip" aria-hidden="true"></span>'}${noteHead}
-    <h4 data-edit="text">${esc(n.text)}</h4>${sk?sketchActs(n):foot(n.weight?weightHTML(n.weight):"",fR(threadCount(n)))}</div>`;}
-  case"notepad":{const defPadTag=uiLang()==="zh"?"记事本":"Notepad",padTag=esc(n.tag||defPadTag),padTitle=esc(uiLang()==="zh"?"点击编辑记事本标签":"Click to edit tag");
+    <h4 data-edit="text">${esc(n.text)}</h4>${sk?sketchActs(n):foot(n.weight?weightHTML(n.weight,false,n):"",fR(threadCount(n)))}</div>`;}
+  case"notepad":{const defPadTag=uiLang()==="zh"?"记事本":"Notepad",padTag=esc(n.tag||formatTagOf(n)||defPadTag),padTitle=esc(uiLang()==="zh"?"点击编辑记事本标签":"Click to edit tag");
     const npHead=sk?head(`${byline(n)}<span class="note-tag notepad-tag"><span>${padTag}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag notepad-tag" data-a="edit-tag" title="${padTitle}"><span data-edit="tag" spellcheck="false">${padTag}</span></span><span class="sp"></span>${cardVotesHTML(n)}</div>`;
     return `<div class="in">${npHead}
-    <h4 data-edit="title">${esc(n.title||"")}</h4><div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>${sk?sketchActs(n):foot(fL(weightHTML(n.weight),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
+    <h4 data-edit="title">${esc(n.title||"")}</h4>${!n.fmtOff&&hasBlocks(n.text)?`<div class="notepad-body pb" data-edit="text" data-raw="1">${blocksHTML(n)}</div>`:`<div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>`}${sk?sketchActs(n):foot(fL(weightHTML(n.weight,false,n),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
   case"table":{/* L is shadowed by lin(n) in cardBody, so translate locally */const tr=(en,zh)=>uiLang()==="zh"?zh:en;const ds=n.data||{columns:[],rows:[]},src=ds.source||{};
     const from=[src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.kind==="paste"?tr("Pasted","粘贴"):src.label||"",src.edited?tr("edited","已编辑"):"",
       src.total>(ds.rows||[]).length?tr(`first ${(ds.rows||[]).length} of ${src.total.toLocaleString()} rows`,`前 ${(ds.rows||[]).length} 行，共 ${src.total.toLocaleString()} 行`):src.more?tr(`first ${(ds.rows||[]).length} rows`,`前 ${(ds.rows||[]).length} 行`):""].filter(Boolean).join(" · ");
@@ -6784,7 +7033,7 @@ function cardBody(n){
       const thumb=!!(htmlSourceText(n)||n.media);
       const htmlHead=ebHTML(n,fmt);
       return `${thumb?`<div class="thumb"><iframe tabindex="-1" sandbox="allow-scripts" data-srcdoc="html" title="${esc(n.title||n.path||Lang("Page preview","网页预览"))}"></iframe>${thumbBadge(fmt)}<div class="open"><button type="button" data-a="open">${ic("eye")} ${Lang("Open preview","打开预览")}</button></div></div>`:""}<div class="in">${head(htmlHead)}
-        <h4 data-edit="title">${esc(n.title||n.path||Lang("Untitled page","未命名网页"))}</h4>${sk?sketchActs(n):foot(weightHTML(n.weight),fR(threadCount(n)))}</div>`;
+        <h4 data-edit="title">${esc(n.title||n.path||Lang("Untitled page","未命名网页"))}</h4>${sk?sketchActs(n):foot(weightHTML(n.weight,false,n),fR(threadCount(n)))}</div>`;
     }
     const pdfSrc=fmt?.id==="pdf"?mediaSrc(n.media):"";
     const pdfThumb=pdfSrc?`<div class="thumb pdf-thumb"><iframe tabindex="-1" loading="lazy" data-src-pdf="${esc(pdfSrc)}" title="${esc(n.title||n.path||Lang("Document preview","文档预览"))}"></iframe>${thumbBadge(fmt)}<div class="open"><button type="button" data-a="open">${ic("eye")} ${Lang("Open preview","打开预览")}</button></div></div>`:"";
@@ -6793,20 +7042,20 @@ function cardBody(n){
     const descHTML=(n.text&&!isAutoDesc)?`<p data-edit="text">${esc(n.text)}</p>`:"";
     const srcHead=ebHTML(n,fmt,customKind);
     return `${pdfThumb}<div class="in">${head(srcHead)}
-      <h4 data-edit="title">${esc(n.title)}</h4>${descHTML}${sk?sketchActs(n):foot(weightHTML(n.weight),fR(threadCount(n)))}</div>`;
+      <h4 data-edit="title">${esc(n.title)}</h4>${descHTML}${sk?sketchActs(n):foot(weightHTML(n.weight,false,n),fR(threadCount(n)))}</div>`;
   }
   case"audio":{const asrc=mediaSrc(n.media);return `<div class="in">${head(ebHTML(n,fmt))}
     <h4 data-edit="title">${esc(n.title||Lang("Audio recording","录音"))}</h4>
     ${asrc?`<div class="aud-bar" data-aud-bar><audio preload="metadata" src="${asrc}"></audio><button type="button" class="aud-play" aria-label="${Lang("Play audio","播放音频")}">${ic("play")}</button><div class="aud-track" role="slider" aria-label="${Lang("Audio progress","播放进度")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div><span class="aud-tc">${n.dur?tc(n.dur).replace(/\.\d$/,""):"0:00"}</span></div>`:`<div class="meta">${Lang("Audio unavailable","音频无法播放")}</div>`}
-    ${sk?sketchActs(n):foot(weightHTML(n.weight),fR(threadCount(n)))}</div>`;}
+    ${sk?sketchActs(n):foot(weightHTML(n.weight,false,n),fR(threadCount(n)))}</div>`;}
   case"link":{const href=safeHref(n.url),host=n.host||linkHost(n.url)||href,desc=(n.text&&n.text!==host&&n.text!==href)?`<p data-edit="text">${esc(n.text)}</p>`:"";
     const still=n.thumb&&/^https:\/\//.test(n.thumb)?n.thumb:"";
     const linkThumb=still?`<div class="thumb link-thumb ready"><img src="${esc(still)}" alt="" loading="lazy" referrerpolicy="no-referrer" draggable="false" onerror="this.parentElement.remove()">${thumbBadge(fmt)}</div>`:n.nopreview?"":href?`<div class="thumb link-thumb"><iframe tabindex="-1" loading="lazy" sandbox="allow-scripts allow-same-origin" data-src-url="${esc(href)}" title="${esc(n.title||host||Lang("Link preview","链接预览"))}"></iframe><div class="link-fallback">${ic("link")}<span>${esc(clip(host||href,36))}</span></div>${thumbBadge(fmt)}<div class="open"><button type="button" data-a="open">${ic("eye")} ${Lang("Open preview","打开预览")}</button></div></div>`:"";
     const rawDisp=(href||n.url||"").replace(/^https?:\/\/(?:www\.)?/i,"").replace(/\/+$/,"");
-    if(!href)return `<div class="in">${head(ebHTML(n,fmt))}<h4 data-edit="title">${esc(n.title||host||"Link")}</h4>${desc}${sk?sketchActs(n):foot(weightHTML(n.weight),fR(threadCount(n)))}</div>`;
+    if(!href)return `<div class="in">${head(ebHTML(n,fmt))}<h4 data-edit="title">${esc(n.title||host||"Link")}</h4>${desc}${sk?sketchActs(n):foot(weightHTML(n.weight,false,n),fR(threadCount(n)))}</div>`;
     const linkVotes=sk?"":cardVotesHTML(n);
     return `${linkThumb}<div class="in">${sk?sketchHead(n):""}<div class="link-title-row"><h4 data-edit="title">${esc(n.title||host||"Link")}</h4>${linkVotes?`<span class="link-title-meta">${linkVotes}</span>`:""}</div><a class="link-url" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="${esc(href)}">${esc(rawDisp||host||href)}</a>${desc}
-    ${sk?sketchActs(n):foot(weightHTML(n.weight),fR(threadCount(n)))}</div>`;}
+    ${sk?sketchActs(n):foot(weightHTML(n.weight,false,n),fR(threadCount(n)))}</div>`;}
   case"group":return `<div class="in">${head(ebHTML(n))}
     <h4 data-edit="title">${esc(n.title||Lang("Untitled group","未命名分组"))}</h4><div class="grp-body"></div></div><span class="grp-resize" data-resize title="${Lang("Drag to resize","拖动调整大小")}" aria-hidden="true"></span>`;
   case"image":{const g=n.gen,sr=n.src,isGif=g?.format==="gif",pv=(g&&g.preview&&!isGif)||(sr&&sr.placeholder);
@@ -6817,13 +7066,13 @@ function cardBody(n){
     const plChip=plBusyNodes.has(n.id)?`<span class="foot-pl busy">${Lang("Reading…","正在反推…")}</span>`:n.plPack?.positive?`<button type="button" class="foot-pl" data-a="reverse-prompt" title="${esc(Lang("View the extracted prompt","查看反推出的提示词"))}">${ic("sparkles")}${Lang("Prompt","提示词")}</button>`:"";
     return `<div class="media${pv?" pv":""}" ${ar?`style="aspect-ratio:${ar}"`:""}><img src="${mediaSrc(n.media)}" alt="${esc(n.title)}" draggable="false">${badge}</div><div class="in">${head(kindTxt)}
     <h4 data-edit="title">${esc(n.title)}</h4>${n.text?`<p data-edit="text">${esc(n.text)}</p>`:""}
-    ${sk?sketchActs(n):foot(fL(weightHTML(n.weight),plChip),fR(info,threadCount(n)))}</div>`}
+    ${sk?sketchActs(n):foot(fL(weightHTML(n.weight,false,n),plChip),fR(info,threadCount(n)))}</div>`}
   case"recording":{const g=n.gen,pv=g?.preview,isAuto=n.text&&fmt&&(n.text===fmt.fullName||n.text.startsWith(fmt.fullName+" · ")),frCnt=outputsOf(n.id).filter(o=>o.type==="frame").length;
     const badge=g?`<span class="badge">${ic("video")}${esc(fmt?.label||"MP4")}</span>`:(fmt?`<span class="badge">${ic("video")}${esc(fmt.label)}</span>`:"");
     const recHead=ebHTML(n,fmt);
     return `<div class="media${pv?" pv":""}"><img src="${mediaSrc(n.poster)||""}" alt="" draggable="false" ${mediaSrc(n.poster)?"":'style="height:190px"'}>${badge}<button type="button" class="play" data-a="open" aria-label="${Lang("Play video","播放视频")}">${ic("play")}</button><span class="tc">${tc(n.dur||0).replace(/\.\d$/,"")}</span></div><div class="film"></div>
     <div class="in">${head(recHead)}<h4 data-edit="title">${esc(n.title)}</h4>${n.text&&!isAuto?`<p data-edit="text">${esc(n.text)}</p>`:""}
-    ${sk?sketchActs(n):foot(fL(weightHTML(n.weight),!g&&frCnt?`<span class="foot-txt">${Lang(`${frCnt} ${frCnt===1?"frame":"frames"} lifted`,`已截取 ${frCnt} 帧`)}</span>`:""),fR(threadCount(n)))}</div>`;}
+    ${sk?sketchActs(n):foot(fL(weightHTML(n.weight,false,n),!g&&frCnt?`<span class="foot-txt">${Lang(`${frCnt} ${frCnt===1?"frame":"frames"} lifted`,`已截取 ${frCnt} 帧`)}</span>`:""),fR(threadCount(n)))}</div>`;}
   case"frame":{const r=byId(n.from),plChip=plBusyNodes.has(n.id)?`<span class="foot-pl busy">${Lang("Reading…","正在反推…")}</span>`:n.plPack?.positive?`<button type="button" class="foot-pl" data-a="reverse-prompt" title="${esc(Lang("View the extracted prompt","查看反推出的提示词"))}">${ic("sparkles")}${Lang("Prompt","提示词")}</button>`:"";return `<div class="media"><img src="${mediaSrc(n.media)}" alt="" draggable="false"><span class="tc">@ ${tc(n.t)}</span></div><div class="in">${head(ebHTML(n))}<h4 data-edit="title">${esc(n.title||Lang("Frame ","帧 ")+tc(n.t))}</h4>${foot(fL(n.weight?weightHTML(n.weight,sk):"",plChip),fR(threadCount(n)))}</div>`}
   case"question":{const on=byId(n.on);return `<div class="in"><span class="qmark" aria-hidden="true">?</span>${head(ebHTML(n))}<h4 data-edit="text">${esc(n.text)}</h4>${foot("",fR(threadCount(n)))}</div>`}
   case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode));
@@ -7842,7 +8091,7 @@ function nodeLineageSig(n){
   return refs.map(r=>`${r.sourceId}:${r.depType}:${r.status}:${r.node?(r.node.rev||1)+":"+digest(r.node):"T"}`).join("|");
 }
 
-function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
+function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.wSug&&n.wSug.w,n.splitSug&&n.splitSug.at,!!n.fmtOff,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
   n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(n.whyYes||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="direction"&&dirFlagHTML(n),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
@@ -17470,14 +17719,15 @@ function openLinkDialog(pt){
     form.onsubmit=e=>{e.preventDefault();const u=form.url.value.trim(),ti=form.title.value.trim(),tx=form.text.value.trim();d.close();createLinkNode(u,pt,ti,tx)};
   });
 }
-function createNotepadNode(initialText,pt){
+function createNotepadNode(initialText,pt,opts={}){
   const v=viewRect(),p=pt||toWorld(v.w/2,v.h/2);checkpoint();
   const spot=freeSpot(p.x-W.notepad/2,p.y-HGUESS.notepad/2,W.notepad,HGUESS.notepad);
   const body=(initialText&&initialText.trim())?initialText.trim():"";
   const firstLine=body.split(/\r?\n/)[0]?.trim()||"";
-  const title=firstLine&&firstLine.length<=56&&body.includes("\n")?firstLine:"Untitled Notepad";
+  const title=opts.title||(firstLine&&firstLine.length<=56&&body.includes("\n")?firstLine:"Untitled Notepad");
   const text=body?body:"Write your structured brief, notes, or outline here...";
-  const n=node("notepad",{title,text},spot);
+  const n=node("notepad",{title,text,...(opts.props||{})},spot);
+  opts.before?.(n);
   log("you",`Opened notepad “${title}”`,n.id);sfx("create");select([n.id],{menus:false});renderAll();persist();
   nodeEl(n.id)?.classList.add("born");startEdit(n.id,body?"title":"text");
   if(body)scheduleAdvisor(n.id,{delay:1600});
@@ -17825,7 +18075,8 @@ function act(a,n,el){
     case"tm-add":return addTreeChild(n,el.dataset.tm,false);
     case"tm-del":return deleteTreeNode(n,el.dataset.tm);
     case"del-syn":return deleteSynPoint(n,+el.dataset.i);
-    case"cycle-weight":return cycleWeight(n);
+    case"cycle-weight":return el?openWeightMenu(n,el):cycleWeight(n);
+    case"split-paste":return splitPaste(n);
     case"edit-note":return startEdit(n.id,"text",{collapseEnd:true});
     case"edit-tag":return startEdit(n.id,"tag",{collapseEnd:false});
   }
@@ -19188,6 +19439,7 @@ function startEdit(id,field,opts){
   const el=nodeEl(id);const n=byId(id);if(!el||!n||n.status==="sketch")return;
   const t=el.querySelector(`[data-edit="${field}"]`)||el.querySelector("[data-edit]");if(!t||t.contentEditable==="true")return;
   const f=t.dataset.edit,hadText=!!(n[f]&&String(n[f]).trim());
+  if(t.dataset.raw){t.textContent=n[f]||"";t.classList.remove("pb");delete t.dataset.raw}
   t.contentEditable="true";el.classList.add("is-editing");
   const isNoteText=n.type==="note"&&f==="text",onInput=()=>el.classList.toggle("is-empty",!t.innerText.trim());
   if(isNoteText){onInput();t.addEventListener("input",onInput)}
@@ -19767,7 +20019,7 @@ addEventListener("paste",e=>{
     else if(/^https?:\/\/\S+$/i.test(s)&&looksLikeDataUrl(s))tableFromUrl(s).then(n=>{if(!n)createLinkNode(s)});
     else if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s);
     else if(looksTabular(s)){const ds=datasetFromText(s);if(ds){checkpoint();const v=viewRect(),n=makeTableCard(ds,{title:L("Pasted table","粘贴的表格"),source:{kind:"paste"},at:toWorld(v.w/2,v.h/2)});sel=[n.id];renderAll();persist();follow([n]);toast(L("Pasted as a table","已粘贴为表格"),{undo:true})}else createNotepadNode(s)}
-    else if(s.length>280||lines>=4)createNotepadNode(s);
+    else if(s.length>280||lines>=4||parsePaste(s))createPastedCard(s);
     else pinCard("note",s);
   }
 });

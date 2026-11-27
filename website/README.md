@@ -1,6 +1,6 @@
-# Vellum website
+# Sympo website
 
-The public home page for Vellum: what it is, how it works, the waitlist and downloads.
+The public home page for Sympo (working name; it lives in one place, `BRAND` in `site.js`, plus the static English fallback in `index.html`): what it is, how it works, the waitlist and downloads.
 It's static HTML, CSS and JS with no build step and no dependencies. It works in English and Chinese, in light and dark, from 320 px wide up.
 
 ```
@@ -35,11 +35,11 @@ Everything that isn't real yet lives in `CONFIG` at the top of `site.js`.
 ## Design rules
 
 - **One idea: the board is the pitch.** The page is built from the app's own cards, lines and colours rather than screenshots. Colours mean what they mean in the app: A–D only for directions, green and red only for supports and counters, ink outlines for reasoning, and set-aside ideas sit under a sheet of vellum, readable, with the reason on top.
-- **Five sections, nothing said twice.** Hero board, Why (the contrast), How (the zones board), Crew, Get Vellum. "Get Vellum" in the header is the only call to action above the last section; "Join the waitlist" appears once.
+- **Five sections, nothing said twice.** Hero board, Why (the contrast), How (the zones board), Crew, Get the app. "Get Sympo" in the header is the only call to action above the last section; "Join the waitlist" appears once.
 - **One system.** One spacing scale (`--s1`…`--s10`, `--section`), one radius set, one icon stroke (1.6), one segmented control for every "pick one of three", one primary button per card. Sibling buttons share size and label grammar.
 - **Few words.** A title and one dry, true sentence per section. Helper text only where it prevents a mistake. Chinese is written, not translated; headings use `word-break: keep-all` with a zero-width space (`​`) marking where a line may break.
 - **Light with a reason.** Boards are lit from the top left like paper on a drafting table; the waiting flag glows ("waiting on you"). Everything holds in dark mode.
 - **Motion that explains.** The hero plays once when it scrolls into view; the zones board traces one lineage once, and the prototype card plays when you reach it. Cards are paper: they lift, tilt as you drag and settle. Touch scrolls instead of dragging. With reduced motion every animation is off and the final state shows at once.
 - **Layouts.** The hero board has three layouts (wide reads left to right; tablet and phone read top to bottom). The zones board stacks below 900 px, with the chosen direction first and lines passing behind lane titles.
 - The hero board, the outputs and the crew lines tell one story: an AI video-editing agent deciding whether to hand over a finished cut or leave the key moments to the editor (Mars chose it on 2026-11-27; the in-browser demo board tells the same story). The zones board shows three kinds of work: product design (AI glasses), short video and an AI feature. Change copy in `T`, `BOARD` and `CASES` in `site.js`, both languages together.
-- Chinese text uses `fonts/VellumSansSC-subset.woff2`, Noto Sans SC (SIL OFL) cut down to the characters on the page (about 110 KB). After changing Chinese copy, re-subset it: collect the CJK characters from `site.js` and `index.html` into a text file, then run `pyftsubset NotoSansSC-VF.woff2 --text-file=chars.txt --flavor=woff2 --layout-features="*" --output-file=fonts/VellumSansSC-subset.woff2`. A missed character falls back to the system font.
+- Chinese text uses `fonts/VellumSansSC-subset.woff2`, Noto Sans SC (SIL OFL) cut down to the characters on the page (about 110 KB). After changing Chinese copy, re-subset it: collect the CJK characters from `site.js` and `index.html` into a text file, then run `pyftsubset NotoSansSC-VF.woff2 --text-file=chars.txt --flavor=woff2 --layout-features="*" --output-file=fonts/VellumSansSC-subset.woff2`. A missed character falls back to the system font. Then bump the `?v=` on its `url()` in `styles.css`, because fonts are cached for a week.

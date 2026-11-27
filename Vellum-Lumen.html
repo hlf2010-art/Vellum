@@ -4720,9 +4720,20 @@ function recheckPack(dir,obs){
 const RC_ACTED=/\b(I|we)\s+(have\s+)?(changed|reopened|replaced|removed|deleted|switched|updated)\b|我(已|已经)?(改|重新打开|替换|删除)/i;
 function rcLangOff(s,zh){const t=String(s||"");if(!t.trim())return false;const cjk=(t.match(/[\u4e00-\u9fff]/g)||[]).length;return zh?cjk<4:cjk>t.length*.3}
 function rcCiteKeys(v){return (Array.isArray(v?.cites)?v.cites:[]).map(x=>String(x).trim().replace(/^\[|\]$/g,"").toUpperCase())}
+/* small models phrase the verdict loosely ("Still holds", "Weakened", "holds."): read the word, never guess between two */
+const RC_SYN={stronger:/^(stronger|strengthens?|strengthened|supports?|supported|backs?|backed)$/,holds:/^(holds?|still holds|unchanged|no change|neutral|irrelevant|not relevant)$/,weaker:/^(weaker|weakens?|weakened|undercut|undercuts)$/,reopen:/^(reopen|re-open|reconsider|revisit|overturn|overturns|reverse)$/};
+function rcNormVerdict(v){
+  if(!v||typeof v!=="object")return v;
+  const raw=String(v.verdict??"").toLowerCase().replace(/[^a-z\s-]/g," ").replace(/\s+/g," ").trim();
+  const hit=Object.keys(RC_SYN).filter(k=>RC_SYN[k].test(raw)||raw.split(" ").includes(k));
+  if(hit.length===1)v.verdict=hit[0];
+  if(typeof v.cites==="string")v.cites=v.cites.split(/[,\s]+/).filter(Boolean);
+  return v;
+}
 function rcStratProblems(v,pack){
   const p=[];
   if(!v||typeof v!=="object")return ["not a JSON object"];
+  rcNormVerdict(v);
   if(!RC_VERDICTS.includes(String(v.verdict||"").toLowerCase()))p.push(`"verdict" must be one of ${RC_VERDICTS.join(", ")}`);
   const why=String(v.why||"").trim();
   if(!why)p.push('"why" is empty');else if(why.length>(pack.zh?160:420))p.push('"why" is too long: one or two short sentences');
@@ -4748,7 +4759,7 @@ function rcCriticProblems(v,pack){
 const RC_RULES=`Rules: judge only from the cards in the pack. Observed evidence (someone watched it happen) outweighs reported (someone said it), which outweighs proposals; an unrated card could be either. One anecdote does not overturn observed evidence. Evidence that only shares a topic may not bear on the decision at all: say so when it doesn't. The decision belongs to the designer: you never change it, you only say what the new evidence means for it.`;
 async function rcStrategist(pack,signal){
   const lang=pack.zh?"Chinese (简体中文)":"English";
-  const system=`${ROLE.muse}\nRight now you are re-checking a decision the designer already made, because new evidence was kept after it. ${RC_RULES}\nReply in ${lang}. Return only JSON:\n{"verdict":"stronger|holds|weaker|reopen","why":"one or two short sentences (max 40 words) on what the new evidence shows and how it bears on the decision's reason","cites":["N1","S2"],"next":"the cheapest check that would settle any doubt (max 18 words), or \\"\\""}\nverdict: stronger = the new evidence backs the decision; holds = it is relevant but does not change the case, or it does not really bear on it; weaker = it undercuts part of the case but the choice can still be right; reopen = it undercuts the decision's core reason, or favors an option set aside.`;
+  const system=`${ROLE.muse}\nRight now you are re-checking a decision the designer already made, because new evidence was kept after it. ${RC_RULES}\nReply in ${lang}. Return only one JSON object with these keys:\n- "verdict": exactly one of these words: stronger, holds, weaker, reopen. stronger = the new evidence backs the decision; holds = it is relevant but does not change the case, or it does not really bear on it; weaker = it undercuts part of the case but the choice can still be right; reopen = it undercuts the decision's core reason, or favors an option set aside.\n- "why": one or two short sentences (max 40 words) on what the new evidence shows and how it bears on the decision's reason.\n- "cites": the ids of the cards your reading rests on, always including the new evidence, for example ["N1","S2"].\n- "next": the cheapest check that would settle any doubt (max 18 words), or "".\nExample of the shape (not of the content): {"verdict":"weaker","why":"Most tents in the test used aluminium poles, so the magnet would not hold where the decision assumed it would.","cites":["N1","S2"],"next":"Count pole materials at the next campsite visit."}`;
   const prompt=`${pack.text}\n\nRe-check the decision D against the new evidence.`;
   return rcAsk({system,prompt,maxTokens:420,signal},v=>rcStratProblems(v,pack));
 }
@@ -4757,18 +4768,19 @@ async function rcStrategist(pack,signal){
 async function rcAsk({system,prompt,maxTokens,signal},problems){
   const ask=pr=>askAI({system,prompt:pr,json:true,maxTokens,quiet:true,memoryMode:"compact",signal},()=>null);
   const r=await ask(prompt);if(!r.live)return null;
-  let v=r.v;const probs=problems(v);
+  let v=r.v;const raw=[clip(JSON.stringify(v),600)];const probs=problems(v);
   if(probs.length){
     const f=await ask(`${prompt}\n\nYour previous answer: ${JSON.stringify(v)}\nFix only these problems and return the whole JSON again: ${probs.join("; ")}.`);
-    if(f.live&&problems(f.v).length<probs.length)v=f.v;
+    if(f.live){raw.push(clip(JSON.stringify(f.v),600));if(problems(f.v).length<probs.length)v=f.v}
   }
-  return {v,engine:r.engine};
+  return {v,engine:r.engine,raw};
 }
 async function rcCritic(pack,strat,signal){
   const lang=pack.zh?"Chinese (简体中文)":"English";
-  const system=`${ROLE.critic}\nStrategist has re-checked a decision against new evidence. Review that reading. ${RC_RULES}\nObject only when the cards give you a reason: an objection must cite the pack ids it rests on and come with a concrete fix the designer can act on. Research before objecting: read every card first. Never argue for its own sake; when the reading is sound, agree.\nReply in ${lang}. Return only JSON, one of:\n{"agree":true}\n{"agree":false,"objection":"max 35 words","cites":["N1"],"fix":"max 22 words"}`;
+  const system=`${ROLE.critic}\nStrategist has re-checked a decision against new evidence. Review that reading. ${RC_RULES}\nObject only when the cards give you a reason: an objection must cite the pack ids it rests on and come with a concrete fix the designer can act on. Research before objecting: read every card first. Never argue for its own sake; when the reading is sound, agree.\nReply in ${lang}. Return only one JSON object. When the reading is sound: {"agree":true}. When you object: {"agree":false,"objection":"what is wrong with the reading, max 35 words","cites":["N1"],"fix":"what the designer can do about it, max 22 words"}`;
   const prompt=`${pack.text}\n\nStrategist's reading: verdict "${strat.verdict}". ${strat.why}${strat.next?` Cheapest check: ${strat.next}`:""} (cites ${rcCiteKeys(strat).join(", ")})\n\nReview it.`;
   const r=await rcAsk({system,prompt,maxTokens:300,signal},v=>rcCriticProblems(v,pack));
+  if(r)rcRunning?.job&&(rcRunning.job.rawCritic=r.raw);
   return r?r.v:null;
 }
 /* run one re-check: all waiting evidence on one decision, together */
@@ -4781,6 +4793,7 @@ async function runRecheck(dirId,obs){
   try{
     const s=await rcStrategist(pack,ac.signal);
     if(!s)return finishRc(job,"fail","no model answered");
+    job.raw=s.raw;
     const sp=rcStratProblems(s.v,pack);
     if(sp.length)return finishRc(job,"fail","watchdog: "+sp[0],{dropped:sp});
     const strat={verdict:String(s.v.verdict).toLowerCase(),why:String(s.v.why).trim(),next:String(s.v.next||"").trim(),cites:rcCiteKeys(s.v)};

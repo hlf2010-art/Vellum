@@ -115,7 +115,7 @@ function serve() { return new Promise(res => { const s = http.createServer((q, r
     const out = await p.evaluate(r => {
       const job = Object.values(board.watch.rc || {}).find(j => j.dir === r.dir) || {};
       const pin = (board.pins?.[r.dir] || []).filter(x => x.check === 'revisit').at(-1) || {};
-      return { status: job.status, why: job.why, strat: job.strat, critic: job.crit ? 'objects' : job.critic, objection: job.crit, dropped: job.dropped, ms: job.ms, engine: job.engine, pinEngine: pin.engine, note: pin.note, adoptedSame: board.adopted[r.claim] === r.dir };
+      return { raw: job.raw, rawCritic: job.rawCritic, status: job.status, why: job.why, strat: job.strat, critic: job.crit ? 'objects' : job.critic, objection: job.crit, dropped: job.dropped, ms: job.ms, engine: job.engine, pinEngine: pin.engine, note: pin.note, adoptedSame: board.adopted[r.claim] === r.dir };
     }, ids);
     const verdict = out.strat?.verdict || null, right = !!verdict && cs.ok.includes(verdict);
     const row = { case: cs.id, kind: cs.kind, i, flagged: true, before: ids.before, ...out, verdict, right, calls, seconds: (Date.now() - t0) / 1000 };
@@ -150,6 +150,7 @@ function serve() { return new Promise(res => { const s = http.createServer((q, r
     if (!r.flagged) { md.push(`### ${r.case} #${r.i + 1}: not flagged by board checks`, ''); continue; }
     md.push(`### ${r.case} #${r.i + 1}: ${r.kind}`, '', `- **Before:** ${r.before}`,
       r.status === 'done' ? `- **After:** ${r.note}` : `- **After:** fell back to the board check (${r.why})`,
+      ...(r.raw || []).map((x, k) => `- Strategist's ${k ? 'repaired' : 'first'} reply: \`${x}\``), ...(r.rawCritic || []).map((x, k) => `- Critic's ${k ? 'repaired' : 'first'} reply: \`${x}\``),
       `- Verdict: ${r.verdict || '-'} ${r.verdict ? (r.right ? '(right range)' : '(outside the right range)') : ''} · Critic: ${r.critic || '-'}${(r.dropped || []).length ? ` · watchdog dropped: ${r.dropped.join('; ')}` : ''} · ${r.seconds.toFixed(0)} s, ${r.calls} calls`, '');
   }
   fs.writeFileSync(path.join(OUT, `recheck-${LABEL}.md`), md.join('\n'));

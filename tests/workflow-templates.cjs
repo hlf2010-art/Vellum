@@ -82,20 +82,28 @@ async function page(browser, base, { model = true } = {}) {
   p.type = async t => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); await p.keyboard.press('Enter'); };
   p.cmd = async (ids, t) => { await p.evaluate(ids => select(ids), ids); await p.type(t); await p.idle(); };
   p.idle = async () => { await p.waitForTimeout(400); for (let i = 0; i < 120 && await p.evaluate(() => crewBusy()); i++) await p.waitForTimeout(250); await p.waitForTimeout(400); };
-  p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(800); };
+  // New board opens the template picker; pick one, optionally with a brief and constraints, and create
+  p.newBoard = async (tpl = 'blank', { variant, brief, constraints } = {}) => {
+    await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(300);
+    await p.click(`[data-tpl="${tpl}"]`); if (variant) await p.click(`[data-var="${variant}"]`);
+    if (brief) await p.fill('#tplBrief', brief); if (constraints) await p.fill('#tplCons', constraints);
+    await p.click('[data-tpl-go]'); await p.waitForTimeout(800);
+  };
   p.stage = () => p.evaluate(() => boardStage().stage);
   return p;
 }
 
 /* helpers that read the board */
 const DIRS = idea => `board.nodes.filter(n => n.type === 'direction' && n.idea === ${JSON.stringify(idea)} && !n.tombstone)`;
-async function directions(p, idea) { return p.evaluate(new Function(`return ${DIRS(idea)}.map(n => ({ id: n.id, letter: n.letter, title: n.title, status: n.status, engine: n.prov && n.prov.engine }))`)); }
+async function directions(p, idea) { return p.evaluate(new Function(`return ${DIRS(idea)}.map(n => ({ id: n.id, letter: n.letter, title: n.title, plan: n.text, status: n.status, engine: n.prov && n.prov.engine }))`)); }
 async function addEvidence(p, idea, list) {
   return p.evaluate(([idea, list]) => { checkpoint(); const ids = list.map(([text, weight], i) => { const n = node('note', { text, weight, status: 'ink' }, { x: -900, y: 200 + i * 160 }); edge(n.id, idea, 'src'); return n.id; }); renderAll(); persist(); return ids; }, [idea, list]);
 }
 
 /* ── Template A: product design (physical product) ─────────────────────────────────────────── */
+const GENERIC = /^(Walk it through|Lay it all out|Cut to one moment|Make the case)$/; // the old template-less rule directions
 const PRODUCT = {
+  constraints: 'Under 120 g with the battery in\nCosts under $12 to make',
   brief: 'A palm-sized camping lantern for solo hikers that hangs, stands and clips, under 120 g',
   evidence: [
     ['Six of eight hikers we watched hung their light from the tent loop, then knocked it down at night', 'observed'],
@@ -118,6 +126,7 @@ const PRODUCT = {
 
 /* ── Template B: short video (10–20 s) ─────────────────────────────────────────────────────── */
 const VIDEO = {
+  constraints: '15 seconds, vertical 9:16\nWatched muted in a feed',
   brief: 'A 15 second vertical video that makes people feel how quiet the new desk fan is',
   dirs: { directions: [
     { title: 'Whisper test', plan: 'Someone whispers a secret next to the fan and the viewer still hears every word.', test: 'Ten viewers say what the video was about after one watch; it fails if fewer than seven say quiet.', mode: 'story' },
@@ -137,16 +146,22 @@ async function productDesign(browser, base, live) {
   const tag = live ? 'scripted model' : 'no model';
   head(`Template A · product design (${tag})`);
   const p = await page(browser, base, { model: live });
-  await p.newBoard();
-  // 1. Brief: the claim is kept straight away; the board is in Explore
-  await p.type('/claim ' + PRODUCT.brief); await p.waitForTimeout(700);
+  // 0. Pick the template: product design, physical, with the brief and the hard constraints written in the picker
+  await p.newBoard('product', { variant: 'physical', brief: PRODUCT.brief, constraints: PRODUCT.constraints });
+  const tpl = await p.evaluate(() => ({ t: board.template, c: board.constraints, title: board.title }));
+  check(`[A ${tag}] the board is made from the product design template (physical)`, tpl.t && tpl.t.id === 'product' && tpl.t.variant === 'physical', JSON.stringify(tpl));
+  check(`[A ${tag}] the constraints from the picker are on the board`, /120 g/.test(tpl.c) && /\$12/.test(tpl.c), JSON.stringify(tpl));
+  // 1. Brief: typed in the picker, it is already the kept claim; the board is in Explore
   const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea')?.id);
-  check(`[A ${tag}] the brief becomes a kept claim`, !!idea && await p.evaluate(id => byId(id).status === 'ink', idea));
+  check(`[A ${tag}] the brief becomes a kept claim`, !!idea && await p.evaluate(id => byId(id).status === 'ink' && /camping lantern/.test(byId(id).text), idea));
   check(`[A ${tag}] stage is Explore once a claim is kept`, (await p.stage()) === 'explore', await p.stage());
   // 2. Evidence, by weight: what was watched counts more than what we propose
   await addEvidence(p, idea, PRODUCT.evidence);
   const brief0 = await p.evaluate(() => stageBrief());
   check(`[A ${tag}] the stage brief counts the evidence by weight`, /1 observed/i.test(brief0) && /1 reported/i.test(brief0) && /1 proposal/i.test(brief0), brief0.slice(0, 240));
+  check(`[A ${tag}] every agent is told the template and its test standard`, /WORKFLOW: Product design \(physical\)/.test(brief0) && /rough model/.test(brief0), brief0);
+  const chipsA = await p.evaluate(() => { select([]); return copilotStarterChips(); });
+  check(`[A ${tag}] Copilot's suggestions include the template's own question`, chipsA.includes('Which direction breaks a constraint?') && /Propose 2 directions/.test(chipsA[0]), chipsA.join(' | '));
   // 3. Diverge: three directions as drafts
   if (live) queue.push({ id: 'A-fork', match: '"directions"', text: PRODUCT.dirs });
   await p.cmd([idea], '/fork 3');
@@ -154,10 +169,11 @@ async function productDesign(browser, base, live) {
   check(`[A ${tag}] fork drafts three directions`, ds.length === 3 && ds.every(d => d.status === 'sketch'), JSON.stringify(ds));
   if (live) {
     check(`[A ${tag}] the fork prompt carries the brief and the evidence`, requests.some(r => r.matched === 'A-fork' && /palm-sized camping lantern/.test(r.full) && /Six of eight hikers/.test(r.full)));
+    check(`[A ${tag}] the fork prompt carries the hard constraints and the template's test standard`, requests.some(r => r.matched === 'A-fork' && /Hard constraints/.test(r.full) && /Under 120 g with the battery in/.test(r.full) && /task real people do with a rough model/.test(r.full)));
     check(`[A ${tag}] directions are the model's, marked as model-made`, ds.map(d => d.title).join('|') === 'Carabiner body|Folding tripod legs|Magnetic puck' && ds.every(d => d.engine === 'model'), JSON.stringify(ds));
   } else {
     check(`[A ${tag}] with no model, the drafts say they came from built-in rules`, ds.every(d => d.engine === 'rules') && await p.evaluate(() => document.querySelectorAll('.card.sketch .prov-rules').length > 0), JSON.stringify(ds));
-    gap(`[A ${tag}] rule-made directions are generic templates, not about this product (audit #5)`, ds.every(d => !/lantern|hik|camp/i.test(d.title + ' ')), ds.map(d => d.title).join(' | '));
+    check(`[A ${tag}] rule-made directions come from the product template and are about this product (audit #5 closed)`, ds.every(d => !GENERIC.test(d.title)) && ds.every(d => /lantern/.test(d.plan)) && ds[0].title === 'One-gesture form', ds.map(d => d.title + ': ' + d.plan).join(' | '));
   }
   // keep A and B, discard C with a reason: the reason stays on the record
   const [A, B, C] = ds;
@@ -173,6 +189,7 @@ async function productDesign(browser, base, live) {
   check(`[A ${tag}] Critic answers on the direction's thread`, !!crit && crit.text.length > 20, JSON.stringify(th));
   check(`[A ${tag}] the designer's question is kept in the thread`, th.some(m => m.who === 'you' && /answers the evidence best/.test(m.text)));
   if (live) check(`[A ${tag}] Critic was asked the question and given the sources`, requests.some(r => r.matched === 'A-crit' && /answers the evidence best/.test(r.full) && /Six of eight hikers/.test(r.full)));
+  if (live) check(`[A ${tag}] Critic is told what to check for in a product project`, requests.some(r => r.matched === 'A-crit' && /rests only on proposals/.test(r.full) && /Under 120 g/.test(r.full)));
   else check(`[A ${tag}] with no model, Critic's reply is marked as not live`, crit && crit.live === false);
   // 5. Converge: adopt A; B is recorded as passed over, the stage moves to Prototype
   await p.evaluate(a => adopt(byId(a)), A.id); await p.waitForTimeout(400);
@@ -186,7 +203,13 @@ async function productDesign(browser, base, live) {
   const proof = await p.evaluate(a => { const n = board.nodes.find(n => n.type === 'proof' && n.dir === a); return n && { id: n.id, title: n.spec?.title, items: (n.spec?.items || []).length, status: n.status, fixed: (n.fixed || []).length }; }, A.id);
   check(`[A ${tag}] Wright builds a proof draft from the adopted direction`, !!proof && proof.status === 'sketch' && proof.items >= 3, JSON.stringify(proof));
   check(`[A ${tag}] the proof records what it was built on`, proof && proof.fixed === 3, JSON.stringify(proof));
-  if (live) check(`[A ${tag}] the proof is the model's test kit`, proof && proof.title === PRODUCT.proof.title, JSON.stringify(proof));
+  if (live) {
+    check(`[A ${tag}] the proof is the model's test kit`, proof && proof.title === PRODUCT.proof.title, JSON.stringify(proof));
+    check(`[A ${tag}] Wright is told the deliverable is a test kit, within the constraints`, requests.some(r => r.matched === 'A-build' && /test kit/.test(r.full) && /Respect these constraints: Under 120 g/.test(r.full)));
+  } else {
+    const kit = await p.evaluate(id => byId(id).spec, proof.id);
+    check(`[A ${tag}] with no model, the proof is the template's test kit, with the constraints on it`, / · test kit$/.test(kit.title) && kit.items.some(i => i.tag === 'Constraints' && /120 g/.test(i.body)) && kit.items.some(i => i.tag === 'Record'), JSON.stringify(kit.items.map(i => i.tag)));
+  }
   await p.evaluate(id => ink([id]), proof.id); await p.waitForTimeout(300);
   // 7. Test plan: the adopted direction becomes a task board (allowed in Prototype)
   await p.cmd([A.id], '/kanban');
@@ -205,6 +228,8 @@ async function productDesign(browser, base, live) {
   const pre = await p.evaluate(() => JSON.stringify({ a: board.adopted, d: (board.declined || []).length, s: boardStage().stage }));
   await p.reload(); await p.waitForTimeout(2500);
   check(`[A ${tag}] a reload keeps the adoption, the record and the stage`, pre === await p.evaluate(() => JSON.stringify({ a: board.adopted, d: (board.declined || []).length, s: boardStage().stage })), pre);
+  check(`[A ${tag}] a reload keeps the template and the constraints`, await p.evaluate(() => board.template?.id === 'product' && /120 g/.test(board.constraints || '')));
+  check(`[A ${tag}] the hand-off file carries the template and the constraints`, await p.evaluate(async () => { const b = await buildBoardBundle(); return b.board.template?.id === 'product' && /120 g/.test(b.board.constraints || ''); }));
   gap(`[A ${tag}] no export to Figma or a design tool yet (roadmap)`, await p.evaluate(() => !CMDS.some(c => /figma|handoff/i.test(c.c + c.d))));
   check(`[A ${tag}] no page errors`, p.errors.length === 0, p.errors.join(' | '));
   await p.context().close();
@@ -215,18 +240,21 @@ async function shortVideo(browser, base, live) {
   head(`Template B · short video (${tag})`);
   media.on = live; media.posts = [];
   const p = await page(browser, base, { model: live });
-  await p.newBoard();
-  // 1. Brief
+  await p.newBoard('video', { constraints: VIDEO.constraints });
+  check(`[B ${tag}] the board is made from the short video template, with its constraints`, await p.evaluate(() => board.template?.id === 'video' && /muted/.test(board.constraints)));
+  // 1. Brief (typed on the board this time, not in the picker)
   await p.type('/claim ' + VIDEO.brief); await p.waitForTimeout(700);
   const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea')?.id);
   check(`[B ${tag}] the brief becomes a kept claim`, !!idea);
+  check(`[B ${tag}] Copilot asks the video question for this stage`, (await p.evaluate(() => { select([]); return copilotStarterChips(); })).includes('Which hook works with the sound off?'));
   // 2. Fork hooks before spending anything on generation
   if (live) queue.push({ id: 'B-fork', match: '"directions"', text: VIDEO.dirs });
   await p.cmd([idea], '/fork 3');
   const ds = await directions(p, idea);
   check(`[B ${tag}] fork drafts three hooks`, ds.length === 3, JSON.stringify(ds));
   check(`[B ${tag}] nothing was rendered while choosing a hook`, media.posts.length === 0 && await p.evaluate(() => !board.nodes.some(n => n.type === 'recording')));
-  if (!live) gap(`[B ${tag}] rule-made hooks are generic templates, not about this video (audit #5)`, ds.every(d => !/fan|quiet|whisper/i.test(d.title)), ds.map(d => d.title).join(' | '));
+  if (!live) check(`[B ${tag}] rule-made hooks come from the video template and are about this video (audit #5 closed)`, ds.every(d => !GENERIC.test(d.title)) && ds.every(d => /fan/.test(d.plan)) && ds[0].title === 'Show the proof', ds.map(d => d.title + ': ' + d.plan).join(' | '));
+  if (live) check(`[B ${tag}] the fork prompt says not to render while choosing, and carries the constraints`, requests.some(r => r.matched === 'B-fork' && /Never render video while choosing a hook/.test(r.full) && /Watched muted in a feed/.test(r.full)));
   await p.evaluate(ids => ink(ids), ds.map(d => d.id));
   // 3. Critique against the brief
   if (live) queue.push({ id: 'B-crit', match: 'Check this', text: VIDEO.critique });
@@ -241,7 +269,8 @@ async function shortVideo(browser, base, live) {
   await p.cmd([ds[0].id], '/build');
   const beats = await p.evaluate(a => { const n = board.nodes.find(n => n.type === 'proof' && n.dir === a); return n && { id: n.id, mode: n.spec?.mode, items: (n.spec?.items || []).map(i => i.title + ': ' + i.body) }; }, ds[0].id);
   check(`[B ${tag}] the adopted hook becomes a step-by-step script page`, beats && beats.mode === 'story' && beats.items.length >= 3, JSON.stringify(beats));
-  if (live) check(`[B ${tag}] the script has timed beats from hook to end card`, beats && /^0–2 s hook/.test(beats.items[0]) && /end card/.test(beats.items[beats.items.length - 1]), JSON.stringify(beats && beats.items));
+  check(`[B ${tag}] the script has timed beats from hook to end card`, beats && /^0–2 s hook/.test(beats.items[0]) && /end card/.test(beats.items[beats.items.length - 1]), JSON.stringify(beats && beats.items));
+  if (live) check(`[B ${tag}] Wright is told to write timed beats`, requests.some(r => r.matched === 'B-beats' && /timed beat/.test(r.full)));
   await p.evaluate(id => ink([id]), beats.id);
   // 6. Render one beat through the video provider
   const shot = beats.items[0].replace(/^[^:]*:\s*/, '');
@@ -265,6 +294,7 @@ async function shortVideo(browser, base, live) {
 
 /* ── Template C: AI product design, with Copilot alongside at every step ───────────────────── */
 const AIPROD = {
+  constraints: 'Never states a price on its own\nUnder 2 rewrites in 20 drafts',
   brief: 'An AI assistant that drafts replies to client emails for freelance designers, never sends a price on its own',
   failures: [
     ['A client asked for a quote and the draft promised a price the designer never set', 'observed'],
@@ -291,11 +321,13 @@ async function aiProduct(browser, base, live) {
   const tag = live ? 'scripted model' : 'no model';
   head(`Template C · AI product with Copilot alongside (${tag})`);
   const p = await page(browser, base, { model: live });
-  await p.newBoard();
+  await p.newBoard('aiproduct', { constraints: AIPROD.constraints });
+  check(`[C ${tag}] the board is made from the AI product template`, await p.evaluate(() => board.template?.id === 'aiproduct' && /price/.test(board.constraints)));
   // the crew speaks when it matters (the default level), quickly, for the test
   await p.evaluate(() => { setCrewLevel('suggest'); advQuietMs = 300; advMaxWaitMs = 2000; advSpent = []; advHeld = 0; board.pins = {}; });
   const chips = () => p.evaluate(() => copilotStarterChips());
   check(`[C ${tag}] on an empty board Copilot offers to put the idea in one sentence`, /one sentence/.test((await chips())[0] || ''), (await chips()).join(' | '));
+  check(`[C ${tag}] and asks what the AI must never do on its own`, (await chips()).includes('What must it never do on its own?'), (await chips()).join(' | '));
   // 1. Brief
   await p.type('/claim ' + AIPROD.brief); await p.waitForTimeout(700);
   const idea = await p.evaluate(() => board.nodes.find(n => n.type === 'idea')?.id);
@@ -341,6 +373,7 @@ async function aiProduct(browser, base, live) {
   if (live) {
     const cpReq = requests.find(r => r.matched === 'C-cp');
     check(`[C ${tag}] Copilot was given the stage, the directions and the failure cases`, !!cpReq && /STAGE: Explore/.test(cpReq.full) && /Drafts, you confirm/.test(cpReq.full) && /promised a price/.test(cpReq.full), cpReq ? cpReq.full.slice(0, 200) : 'no request');
+    check(`[C ${tag}] Copilot was given the template and the constraints`, !!cpReq && /WORKFLOW: AI product design/.test(cpReq.full) && /Never states a price on its own/.test(cpReq.full));
     check(`[C ${tag}] what Copilot creates arrives as a draft for the designer to keep`, await p.evaluate(() => { const n = board.nodes.find(n => n.title === 'Eval set v0'); return !!n && n.status === 'sketch'; }));
     const B = ds.find(d => d.title === 'Drafts, you confirm');
     check(`[C ${tag}] a change Copilot wants on a kept direction is only suggested`, await p.evaluate(id => openProps(id).length === 1 && !/any draft states a price/.test(byId(id).test || ''), B.id));
@@ -353,12 +386,13 @@ async function aiProduct(browser, base, live) {
   await p.evaluate(b => { adopt(byId(b)); select([]); }, B.id); await p.waitForTimeout(300);
   c = await chips();
   check(`[C ${tag}] once adopted, Copilot moves on to the cheapest real test`, /cheapest real test/.test(c[0] || ''), c.join(' | '));
+  check(`[C ${tag}] and offers to design the four states and an eval set`, c.includes('Design the four states') && c.includes('Draft a 20-case eval set'), c.join(' | '));
   // 7. Prototype with the four states an AI feature needs
   if (live) queue.push({ id: 'C-build', match: 'Write the real content for this prototype', text: AIPROD.proof });
   await p.cmd([B.id], '/build');
   const proof = await p.evaluate(b => { const n = board.nodes.find(n => n.type === 'proof' && n.dir === b); return n && { id: n.id, items: (n.spec?.items || []).map(i => i.title) }; }, B.id);
   check(`[C ${tag}] Wright builds a proof for the adopted direction`, !!proof && proof.items.length >= 3, JSON.stringify(proof));
-  if (live) check(`[C ${tag}] the proof designs all four states: normal, wrong, unsure, no model`, proof && ['Normal', 'Wrong', 'Unsure', 'No model'].every(s => proof.items.includes(s)), JSON.stringify(proof && proof.items));
+  check(`[C ${tag}] the proof designs all four states: normal, wrong, unsure, no model`, proof && ['Normal', 'Wrong', 'Unsure', 'No model'].every(s => proof.items.includes(s)), JSON.stringify(proof && proof.items));
   await p.evaluate(id => ink([id]), proof.id);
   await p.cmd([proof.id], '/snapshot');
   check(`[C ${tag}] the tested version is frozen`, (await p.stage()) === 'snapshot', await p.stage());
@@ -369,11 +403,59 @@ async function aiProduct(browser, base, live) {
   await p.context().close();
 }
 
+
+/* ── The picker: choosing a template, constraints, changing a board's template, both languages ── */
+async function picker(browser, base) {
+  head('Template picker');
+  const p = await page(browser, base, { model: false });
+  const open = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.click('#boardsPop [data-new]'); await p.waitForTimeout(300); };
+  const startId = await p.evaluate(() => board.id);
+  await open();
+  const d0 = await p.evaluate(() => ({ open: dlg.open, cards: [...dlg.querySelectorAll('[data-tpl]')].map(b => b.dataset.tpl), on: dlg.querySelector('[data-tpl][aria-checked="true"]')?.dataset.tpl, variant: !dlg.querySelector('[data-tpl-variant]').hidden }));
+  check('New board opens the template picker with product design, short video, AI product and blank', d0.open && d0.cards.join() === 'product,video,aiproduct,blank', JSON.stringify(d0));
+  check('product design is picked by default, with physical or digital to choose', d0.on === 'product' && d0.variant, JSON.stringify(d0));
+  await p.click('[data-tpl="video"]');
+  const d1 = await p.evaluate(() => ({ variant: !dlg.querySelector('[data-tpl-variant]').hidden, brief: dlg.querySelector('#tplBrief').placeholder, cons: dlg.querySelector('#tplCons').placeholder }));
+  check('picking short video hides the product type and changes the examples', !d1.variant && /desk fan/.test(d1.brief) && /muted/.test(d1.cons), JSON.stringify(d1));
+  await p.click('[data-tpl="product"]'); await p.click('[data-var="digital"]');
+  check('the digital product type has its own examples', await p.evaluate(() => /dentist/.test(dlg.querySelector('#tplBrief').placeholder) && /Platform/.test(dlg.querySelector('#tplCons').placeholder)));
+  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  check('closing the picker keeps the board you were on', await p.evaluate(id => !dlg.open && board.id === id, startId));
+  await open(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(600);
+  check('blank makes an empty board with no template', await p.evaluate(id => board.id !== id && !board.template && board.nodes.length === 0 && !copilotStarterChips().some(c => /constraint/i.test(c)), startId));
+  // a constraint typed on the line goes into every prompt
+  await p.type('/constraint Under 2 kg'); await p.waitForTimeout(300);
+  check('/constraint adds a hard constraint to the board', await p.evaluate(() => /Under 2 kg/.test(board.constraints)));
+  check('constraints go into the prompt every agent gets', await p.evaluate(() => /Hard constraints[^]*- Under 2 kg/.test(memoryPromptBlock('full')) && /Under 2 kg/.test(memoryPromptBlock('compact'))));
+  // /template changes this board's template; cards and constraints stay
+  await p.type('/claim A folding stool for festival goers'); await p.waitForTimeout(400);
+  const bid = await p.evaluate(() => board.id);
+  await p.type('/template'); await p.waitForTimeout(400);
+  check('/template opens the picker for this board', await p.evaluate(() => dlg.open && !dlg.querySelector('#tplBrief') && /Under 2 kg/.test(dlg.querySelector('#tplCons').value)));
+  await p.click('[data-tpl="product"]'); await p.click('[data-var="physical"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(400);
+  check('applying a template keeps the board and its cards', await p.evaluate(id => board.id === id && board.template?.id === 'product' && board.nodes.some(n => n.type === 'idea') && /Under 2 kg/.test(board.constraints), bid));
+  check('the stage brief now names the template', await p.evaluate(() => /WORKFLOW: Product design \(physical\)/.test(stageBrief())));
+  // the Memory sheet shows the template and edits the constraints
+  await p.evaluate(() => memoryDialog()); await p.waitForTimeout(300);
+  check('the Memory sheet shows the template and the constraints', await p.evaluate(() => /Product design/.test(dlg.querySelector('.mem-tpl').textContent) && /Under 2 kg/.test(dlg.querySelector('#memCons').value)));
+  await p.fill('#memCons', 'Under 2 kg\nFolds flat to 5 cm'); await p.waitForTimeout(200);
+  check('editing constraints there saves them', await p.evaluate(() => /Folds flat to 5 cm/.test(board.constraints)));
+  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  // Chinese
+  await p.evaluate(() => store.set('.lang', 'zh')); await open();
+  const zh = await p.evaluate(() => dlg.textContent);
+  check('the picker is in Chinese when the app is', /新建画板/.test(zh) && /产品设计/.test(zh) && /短视频/.test(zh) && /AI 产品设计/.test(zh) && /创建画板/.test(zh), zh.slice(0, 160));
+  await p.keyboard.press('Escape'); await p.evaluate(() => store.set('.lang', 'en'));
+  check('[picker] no page errors', p.errors.length === 0, p.errors.join(' | '));
+  await p.context().close();
+}
+
 (async () => {
   const srv = await serve(), base = 'http://127.0.0.1:' + srv.address().port;
   const browser = await chromium.launch({ headless: !process.argv.includes('--headed') });
   try {
     const only = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7); // e.g. --only=C
+    if (!only || only.includes('P')) await picker(browser, base);
     for (const live of [true, false]) for (const [k, f] of [['A', productDesign], ['B', shortVideo], ['C', aiProduct]]) if (!only || only.includes(k)) await f(browser, base, live);
   } catch (e) { check('the run finished', false, String(e && e.stack || e).split('\n').slice(0, 3).join(' ')); }
   await browser.close(); srv.close();

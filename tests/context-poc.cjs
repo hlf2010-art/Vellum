@@ -143,7 +143,7 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
   let ids;
   try {
     const { p, ctx } = await openPage(browser, base);
-    await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.waitForTimeout(800);
+    await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(800);
     await p.evaluate(() => { setCrew({ speak: 'never', act: 'drafts' }); }); // no unasked looks while the fixture is built
     ids = await buildFixture(p);
     const name = Object.fromEntries(Object.entries(ids).map(([k, v]) => [v, k]));
@@ -360,7 +360,7 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
     /* ── P0: visible fallbacks, held-back repeats you can see, the remaining rejection signals (fresh board) ── */
     {
       const { p: q, ctx: c2 } = await openPage(browser, base);
-      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.waitForTimeout(800);
+      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.click('[data-tpl="blank"]'); await q.click('[data-tpl-go]'); await q.waitForTimeout(800);
       await q.evaluate(() => setCrew({ speak: 'never', act: 'drafts' }));
       const I = await buildFixture(q);
       const ADV = 'Include 1 or at most 2 pins';
@@ -465,7 +465,7 @@ const pickSummary = (p, id) => p.evaluate(id => { const cx = contextFor(byId(id)
     /* ── M: meaning (embeddings) as a recall layer — fresh board, scripted vectors ── */
     {
       const { p: q, ctx: c3 } = await openPage(browser, base);
-      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.waitForTimeout(800);
+      await q.click('#projectBtn'); await q.waitForTimeout(300); await q.getByText('New board', { exact: true }).click(); await q.click('[data-tpl="blank"]'); await q.click('[data-tpl-go]'); await q.waitForTimeout(800);
       await q.evaluate(() => { setCrew({ speak: 'never', act: 'drafts' }); apiCfg.embedModel = 'poc-embed'; ctxVec.clear(); ctxEmbedFailSig = null; });
       embed.mode = 'ok';
       const I = await buildFixture(q);

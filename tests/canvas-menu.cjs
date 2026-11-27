@@ -219,6 +219,18 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
       check('no page errors (walkthrough)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
+    {
+      // kanban: status colour on the column dot only (to do neutral ring, in progress blue half, done green solid), and a time on every item
+      const p = await open(browser, base);
+      const k = await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'kanban'); const el = document.querySelector(`[data-id="${n.id}"]`); const cols = [...el.querySelectorAll('.kb-col')]; const dot = c => getComputedStyle(c.querySelector('.kb-col-h span'), '::before'); const B = getComputedStyle(document.documentElement).getPropertyValue('--B').trim(); return { n: cols.length, ring0: dot(cols[0]).backgroundColor, img1: dot(cols[1]).backgroundImage, fill2: dot(cols[2]).backgroundColor, colBg: [getComputedStyle(cols[1]).backgroundColor, getComputedStyle(cols[0]).backgroundColor], items: el.querySelectorAll('.kb-item').length, times: el.querySelectorAll('.kb-item time.kb-at').length }; });
+      check('kanban columns: to do is an empty ring, in progress a half ring, done a solid dot', k.n === 3 && /rgba\(0, 0, 0, 0\)|transparent/.test(k.ring0) && /linear-gradient/.test(k.img1) && !/rgba\(0, 0, 0, 0\)/.test(k.fill2), JSON.stringify(k));
+      check('kanban columns themselves stay neutral (colour only on the dot)', k.colBg[0] === k.colBg[1], JSON.stringify(k));
+      check('every kanban item shows a time', k.items > 0 && k.times === k.items, JSON.stringify(k));
+      const moved = await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'kanban'); const c = n.cards.find(x => x.col === kanbanColsOf(n)[0].id); delete c.at; moveKanbanCard(n, c.id, 1); return !!c.at && Date.now() - c.at < 5000; });
+      check('moving an item restamps its time', moved);
+      check('no page errors (kanban)', !p.errors.length, p.errors.join(' | '));
+      await p.context().close();
+    }
   } catch (e) { check('test ran to the end', false, e.stack); }
   await browser.close(); srv.close();
   console.log(results.join('\n'));

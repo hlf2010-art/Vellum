@@ -197,7 +197,8 @@ const grey = c => { const m = String(c).match(/[\d.]+/g); if (!m) return false; 
       });
       check(`crew avatars are white light, told apart by their signs, not tinted with the directions' colours (${theme})`, c.mks.length > 0 && c.mks.every(grey), JSON.stringify(c.mks));
       check(`a snapshot is finished, so it does not glow in its colour (${theme})`, !c.prBlue, JSON.stringify(c));
-      check(`kanban columns are not coloured like directions (${theme})`, c.kb.length > 0 && c.kb.every(grey), JSON.stringify(c.kb));
+      // status, not lineage (Mars 2026-11-27): to do is a neutral ring, in progress a half ring, done a solid green dot; nothing in the A (amber) or D (pink) colours
+      check(`kanban columns carry status colour on the dot only, never a direction's amber or pink (${theme})`, c.kb.length > 0 && c.kb.filter((x, i) => i % 3 !== 2).every(x => x === 'rgba(0, 0, 0, 0)') && c.kb.filter((x, i) => i % 3 === 2).every(x => x !== 'rgba(0, 0, 0, 0)' && !/rgba?\(\s*(2[0-5]\d),\s*(1[0-9]\d|9\d),\s*(\d|[1-9]\d|1[0-4]\d)\b/.test(x)), JSON.stringify(c.kb));
       await p.evaluate(() => openCopilot(true)); await p.waitForTimeout(400); await p.click('#cpInput');
       const ring = await p.evaluate(() => getComputedStyle($('cpForm')).boxShadow);
       check(`focus is a thin line, not a warm halo (${theme})`, !/255, 1[6-9]\d, \d+/.test(ring) && !/\d+px \d+px 2\dpx/.test(ring), ring);

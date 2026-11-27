@@ -593,14 +593,18 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .m-sec .todo-bar{margin-top:2px;margin-bottom:4px}
 .kb-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;align-items:start}
 .kb-col{--kb-c:var(--label-3);background:color-mix(in srgb,var(--kb-c) 7%,var(--hover));box-shadow:none;border-radius:var(--radius-sm);padding:7px;min-width:0;display:flex;flex-direction:column;gap:6px;transition:box-shadow .18s var(--ease),background .18s var(--ease),transform .18s var(--ease)}
-.kb-col:nth-child(1){--kb-c:var(--A)}
-.kb-col:nth-child(2){--kb-c:var(--B)}
-.kb-col:nth-child(3){--kb-c:var(--C)}
+/* status, not lineage: to do = neutral empty ring, in progress = blue half ring, done = green solid dot (same as the website and the table status tags) */
+.kb-col:nth-child(1){--kb-s:var(--label-3)}
+.kb-col:nth-child(2){--kb-s:var(--B)}
+.kb-col:nth-child(3){--kb-s:var(--C)}
 .kb-col.kb-drop{box-shadow:inset 0 0 0 1.5px var(--kb-c);background:color-mix(in srgb,var(--kb-c) 14%,var(--hover));transform:translateY(-1px)}
 .kb-col.kb-drop .kb-empty{display:none}
 .kb-col-h{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:1px 3px 3px;font:600 12px/1.2 var(--ui);color:color-mix(in srgb,var(--kb-c) 72%,var(--label));letter-spacing:.01em}
 .kb-col-h span:first-child{display:inline-flex;align-items:center;gap:5px;min-width:0}
-.kb-col-h span:first-child::before{content:"";width:6px;height:6px;border-radius:50%;flex:none;background:var(--kb-c);box-shadow:0 0 6px color-mix(in srgb,var(--kb-c) 55%,transparent)}
+.kb-col-h span:first-child::before{content:"";width:8px;height:8px;box-sizing:border-box;border-radius:50%;flex:none;border:1.5px solid var(--kb-s,var(--kb-c));background:transparent}
+.kb-col:nth-child(2) .kb-col-h span:first-child::before{background:linear-gradient(90deg,var(--kb-s) 50%,transparent 50%)}
+.kb-col:nth-child(3) .kb-col-h span:first-child::before{background:var(--kb-s)}
+.kb-at{display:block;margin-top:3px;font:500 11px/1.2 var(--ui);color:var(--label-3);font-variant-numeric:tabular-nums}
 .kb-col-h span:last-child{font:600 11px/1 var(--mono);color:color-mix(in srgb,var(--kb-c) 82%,var(--label));padding:2px 6px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--kb-c) 14%,transparent)}
 .kb-cards{list-style:none;margin:0;padding:0;display:grid;gap:5px;min-height:4px}
 .kb-item{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:6px 8px;border-radius:var(--radius-xs);background:var(--card-2);border-left:2.5px solid color-mix(in srgb,var(--kb-c) 68%,transparent);box-shadow:0 1px 2px rgba(0,0,0,.08);font:13px/1.38 var(--ui);color:var(--label);cursor:grab;user-select:none;transition:transform .16s var(--ease),box-shadow .16s var(--ease),opacity .16s var(--ease),border-color .2s var(--ease)}
@@ -4067,7 +4071,7 @@ body.snap-skip #wall{cursor:copy}
 .isl-av[data-a]{--tint:var(--label-2)!important}
 .part-b[aria-checked="true"] .ico{color:var(--label)!important}
 .catch-pop .cu-ico{color:var(--label-2);background:var(--hover)}
-.kb-col{--kb-c:var(--label-3)!important}
+.kb-col{--kb-c:var(--label-3)!important}  /* columns and cards stay neutral; only the status dot carries colour (--kb-s) */
 .kb-item{border-left:0}
 .kb-col-h span:first-child::before{box-shadow:none}
 .vote-btn.up.active,.vote-btn.dn.active{color:var(--label);background:var(--hover)}
@@ -7242,13 +7246,15 @@ function setKbSel(id){
   kbSelId=id||null;
   qsa(".kb-item[data-kb-id]").forEach(el=>el.classList.toggle("kb-sel",el.dataset.kbId===kbSelId));
 }
+/* when the item reached its column (moving it restamps); older items fall back to the card's own time */
+function kbAtHTML(c,n){const t=c.at||n.updated||n.created;if(!t)return "";const full=new Date(t).toLocaleString(uiLang()==="zh"?"zh-CN":"en-US",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});return `<time class="kb-at" datetime="${new Date(t).toISOString()}" title="${esc(full)}">${esc(relDate(t))}</time>`}
 function kanbanHTML(n,forMargin=false){
   const cols=kanbanColsOf(n),cards=n.cards||[],sk=n.status==="sketch",attr=forMargin?"m":"a";
   return `<div class="kb-cols">${cols.map((col,ci)=>{
     const list=cards.filter(c=>c.col===col.id||(ci===0&&!cols.some(x=>x.id===c.col)));
     return `<div class="kb-col" data-kb-col="${esc(col.id)}" data-kb-node="${n.id}">
       <div class="kb-col-h"><span>${esc(col.title)}</span><span>${list.length}</span></div>
-      <ul class="kb-cards">${list.length?list.map(c=>`<li class="kb-item${kbSelId===c.id?" kb-sel":""}${kbLandId===c.id?" kb-land":""}" data-kb-id="${esc(c.id)}"><span class="kb-txt" data-${attr}-kb-item="${esc(c.id)}"${sk?"":` title="${Lang("Drag to move · double-click to edit","拖动移动 · 双击编辑")}"`}>${esc(c.title)}</span>${sk?"":`<span class="kb-acts"><button type="button" class="kb-mv" data-${attr}="kb-mv-l" data-cid="${esc(c.id)}"${ci===0?" disabled":""} title="${Lang("Move left","左移")}" aria-label="${Lang("Move left","左移")}">${ic("left")}</button><button type="button" class="kb-mv" data-${attr}="kb-mv-r" data-cid="${esc(c.id)}"${ci===cols.length-1?" disabled":""} title="${Lang("Move right","右移")}" aria-label="${Lang("Move right","右移")}">${ic("right")}</button><button type="button" class="kb-del" data-${attr}="kb-del" data-cid="${esc(c.id)}" title="${Lang("Remove","移除")}" aria-label="${Lang("Remove","移除")}">${ic("trash")}</button></span>`}</li>`).join(""):`<li class="kb-empty">${Lang("Empty","空")}</li>`}</ul>
+      <ul class="kb-cards">${list.length?list.map(c=>`<li class="kb-item${kbSelId===c.id?" kb-sel":""}${kbLandId===c.id?" kb-land":""}" data-kb-id="${esc(c.id)}"><span class="kb-txt" data-${attr}-kb-item="${esc(c.id)}"${sk?"":` title="${Lang("Drag to move · double-click to edit","拖动移动 · 双击编辑")}"`}>${esc(c.title)}</span>${kbAtHTML(c,n)}${sk?"":`<span class="kb-acts"><button type="button" class="kb-mv" data-${attr}="kb-mv-l" data-cid="${esc(c.id)}"${ci===0?" disabled":""} title="${Lang("Move left","左移")}" aria-label="${Lang("Move left","左移")}">${ic("left")}</button><button type="button" class="kb-mv" data-${attr}="kb-mv-r" data-cid="${esc(c.id)}"${ci===cols.length-1?" disabled":""} title="${Lang("Move right","右移")}" aria-label="${Lang("Move right","右移")}">${ic("right")}</button><button type="button" class="kb-del" data-${attr}="kb-del" data-cid="${esc(c.id)}" title="${Lang("Remove","移除")}" aria-label="${Lang("Remove","移除")}">${ic("trash")}</button></span>`}</li>`).join(""):`<li class="kb-empty">${Lang("Empty","空")}</li>`}</ul>
       ${sk?"":`<div class="kb-add"><input type="text" data-kb-add="${n.id}" data-kb-col="${esc(col.id)}" placeholder="${Lang("+ Add…","+ 添加…")}" aria-label="${esc(Lang(`Add to ${col.title}`,`添加到「${col.title}」`))}"><button type="button" data-${attr}="kb-add" data-kb-col="${esc(col.id)}" hidden>${Lang("Add","添加")}</button></div>`}
     </div>`;
   }).join("")}</div>`;
@@ -7256,7 +7262,7 @@ function kanbanHTML(n,forMargin=false){
 function addKanbanCard(n,colId,title){
   const t=String(title||"").trim();if(!n||!t)return;
   const cols=kanbanColsOf(n),cid=cols.some(c=>c.id===colId)?colId:cols[0].id;
-  checkpoint();n.cols=cols;n.cards=n.cards||[];n.cards.push({id:"k-"+uid(),title:t,col:cid});n.updated=NOW();renderAll();persist();
+  checkpoint();n.cols=cols;n.cards=n.cards||[];n.cards.push({id:"k-"+uid(),title:t,col:cid,at:NOW()});n.updated=NOW();renderAll();persist();
 }
 function moveKanbanCard(n,cardId,dirOrCol){
   if(!n?.cards)return;const card=n.cards.find(c=>c.id===cardId);if(!card)return;
@@ -7269,7 +7275,7 @@ function moveKanbanCard(n,cardId,dirOrCol){
     targetCol=dirOrCol;
   }
   if(!targetCol||targetCol===card.col)return;
-  checkpoint();card.col=targetCol;n.updated=NOW();kbLandId=cardId;renderAll();persist();
+  checkpoint();card.col=targetCol;card.at=NOW();n.updated=NOW();kbLandId=cardId;renderAll();persist();
   clearTimeout(moveKanbanCard._t);moveKanbanCard._t=setTimeout(()=>{if(kbLandId===cardId)kbLandId=null},450);
 }
 function editKanbanCard(n,cardId,text){

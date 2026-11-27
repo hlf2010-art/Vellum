@@ -209,8 +209,8 @@ const grey = c => { const m = String(c).match(/[\d.]+/g); if (!m) return false; 
     /* 8. the Copilot button sits in the top bar, not over cards */
     {
       const p = await open(browser, base);
-      const b = await p.evaluate(() => { const btn = $('copilotBtn'), r = btn.getBoundingClientRect(), top = document.querySelector('header.top').getBoundingClientRect(); return { inTop: !!btn.closest('header.top'), within: r.top >= top.top && r.bottom <= top.bottom, label: btn.innerText.trim() }; });
-      check('the Copilot button is in the top bar, at the end, named', b.inTop && b.within && b.label === 'Copilot', JSON.stringify(b));
+      const b = await p.evaluate(() => { const btn = $('copilotBtn'), r = btn.getBoundingClientRect(), top = document.querySelector('header.top').getBoundingClientRect(); return { inTop: !!btn.closest('header.top'), within: r.top >= top.top && r.bottom <= top.bottom, label: btn.innerText.trim(), name: btn.getAttribute('aria-label'), tip: btn.title, w: r.width, h: r.height }; });
+      check('the Copilot button is in the top bar, icon only, named by its tooltip and accessible name', b.inTop && b.within && b.label === '' && /Copilot/.test(b.name) && /Copilot · ⌘\./.test(b.tip) && Math.abs(b.w - b.h) < 1, JSON.stringify(b));
       await p.click('#copilotBtn'); await p.waitForTimeout(500);
       check('it opens the panel and shows that it is open', await p.evaluate(() => copilotOpen && $('copilotBtn').getAttribute('aria-expanded') === 'true'));
       check('the panel is solid', await p.evaluate(() => { const cs = getComputedStyle($('copilotPanel')); return !/rgba\([^)]*,\s*0?\.\d+\)/.test(cs.backgroundColor) && (cs.backdropFilter === 'none' || !cs.backdropFilter); }));

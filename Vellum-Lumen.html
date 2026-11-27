@@ -884,10 +884,13 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .copilot-btn{position:relative;flex:none;display:inline-flex;align-items:center;height:36px;padding:0 14px 0 10px;border-radius:var(--radius-pill);font:550 13px/1 var(--ui);color:var(--label-2);background:var(--chrome);box-shadow:var(--chrome-shadow);white-space:nowrap;transition:background-color .2s var(--ease),color .2s var(--ease)}
 .copilot-btn .cp-ear-orb{position:relative;width:18px;height:18px;display:grid;place-items:center;flex:none;color:inherit}
 .copilot-btn .cp-ear-orb svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.copilot-btn .cp-ear-orb :is(.ray-in,.ray-a,.ray-b){opacity:.5}
+.copilot-btn .cp-ear-orb svg .f{fill:currentColor;stroke:none}
 .copilot-btn .cp-ear-ctx{display:none}
-.copilot-btn .cp-ear-lbl{display:inline-flex;align-items:center;margin-left:7px;letter-spacing:-.01em}
-.copilot-btn .cp-ear-lbl kbd{display:none}
+/* icon only (Mars, 2026-11-27): the name and ⌘. live in the tooltip and the accessible name */
+.copilot-btn .cp-ear-lbl{display:none}
+header.top .copilot-btn{width:40px;padding:0;justify-content:center;color:var(--label)}
+header.top .copilot-btn .cp-ear-orb,header.top .copilot-btn .cp-ear-orb svg{width:18px;height:18px}
+header.top .copilot-btn .cp-ear-orb svg{stroke-width:1.6}
 .copilot-btn:hover{color:var(--label)}
 .copilot-btn:active{transform:scale(.97)}
 .copilot-btn[aria-expanded="true"]{color:var(--label);background:color-mix(in srgb,var(--label) 7%,var(--chrome))}
@@ -3447,7 +3450,7 @@ body.snap-skip #wall{cursor:copy}
 
   <button type="button" class="copilot-btn" id="copilotBtn" aria-expanded="false" aria-controls="copilotPanel" aria-label="Open Copilot (⌘.)" title="Copilot (⌘.)">
     <span class="cp-ear-ctx" aria-hidden="true"></span>
-    <span class="cp-ear-orb" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4.6 19.2 17.6H4.8Z"/><path class="ray-in" d="M2.8 13.6 8.8 11.4"/><path class="ray-a" d="M16 11.4 21.2 9.4"/><path class="ray-b" d="M17.1 13.9 21.4 13.9"/></svg></span>
+    <span class="cp-ear-orb" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11.4c0 4.05-3.58 7.33-8 7.33-1.12 0-2.18-.21-3.15-.59L4.6 19.4l1.13-3.37C4.64 14.77 4 13.15 4 11.4 4 7.35 7.58 4.07 12 4.07s8 3.28 8 7.33Z"/><path class="f" d="M12 8.2c.28 1.75 1.27 2.74 3.02 3.02-1.75.28-2.74 1.27-3.02 3.02-.28-1.75-1.27-2.74-3.02-3.02 1.75-.28 2.74-1.27 3.02-3.02Z"/></svg></span>
     <span class="cp-ear-lbl"><span>Copilot</span><kbd>⌘.</kbd></span>
   </button>
   <aside id="copilotPanel" class="copilot-panel" hidden aria-label="Copilot"></aside>

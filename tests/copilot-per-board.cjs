@@ -166,6 +166,31 @@ async function open(browser, base, { theme = 'light', ctx = null } = {}) {
     await p.evaluate(() => openCopilot(true)); await p.waitForTimeout(300);
     const R = await p.panel();
     check('after a reload the panel shows the active board\'s conversation', R.board === 'Desk fan' && R.msgs.length === 2 && /noise at night/.test(R.msgs[1]), JSON.stringify(R));
+
+    // B6b. messages already in the panel stay still when it reopens or redraws; only a new arrival rises in
+    const entrance = () => p.evaluate(() => [...document.querySelectorAll('#cpMsgs > .cp-msg')].map(m => ({ isNew: m.classList.contains('cp-new'), running: m.getAnimations({ subtree: true }).filter(a => a.playState === 'running' && a.animationName === 'rise').length })));
+    await p.evaluate(() => openCopilot(false)); await p.waitForTimeout(400);
+    await p.evaluate(() => openCopilot(true)); await p.waitForTimeout(30);
+    const A1 = await entrance();
+    check('reopening the panel does not replay the history\'s entrance', A1.length === 2 && A1.every(m => !m.isNew && !m.running), JSON.stringify(A1));
+    queue = [{ id: 'b2', match: 'Lumen Copilot', text: 'Then measure it at one metre.' }];
+    await p.fill('#cpInput', 'How loud is too loud?'); await p.press('#cpInput', 'Enter'); await p.waitForTimeout(30);
+    const A2 = await entrance();
+    check('a message just sent and its reply rise in, the earlier ones stay still', A2.length === 4 && !A2[0].isNew && !A2[1].isNew && A2[2].isNew && A2[3].isNew && A2[2].running > 0, JSON.stringify(A2));
+    for (let i = 0; i < 80 && await p.evaluate(() => copilotStreaming); i++) await p.waitForTimeout(150);
+    await p.waitForTimeout(400);
+    await p.evaluate(() => renderCopilot()); await p.waitForTimeout(30);
+    const A3 = await entrance();
+    check('a redraw after the reply finished animates nothing', A3.length === 4 && A3.every(m => !m.isNew && !m.running), JSON.stringify(A3));
+    await p.evaluate(() => { const snap = JSON.parse(JSON.stringify(board.copilot)); board.copilot = snap; renderCopilot(); }); await p.waitForTimeout(30);
+    check('the same conversation restored as copies (as Undo does) does not replay', (await entrance()).every(m => !m.isNew), '');
+    await p.emulateMedia({ reducedMotion: 'reduce' });
+    queue = [{ id: 'b3', match: 'Lumen Copilot', text: 'Fine.' }];
+    await p.fill('#cpInput', 'Thanks'); await p.press('#cpInput', 'Enter'); await p.waitForTimeout(30);
+    const dur = await p.evaluate(() => { const m = [...document.querySelectorAll('#cpMsgs > .cp-msg.cp-new')].at(-1); return m ? parseFloat(getComputedStyle(m).animationDuration) : -1; });
+    check('with reduced motion a new message appears without a visible rise', dur >= 0 && dur < 0.01, String(dur));
+    for (let i = 0; i < 80 && await p.evaluate(() => copilotStreaming); i++) await p.waitForTimeout(150);
+    await p.emulateMedia({ reducedMotion: 'no-preference' });
     check('no page errors', p.errors.length === 0, p.errors.join(' | '));
 
     // B7. the empty state in dark mode and Chinese (for the screenshot) still reads well

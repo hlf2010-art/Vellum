@@ -32,13 +32,17 @@
     if (!el || reduced) { if (done) done(); return 0; }
     // Clause spans (Chinese line breaks) stay in place: words stream in inside each clause.
     var orig = el.innerHTML, text = el.textContent, cls = el.querySelectorAll(".cl");
-    Array.prototype.forEach.call(cls.length ? cls : [el], function (box) {
-      var s = box.textContent, parts = s.match(/[⺀-鿿＀-￯]|[^\s⺀-鿿＀-￯]+\s*|\s+/g) || [s];
-      box.innerHTML = parts.map(function (p) { return '<span class="tok">' + esc(p) + "</span>"; }).join("");
-    });
-    var toks = el.querySelectorAll(".tok"), cjk = /[⺀-鿿]/.test(text), step = cjk ? 34 : 62;
-    toks.forEach(function (t, i) { setTimeout(function () { t.classList.add("in"); }, (delay || 0) + i * step); });
-    var total = (delay || 0) + toks.length * step + 260;
+    var toks = function (s) { var parts = s.match(/[⺀-鿿＀-￯]|[^\s⺀-鿿＀-￯]+\s*|\s+/g) || [s]; return parts.map(function (p) { return '<span class="tok">' + esc(p) + "</span>"; }).join(""); };
+    if (el.querySelector(".w")) {
+      // Word spans (Chinese words kept whole) stay in place too: their characters stream in inside them.
+      Array.prototype.slice.call(el.childNodes).forEach(function (n) {
+        if (n.nodeType === 3) { var f = document.createElement("span"); f.innerHTML = toks(n.textContent); while (f.firstChild) el.insertBefore(f.firstChild, n); el.removeChild(n); }
+        else n.innerHTML = toks(n.textContent);
+      });
+    } else Array.prototype.forEach.call(cls.length ? cls : [el], function (box) { box.innerHTML = toks(box.textContent); });
+    var all = el.querySelectorAll(".tok"), cjk = /[⺀-鿿]/.test(text), step = cjk ? 34 : 62;
+    all.forEach(function (t, i) { setTimeout(function () { t.classList.add("in"); }, (delay || 0) + i * step); });
+    var total = (delay || 0) + all.length * step + 260;
     setTimeout(function () { if (el.querySelector(".tok")) el.innerHTML = orig; if (done) done(); }, total);
     return total;
   }
@@ -105,10 +109,11 @@
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
       "any.soon": "Coming soon", "any.title": "Keep thinking, wherever you are.",
-      "any.lede": "Scan the code on your Mac with your iPad and the board opens. Nothing to install, no cloud in between.",
-      "any.mac": "Lay out the whole argument.", "any.pad": "Circle a direction with the pen.", "any.phone": "Phone", "any.ph": "Decisions in your pocket.",
-      "any.dirs": "Directions", "any.a": "One-click final cut", "any.b": "Rough cut, you mark the moments", "any.c": "Suggestions only",
-      "any.decs": "Decisions", "any.dk": "Decided", "any.dt": "Ship the rough cut.", "any.dm": "On iPad · just now",
+      "any.lede": "Scan the code on your computer with your tablet and the board opens. Nothing to install, no cloud in between.",
+      "any.mac": "Lay out the whole argument.", "any.pad": "Circle a direction with the pen.", "any.comp": "Computer", "any.tab": "Tablet", "any.phone": "Phone", "any.ph": "Decisions in your pocket.",
+      "any.board": "Beta cut feedback", "any.decBtn": "Decisions", "any.me": "Y", "any.chosen": "Chosen on the tablet · just now",
+      "any.toast": "Chose B", "any.undo": "Undo", "any.date": "Friday, November 27", "any.time": "10:24",
+      "any.now": "now", "any.ago": "12m ago", "any.n1t": "You chose B on your tablet",
       "get.title": "Get {brand}.",
       "get.l1": "Early builds for Mac and Windows are on the way.", "get.l2": "We'll email you the day yours is ready.",
       "get.os": "Preferred system", "get.mac": "macOS", "get.win": "Windows", "get.use": "What will you use it for?", "get.email": "Email",
@@ -141,7 +146,7 @@
       "why.a4": "当初为什么这么定，没人记得", "why.b4": "情况一变，它提醒你回头看看",
       "how.title": "每张卡片，​都有出处。",
       "how.lede": "点开任意一张，来龙去脉都在。",
-      "out.title": "想透了，再动手。", "out.lede": "做出什么，都说得清为什么。", "out.label": "产出",
+      "out.title": "想透了，再动手。", "out.lede": "每个方案，都说得清来龙去脉。", "out.label": "产出",
       "out.plan": "方案", "out.tasks": "任务", "out.table": "表格", "out.cut": "成片", "out.site": "网站",
       "doc.h": "粗剪 + 高光标记", "doc.why": "为什么选它", "doc.whyv": "剪辑师只想让 AI 干杂活，高光要自己挑。",
       "doc.rests": "证据", "doc.k1": "实测", "doc.e1": "AI 剪的 10 刀，剪辑师撤回了 6 刀", "doc.k2": "原话", "doc.e2": "“先给我个粗剪，高光我自己挑。”",
@@ -162,7 +167,7 @@
       "crew.wright": "做原型验证", "crew.wrightq": "“B 方案的原型好了，要保留吗？”",
       "crew.critic": "对照来源挑刺", "crew.criticq": "“没有任何证据说明，剪辑师想要一键成片。”",
       "crew.agency": "提出建设性的质疑，让决定更快落地。",
-      "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
+      "mode.focus": "专注模式", "mode.listen": "旁听模式", "mode.team": "协作模式",
       "mode.focusd": "绝不打扰。有发现先记下，等你回来再说。",
       "sc.wait": "条待看", "sc.backK": "专注期间", "sc.backT": "团队记下了 3 条",
       "sc.srcK": "原话 · 剪辑师访谈", "sc.srcB": "“最花时间的，是把 AI 剪掉的好镜头一个个找回来。”",
@@ -172,10 +177,11 @@
       "mode.teamd": "和你一起起草，好的留下就行。",
       "modes.label": "AI 团队的参与程度",
       "any.soon": "即将推出", "any.title": "在哪儿，都能接着想。",
-      "any.lede": "用 iPad 扫一下 Mac 上的码，白板就打开了。不用装 App，也不经过云端。",
-      "any.mac": "摆开整个论证。", "any.pad": "拿笔圈出一个方向。", "any.phone": "手机", "any.ph": "决定随身带着。",
-      "any.dirs": "方向", "any.a": "一键成片", "any.b": "粗剪，高光由你来标", "any.c": "只给建议",
-      "any.decs": "决策", "any.dk": "已决定", "any.dt": "先上线粗剪。", "any.dm": "刚刚 · 在 iPad 上",
+      "any.lede": "用平板扫一下电脑上的码，白板就打开了。不用装 App，也不经过云端。",
+      "any.mac": "摆开整个论证。", "any.pad": "拿笔圈出一个方向。", "any.comp": "电脑", "any.tab": "平板", "any.phone": "手机", "any.ph": "决定随身带着。",
+      "any.board": "内测剪辑反馈", "any.decBtn": "决策", "any.me": "你", "any.chosen": "刚刚在平板上选定",
+      "any.toast": "已选定 B", "any.undo": "撤销", "any.date": "11月27日 星期五", "any.time": "10:24",
+      "any.now": "现在", "any.ago": "12 分钟前", "any.n1t": "你在平板上选定了 B",
       "get.title": "抢先体验 {brand}。",
       "get.l1": "Mac 和 Windows 内测版即将推出。", "get.l2": "留下邮箱，上线第一时间通知你。",
       "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "打算用它做什么？", "get.email": "邮箱",
@@ -391,7 +397,12 @@
   function t(key) { var v = has(key) ? T[lang][key] : T.en[key]; return (v == null ? "" : String(v)).replace(/\{brand\}/g, BRAND); }
   // Chinese may break between any two characters, which in a short line can split a word (剪/辑师).
   // With clauses on, each clause stays whole and lines break between clauses; a clause too long for the line still wraps.
+  var ZHW = new RegExp("(一键成片|同一个人|最花时间|要保留吗|剪辑师|好镜头|一个个|找回来|被剪掉|剪得慢|挑高光|能留下|说的是|剪掉的|时间|剪辑|太费|那就|访谈|不是|只会|剪掉|更多|先让|自己|差评|其实|发的|如果|成立|粗剪|方案|原型|好了|没有|任何|证据|说明|想要)", "g");
   function setCopy(el, v, clauses) {
+    // "w": Chinese breaks only between words (一键成片 stays whole), so lines still fill the card. Browsers' own word
+    // segmentation is uneven, so the card copy's words are listed (longest first).
+    if (lang === "zh" && clauses === "w") { el.innerHTML = esc(v).replace(ZHW, '<span class="w">$1</span>'); return; }
+    if (clauses === "w") { el.textContent = v; return; }
     if (lang === "zh" && clauses) el.innerHTML = v.replace(/([，；：])/g, "$1\u0001").split("\u0001").map(function (c) { return '<span class="cl">' + esc(c) + "</span>"; }).join("");
     else el.textContent = v;
   }
@@ -411,7 +422,7 @@
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
       var k = el.getAttribute("data-i18n"), v = t(k);
       if (!v && !has(k)) return;
-      setCopy(el, v, el.hasAttribute("data-clauses"));
+      setCopy(el, v, el.hasAttribute("data-words") ? "w" : el.hasAttribute("data-clauses"));
     });
     $("langSel").value = lang;
     document.title = t("title");
@@ -423,6 +434,7 @@
     $("modes").setAttribute("aria-label", t("modes.label"));
     board.relabel();
     if (scene) scene.relabel();
+    if (anywhere) anywhere.relabel();
     $("hero-title").setAttribute("aria-label", t("hero.title"));
     headline.type(true);
     zones.render(false);
@@ -1646,7 +1658,7 @@
     }
     function relabel() {
       var txt = { me: lang === "zh" ? "你" : "Y" };
-      st.querySelectorAll("[data-sc]").forEach(function (e) { var k = e.getAttribute("data-sc"); if (k === "note" && typing) return; setCopy(e, txt[k] != null ? txt[k] : t("sc." + k), k === "critic" || k === "note" || k === "srcB"); });
+      st.querySelectorAll("[data-sc]").forEach(function (e) { var k = e.getAttribute("data-sc"); if (k === "note" && typing) return; setCopy(e, txt[k] != null ? txt[k] : t("sc." + k), k === "critic" || k === "note" || k === "srcB" ? "w" : false); });
       requestAnimationFrame(link);
       snug(bubble.querySelector("p"));
       if (cur.you) cur.you.querySelector(".who").textContent = lang === "zh" ? "你" : "You";
@@ -1682,11 +1694,11 @@
       var full = t("sc.note"), chars = Array.from(full), step = lang === "zh" ? 85 : 34;
       typing = true; noteP.textContent = ""; mine.classList.add("typing");
       chars.forEach(function (c, i) { at(startMs + i * step, function () { noteP.textContent = chars.slice(0, i + 1).join(""); }); });
-      at(startMs + chars.length * step + 380, function () { typing = false; mine.classList.remove("typing"); setCopy(noteP, full, true); });
+      at(startMs + chars.length * step + 380, function () { typing = false; mine.classList.remove("typing"); setCopy(noteP, full, "w"); });
     }
     function reset() {
       timers.forEach(clearTimeout); timers = [];
-      if (typing) { typing = false; mine.classList.remove("typing"); setCopy(noteP, t("sc.note"), true); }
+      if (typing) { typing = false; mine.classList.remove("typing"); setCopy(noteP, t("sc.note"), "w"); }
       [mine, bubble, back, draft, dot].forEach(function (e) { e.classList.remove("on"); });
       relSvg.classList.remove("on");
       Object.keys(cur).forEach(function (n) { cur[n].classList.remove("on"); });
@@ -1854,24 +1866,96 @@
   [email, useText].forEach(function (f) { f.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); if (!joinBtn.disabled) moreForm.requestSubmit(joinBtn); } }); });
   dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close("back"); });
 
-  // ---- Anywhere: the pen circles B on the iPad, then the same card lights on all three screens at once. ----------
-  // One beat, repeated while the section is on screen. Reduced motion shows the lit state, still.
-  (function () {
-    var box = $("devices"); if (!box) return;
-    if (reduced || !window.IntersectionObserver) { box.classList.add("lit", "drawn"); return; }
-    var timers = [], on = false;
-    function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
-    function beat() {
-      box.classList.remove("drawing", "drawn", "lit");
-      later(function () { box.classList.add("drawing"); }, 700);
-      later(function () { box.classList.add("drawn", "lit"); }, 2050);
-      later(beat, 8200);
+  // ---- Anywhere: one board on a computer, a tablet and a phone, drawn at real size and scaled down, so each
+  // screen is the app in miniature. One beat: the pen circles B on the tablet, then B lights on all three at once.
+  var anywhere = (function () {
+    var box = $("devices"); if (!box) return null;
+    var uis = [].slice.call(box.querySelectorAll(".ui"));
+    // A hand-drawn loop, normalised to a 100 x 40 box, stretched around a card with some air.
+    var LOOP = [[58,2],[90,1,99,4,99,20],[99,37,85,39.5,50,39],[14,38.5,1,36,1,20],[1,4,13,2.5,44,2],[55,1.8,65,2.4,73,4.5]];
+    function loopPath(x, y, w, h, px, py) {
+      var X = x - px, Y = y - py, W = w + 2 * px, H = h + 2 * py, f = function (i, v) { return (i % 2 ? Y + v / 40 * H : X + v / 100 * W).toFixed(1); };
+      return LOOP.map(function (seg, n) { return (n ? "C" : "M") + seg.map(function (v, i) { return f(i, v); }).join(" "); }).join(" ");
     }
-    new IntersectionObserver(function (en) {
-      var vis = en[0].isIntersecting;
-      if (vis && !on) { on = true; beat(); }
-      else if (!vis && on) { on = false; timers.forEach(clearTimeout); timers = []; box.classList.remove("drawing"); box.classList.add("drawn", "lit"); }
-    }, { threshold: 0.45 }).observe(box);
+    function me() { return '<b class="me">' + esc(t("any.me")) + "</b>"; }
+    function card(id, c, cls, k, by, style, extra) {
+      return '<article class="vc u-c ' + (cls || "") + '" data-c="' + id + '" style="' + style + '"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + k + '"/></svg><span>' + esc(c.k) + '</span><span class="by">' + by + "</span></div>" + (extra || "") + "</article>";
+    }
+    function dir(id, L, c, style) {
+      return card(id, c, "u-dir", "fork", crewAv("Strategist", ""), style, '<div class="t"><span class="chip ' + L + '">' + L + "</span>" + esc(c.t) + '</div><div class="b">' + esc(c.b) + "</div>");
+    }
+    function tool(ic, on) { return '<i class="u-tl' + (on ? " on" : "") + '"><svg class="ic" aria-hidden="true"><use href="#i-' + ic + '"/></svg></i>'; }
+    function pc(C) {
+      return '<header class="u-top"><span class="u-board"><svg class="ic mk" aria-hidden="true"><use href="#i-mark"/></svg><b>' + esc(t("any.board")) + '</b><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg></span>' +
+        '<span class="u-crew">' + crewAv("Scout", "") + crewAv("Strategist", "") + crewAv("Wright", "") + crewAv("Critic", "") + "</span>" +
+        '<span class="u-decb"><svg class="ic" aria-hidden="true"><use href="#i-decide"/></svg>' + esc(t("any.decBtn")) + '<i class="u-badge">1</i></span></header>' +
+        '<div class="u-canvas"><svg class="u-lines" aria-hidden="true"></svg>' +
+        '<nav class="u-tools">' + tool("cursor", 1) + tool("sticky") + tool("pen") + tool("link") + tool("spark") + "</nav>" +
+        card("e1", C.e1, "", "eye", me(), "left:76px;top:30px;width:214px", '<div class="b">' + esc(C.e1.b) + "</div>") +
+        card("e2", C.e2, "", "msg", crewAv("Scout", ""), "left:76px;top:170px;width:214px", '<div class="b">' + esc(C.e2.b) + "</div>") +
+        card("e3", C.e3, "u-q", "quote", me(), "left:76px;top:310px;width:214px", '<div class="b">“' + esc(C.e3.b.replace(/[“”]/g, "")) + "”</div>") +
+        dir("dA", "A", C.dA, "left:356px;top:22px;width:240px") + dir("dB", "B", C.dB, "left:356px;top:186px;width:240px") + dir("dC", "C", C.dC, "left:356px;top:350px;width:240px") +
+        card("dc", C.dc, "u-dec", "decide", me(), "left:664px;top:176px;width:250px", '<div class="t">' + esc(C.dc.t) + '</div><div class="u-meta">' + esc(t("any.chosen")) + "</div>") +
+        '<svg class="u-mark" aria-hidden="true"><path/></svg></div>';
+    }
+    function tab(C) {
+      return '<div class="u-canvas"><nav class="u-pens">' + tool("pen", 1) + tool("marker") + tool("eraser") + tool("lasso") + '<i class="u-sep"></i>' + tool("undo") + "</nav>" +
+        dir("dA", "A", C.dA, "left:34px;top:84px;width:352px") + dir("dB", "B", C.dB, "left:34px;top:226px;width:352px") + dir("dC", "C", C.dC, "left:34px;top:368px;width:352px") +
+        '<svg class="u-loop" aria-hidden="true"><path pathLength="1"/></svg>' +
+        '<div class="u-toast"><span class="chip B">B</span>' + esc(t("any.toast")) + "<em>" + esc(t("any.undo")) + "</em></div></div>";
+    }
+    function note(time, title, body, cls) {
+      return '<div class="u-n ' + (cls || "") + '"><i class="u-app"><svg class="ic" aria-hidden="true"><use href="#i-mark"/></svg></i><div><p class="u-nh"><b>' + esc(BRAND) + "</b><span>" + esc(time) + '</span></p><p class="u-nt">' + esc(title) + '</p><p class="u-nb">' + esc(body) + "</p></div></div>";
+    }
+    function ph(C) {
+      return '<div class="u-lock"><p class="u-status"><b>' + esc(t("any.time")) + '</b><span class="u-sig"><i></i><i></i><i></i><i></i></span><span class="u-bat"><i></i></span></p>' +
+        '<p class="u-date">' + esc(t("any.date")) + '</p><p class="u-clock">' + esc(t("any.time")) + "</p>" +
+        '<div class="u-notes"><div class="u-nw"><div>' + note(t("any.now"), t("any.n1t"), C.dc.t, "new") + "</div></div>" +
+        note(t("any.ago"), "Critic", C.st.b, "old") + '</div><i class="u-home"></i></div>';
+    }
+    // Connector lines and loops are drawn from the cards' real boxes (unscaled), so they hold in both languages.
+    function geo(ui, id) { var e = ui.querySelector('[data-c="' + id + '"]'); return e ? { x: e.offsetLeft, y: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight } : null; }
+    function wire(ui) {
+      var svg = ui.querySelector(".u-lines");
+      if (svg) {
+        var B = geo(ui, "dB"), D = geo(ui, "dc"), d = "";
+        ["e1", "e2", "e3"].forEach(function (id) { var a = geo(ui, id), y1 = a.y + a.h / 2, y2 = B.y + B.h / 2, x1 = a.x + a.w, x2 = B.x, m = (x1 + x2) / 2;
+          d += '<path d="M' + x1 + " " + y1 + " C" + m + " " + y1 + " " + m + " " + y2 + " " + x2 + " " + y2 + '"/>'; });
+        var yb = B.y + B.h / 2, yd = D.y + 34;
+        d += '<path class="later" d="M' + (B.x + B.w) + " " + yb + " C" + (B.x + B.w + 34) + " " + yb + " " + (D.x - 34) + " " + yd + " " + D.x + " " + yd + '"/>';
+        svg.innerHTML = d;
+        var m = ui.querySelector(".u-mark path"); if (m) m.setAttribute("d", loopPath(B.x, B.y, B.w, B.h, 12, 10));
+      }
+      var lp = ui.querySelector(".u-loop path"); if (lp) { var b = geo(ui, "dB"); lp.setAttribute("d", loopPath(b.x, b.y, b.w, b.h, 14, 12)); }
+    }
+    function fit() {
+      uis.forEach(function (ui) { var w = ui.parentNode.clientWidth; if (w) ui.style.transform = "scale(" + (w / +ui.getAttribute("data-w")) + ")"; });
+    }
+    function relabel() {
+      var C = BOARD[lang].cards, R = { pc: pc, tab: tab, ph: ph };
+      uis.forEach(function (ui) { var k = ui.getAttribute("data-ui"); ui.style.width = ui.getAttribute("data-w") + "px"; ui.style.height = ui.getAttribute("data-h") + "px"; ui.innerHTML = R[k](C); wire(ui); });
+      fit();
+    }
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(box); else window.addEventListener("resize", fit);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { uis.forEach(wire); });
+
+    if (reduced || !window.IntersectionObserver) box.classList.add("lit", "drawn");
+    else {
+      var timers = [], on = false;
+      var later = function (fn, ms) { timers.push(setTimeout(fn, ms)); };
+      var beat = function () {
+        box.classList.remove("drawing", "drawn", "lit");
+        later(function () { box.classList.add("drawing"); }, 700);
+        later(function () { box.classList.add("drawn", "lit"); }, 2050);
+        later(beat, 8200);
+      };
+      new IntersectionObserver(function (en) {
+        var vis = en[0].isIntersecting;
+        if (vis && !on) { on = true; beat(); }
+        else if (!vis && on) { on = false; timers.forEach(clearTimeout); timers = []; box.classList.remove("drawing"); box.classList.add("drawn", "lit"); }
+      }, { threshold: 0.45 }).observe(box);
+    }
+    return { relabel: relabel };
   })();
 
   applyCopy();

@@ -3,14 +3,16 @@
   "use strict";
 
   // ---- Go-live settings -------------------------------------------------------------------
-  // Fill these in to make Download and the waitlist real. Until then the buttons say "Soon"
-  // and a sign-up only tells the visitor that this is a preview.
+  // Fill these in to make Download real. Until a build is live, everyone joins the waitlist. Sign-ups go to
+  // functions/api/waitlist.js on Cloudflare Pages; anywhere that can't take them (a local preview, or Pages with
+  // no KV bound yet), Join says sign-ups aren't open and sends nothing. It never claims a sign-up it didn't make.
   var CONFIG = {
     downloads: {
       mac: "",   // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-mac.dmg"
       win: ""    // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-Setup.exe"
     },
-    waitlistEndpoint: "" // POST {email, use, lang} as JSON (Formspree, Buttondown, a Worker…)
+    demo: "",            // The in-browser demo, built from the repo. Until it's set, the Try the demo button stays hidden.
+    waitlistEndpoint: "/api/waitlist" // One POST {email, os, use, lang} as JSON; os is "mac" or "win". 404/405/501/503 = not open yet.
   };
 
   var root = document.documentElement;
@@ -59,13 +61,13 @@
       "how.lede": "Pick one to see what it rests on.",
       "out.title": "Then make it real.", "out.lede": "Whatever you ship remembers why.", "out.label": "Outputs",
       "out.plan": "Plan", "out.tasks": "Tasks", "out.table": "Table", "out.cut": "Cut", "out.site": "Site",
-      "doc.h": "Hook-first lantern", "doc.why": "Why", "doc.whyv": "8 of 10 campers hang it from the tent loop.",
-      "doc.rests": "Rests on", "doc.restsv": "3 sources, 2 of them observed", "doc.aside": "Set aside", "doc.asidev": "A shade dial, C glow ring",
-      "kb.todo": "To do", "kb.doing": "Doing", "kb.done": "Done", "kb.1": "Widen the hook mouth", "kb.2": "Glove test, 5 people",
-      "kb.3": "Order 2200K LEDs", "kb.4": "Foam mock-up", "kb.5": "Field test",
-      "tb.h": "Field test, 10 campers", "tb.table": "Table", "tb.chart": "Chart", "tb.r1": "Found it in the dark",
-      "tb.r2": "Hook held, thick line", "tb.r3": "Hook held, thin line", "tb.r4": "Too bright up close",
-      "cut.line": "Find it in the dark.", "site.h": "Find it in the dark.", "site.p": "Hook on top. 2200K at 40 lumens.", "site.cta": "Pre-order",
+      "doc.h": "Rough cut, moments marked", "doc.why": "Why", "doc.whyv": "Editors undo 6 of 10 auto cuts.",
+      "doc.rests": "Rests on", "doc.restsv": "3 sources, 2 of them observed", "doc.aside": "Set aside", "doc.asidev": "A one-click cut, C suggestions only",
+      "kb.todo": "To do", "kb.doing": "Doing", "kb.done": "Done", "kb.1": "Pre-mark top 5 moments", "kb.2": "Long-clip test, 10 editors",
+      "kb.3": "Moment markers on the timeline", "kb.4": "Undo-rate tracking", "kb.5": "Beta with 20 editors",
+      "tb.h": "Beta, 20 editors", "tb.table": "Table", "tb.chart": "Chart", "tb.r1": "Faster than by hand",
+      "tb.r2": "Kept the rough cut", "tb.r3": "Long clips felt slow", "tb.r4": "Agent missed a moment",
+      "cut.line": "Your moments. Its busywork.", "site.h": "Your moments. Its busywork.", "site.p": "A rough cut in minutes. You pick what stays.", "site.cta": "Try it free",
       "z.1": "Gather", "z.1d": "What people did and said",
       "z.2": "Explore", "z.2d": "Judgments, then directions",
       "z.3": "Prototype", "z.3d": "Built from one direction",
@@ -73,35 +75,35 @@
       "cases.t1": "Product design", "cases.t2": "Short video", "cases.t3": "AI products",
       "crew.title": "A crew that thinks with you, and sometimes against you.",
       "crew.scout": "Weighs the evidence", "crew.scoutq": "“Two of these seven sources are the same review.”",
-      "crew.strat": "Forks it into directions", "crew.stratq": "“If B is right, campers find it in five seconds.”",
-      "crew.wright": "Builds the proof", "crew.wrightq": "“The foam mock-up for B is ready. Keep it?”",
-      "crew.critic": "Checks it against the sources", "crew.criticq": "“Nothing here says campers want a dial.”",
+      "crew.strat": "Forks it into directions", "crew.stratq": "“If B is right, editors keep 9 in 10 rough cuts.”",
+      "crew.wright": "Builds the proof", "crew.wrightq": "“The moment-marker prototype for B is ready. Keep it?”",
+      "crew.critic": "Checks it against the sources", "crew.criticq": "“Nothing here says editors want one click.”",
       "crew.agency": "They can challenge your decision. Only you can make it.",
       "mode.focus": "Focus", "mode.listen": "Listening", "mode.team": "Teamwork",
       "mode.focusd": "Nothing interrupts you. What they notice waits until you're back.",
       "sc.wait": "waiting", "sc.backK": "While you focused", "sc.backT": "3 notes from the crew",
-      "sc.critic": "Nothing here says campers want a dial.", "sc.draftK": "Prototype · draft", "sc.draftT": "Foam mock-up", "sc.keep": "Keep", "sc.discard": "Discard",
+      "sc.critic": "Nothing here says editors want one click.", "sc.draftK": "Prototype · draft", "sc.draftT": "Moment-marker prototype", "sc.keep": "Keep", "sc.discard": "Discard",
       "mode.listend": "They speak up only when something doesn't add up.",
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
       "get.title": "Get Vellum.",
-      "get.dl": "Download", "get.dld": "Early builds for macOS and Windows.",
-      "get.mac": "macOS", "get.win": "Windows", "get.soon": "Soon",
-      "get.wl": "Hear about new builds", "get.wld": "One email when a build is worth your time. That's the whole newsletter.",
-      "get.email": "Email", "get.use": "Mostly for", "get.other": "Something else",
-      "cta.waitlist": "Join the waitlist",
-      "get.thanks": "You're on the list.",
-      "get.thanksd": "We'll write to {email} when a build is ready.",
-      "get.thankspreview": "This preview doesn't send sign-ups yet, so {email} stayed right here.",
+      "get.l1": "Early builds for macOS and Windows are on the way.", "get.l2": "One email when yours is worth your time.",
+      "get.os": "Preferred system", "get.mac": "macOS", "get.win": "Windows", "get.use": "What will you use it for?", "get.email": "Email",
+      "get.useph": "A product launch, a short film…", "get.step": "Get early access.", "get.back": "Back", "get.join": "Join",
+      "get.needos": "Pick a system first.", "get.needemail": "Where should we write to?", "get.needuse": "A few words on what it's for.",
+      "cta.waitlist": "Join the waitlist", "cta.demo": "Try the demo", "get.dlfor": "Download for {os}",
+      "get.thanks": "You're on the list.", "get.thanksos": "You're on the list for {os}.",
+      "get.thanksd": "We'll write to {email} when it's ready.",
+      "get.closed": "Sign-ups open soon. Nothing was sent this time.",
       "get.bademail": "That doesn't look like an email address.",
       "get.fail": "That didn't go through. Try again in a moment.",
-      "board.label": "A Vellum board deciding how a camping lantern should work",
+      "board.label": "A Vellum board deciding how an AI video-editing agent should work",
       "lang.label": "Language", "theme.switch": "Switch theme", "steps.label": "Demo steps", "cases.label": "Use cases",
       "title": "Vellum: your best thinking deserves more than a chat box"
     },
     zh: {
       "skip": "跳到正文",
-      "nav.why": "为什么是 Vellum", "nav.how": "怎么用", "nav.crew": "AI 伙伴",
+      "nav.why": "理念", "nav.how": "用法", "nav.crew": "AI 伙伴",
       "cta.get": "获取 Vellum",
       "hero.title": "你的好想法，不该困在一个聊天框里。", "hero.t1": "你的好想法，不该困在一个", "hero.kw": "聊天框", "hero.t2": "里。",
       "hero.lede": "把整个问题摊在一张白板上，让 AI 团队把它辩清楚。每个选择，都留着理由。",
@@ -118,13 +120,13 @@
       "how.lede": "选一张，看它建立在什么之上。",
       "out.title": "然后，把它做出来。", "out.lede": "做出来的每样东西，都记得为什么。", "out.label": "产出",
       "out.plan": "方案", "out.tasks": "任务", "out.table": "表格", "out.cut": "成片", "out.site": "网站",
-      "doc.h": "挂钩优先的营地灯", "doc.why": "为什么", "doc.whyv": "10 位露营者里，8 位把灯挂在帐篷挂环上。",
-      "doc.rests": "依据", "doc.restsv": "3 条依据，其中 2 条是观察", "doc.aside": "已搁置", "doc.asidev": "A 遮光旋钮，C 夜光定位环",
-      "kb.todo": "待办", "kb.doing": "进行中", "kb.done": "完成", "kb.1": "加宽挂钩开口", "kb.2": "5 人戴手套试用",
-      "kb.3": "订 2200K 灯珠", "kb.4": "泡沫手板", "kb.5": "实地测试",
-      "tb.h": "实地测试，10 位露营者", "tb.table": "表格", "tb.chart": "图表", "tb.r1": "黑暗里找得到",
-      "tb.r2": "挂钩稳，粗绳", "tb.r3": "挂钩稳，细绳", "tb.r4": "近看刺眼",
-      "cut.line": "在黑暗里，一眼找到。", "site.h": "在黑暗里，一眼找到。", "site.p": "挂钩在顶部。2200K，40 流明。", "site.cta": "预订",
+      "doc.h": "初剪 + 标出关键瞬间", "doc.why": "为什么", "doc.whyv": "自动剪的十刀里，剪辑师撤销了六刀。",
+      "doc.rests": "依据", "doc.restsv": "3 条依据，其中 2 条是观察", "doc.aside": "已搁置", "doc.asidev": "A 一键成片，C 只给建议",
+      "kb.todo": "待办", "kb.doing": "进行中", "kb.done": "完成", "kb.1": "预标 5 个候选瞬间", "kb.2": "长素材测试，10 位剪辑师",
+      "kb.3": "时间线上的瞬间标记", "kb.4": "撤销率统计", "kb.5": "20 位剪辑师内测",
+      "tb.h": "内测，20 位剪辑师", "tb.table": "表格", "tb.chart": "图表", "tb.r1": "比自己剪更快",
+      "tb.r2": "保留了初剪", "tb.r3": "长素材觉得慢", "tb.r4": "漏掉了关键瞬间",
+      "cut.line": "瞬间归你，杂活归它。", "site.h": "瞬间归你，杂活归它。", "site.p": "几分钟出初剪，留什么你说了算。", "site.cta": "免费试用",
       "z.1": "收集", "z.1d": "人们做了什么、说了什么",
       "z.2": "探索", "z.2d": "先下判断，再分方向",
       "z.3": "原型", "z.3d": "从一个方向做出来",
@@ -132,35 +134,35 @@
       "cases.t1": "产品设计", "cases.t2": "短视频", "cases.t3": "AI 产品",
       "crew.title": "和你一起想，\u200b有时也和你唱反调。",
       "crew.scout": "掂量证据", "crew.scoutq": "“这七条来源里，有两条是同一篇评论。”",
-      "crew.strat": "把判断分成方向", "crew.stratq": "“如果 B 是对的，露营者五秒就能找到灯。”",
-      "crew.wright": "做出能验证的东西", "crew.wrightq": "“B 的泡沫手板做好了，留下吗？”",
-      "crew.critic": "对照来源挑毛病", "crew.criticq": "“这里没有证据表明，露营者想要旋钮。”",
+      "crew.strat": "把判断分成方向", "crew.stratq": "“如果 B 是对的，初剪十个能留九个。”",
+      "crew.wright": "做出能验证的东西", "crew.wrightq": "“B 的瞬间标记原型好了，留下吗？”",
+      "crew.critic": "对照来源挑毛病", "crew.criticq": "“这里没有证据表明，剪辑师想要一键成片。”",
       "crew.agency": "它们可以质疑你的决定，但只有你能做决定。",
       "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
       "mode.focusd": "不打扰你。它们注意到的事，等你回来再说。",
       "sc.wait": "条待看", "sc.backK": "你专注的时候", "sc.backT": "伙伴记下了 3 条",
-      "sc.critic": "这里没有证据表明，露营者想要旋钮。", "sc.draftK": "原型 · 草稿", "sc.draftT": "泡沫手板", "sc.keep": "留下", "sc.discard": "丢掉",
+      "sc.critic": "这里没有证据表明，剪辑师想要一键成片。", "sc.draftK": "原型 · 草稿", "sc.draftT": "关键瞬间标记原型", "sc.keep": "留下", "sc.discard": "丢掉",
       "mode.listend": "只在有地方说不通时才开口。",
       "mode.teamd": "和你一起起草，好的你留下。",
       "modes.label": "AI 伙伴参与的程度",
       "get.title": "获取 Vellum。",
-      "get.dl": "下载", "get.dld": "macOS 和 Windows 早期版本。",
-      "get.mac": "macOS", "get.win": "Windows", "get.soon": "即将推出",
-      "get.wl": "新版本通知", "get.wld": "有值得一试的版本时，发你一封邮件。仅此而已。",
-      "get.email": "邮箱", "get.use": "主要用来做", "get.other": "其他",
-      "cta.waitlist": "加入等候名单",
-      "get.thanks": "已加入名单。",
-      "get.thanksd": "版本准备好后，我们会写信到 {email}。",
-      "get.thankspreview": "这是预览版，报名还没有接通，{email} 没有被发送出去。",
+      "get.l1": "macOS 和 Windows 早期版本快来了。", "get.l2": "你的那一版值得一试时，发你一封邮件。",
+      "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "你打算用它来做什么？", "get.email": "邮箱",
+      "get.useph": "比如：一款新产品、一支短片…", "get.step": "抢先体验 Vellum。", "get.back": "返回", "get.join": "加入",
+      "get.needos": "先选一个系统。", "get.needemail": "先留个邮箱。", "get.needuse": "写几个字，说说用来做什么。",
+      "cta.waitlist": "加入等候名单", "cta.demo": "在线试玩", "get.dlfor": "下载 {os} 版",
+      "get.thanks": "已加入名单。", "get.thanksos": "已加入 {os} 名单。",
+      "get.thanksd": "准备好后，我们会写信到 {email}。",
+      "get.closed": "报名即将开放，这次什么都没有发送。",
       "get.bademail": "这看起来不像邮箱地址。",
       "get.fail": "没有提交成功，请稍后再试。",
-      "board.label": "Vellum 白板演示：决定一盏露营灯该怎么设计",
+      "board.label": "Vellum 白板演示：决定一个 AI 剪辑 agent 该怎么工作",
       "lang.label": "语言 Language", "theme.switch": "切换深浅色", "steps.label": "演示步骤", "cases.label": "使用场景",
       "title": "Vellum：你的好想法，不该困在聊天框里"
     }
   };
 
-  // The hero board: a camping lantern, because product design is Vellum's first use case.
+  // The hero board: an AI video-editing agent deciding how much to cut on its own (Mars chose it, 2026-11-27).
   var BOARD = {
     en: {
       steps: ["Evidence", "Judgment", "Directions", "Decision", "New evidence"],
@@ -174,25 +176,25 @@
       reopened: "Reopened. Nothing was lost along the way.",
       held: "Still holds. Your reason now sits beside the counter-evidence.",
       cards: {
-        e1: { k: "Observed", t: "Field notes", b: "8 of 10 campers hung it from the tent loop.", by: "You" },
-        e2: { k: "Reported", t: "Reviews", b: "41 reviews call it blinding up close.", by: "Scout" },
-        e3: { k: "Quote", t: "Camper", b: "I just want to find it in the dark.", by: "You" },
-        j1: { k: "Judgment", t: "It's used hanging, up close, after dark.", b: "Rests on 3 sources, mostly observed.", by: "You + Scout" },
-        dA: { k: "Direction", t: "Shade dial", b: "Twist a hood to dim it.", by: "Strategist" },
-        dB: { k: "Direction", t: "Hook-first, warm low glow", b: "Hook on top. 2200K at 40 lumens.", by: "Strategist" },
-        dC: { k: "Direction", t: "Glow-ring locator", b: "A faint ring to find it at night.", by: "Strategist" },
-        st: { k: "Critic", b: "A dial is hard to turn in gloves. And nobody asked for one." },
-        n1: { k: "Observed · new", t: "Field test", b: "The hook slips on thin guylines.", by: "You" }
+        e1: { k: "Observed", t: "Session logs", b: "Editors undo 6 of 10 cuts the agent makes.", by: "You" },
+        e2: { k: "Reported", t: "Reviews", b: "34 reviews say it cut the best moment.", by: "Scout" },
+        e3: { k: "Quote", t: "Editor", b: "Give me a first pass. The moments are mine.", by: "You" },
+        j1: { k: "Judgment", t: "Editors want the busywork done and the moments left to them.", b: "Rests on 3 sources, mostly observed.", by: "You + Scout" },
+        dA: { k: "Direction", t: "One-click final cut", b: "Upload, get a finished video.", by: "Strategist" },
+        dB: { k: "Direction", t: "Rough cut, moments marked", b: "It trims the dead air. You pick the moments.", by: "Strategist" },
+        dC: { k: "Direction", t: "Suggestions only", b: "It comments. You make every cut.", by: "Strategist" },
+        st: { k: "Critic", b: "One click hides the cuts editors undo most. And nobody asked for it." },
+        n1: { k: "Observed · new", t: "Beta test", b: "On long clips, picking moments takes longer than cutting by hand.", by: "You" }
       },
-      adopted: "<strong>Chosen.</strong> It fits how 8 of 10 campers hang it.",
-      asideA: "<strong>Set aside.</strong> Hard to use in gloves.",
-      asideC: "<strong>Set aside.</strong> Finds the lantern, not the glare.",
+      adopted: "<strong>Chosen.</strong> It does the cuts editors keep, and leaves them the moments.",
+      asideA: "<strong>Set aside.</strong> Fast, but it chooses the moments for you.",
+      asideC: "<strong>Set aside.</strong> Keeps control, saves no time.",
       back: "Back in play",
       flagH: "New counter since you chose",
       reopen: "Reopen", holds: "Still holds",
-      heldNote: "Still holds. Fix: a wider hook mouth.",
+      heldNote: "Still holds. Fix: the agent pre-marks its top 5 moments.",
       // The reviews Scout read, as they sit in the spreadsheet. [[...]] marks what matched.
-      sheet: { head: ["Review", "★"], rows: [[118, "Lasts the whole weekend", 5], [119, "[[Blinding]] at arm's length", 2], [120, "Hook feels a bit flimsy", 3], [121, "[[Too bright]] up close", 2], [122, "[[Blinding]] inside the tent", 1]] },
+      sheet: { head: ["Review", "★"], rows: [[212, "Saved me an hour", 5], [213, "It [[cut the punchline]]", 2], [214, "Exports are quick", 4], [215, "[[Dropped my best take]]", 2], [216, "[[Cut the reaction shot]]", 1]] },
       reopenedNote: "Reopened. A and C are back in play.",
       supports: "supports", counters: "counters"
     },
@@ -208,24 +210,24 @@
       reopened: "已重新讨论。一路上什么都没丢。",
       held: "依然成立。你的理由和反驳证据放在了一起。",
       cards: {
-        e1: { k: "观察", t: "实地记录", b: "10 位露营者里，8 位把灯挂在帐篷挂环上。", by: "你" },
-        e2: { k: "转述", t: "用户评论", b: "41 条评论说它近看刺眼。", by: "Scout" },
-        e3: { k: "原话", t: "露营者", b: "我只想在黑暗里找得到它。", by: "你" },
-        j1: { k: "判断", t: "它是挂着用的：近距离，天黑以后。", b: "依据 3 条来源，大多是观察。", by: "你 + Scout" },
-        dA: { k: "方向", t: "遮光旋钮", b: "转动灯罩来调暗。", by: "Strategist" },
-        dB: { k: "方向", t: "挂钩优先，暖色低光", b: "顶部挂钩，2200K 暖光，40 流明。", by: "Strategist" },
-        dC: { k: "方向", t: "夜光定位环", b: "一圈微光，夜里也找得到。", by: "Strategist" },
-        st: { k: "Critic", b: "戴手套拧不动旋钮。而且，没人说想要它。" },
-        n1: { k: "观察 · 新", t: "实地测试", b: "挂钩挂在细防风绳上会滑脱。", by: "你" }
+        e1: { k: "观察", t: "操作日志", b: "剪辑师撤销了 agent 十刀里的六刀。", by: "你" },
+        e2: { k: "转述", t: "用户评论", b: "34 条评论说它剪掉了最好的瞬间。", by: "Scout" },
+        e3: { k: "原话", t: "剪辑师", b: "给我一个初剪就好，关键瞬间我自己定。", by: "你" },
+        j1: { k: "判断", t: "剪辑师要它干杂活，关键瞬间留给自己。", b: "依据 3 条来源，大多是观察。", by: "你 + Scout" },
+        dA: { k: "方向", t: "一键成片", b: "上传素材，直接出成片。", by: "Strategist" },
+        dB: { k: "方向", t: "初剪 + 标出关键瞬间", b: "它剪掉冗余，你来挑瞬间。", by: "Strategist" },
+        dC: { k: "方向", t: "只给建议", b: "它只提意见，每一刀都你来剪。", by: "Strategist" },
+        st: { k: "Critic", b: "一键成片藏起了剪辑师最常撤销的那些刀。而且，没人要它。" },
+        n1: { k: "观察 · 新", t: "内测", b: "长素材里，挑瞬间比自己剪还慢。", by: "你" }
       },
-      adopted: "<strong>已选定。</strong>顺着 10 位里 8 位的挂法。",
-      asideA: "<strong>已搁置。</strong>戴手套不好用。",
-      asideC: "<strong>已搁置。</strong>找得到灯，没解决刺眼。",
+      adopted: "<strong>已选定。</strong>它只做剪辑师会保留的那些刀，瞬间留给人。",
+      asideA: "<strong>已搁置。</strong>快，但替你决定了瞬间。",
+      asideC: "<strong>已搁置。</strong>掌控还在，时间没省。",
       back: "重新纳入考虑",
       flagH: "选定之后，出现 1 条反证",
       reopen: "重新讨论", holds: "依然成立",
-      heldNote: "依然成立。改法：把挂钩开口加宽。",
-      sheet: { head: ["评论", "★"], rows: [[118, "整个周末都够用", 5], [119, "近看太[[刺眼]]", 2], [120, "挂钩有点软", 3], [121, "离近了[[晃眼睛]]", 2], [122, "在帐篷里[[刺眼]]", 1]] },
+      heldNote: "依然成立。改法：agent 先预标出 5 个候选瞬间。",
+      sheet: { head: ["评论", "★"], rows: [[212, "帮我省了一小时", 5], [213, "把[[笑点剪没了]]", 2], [214, "导出很快", 4], [215, "[[最好的一条没了]]", 2], [216, "[[反应镜头被剪了]]", 1]] },
       reopenedNote: "已重新讨论。A 和 C 重新纳入考虑。",
       supports: "支持", counters: "反驳"
     }
@@ -235,13 +237,13 @@
   var CASES = {
     en: {
       product: {
-        e1: { k: "Reported", t: "Returns", b: "“Too loud for calls.” 38 of them.", page: "Returns, last 90 days" },
-        e2: { k: "Observed", t: "Sound test", b: "48 dB on the lowest setting." },
-        j: { t: "Noise, not airflow, is why people send it back." },
-        A: { t: "Bigger, slower blades", why: "Won't fit on a desk." },
-        B: { t: "Brushless motor, call mode", b: "Chosen. Quiet enough for a meeting." },
-        C: { t: "Bladeless tower", why: "Quiet, and twice the price." },
-        P: { t: "Call-mode prototype", meta: "31 dB at full speed" },
+        e1: { k: "Reported", t: "Returns", b: "“Hurts my nose after an hour.” 38 of them.", page: "Returns, last 90 days" },
+        e2: { k: "Observed", t: "Wear time", b: "Worn 2 hours a day after the first week." },
+        j: { t: "Weight, not features, is why they come off." },
+        A: { t: "Bigger battery, same frame", why: "Even heavier." },
+        B: { t: "32 g frame, battery in the temple tips", b: "Chosen. Light enough to forget." },
+        C: { t: "Drop the camera", why: "Lighter, but loses the main use." },
+        P: { t: "32 g prototype", meta: "Worn 6 hours straight in testing" },
         S: { t: "Spec for the tooling review" }
       },
       video: {
@@ -268,13 +270,13 @@
     },
     zh: {
       product: {
-        e1: { k: "转述", t: "退货原因", b: "“开会时太吵。”38 条。", page: "退货记录，近 90 天" },
-        e2: { k: "观察", t: "噪音测试", b: "最低档也有 48 分贝。" },
-        j: { t: "退货是因为噪音，不是风量。" },
-        A: { t: "加大扇叶、降低转速", why: "放不进桌面。" },
-        B: { t: "无刷电机 + 通话模式", b: "已选定。安静到可以开会。" },
-        C: { t: "无叶塔扇", why: "很安静，价格翻倍。" },
-        P: { t: "通话模式样机", meta: "最高档 31 分贝" },
+        e1: { k: "转述", t: "退货原因", b: "“戴一小时就压鼻梁。”38 条。", page: "退货记录，近 90 天" },
+        e2: { k: "观察", t: "佩戴时长", b: "第一周之后，每天只戴 2 小时。" },
+        j: { t: "大家摘下它，是因为重量，不是功能。" },
+        A: { t: "加大电池，镜框不变", why: "只会更重。" },
+        B: { t: "32 克镜框，电池放进镜腿尾端", b: "已选定。轻到忘了戴着。" },
+        C: { t: "去掉摄像头", why: "轻了，但丢了最主要的用途。" },
+        P: { t: "32 克样机", meta: "测试中连续戴了 6 小时" },
         S: { t: "给开模评审的规格书" }
       },
       video: {
@@ -306,27 +308,29 @@
     h.forEach(function (v, i) { o += '<i class="w' + (i < 7 ? " on" : "") + '" style="height:' + v + 'px"></i>'; });
     return o + "</span>";
   })();
-  // Evidence comes in whatever form it was captured: a photo from the field, an excerpt of a spreadsheet, a clip.
+  // Evidence comes in whatever form it was captured: a screenshot, an excerpt of a spreadsheet, a clip.
   // The label on the card still says where it came from; the picture only shows what it is.
-  // The lantern on its hook, sliding down a guyline in the clip: drawn once, ghosted twice behind itself.
-  var HOOK = '<path class="cl-hook" d="M134 52v-6.5a4 4 0 0 1 8 0v2"/><rect class="ph-cap" x="130" y="52" width="8" height="3" rx="1"/><rect class="cl-lamp" x="128.5" y="55" width="11" height="14" rx="3.5"/>';
   var MEDIA = {
+    // The agent's timeline as the editor saw it: the cuts they undid are left as dashed outlines.
     photo:
       '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<rect class="ph-bg" width="200" height="84"/><path class="ph-ground" d="M0 72c56-5 140-5 200 0v12H0Z"/>' +
-      '<path class="ph-tent" d="M0 0h200v27c-30 4-58 5-88 6-30-1-62-3-112-7Z"/><path class="ph-seam" d="M46 0l8 31M158 0l-8 32"/>' +
-      '<ellipse class="ph-wash" cx="112" cy="27" rx="54" ry="12"/><path class="ph-guy" d="M178 29l28 60"/>' +
-      '<circle class="ph-glow" cx="112" cy="52" r="22"/>' +
-      '<path class="ph-loop" d="M109.5 32v2.5a2.5 2.5 0 0 0 5 0V32"/><path class="ph-cord" d="M112 37v4"/>' +
-      '<rect class="ph-cap" x="106" y="41" width="12" height="4" rx="1.5"/><rect class="ph-lamp" x="104.5" y="44" width="15" height="19" rx="5"/></svg>',
+      '<rect class="ph-bg" width="200" height="84"/>' +
+      '<path class="tl-tick" d="M6 5v4"/><path class="tl-tick" d="M16 5v2"/><path class="tl-tick" d="M26 5v2"/><path class="tl-tick" d="M36 5v2"/><path class="tl-tick" d="M46 5v2"/><path class="tl-tick" d="M56 5v4"/><path class="tl-tick" d="M66 5v2"/><path class="tl-tick" d="M76 5v2"/><path class="tl-tick" d="M86 5v2"/><path class="tl-tick" d="M96 5v2"/><path class="tl-tick" d="M106 5v4"/><path class="tl-tick" d="M116 5v2"/><path class="tl-tick" d="M126 5v2"/><path class="tl-tick" d="M136 5v2"/><path class="tl-tick" d="M146 5v2"/><path class="tl-tick" d="M156 5v4"/><path class="tl-tick" d="M166 5v2"/><path class="tl-tick" d="M176 5v2"/><path class="tl-tick" d="M186 5v2"/><path class="tl-tick" d="M196 5v2"/>' +
+      '<rect class="tl-clip" x="6" y="16" width="40" height="18" rx="3"/><rect class="tl-undo" x="50" y="16.5" width="28" height="17" rx="3"/>' +
+      '<rect class="tl-clip" x="82" y="16" width="44" height="18" rx="3"/><rect class="tl-undo" x="130" y="16.5" width="20" height="17" rx="3"/>' +
+      '<rect class="tl-clip" x="154" y="16" width="40" height="18" rx="3"/>' +
+      '<rect class="tl-aud" x="6" y="40" width="72" height="10" rx="2.5"/><rect class="tl-aud" x="82" y="40" width="112" height="10" rx="2.5"/>' +
+      '<rect class="tl-clip dim" x="6" y="56" width="60" height="10" rx="2.5"/><rect class="tl-undo" x="70" y="56.5" width="34" height="9" rx="2.5"/><rect class="tl-clip dim" x="108" y="56" width="86" height="10" rx="2.5"/>' +
+      '<path class="tl-redo" d="M58 25.5a5 5 0 1 1 1.5 3.6M58 25.5v-3.2M58 25.5h3.2"/>' +
+      '<circle class="tl-glow" cx="104" cy="9" r="9"/><path class="tl-head" d="M104 7v74"/><path class="tl-cap" d="M100.5 4h7v4l-3.5 3-3.5-3Z"/></svg>',
+    // A long beta session: the strip is crowded with moments still waiting to be picked.
     clip:
       '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<rect class="ph-bg" width="200" height="84"/><path class="ph-ground" d="M0 72c56-5 140-5 200 0v12H0Z"/><path class="ph-guy" d="M-4 14 204 62"/>' +
-      '<g class="cl-ghost" style="opacity:.12" transform="translate(-30 -6.9)">' + HOOK + '</g>' +
-      '<g class="cl-ghost" style="opacity:.28" transform="translate(-15 -3.5)">' + HOOK + '</g>' + HOOK +
-      '<circle class="play" cx="70" cy="40" r="11"/><path class="play-ink" d="M66.6 34.6v10.8l9.2-5.4Z"/>' +
-      '<rect class="cl-track" x="0" y="81" width="200" height="3"/><rect class="cl-done" x="0" y="81" width="64" height="3"/>' +
-      '<rect class="cl-time" x="166" y="64" width="26" height="12" rx="6"/><text class="cl-tx" x="179" y="72.6" text-anchor="middle">0:12</text></svg>'
+      '<rect class="ph-bg" width="200" height="84"/><ellipse class="ph-wash" cx="100" cy="30" rx="70" ry="16"/>' +
+      '<rect class="tk" x="6" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="10" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="14" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="18" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="22" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="26" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="30" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="34" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="38" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="42" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="46" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="50" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="54" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="58" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="62" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="66" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="70" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="74" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="78" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="82" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="86" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="90" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="94" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="98" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="102" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="106" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="110" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="114" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="118" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="122" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="126" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="130" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="134" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="138" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="142" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="146" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="150" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="154" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="158" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="162" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="166" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="170" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="174" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="178" y="61" width="1.6" height="5" rx=".8"/><rect class="tk on" x="182" y="58" width="1.6" height="10" rx=".8"/><rect class="tk" x="186" y="61" width="1.6" height="5" rx=".8"/><rect class="tk" x="190" y="61" width="1.6" height="5" rx=".8"/>' +
+      '<circle class="play" cx="100" cy="30" r="11"/><path class="play-ink" d="M96.6 24.6v10.8l9.2-5.4Z"/>' +
+      '<rect class="cl-track" x="0" y="81" width="200" height="3"/><rect class="cl-done" x="0" y="81" width="22" height="3"/>' +
+      '<rect class="cl-time" x="162" y="8" width="30" height="12" rx="6"/><text class="cl-tx" x="177" y="16.6" text-anchor="middle">24:10</text></svg>'
   };
   function unquote(t) { return String(t).replace(/^[“"「『]|[”"」』]$/g, ""); }
   var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "观察": "eye", "转述": "msg", "原话": "quote" };
@@ -358,7 +362,8 @@
     zones.render(false);
     reel.relabel();
     renderMode(false);
-    renderDownloads();
+    $("useText").setAttribute("placeholder", t("get.useph"));
+    renderPicks();
   }
 
   // ---- Theme and language ------------------------------------------------------------------
@@ -1028,13 +1033,16 @@
     var EDGES = [["e1", "j", "supports"], ["e2", "j", "supports"], ["j", "A", "aside"], ["j", "B", ""], ["j", "C", "aside"], ["B", "P", "lineB"], ["P", "S", "lineB"]];
 
     var ILL = {
-      product: // a desk fan in call mode: the blades spin when you point at the card
-        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true"><ellipse cx="100" cy="134" rx="46" ry="5" fill="currentColor" opacity=".07"/>' +
-        '<path class="line" d="M100 104v22M78 130h44"/><circle class="fill-card line" cx="100" cy="62" r="42"/>' +
-        '<g class="soft"><circle cx="100" cy="62" r="33"/><path d="M100 20v10M100 94v10M58 62h10M132 62h10M70.3 32.3l7 7M122.7 84.7l7 7M70.3 91.7l7-7M122.7 39.3l7-7"/></g>' +
-        '<g class="blades"><path class="fill-2 line" d="M100 62c-3-12 2-24 10-24 7 0 6 14-10 24ZM100 62c12-1 21 7 18 15-3 6-15 0-18-15ZM100 62c-8 9-21 10-24 3-2-7 11-12 24-3Z"/></g>' +
-        '<circle class="fill-card line" cx="100" cy="62" r="5"/>' +
-        '<g class="b-stroke"><path d="M152 50c4 3 6 7 6 12s-2 9-6 12" opacity=".9"/><path d="M161 43c6 5 9 11 9 19s-3 14-9 19" opacity=".45"/></g></svg>',
+      product: // the 32 g prototype set down on a scale: it settles when you reach it, the battery tips in B
+        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true"><ellipse cx="100" cy="134" rx="56" ry="5" fill="currentColor" opacity=".07"/>' +
+        '<rect class="fill-card line" x="44" y="108" width="112" height="20" rx="6"/><rect class="fill-2" x="82" y="112" width="36" height="12" rx="3"/>' +
+        '<text x="100" y="121" text-anchor="middle">32 g</text>' +
+        '<g class="drop">' +
+        '<path class="line" d="M48 70H34l-4 6M152 70h14l4 6"/>' +
+        '<rect class="b-ink" x="24" y="74" width="12" height="9" rx="4.5"/><rect class="b-ink" x="164" y="74" width="12" height="9" rx="4.5"/>' +
+        '<rect class="fill-card line" x="48" y="62" width="44" height="34" rx="14"/><rect class="fill-card line" x="108" y="62" width="44" height="34" rx="14"/>' +
+        '<path class="soft" d="M58 72c6-4 14-5 20-3M118 72c6-4 14-5 20-3"/><path class="line" d="M92 74c4-6 12-6 16 0"/>' +
+        '<circle class="line fill-2" cx="53" cy="67" r="2.4"/></g></svg>',
       video: // a storyboard with the chosen opening framed in B
         '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true">' +
         '<g><rect class="fill-card" x="12" y="42" width="54" height="40" rx="5"/><rect class="b-stroke" x="12" y="42" width="54" height="40" rx="5"/><circle class="b-ink" cx="39" cy="62" r="9" opacity=".9"/><path class="line" d="M28 75h22" opacity=".5"/></g>' +
@@ -1240,7 +1248,7 @@
       zb.querySelectorAll(".lit").forEach(function (n) { n.classList.remove("lit"); });
     }
 
-    // The prototype plays once when you reach it: the fan spins up, the playhead runs, the evals tick.
+    // The prototype plays once when you reach it: the glasses settle on the scale, the playhead runs, the evals tick.
     var aliveT = 0;
     function wake() {
       var c = nodes.P;
@@ -1548,47 +1556,87 @@
   window.addEventListener("resize", function () { renderMode(false); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { renderMode(false); });
 
-  // ---- Downloads: one primary per card ----------------------------------------------------------
-  function renderDownloads() {
-    var live = !!(CONFIG.downloads.mac || CONFIG.downloads.win);
-    var want = /Win/i.test(navigator.platform || navigator.userAgent || "") ? "win" : "mac";
-    if (!CONFIG.downloads[want]) want = CONFIG.downloads.mac ? "mac" : "win";   // one primary, even if only one build is out
-    document.querySelectorAll(".dl").forEach(function (a) {
-      var url = CONFIG.downloads[a.dataset.os];
-      a.classList.toggle("live", !!url);
-      if (url) { a.href = url; a.removeAttribute("aria-disabled"); a.removeAttribute("tabindex"); }
-      else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); }
-      var primary = !!url && a.dataset.os === want;
-      a.classList.toggle("btn-primary", primary); a.classList.toggle("btn-quiet", !primary);
-      if (primary) a.parentNode.appendChild(a);   // the primary sits last: on the right, or at the bottom on a phone
-    });
-    var submit = document.querySelector("#waitlist button[type=submit]");
-    submit.classList.toggle("btn-primary", !live); submit.classList.toggle("btn-quiet", live);
+  // ---- Get Vellum: one button, then a short form ---------------------------------------------------------
+  // "Join the waitlist" opens a small dialog: email, which system (picked for you from the browser; a phone or
+  // tablet can't tell, so nothing is picked there) and, in their own words, what it's for. All three are needed.
+  // Back, Esc or a click outside closes it without joining and keeps what was typed. Once a build is live for
+  // the visitor's system, the button becomes its download.
+  var form = $("waitlist"), email = $("email"), dlGo = $("dlGo"), openBtn = $("joinOpen");
+  var dlg = $("more"), moreForm = $("moreForm"), useText = $("useText"), moreMsg = $("moreMsg"), osChips = $("osChips");
+  var joinBtn = moreForm.querySelector("button[value=join]");
+  if (CONFIG.demo) { $("demoGo").href = CONFIG.demo; $("demoGo").hidden = false; }
+  var pick = { os: guessOS() }, sent = null, need = "";
+  function guessOS() {
+    var ua = navigator.userAgent || "", pf = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+    if (/iPhone|iPad|iPod|Android/i.test(ua) || (/Mac/i.test(pf) && navigator.maxTouchPoints > 1)) return "";
+    return /Mac/i.test(pf) ? "mac" : /Win/i.test(pf) ? "win" : "";
   }
-
-  // ---- Waitlist ---------------------------------------------------------------------------
-  var form = $("waitlist"), email = $("email"), msg = $("formMsg");
-  email.addEventListener("input", function () { email.removeAttribute("aria-invalid"); msg.textContent = ""; });
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var v = email.value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
-      email.setAttribute("aria-invalid", "true");
-      msg.textContent = t("get.bademail");
-      email.focus();
-      return;
+  function renderPicks() {
+    dlg.querySelectorAll(".pick").forEach(function (b) {
+      var on = b.dataset.os === pick.os;
+      b.setAttribute("aria-checked", on ? "true" : "false"); b.tabIndex = on || !pick.os && b.dataset.os === "mac" ? 0 : -1;
+    });
+    var url = pick.os && CONFIG.downloads[pick.os];
+    form.classList.toggle("live", !!url && !sent);
+    dlGo.hidden = !url || !!sent;
+    if (url) { dlGo.href = url; dlGo.textContent = t("get.dlfor").replace("{os}", t("get." + pick.os)); }
+    if (sent) {
+      $("doneText").textContent = t("get.thanksos").replace("{os}", t("get." + sent.os));
+      $("doneNote").textContent = t(sent.note).replace("{email}", sent.email);
     }
-    var btn = form.querySelector("button[type=submit]");
-    function done(key) { $("doneText").textContent = t(key).replace("{email}", v); form.classList.add("sent"); }
-    if (!CONFIG.waitlistEndpoint) { done("get.thankspreview"); return; }
-    btn.disabled = true;
-    fetch(CONFIG.waitlistEndpoint, {
-      method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ email: v, use: $("use").value, lang: lang })
-    }).then(function (r) { if (!r.ok) throw new Error(r.status); done("get.thanksd"); })
-      .catch(function () { msg.textContent = t("get.fail"); })
-      .then(function () { btn.disabled = false; });
+    $("emailHint").textContent = need === "get.bademail" || need === "get.needemail" ? t(need) : "";
+    $("osHint").textContent = need === "get.needos" ? t(need) : "";
+    $("useHint").textContent = need === "get.needuse" ? t(need) : "";
+    moreMsg.textContent = need === "get.fail" || need === "get.closed" ? t(need) : "";
+    moreMsg.classList.toggle("info", need === "get.closed");
+  }
+  function setNeed(key) {
+    need = key;
+    osChips.toggleAttribute("aria-invalid", key === "get.needos");
+    if (key === "get.needuse") useText.setAttribute("aria-invalid", "true"); else useText.removeAttribute("aria-invalid");
+    if (key === "get.bademail" || key === "get.needemail") email.setAttribute("aria-invalid", "true"); else email.removeAttribute("aria-invalid");
+    renderPicks();
+  }
+  function post(data) {
+    return fetch(CONFIG.waitlistEndpoint, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(data) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status === 404 || r.status === 405 || r.status === 501 || r.status === 503 ? "closed" : r.status); });
+  }
+  var osBtns = Array.prototype.slice.call(dlg.querySelectorAll(".pick"));
+  osBtns.forEach(function (b, i) {
+    b.addEventListener("click", function () { pick.os = b.dataset.os; if (need === "get.needos") setNeed(""); renderPicks(); });
+    b.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+      if (!d) return;
+      e.preventDefault(); var n = osBtns[(i + d + osBtns.length) % osBtns.length]; pick.os = n.dataset.os; if (need === "get.needos") setNeed(""); renderPicks(); n.focus();
+    });
   });
+  email.addEventListener("input", function () { if (need === "get.bademail" || need === "get.needemail") setNeed(""); });
+  useText.addEventListener("input", function () { if (need === "get.needuse" && useText.value.trim()) setNeed(""); });
+  openBtn.addEventListener("click", function () {
+    if (typeof dlg.showModal !== "function") return;
+    setNeed(""); dlg.returnValue = ""; dlg.showModal(); email.focus();
+  });
+  // The dialog's own buttons: Back just closes; Join checks all three answers, then signs up.
+  moreForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!e.submitter || e.submitter.value !== "join") { dlg.close("back"); return; }
+    var use = useText.value.trim(), v = email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { setNeed(v ? "get.bademail" : "get.needemail"); email.focus(); return; }
+    if (!pick.os) { setNeed("get.needos"); (osBtns[0]).focus(); return; }
+    if (!use) { setNeed("get.needuse"); useText.focus(); return; }
+    setNeed("");
+    function joined(note) { sent = { os: pick.os, email: v, note: note }; dlg.close("join"); form.classList.add("sent"); renderPicks(); }
+    if (!CONFIG.waitlistEndpoint) { setNeed("get.closed"); return; }
+    joinBtn.disabled = true;
+    post({ email: v, os: pick.os, use: use, lang: lang })
+      .then(function () { joined("get.thanksd"); })
+      .catch(function (err) { setNeed(err && err.message === "closed" ? "get.closed" : "get.fail"); })
+      .then(function () { joinBtn.disabled = false; });
+  });
+  dlg.addEventListener("close", function () { if (!sent) setNeed(""); });
+  // Enter in a text field means Join (the form's first button is Back).
+  [email, useText].forEach(function (f) { f.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); moreForm.requestSubmit(joinBtn); } }); });
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close("back"); });
 
   applyCopy();
 })();

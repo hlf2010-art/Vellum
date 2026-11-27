@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vellum: the whiteboard that remembers why</title>
+<meta name="description" content="Vellum is a shared thinking space for you and AI. Lay out the evidence, let agents argue the directions, and keep every decision with the reason behind it.">
+<meta name="theme-color" content="#ecedf0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#08090b" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Vellum: the whiteboard that remembers why">
+<meta property="og:description" content="A shared thinking space for humans and AI.">
+<link rel="icon" href="assets/vellum-mark.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/BricolageGrotesque-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+<script>
+  // Set theme and language before first paint so nothing flashes.
+  (function () {
+    var d = document.documentElement, t = null, l = null;
+    try { t = localStorage.getItem("vellum-site-theme"); l = localStorage.getItem("vellum-site-lang"); } catch (e) {}
+    if (t === "light" || t === "dark") d.setAttribute("data-theme", t);
+    if (!l) l = /^zh/i.test(navigator.language || "") ? "zh" : "en";
+    if (/[?&]lang=zh/.test(location.search)) l = "zh";
+    if (/[?&]lang=en/.test(location.search)) l = "en";
+    d.lang = l === "zh" ? "zh-CN" : "en";
+  })();
+</script>
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<header class="site-head" id="top">
+  <div class="wrap head-row">
+    <a class="brand" href="#top" aria-label="Vellum home"><img src="assets/vellum-mark.svg" alt="" width="30" height="30">Vellum</a>
+    <nav class="nav" aria-label="Main">
+      <a href="#how" data-i18n="nav.how">How it works</a>
+      <a href="#why" data-i18n="nav.why">Why Vellum</a>
+      <a href="#crew" data-i18n="nav.crew">The crew</a>
+      <a href="#get" data-i18n="nav.get">Download</a>
+    </nav>
+    <div class="tools">
+      <button class="icon-btn lang-btn" id="langBtn" type="button" aria-label="Switch language / 切换语言"><span data-l="en">EN</span>/<span data-l="zh">中</span></button>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <a class="btn btn-primary btn-sm head-cta" href="#get" data-i18n="cta.waitlist">Join the waitlist</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <!-- Hero: the board is the pitch -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div class="hero-top">
+        <h1 id="hero-title" data-i18n="hero.title">The whiteboard that remembers why.</h1>
+        <div class="hero-side">
+          <p class="lede" data-i18n="hero.lede">Vellum is a shared thinking space for you and AI. Lay out what you know, let agents argue the directions from different expert views, and keep every decision with the reason behind it.</p>
+          <div class="hero-ctas">
+            <a class="btn btn-primary" href="#get" data-download>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
+              <span data-i18n="cta.download">Download Vellum</span>
+            </a>
+            <a class="btn btn-ghost" href="#get" data-i18n="cta.waitlist">Join the waitlist</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="board-shell">
+        <div class="board" id="board" role="group" aria-roledescription="interactive demo" aria-label="A Vellum board deciding how a camping lantern should work">
+          <div class="board-stage" id="stage">
+            <svg class="board-lines" id="lines" aria-hidden="true"></svg>
+          </div>
+          <div class="drag-hint" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9 2 12l3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>
+            <span data-i18n="board.hint">Drag the cards around</span>
+          </div>
+        </div>
+        <ol class="steps" id="steps" aria-label="Demo steps"></ol>
+        <div class="step-caption">
+          <p id="caption" aria-live="polite"></p>
+          <button class="btn btn-ghost btn-sm replay" id="replay" type="button" hidden data-i18n="board.replay">Play again</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why -->
+  <section class="block" id="why" aria-labelledby="why-title">
+    <div class="wrap why-grid">
+      <div>
+        <h2 id="why-title" data-i18n="why.title">Most AI canvases help you make more. Vellum helps you think it through.</h2>
+        <p class="lede" style="margin-top:26px" data-i18n="why.p1">The best product meetings skip the slides and go straight to the whiteboard. You draw what you know, argue about what it means, and leave with a decision.</p>
+        <p class="lede" data-i18n="why.p2">Vellum is that whiteboard, with a memory. It keeps the context, the options you turned down and why, and it brings a decision back to you when the facts change.</p>
+      </div>
+      <div class="contrast" role="table" aria-label="What changes with Vellum">
+        <div class="contrast-row contrast-head" role="row"><div role="columnheader" data-i18n="why.h1">A generator canvas</div><div role="columnheader" data-i18n="why.h2">Vellum</div></div>
+        <div class="contrast-row" role="row"><div role="cell" data-i18n="why.a1">Forty images, no idea which one is right</div><div role="cell" data-i18n="why.b1">Three directions, each with what it rests on</div></div>
+        <div class="contrast-row" role="row"><div role="cell" data-i18n="why.a2">An assistant that agrees with you</div><div role="cell" data-i18n="why.b2">A crew that argues from different expert views</div></div>
+        <div class="contrast-row" role="row"><div role="cell" data-i18n="why.a3">Rejected ideas deleted or buried</div><div role="cell" data-i18n="why.b3">Set-aside ideas kept, with the reason</div></div>
+        <div class="contrast-row" role="row"><div role="cell" data-i18n="why.a4">A decision you can't explain next month</div><div role="cell" data-i18n="why.b4">A decision log that speaks up when new evidence lands</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="block" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="how-title" data-i18n="how.title">One board, four zones, left to right.</h2>
+        <p class="lede" data-i18n="how.lede">Every board reads like a line of reasoning. Evidence on the left, a decision you can ship on the right, and every card in between linked to what it came from.</p>
+      </div>
+      <div class="how">
+        <div class="shot" id="shot">
+          <img id="shotImg" src="assets/board-light-en.webp" width="1800" height="1125" alt="A Vellum board with Gather, Explore, Prototype and Snapshot zones" loading="lazy" decoding="async">
+          <div class="veil" id="veilL"></div><div class="veil" id="veilR"></div>
+          <div class="lane-ring" id="laneRing"></div>
+        </div>
+        <ol class="lanes" role="tablist" aria-label="Zones">
+          <li><button role="tab" aria-selected="true" data-lane="0"><span class="ln">1</span><h3 data-i18n="how.l1">Gather</h3><p data-i18n="how.l1d">Drop in what people did and said: interviews, reviews, photos, playtests. Scout reads it and marks how strong each piece is.</p></button></li>
+          <li><button role="tab" aria-selected="false" data-lane="1"><span class="ln">2</span><h3 data-i18n="how.l2">Explore</h3><p data-i18n="how.l2d">Turn evidence into judgments, then fork a judgment into directions you can test. Pick one and the others stay, with why.</p></button></li>
+          <li><button role="tab" aria-selected="false" data-lane="2"><span class="ln">3</span><h3 data-i18n="how.l3">Prototype</h3><p data-i18n="how.l3d">Branch prototypes from the direction you chose, using the image, video or code tools you already like.</p></button></li>
+          <li><button role="tab" aria-selected="false" data-lane="3"><span class="ln">4</span><h3 data-i18n="how.l4">Snapshot</h3><p data-i18n="how.l4d">Freeze an edition to share. It carries the decision, the reasons and the evidence trail with it.</p></button></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pillars -->
+  <section class="block" id="pillars" aria-labelledby="pillars-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="pillars-title" data-i18n="p.title">Built for thinking clearly, not for making more.</h2>
+      </div>
+      <div class="pillars-grid">
+        <ul class="pillars">
+          <li>
+            <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2.5" y="4" width="9" height="7" rx="2"/><rect x="14.5" y="4" width="9" height="7" rx="2"/><rect x="8.5" y="15" width="9" height="7" rx="2"/><path d="M11.5 7.5h3M13 11v4"/></svg>
+            <h3 data-i18n="p.1t">Spatial context</h3>
+            <p data-i18n="p.1d">Where you put something is part of what it means. Snap cards together or draw a line between them, and the relation is recorded: supports, counters or refines.</p>
+          </li>
+          <li>
+            <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 14 10 12"/><path d="M15 11 23 6M15.5 12.5l7.5-1M15.5 14l7.5 2.5M15 15.5l8 5"/><path d="M13 5.5 17.5 16h-9Z" stroke-linejoin="round"/></svg>
+            <h3 data-i18n="p.2t">Collective intelligence</h3>
+            <p data-i18n="p.2d">Agents reason from distinct expert views instead of echoing you. The Strategist forks, the Critic objects, and you see the disagreement on the board.</p>
+          </li>
+          <li>
+            <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 3.5h14v19l-7-4.5-7 4.5Z" stroke-linejoin="round"/><path d="m9.5 10 2.5 2.5 4.5-5"/></svg>
+            <h3 data-i18n="p.3t">Decision memory</h3>
+            <p data-i18n="p.3d">Every decision keeps what you chose, why, what it rests on and what you set aside. Months later, you can still explain it.</p>
+          </li>
+          <li>
+            <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M21.5 13a8.5 8.5 0 1 1-2.5-6"/><path d="M19.5 3v4.5H15"/><circle cx="13" cy="13" r="1.6" fill="currentColor" stroke="none"/></svg>
+            <h3 data-i18n="p.4t">Continuous reasoning</h3>
+            <p data-i18n="p.4d">When new evidence lands, Vellum shows which decisions it touches and whether it supports or counters them. Reopen the choice, or note why it still holds.</p>
+          </li>
+          <li>
+            <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="13" cy="8" r="4"/><path d="M5 22.5c.8-4.2 4-6.5 8-6.5s7.2 2.3 8 6.5"/></svg>
+            <h3 data-i18n="p.5t">Human agency</h3>
+            <p data-i18n="p.5d">Agents can challenge a direction you confirmed. They never replace it. Nothing they draft lands on the board until you keep it.</p>
+          </li>
+        </ul>
+        <figure class="media-col">
+          <video id="snapVideo" src="assets/snap-demo.mp4" muted loop playsinline preload="metadata" aria-label="Snapping two cards together creates a relation that stays when you pull them apart"></video>
+          <figcaption data-i18n="p.cap">Snap two cards together and they're related. Pull them apart and the relation stays, drawn as a line.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Crew -->
+  <section class="block" id="crew" aria-labelledby="crew-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="crew-title" data-i18n="crew.title">A crew that thinks with you, and sometimes against you.</h2>
+        <p class="lede" data-i18n="crew.lede">Four agents with different jobs work on the same board you do. Each card shows who worked on it, so you always know where an idea came from.</p>
+      </div>
+      <div class="crew-grid">
+        <div style="--c: var(--crew-scout)">
+          <div class="who"><span class="av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m15 9-4 2-2 4 4-2Z" fill="currentColor"/></svg></span><h3>Scout</h3></div>
+          <p data-i18n="crew.scout">Reads your sources and weighs the evidence: observed, reported, or just a guess.</p>
+          <q data-i18n="crew.scoutq">Two of these seven sources are the same review, quoted twice.</q>
+        </div>
+        <div style="--c: var(--crew-strategist)">
+          <div class="who"><span class="av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 21v-8M12 13 6 5M12 13l6-8M6 5v3M18 5v3"/></svg></span><h3>Strategist</h3></div>
+          <p data-i18n="crew.strat">Forks a judgment into directions you can actually test, and says what each one is betting on.</p>
+          <q data-i18n="crew.stratq">If B is right, testers should find the lantern in under five seconds.</q>
+        </div>
+        <div style="--c: var(--crew-wright)">
+          <div class="who"><span class="av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h7v-7H4ZM13 11h7V4h-7ZM13 20h7v-5h-7Z"/></svg></span><h3>Wright</h3></div>
+          <p data-i18n="crew.wright">Builds the proof: a page, a storyboard, a render brief, an action list. Drafts wait for your OK.</p>
+          <q data-i18n="crew.wrightq">Here's a foam mock-up plan for B. Keep or retry?</q>
+        </div>
+        <div style="--c: var(--crew-critic)">
+          <div class="who"><span class="av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v16M5 8h14M7 8l-3 6a3 3 0 0 0 6 0ZM17 8l-3 6a3 3 0 0 0 6 0Z"/></svg></span><h3>Critic</h3></div>
+          <p data-i18n="crew.critic">Checks the work against its sources and flags a direction that rests only on assumptions.</p>
+          <q data-i18n="crew.criticq">Nothing on the board shows campers want a dial.</q>
+        </div>
+      </div>
+      <div class="agency">
+        <p data-i18n="crew.agency">They can challenge your decision. Only you can make it.</p>
+        <div class="modes" role="group" aria-label="How much the crew joins in">
+          <button type="button" data-mode="focus" aria-pressed="false" data-i18n="mode.focus">Focus</button>
+          <button type="button" data-mode="listen" aria-pressed="true" data-i18n="mode.listen">Listening</button>
+          <button type="button" data-mode="team" aria-pressed="false" data-i18n="mode.team">Teamwork</button>
+        </div>
+        <p class="mode-desc" id="modeDesc" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Use cases -->
+  <section class="block" id="cases" aria-labelledby="cases-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="cases-title" data-i18n="cases.title">From evidence to prototype, whatever you make.</h2>
+      </div>
+      <div class="cases-tabs" role="tablist" aria-label="Use cases">
+        <button role="tab" id="tab-product" aria-controls="case-product" aria-selected="true" data-i18n="cases.t1">Product design</button>
+        <button role="tab" id="tab-video" aria-controls="case-video" aria-selected="false" tabindex="-1" data-i18n="cases.t2">Short video</button>
+        <button role="tab" id="tab-ai" aria-controls="case-ai" aria-selected="false" tabindex="-1" data-i18n="cases.t3">AI products</button>
+      </div>
+      <div class="case" id="case-product" role="tabpanel" aria-labelledby="tab-product"></div>
+      <div class="case" id="case-video" role="tabpanel" aria-labelledby="tab-video" hidden></div>
+      <div class="case" id="case-ai" role="tabpanel" aria-labelledby="tab-ai" hidden></div>
+    </div>
+  </section>
+
+  <!-- Get Vellum -->
+  <section class="get" id="get" aria-labelledby="get-title">
+    <div class="wrap get-grid">
+      <div>
+        <div class="sheets" aria-hidden="true">
+          <span></span><span></span><span></span>
+          <svg viewBox="0 0 360 150" fill="none" stroke-linecap="round">
+            <path d="M40 92 C 90 92, 110 70, 150 70" stroke="var(--label-3)" stroke-width="2"/>
+            <path d="M184 66 C 230 50, 250 30, 300 28" stroke="var(--A-fill)" stroke-width="2"/>
+            <path d="M188 72 C 240 70, 260 64, 310 62" stroke="var(--B-fill)" stroke-width="2.6"/>
+            <path d="M186 78 C 236 96, 258 108, 304 112" stroke="var(--C-fill)" stroke-width="2"/>
+            <path d="M168 50 186 86 H150 Z" stroke="var(--label)" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2 id="get-title" data-i18n="get.title">Why it's called Vellum.</h2>
+        <p class="lede name-story" data-i18n="get.story">Vellum is the translucent paper designers lay over a drawing. You trace the next idea on top, and the earlier lines stay visible underneath. That's how decisions work here.</p>
+      </div>
+      <div class="panel">
+        <div>
+          <h3 data-i18n="get.dl">Get the app</h3>
+          <p class="muted" style="margin-top:6px" data-i18n="get.dld">Early builds for macOS and Windows.</p>
+        </div>
+        <div class="dl-row">
+          <a class="btn btn-primary" data-download data-os="mac" href="#">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.2 1-4.1 2.5-1.8 3-.5 7.6 1.3 10.1.8 1.2 1.8 2.6 3.1 2.5 1.3 0 1.7-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.2-1.2 3-2.5.9-1.4 1.3-2.7 1.3-2.8 0 0-2.6-1-2.6-4.2ZM14 5.5c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.1-.6 2.8-1.4Z"/></svg>
+            <span data-i18n="get.mac">Download for macOS</span>
+          </a>
+          <a class="btn btn-ghost" data-download data-os="win" href="#">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.4 4.5v7H3Zm0 13 7.4 1v-7H3Zm8.3 1.1L21 21v-8.5h-9.7Zm0-15.2v7.1H21V3Z"/></svg>
+            <span data-i18n="get.win">Windows</span>
+          </a>
+        </div>
+        <p class="dl-note" id="dlNote"></p>
+        <div class="divider"></div>
+        <form class="waitlist" id="waitlist" novalidate>
+          <div class="form-body">
+            <h3 data-i18n="get.wl">Join the waitlist</h3>
+            <p class="muted" style="margin:6px 0 16px" data-i18n="get.wld">We'll write when there's a new build worth trying. No newsletter.</p>
+            <div class="form-row">
+              <div class="field">
+                <label for="email" data-i18n="get.email">Email</label>
+                <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@studio.com">
+              </div>
+              <div class="field">
+                <label for="use" data-i18n="get.use">Mostly for</label>
+                <select id="use" name="use">
+                  <option value="product" data-i18n="cases.t1">Product design</option>
+                  <option value="video" data-i18n="cases.t2">Short video</option>
+                  <option value="ai" data-i18n="cases.t3">AI products</option>
+                  <option value="other" data-i18n="get.other">Something else</option>
+                </select>
+              </div>
+            </div>
+            <p class="form-msg" id="formMsg" role="alert"></p>
+            <button class="btn btn-primary" type="submit" style="width:100%" data-i18n="cta.waitlist">Join the waitlist</button>
+          </div>
+          <div class="done-state" role="status">
+            <strong data-i18n="get.thanks">You're on the list.</strong>
+            <span class="muted" id="doneText"></span>
+          </div>
+          <p class="placeholder-note" id="placeholderNote">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+            <span data-i18n="get.placeholder">Preview: sign-ups aren't sent anywhere yet.</span>
+          </p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-row">
+    <a class="brand" href="#top" style="font-size:17px"><img src="assets/vellum-mark.svg" alt="" width="24" height="24" style="width:24px;height:24px">Vellum</a>
+    <span data-i18n="foot.tag">A shared thinking space for humans and AI.</span>
+    <nav aria-label="Footer">
+      <a href="#how" data-i18n="nav.how">How it works</a>
+      <a href="#get" data-i18n="nav.get">Download</a>
+      <a id="ghLink" href="https://github.com/hlf2010-art/Vellum">GitHub</a>
+    </nav>
+    <span>© 2026 Vellum</span>
+  </div>
+</footer>
+
+<script src="site.js" defer></script>
+</body>
+</html>

@@ -237,6 +237,15 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:5px;background:var(-
 .ev-line .ev-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ev-wrap{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:100%}
 .ev-empty .ev-txt{color:var(--label-3)}
+.dir-flag{animation:dirFlagIn .42s var(--ease-out,cubic-bezier(.2,.8,.2,1)) both}
+@keyframes dirFlagIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.dir-flag{animation:none}}
+.ev-test{display:grid;gap:3px;margin:8px 0 0;padding:8px 10px;border-radius:var(--radius-xs);background:color-mix(in srgb,var(--label) 5%,transparent);font:12.5px/1.45 var(--ui);color:var(--label-2)}
+.card.direction .test-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.card.direction .test-h b{margin:0}
+.card.direction .dir-flag-row{margin-top:12px;font:500 12px/1 var(--ui);color:var(--label-3)}
+.card.direction .dir-flag-row .dir-flag{margin-left:0}
+.card.direction .test-h .dir-flag{flex:none;font:500 12px/1 var(--ui);color:var(--label-3);margin:-3px -6px -3px 0}
 .ev-ctr{flex:none;display:inline-flex;align-items:center;gap:5px;font:600 12px/1 var(--ui);color:var(--danger);white-space:nowrap}
 .ev-ctr::before{content:"";width:12px;height:0;border-top:1.5px dashed currentColor}
 .by-pop .ev-ctr-dot{width:14px;height:0;border-top:2px dashed var(--danger)}
@@ -4573,11 +4582,6 @@ function bearsOn(e,d){
   }
   return null;
 }
-function evidenceUnder(d){
-  const ids=new Set([d.dir.id,d.claim?.id].filter(Boolean)),out=[...sourcesFor(d.dir),...(d.claim?sourcesFor(d.claim):[])];
-  for(const e of board.edges){if(!e.rel||e.rel==="conflicts")continue;const o=ids.has(e.a)?e.b:ids.has(e.b)?e.a:null;if(o)out.push(byId(o))}
-  return out.filter(isEvidenceCard);
-}
 /* look at the board and queue what is new; returns the observations added */
 function runBoardChecks(){
   if(!board)return [];
@@ -4589,7 +4593,10 @@ function runBoardChecks(){
   const ds=decisionsNow(),fresh=ev.filter(n=>!W.seen.includes(n.id)),known=new Set([...W.done,...W.queue.map(o=>o.sig)]),added=[];
   const add=o=>{if(known.has(o.sig))return;known.add(o.sig);W.queue.push(o);added.push(o)};
   for(const e of fresh){W.seen.push(e.id);for(const d of ds){const b=bearsOn(e,d);if(b)add({kind:"revisit",sig:"rv:"+e.id+":"+d.dir.id,target:d.dir.id,about:e.id,rel:b.rel,how:b.how,terms:b.terms||[],at:NOW()})}}
-  for(const d of ds)if(!evidenceUnder(d).length)add({kind:"assume",sig:"as:"+d.dir.id,target:d.dir.id,at:NOW()});
+  for(const d of ds)if(groundOf(d.dir).flag)add({kind:"assume",sig:"as:"+d.dir.id,target:d.dir.id,at:NOW()});
+  /* once evidence or a test result backs a decision, the "rests on assumptions" note on it is no longer true: take it down */
+  for(const [id,ps] of Object.entries(board.pins||{})){if(!ps?.some(p=>p.check==="assume"))continue;const d=byId(id);
+    if(!d||!groundOf(d).flag||board.adopted[d.idea]!==d.id){board.pins[id]=ps.filter(p=>p.check!=="assume");const el=nodeEl(id);if(el)el._sig=""}}
   if(W.seen.length>400)W.seen=W.seen.slice(-400);if(W.done.length>400)W.done=W.done.slice(-400);
   return added;
 }
@@ -4606,8 +4613,13 @@ function checkPin(o){
     return {id:"pin-"+uid(),agent:o.rel==="conflicts"?"critic":"scout",t:NOW(),note,check:o.kind,sig:o.sig,engine:"rules",basis:[{id:e.id,rev:e.rev||1,relation:o.rel==="related"?"related":o.rel,why:L("new evidence","新证据")}]};
   }
   if(o.kind==="assume"){
-    if(evidenceUnder({dir:d,claim:byId(d.idea)}).length)return null;
-    return {id:"pin-"+uid(),agent:"critic",t:NOW(),note:L(`Your decision ${qTitle(d)} rests on **proposals only**: no observed or reported evidence is linked to it yet.`,`你的决定 ${qTitle(d)} 目前**只基于设想**：还没有连上任何实测或转述的证据。`),check:o.kind,sig:o.sig,engine:"rules",basis:[]};
+    /* the Critic challenges once, at the decision: what it rests on, and the cheapest way to find out. It never changes it */
+    const g=groundOf(d);if(!g.flag||board.adopted[d.idea]!==d.id)return null;
+    const test=String(d.test||"").trim();
+    const head=g.k==="none"?L(`Your decision ${qTitle(d)} has **nothing behind it yet**: no evidence is tied to it or its claim.`,`你的决定 ${qTitle(d)} **还没有任何依据**：它和它的论点都没有连上证据。`)
+      :L(`Your decision ${qTitle(d)} rests on **proposals only**: nobody has watched or been told it works yet.`,`你的决定 ${qTitle(d)} **只靠设想**：还没有人亲眼看到或听人说过它可行。`);
+    const next=test?L(` Its test would tell you: “${clip(test,120)}”.`,` 它的验证标准能告诉你：“${clip(test,120)}”。`):L(" What would you need to see to know it works?"," 要看到什么，你才能确定它可行？");
+    return {id:"pin-"+uid(),agent:"critic",t:NOW(),note:head+next+L(" The decision stays as you made it."," 决定仍按你定的来。"),check:o.kind,sig:o.sig,engine:"rules",basis:g.sup.slice(0,4).map(e=>({id:e.id,rev:e.rev||1,relation:"related",why:weightLabel(e.weight)||L("unrated","未评估")}))};
   }
   return null;
 }
@@ -6104,7 +6116,7 @@ function contribGroupHTML(n){
 const byPop={el:null,for:null,openT:0,closeT:0};
 function byPopEl(){if(byPop.el)return byPop.el;const d=document.createElement("div");d.id="byPop";d.className="by-pop";d.setAttribute("role","dialog");d.hidden=true;document.body.appendChild(d);
   d.addEventListener("pointerenter",()=>clearTimeout(byPop.closeT));
-  d.addEventListener("click",e=>{const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for),ro=n?restsOn(n):{sup:[],ctr:[]},ns=[...ro.sup,...ro.ctr];closeByPop(0);
+  d.addEventListener("click",e=>{const b=e.target.closest("[data-ev-act]");if(!b)return;const n=byId(d.dataset.for),ro=n?backingOf(n):{sup:[],ctr:[]},ns=[...ro.sup,...ro.ctr];closeByPop(0);
     if(b.dataset.evAct==="rate"){const s=ns.find(x=>!x.weight);if(s){select([s.id]);focusNodes([s],Math.max(cam.s,.9))}}
     else if(ns.length){select(ns.map(x=>x.id));focusNodes(ns,Math.max(Math.min(cam.s,1),.5))}});d.addEventListener("pointerleave",()=>closeByPop());return byPop.el=d}
 function openByPop(grp,{now=false}={}){
@@ -6354,9 +6366,11 @@ function cardBody(n){
   case"frame":{const r=byId(n.from),plChip=plBusyNodes.has(n.id)?`<span class="foot-pl busy">Reversing…</span>`:n.plPack?.positive?`<button type="button" class="foot-pl" data-a="reverse-prompt" title="${esc(uiLang()==="zh"?"查看反推提示词包":"View extracted Prompt Pack")}">${ic("sparkles")}Prompt</button>`:"";return `<div class="media"><img src="${mediaSrc(n.media)}" alt="" draggable="false"><span class="badge">${ic("frame")}FRAME</span><span class="tc">@ ${tc(n.t)}</span></div><div class="in">${head(`<span class="card-k-src">Frame${r?` · ${esc(r.title)}`:""}</span>`)}<h4 data-edit="title">${esc(n.title||"Frame "+tc(n.t))}</h4>${foot(fL(n.weight?weightHTML(n.weight,sk):"",plChip),fR(threadCount(n)))}</div>`}
   case"question":{const on=byId(n.on);return `<div class="in"><span class="qmark" aria-hidden="true">?</span>${head(`${byline(n)}${L?`<span class="q-dot"></span>`:""}<span class="q-on">${uiLang()==="zh"?"追问":"Question"}${on?`${uiLang()==="zh"?" · ":" on "}${esc(titleOf(on))}`:""}</span>`)}<h4 data-edit="text">${esc(n.text)}</h4>${foot("",fR(threadCount(n)))}</div>`}
   case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode));
+    /* the flag sits on the test when there is one: the test is how the assumption gets settled */
+    const flagH=sk?"":dirFlagHTML(n),flagInTest=!!(flagH&&n.test);
     const res=!sk&&n.outcome?.result,resHTML=res?`<span class="res ${res}"><b>${outcomeWord(res)}</b>${n.outcome.note?` · ${esc(n.outcome.note)}`:""}</span>`:"";
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
-    <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test||resHTML?`<div class="test">${n.test?`<b>${uiLang()==="zh"?"验证标准":"The Test"}</b><span data-edit="test">${esc(n.test)}</span>`:""}${resHTML}</div>`:""}${sk?"":setAsideHTML(n)+choseHTML(n)}
+    <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test||resHTML?`<div class="test">${n.test?`${flagH?`<div class="test-h"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b>${flagH}</div>`:`<b>${uiLang()==="zh"?"验证标准":"The Test"}</b>`}<span data-edit="test">${esc(n.test)}</span>`:""}${resHTML}</div>`:""}${flagH&&!flagInTest?`<div class="dir-flag-row">${flagH}</div>`:""}${sk?"":setAsideHTML(n)+choseHTML(n)}
     ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",mode&&!(adopted&&!hasProof)?`<span>${mode}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<span>${uiLang()==="zh"?"已生成原型":"Proof built"}</span>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
   case"proof":{
     /* A proof is an experiment that tests its direction: results first, thumbnail second, one next step. */
@@ -7271,7 +7285,9 @@ function evidenceVerdict(t){
   if(o&&o*2>=w)return {k:"obs",ico:"observed",txt:L("Mostly observed","以实测为主")};
   if(o&&o>r)return {k:"part",ico:"observed",txt:L("Partly observed","部分有实测")};
   if(r)return o?{k:"rep",ico:"reported",txt:L("Mostly second-hand","多为转述")}:{k:"rep",ico:"reported",txt:L("Second-hand only","只有转述")};
-  return {k:"thin",ico:"proposed",txt:L("No evidence yet","还没有证据")};
+  /* nothing observed or reported: unrated sources might still be either, so rating them comes first */
+  if(t.none)return {k:"none",ico:"none",txt:L("Not rated yet","尚未评估")};
+  return {k:"thin",ico:"proposed",txt:t.proposed?L("Proposals only","只靠设想"):L("Illustrations only","只有示意")};
 }
 function evSentence(t,n){
   const o=t.observed||0,r=t.reported||0,u=t.none||0,w=weighedCount(t),v=evidenceVerdict(t);
@@ -7299,20 +7315,50 @@ function restsOn(n){
     if(e.rel==="conflicts"){ctr.set(m.id,m);sup.delete(m.id)}else sup.set(m.id,m)}
   return {sup:[...sup.values()],ctr:[...ctr.values()]};
 }
+/* ── grounding: one reading of "what does this rest on?" for every surface ──
+   The card's evidence line, the flag on a direction, the evidence card, the decision view and the board check all read it
+   here, so they never disagree. A direction rests on its own backing plus its claim's (as the decision view reads it).
+   k: none (nothing behind it) · assumed (only proposals or illustrations) · unrated (nobody has rated the sources yet, so
+   it could still be either) · grounded (something observed or reported). A recorded test result is itself an observation,
+   so a tested direction is not flagged. Flagged means: none or assumed, and not tested. */
+function backingOf(n){return n?.type==="direction"?decRests({dir:n,claim:byId(n.idea)}):restsOn(n)}
+function groundOf(n){
+  const r=backingOf(n),t=tally(r.sup),v=r.sup.length?evidenceVerdict(t):null;
+  const k=!v?"none":v.k==="thin"?"assumed":v.k==="none"?"unrated":"grounded",tested=n?.type==="direction"&&!!n.outcome?.result;
+  return {...r,t,k,v,tested,flag:(k==="none"||k==="assumed")&&!tested,txt:v?v.txt:L("Nothing behind it yet","还没有依据"),ico:v?v.ico:"none"};
+}
+/* The flag on a direction card says the choice rests on assumptions. It is quiet (the same line as a card's evidence) and
+   says each thing once: before you choose, it shows only when a sibling is better backed (otherwise the claim's own
+   evidence line already says it for all of them); once adopted, it stays on the decision until evidence or a test result
+   backs it. A direction set aside never carries it. It is a fact read off the board, not a model's thought. */
+function dirFlagHTML(n){
+  if(n?.type!=="direction"||n.status!=="ink"||n.tombstone||setAsideFor(n))return "";
+  const g=groundOf(n);if(!g.flag)return "";
+  const adopted=board.adopted[n.idea]===n.id;
+  if(!adopted&&!board.nodes.some(s=>s.type==="direction"&&s.idea===n.idea&&s.id!==n.id&&s.status==="ink"&&!s.tombstone&&!s.archived&&groundOf(s).k==="grounded"))return "";
+  const lbl=adopted?L(`Decided on assumptions: ${g.txt}`,`这个决定只靠设想：${g.txt}`):L(`Rests on assumptions: ${g.txt}`,`只靠设想：${g.txt}`);
+  return `<span class="ev-line ev-${g.k==="none"?"empty":"thin"} dir-flag" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(lbl)}">${evIconHTML(g.ico,"ev-ico")}<span class="ev-txt">${esc(g.txt)}</span></span>`;
+}
+/* in the evidence card of a flagged direction: its own test is the quickest way to find out */
+function dirTestHTML(n){
+  if(n?.type!=="direction"||!String(n.test||"").trim()||!groundOf(n).flag)return "";
+  return `<p class="ev-test">${esc(L("Its test, on this card, is the quickest way to find out.","这张卡上的验证标准，是最快的验证办法。"))}</p>`;
+}
 /* the relations you made on a card, for its render signature */
 const relSig=n=>board.edges.filter(e=>e.by==="you"&&(e.a===n.id||e.b===n.id)).map(e=>e.a+e.rel+e.b).join();
 function counterMark(ctr){const k=ctr.length;if(!k)return"";
   return `<span class="ev-ctr" title="${esc(L("Countered by: ","反驳它的：")+ctr.slice(0,3).map(titleOf).join(" · "))}">${esc(L(`${k} counter${k>1?"s":""}`,`${k} 条反驳`))}</span>`}
 function evidencePopHTML(n){
-  const ro=restsOn(n),ns=ro.sup,ctr=ro.ctr,t=ns.length?tally(ns):(n.weights||{}),total=ns.length||(n.of||[]).length,v=evidenceVerdict(t);
+  const ro=backingOf(n),ns=ro.sup,ctr=ro.ctr,t=ns.length?tally(ns):(n.weights||{}),total=ns.length||(n.of||[]).length,v=evidenceVerdict(t);
   const rows=[...WEIGHT_ORDER,"none"].filter(k=>t[k]).map((k,i)=>{const w=WEIGHTS[k];
     return `<li style="--i:${i}" class="ev-row ev-k-${k}"><span class="ev-k-g">${evIconHTML(k,"ev-ico")}</span><span class="by-pop-txt"><b>${esc(k==="none"?L("Not rated","未评估"):weightLabel(k))}</b><small>${esc(k==="none"?L("Nobody has judged these yet.","还没有人判断过它们有多可信。"):weightDesc(k))}</small></span><span class="ev-n">${t[k]}</span></li>`}).join("");
   const ctrRow=ctr.length?`<li style="--i:6" class="ev-row ev-k-ctr"><span class="ev-k-g"><i class="ev-ctr-dot" aria-hidden="true"></i></span><span class="by-pop-txt"><b>${esc(L("Counters it","反驳它"))}</b><small>${esc(ctr.slice(0,3).map(x=>clip(titleOf(x),46)).join(" · "))}</small></span><span class="ev-n">${ctr.length}</span></li>`:"";
   const u=t.none||0,acts=[];   // secondary first, primary last: the primary action sits bottom-right, where the eye lands
   if(ns.length||ctr.length)acts.push(`<button type="button" class="ev-act" data-ev-act="show">${esc(L("View","查看"))}</button>`);
   if(u&&ns.some(x=>!x.weight))acts.push(`<button type="button" class="ev-act primary" data-ev-act="rate">${esc(L("Rate","评估"))}</button>`);
-  if(!ns.length&&!(n.of||[]).length)return `<header class="ev-head ev-none">${evIconHTML("none","ev-ico")}<b>${esc(L("Nothing behind it yet","还没有依据"))}</b></header><p class="ev-sent">${esc(L("Drag a piece of evidence beside this card to back it, or say it counters it. You can also draw a line from any card.","把一条证据拖到这张卡旁边来支持它，或标明它是反驳。也可以从任意卡片拉一条线过来。"))}</p>${ctrRow?`<ul>${ctrRow}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
-  return `<header class="ev-head ev-${v.k}">${evIconHTML(v.ico,"ev-ico")}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows||ctrRow?`<ul>${rows}${ctrRow}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
+  const testH=dirTestHTML(n);
+  if(!ns.length&&!(n.of||[]).length)return `<header class="ev-head ev-none">${evIconHTML("none","ev-ico")}<b>${esc(L("Nothing behind it yet","还没有依据"))}</b></header><p class="ev-sent">${esc(n.type==="direction"?L("No evidence is tied to this direction or its claim. Drag a piece of evidence beside either one to back it.","这个方向和它的论点都还没有连上证据。把一条证据拖到其中一张卡旁边来支持它。"):L("Drag a piece of evidence beside this card to back it, or say it counters it. You can also draw a line from any card.","把一条证据拖到这张卡旁边来支持它，或标明它是反驳。也可以从任意卡片拉一条线过来。"))}</p>${testH}${ctrRow?`<ul>${ctrRow}</ul>`:""}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
+  return `<header class="ev-head ev-${v.k}">${evIconHTML(v.ico,"ev-ico")}<b>${esc(v.txt)}</b></header><p class="ev-sent">${esc(evSentence(t,total))}</p>${rows||ctrRow?`<ul>${rows}${ctrRow}</ul>`:""}${testH}${acts.length?`<footer class="ev-acts">${acts.join("")}</footer>`:""}`;
 }
 function evidenceScale(n){const {sup,ctr}=restsOn(n);
   const line=sup.length?evidenceLine(tally(sup),sup.length):`<span class="ev-line ev-empty" tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(L("Nothing behind it yet","还没有依据"))}">${evIconHTML("none","ev-ico")}<span class="ev-txt">${esc(L("Nothing behind it yet","还没有依据"))}</span></span>`;
@@ -7334,7 +7380,7 @@ function nodeLineageSig(n){
 }
 
 function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(n.whyYes||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(n.whyYes||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="direction"&&dirFlagHTML(n),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -19115,8 +19161,8 @@ function decCardHTML(x,i){
   const {claim,dir,rests,since,fresh}=x,zh=uiLang()==="zh";
   const who=dir.adoptedBy&&dir.adoptedBy!=="you"?(AGENTS[dir.adoptedBy]?.name||dir.adoptedBy):L("you","你");
   const meta=x.at?L(`Decided ${decWhen(x.at)} by ${who}`,`${decWhen(x.at)} 由${who}决定`):L(`Decided by ${who}`,`由${who}决定`);
-  const t=tally(rests.sup),v=rests.sup.length?evidenceVerdict(t):null,thin=!rests.sup.length||!(t.observed||t.reported);
-  const evSum=rests.sup.length?`${evIconHTML(v.ico,"ev-ico")}<span>${esc(thin?L("Proposals only","只靠设想"):v.txt)}</span><span class="dv-cnt">· ${esc(L(`${rests.sup.length} source${rests.sup.length>1?"s":""}`,`${rests.sup.length} 个来源`))}</span>`
+  const g=groundOf(dir),thin=g.k==="none"||g.k==="assumed";   // the same reading as the card's flag and the board check
+  const evSum=rests.sup.length?`${evIconHTML(g.ico,"ev-ico")}<span>${esc(g.txt)}</span><span class="dv-cnt">· ${esc(L(`${rests.sup.length} source${rests.sup.length>1?"s":""}`,`${rests.sup.length} 个来源`))}</span>`
     :`${evIconHTML("none","ev-ico")}<span>${esc(L("Nothing behind it yet","还没有依据"))}</span>`;
   const ctrN=rests.ctr.length?`<span class="dv-cnt" style="color:var(--danger)">· ${esc(L(`${rests.ctr.length} counter${rests.ctr.length>1?"s":""}`,`${rests.ctr.length} 条反驳`))}</span>`:"";
   const evOpen=decEvOpen.has(dir.id);

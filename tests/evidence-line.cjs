@@ -47,7 +47,7 @@ async function open(browser, base, opts = {}) {
       check('mostly observed: half or more of the rated sources were watched', v.strong.txt === 'Mostly observed' && v.strong.ico === 'observed' && v.half.k === 'obs', JSON.stringify(v));
       check('partly observed: some watched, more than reported', v.part.txt === 'Partly observed' && v.part.ico === 'observed', JSON.stringify(v.part));
       check('second-hand: reports outweigh what was watched; "only" when nothing was', v.mostlyRep.txt === 'Mostly second-hand' && v.repOnly.txt === 'Second-hand only' && v.repOnly.ico === 'reported' && v.mostlyRep.ico === 'reported', JSON.stringify([v.mostlyRep, v.repOnly]));
-      check('ideas and pictures are not evidence', v.ideas.txt === 'No evidence yet' && v.ideas.ico === 'proposed', JSON.stringify(v.ideas));
+      check('ideas and pictures are not evidence', v.ideas.txt === 'Proposals only' && v.ideas.ico === 'proposed', JSON.stringify(v.ideas));
       check('nothing rated says so', v.none.txt === 'Not rated yet', JSON.stringify(v.none));
 
       // signs say what kind of evidence it is, not a strength meter (bars read as a phone signal)

@@ -157,7 +157,7 @@
       held: "Still holds. Your reason now sits beside the counter-evidence.",
       cards: {
         e1: { k: "Observed", t: "Field notes", b: "8 of 10 campers hung it from the tent loop.", by: "You" },
-        e2: { k: "Reported", t: "Reviews", b: "“Blinding at arm's length.” 41 mentions.", by: "Scout" },
+        e2: { k: "Reported", t: "Reviews", b: "41 reviews call it blinding up close.", by: "Scout" },
         e3: { k: "Quote", t: "Camper", b: "I just want to find it in the dark.", by: "You" },
         j1: { k: "Judgment", t: "It's used hanging, up close, after dark.", b: "Rests on 3 sources, mostly observed.", by: "You + Scout" },
         dA: { k: "Direction", t: "Shade dial", b: "Twist a hood to dim it.", by: "Strategist" },
@@ -173,6 +173,8 @@
       flagH: "New counter since you chose",
       reopen: "Reopen", holds: "Still holds",
       heldNote: "Still holds. Fix: a wider hook mouth.",
+      // The reviews Scout read, as they sit in the spreadsheet. [[...]] marks what matched.
+      sheet: { head: ["Review", "★"], rows: [[118, "Lasts the whole weekend", 5], [119, "[[Blinding]] at arm's length", 2], [120, "Hook feels a bit flimsy", 3], [121, "[[Too bright]] up close", 2], [122, "[[Blinding]] inside the tent", 1]] },
       reopenedNote: "Reopened. A and C are back in play.",
       supports: "supports", counters: "counters"
     },
@@ -189,7 +191,7 @@
       held: "依然成立。你的理由和反驳证据放在了一起。",
       cards: {
         e1: { k: "观察", t: "实地记录", b: "10 位露营者里，8 位把灯挂在帐篷挂环上。", by: "你" },
-        e2: { k: "转述", t: "用户评论", b: "“近看太刺眼。”41 条提到。", by: "Scout" },
+        e2: { k: "转述", t: "用户评论", b: "41 条评论说它近看刺眼。", by: "Scout" },
         e3: { k: "原话", t: "露营者", b: "我只想在黑暗里找得到它。", by: "你" },
         j1: { k: "判断", t: "它是挂着用的：近距离，天黑以后。", b: "依据 3 条来源，大多是观察。", by: "你 + Scout" },
         dA: { k: "方向", t: "遮光旋钮", b: "转动灯罩来调暗。", by: "Strategist" },
@@ -205,6 +207,7 @@
       flagH: "选定之后，出现 1 条反证",
       reopen: "重新讨论", holds: "依然成立",
       heldNote: "依然成立。改法：把挂钩开口加宽。",
+      sheet: { head: ["评论", "★"], rows: [[118, "整个周末都够用", 5], [119, "近看太[[刺眼]]", 2], [120, "挂钩有点软", 3], [121, "离近了[[晃眼睛]]", 2], [122, "在帐篷里[[刺眼]]", 1]] },
       reopenedNote: "已重新讨论。A 和 C 重新纳入考虑。",
       supports: "支持", counters: "反驳"
     }
@@ -285,6 +288,28 @@
     h.forEach(function (v, i) { o += '<i class="w' + (i < 7 ? " on" : "") + '" style="height:' + v + 'px"></i>'; });
     return o + "</span>";
   })();
+  // Evidence comes in whatever form it was captured: a photo from the field, an excerpt of a spreadsheet, a clip.
+  // The label on the card still says where it came from; the picture only shows what it is.
+  // The lantern on its hook, sliding down a guyline in the clip: drawn once, ghosted twice behind itself.
+  var HOOK = '<path class="cl-hook" d="M134 52v-6.5a4 4 0 0 1 8 0v2"/><rect class="ph-cap" x="130" y="52" width="8" height="3" rx="1"/><rect class="cl-lamp" x="128.5" y="55" width="11" height="14" rx="3.5"/>';
+  var MEDIA = {
+    photo:
+      '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+      '<rect class="ph-bg" width="200" height="84"/><path class="ph-ground" d="M0 72c56-5 140-5 200 0v12H0Z"/>' +
+      '<path class="ph-tent" d="M0 0h200v27c-30 4-58 5-88 6-30-1-62-3-112-7Z"/><path class="ph-seam" d="M46 0l8 31M158 0l-8 32"/>' +
+      '<ellipse class="ph-wash" cx="112" cy="27" rx="54" ry="12"/><path class="ph-guy" d="M178 29l28 60"/>' +
+      '<circle class="ph-glow" cx="112" cy="52" r="22"/>' +
+      '<path class="ph-loop" d="M109.5 32v2.5a2.5 2.5 0 0 0 5 0V32"/><path class="ph-cord" d="M112 37v4"/>' +
+      '<rect class="ph-cap" x="106" y="41" width="12" height="4" rx="1.5"/><rect class="ph-lamp" x="104.5" y="44" width="15" height="19" rx="5"/></svg>',
+    clip:
+      '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+      '<rect class="ph-bg" width="200" height="84"/><path class="ph-ground" d="M0 72c56-5 140-5 200 0v12H0Z"/><path class="ph-guy" d="M-4 14 204 62"/>' +
+      '<g class="cl-ghost" style="opacity:.12" transform="translate(-30 -6.9)">' + HOOK + '</g>' +
+      '<g class="cl-ghost" style="opacity:.28" transform="translate(-15 -3.5)">' + HOOK + '</g>' + HOOK +
+      '<circle class="play" cx="70" cy="40" r="11"/><path class="play-ink" d="M66.6 34.6v10.8l9.2-5.4Z"/>' +
+      '<rect class="cl-track" x="0" y="81" width="200" height="3"/><rect class="cl-done" x="0" y="81" width="64" height="3"/>' +
+      '<rect class="cl-time" x="166" y="64" width="26" height="12" rx="6"/><text class="cl-tx" x="179" y="72.6" text-anchor="middle">0:12</text></svg>'
+  };
   function unquote(t) { return String(t).replace(/^[“"「『]|[”"」』]$/g, ""); }
   var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "观察": "eye", "转述": "msg", "原话": "quote" };
 
@@ -375,19 +400,19 @@
         e1: [28, 40, 212], e2: [28, 266, 212], e3: [28, 498, 212],
         j1: [320, 270, 240], st: [342, 50, 196],
         dA: [626, 40, 236], dC: [626, 456, 236],
-        dB: [904, 150, 248], n1: [926, 560, 204]
+        dB: [904, 150, 248], n1: [926, 516, 204]
       } },
-      mid: { w: 760, h: 966, loop: 15, max: 1.1, pos: {
+      mid: { w: 760, h: 1000, loop: 15, max: 1.1, pos: {
         e1: [20, 24, 228], e2: [266, 24, 228], e3: [512, 24, 228],
-        st: [40, 214, 196], j1: [266, 222, 228],
-        dA: [20, 440, 228], dB: [266, 440, 228], dC: [512, 440, 228],
-        n1: [266, 806, 228]
+        st: [40, 254, 196], j1: [266, 262, 228],
+        dA: [20, 480, 228], dB: [266, 480, 228], dC: [512, 480, 228],
+        n1: [266, 780, 228]
       } },
-      narrow: { w: 380, h: 1062, loop: 9, max: 1.12, pos: {
-        e1: [12, 14, 172], e2: [196, 14, 172], e3: [12, 160, 172],
-        j1: [196, 160, 172], st: [20, 316, 158],
-        dA: [196, 340, 172], dB: [12, 542, 356],
-        dC: [12, 836, 172], n1: [196, 836, 172]
+      narrow: { w: 380, h: 1118, loop: 9, max: 1.12, pos: {
+        e1: [12, 14, 172], e2: [196, 14, 172], e3: [12, 216, 172],
+        j1: [196, 216, 172], st: [20, 372, 158],
+        dA: [196, 396, 172], dB: [12, 598, 356],
+        dC: [12, 892, 172], n1: [196, 892, 172]
       } }
     };
     var RELS = [
@@ -449,10 +474,12 @@
         if (id === "j1" || id[0] === "d") c.classList.add("ink");
         if (id === "st") c.classList.add("sticky");
         if (id === "e3") c.classList.add("quote");
+        var pic = { e1: MEDIA.photo, e2: '<table class="xl" aria-hidden="true"></table>', n1: MEDIA.clip }[id];
+        if (pic) c.classList.add("has-media");
         c.dataset.id = id;
-        c.innerHTML = '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI[id] + '"/></svg><span class="kk"></span>' + (id === "st" ? "" : '<span class="by"></span>') + "</div>" +
+        c.innerHTML = (pic ? '<div class="media' + (id === "e2" ? " xl-wrap" : "") + '">' + pic + "</div>" : "") + '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI[id] + '"/></svg><span class="kk"></span>' + (id === "st" ? "" : '<span class="by"></span>') + "</div>" +
           (id === "e3" ? '<div class="b"></div><div class="cite"><div class="t"></div>' + WAVE + "</div>" :
-          (id === "st" ? "" : '<div class="t"></div>') + '<div class="b"></div>') +
+          (id === "st" || pic ? "" : '<div class="t"></div>') + '<div class="b"></div>') +
           (id === "dA" || id === "dC" ? '<div class="veil"></div><div class="note"></div><span class="back-chip"><svg class="ki" aria-hidden="true"><use href="#i-retry"/></svg><span></span></span>' : "") +
           // The chosen card shows one line; why it was chosen and what you can do open on hover, focus or tap.
           (id === "dB" ? '<div class="flag"><div class="fh"></div></div><div class="more"><div class="mi"><div class="note"></div><div class="fb" role="group"><button type="button" class="reopen"></button><button type="button" class="holds"></button></div></div></div>' : "");
@@ -497,6 +524,11 @@
           by.title = d.by; by.setAttribute("role", "img"); by.setAttribute("aria-label", d.by);
         }
       });
+      cards.e2.querySelector(".xl").innerHTML = '<tr><th></th><th>' + esc(l.sheet.head[0]) + "</th><th>" + l.sheet.head[1] + "</th></tr>" +
+        l.sheet.rows.map(function (r) {
+          var hit = r[1].indexOf("[[") > -1, tx = esc(r[1]).replace(/\[\[(.+?)\]\]/g, "<mark>$1</mark>");
+          return '<tr' + (hit ? ' class="hit"' : "") + '><td class="n">' + r[0] + '</td><td class="tx">' + tx + '</td><td class="st">' + r[2] + "</td></tr>";
+        }).join("");
       cards.dB.querySelector(".fh").textContent = resolved === "holds" ? l.heldNote : resolved === "reopen" ? l.reopenedNote : l.flagH;
       cards.dB.querySelector(".reopen").textContent = l.reopen;
       cards.dB.querySelector(".holds").textContent = l.holds;

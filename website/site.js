@@ -322,6 +322,16 @@
     applyCopy();
   });
 
+  // While the page scrolls, things slide under a resting pointer. Anything that reacts to hover in script asks
+  // this first, so a pointer that never moved can't focus, trace or dim a card. CSS hover lifts pause too.
+  var lastScrollAt = 0, scrollT = 0;
+  function scrollingNow() { return performance.now() - lastScrollAt < 450; }
+  window.addEventListener("scroll", function () {
+    lastScrollAt = performance.now();
+    root.classList.add("scrolling");
+    clearTimeout(scrollT); scrollT = setTimeout(function () { root.classList.remove("scrolling"); }, 200);
+  }, { passive: true });
+
   // Hairline under the header once the page moves.
   var head = document.querySelector(".site-head");
   function onScroll() { head.classList.toggle("scrolled", window.scrollY > 4); }
@@ -410,6 +420,7 @@
         cards[id].classList.toggle("ctx", !lit[id] && !!ctx[id]);
       });
       svg.querySelectorAll("path[data-a]").forEach(function (p) { p.classList.toggle("lit", !!(lit[p.dataset.a] || lit[p.dataset.b])); });
+      stage.querySelectorAll(".rel-tag[data-a]").forEach(function (g) { g.classList.toggle("lit", !!(lit[g.dataset.a] || lit[g.dataset.b])); });
       el.classList.add("spotlit");
     }
     var KI = { e1: "eye", e2: "msg", e3: "quote", j1: "judge", dA: "fork", dB: "fork", dC: "fork", st: "critic", n1: "eye" };
@@ -557,6 +568,7 @@
           if (r.tag && !(mode === "narrow" && r.a === "n1")) {
             var tag = document.createElement("span");
             tag.className = "rel-tag " + r.type;
+            tag.dataset.a = r.a; tag.dataset.b = r.b;
             stage.appendChild(tag);
             p.tag = tag;
             requestAnimationFrame(function () { requestAnimationFrame(function () { tag.classList.add("on"); }); });
@@ -566,7 +578,7 @@
         if (p.pen) { pen(p.path, p.pen); p.pen = null; }
         p.path.classList.toggle("dim", step >= 3 && !resolved && r.type === "related" && r.b !== "dB");
         p.path.classList.toggle("lit", !!(litSet[r.a] || litSet[r.b]));
-        if (p.tag) { p.tag.textContent = L()[r.type]; p.tag.style.left = g.m.x + "px"; p.tag.style.top = g.m.y + "px"; }
+        if (p.tag) { p.tag.textContent = L()[r.type]; p.tag.style.left = g.m.x + "px"; p.tag.style.top = g.m.y + "px"; p.tag.classList.toggle("lit", !!(litSet[r.a] || litSet[r.b])); }
       });
       drawLoop(animateNew);
     }
@@ -855,12 +867,12 @@
     // everything else steps back. A short pause first, so passing over the board doesn't flicker.
     // Only a pointer that actually moves can focus a card. While you scroll, cards slide under a resting
     // pointer; that must not dim the story mid-step.
-    var hotT = 0, lastScroll = 0;
-    window.addEventListener("scroll", function () { lastScroll = performance.now(); }, { passive: true });
+    var hotT = 0;
     function hot(id, on) {
       clearTimeout(hotT);
-      if (on && performance.now() - lastScroll < 450) return;
+      if (on && scrollingNow()) return;
       svg.querySelectorAll("path[data-a]").forEach(function (p) { if (p.dataset.a === id || p.dataset.b === id) p.classList.toggle("hot", on); });
+      stage.querySelectorAll(".rel-tag[data-a]").forEach(function (g) { if (g.dataset.a === id || g.dataset.b === id) g.classList.toggle("hot", on); });
       if (!on) { el.classList.remove("focus", "b-far"); Object.keys(cards).forEach(function (n) { cards[n].classList.remove("near"); }); return; }
       hotT = setTimeout(function () {
         if (!cards[id].matches(":hover") || cards[id].classList.contains("dragging")) return;
@@ -1128,8 +1140,9 @@
 
     function wire(c) {
       var id = c.dataset.id;
-      if (id === "P") c.addEventListener("pointerenter", wake);
-      c.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse" && !pinned) { interacted = true; trace(id); } });
+      if (id === "P") c.addEventListener("pointerenter", function () { if (!scrollingNow()) wake(); });
+      c.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse" && !pinned && !scrollingNow()) { interacted = true; trace(id); } });
+      c.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse" && !pinned && !c.classList.contains("lit") && !scrollingNow()) { interacted = true; trace(id); } });
       c.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse" && !pinned) clearTrace(); });
       c.addEventListener("click", function () { interacted = true; if (pinned === id) { pinned = null; clearTrace(); } else { pinned = id; trace(id); if (id === "P") wake(); } });
       c.addEventListener("focus", function () { if (!pinned) trace(id); });

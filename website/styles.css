@@ -234,13 +234,14 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .board-lines path.dim { opacity: .3; }
 .board.focus .board-lines path:not(.hot):not(.marker) { opacity: .22; }
 .board.focus .bcard.on:not(.near) { opacity: .5; transition: opacity .3s var(--e-out), transform .62s var(--settle), filter .42s var(--e-out), box-shadow .25s var(--ease); }
-.board.focus .rel-tag { opacity: .4; }
+.board.focus .rel-tag.on:not(.hot) { opacity: .3; }
 /* Spotlight: the step's own cards are lit, what they touch is half lit, the rest steps back but stays legible.
    Pointing at a card (.focus) takes over. */
 .board.spotlit:not(.focus) .bcard.on:not(.lit):not(.ctx) { opacity: .34; }
 .board.spotlit:not(.focus) .bcard.on.ctx { opacity: .7; }
 .board.spotlit:not(.focus) .board-lines path[data-a]:not(.lit) { opacity: .2; }
-.board.spotlit:not(.focus) .rel-tag { opacity: .55; }
+/* A tag reads with its line: when the line steps back, so does its label. */
+.board.spotlit:not(.focus) .rel-tag.on:not(.lit) { opacity: .3; }
 /* Set-aside cards already wear a veil; dimming them again would make them unreadable. */
 .board.spotlit:not(.focus) .bcard.on.aside:not(.lit) { opacity: .66; }
 /* The marker loop is part of the chosen card: when B steps back, so does its loop. */
@@ -530,6 +531,8 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 
 .zc { cursor: pointer; transition: opacity .35s var(--ease), transform .5s var(--spring), box-shadow .25s var(--ease), filter .35s; outline-offset: 3px; }
 .zc:hover, .zc.lit { transform: translateY(-2px); }
+/* No hover lifts while the page is moving under a resting pointer. */
+html.scrolling .zc:not(.lit):hover { transform: none; }
 .zc.dir .t { display: flex; align-items: baseline; }
 .zc.dir .chip { margin-top: 1px; align-self: flex-start; }
 .zc.aside { padding-top: 11px; padding-bottom: 11px; }

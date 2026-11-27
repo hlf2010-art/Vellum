@@ -189,27 +189,12 @@
 .vl-rail.is-row .vl-sep{width:1px;height:18px;margin:0 3px}
 
 /* Composer — one calm row (lumen-v2) */
-.vl-line{width:min(640px,100%)}
-.vl-field{display:flex;align-items:flex-end;gap:3px;padding:7px 8px 6px;border-radius:var(--radius-field);background:rgba(250,250,252,.9);-webkit-backdrop-filter:blur(10px) saturate(1.5);backdrop-filter:blur(10px) saturate(1.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 0 -1px 0 rgba(255,255,255,.35),0 0 0 .5px rgba(11,12,14,.13),0 2px 6px -2px rgba(0,0,0,.1),0 16px 40px -18px rgba(0,0,0,.35)}
-[data-theme="dark"] .vl-field{background:rgba(34,35,40,.9);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(255,255,255,.04),0 0 0 .5px rgba(255,255,255,.12),0 2px 6px -2px rgba(0,0,0,.1),0 16px 40px -18px rgba(0,0,0,.35)}
-.vl-root .vl-sq{display:grid;place-items:center;width:var(--size-lg);height:var(--size-lg);border-radius:50%;flex:none;color:var(--label-3)}
-.vl-root .vl-sq:hover{background:var(--hover);color:var(--label)}
-.vl-root .vl-plus{color:var(--label-2)}
-.vl-sq .vl-ico{width:var(--icon-md);height:var(--icon-md);stroke-width:1.75}
 .vl-root .vl-send{background:color-mix(in srgb,var(--label) 86%,transparent);color:var(--canvas);transition:transform var(--duration-press) ease-out,background-color var(--duration-quick),color var(--duration-quick)}
 .vl-root .vl-send:hover{background:color-mix(in srgb,var(--label) 86%,transparent);color:var(--canvas);box-shadow:inset 0 0 0 100px rgba(255,255,255,.1)}
 .vl-root .vl-send:active{transform:scale(.92)}
 .vl-root .vl-send{transition:width var(--duration-base) var(--easing-standard),opacity var(--duration-quick),transform var(--duration-base) var(--easing-standard),background-color var(--duration-quick)}
 .vl-root .vl-send:disabled{width:0;min-width:0;padding:0;opacity:0;transform:scale(.4);pointer-events:none;overflow:hidden;box-shadow:none}
 .vl-send .vl-ico{stroke-width:2.2}
-.vl-line textarea{flex:1;min-width:0;height:36px;min-height:36px;max-height:160px;resize:none;border:0;outline:0;background:none;padding:6px 6px;font:450 16px/24px var(--font-ui);letter-spacing:-.014em;color:var(--label)}
-.vl-line textarea::placeholder{color:var(--label-3)}
-.vl-root .vl-route{display:flex;align-items:center;gap:5px;height:var(--size-sm);margin:4px 2px 4px 0;padding:0 8px 0 6px;border-radius:var(--radius-pill);font:500 12px/1 var(--font-ui);color:var(--label-3);background:var(--hover);white-space:nowrap;flex:none}
-.vl-route b{font-weight:600;color:var(--label-2)}
-.vl-route .vl-ico{width:var(--icon-xs);height:var(--icon-xs)}
-.vl-route .vl-mk.is-xs{width:20px;height:20px}
-.vl-route-cp{width:20px;height:20px;border-radius:var(--radius-xs);background:conic-gradient(from 200deg,#FF6B6B,#FFB547,#FFE066,#5BE38F,#4FC3FF,#7C8CFF,#C77DFF,#FF6B6B)}
-.vl-hint{margin-top:6px;text-align:center;font:450 11px/1.2 var(--font-ui);color:var(--label-3)}
 
 /* DraftBar — crew draft waiting for a decision */
 .vl-pbar{display:grid;gap:6px;width:min(340px,100%);padding:8px 11px 7px;border-radius:var(--radius-media);background:rgba(255,255,255,.95);-webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(255,255,255,.35),0 0 0 .5px rgba(0,0,0,.08),0 4px 14px -3px rgba(0,0,0,.22),0 20px 48px -16px rgba(0,0,0,.5)}
@@ -343,7 +328,7 @@
 .vl-toast .vl-msg{white-space:nowrap}
 
 @media (prefers-reduced-motion:reduce){.vl-review i{animation:none}.vl-root *{transition:none!important}}
-@media (prefers-reduced-transparency:reduce){.vl-rail,.vl-field,.vl-toast,.vl-review,.vl-pbar,.vl-island,.vl-crewpop,.vl-cmenu{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--card)}}
+@media (prefers-reduced-transparency:reduce){.vl-rail,.vl-toast,.vl-review,.vl-pbar,.vl-island,.vl-crewpop,.vl-cmenu{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--card)}}
 .vl-foot-l:has(.vl-rated){flex:1;min-width:0}.vl-foot-l:has(.vl-rated)+.vl-sp{flex:0 0 4px}
 .vl-foot-l>span:has(>.vl-rated){flex:1;min-width:0;display:flex}
 
@@ -396,8 +381,6 @@
 .vl-mk.is-xs.is-waiting::after{width:6px;height:6px;top:-1px;right:-1px;box-shadow:0 0 0 1.5px var(--card)}
 
 /* Composer: route slot always reserved; quiet until there is text */
-.vl-root .vl-route.is-quiet{background:transparent}
-.vl-root .vl-mic.is-rec{color:var(--danger-ink);background:color-mix(in srgb,var(--danger) 12%,transparent)}
 
 /* Toast error */
 .vl-toast.is-error{box-shadow:var(--shadow-chrome)}
@@ -533,15 +516,6 @@
 .vl-ccur-lbl{padding:7px 10px;border-radius:var(--radius-pill);background:var(--chrome);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:var(--shadow-chrome)}
 
 /* CommandMenu */
-.vl-cmd{width:min(560px,100%);max-height:400px;overflow:auto;padding:6px;border-radius:var(--radius-card);background:var(--chrome);-webkit-backdrop-filter:blur(30px) saturate(1.4);backdrop-filter:blur(30px) saturate(1.4);box-shadow:var(--shadow-chrome);font-family:var(--font-ui);outline:0}
-.vl-cmd:focus-visible{box-shadow:var(--shadow-chrome),0 0 0 var(--ring-width) var(--focus)}
-.vl-cmd-h{padding:8px 12px 6px;font:600 12px/1 var(--font-ui);color:var(--label-3)}
-.vl-cmd-i{display:grid;grid-template-columns:24px 88px minmax(0,1fr);align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-media);cursor:pointer}
-.vl-cmd-i.is-active{background:var(--hover)}
-.vl-cmd-none{width:6px;height:6px;margin:0 9px;border-radius:50%;background:var(--label-4)}
-.vl-cmd-c{font:600 14px/1 var(--font-ui);color:var(--label)}
-.vl-cmd-c small{font-weight:500;color:var(--label-3)}
-.vl-cmd-d{font:var(--text-body);color:var(--label-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* Dialog */
 .vl-scrim{display:grid;place-items:center;padding:32px;border-radius:var(--radius-card);background:color-mix(in srgb,var(--canvas) 50%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
@@ -563,7 +537,6 @@
 .vl-tip.is-open{opacity:1;transform:translate(-50%,0)}
 .vl-tip-k{opacity:.62;font-variant-numeric:tabular-nums}
 /* Kbd */
-.vl-kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:var(--radius-xs);background:var(--hover);font:500 11px/1 var(--font-mono);color:var(--label-2)}
 /* Tag */
 .vl-tag{display:inline-flex;align-items:center;gap:4px;height:var(--size-xs);padding:0 7px;border-radius:var(--radius-xs);background:var(--hover);font:600 11px/1 var(--font-ui);color:var(--label-2);white-space:nowrap}
 .vl-tag .vl-ico{width:var(--icon-xs);height:var(--icon-xs)}
@@ -648,8 +621,8 @@
 
 .vl-toast.is-error{background:color-mix(in srgb,var(--danger) 9%,var(--card))}
 /* Light, not lines: glass chrome gets a 1px top sheen instead of an edge. */
-.vl-ov,.vl-strip,.vl-cmd,.vl-ccur-lbl,.vl-toast,.vl-cmenu,.vl-crewpop{box-shadow:var(--shadow-chrome),inset 0 1px 0 rgba(255,255,255,.55)}
-[data-theme="dark"] .vl-ov,[data-theme="dark"] .vl-strip,[data-theme="dark"] .vl-cmd,[data-theme="dark"] .vl-ccur-lbl,[data-theme="dark"] .vl-toast,[data-theme="dark"] .vl-cmenu,[data-theme="dark"] .vl-crewpop{box-shadow:var(--shadow-chrome),inset 0 1px 0 rgba(255,255,255,.06)}
+.vl-ov,.vl-strip,.vl-ccur-lbl,.vl-toast,.vl-cmenu,.vl-crewpop{box-shadow:var(--shadow-chrome),inset 0 1px 0 rgba(255,255,255,.55)}
+[data-theme="dark"] .vl-ov,[data-theme="dark"] .vl-strip,[data-theme="dark"] .vl-ccur-lbl,[data-theme="dark"] .vl-toast,[data-theme="dark"] .vl-cmenu,[data-theme="dark"] .vl-crewpop{box-shadow:var(--shadow-chrome),inset 0 1px 0 rgba(255,255,255,.06)}
 .vl-toast.is-error{box-shadow:var(--shadow-chrome),inset 0 1px 0 rgba(255,255,255,.4)}
 /* Small text on tints: mix the hue toward the text colour so it reads in both themes. */
 .vl-tag.is-ok{color:color-mix(in srgb,var(--ok) 72%,var(--label))}
@@ -726,3 +699,152 @@
 .vl-swrite:focus-within,.vl-pc-iter:focus-within{background:var(--card);box-shadow:var(--shadow-field-focus)}
 .vl-input:focus{background:var(--card);box-shadow:var(--shadow-field-focus)}
 .vl-tf.is-error .vl-input:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 22%,transparent)}
+
+/* ════ 27 Nov: command palette, keycaps, selection bar, Copilot button, evidence line, avatar groups, breathing ════
+   Taken from the design pass in Vellum-Lumen.html. Menus and bars that float over cards are solid, never glass. */
+
+/* Kbd: a keycap */
+.vl-kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:var(--radius-chip);background:var(--hover);font:550 11px/1 var(--font-ui);letter-spacing:0;color:var(--label-2);box-shadow:inset 0 0 0 .5px var(--hair-2),inset 0 -1px 0 var(--hair-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.vl-kbd.is-sm{min-width:16px;height:16px;padding:0 4px;margin:0 2px;border-radius:4px;font-weight:600}
+
+/* Composer closed: the hint pill */
+.vl-root .vl-palhint{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px 0 5px;border-radius:var(--radius-pill);font:550 12px/1 var(--font-ui);letter-spacing:-.005em;color:var(--label-3);background:var(--chrome);-webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);box-shadow:var(--shadow-chrome);white-space:nowrap;transition:color var(--duration-quick),transform var(--duration-press) ease-out}
+.vl-root .vl-palhint:hover{color:var(--label)}
+.vl-root .vl-palhint:active{transform:scale(.97)}
+
+/* Composer open: the palette */
+.vl-pal{width:min(640px,100%);border-radius:var(--radius-control);overflow:hidden;background:var(--card);box-shadow:var(--shadow-card-up);font-family:var(--font-ui);animation:vlPalIn var(--duration-spring) var(--easing-standard) both}
+@keyframes vlPalIn{from{opacity:0;transform:translateY(-6px) scale(.985)}}
+.vl-pal-field{display:flex;align-items:center;gap:4px;min-height:40px;padding:8px 10px 8px 12px}
+.vl-pal-field>.vl-ico{width:18px;height:18px;margin:0 4px 0 6px;color:var(--label-3);stroke-width:1.8;flex:none}
+.vl-pal-field input{flex:1;min-width:0;height:40px;border:0;outline:0;background:none;padding:0 6px;font:450 17px/22px var(--font-ui);letter-spacing:-.016em;color:var(--label)}
+.vl-pal-field input::placeholder{color:var(--label-3)}
+.vl-pal-route{display:inline-flex;align-items:center;gap:8px;flex:none;font:500 13px/1 var(--font-ui);color:var(--label-3);white-space:nowrap}
+.vl-pal-route .vl-kbd{font:500 12px/1 var(--font-mono)}
+
+/* CommandMenu: palette rows */
+.vl-cmd{width:min(640px,100%);max-height:min(372px,52vh);overflow:auto;padding:6px;border-radius:var(--radius-control);background:var(--card);box-shadow:var(--shadow-card-up);font-family:var(--font-ui);outline:0}
+.vl-cmd.is-embedded{width:auto;border-radius:0;background:transparent;box-shadow:inset 0 .5px 0 var(--hair-2)}
+.vl-cmd:focus-visible{box-shadow:var(--shadow-card-up),0 0 0 var(--ring-width) var(--focus)}
+.vl-cmd.is-embedded:focus-visible{box-shadow:inset 0 .5px 0 var(--hair-2),inset 0 0 0 var(--ring-width) var(--focus)}
+.vl-cmd-h{padding:10px 10px 6px;font:600 11px/1 var(--font-ui);letter-spacing:.02em;color:var(--label-3)}
+.vl-cmd-i{display:grid;grid-template-columns:24px minmax(84px,auto) minmax(0,1fr) auto;align-items:center;gap:12px;min-height:40px;padding:0 10px;border-radius:var(--radius-sm);cursor:pointer}
+.vl-cmd-i.is-short{grid-template-columns:24px minmax(0,1fr) auto}
+.vl-cmd-i:hover:not(.is-active){background:color-mix(in srgb,var(--hover) 55%,transparent)}
+.vl-cmd-i.is-active{background:var(--hover)}
+.vl-cmd-ic{display:grid;place-items:center;width:24px;height:24px;border-radius:var(--radius-xs);color:var(--label-2);background:var(--hover)}
+.vl-cmd-ic .vl-ico{width:15px;height:15px;stroke-width:1.8}
+.vl-cmd-dot{display:block;width:8px;height:8px;border-radius:50%;background:var(--c,var(--label-4))}
+.vl-cmd-c{font:550 14px/1.2 var(--font-ui);letter-spacing:-.01em;color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vl-cmd-c small{font:inherit;color:var(--label-4)}
+.vl-cmd-d{font:450 14px/1.3 var(--font-ui);color:var(--label-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vl-cmd-who{font:500 12px/1 var(--font-ui);color:var(--label-3);justify-self:end}
+.vl-cmd-i>.vl-kbd{justify-self:end}
+.vl-cmd-tip{padding:8px 10px 4px;font:450 12px/1.3 var(--font-ui);color:var(--label-3)}
+.vl-cmd.is-compact .vl-cmd-i{grid-template-columns:24px auto minmax(0,1fr);gap:10px;min-height:36px;padding:0 8px}
+.vl-cmd.is-compact .vl-cmd-who{display:none}
+.vl-cmd.is-compact .vl-cmd-c,.vl-cmd.is-compact .vl-cmd-d{font-size:13px}
+
+/* SelectionBar */
+.vl-sb{position:relative;display:inline-flex;align-items:center;gap:2px;height:40px;padding:4px;border-radius:var(--radius-md);background:var(--card);box-shadow:var(--shadow-chrome);font-family:var(--font-ui)}
+.vl-root .vl-sb button{position:relative;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:var(--radius-xs);font:550 13px/1 var(--font-ui);letter-spacing:-.01em;color:var(--label-2);transition:background var(--duration-quick),color var(--duration-quick),transform var(--duration-press) ease-out}
+.vl-root .vl-sb button:hover,.vl-root .vl-sb button[aria-expanded="true"]{background:var(--hover);color:var(--label)}
+.vl-root .vl-sb button:active{transform:scale(.96);background:var(--press)}
+.vl-sb button .vl-ico{width:16px;height:16px;stroke-width:1.8;flex:none}
+.vl-root .vl-sb .vl-sb-ic{width:32px;padding:0;justify-content:center}
+.vl-root .vl-sb .vl-sb-ic.is-del:hover{color:var(--danger-ink)}
+.vl-sb-split{display:inline-flex;align-items:center;height:32px;margin-right:4px;border-radius:var(--radius-xs);background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair-2)}
+.vl-root .vl-sb .vl-sb-main{padding:0 10px 0 9px;color:var(--label);font-weight:600;border-radius:8px 0 0 8px}
+.vl-root .vl-sb .vl-sb-caret{width:26px;padding:0;justify-content:center;border-radius:0 8px 8px 0;box-shadow:inset .5px 0 0 var(--hair-2)}
+.vl-sb .vl-sb-caret .vl-ico{width:13px;height:13px;stroke-width:2}
+.vl-sb-menu{position:absolute;top:calc(100% + 6px);min-width:196px;padding:5px;border-radius:var(--radius-md);display:grid;gap:1px;z-index:3;background:var(--card);box-shadow:var(--shadow-card-up)}
+.vl-sb-menu.is-make{left:4px}
+.vl-sb-menu.is-more{right:4px}
+.vl-root .vl-sb .vl-sb-menu button{justify-content:flex-start;width:100%;gap:10px;font:500 13px/1 var(--font-ui);color:var(--label)}
+.vl-sb-menu button .vl-ico{color:var(--label-2)}
+.vl-sb-menu .vl-kbd{margin-left:auto;background:none;box-shadow:none;font:500 12px/1 var(--font-ui);color:var(--label-3)}
+.vl-sb-sep{display:block;height:.5px;margin:4px 6px}
+
+/* CopilotButton */
+.vl-root .vl-cpbtn{display:grid;place-items:center;width:36px;height:36px;border-radius:var(--radius-pill);color:var(--label-2);background:var(--card);box-shadow:var(--shadow-chrome);transition:color var(--duration-quick),background var(--duration-quick),transform var(--duration-press) ease-out}
+.vl-root .vl-cpbtn:hover{color:var(--label)}
+.vl-root .vl-cpbtn:active{transform:scale(.97)}
+.vl-root .vl-cpbtn.is-open{color:var(--label);background:color-mix(in srgb,var(--label) 7%,var(--card))}
+.vl-cpbtn .vl-ico{width:16px;height:16px;stroke-width:1.7}
+.vl-cpbtn .vl-ico path+path{opacity:.5}
+
+/* EvidenceLine and its card */
+.vl-evl-wrap,.vl-avg-wrap{position:relative;display:inline-flex}
+.vl-evl{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;padding:2px 6px 2px 4px;margin:-2px -6px -2px -4px;border-radius:var(--radius-xs);font:var(--text-meta);color:var(--label-3);cursor:default;outline:none;transition:background var(--duration-quick)}
+.vl-evl:hover,.vl-evl.is-open{background:var(--hover)}
+.vl-evl:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--label) 40%,transparent)}
+.vl-evl span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vl-ev-ico{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;color:var(--label-3)}
+.vl-ev-ico.is-observed{color:var(--C)}
+.vl-ev-ico.is-reported{color:var(--A)}
+.vl-ev-ico.is-proposed{color:var(--B)}
+.vl-ev-ico.is-none{color:var(--label-4)}
+.vl-evc,.vl-avc{position:absolute;left:-6px;top:calc(100% + 8px);z-index:var(--z-tooltip);border-radius:var(--radius-md);background:var(--card);box-shadow:var(--shadow-card-up);font-family:var(--font-ui);color:var(--label);animation:vlPopIn var(--duration-spring) cubic-bezier(.32,.72,0,1) both}
+@keyframes vlPopIn{from{opacity:0;transform:translateY(-4px) scale(.97)}}
+.vl-evc{width:300px;padding:12px 6px 6px}
+.vl-evc-head{display:flex;align-items:center;gap:8px;padding:0 10px}
+.vl-evc-head b{font:650 15px/1.25 var(--font-ui);letter-spacing:-.01em}
+.vl-evc-head .vl-ev-ico{width:17px;height:17px}
+.vl-evc p{margin:6px 10px 8px;font:400 13px/19px var(--font-ui);color:var(--label-2)}
+.vl-evc ul,.vl-avc ul{list-style:none;margin:0;padding:0}
+.vl-evc li,.vl-avc li{display:flex;align-items:flex-start;gap:10px;padding:6px 8px;border-radius:var(--radius-sm)}
+.vl-evc li:hover,.vl-avc li:hover{background:var(--hover)}
+.vl-evc-g{flex:none;width:24px;height:20px;display:grid;place-items:center}
+.vl-evc-g .vl-ev-ico{width:15px;height:15px}
+.vl-evc-t,.vl-avc-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.vl-evc-t b,.vl-avc-t b{font:600 13px/1.2 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vl-evc-t small,.vl-avc-t small{font:var(--text-caption);color:var(--label-3);line-height:16px}
+.vl-evc-n{flex:none;min-width:16px;text-align:right;font:600 13px/20px var(--font-ui);font-variant-numeric:tabular-nums;color:var(--label-2)}
+.vl-evc-acts{display:flex;justify-content:flex-end;gap:6px;padding:8px 6px 4px;margin-top:4px;border-top:.5px solid var(--hair)}
+.vl-root .vl-evc-acts button{height:28px;padding:0 10px;border-radius:var(--radius-sm);background:var(--hover);color:var(--label);font:550 13px/1 var(--font-ui)}
+.vl-root .vl-evc-acts button:hover{background:var(--press)}
+.vl-root .vl-evc-acts button.is-primary{background:var(--act);color:var(--on-act)}
+
+/* Avatar and AvatarGroup */
+.vl-av{position:relative;flex:none;width:18px;height:18px;border-radius:50%;background:var(--seal-ring,var(--card));box-shadow:0 0 0 2px var(--seal-ring,var(--card))}
+.vl-av.is-md{width:24px;height:24px;box-shadow:none;background:none}
+.vl-av-mk{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:color-mix(in srgb,var(--label) 6%,var(--card));color:var(--crew-scout);box-shadow:0 0 0 .5px var(--hair-2)}
+.vl-av-mk svg{width:66%;height:66%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vl-av-mk svg .f{fill:currentColor;stroke:none}
+.vl-av.is-md .vl-av-mk svg{width:62%;height:62%;stroke-width:1.9}
+.vl-av-mk.is-person{background:var(--person,var(--label-2));color:var(--person-ink,var(--card));box-shadow:none;font:650 10px/1 var(--font-ui);letter-spacing:-.01em}
+.vl-av.is-md .vl-av-mk.is-person{font-size:11px}
+.vl-av-mk.is-anon{background:var(--hover);color:var(--label-2)}
+.vl-av-ok{position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:var(--label);box-shadow:0 0 0 1.5px var(--card);display:grid;place-items:center}
+.vl-av.is-md .vl-av-ok{right:-2px;bottom:-2px;width:11px;height:11px}
+.vl-av-ok svg{width:100%;height:100%;fill:none;stroke:var(--card);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.vl-avg{display:inline-flex;align-items:center;height:20px;padding:0 1px;border-radius:var(--radius-pill);outline:none;cursor:default}
+.vl-avg:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--label) 40%,transparent)}
+.vl-avg>.vl-av,.vl-av-more{margin-left:-4px;z-index:calc(10 - var(--i));transition:margin-left var(--duration-spring) cubic-bezier(.32,.72,0,1) calc(var(--i) * 30ms)}
+.vl-avg>.vl-av:first-child{margin-left:0}
+.vl-av-more{position:relative;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px 0 6px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--label) 8%,var(--card));box-shadow:0 0 0 2px var(--seal-ring,var(--card));color:var(--label-2);font:650 10px/1 var(--font-ui);font-variant-numeric:tabular-nums}
+.vl-avg:hover>.vl-av,.vl-avg:hover>.vl-av-more,.vl-avg.is-open>.vl-av,.vl-avg.is-open>.vl-av-more{margin-left:3px}
+.vl-avg:hover>.vl-av:first-child,.vl-avg.is-open>.vl-av:first-child{margin-left:0}
+.vl-avc{min-width:220px;max-width:300px;padding:6px}
+.vl-avc header{padding:6px 8px 4px;font:var(--text-eyebrow);letter-spacing:.02em;color:var(--label-3)}
+.vl-avc li{align-items:center;animation:vlRowIn 240ms cubic-bezier(.32,.72,0,1) both;animation-delay:calc(40ms + var(--i) * 30ms)}
+@keyframes vlRowIn{from{opacity:0;transform:translateY(3px)}}
+.vl-avc time{flex:none;font:var(--text-caption);color:var(--label-3);font-variant-numeric:tabular-nums}
+
+/* Breathing: anything waiting or thinking breathes at one pace */
+.vl-mk.is-thinking{background:radial-gradient(circle at 40% 35%,#fff,#FFF6E6 55%,#FFE2B8);color:#2A1E0E;animation:vlBreathe var(--duration-breath) ease-in-out infinite}
+@keyframes vlBreathe{0%,100%{box-shadow:0 0 0 1px rgba(255,255,255,.4),0 0 3px 0 var(--bloom);transform:scale(1)}50%{box-shadow:0 0 0 1px rgba(255,255,255,.4),0 0 14px 3px var(--bloom);transform:scale(1.05)}}
+.vl-mk.is-working{animation:vlBreathe var(--duration-breath) ease-in-out infinite}
+
+@media (prefers-reduced-motion:reduce){
+  .vl-pal,.vl-evc,.vl-avc,.vl-avc li{animation:none}
+  .vl-avg>.vl-av,.vl-av-more{transition:none}
+  .vl-mk.is-thinking,.vl-mk.is-working{animation:none;box-shadow:0 0 0 1px rgba(255,255,255,.4),0 0 10px 2px var(--bloom)}
+}
+:lang(zh) .vl-cmd-c,:lang(zh) .vl-cmd-d,:lang(zh) .vl-pal-field input,:lang(zh) .vl-sb button,:lang(zh) .vl-evl,:lang(zh) .vl-evc-head b{letter-spacing:0}
+
+/* Menus and bars that float over cards are solid, so the words under them never show through (PR 54) */
+:root .vl-root :is(.vl-strip,.vl-cmenu,.vl-pbar,.vl-tip){background:var(--card);-webkit-backdrop-filter:none;backdrop-filter:none}
+:root .vl-root :is(.vl-strip,.vl-cmenu,.vl-tip){box-shadow:var(--shadow-chrome)}
+:root .vl-root .vl-tip{color:var(--label)}
+:root .vl-root .vl-tip-k{color:var(--label-3);opacity:1}

@@ -1,7 +1,7 @@
 <!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # Kbd
 
-A key, inline in copy or on a button: a filled `hover` chip in mono 11px.
+A keycap: a key, inline in copy, at the end of a palette row, or in a menu.
 
 `Vellum.Kbd` · Controls
 
@@ -16,6 +16,7 @@ A key, inline in copy or on a button: a filled `hover` chip in mono 11px.
 | prop | type | note |
 | --- | --- | --- |
 | `children` | `React.ReactNode` |  |
+| `size` | `'sm' \| 'md'` | `sm` (16px) inside a sentence of 12px copy. Default 20px. |
 
 ## More
 

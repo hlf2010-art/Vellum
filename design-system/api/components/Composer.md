@@ -1,7 +1,7 @@
 <!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # Composer
 
-The command bar at the bottom centre of every board: one calm row where you write an idea or a `/` command.
+The ⌘K command palette: one field in the middle of the screen for commands, card search and new ideas.
 
 `Vellum.Composer` · Canvas chrome
 
@@ -15,13 +15,20 @@ The command bar at the bottom centre of every board: one calm row where you writ
 
 | prop | type | note |
 | --- | --- | --- |
-| `placeholder` | `string` | Default "Write an idea, or / for commands". |
+| `open` | `boolean` | false: only the hint pill ("⌘K Commands") at the bottom centre. Default true: the open palette. |
+| `placeholder` | `string` | Default "Type a command, or search". With no cards yet the app says "Type a command, or write an idea". |
 | `value` | `string` |  |
-| `hint` | `string` |  |
-| `route` | `{ member?: CrewMember \| null; label: string }` | Who handles the request; the chip appears once there is text (or with showRoute). |
-| `showRoute` | `boolean` |  |
-| `onSend` | `(text: string) => void` | Enter sends, Shift+Enter breaks the line; the field grows to 160px. |
-| `recording` | `boolean` | Mic is recording: danger tint, aria-pressed. |
+| `hintLabel` | `string` | Hint pill text. Default "Commands". |
+| `suggestions` | `CommandItem[]` | Up to three rows shown while the field is empty, each with its keycap. |
+| `commands` | `CommandItem[]` | Rows listed after "/" and matched against plain words. |
+| `cards` | `CommandItem[]` | Cards matched against plain words (two characters or more). |
+| `route` | `string` | What Enter will do once there is text, shown at the right with a ↵ keycap. Default "Run command" / "Add as an idea". |
+| `learned` | `boolean` | Hides the "Type / to see every command" tip once someone has used "/" a few times. |
+| `autoFocus` | `boolean` |  |
+| `onOpen` | `() => void` |  |
+| `onClose` | `() => void` |  |
+| `onSubmit` | `(text: string) => void` |  |
+| `onPick` | `(item: CommandItem) => void` |  |
 
 ## More
 

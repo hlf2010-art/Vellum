@@ -1595,7 +1595,7 @@ th[aria-sort="ascending"],th[aria-sort="descending"]{color:var(--label)}
 .cp-target button{margin-left:auto;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:var(--label-3)}
 .cp-target button:hover{background:var(--press);color:var(--label)}
 .cp-target button .ico{width:11px;height:11px;stroke-width:2.2}
-.omni-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c,var(--B))}
+.omni-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c,var(--label-4))}
 .cp-caret{display:inline-block;width:6px;height:13px;margin-left:3px;vertical-align:-2px;border-radius:2px;background:var(--C-fill);animation:beat .8s ease-in-out infinite}
 /* streaming reveal: each new word fades in and un-blurs, like Gemini */
 .uv{display:inline-block;animation:uv .64s cubic-bezier(.22,.7,.2,1) both}
@@ -3065,9 +3065,9 @@ dialog.sheet.del-sheet{width:min(420px,calc(100% - 24px))}
 #world.far .rel-tag{display:none}
 #wires path.w.rel{stroke-dasharray:none;stroke-width:1.7}
 #wires path.w.rel-related{stroke:color-mix(in srgb,var(--label) 34%,transparent)}
-#wires path.w.rel-supports{stroke:color-mix(in srgb,var(--ok) 75%,transparent)}
+#wires path.w.rel-supports{stroke:color-mix(in srgb,var(--ok-fill) 75%,transparent)}
 #wires path.w.rel-conflicts{stroke:color-mix(in srgb,var(--danger) 72%,transparent);stroke-dasharray:7 4}
-#wires path.w.rel-extends{stroke:color-mix(in srgb,var(--B) 72%,transparent)}
+#wires path.w.rel-extends{stroke:color-mix(in srgb,var(--B-fill) 72%,transparent)}
 /* the snap preview: a glowing seam where the clasp will land, and a guide when edges line up */
 .snap-guide{position:absolute;left:0;top:0;pointer-events:none;opacity:0;transition:opacity .12s var(--ease)}
 .snap-guide.on{opacity:1}
@@ -14677,7 +14677,7 @@ function showOmniResults(v){
   if(!hits.length&&!cmds.length)return false;
   if(menuKind!=="omni")menuIdx=-1;
   menuKind="omni";
-  menuItems=[...hits.map(n=>({card:n.id,html:`<span class="pal-ic"><i class="omni-dot" style="--c:${lin(n)?`var(--${lin(n)})`:"var(--label-4)"}"></i></span><span class="cmd">${esc(clip(titleOf(n)||kindLabel(n),52))}</span><span class="d">${esc(kindLabel(n))}</span>`})),...cmds.map(c=>({ins:c.c+" ",html:cmdRowHTML(c)}))];
+  menuItems=[...hits.map(n=>({card:n.id,html:`<span class="pal-ic"><i class="omni-dot" style="--c:${lin(n)?`var(--${lin(n)}-fill)`:"var(--label-4)"}"></i></span><span class="cmd">${esc(clip(titleOf(n)||kindLabel(n),52))}</span><span class="d">${esc(kindLabel(n))}</span>`})),...cmds.map(c=>({ins:c.c+" ",html:cmdRowHTML(c)}))];
   menuIdx=clamp(menuIdx,-1,menuItems.length-1);
   const el=$("menu");el.hidden=false;
   el.innerHTML=(hits.length?`<div class="mh">${L("Cards","卡片")}</div>`:"")+menuItems.map((it,i)=>(i===hits.length&&cmds.length?`<div class="mh">${L("Commands","命令")}</div>`:"")+`<button type="button" role="option" data-mi="${i}"${it.card?' class="omni-row"':""} aria-selected="${i===menuIdx}">${it.html}</button>`).join("");

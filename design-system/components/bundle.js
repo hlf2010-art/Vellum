@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Vellum","components":[{"name":"Card"},{"name":"LineageChip"},{"name":"EvidenceWeight"},{"name":"CrewMark"},{"name":"Button"},{"name":"ReviewPill"},{"name":"ToolRail"},{"name":"Composer"},{"name":"Toast"},{"name":"DraftBar"},{"name":"TaskIsland"},{"name":"CrewBar"},{"name":"CrewSettings"},{"name":"CardMenu"},{"name":"Sheet"},{"name":"SourceRow"},{"name":"EvidenceBlocks"},{"name":"Overview"},{"name":"Wire"},{"name":"Port"},{"name":"StageHeader"},{"name":"SelectionStrip"},{"name":"CrewCursor"},{"name":"CommandMenu"},{"name":"Dialog"},{"name":"Segmented"},{"name":"Tooltip"},{"name":"Kbd"},{"name":"Tag"},{"name":"TextField"},{"name":"Checkbox"},{"name":"Switch"},{"name":"Tabs"},{"name":"Progress"},{"name":"Skeleton"},{"name":"EmptyState"},{"name":"InlineAlert"},{"name":"ProofCard"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Vellum","components":[{"name":"Card"},{"name":"LineageChip"},{"name":"EvidenceWeight"},{"name":"CrewMark"},{"name":"Button"},{"name":"ReviewPill"},{"name":"ToolRail"},{"name":"Composer"},{"name":"Toast"},{"name":"DraftBar"},{"name":"TaskIsland"},{"name":"CrewBar"},{"name":"CrewSettings"},{"name":"CardMenu"},{"name":"Sheet"},{"name":"SourceRow"},{"name":"EvidenceBlocks"},{"name":"Overview"},{"name":"Wire"},{"name":"Port"},{"name":"StageHeader"},{"name":"SelectionStrip"},{"name":"CrewCursor"},{"name":"CommandMenu"},{"name":"Dialog"},{"name":"Segmented"},{"name":"Tooltip"},{"name":"Kbd"},{"name":"Tag"},{"name":"TextField"},{"name":"Checkbox"},{"name":"Switch"},{"name":"Tabs"},{"name":"Progress"},{"name":"Skeleton"},{"name":"EmptyState"},{"name":"InlineAlert"},{"name":"ProofCard"},{"name":"SelectionBar"},{"name":"CopilotButton"},{"name":"EvidenceLine"},{"name":"EvidenceCard"},{"name":"Avatar"},{"name":"AvatarGroup"}]} */
 (function(){
   var React = window.React, h = React.createElement;
   function cx(){ return Array.prototype.filter.call(arguments, Boolean).join(' '); }
@@ -6,7 +6,8 @@
   // Vellum's own 24px line icons (paths copied from Vellum-Lumen.html)
   var ICONS = {
     select: '<path d="M5 4l12.5 7.2-5.6 1.9-1.9 5.6z"/>',
-    lasso: '<path d="M12 4.5c4.7 0 8.5 3.1 8.5 6.9s-3.8 6.9-8.5 6.9-8.5-3.1-8.5-6.9c0-2.6 1.7-4.8 4.3-6"/><circle cx="7.5" cy="17.8" r="1.6"/>',
+    lasso: '<path d="M14.6 5.4l4 4L9 19H5v-4z"/><path d="M12.6 7.4l4 4"/>',
+    pen: '<path d="M14.6 5.4l4 4L9 19H5v-4z"/><path d="M12.6 7.4l4 4"/>',
     hand: '<path d="M8.5 13V6.8a1.3 1.3 0 0 1 2.6 0V11m0-4.2V5.3a1.3 1.3 0 0 1 2.6 0V11m0-3.7a1.3 1.3 0 0 1 2.6 0V12c0 4-2.5 6.8-6.1 6.8-2.3 0-4.1-1.1-5-3l-1.5-3.1a1.3 1.3 0 0 1 2.2-1.3L8.5 13"/>',
     upload: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.4"/><path d="m21 15.5-4.5-4.5-6.5 6.5L7 14.5l-4 4"/>',
     organize: '<rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2"/>',
@@ -69,7 +70,7 @@
   function CrewMark(p){
     var c = CREW[p.member || 'scout'];
     var state = p.state || (p.working ? 'working' : 'free');
-    var label = { free: 'free', working: 'working', waiting: 'waiting for you' }[state] || state;
+    var label = { free: 'free', working: 'working', waiting: 'waiting for you', thinking: 'thinking' }[state] || state;
     return h('span', { className: cx('vl-mk', state !== 'free' && 'is-' + state, p.size === 'sm' && 'is-sm', p.size === 'xs' && 'is-xs', p.size === 'isl' && 'is-isl'), style: { '--crew': c.ink }, title: c.name + ': ' + label, role: 'img', 'aria-label': c.name + ': ' + label },
       h('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true', dangerouslySetInnerHTML: { __html: c.svg } }));
   }
@@ -86,7 +87,7 @@
     return h('button', { type: 'button', className: 'vl-review', onClick: p.onClick }, h('i', { 'aria-hidden': 'true' }), p.label || (n + ' waiting'));
   }
 
-  var KIND_LABEL = { source: 'Source', idea: 'Core Thesis', direction: 'Direction', note: 'Sticky', notepad: 'Notepad', recording: 'Recording', image: 'Image', audio: 'Audio', link: 'Link', frame: 'Frame', synthesis: 'Synthesis', proof: 'Proof', question: 'Question', list: 'Action list', snapshot: 'Snapshot', kanban: 'Kanban', group: 'Group' };
+  var KIND_LABEL = { source: 'Document', idea: 'Idea', direction: 'Direction', note: 'Sticky', notepad: 'Notepad', recording: 'Video', image: 'Image', audio: 'Audio', link: 'Link', frame: 'Frame', synthesis: 'Synthesis', proof: 'Proof', question: 'Question', list: 'Action list', snapshot: 'Snapshot', kanban: 'Kanban', group: 'Group' };
   var KIND_ICON = { source: 'doc', notepad: 'notepad', audio: 'audio', group: 'group' };
   var MEDIA_ICON = { recording: 'video', image: 'image', frame: 'frame', link: 'link' };
 
@@ -123,8 +124,7 @@
       if (p.by) bits.push(h(CrewMark, { key: 'by', member: p.by, size: 'xs' }));
       if (p.lineage && (kind === 'direction' || kind === 'proof' || kind === 'snapshot')) bits.push(h(LineageChip, { key: 'chip', lineage: p.lineage }));
       if (kind === 'question') bits.push(h('i', { key: 'q', className: 'vl-qdot', 'aria-hidden': 'true' }));
-      if (KIND_ICON[kind] && !p.by) bits.push(h(Icon, { key: 'i', name: KIND_ICON[kind] }));
-      bits.push(h('span', { key: 't', className: kind === 'direction' ? 'vl-pgname' : null }, kind === 'proof' && p.version ? label + ' · ' + p.version : label));
+      bits.push(h('span', { key: 't', className: kind === 'direction' ? 'vl-pgname' : null, title: p.eyebrowTip }, kind === 'proof' && p.version ? label + ' · ' + p.version : label));
       lead = bits;
     }
     var head = (kind === 'link') ? null : h('div', { className: 'vl-card-k' }, lead, h('span', { className: 'vl-sp' }), p.headExtra);
@@ -150,7 +150,7 @@
       })));
     }
     if (kind === 'kanban' && p.columns) body.push(h('div', { key: 'kb', className: 'vl-kb' }, p.columns.map(function(col, i){
-      return h('div', { key: i, className: 'vl-kb-col', style: { '--kb-c': 'var(--' + (col.lineage || ['A', 'B', 'C'][i % 3]) + ')' } },
+      return h('div', { key: i, className: 'vl-kb-col', style: col.lineage ? { '--kb-c': 'var(--' + col.lineage + '-fill)' } : null },
         h('div', { className: 'vl-kb-h' }, h('span', null, col.title), h('span', null, col.items.length)),
         h('ul', null, col.items.map(function(it, j){ return h('li', { key: j }, it); })),
         h('div', { className: 'vl-kb-add' }, '+ Add…'));
@@ -188,7 +188,7 @@
       h('div', { className: 'vl-in' }, head, body, foot), err, prop);
   }
 
-  var TOOLS = [['select', 'Select / Pan · V'], ['lasso', 'Lasso select · S'], ['hand', 'Hand / Pan · H'], '|', ['upload', 'Upload file or media · U'], ['organize', 'Organize canvas · T'], ['search', 'Search cards · ⌘F'], '|', ['undo', 'Undo · ⌘Z'], ['redo', 'Redo · ⌘⇧Z']];
+  var TOOLS = [['select', 'Select / Pan · V'], ['lasso', 'Pen · P · circle to select'], ['hand', 'Hand / Pan · H'], '|', ['upload', 'Upload file or media · U'], ['organize', 'Organize canvas · T'], ['search', 'Search cards · ⌘F'], '|', ['undo', 'Undo · ⌘Z'], ['redo', 'Redo · ⌘⇧Z']];
   function ToolRail(p){
     var useState = React.useState;
     var st = useState(p.active || 'select'), active = st[0], setActive = st[1];
@@ -202,24 +202,57 @@
     return h('div', { className: cx('vl-rail', p.orientation === 'horizontal' && 'is-row'), role: 'toolbar', 'aria-label': 'Canvas tools', 'aria-orientation': p.orientation || 'vertical' }, items);
   }
 
+  /* Composer: the ⌘K command palette. Closed, only a small hint pill stays at the bottom centre (a hint, not an input).
+     Open, one field sits in the middle of the screen: three suggestions when empty, every command after "/",
+     cards and matching commands for plain words. Esc or a click outside puts it away. */
+  var PAL_STARTS = [{ icon: 'note', cmd: 'New sticky', kbd: 'N' }, { icon: 'upload', cmd: 'Add files', kbd: 'U' }, { icon: 'copilot', cmd: 'Ask Copilot', kbd: '⌘.' }];
+  var PAL_CMDS = [{ icon: 'fork', cmd: '/fork', hint: '2–4', desc: 'Explore directions from the selected claim', member: 'strategist' }, { icon: 'build', cmd: '/build', desc: 'Build a prototype from the selected direction', member: 'wright' }, { icon: 'gather', cmd: '/gather', desc: 'Read the selection and weigh its evidence', member: 'scout' }, { icon: 'critique', cmd: '/critique', desc: 'Check the selection against its sources', member: 'critic' }, { icon: 'note', cmd: '/note', desc: 'Add a sticky where you’re looking' }, { icon: 'link', cmd: '/link', desc: 'Save a web address as a link card' }];
+  var PAL_CARDS = [{ dot: 'B', cmd: 'Isolate one retry', desc: 'Direction B' }, { cmd: 'Creators re-run the whole job when one check fails', desc: 'Idea' }, { cmd: 'Playtest telemetry', desc: 'Document' }];
   function Composer(p){
     var st = React.useState(p.value || ''), val = st[0], setVal = st[1];
     var ref = React.useRef(null);
-    var has = !!val.trim();
-    var route = p.route || { member: null, label: 'Canvas AI' };
-    React.useLayoutEffect(function(){ var t = ref.current; if (!t) return; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 160) + 'px'; }, [val]);
-    return h('form', { className: 'vl-line', onSubmit: function(e){ e.preventDefault(); if (!has) return; if (p.onSend) p.onSend(val); setVal(''); }, 'aria-label': 'Composer' },
-      h('div', { className: 'vl-field' },
-        h('button', { type: 'button', className: 'vl-sq vl-plus', 'aria-label': 'Add files, a note or a claim', title: 'Add' }, h(Icon, { name: 'plus' })),
-        h('textarea', { ref: ref, rows: 1, value: val, placeholder: p.placeholder || 'Write an idea, or / for commands', 'aria-label': 'Ask the crew',
+    if (p.open === false) return h('button', { type: 'button', className: 'vl-palhint', onClick: p.onOpen, 'aria-keyshortcuts': 'Meta+K', 'aria-label': 'Open commands (⌘K)' }, h(Kbd, null, '⌘K'), h('span', null, p.hintLabel || 'Commands'));
+    var q = val.trim(), sections, route = null;
+    if (!q) sections = [{ title: 'Suggestions', items: p.suggestions || PAL_STARTS }];
+    else if (q[0] === '/') { var w = q.slice(1).toLowerCase(); sections = [{ title: 'Commands', items: (p.commands || PAL_CMDS).filter(function(c){ return c.cmd.slice(1).indexOf(w) === 0; }) }]; }
+    else if (q.length >= 2) { var lw = q.toLowerCase(); sections = [{ title: 'Cards', items: (p.cards || PAL_CARDS).filter(function(c){ return c.cmd.toLowerCase().indexOf(lw) >= 0; }) }, { title: 'Commands', items: (p.commands || PAL_CMDS).filter(function(c){ return c.cmd.slice(1).indexOf(lw) === 0; }).slice(0, 3) }]; }
+    if (q) route = p.route || (q[0] === '/' ? 'Run command' : 'Add as an idea');
+    sections = (sections || []).filter(function(s){ return s.items.length; });
+    return h('form', { className: 'vl-pal', role: 'dialog', 'aria-label': 'Commands', onSubmit: function(e){ e.preventDefault(); if (!q) return; if (p.onSubmit) p.onSubmit(val); setVal(''); } },
+      h('div', { className: 'vl-pal-field' },
+        h(Icon, { name: 'search' }),
+        h('input', { ref: ref, value: val, autoFocus: p.autoFocus, placeholder: p.placeholder || 'Type a command, or search', 'aria-label': 'Commands and search', spellCheck: false,
           onChange: function(e){ setVal(e.target.value); },
-          onKeyDown: function(e){ if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); e.currentTarget.form.requestSubmit(); } } }),
-        h('button', { type: 'button', className: cx('vl-route', !has && !p.showRoute && 'is-quiet'), 'aria-haspopup': 'menu', title: route.label + ' \u00b7 click to pick a specialist' },
-          route.member ? h(CrewMark, { member: route.member, size: 'xs' }) : h('span', { className: 'vl-route-cp', 'aria-hidden': 'true' }), h('b', null, route.label), h(Icon, { name: 'chevron' })),
-        h('button', { type: 'button', className: cx('vl-sq vl-mic', p.recording && 'is-rec'), 'aria-label': p.recording ? 'Stop dictation' : 'Dictate', 'aria-pressed': p.recording ? 'true' : 'false', title: 'Dictate' }, h(Icon, { name: 'mic' })),
-        h('button', { type: 'submit', className: 'vl-sq vl-send', 'aria-label': 'Send', disabled: !has }, h(Icon, { name: 'send' }))),
-      p.hint ? h('div', { className: 'vl-hint' }, p.hint) : null);
+          onKeyDown: function(e){ if (e.key === 'Escape' && p.onClose) { e.preventDefault(); p.onClose(); } } }),
+        route ? h('span', { className: 'vl-pal-route', title: 'What ↵ will do' }, route, h(Kbd, null, '↵')) : null),
+      sections.length ? h(CommandMenu, { embedded: true, sections: sections, tip: !q && !p.learned ? h(React.Fragment, null, 'Type ', h(Kbd, { size: 'sm' }, '/'), ' to see every command') : null, onPick: p.onPick }) : null);
   }
+
+  /* CommandMenu: the rows inside the palette (and the "/" list above the Copilot input). One row: an icon tile,
+     the command, a quiet description, who does it, and its keycap. Sections are separated by a small heading, not rules. */
+  function CommandMenu(p){
+    var sections = p.sections || [{ title: p.title || 'Commands', items: p.items || PAL_CMDS }];
+    var flat = []; sections.forEach(function(s){ s.items.forEach(function(it){ flat.push(it); }); });
+    var as = React.useState(p.active || 0), act = as[0], setAct = as[1];
+    var uid = React.useRef('vl-cmd-' + Math.random().toString(36).slice(2, 7)).current;
+    function onKey(e){ if (!flat.length) return; if (e.key === 'ArrowDown') { e.preventDefault(); setAct((act + 1) % flat.length); } else if (e.key === 'ArrowUp') { e.preventDefault(); setAct((act - 1 + flat.length) % flat.length); } else if (e.key === 'Enter' && p.onPick) { e.preventDefault(); p.onPick(flat[act]); } }
+    var n = -1;
+    return h('div', { className: cx('vl-cmd', p.embedded && 'is-embedded', p.compact && 'is-compact'), role: 'listbox', 'aria-label': sections[0].title, tabIndex: 0, onKeyDown: onKey, 'aria-activedescendant': uid + '-' + act },
+      sections.map(function(s, si){
+        return h(React.Fragment, { key: si }, h('div', { className: 'vl-cmd-h', role: 'presentation' }, s.title),
+          s.items.map(function(it){ var i = ++n; var c = it.member && CREW[it.member];
+            return h('div', { key: i, id: uid + '-' + i, role: 'option', 'aria-selected': String(i === act), className: cx('vl-cmd-i', i === act && 'is-active', !it.desc && 'is-short'), onMouseEnter: function(){ setAct(i); }, onClick: function(){ if (p.onPick) p.onPick(it); } },
+              h('span', { className: 'vl-cmd-ic', 'aria-hidden': 'true' }, it.icon ? h(Icon, { name: it.icon }) : h('i', { className: 'vl-cmd-dot', style: it.dot ? { '--c': 'var(--' + it.dot + '-fill)' } : null })),
+              h('span', { className: 'vl-cmd-c' }, it.cmd, it.hint ? h('small', null, ' ' + it.hint) : null),
+              it.desc ? h('span', { className: 'vl-cmd-d' }, it.desc) : null,
+              it.kbd ? h(Kbd, null, it.kbd) : h('span', { className: 'vl-cmd-who' }, c ? c.name : ''));
+          }));
+      }),
+      p.tip ? h('div', { className: 'vl-cmd-tip' }, p.tip) : null);
+  }
+
+  /* Kbd: a keycap. Filled, with a hairline edge and a slightly heavier bottom so it reads as a key. */
+  function Kbd(p){ return h('kbd', { className: cx('vl-kbd', p.size === 'sm' && 'is-sm') }, p.children); }
 
   function Toast(p){
     var acts = p.actions || (p.undo ? [{ label: 'Undo' }] : []);
@@ -462,19 +495,6 @@
     return h('div', { className: 'vl-ccur', role: 'status', 'aria-live': 'polite' }, h(CrewMark, { member: p.member || 'scout', state: 'working', size: 'sm' }), h('span', { className: 'vl-ccur-lbl' }, p.label || 'Reading 3/7'));
   }
 
-  /* CommandMenu: what the composer offers after "/" or "@". */
-  var CMD_SAMPLE = [{ cmd: '/fork', member: 'strategist', desc: 'Explore directions from the selected claim', hint: '2–4' }, { cmd: '/build', member: 'wright', desc: 'Build a proof from the selected direction' }, { cmd: '/gather', member: 'scout', desc: 'Read the selection and weigh its evidence' }, { cmd: '/critique', member: 'critic', desc: 'Check the selection against its sources' }, { cmd: '/note', desc: 'Add a note where you’re looking' }, { cmd: '/link', desc: 'Save a URL as a link card' }];
-  function CommandMenu(p){
-    var items = p.items || CMD_SAMPLE, as = React.useState(p.active || 0), act = as[0], setAct = as[1];
-    function onKey(e){ if (e.key === 'ArrowDown') { e.preventDefault(); setAct((act + 1) % items.length); } else if (e.key === 'ArrowUp') { e.preventDefault(); setAct((act - 1 + items.length) % items.length); } else if (e.key === 'Enter' && p.onPick) { e.preventDefault(); p.onPick(items[act]); } }
-    return h('div', { className: 'vl-cmd', role: 'listbox', 'aria-label': p.title || 'Moves', tabIndex: 0, onKeyDown: onKey, 'aria-activedescendant': 'vl-cmd-' + act },
-      h('div', { className: 'vl-cmd-h' }, p.title || 'Moves'),
-      items.map(function(it, i){ return h('div', { key: i, id: 'vl-cmd-' + i, role: 'option', 'aria-selected': String(i === act), className: cx('vl-cmd-i', i === act && 'is-active'), onMouseEnter: function(){ setAct(i); }, onClick: function(){ if (p.onPick) p.onPick(it); } },
-        it.member ? h(CrewMark, { member: it.member, size: 'xs' }) : h('span', { className: 'vl-cmd-none', 'aria-hidden': 'true' }),
-        h('span', { className: 'vl-cmd-c' }, it.cmd, it.hint ? h('small', null, ' ' + it.hint) : null),
-        h('span', { className: 'vl-cmd-d' }, it.desc)); }));
-  }
-
   /* Dialog: a focused task that needs an answer before you go on. Prefer a Sheet or an inline control first. */
   function Dialog(p){
     var panel = h('div', { className: 'vl-dlg', role: 'dialog', 'aria-modal': p.scrim ? 'true' : undefined, 'aria-label': p.title, style: { width: p.width } },
@@ -499,9 +519,6 @@
     return h('span', { className: cx('vl-tipwrap', 'is-' + (p.side || 'top')) }, trigger,
       h('span', { id: id, role: 'tooltip', className: cx('vl-tip', open && 'is-open') }, p.label, p.shortcut ? h('span', { className: 'vl-tip-k' }, ' · ' + p.shortcut) : null));
   }
-
-  /* Kbd: a key, inline in copy or on a button. */
-  function Kbd(p){ return h('kbd', { className: 'vl-kbd' }, p.children); }
 
   /* Tag: a small filled label for kind or status. Never outlined. */
   function Tag(p){ return h('span', { className: cx('vl-tag', p.tone && 'is-' + p.tone), style: p.lineage ? { '--pg': 'var(--' + p.lineage + ')' } : undefined }, p.icon ? h(Icon, { name: p.icon }) : null, p.children); }
@@ -637,5 +654,94 @@
           h(Button, { size: 'sm', onClick: p.onOpen }, 'Open'), primary)));
   }
 
-  window.Vellum = { ProofCard: ProofCard, Segmented: Segmented, Tooltip: Tooltip, Kbd: Kbd, Tag: Tag, TextField: TextField, Checkbox: Checkbox, Switch: Switch, Tabs: Tabs, Progress: Progress, ProgressRing: ProgressRing, Skeleton: Skeleton, EmptyState: EmptyState, InlineAlert: InlineAlert, Sheet: Sheet, SheetSection: SheetSection, SourceRow: SourceRow, EvidenceBlocks: EvidenceBlocks, Overview: Overview, Wire: Wire, Port: Port, StageHeader: StageHeader, SelectionStrip: SelectionStrip, CrewCursor: CrewCursor, CommandMenu: CommandMenu, Dialog: Dialog, Card: Card, LineageChip: LineageChip, EvidenceWeight: EvidenceWeight, CrewMark: CrewMark, Button: Button, ReviewPill: ReviewPill, ToolRail: ToolRail, Composer: Composer, Toast: Toast, DraftBar: DraftBar, TaskIsland: TaskIsland, CrewBar: CrewBar, CrewSettings: CrewSettings, CardMenu: CardMenu, Icon: Icon, Root: Root, CREW: CREW };
+  /* ── 27 Nov: the pieces the app gained after the design pass ── */
+  ICONS.copilot = '<path d="M12 4.6 19.2 17.6H4.8Z"/><path d="M2.8 13.6 8.8 11.4"/><path d="M16 11.4 21.2 9.4"/>';
+  ICONS.relate = '<path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1"/><path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1"/>';
+  ICONS.more = '<circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/>';
+  ICONS.fork = '<circle cx="6" cy="5.5" r="2"/><circle cx="18" cy="5.5" r="2"/><circle cx="12" cy="18.5" r="2"/><path d="M6 7.5V9a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V7.5M12 12v4.5"/>';
+  ICONS.build = '<path d="M12 3.5 19.5 7.8v8.4L12 20.5l-7.5-4.3V7.8z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12.1v8.4"/>';
+  ICONS.gather = '<circle cx="12" cy="12" r="8.5"/><path d="m15.6 8.4-2.4 4.8-4.8 2.4 2.4-4.8z"/>';
+  ICONS.critique = '<path d="M12 5v14.6M8.4 19.6h7.2M4.8 7.8h14.4"/><path d="M4.8 7.8 2.7 12.9a2.2 2.2 0 0 0 4.2 0zM19.2 7.8l-2.1 5.1a2.2 2.2 0 0 0 4.2 0z"/>';
+  ICONS.note = '<path d="M5.5 5.5h13v8.6l-4.4 4.4H5.5z"/><path d="M14.1 18.5v-4.4h4.4"/>';
+  ICONS.synth = '<path d="M5 4.5v3.2a7 7 0 0 0 7 7 7 7 0 0 0 7-7V4.5M12 14.7v4.8"/><circle cx="12" cy="20" r=".9" fill="currentColor" stroke="none"/>';
+  ICONS.list = '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="5" cy="6.5" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="5" cy="17.5" r="1"/>';
+  ICONS.kanban = '<rect x="3.5" y="4.5" width="4.5" height="15" rx="1.2"/><rect x="9.75" y="4.5" width="4.5" height="11" rx="1.2"/><rect x="16" y="4.5" width="4.5" height="13" rx="1.2"/>';
+  ICONS.treemap = '<rect x="3" y="9" width="6" height="6" rx="1.5"/><rect x="15" y="4" width="6" height="4.5" rx="1.2"/><rect x="15" y="15.5" width="6" height="4.5" rx="1.2"/><path d="M9 12h2.5c1.5 0 1.5-5.75 3.5-5.75M9 12h2.5c1.5 0 1.5 5.75 3.5 5.75"/>';
+
+  /* SelectionBar: two or more cards selected. One small solid bar 8–12px above them that follows them.
+     [Ask Copilot | ▾] first, then Relate, Group, Hide, Delete and ⋯. No "2 selected": the rings already say it. */
+  var SB_MAKE = [{ icon: 'synth', label: 'Synthesize' }, { icon: 'list', label: 'Action list' }, { icon: 'kanban', label: 'Kanban' }, { icon: 'treemap', label: 'Tree map' }, { icon: 'critique', label: 'Critique' }];
+  var SB_MORE = [{ label: 'Align left edges' }, { label: 'Align tops' }, { label: 'Distribute horizontally' }, { label: 'Duplicate', kbd: '⌘D' }];
+  function SelectionBar(p){
+    var ms = React.useState(p.menu || null), menu = ms[0], setMenu = ms[1];
+    function tog(m){ setMenu(menu === m ? null : m); }
+    function item(it, i){ return h('button', { key: i, type: 'button', role: 'menuitem', onClick: it.onClick }, it.icon ? h(Icon, { name: it.icon }) : null, h('span', null, it.label), it.kbd ? h(Kbd, null, it.kbd) : null); }
+    var make = (p.make || SB_MAKE).slice(), more = p.more || SB_MORE;
+    var ic = function(k, icon, label, tip, extra){ return h('button', Object.assign({ type: 'button', className: cx('vl-sb-ic', k === 'delete' && 'is-del'), 'aria-label': label, title: tip || label, onClick: p['on' + k[0].toUpperCase() + k.slice(1)] }, extra || {}), h(Icon, { name: icon })); };
+    return h('div', { className: 'vl-sb', role: 'toolbar', 'aria-label': 'Selected cards' },
+      h('div', { className: 'vl-sb-split' },
+        h('button', { type: 'button', className: 'vl-sb-main', title: 'Chat about these cards · ⌘↵', 'aria-keyshortcuts': 'Meta+Enter', onClick: p.onAsk }, h(Icon, { name: 'copilot' }), h('span', null, 'Ask Copilot')),
+        h('button', { type: 'button', className: 'vl-sb-caret', 'aria-haspopup': 'menu', 'aria-expanded': String(menu === 'make'), 'aria-label': 'Make something from these cards', title: 'Make from these', onClick: function(){ tog('make'); } }, h(Icon, { name: 'chevron' }))),
+      ic('relate', 'relate', 'Relate'), ic('group', 'group', 'Group'), ic('hide', 'eyeOff', 'Hide', 'Hide · ⇧H'), ic('delete', 'trash', 'Delete', 'Delete · ⌫'),
+      ic('more', 'more', 'More', 'Arrange', { 'aria-haspopup': 'menu', 'aria-expanded': String(menu === 'more'), onClick: function(){ tog('more'); } }),
+      menu === 'make' ? h('div', { className: 'vl-sb-menu is-make', role: 'menu' }, make.map(item), p.hasPictures ? [h('span', { key: 'sep', className: 'vl-sb-sep', role: 'separator' }), item({ icon: 'image', label: 'GIF' }, 'g'), item({ icon: 'video', label: 'Video' }, 'v')] : null) : null,
+      menu === 'more' ? h('div', { className: 'vl-sb-menu is-more', role: 'menu' }, more.map(item)) : null);
+  }
+
+  /* CopilotButton: Copilot's door, in the top bar at the end, right above the panel it opens. Monochrome mark, no label. */
+  function CopilotButton(p){
+    return h('button', { type: 'button', className: cx('vl-cpbtn', p.open && 'is-open'), 'aria-expanded': String(!!p.open), 'aria-label': (p.open ? 'Close' : 'Open') + ' Copilot (⌘.)', title: 'Copilot · ⌘.', 'aria-keyshortcuts': 'Meta+.', onClick: p.onClick }, h(Icon, { name: 'copilot' }));
+  }
+
+  /* EvidenceLine: one plain verdict on a judgment card (idea, synthesis, direction, question) instead of "x/y rated".
+     The mark is the weight's own glyph; hovering or focusing it opens the breakdown (EvidenceCard). */
+  var EV_GLYPH = { observed: '<path d="M1.1 6S3.1 2.5 6 2.5 10.9 6 10.9 6 8.9 9.5 6 9.5 1.1 6 1.1 6Z"/><circle cx="6" cy="6" r="1.55"/>', reported: '<path d="M2.6 2.2h6.8a1.2 1.2 0 0 1 1.2 1.2v3.9a1.2 1.2 0 0 1-1.2 1.2H5.4L3.2 10.1V8.5h-.6a1.2 1.2 0 0 1-1.2-1.2V3.4a1.2 1.2 0 0 1 1.2-1.2Z"/>', proposed: '<path d="M4.4 8.1A3.4 3.4 0 1 1 7.6 8.1v.8H4.4Z"/><path d="M4.7 10.6h2.6"/>', none: '<circle cx="6" cy="6" r="4.2" stroke-dasharray="2 1.6"/>' };
+  var EV_VERDICT = { mostly: ['observed', 'Mostly observed'], partly: ['observed', 'Partly observed'], secondhand: ['reported', 'Mostly second-hand'], hearsay: ['reported', 'Second-hand only'], thin: ['proposed', 'No evidence yet'], unrated: ['none', 'Not rated yet'] };
+  function EvGlyph(p){ return h('svg', { className: cx('vl-ev-ico', 'is-' + p.k), viewBox: '0 0 12 12', 'aria-hidden': 'true', dangerouslySetInnerHTML: { __html: EV_GLYPH[p.k] } }); }
+  function EvidenceLine(p){
+    var v = EV_VERDICT[p.verdict || 'mostly'], n = p.sources == null ? 3 : p.sources;
+    var os = React.useState(!!p.open), open = os[0], setOpen = os[1];
+    return h('span', { className: 'vl-evl-wrap' },
+      h('span', { className: cx('vl-evl', open && 'is-open', p.verdict === 'unrated' && 'is-empty'), tabIndex: 0, role: 'button', 'aria-haspopup': 'dialog', 'aria-expanded': String(open), 'aria-label': 'Evidence: ' + v[1] + ', ' + n + ' source' + (n === 1 ? '' : 's'),
+        onMouseEnter: function(){ setOpen(true); }, onMouseLeave: function(){ if (!p.open) setOpen(false); }, onFocus: function(){ setOpen(true); }, onBlur: function(){ if (!p.open) setOpen(false); } },
+        h(EvGlyph, { k: v[0] }), h('span', null, v[1])),
+      open ? h(EvidenceCard, { verdict: p.verdict, counts: p.counts, sentence: p.sentence }) : null);
+  }
+  function EvidenceCard(p){
+    var v = EV_VERDICT[p.verdict || 'mostly'], c = p.counts || { observed: 2, reported: 1, proposed: 0 };
+    var rows = [['observed', 'Observed', 'Watched in real use or a test'], ['reported', 'Reported', 'Someone told us'], ['proposed', 'Proposal', 'Our own idea, not evidence']].filter(function(r){ return c[r[0]]; });
+    var total = rows.reduce(function(s, r){ return s + c[r[0]]; }, 0) + (c.none || 0);
+    return h('div', { className: 'vl-evc', role: 'dialog', 'aria-label': 'Evidence' },
+      h('div', { className: 'vl-evc-head' }, h(EvGlyph, { k: v[0] }), h('b', null, v[1])),
+      h('p', null, p.sentence || ((c.observed || 0) + ' of ' + total + ' sources ' + ((c.observed || 0) === 1 ? 'was' : 'were') + ' watched first-hand.')),
+      h('ul', null, rows.map(function(r){ return h('li', { key: r[0] }, h('span', { className: 'vl-evc-g' }, h(EvGlyph, { k: r[0] })), h('span', { className: 'vl-evc-t' }, h('b', null, r[1]), h('small', null, r[2])), h('span', { className: 'vl-evc-n' }, c[r[0]])); })),
+      h('div', { className: 'vl-evc-acts' }, c.none ? h('button', { type: 'button' }, 'Rate the rest') : null, h('button', { type: 'button', className: 'is-primary' }, 'Show sources')));
+  }
+
+  /* AvatarGroup: who worked on a card, beside its time. One avatar alone; up to three stacked; more than three shows two and "+N".
+     On hover or focus the avatars ease apart and a card lists who did what. A check on an avatar: drafted by the crew, confirmed by you. */
+  function Avatar(p){
+    var c = p.member && CREW[p.member];
+    var inner = c ? h('span', { className: 'vl-av-mk' }, h('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true', dangerouslySetInnerHTML: { __html: c.svg } }))
+      : h('span', { className: cx('vl-av-mk', 'is-person', !p.initials && 'is-anon') }, p.initials || '?');
+    var st = Object.assign({}, p.style, p.color && !c ? { '--person': p.color, '--person-ink': '#fff' } : null);
+    return h('span', { className: cx('vl-av', p.size === 'md' && 'is-md'), style: st }, inner,
+      p.confirmed ? h('span', { className: 'vl-av-ok', 'aria-hidden': 'true' }, h('svg', { viewBox: '0 0 12 12', dangerouslySetInnerHTML: { __html: '<path d="m3.2 6.2 1.9 1.9 3.8-4"/>' } })) : null);
+  }
+  var AV_SAMPLE = [{ initials: 'M', name: 'You', role: 'Wrote the claim', when: '9:02 AM' }, { member: 'strategist', role: 'Forked it into 3 directions', when: '9:10 AM', confirmed: true }, { member: 'critic', role: 'Asked about the test', when: '9:14 AM' }];
+  function AvatarGroup(p){
+    var ppl = p.people || AV_SAMPLE, os = React.useState(!!p.open), open = os[0], setOpen = os[1];
+    var shown = ppl.length > 3 ? ppl.slice(0, 2) : ppl, more = ppl.length - shown.length;
+    var name = function(x){ return x.name || (x.member && CREW[x.member].name) || 'Someone'; };
+    return h('span', { className: 'vl-avg-wrap' },
+      h('span', { className: cx('vl-avg', open && 'is-open'), tabIndex: 0, role: 'button', 'aria-haspopup': 'dialog', 'aria-expanded': String(open), 'aria-label': ppl.length + ' contributor' + (ppl.length === 1 ? '' : 's') + ': ' + ppl.map(name).join(', '),
+        onMouseEnter: function(){ setOpen(true); }, onMouseLeave: function(){ if (!p.open) setOpen(false); }, onFocus: function(){ setOpen(true); }, onBlur: function(){ if (!p.open) setOpen(false); } },
+        shown.map(function(x, i){ return h(Avatar, Object.assign({ key: i, style: { '--i': i } }, x)); }),
+        more ? h('span', { className: 'vl-av-more', style: { '--i': shown.length } }, '+' + more) : null),
+      open ? h('div', { className: 'vl-avc', role: 'dialog', 'aria-label': 'Who worked on this' },
+        h('header', null, 'Worked on this'),
+        h('ul', null, ppl.map(function(x, i){ return h('li', { key: i, style: { '--i': i } }, h(Avatar, Object.assign({ size: 'md' }, x)), h('span', { className: 'vl-avc-t' }, h('b', null, name(x)), h('small', null, x.role)), x.when ? h('time', null, x.when) : null); }))) : null);
+  }
+
+  window.Vellum = { SelectionBar: SelectionBar, CopilotButton: CopilotButton, EvidenceLine: EvidenceLine, EvidenceCard: EvidenceCard, Avatar: Avatar, AvatarGroup: AvatarGroup, ProofCard: ProofCard, Segmented: Segmented, Tooltip: Tooltip, Kbd: Kbd, Tag: Tag, TextField: TextField, Checkbox: Checkbox, Switch: Switch, Tabs: Tabs, Progress: Progress, ProgressRing: ProgressRing, Skeleton: Skeleton, EmptyState: EmptyState, InlineAlert: InlineAlert, Sheet: Sheet, SheetSection: SheetSection, SourceRow: SourceRow, EvidenceBlocks: EvidenceBlocks, Overview: Overview, Wire: Wire, Port: Port, StageHeader: StageHeader, SelectionStrip: SelectionStrip, CrewCursor: CrewCursor, CommandMenu: CommandMenu, Dialog: Dialog, Card: Card, LineageChip: LineageChip, EvidenceWeight: EvidenceWeight, CrewMark: CrewMark, Button: Button, ReviewPill: ReviewPill, ToolRail: ToolRail, Composer: Composer, Toast: Toast, DraftBar: DraftBar, TaskIsland: TaskIsland, CrewBar: CrewBar, CrewSettings: CrewSettings, CardMenu: CardMenu, Icon: Icon, Root: Root, CREW: CREW };
 })();

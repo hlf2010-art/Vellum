@@ -260,3 +260,14 @@ This works without a model too, from the deterministic signals.
 Strategist couldn't be re-measured: every call got a 402.
 
 **Still hypothetical:** whether the meaning layer helps on real boards, in Chinese, and with the local model. The evidence so far comes from one synthetic English board and a handful of runs.
+
+## 10. When no model can be reached (2026-11-25)
+
+The live runs in section 9 stopped on an OpenRouter account with no credits. That case now has its own tests, so it never depends on a live account.
+
+- **402 (no credits), refused key, unknown model.** The first failing call marks the connection, whether it was a chat call or an embeddings call. After that, nothing more is sent to the Cloud API until the settings change or a re-check passes: no chat, no embeddings. A 402 is never retried as if the reply had been cut off.
+- **Thoughts say why.** A thought made by the built-in rules keeps the reason no model answered, and the "built-in rules" tag's tooltip shows it ("Cloud API is out of credits (HTTP 402), so this thought came from built-in rules"). Later looks that skip the Cloud API carry the same reason.
+- **Moves still happen.** Strategist forks from built-in rules and its toast says the Cloud API is out of credits. The card sheet's Related section still fills from links and topic. Decision memory doesn't need a model.
+- **No key at all.** Nothing leaves the page; the crew works on built-in rules.
+
+`tests/context-poc.cjs` group F covers all of this (18 checks). Live measurements of Strategist with embeddings still need an account with credit.

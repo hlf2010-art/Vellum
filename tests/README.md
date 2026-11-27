@@ -12,6 +12,10 @@ It checks that every inline script parses, the sample board loads and every card
 
 It also checks that what you type reaches the model: words typed on a crew draft revise it (the request carries your words and the draft), Critic answers the question you typed, and a question or an @mention of someone else is not taken as a revision. A source you add can be rated on its card (an Unrated pill) and in its sheet. A reply that hits its length limit or time limit says it was cut off, a timeout is never mistaken for Stop, and a timed-out crew move falls back to built-in rules with a message saying why. The scripted endpoint can send `finish_reason` (`finish`) and stream slowly (`slow`, ms per chunk) for these.
 
+With no model to answer (an out-of-credits Cloud API), nothing pretends to be a model's work. Try again replaces nothing when built-in rules give the same drafts, and says so. Words typed on a draft are kept on that draft with a message saying why they couldn't be applied, and no request goes to the broken Cloud API. Copilot opens by saying no model answered and why, invents no directions, and draws an image prompt from what you described. With no image service, `/image` makes one empty frame labelled Not generated instead of pictures that could pass for results.
+
+First run and the no-credit state (group 13) are checked as a first-time user with an OpenRouter key and $0 credit meets them: a welcome says what Vellum is and offers Start a board or Explore the sample (automated browsers skip it unless the address has `?welcome=1`); the sample opens on its first lane at a readable zoom with no draft tray waiting; its groups use the lane names; Test connection on a 402 says the key works but the account is out of credits and links to the provider's billing page, and every status the classifier returns has a message; the pill and the Connection popover say the same thing ("No AI connected", "Out of credits", the model's own name), also after a reload; Media Studio says what it needs instead of "your Windows PC"; `/adopt` on a draft keeps and adopts it; and the same toast twice shows once.
+
 Pin threads and Copilot are covered too. A pin reply ends with up to 3 buttons: the `ACTIONS:` line is split off (also when it follows a word such as "interactions:" or sits in a code fence), invalid buttons are dropped, a reply with none leaves the pin's own button, and the buttons go away once you write again. A search started from a card keeps the camera valid (a `NaN` camera once made the canvas impossible to move and every render throw), and a camera that is already bad heals. Copilot puts new tasks on the kanban already on the board (as a suggested edit when that board is kept, directly for a draft or your own request), still makes a separate board when asked, and shows a proposal as placed once the same card is already on the board. Streamed text is revealed word by word with a fade-in, never goes backwards, and finishes before the final render.
 
 The questions Strategist asks before branching an open idea offer suggestions, not the only answers: each has a row for the designer's own words (typing clears the chosen chip, choosing a chip clears the text, Enter submits, the typed answer is returned like a chosen one, Skip still skips).
@@ -19,6 +23,10 @@ The questions Strategist asks before branching an open idea offer suggestions, n
 Those questions stay about the idea: for an idea with no place or period of its own, a question whose options bring in a city, country, year or company the idea never mentioned ("Berlin 2025", "Siemens Germany") is dropped whichever engine answered and replaced by a relevant one (a business idea gets who it is for, how it makes money, what the first version is); games and ideas set somewhere keep their real places and periods.
 
 Run it before committing a change to `Vellum-Lumen.html`.
+
+## The board as a reasoning workflow
+
+`tests/reasoning-flow.cjs` checks that lanes are zones (a tinted band, a header saying what lives there, no step numbers, no lane-wide groups in the sample); that an empty lane is a way in that starts the action (Choose files / Write a note, Write your core judgment, pick a direction to prototype or branch a judgment, freeze a prototype) and stops inviting once its kind of card exists anywhere; that evidence tied to a judgment reads evidence → judgment, shows on the judgment's bottom row with counter-evidence apart, and lights up when the judgment is selected; that an adopted direction offers Prototype; and that the crew, the model and settings are one entry in the top bar.
 
 ## Stage and roles
 
@@ -147,7 +155,7 @@ Wait for `"status": "ready"` from `curl -s http://127.0.0.1:59631/studio/health`
 
 ## Context and decision-memory proof of concept
 
-`tests/context-poc.cjs` checks the claims in `context-poc.md`: cards keep identity, revisions, links and decision records across edits, moves and a reload; the agent reads cards by link and topic, never by position alone; it names what its thoughts rest on; and ideas you turned down stay on the record and are not offered again. The P0 group (fresh board) covers retrying replies cut off by the token limit, the "built-in rules" tag, held-back repeats in the Crew popover (Show anyway, Dismiss), and the newer rejection signals.
+`tests/context-poc.cjs` checks the claims in `context-poc.md`: cards keep identity, revisions, links and decision records across edits, moves and a reload; the agent reads cards by link and topic, never by position alone; it names what its thoughts rest on; and ideas you turned down stay on the record and are not offered again. The P0 group (fresh board) covers retrying replies cut off by the token limit, the "built-in rules" tag, held-back repeats in the Crew popover (Show anyway, Dismiss), and the newer rejection signals. Group F checks that nothing breaks when no model can be reached: a 402 (no credits) on chat or embeddings, and no key at all.
 
 ```bash
 node tests/context-poc.cjs                                              # deterministic, scripted model
@@ -155,3 +163,58 @@ node tests/context-poc.cjs --live anthropic/claude-haiku-5.5 --runs 5   # also a
 ```
 
 `--live` sends the synthetic fixture board (no user data) to `LIVE_BASE` (default `https://openrouter.ai/api/v1`, key from `LIVE_KEY` or an injecting proxy). `--json out.json` writes every check; `--shots dir` saves a screenshot of a thought's "Based on" line. Lines marked KNOWN are recorded limitations; PART means a live rate below the bar but above zero.
+
+## Relations
+
+`tests/relations.cjs` checks `relations-contract.md` with real mouse drags: the snap previews before it happens and makes one `related` relation shown as a clasp; the type picker (keys 1 to 4); a connector between snapped cards opens the same relation instead of adding one; Show line and Hide line; pulling apart keeps the relation as a line with its type and offers Unbind; ⌥ skips the snap, M and the toolbar toggle it (remembered); one Undo takes back the move and the relation; nudging a snapped card asks nothing again; a snapped group moves by its clasp and a connector dropped on the clasp relates to every card in it; the crew reads relations with their type and direction, ranks them first and never changes them; reduced motion and dark mode.
+
+```bash
+node tests/relations.cjs
+```
+
+## Moving a sticky while you write it
+
+`tests/sticky-move.cjs` checks that a sticky made by double-clicking the canvas can be moved before anything is typed: dragging an empty sticky from anywhere moves it (it used to vanish) and leaves the caret in it, so typing after the drop goes into the sticky; once it has words, dragging inside them selects text, while the grip at the top or the edge moves it without ending the edit or losing the selection; clicking away from a sticky that was never written in removes it (also after it was moved or snapped, together with its relation), but a sticky that had words is never removed; a fresh sticky shows the snap preview and snaps into a `related` relation like any card, without the type picker until it has words (with words, the picker comes up as usual).
+
+```bash
+node tests/sticky-move.cjs
+```
+
+## Who made a card
+
+`tests/creator-badge.cjs` checks who a card names, in its bottom row right before the time. A card with one maker shows that maker's avatar: a crew member's sign (Scout, Strategist, Wright, Critic, or Copilot), or your initial on a solid colour with your name from Settings › Your name ("You" / "你" until one is set); the name slides out ("Critic ·") on hover or selection. A card several people or crew members worked on shows an avatar group: maker first, then by latest activity; stacked at rest, eased apart one after another on hover or selection; more than three shows two avatars and "+N". Hovering the group (or focusing it with the keyboard) opens a card listing each contributor with what they did (Drafted / Created, Edited n×, Kept) and when; moving away or Escape closes it. Contributions are kept on the card (`n.contrib`), so trimming the change log can't lose them: editing a card adds the editor, keeping a crew card adds you, a comment adds nobody, and finishing your own new card in its first minutes is not a second contribution. Drafts show nobody (their header already names who suggested them). A card records the name it was made under (`prov.name`). Crew avatars are the top-bar seat avatars. In the overview the marks are hidden and come back on hover. Stickies no longer have a pen button; double-click edits. A card Copilot makes on its own is marked Copilot (it used to be filed under Critic), and a Copilot draft says "Suggested by Copilot". Chinese labels and the dark theme are checked too.
+
+```bash
+node tests/creator-badge.cjs
+```
+
+## How well a card is backed
+
+`tests/evidence-line.cjs` checks the evidence line on idea and synthesis cards. Instead of a "6/5 rated" bar chart, the card says one plain verdict with the same signal bars as a source's rating: Mostly observed (half or more of the rated sources were watched), Partly observed, Mostly second-hand / Second-hand only, No evidence yet (only proposals and illustrations), or Not rated yet. Hovering or focusing the line opens a card with the verdict in a sentence ("4 of 7 sources were watched first-hand. 2 not rated yet."), each kind of source with what it means and how many, and what to do next: "Rate 2 unrated sources" selects and flies to one, "Show sources" selects them all. A synthesis counts the sources it actually rests on (its stored weights once outnumbered them). It also checks that no card's bottom row runs past the card's edge, at rest, with every card selected, and with five contributors on every card. Chinese is checked too.
+
+```bash
+node tests/evidence-line.cjs
+```
+
+## One Copilot conversation per board
+
+`tests/copilot-per-board.cjs` checks that each board keeps its own Copilot conversation (`board.copilot`): switching boards switches the panel's conversation (the header names the board) with a short settle-in transition; a new board opens on an empty conversation that says Copilot reads only this board, with the stage's starter suggestions; half-typed words, queued messages and the crew member being addressed do not follow you to another board; a request made on one board carries none of another board's cards or conversation; leaving while a reply is streaming stops it, keeps what arrived on the board it was asked on (marked as stopped because you switched), and places nothing on either board; Export and Import carry the conversation, and a reply saved mid-stream shows as stopped instead of a caret forever; after a reload the active board opens on its own conversation.
+
+```bash
+node tests/copilot-per-board.cjs
+SHOTS=/some/dir node tests/copilot-per-board.cjs   # also saves screenshots
+```
+
+## Deleting a card
+
+`tests/delete-dialog.cjs` checks that deleting asks a question only when another card was made from the one being deleted. A card that is only related to another (a line you drew or a snap) is deleted at once, the toast names it, and Undo brings back the card and the relation. Otherwise one sheet asks `Delete “name”?`, says in plain words that the card made from it stays and is marked for review, shows that card as a chip, and offers Hide instead, Cancel and Delete (focused, red; Enter deletes). Delete leaves a marker so the other card says its source needs review, and Undo restores everything. From Hidden & Archived, Delete permanently uses the same sheet, says it can't be undone, and scrubs the title from Undo history. `--shots DIR` saves light and dark screenshots of the sheet.
+
+## How much the crew joins in
+
+`tests/participation.cjs` covers the Focus · Listening · Teamwork switch in the top bar (`⌘⇧.` toggles Focus; `⌘.` still opens Copilot). Each board keeps its own level and a new board starts on Listening. Focus sends nothing unasked and shows nothing; board checks keep running and wait, and leaving Focus shows them once as a short catch-up ("While you focused, I noticed 2 things") that says how long you focused and, with no model, that the crew did not read your new cards. Listening waits until you pause, then puts at most one dot on the card it is about and opens nothing by itself; Teamwork allows two and looks sooner. Board checks need no model: new observed or reported evidence that bears on an adopted direction (a relation, a wire, or shared words) and a decision with no evidence under it. They are labelled board checks, Ignore does not count them as declined ideas, and they don't come back. Changing level keeps custom permissions, and on every level edits to kept cards stay suggestions.
+
+`tests/reasoning-ink.cjs` checks that thinking is drawn in ink: claims, syntheses, directions, questions and proofs carry an ink rule in light and dark, while images, files and stickies stay plain paper. A direction set aside (another one was adopted) is fully readable, says which direction was chosen ("Set aside for B · …"), and offers "Add a reason". The reason is kept on the card, undo takes it back, the crew's record of passed-over directions carries it, and the card below moves down instead of being covered. Lines no longer take stage colours, the empty background-task pill is hidden until something has run, and an off-screen draft no longer adds a "waiting" chip at the screen edge (the top bar's "1 draft" already does that). The top bar says each thing once: "No AI connected" appears only on the connection chip (no extra dot on crew settings or the participation switch, no line in the crew popover), and a waiting draft is shown only by "1 draft", not also by a glowing agent seat.
+
+```
+node tests/reasoning-ink.cjs
+```

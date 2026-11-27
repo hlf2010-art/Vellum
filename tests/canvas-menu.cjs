@@ -186,6 +186,39 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
       check('no page errors (search snippet, welcome)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
+    {
+      // first run: a one-line welcome, then a walkthrough that shows one step at a time and points at the real thing
+      const p = await open(browser, base);
+      await p.goto(base + '/Vellum-Lumen.html?welcome=1'); await p.waitForTimeout(1500);
+      await p.evaluate(() => { store.set('.tourDone', false); if (!dlg.open) showWelcome(); }); await p.waitForTimeout(300);
+      const w = await p.evaluate(() => ({ ps: dlg.querySelectorAll('.d-body p').length, keys: !!dlg.querySelector('.wl-keys'), txt: dlg.innerText }));
+      check('welcome is one sentence and two buttons, no list of gestures', w.ps === 1 && !w.keys && !/Double-click/.test(w.txt), JSON.stringify(w));
+      await p.click('[data-welcome="start"]'); await p.waitForTimeout(400); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(1300);
+      const step = () => p.evaluate(() => { const c = document.querySelector('.tour-card'), h = document.querySelector('.tour-hole'); const r = c?.getBoundingClientRect(); return { at: tourAt, t: document.querySelector('.tour-t')?.textContent, cards: document.querySelectorAll('.tour-card').length, inView: !!r && r.left >= 16 && r.right <= innerWidth - 16 && r.top >= 0 && r.bottom <= innerHeight, holeHit: h ? getComputedStyle(h).pointerEvents : '', skip: !!c?.querySelector('[data-tour="skip"]'), btns: [...(c?.querySelectorAll('button') || [])].map(b => b.dataset.tour).join(',') }; });
+      let s = await step();
+      check('creating a board starts the walkthrough on step 1, one card, inside the screen', s.at === 0 && s.cards === 1 && s.inView && /Four stages/.test(s.t), JSON.stringify(s));
+      check('the spotlight never blocks the board', s.holeHit === 'none', JSON.stringify(s));
+      check('Skip then Next, primary rightmost', s.btns === 'skip,next', JSON.stringify(s));
+      await p.click('[data-tour="next"]'); await p.waitForTimeout(500); s = await step();
+      check('step 2 asks for a double-click', s.at === 1 && /Double-click/.test(s.t), JSON.stringify(s));
+      const pt = await p.evaluate(() => tourSpotPt); const before = await p.evaluate(() => board.nodes.length);
+      await p.mouse.dblclick(pt.x, pt.y); await p.waitForTimeout(700); s = await step();
+      check('double-clicking for real makes a sticky and moves on to step 3', s.at === 2 && await p.evaluate(n => board.nodes.length > n, before), JSON.stringify(s));
+      await p.keyboard.press('Escape'); await p.mouse.click(8, 450); await p.waitForTimeout(300);
+      await p.keyboard.press('ControlOrMeta+k'); await p.waitForTimeout(500);
+      const away = await p.evaluate(() => ({ at: tourAt, away: $('tour').classList.contains('tour-away') }));
+      check('opening ⌘K counts as step 3 and the walkthrough steps aside while the palette is open', away.at === 3 && away.away, JSON.stringify(away));
+      await p.keyboard.press('Escape'); await p.waitForTimeout(500); s = await step();
+      check('after the palette closes, the last step points at the crew and ends with Done', s.at === 3 && /crew/i.test(s.t) && s.btns === 'next' && !s.skip, JSON.stringify(s));
+      await p.click('[data-tour="next"]'); await p.waitForTimeout(400);
+      check('Done ends it for good', await p.evaluate(() => tourAt === -1 && $('tour').hidden && store.get('.tourDone')));
+      await p.evaluate(() => helpDialog()); await p.waitForTimeout(200); await p.click('[data-tour-again]'); await p.waitForTimeout(600);
+      check('Shortcuts can show the walkthrough again', await p.evaluate(() => tourAt === 0 && !dlg.open));
+      await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+      check('Esc skips it', await p.evaluate(() => tourAt === -1));
+      check('no page errors (walkthrough)', !p.errors.length, p.errors.join(' | '));
+      await p.context().close();
+    }
   } catch (e) { check('test ran to the end', false, e.stack); }
   await browser.close(); srv.close();
   console.log(results.join('\n'));

@@ -3321,6 +3321,27 @@ body.snap-skip #wall{cursor:copy}
 .card.direction .chose.empty:not(:has([contenteditable="true"])) .chose-k{display:none}
 .card.direction .chose.empty .aside-add{margin-top:0}
 @media (max-width:640px){.dec-btn .dec-l{display:none}.dec-panel{left:8px;right:8px;width:auto;bottom:8px}}
+
+/* first-run walkthrough */
+#tour{position:fixed;inset:0;z-index:70;pointer-events:none}
+#tour[hidden]{display:none}
+.tour-hole{position:fixed;box-shadow:0 0 36px 200vmax var(--tour-dim);transition:left .36s cubic-bezier(.2,.8,.2,1),top .36s cubic-bezier(.2,.8,.2,1),width .36s cubic-bezier(.2,.8,.2,1),height .36s cubic-bezier(.2,.8,.2,1),border-radius .36s,opacity .2s}
+.tour-card{position:fixed;width:300px;max-width:calc(100vw - 32px);padding:16px 16px 12px;border-radius:16px;background:var(--card);box-shadow:var(--card-shadow-up),0 24px 60px -24px rgba(0,0,0,.4);pointer-events:auto;transition:left .36s cubic-bezier(.2,.8,.2,1),top .36s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.tour-card.tour-in{animation:tourIn .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes tourIn{from{opacity:0;transform:translateY(4px)}}
+.tour-t{margin:0 0 4px;font:650 14px/1.35 var(--ui);color:var(--label)}
+.tour-b{margin:0;font:500 13px/1.5 var(--ui);color:var(--label-2)}
+.tour-foot{display:flex;align-items:center;gap:8px;margin-top:14px}
+.tour-foot .sp{flex:1}
+.tour-dots{display:flex;gap:5px}
+.tour-dots i{width:5px;height:5px;border-radius:50%;background:var(--label-3);opacity:.35;transition:opacity .2s,width .2s}
+.tour-dots i.on{opacity:1;width:14px;border-radius:3px}
+#tour.tour-away .tour-hole,#tour.tour-away .tour-card,#tour.tour-out .tour-hole,#tour.tour-out .tour-card{opacity:0;pointer-events:none}
+:root{--tour-dim:rgba(16,17,20,.07)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--tour-dim:rgba(0,0,0,.55)}}
+:root[data-theme="dark"]{--tour-dim:rgba(0,0,0,.55)}
+@media (prefers-reduced-motion:reduce){.tour-hole,.tour-card{transition:none}.tour-card.tour-in{animation:none}}
+.tour-again{display:flex;justify-content:flex-end;margin-top:12px}
 </style>
 <div id="app">
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
@@ -19025,6 +19046,7 @@ function helpDialog(opts={}){
   <div class="principle">${orb}<span><b>Light is alive</b>Only an agent at work, or something waiting for you, glows. Idle crew members are unlit. Work happening off-screen lights the edge of the screen.</span></div>
   <div class="principle"><i style="background:conic-gradient(var(--A),var(--B),var(--C),var(--D),var(--A))"></i><span><b>Colour is lineage</b>The crew is white light; each direction is one colour of its spectrum. Proofs and prints keep the colour of the direction they came from.</span></div>
   <div class="principle"><i style="border:1.5px dashed var(--label-3)"></i><span><b>See before you send</b>As you type, the board shows where the work will land and which cards will be read.</span></div>
+  <div class="tour-again"><button type="button" class="sh-btn" data-tour-again>${L("Show the walkthrough again","重新看一遍引导")}</button></div>
   <dl class="keys"><dt>Click / Pen</dt><dd>Select with V, draw with P (or ⌥+drag on the board, or a stylus): circle cards to select them, circle a direction to adopt it · ⇧+drag in Select draws a box · hold Space to pan · click wires to disconnect</dd><dt>↵ or double-click</dt><dd>Open a card in place · Esc closes</dd><dt>Space</dt><dd>Preview a proof, direction or recording</dd>
   <dt>/ and @</dt><dd>Actions and crew in the composer · ⇥ makes a request more specific</dd><dt>] </dt><dd>Next suggestion waiting for you</dd>
   <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘A · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · select all · duplicate · copy &amp; paste selected cards</dd><dt>Right-click</dt><dd>On empty canvas: upload files to where you clicked, select all, fit the board · double-click for a sticky</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
@@ -20399,26 +20421,92 @@ function initGlass(){
 function showWelcome(){
   let force=false;try{force=new URLSearchParams(location.search).get("welcome")==="1"}catch{}
   if((navigator.webdriver&&!force)||dlg.open)return;
-  openDialog(L("Welcome to Vellum","欢迎使用 Vellum"),`<div class="welcome" style="display:grid;gap:12px">
-    <p style="margin:0;font:500 14px/1.5 var(--ui);color:var(--label)">${L("Turn an idea into directions you can test, a working prototype, and a snapshot to share. Four stages run left to right: Gather, Explore, Prototype, Snapshot.","把一个想法变成可验证的方向、可交互的原型和可分享的定稿快照。四个阶段从左到右：收集素材、探索方向、制作原型、定稿分享。")}</p>
-    <p style="margin:0;font:500 13px/1.45 var(--ui);color:var(--label-2)">${L("A crew helps at each step: Scout finds sources, Strategist branches ideas, Wright builds, Critic tests. Without an AI model they fall back to simple built-in rules and say so. Connect one any time from the pill at the top right.","每一步都有成员协助：Scout 查资料，Strategist 发散想法，Wright 动手制作，Critic 负责检验。没有连接 AI 模型时，它们只能使用简单的内置规则，并会明确告诉你。随时可以从右上角的状态按钮连接模型。")}</p>
-    <dl class="wl-keys">
-      <dt>${L("Double-click","双击")}</dt><dd>${L("A sticky, right where you clicked","在点击处新建便签")}</dd>
-      <dt><kbd>⌘K</kbd></dt><dd>${L("Every command and kind of card","所有命令和卡片类型")}</dd>
-      <dt>${L("Right-click","右键")}</dt><dd>${L("Upload to that spot, select all, fit the board","上传到该处、全选、适应屏幕")}</dd>
-    </dl>
-    <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px">
+  /* one sentence here; the rest is taught one step at a time, pointing at the real thing (startTour) */
+  openDialog(L("Welcome to Vellum","欢迎使用 Vellum"),`<div class="welcome" style="display:grid;gap:20px">
+    <p style="margin:0;font:500 14px/1.5 var(--ui);color:var(--label-2)">${L("A board where you and an AI crew think an idea through, from first evidence to a prototype you can test.","在这块白板上，你和 AI 成员一起把一个想法想清楚：从最初的证据，到一个能验证的原型。")}</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
       <button type="button" class="sh-btn" data-welcome="sample">${L("Explore the sample","先看看示例")}</button>
       <button type="button" class="sh-btn" style="background:var(--act);color:var(--on-act)" data-welcome="start">${L("Start a board","新建画板")}</button>
     </div>
   </div>`,d=>{
     qs('[data-welcome="start"]',d).onclick=()=>{d.close();
-      if(typeof newBoardDialog==="function")return newBoardDialog();
-      persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);persist();setTimeout(()=>lineIn.focus(),100)};
-    qs('[data-welcome="sample"]',d).onclick=()=>d.close();
+      if(typeof newBoardDialog==="function"){newBoardDialog();return tourWhenClear()}
+      persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);persist();tourWhenClear()};
+    qs('[data-welcome="sample"]',d).onclick=()=>{d.close();tourWhenClear()};
     setTimeout(()=>qs('[data-welcome="start"]',d)?.focus({focusVisible:false}),0);  /* Enter still starts; the ring only appears once the keyboard is used */
   });
 }
+/* ── First-run walkthrough: one step at a time, each pointing at what it explains. Never blocks the board:
+   the spotlight is a feathered shadow with no hit area, and every step can be done for real or skipped. */
+const TOUR_STEPS=[
+  {k:"lanes",t:["Four stages, left to right","四个阶段，从左到右"],b:["Gather evidence, explore directions, build a prototype, keep a snapshot. Move between them any time.","收集素材、探索方向、制作原型、定稿快照。随时可以来回走。"],
+   rect:()=>{const hs=qsa(".bay-head").map(e=>e.getBoundingClientRect()).filter(r=>r.right>0&&r.left<innerWidth&&r.bottom>0&&r.top<innerHeight);if(!hs.length)return null;return {l:Math.max(8,Math.min(...hs.map(r=>r.left))),t:Math.min(...hs.map(r=>r.top)),r:Math.min(innerWidth-8,Math.max(...hs.map(r=>r.right))),b:Math.max(...hs.map(r=>r.bottom))}}},
+  {k:"sticky",t:["Double-click for a sticky","双击，新建便签"],b:["Try it on any empty spot. Write whatever is on your mind.","在任意空白处试一下，想到什么写什么。"],
+   rect:()=>{const pt=tourSpot();return pt?{l:pt.x-44,t:pt.y-44,r:pt.x+44,b:pt.y+44,round:true}:null}},
+  {k:"palette",t:["⌘K finds everything","⌘K 什么都能找到"],b:["Every command and every kind of card, from tables to tree maps.","所有命令和所有卡片类型，从表格到树状图。"],
+   rect:()=>{const e=qs("#line .pal-hint");const r=e?.getBoundingClientRect();return r&&r.width?{l:r.left,t:r.top,r:r.right,b:r.bottom,pill:true}:null}},
+  {k:"crew",t:["Your crew","你的 AI 成员"],b:["Scout, Strategist, Wright and Critic help at each step. Without an AI model they use simple built-in rules, and say so.","Scout、Strategist、Wright 和 Critic 在每一步协助你。没连 AI 模型时，它们只用简单的内置规则，并会说明。"],
+   rect:()=>{const r=$("crewSetBtn")?.getBoundingClientRect();return r&&r.width?{l:r.left,t:r.top,r:r.right,b:r.bottom,pill:true}:null}}
+];
+let tourAt=-1,tourTick=0,tourSpotPt=null,tourDirty=false;
+const tourOn=()=>tourAt>=0;
+function tourWhenClear(){setTimeout(()=>{if(tourOn()||store.get(".tourDone",false))return;if(dlg.open){dlg.addEventListener("close",()=>setTimeout(tourWhenClear,420),{once:true});return}startTour()},60)}
+function tourSpot(){
+  /* an empty patch of board near the middle of the screen, kept while the step lasts so the spotlight doesn't hop */
+  if(tourSpotPt&&!document.elementFromPoint(tourSpotPt.x,tourSpotPt.y)?.closest(".card,button,[class^='bs-'],.bay-start"))return tourSpotPt;
+  const cx=innerWidth/2,cy=innerHeight/2;
+  for(let rad=0;rad<420;rad+=40)for(let a=0;a<(rad?16:1);a++){
+    const x=Math.round(cx+rad*Math.cos(a*Math.PI/8)),y=Math.round(cy+rad*Math.sin(a*Math.PI/8));
+    const el=document.elementFromPoint(x,y);
+    if(el&&wall.contains(el)&&!el.closest(".card,button,.bay-start,.bay-head,[class^='bs-']"))return tourSpotPt={x,y};
+  }
+  return tourSpotPt=null;
+}
+function startTour({force=false}={}){
+  if(!force&&store.get(".tourDone",false))return;
+  let root=$("tour");
+  if(!root){root=document.createElement("div");root.id="tour";root.innerHTML=`<div class="tour-hole" aria-hidden="true"></div><div class="tour-card" role="dialog" aria-live="polite"></div>`;document.body.appendChild(root)}
+  tourAt=0;tourSpotPt=null;root.hidden=false;root.classList.remove("tour-out");
+  paintTour(true);clearInterval(tourTick);tourTick=setInterval(()=>paintTour(),200);
+}
+function endTour(){
+  if(!tourOn())return;tourAt=-1;clearInterval(tourTick);store.set(".tourDone",true);
+  const root=$("tour");if(!root)return;
+  if(calm()){root.hidden=true;return}
+  root.classList.add("tour-out");setTimeout(()=>{if(!tourOn())root.hidden=true},220);
+}
+function tourNext(){if(!tourOn())return;if(tourAt>=TOUR_STEPS.length-1)return endTour();tourAt++;tourSpotPt=null;paintTour(true)}
+function paintTour(fresh){
+  const root=$("tour");if(!root||!tourOn())return;
+  let st=TOUR_STEPS[tourAt];const card=qs(".tour-card",root),hole=qs(".tour-hole",root);
+  /* step it out of the way while something else has the stage: a dialog, the palette, or a sticky being written */
+  const busy=dlg.open||(typeof palOpen!=="undefined"&&palOpen);
+  if(st.k==="palette"&&busy&&!dlg.open){tourAt++;tourSpotPt=null;tourDirty=true;root.classList.add("tour-away");return}  /* opening ⌘K is the step done */
+  root.classList.toggle("tour-away",busy);if(busy)return;
+  if(tourDirty){fresh=true;tourDirty=false}
+  if(fresh){
+    const n=TOUR_STEPS.length,last=tourAt===n-1;
+    card.innerHTML=`<p class="tour-t">${esc(L(st.t[0],st.t[1]))}</p><p class="tour-b">${esc(L(st.b[0],st.b[1]))}</p>
+      <div class="tour-foot"><span class="tour-dots" aria-label="${esc(L(`Step ${tourAt+1} of ${n}`,`第 ${tourAt+1} 步，共 ${n} 步`))}">${TOUR_STEPS.map((_,i)=>`<i${i===tourAt?' class="on"':""}></i>`).join("")}</span><span class="sp"></span>
+      ${last?"":`<button type="button" class="sh-btn" data-tour="skip">${L("Skip","跳过")}</button>`}<button type="button" class="sh-btn solid" data-tour="next">${last?L("Done","完成"):L("Next","下一步")}</button></div>`;
+    card.classList.remove("tour-in");void card.offsetWidth;card.classList.add("tour-in");
+  }
+  const r=st.rect();
+  if(!r){hole.style.opacity="0";card.style.left=Math.round(innerWidth/2-card.offsetWidth/2)+"px";card.style.top=Math.round(innerHeight/2-card.offsetHeight/2)+"px";return}
+  const pad=r.round?0:10,hl=r.l-pad,ht=r.t-pad,hw=r.r-r.l+pad*2,hh=r.b-r.t+pad*2;
+  Object.assign(hole.style,{opacity:"1",left:hl+"px",top:ht+"px",width:hw+"px",height:hh+"px",borderRadius:r.round||r.pill?"999px":"16px"});
+  /* the card sits beside its target: below when there's room, else above, clamped to a 16px gutter */
+  const cw=card.offsetWidth,ch=card.offsetHeight,gap=14;
+  let top=ht+hh+gap;if(top+ch>innerHeight-16)top=Math.max(16,ht-gap-ch);
+  let left=hl+hw/2-cw/2;
+  left=clamp(left,16,innerWidth-16-cw);
+  card.style.left=Math.round(left)+"px";card.style.top=Math.round(top)+"px";
+}
+document.addEventListener("click",e=>{const b=e.target.closest?.("[data-tour]");if(!b)return;b.dataset.tour==="next"?tourNext():endTour()});
+document.addEventListener("click",e=>{if(!e.target.closest?.("[data-tour-again]"))return;dlg.open&&dlg.close();setTimeout(()=>startTour({force:true}),260)});
+/* doing the step for real counts as finishing it */
+addEventListener("dblclick",e=>{if(tourOn()&&TOUR_STEPS[tourAt].k==="sticky"&&wall.contains(e.target))setTimeout(tourNext,350)},true);
+addEventListener("keydown",e=>{if(!tourOn()||e.key!=="Escape")return;const t=e.target;if(dlg.open||(typeof palOpen!=="undefined"&&palOpen)||t?.isContentEditable||/^(INPUT|TEXTAREA)$/.test(t?.tagName))return;endTour()},true);
 function boot(){
   // the board never scrolls; focus moving to an off-screen control must not shift it under the floating UI
   for(const el of [wall,$("app")])el.addEventListener("scroll",()=>{if(el.scrollLeft||el.scrollTop){el.scrollLeft=0;el.scrollTop=0}});

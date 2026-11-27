@@ -120,6 +120,9 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);b
 :root{--zone:rgba(255,255,255,.3);--zone-2:rgba(255,255,255,.62);--zone-edge:rgba(11,12,14,.055);--zone-rule:rgba(11,12,14,.12);--zone-dash:rgba(11,12,14,.2)}
 :root[data-theme="dark"]{--zone:rgba(255,255,255,.016);--zone-2:rgba(255,255,255,.04);--zone-edge:rgba(255,255,255,.06);--zone-rule:rgba(255,255,255,.12);--zone-dash:rgba(255,255,255,.2)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--zone:rgba(255,255,255,.016);--zone-2:rgba(255,255,255,.04);--zone-edge:rgba(255,255,255,.06);--zone-rule:rgba(255,255,255,.12);--zone-dash:rgba(255,255,255,.2)}}
+:root{--pill:#FFFFFF;--pill-shadow:0 8px 28px -10px rgba(11,12,14,.12),0 1px 2px rgba(11,12,14,.03)}
+:root[data-theme="dark"]{--pill:#1A1B1F;--pill-shadow:inset 0 .5px 0 rgba(255,255,255,.06),0 10px 30px -12px rgba(0,0,0,.7)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pill:#1A1B1F;--pill-shadow:inset 0 .5px 0 rgba(255,255,255,.06),0 10px 30px -12px rgba(0,0,0,.7)}}
 .bay{position:absolute;top:-260px;height:4200px;pointer-events:none}
 /* lanes are zones: a tinted band under each, a hairline between them; every other lane a shade deeper */
 .bay-zone{position:absolute;left:18px;right:18px;top:64px;bottom:0;border-radius:36px 36px 0 0;background:var(--zone);box-shadow:inset 0 0 0 1px var(--zone-edge)}
@@ -3459,6 +3462,7 @@ body.snap-skip #wall{cursor:copy}
   <aside id="ledger" class="ledger" hidden aria-label="Activity"></aside>
   <div id="dropveil" class="dropveil" hidden><span>Drop to add to the board</span></div>
   <div id="tip" class="tip" role="tooltip"></div>
+  <div id="crewBub" class="crew-bub" role="tooltip"></div>
 
   <div class="stubs" aria-hidden="true">
     <nav id="rail"></nav>
@@ -3519,20 +3523,77 @@ body.snap-skip #wall{cursor:copy}
 /* crew level pill, crew popover, locks */
 .crew-group{display:inline-flex;align-items:center;gap:6px;padding:0 3px 0 0;border-radius:var(--radius-pill)}
 /* the one entry: the crew's marks, and words only when something is wrong */
-.crew-hub{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 10px 0 5px;border-radius:var(--radius-pill);background:var(--chrome);box-shadow:var(--chrome-shadow);color:var(--label-2);font:560 13px/1 var(--ui);transition:background var(--d-quick),color var(--d-quick),transform var(--duration-press)}
-.crew-hub:hover,.crew-hub[aria-expanded="true"]{background:var(--card);color:var(--label)}
+/* Top-bar pills: one solid surface and one soft, wide shadow; no hairline, no blur (Mars, 2026-11-27). */
+header.top :is(.review,.part,.crew-hub,.copilot-btn,.arch-btn){height:40px;background:var(--pill);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:var(--pill-shadow)}
+header.top .part-b[aria-checked="true"]{background:var(--card-2);box-shadow:none}
+header.top .part-b{height:32px}
+.crew-hub{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 14px 0 7px;border-radius:var(--radius-pill);color:var(--label);font:540 13px/1 var(--ui);transition:color var(--d-quick),transform var(--duration-press)}
 .crew-hub:active{transform:scale(.97)}
 .crew-hub:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.hub-mks{display:inline-flex;align-items:center}
-.hub-mk{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;box-shadow:0 0 0 2px var(--card);margin-left:-7px;transition:transform var(--t-bouncy) var(--bouncy)}
-.hub-mk:first-child{margin-left:0}
+/* The crew: whole circles 1px apart at rest; on hover they spread apart one after another, by transform only, so
+   the pill never changes width. A member at work keeps room for its ring even at rest. */
+.hub-mks{display:inline-flex;align-items:center;gap:1px}
+.hub-mk{position:relative;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;transition:transform .52s cubic-bezier(.34,1.32,.64,1),margin .42s var(--easing-standard)}
+.hub-mk:nth-child(2){transition-delay:20ms}.hub-mk:nth-child(3){transition-delay:40ms}.hub-mk:nth-child(4){transition-delay:60ms}
 .hub-mk .mk{width:26px;height:26px}
-.crew-hub:hover .hub-mk:nth-child(2){transform:translateX(2px)}.crew-hub:hover .hub-mk:nth-child(3){transform:translateX(4px)}.crew-hub:hover .hub-mk:nth-child(4){transform:translateX(6px)}
+.crew-hub:hover .hub-mk:nth-child(2),.crew-hub:focus-visible .hub-mk:nth-child(2){transform:translateX(4px)}
+.crew-hub:hover .hub-mk:nth-child(3),.crew-hub:focus-visible .hub-mk:nth-child(3){transform:translateX(8px)}
+.crew-hub:hover .hub-mk:nth-child(4),.crew-hub:focus-visible .hub-mk:nth-child(4){transform:translateX(12px)}
+.crew-hub .hub-mks+*{margin-left:12px}
+.hub-mk.rg{margin:0 8px}
+.hub-mk.rg:first-child{margin-left:2px}
+/* ring: the member's own hue; a turning arc while it works, a closed ring while its drafts wait for you */
+.hub-mk .ring{position:absolute;left:50%;top:50%;width:36px;height:36px;transform:translate(-50%,-50%) rotate(-90deg);pointer-events:none;overflow:visible}
+.hub-mk .ring circle{fill:none;stroke-width:1.5}
+.hub-mk .ring .tr{stroke:oklch(.6 .11 var(--h) / .16)}
+.hub-mk .ring .ar{stroke:oklch(.6 .11 var(--h));stroke-linecap:round}
+.hub-mk.busy .ring{animation:ringTurn 1.6s linear infinite}
+.hub-mk.ready .ring .tr{stroke:transparent}
+@keyframes ringTurn{to{transform:translate(-50%,-50%) rotate(270deg)}}
+@media (prefers-reduced-motion:reduce){.hub-mk.busy .ring{animation:none}.hub-mk,.crew-hub:hover .hub-mk{transition:none}}
+/* identity: a pale plate and a deeper icon of one hue per member. Hues sit between the meaning colours
+   (A amber, B blue, C green/supports, D pink/counters) and appear only on the plate and its ring, never on lines, text or badges. */
+[data-mk="scout"],[data-agent="scout"],[data-who="scout"]{--h:200}
+[data-mk="muse"],[data-agent="muse"],[data-who="muse"]{--h:305}
+[data-mk="wright"],[data-agent="wright"],[data-who="wright"]{--h:100}
+[data-mk="critic"],[data-agent="critic"],[data-who="critic"]{--h:262}
+:is(.hub-mk,.hub-seat,.crew-bub .cb-hd) .mk{background:oklch(.955 .026 var(--h));color:oklch(.48 .085 var(--h))}
+:root[data-theme="dark"] :is(.hub-mk,.hub-seat,.crew-bub .cb-hd) .mk{background:oklch(.33 .045 var(--h));color:oklch(.86 .07 var(--h))}
+:root[data-theme="dark"] .hub-mk .ring .tr{stroke:oklch(.78 .1 var(--h) / .18)}
+:root[data-theme="dark"] .hub-mk .ring .ar{stroke:oklch(.78 .1 var(--h))}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) :is(.hub-mk,.hub-seat,.crew-bub .cb-hd) .mk{background:oklch(.33 .045 var(--h));color:oklch(.86 .07 var(--h))}:root:not([data-theme="light"]) .hub-mk .ring .tr{stroke:oklch(.78 .1 var(--h) / .18)}:root:not([data-theme="light"]) .hub-mk .ring .ar{stroke:oklch(.78 .1 var(--h))}}
 .crew-hub.off .hub-mk .mk{filter:saturate(.35)}
-.hub-mk.busy{box-shadow:0 0 0 2px var(--card),0 0 12px 2px var(--bloom)}
-.crew-hub .hub-l{white-space:nowrap}
+/* cloud calls: nothing at rest; a small ring and the count only under 20% left (amber), red at none */
+.hub-q{display:inline-flex;align-items:center;gap:5px;font:600 12px/1 var(--ui);color:var(--warn);font-variant-numeric:tabular-nums}
+.hub-q svg{width:16px;height:16px;transform:rotate(-90deg)}
+.hub-q circle{fill:none;stroke-width:1.75}
+.hub-q .tr{stroke:var(--label-4)}.hub-q .ar{stroke:var(--warn-fill);stroke-linecap:round}
+.hub-q.out{color:var(--danger)}.hub-q.out .tr{stroke:var(--danger)}
+.crew-hub .hub-l{white-space:nowrap;color:var(--label-2)}
 .crew-hub .cm-chev{width:12px;height:12px;color:var(--label-3);transition:transform var(--d-quick)}
+.crew-hub .hub-mks+.cm-chev{margin-left:8px}
 .crew-hub[aria-expanded="true"] .cm-chev{transform:rotate(180deg)}
+/* the hover bubble: its tail points at the member (or the model) it speaks for */
+.crew-bub{position:fixed;z-index:var(--z-tooltip);width:288px;padding:14px 14px 12px;border-radius:16px;background:var(--pill);box-shadow:0 18px 48px -16px rgba(11,12,14,.18),0 2px 6px rgba(11,12,14,.04);color:var(--label);font:500 13px/1.4 var(--ui);
+  opacity:0;transform:translateY(-4px) scale(.98);transform-origin:var(--tx,50%) 0;pointer-events:none;transition:opacity .16s ease,transform .26s var(--easing-standard)}
+.crew-bub.on{opacity:1;transform:none;pointer-events:auto}
+.crew-bub::before{content:"";position:absolute;top:-6px;left:var(--tx,50%);width:12px;height:12px;margin-left:-6px;background:var(--pill);transform:rotate(45deg);border-radius:2px 0 0 0}
+:root[data-theme="dark"] .crew-bub{box-shadow:inset 0 .5px 0 rgba(255,255,255,.06),0 20px 50px -16px rgba(0,0,0,.8)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .crew-bub{box-shadow:inset 0 .5px 0 rgba(255,255,255,.06),0 20px 50px -16px rgba(0,0,0,.8)}}
+.crew-bub .cb-hd{display:flex;align-items:center;gap:8px;font:600 13px/1.2 var(--ui)}
+.crew-bub .cb-hd .mk{width:22px;height:22px;flex:none}
+.crew-bub .cb-hd small{margin-left:auto;font:500 12px/1 var(--ui);color:var(--label-3);white-space:nowrap}
+.crew-bub .cb-now{margin-top:10px;color:var(--label)}
+.crew-bub .cb-sub{margin-top:3px;font:500 12px/1.4 var(--ui);color:var(--label-3)}
+.crew-bub .cb-ft{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:12px}
+.crew-bub .cb-ft .cb-src{margin-right:auto;font:500 12px/1.2 var(--ui);color:var(--label-3)}
+.crew-bub .cbtn{height:28px;padding:0 12px;font-size:12.5px}
+.crew-bub .cb-lim{margin-top:10px;padding-top:10px;border-top:.5px solid var(--hair-2)}
+.crew-bub .cb-lim .r{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font:600 12.5px/1.2 var(--ui)}
+.crew-bub .cb-lim .r small{font:500 12px/1 var(--ui);color:var(--label-3);white-space:nowrap}
+.crew-bub .cb-bar{height:3px;border-radius:3px;background:var(--label-4);margin-top:8px;overflow:hidden}
+.crew-bub .cb-bar b{display:block;height:100%;border-radius:3px;background:var(--label-2)}
+.crew-bub .cb-bar.low b{background:var(--warn-fill)}.crew-bub .cb-bar.out b{background:var(--danger)}
 .hub-box{display:grid;gap:8px}
 .hub-seats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .hub-seat.seat{width:auto;height:auto;border-radius:var(--radius-md);display:flex;align-items:center;gap:9px;padding:7px 8px;background:var(--card-2);text-align:left;transform:none!important}
@@ -8872,6 +8933,63 @@ function aiSource(){
   }
   return {live:false,kind:"local",cls:"",label:L("No AI connected","未连接 AI"),title:tip};
 }
+/* ── crew marks: state, cloud quota and the hover bubble ───────────────────────────── */
+function crewDrafts(k){return board.nodes.filter(n=>n.status==="sketch"&&n.by===k)}
+function crewMarkState(k){return crewState[k]?.busy?"busy":crewDrafts(k).length?"ready":""}
+/* the Cloud API's daily calls, only when there is a limit to count and the cloud is in use */
+function cloudQuota(){if(aiPref==="local"||!hasApi()||!apiRoutable())return null;const lim=cloudDailyLimit();if(lim==null)return null;return {lim,left:Math.min(lim,cloudLeft())}}
+function cloudResetText(){
+  const b=cloudUse();let at;
+  if(b.until>Date.now())at=new Date(b.until);
+  else if(isGeminiApi()){try{const pt=new Intl.DateTimeFormat("en-US",{timeZone:"America/Los_Angeles",hour:"numeric",minute:"numeric",second:"numeric",hourCycle:"h23"}).formatToParts(new Date());const g=t=>+pt.find(x=>x.type===t).value;at=new Date(Date.now()+((24-g("hour"))*3600-g("minute")*60-g("second"))*1000)}catch{}}
+  if(!at){const d=new Date();d.setHours(24,0,0,0);at=d;if(!isGeminiApi())return L("Resets at midnight","午夜重置")}
+  const t=at.toLocaleTimeString(uiLang()==="zh"?"zh-CN":"en-US",{hour:"numeric",minute:"2-digit"});
+  return L(`Resets ${t}`,`${t} 重置`);
+}
+var crewBubFor=null,crewBubT=0;
+function crewBubHTML(who){
+  const mode=aiSource(),c=connSummary();
+  const where=c.engine==="local"?L("On this Mac","在本机运行"):c.engine==="api"?L("Cloud API","云端 API"):c.engine==="claude"?"Claude":"";
+  const runs=[where,c.model].filter(Boolean).join(" · ");
+  if(who==="model"){
+    const q=cloudQuota();
+    const head=`<div class="cb-hd">${esc(c.engine==="api"?apiModelName():c.engine==="local"?(c.model||c.name):mode.label)}<small>${esc(q?cloudResetText():c.engine==="local"?L("No limits","无限制"):"")}</small></div>`;
+    if(!q)return head+(where?`<div class="cb-sub">${esc(c.engine==="local"?L("Nothing leaves this computer","数据不离开这台电脑"):where)}</div>`:"");
+    const low=q.left/q.lim<.2;
+    return head+`<div class="cb-lim"><div class="r"><span>${L("Cloud calls today","今日云端调用")}</span><small>${esc(L(`${q.left} of ${q.lim} left`,`还剩 ${q.left}/${q.lim}`))}</small></div><div class="cb-bar${q.left<=0?" out":low?" low":""}"><b style="width:${(q.left/q.lim*100).toFixed(1)}%"></b></div></div>`
+      +(low?`<div class="cb-sub" style="margin-top:10px">${esc(studioState.status==="ready"?L("After that the crew keeps working on Local AI.","用完后小组改用本地模型继续工作。"):L("After that the crew falls back to board checks.","用完后小组只做看板检查。"))}</div>`:"");
+  }
+  const a=AGENTS[who];if(!a)return "";const st=crewState[who],drafts=crewDrafts(who);
+  const hd=`<div class="cb-hd"><span class="mk">${a.mk}</span>${esc(a.name)}<small>${st?.busy?L("Working","进行中"):drafts.length?L("Ready","已完成"):L("Free","空闲")}</small></div>`;
+  if(st?.busy){const s0=String(st.status||L("working","工作中"));return hd+`<div class="cb-now">${esc(s0[0].toUpperCase()+s0.slice(1))}</div><div class="cb-ft">${runs?`<span class="cb-src">${esc(runs)}</span>`:""}<button type="button" class="cbtn" data-crew-bub="stop">${L("Stop","停止")}</button></div>`}
+  if(drafts.length)return hd+`<div class="cb-now">${esc(L(`${drafts.length} draft${drafts.length>1?"s":""} waiting for you`,`${drafts.length} 份草稿等你确认`))}</div><div class="cb-ft"><button type="button" class="cbtn solid" data-crew-bub="show">${L("Show","查看")}</button></div>`;
+  return hd+`<div class="cb-sub" style="margin-top:8px">${esc(agentCraft(a))}</div>`;
+}
+function showCrewBub(who,refresh){
+  const bub=$("crewBub"),btn=$("crewSetBtn");if(!bub||!btn)return;
+  if(typeof crewPopOpen!=="undefined"&&crewPopOpen&&!refresh)return;
+  const anchor=who==="model"?(btn.querySelector('[data-crew-zone="model"]')||btn.querySelector(".cm-chev")):btn.querySelector(`[data-mk="${who}"]`);
+  const html=crewBubHTML(who);if(!anchor||!html){hideCrewBub(true);return}
+  crewBubFor=who;bub.dataset.who=who;bub.innerHTML=html;
+  const place=()=>{const r=anchor.getBoundingClientRect(),w=bub.offsetWidth,cx=r.left+r.width/2,left=clamp(cx-w/2,12,innerWidth-w-12);
+    bub.style.left=Math.round(left)+"px";bub.style.top=Math.round(r.bottom+12)+"px";bub.style.setProperty("--tx",Math.round(cx-left)+"px")};
+  place();if(!refresh)setTimeout(place,300);   // again once the spread has settled
+  bub.classList.add("on");
+}
+function hideCrewBub(now){clearTimeout(crewBubT);const go=()=>{crewBubFor=null;$("crewBub")?.classList.remove("on")};if(now)go();else crewBubT=setTimeout(go,160)}
+function initCrewBub(){
+  const box=$("crew"),bub=$("crewBub");if(!box||!bub)return;
+  let showT=0;
+  box.addEventListener("pointermove",e=>{if(e.pointerType==="touch")return;const t=e.target.closest?.("[data-mk],[data-crew-zone],.cm-chev");const who=t?(t.dataset.mk||"model"):null;
+    clearTimeout(crewBubT);if(!who||who===crewBubFor)return;clearTimeout(showT);showT=setTimeout(()=>showCrewBub(who),crewBubFor?0:220)});
+  box.addEventListener("pointerleave",()=>{clearTimeout(showT);hideCrewBub()});
+  box.addEventListener("pointerdown",()=>{clearTimeout(showT);hideCrewBub(true)});
+  bub.addEventListener("pointerenter",()=>clearTimeout(crewBubT));
+  bub.addEventListener("pointerleave",()=>hideCrewBub());
+  bub.addEventListener("click",e=>{const b=e.target.closest("[data-crew-bub]");if(!b)return;const k=crewBubFor;
+    if(b.dataset.crewBub==="stop"&&k)stopAgent(k);
+    if(b.dataset.crewBub==="show"&&k){const ds=crewDrafts(k);hideCrewBub(true);if(ds.length){focusNodes(ds,Math.max(cam.s,.72));select(ds.map(n=>n.id),{menus:false})}}});
+}
 function renderCrew(){
   paintPart?.();
   const mode=aiSource();
@@ -8880,9 +8998,19 @@ function renderCrew(){
   const setTip=`${L("Crew, model and settings","成员、模型与设置")} · ${L("Acts","动手")}: ${autonomyCustom?L("Custom","自定义"):L(ACT_LABEL[crewAct][0],ACT_LABEL[crewAct][1])}${quiet?" · "+quiet.tip:""}`;
   /* One entry for the crew, the model connection and settings. At rest it shows the crew's marks; it says what is
      wrong only when something is ("No AI connected", "Out of credits"), and nothing about where the model runs. */
-  const marks=Object.values(AGENTS).map(a=>`<span class="hub-mk${crewState[a.key]?.busy?" busy":""}" data-mk="${a.key}" aria-hidden="true"><span class="mk">${a.mk}</span></span>`).join("");
+  /* A ring only says what a member is doing: a turning arc while it works, a closed ring while its drafts wait. */
+  const C=2*Math.PI*16.25,turn=-(performance.now()%1600);
+  const marks=Object.values(AGENTS).map(a=>{const st=crewMarkState(a.key);
+    const ring=st==="busy"?`<svg class="ring" viewBox="0 0 36 36" style="animation-delay:${turn}ms"><circle class="tr" cx="18" cy="18" r="16.25"/><circle class="ar" cx="18" cy="18" r="16.25" stroke-dasharray="${(C*.28).toFixed(2)} ${C.toFixed(2)}"/></svg>`
+      :st==="ready"?`<svg class="ring" viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="16.25"/><circle class="ar" cx="18" cy="18" r="16.25"/></svg>`:"";
+    return `<span class="hub-mk${st?" rg "+st:""}" data-mk="${a.key}" aria-hidden="true"><span class="mk">${a.mk}</span>${ring}</span>`}).join("");
   const anyBusy=Object.values(crewState).some(x=>x?.busy);
-  $("crew").innerHTML=`<button type="button" id="crewSetBtn" class="crew-hub${mode.live?" live":" off"}${quiet?" quiet-"+quiet.k:""}${anyBusy?" busy":""}" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" title="${esc(setTip)}" aria-label="${esc(setTip+(mode.live?"":" · "+modeLbl))}"><span class="hub-mks">${marks}</span>${mode.live?"":`<span class="hub-l">${esc(modeLbl)}</span>`}${ic("chev","ico cm-chev")}</button>`;
+  /* Cloud calls are never shown at rest; only a small ring and the count once under 20% are left. */
+  const q=cloudQuota(),qLow=q&&q.left/q.lim<.2,qc=2*Math.PI*6.5;
+  const qHTML=qLow?`<span class="hub-q${q.left<=0?" out":""}" data-crew-zone="model"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="tr" cx="8" cy="8" r="6.5"/><circle class="ar" cx="8" cy="8" r="6.5" stroke-dasharray="${(qc*q.left/q.lim).toFixed(2)} ${qc.toFixed(2)}"/></svg>${q.left}</span>`:"";
+  const qTip=qLow?" · "+cloudBudgetLine():"";
+  $("crew").innerHTML=`<button type="button" id="crewSetBtn" class="crew-hub${mode.live?" live":" off"}${quiet?" quiet-"+quiet.k:""}${anyBusy?" busy":""}" aria-haspopup="dialog" aria-expanded="${typeof crewPopOpen!=="undefined"&&crewPopOpen}" aria-label="${esc(setTip+(mode.live?"":" · "+modeLbl)+qTip)}"><span class="hub-mks">${marks}</span>${mode.live?"":`<span class="hub-l" data-crew-zone="model">${esc(modeLbl)}</span>`}${qHTML}${ic("chev","ico cm-chev")}</button>`;
+  if(crewBubFor)showCrewBub(crewBubFor,true);
   if(!$("hubSeats")&&!renderCrew._in&&typeof renderCrewPop==="function"){renderCrew._in=1;try{renderCrewPop()}finally{renderCrew._in=0}}
   paintHub(mode);
   paintCopilotHeader?.();
@@ -20343,7 +20471,7 @@ applyTheme();document.documentElement.lang=uiLang()==="zh"?"zh-CN":"en";loadBoar
   if(board.cam&&!firstRun){cam={...board.cam};paintCam()}else{openingShot(true);store.set(".seen",true)}
   if(firstRun)setTimeout(showWelcome,900);
   addEventListener("resize",()=>{paintCam();renderBars();placeStrip();autoGrow();syncLineClearance()});
-  restoreMedia();hydrateBoardFromIdb();initIsland();resumePendingVideoJobs();initClaude();refreshImageService();if(hasApi()&&apiHealthNow().k==="unknown"&&!cloudDailyLimit())setTimeout(()=>testApi({quiet:true}),1500);setupVoice();renderStages();syncStaticLang();paintMap();initCopilot?.();
+  restoreMedia();hydrateBoardFromIdb();initIsland();initCrewBub();resumePendingVideoJobs();initClaude();refreshImageService();if(hasApi()&&apiHealthNow().k==="unknown"&&!cloudDailyLimit())setTimeout(()=>testApi({quiet:true}),1500);setupVoice();renderStages();syncStaticLang();paintMap();initCopilot?.();
   setInterval(()=>{if(!gesture&&!stageOpen)qsa(".card time").length&&renderNodes()},60000);
 }
 /* ════ Design pass, 27 Nov 2026 ═════════════════════════════════════════════════════════════════════════════ */

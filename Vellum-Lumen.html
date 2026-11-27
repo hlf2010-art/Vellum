@@ -7159,9 +7159,9 @@ function proofVersions(n){if(!n||n.type!=="proof"||n.status==="sketch")return[n]
 function setAsideFor(n){const w=n?.type==="direction"&&n.status==="ink"?board.adopted[n.idea]:null;return w&&w!==n.id?byId(w):null}
 /* the adopted direction keeps your reason for choosing it; the decision view shows the same words */
 function choseHTML(n){if(board.adopted[n.idea]!==n.id)return "";const zh=uiLang()==="zh",why=String(n.whyYes||"").trim();
-  return `<div class="chose${why?"":" empty"}"><span class="chose-k">${zh?"为什么选它":"Why this one"}</span><p class="aside-why" data-edit="whyYes" data-ph="${zh?"为什么选它？":"Why this one?"}">${esc(why)}</p><button type="button" class="aside-add" data-a="why-yes">${why?(zh?"改理由":"Edit reason"):(zh?"写下为什么选它":"Say why you chose it")}</button></div>`}
+  return `<div class="chose${why?"":" empty"}"><span class="chose-k">${zh?"为什么选它":"Why this one"}</span><p class="aside-why" data-edit="whyYes" data-ph="${zh?"为什么选它？":"Why this one?"}" title="${zh?"双击修改":"Double-click to edit"}">${esc(why)}</p>${why?"":`<button type="button" class="aside-add" data-a="why-yes">${zh?"写下为什么选它":"Say why you chose it"}</button>`}</div>`}
 function setAsideHTML(n){const w=setAsideFor(n);if(!w)return "";const zh=uiLang()==="zh",why=String(n.whyNot||"").trim();
-  return `<div class="aside"><div class="aside-h"><span>${zh?"已搁置，选了":"Set aside for"}</span><span class="chip${lin(w)?" pg-"+lin(w):""}">${esc(w.letter||"")}</span><span class="aside-w">${esc(clip(w.title||"",48))}</span></div><p class="aside-why" data-edit="whyNot" data-ph="${zh?"为什么不选它？":"Why not this one?"}">${esc(why)}</p><button type="button" class="aside-add" data-a="why-not">${why?(zh?"改理由":"Edit reason"):(zh?"写下为什么不选它":"Add a reason")}</button></div>`}
+  return `<div class="aside"><div class="aside-h"><span>${zh?"已搁置，选了":"Set aside for"}</span><span class="chip${lin(w)?" pg-"+lin(w):""}">${esc(w.letter||"")}</span><span class="aside-w">${esc(clip(w.title||"",48))}</span></div><p class="aside-why" data-edit="whyNot" data-ph="${zh?"为什么不选它？":"Why not this one?"}" title="${zh?"双击修改":"Double-click to edit"}">${esc(why)}</p>${why?"":`<button type="button" class="aside-add" data-a="why-not">${zh?"写下为什么不选它":"Add a reason"}</button>`}</div>`}
 function proofResults(n){const items=(n?.spec?.items||[]).filter(it=>/^(passed|failed|waiting)$/i.test(String(it.tag||"").trim()));if(!items.length)return null;const t=k=>items.filter(it=>String(it.tag).trim().toLowerCase()===k);return {passed:t("passed").length,failed:t("failed").length,waiting:t("waiting").length,failedTitles:t("failed").map(it=>it.title)}}
 function cardBody(n){
   const sk=n.status==="sketch",L=lin(n),tm0=timeTag(n),seal=contribGroupHTML(n),tm=seal&&tm0?`<span class="foot-by">${seal}${tm0}</span>`:tm0;
@@ -20234,6 +20234,8 @@ wall.addEventListener("dblclick",e=>{
   if(under.some(x=>x.closest?.(".tbl-block tbody td,.tbl-block thead th,.tbl-addrow,.tbl-chart,button,textarea,input,audio,a,[contenteditable='true'],[data-a-item],[data-a-kb-item],[data-a-tm-item],[data-a-syn],.card-resize,.todo-add,.kb-add,.line,.margin,.tools,.top-tools,.find-bar,.find-scrim,.wire-pop,.w-hit,.zoom,.top,.pbar,.strip,.selbar,.map,.copilot-panel,.copilot-btn,.studio-pop,.ledger")))return;
   const card=under.map(x=>x.closest?.(".card")).find(c=>c&&(byId(c.dataset.id)?.type!=="group"||under.some(x=>x.closest?.(".card-k,h4,.grp-resize")?.closest?.(".card")===c)));
   if(card){const n=byId(card.dataset.id);if(n&&n.status==="sketch"){ink(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);return}
+    const whyHit=under.map(x=>x.closest?.(".aside-why[data-edit]")).find(Boolean);
+    if(whyHit&&n&&n.type==="direction"){startEdit(n.id,whyHit.dataset.edit,{collapseEnd:true});return}
     const tagHit=under.map(x=>x.closest?.(".note-tag,[data-edit='tag']")).find(Boolean);
     if(tagHit&&n&&(n.type==="note"||n.type==="notepad")){startEdit(n.id,"tag",{collapseEnd:false});return}
     if(n&&n.type==="note"&&!under.some(x=>x.closest?.(".card-k,.foot"))){startEdit(n.id,"text",{clientX:e.clientX,clientY:e.clientY});return}openFocus(card.dataset.id);return}
@@ -20448,7 +20450,7 @@ function decRecheckHTML(dir,fresh){
   const r=dir.recheck;if(!r||!RC_LABEL[r.verdict])return "";
   const latest=Math.max(...fresh.map(s=>s.t||0));if(latest&&r.at+1000<latest)return "";   // newer evidence than the re-check: it is not the reading of these
   const crit=r.fix||r.objection;
-  return `<div class="dv-rc rc-${esc(r.verdict)}"><span class="dv-rc-h" title="${esc(DEMO?demoRunLine():"")}">${esc(DEMO?L("The crew · recorded","成员 · 录制回放"):L("The crew","成员"))}</span><p><b class="dv-rc-v">${esc(L(...RC_LABEL[r.verdict]))}.</b> ${esc(r.why)}</p>${crit?`<p class="dv-rc-c">${esc(L("Critic suggests: ","Critic 建议："))}${esc(crit)}</p>`:""}</div>`;
+  return `<div class="dv-rc rc-${esc(r.verdict)}"><span class="dv-rc-h" title="${esc(DEMO?demoRunLine():"")}">${esc(DEMO?L("The crew · recorded","成员 · 录制回放"):L("The crew","成员"))}</span><p><b class="dv-rc-v">${esc(L(...RC_LABEL[r.verdict]))}${L(".","。")}</b>${L(" ","")}${esc(r.why)}</p>${crit?`<p class="dv-rc-c">${esc(L("Critic suggests: ","Critic 建议："))}${esc(crit)}</p>`:""}</div>`;
 }
 function decCardHTML(x,i){
   const {claim,dir,rests,since,fresh}=x,zh=uiLang()==="zh";

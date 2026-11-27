@@ -95,7 +95,7 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
     /* one entry */
     await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2200);
     const t = await p.evaluate(() => ({ kids: [...document.querySelector('.top-right').children].filter(x => !x.hidden && getComputedStyle(x).display !== 'none').map(x => x.id || x.className), marks: document.querySelectorAll('#crewSetBtn .hub-mk').length, label: document.querySelector('#crewSetBtn .hub-l')?.textContent }));
-    check('the top bar keeps drafts, the participation switch and one entry (no separate seats, connection chip or gear)', JSON.stringify(t.kids) === JSON.stringify(['reviewBtn', 'partSw', 'crew']) && t.marks === 4 && t.label === 'No AI connected', JSON.stringify(t));
+    check('the top bar keeps drafts, the participation switch, one crew entry and Copilot (no separate seats, connection chip or gear)', JSON.stringify(t.kids) === JSON.stringify(['reviewBtn', 'partSw', 'crew', 'copilotBtn']) && t.marks === 4 && t.label === 'No AI connected', JSON.stringify(t));
     await p.click('#crewSetBtn'); await p.waitForTimeout(300);
     const h = await p.evaluate(() => ({ seats: [...document.querySelectorAll('#crewPop .seat')].map(s => s.querySelector('b').textContent).join(','), model: document.querySelector('#crewPop #crewModeBtn small')?.textContent, set: !!document.querySelector('#crewPop [data-crew-settings]'), r: $('crewPop').getBoundingClientRect().right }));
     check('the entry opens the crew, the model row and Settings', h.seats === 'Scout,Strategist,Wright,Critic' && h.model === 'No AI connected' && h.set && h.r <= 1440, JSON.stringify(h));

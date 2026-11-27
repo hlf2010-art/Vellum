@@ -89,7 +89,7 @@ async function open(browser, base, { theme = 'light', live = false } = {}) {
     check('only the chosen level shows its name (after the transition)', await p.evaluate(() => [...document.querySelectorAll('#partSw .part-l')].map(s => s.getBoundingClientRect().width > 10 ? 1 : 0).join('')) === '010');
     await p.click('#partSw [data-part="often"]'); await p.waitForTimeout(500);
     check('choosing Teamwork takes effect: talkative, drafted follow-ups', await p.sw() === 'never,matters,often*' && await p.evaluate(() => crewSpeak === 'often' && advisorMode && advisorAuto && board.speak === 'often'));
-    check('the crew popover does not repeat the switch', await p.evaluate(() => { toggleCrewPop(true); const t = $('crewPop').innerText; const ok = !document.querySelector('#crewPop [data-crew-speak]') && !/Focus|Listening|Teamwork|Joins in/.test(t) && /Cards you kept change only when you accept/.test(t); toggleCrewPop(false); return ok; }));
+    check('the crew popover does not repeat the switch', await p.evaluate(() => { toggleCrewPop(true); const t = $('crewPop').innerText; const ok = !document.querySelector('#crewPop [data-crew-speak]') && !/Focus|Listening|Teamwork|Joins in/.test(t) && /Acts on the board/.test(t) && !/Cards you kept change only when you accept/.test(t); toggleCrewPop(false); return ok; }));
     await p.keyboard.press('Meta+Shift+Period'); await p.waitForTimeout(400);
     check('⌘⇧. turns Focus on', await p.evaluate(() => crewSpeak === 'never' && !advisorMode && document.body.classList.contains('is-focus')));
     await p.keyboard.press('Meta+Shift+Period'); await p.waitForTimeout(400);
@@ -160,7 +160,7 @@ async function open(browser, base, { theme = 'light', live = false } = {}) {
     });
     await p.settle(2000);
     pins = await p.checkPins();
-    check('a decision resting on proposals only is flagged once', pins.filter(x => x.kind === 'assume' && x.on === D2.dir).length === 1 && /proposals only/.test(pins.find(x => x.kind === 'assume')?.note || ''), JSON.stringify(pins.map(x => x.kind)));
+    check('a decision resting on proposals only is flagged once', pins.filter(x => x.kind === 'assume' && x.on === D2.dir).length === 1 && /nothing behind it yet/.test(pins.find(x => x.kind === 'assume')?.note || ''), JSON.stringify(pins.map(x => x.kind)));
     check('no model was asked for any of this', requests.length === 0, String(requests.length));
     if (SHOTS) { await p.evaluate(id => { const n = byId(id); focusNodes([n], 1, 0); }, D.dir); await p.waitForTimeout(800); await p.screenshot({ path: path.join(SHOTS, 'light-2-listening-dot.png') }); }
 

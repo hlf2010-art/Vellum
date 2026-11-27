@@ -520,7 +520,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('with directions and none adopted it is still Explore, and tells the crew to offer options, not task boards', r.stage === 'explore' && /Open: which direction to adopt/.test(r.brief) && /Do not create task boards, lists or proofs unless asked/.test(r.brief), r.brief.slice(0, 260));
       await p.evaluate(() => adopt(board.nodes.find(n => n.type === 'direction' && n.letter === 'B')));
       r = await st();
-      check('adopting a direction moves it to Prototype, names the decision, and says what is open', r.stage === 'prototype' && r.adopted === 1 && /Decided: B · Option B\. Open/.test(r.brief) && /no proof built yet for the adopted direction/.test(r.brief) && /Build and test it/.test(r.brief), r.brief.slice(0, 300));
+      check('adopting a direction moves it to Prototype, names the decision, and says what is open', r.stage === 'prototype' && r.adopted === 1 && /Decided: B · Option B\. (Resting on proposals only[^.]*\. )?Open/.test(r.brief) && /no proof built yet for the adopted direction/.test(r.brief) && /Build and test it/.test(r.brief), r.brief.slice(0, 300));
       await p.evaluate(() => { const d = board.nodes.find(n => n.type === 'direction' && n.letter === 'B'); const pf = node('proof', { dir: d.id, _src: d.id, title: 'Proof B', spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1100, y: 100 }); edge(d.id, pf.id, 'derive', 'live'); });
       check('once a proof exists the open item is what it shows', /Open: what the proofs show/.test((await st()).brief));
       await p.evaluate(() => { const pf = board.nodes.find(n => n.type === 'proof'); node('print', { proof: pf.id, dir: pf.dir, ed: 1, spec: { items: [] }, status: 'ink', by: 'wright' }, { x: 1500, y: 100 }); });
@@ -552,11 +552,12 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       const p = await page(browser, base);
       await p.newBoard();
       const ph = () => p.evaluate(() => document.getElementById('lineInput').placeholder);
-      check('an empty board still invites the first idea, in command-bar words', /write an idea/i.test(await ph()) && /^Type \//.test(await ph()), await ph());
+      check('an empty board still invites the first idea, in command words', /write an idea/i.test(await ph()) && /^Type a command/.test(await ph()), await ph());
       await p.evaluate(() => { node('note', { text: 'Founder interviews', status: 'ink', by: 'you' }, { x: 100, y: 100 }); node('note', { text: 'Pricing idea for solo founders', status: 'ink', by: 'you' }, { x: 100, y: 500 }); node('idea', { text: 'Sell an AI back office to one-person companies', status: 'ink', by: 'you' }, { x: 500, y: 100 }); select([]); renderLineCtx(); });
-      check('with cards on the board the bar reads as commands and search, with no chat wording', /\/ for commands/.test(await ph()) && /search your cards/i.test(await ph()) && !/\bask\b|critic|chat/i.test(await ph()), await ph());
+      check('with cards on the board the palette reads as commands and search, with no chat wording', /command/.test(await ph()) && /search/i.test(await ph()) && !/\bask\b|critic|chat/i.test(await ph()), await ph());
       await p.evaluate(() => { select([board.nodes.find(n => n.type === 'idea').id]); renderLineCtx(); });
-      check('with a claim selected it names the commands that fit', /\/fork/.test(await ph()) && !/\bask\b|critic/i.test(await ph()), await ph());
+      const starts = await p.evaluate(() => paletteStarts().map(s => s.t));
+      check('with a claim selected the palette suggests the moves that fit (explore directions), and its words stay command words', starts.some(t => /Explore directions/.test(t)) && starts.length <= 3 && !/\bask\b|critic/i.test(await ph()), JSON.stringify({ starts, ph: await ph() }));
       check('the chip shows what Enter will do, not an AI target', await p.evaluate(() => !/Canvas AI/.test(document.getElementById('route').textContent)));
       await p.evaluate(() => { select([]); renderLineCtx(); });
 
@@ -601,7 +602,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('a word that names a command lists the command too', m.head.includes('Commands') && m.rows.some(r => /^\/kanban/.test(r)), JSON.stringify(m));
       await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.keyboard.type('/for');
       m = await menu();
-      check('a slash still opens the command list, not the card search', m.head[0] === 'Moves' && !m.rows.some(r => /Founder/.test(r)), JSON.stringify(m));
+      check('a slash still opens the command list, not the card search', m.head[0] === 'Commands' && !m.rows.some(r => /Founder/.test(r)), JSON.stringify(m));
       await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.keyboard.press('Escape');
 
       // the selection shows once: in the panel while it is open
@@ -630,8 +631,8 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       let m = await right(r0.cx, r0.cy);
       check('right-click on one of several selected cards opens a menu for the whole selection (not that one card\'s menu)', m.open && /^2 /.test(m.head) && ['copilot', 'gather', 'list', 'kanban', 'dup', 'group'].every(k => m.sm.includes(k)) && m.cm === 0, JSON.stringify(m));
       await p.click('#cardMenu [data-sm="copilot"]'); await p.waitForTimeout(400);
-      const cp = await p.evaluate(() => ({ open: copilotOpen, selN: sel.length, focus: document.activeElement?.id, ph: document.getElementById('cpInput')?.placeholder, chips: document.querySelectorAll('#cpCompCards .cp-comp-chip').length, sent: (board.copilot || []).length, menuOpen: !document.getElementById('cardMenu').hidden }));
-      check('Ask Copilot there opens the panel with the selection as context and the cursor in the input, and sends nothing (it used to do nothing at all)', cp.open && cp.selN === 2 && cp.focus === 'cpInput' && /selection/i.test(cp.ph) && cp.chips === 2 && cp.sent === 0 && !cp.menuOpen, JSON.stringify(cp));
+      const cp = await p.evaluate(() => ({ open: copilotOpen, selN: sel.length, focus: document.activeElement?.id, ph: document.getElementById('cpInput')?.placeholder, chips: document.querySelectorAll('#cpCompCards .cp-comp-chip').length, chip: document.querySelector('#cpCompCards .cp-comp-chip')?.textContent.trim() || '', sent: (board.copilot || []).length, menuOpen: !document.getElementById('cardMenu').hidden }));
+      check('Ask Copilot there opens the panel with the selection as one removable context chip ("2 cards") and the cursor in the input, and sends nothing', cp.open && cp.selN === 2 && cp.focus === 'cpInput' && /selection/i.test(cp.ph) && cp.chips === 1 && /^2 cards/.test(cp.chip) && cp.sent === 0 && !cp.menuOpen, JSON.stringify(cp));
       await p.evaluate(() => openCopilot(false)); await p.waitForTimeout(300);
 
       const gapX = (r0.r + r1.l) / 2, gapY = r0.t + 24;
@@ -650,7 +651,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       const bar = await p.evaluate(() => [...document.querySelectorAll('#selbar [data-s]')].map(b => b.dataset.s));
       check('the selection bar offers Ask Copilot first', bar[0] === 'copilot' && bar.includes('gather') && bar.includes('kanban'), bar.join());
       await p.click('#selbar [data-s="copilot"]'); await p.waitForTimeout(400);
-      check('and it opens the panel with both cards in context', await p.evaluate(() => copilotOpen && sel.length === 2 && document.querySelectorAll('#cpCompCards .cp-comp-chip').length === 2 && document.activeElement?.id === 'cpInput'));
+      check('and it opens the panel with both cards in context, as one chip', await p.evaluate(() => copilotOpen && sel.length === 2 && document.querySelectorAll('#cpCompCards .cp-comp-chip').length === 1 && /^2 cards/.test(document.querySelector('#cpCompCards .cp-comp-chip').textContent.trim()) && document.activeElement?.id === 'cpInput'));
       await p.evaluate(() => openCopilot(false)); await p.waitForTimeout(300);
 
       // other menu items act on the whole selection
@@ -699,14 +700,20 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.context().close();
     }
 
-    // 5l. the bottom bar looks and reads like a command bar: a prompt, keys, no chat controls
+    // 5l. commands live in a palette: closed, only a ⌘K hint; open, a field in the middle with keys and no chat controls
     {
       const p = await page(browser, base);
       await p.newBoard();
       const vis = () => p.evaluate(() => { const v = id => { const e = document.getElementById(id); return !!e && e.offsetParent !== null && e.getBoundingClientRect().width > 0 }; return { send: v('sendBtn'), mic: v('micBtn'), enh: v('enhanceBtn'), route: v('route'), plus: v('plusBtn'), prompt: !!document.querySelector('#line .prompt') && document.querySelector('#line .prompt').offsetParent !== null, ph: lineIn.placeholder, chip: (document.getElementById('route').textContent || '').trim() }; });
       let v = await vis();
-      check('an empty board still reads as a command bar, not "write an idea"', /\/ for commands/.test(v.ph) && !/drop anything/.test(v.ph), v.ph);
-      check('the bar shows a prompt glyph and no send button, microphone or enhance star', v.prompt && !v.send && !v.mic && !v.enh, JSON.stringify(v));
+      const pal = () => p.evaluate(() => ({ open: $('line').classList.contains('palette'), hint: getComputedStyle(document.querySelector('#line .pal-hint')).display !== 'none' && document.querySelector('#line .pal-hint').getBoundingClientRect().width > 0, foot: !!document.querySelector('#line .pal-foot') && getComputedStyle(document.querySelector('#line .pal-foot')).display !== 'none' }));
+      let pv = await pal();
+      check('closed, the palette is only a small ⌘K hint (not an input), with no send button, microphone or enhance star', !pv.open && pv.hint && !v.send && !v.mic && !v.enh, JSON.stringify({ pv, v }));
+      await p.keyboard.press('ControlOrMeta+k'); await p.waitForTimeout(250);
+      pv = await pal(); v = await vis();
+      check('⌘K opens it in the middle of the screen in command words, with keys and no send button, microphone or enhance star', pv.open && pv.foot && /^Type a command/.test(v.ph) && !/drop anything/.test(v.ph) && !v.send && !v.mic && !v.enh, JSON.stringify({ pv, v }));
+      await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+      check('Esc puts it away', !(await pal()).open);
       await p.evaluate(() => { node('idea', { title: 'Solo back office', text: 'An AI-run back office for one-person companies', status: 'ink', by: 'you' }, { x: 100, y: 100 }); select([]); renderAll(); });
       await p.click('#lineInput'); await p.keyboard.type('what should I test first?'); await p.waitForTimeout(250);
       v = await vis();
@@ -719,7 +726,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.fill('#lineInput', ''); await p.keyboard.type('Talk'); await p.waitForTimeout(300);
       const chipText = () => p.evaluate(() => document.getElementById('route').textContent.replace(/\s+/g, ' ').trim());
       let cc = await chipText();
-      check('with matching cards listed, the key cap says ↓ opens a card and still says what Enter does', /↓\s*open card/.test(cc) && /↵/.test(cc), cc);
+      check('with matching cards listed, the key cap says ↓ opens a card and still says what Enter does', /↓\s*open card/i.test(cc) && /↵/.test(cc), cc);
       await p.keyboard.press('ArrowDown'); await p.waitForTimeout(200);
       cc = await chipText();
       check('after ↓ the cap says Enter opens the card, and nothing about adding', /^↵\s*Open card$/.test(cc), cc);
@@ -909,10 +916,8 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       const segs = await p.evaluate(() => ['speak', 'act'].map(a => [...document.querySelectorAll(`#crewPop [data-crew-${a}]`)].map(b => b.dataset['crew' + a[0].toUpperCase() + a.slice(1)] + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(',')).join(' | '));
       check('the popover has one segmented axis (acts on the board); participation lives only in the top-bar switch', segs === ' | drafts*,create' && await p.evaluate(() => document.querySelectorAll('#crewPop .sp-seg').length === 1 && !/Focus|Listening|Teamwork/.test($('crewPop').innerText)), segs);
       check('no Copilot shortcut in the popover', await p.evaluate(() => !document.querySelector('#crewPop [data-crew-copilot]')));
-      await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
-      check('lanes can be locked from the popover', await p.evaluate(() => lockedBays().includes(1) && document.querySelector('#crewPop [data-crew-lock="1"]').getAttribute('aria-pressed') === 'true'));
-      await p.click('#crewPop [data-crew-lock="1"]'); await p.waitForTimeout(200);
-      check('Crew popover: title only unless the crew is held back, the waiting thought comes first, lock icons only on locked lanes', await p.evaluate(() => { const pop = document.getElementById('crewPop'); const kids = [...pop.children]; const locks = [...pop.querySelectorAll('.crew-lock')]; return pop.querySelector('.cp-pop-head').textContent.trim() === 'Crew' && kids[1]?.classList.contains('crew-wait') && locks.every(b => !!b.querySelector('.ico') === (b.getAttribute('aria-pressed') === 'true')) && !!pop.querySelector('.crew-axis-h [data-crew-custom]'); }));
+      check('the popover does not repeat the lane locks (they live on each lane title) or carry small print about them', await p.evaluate(() => !document.querySelector('#crewPop [data-crew-lock]') && !/locked lane/i.test($('crewPop').innerText) && !!document.querySelector('[data-bay-lock="1"]')));
+      check('Crew popover: title only unless the crew is held back, and the waiting thought comes first', await p.evaluate(() => { const pop = document.getElementById('crewPop'); const kids = [...pop.children]; return pop.querySelector('.cp-pop-head').textContent.trim() === 'Crew' && kids[1]?.classList.contains('crew-wait') && !!pop.querySelector('.crew-axis-h [data-crew-custom]'); }));
       await p.click('#crewPop [data-crew-show]'); await p.waitForTimeout(500);
       check('Show opens the waiting thought and marks it read', await p.evaluate(id => openAdvNodeId === id && board.pins[id][0].seen === true && !$('crewSetBtn').classList.contains('quiet-pacing'), pinCard));
       await p.evaluate(() => closeAdvPop());
@@ -1003,7 +1008,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('your own words still change a locked card', await p.evaluate(id => byId(id).text === 'Changed because you asked', claim));
       check('the Snapshot lane starts locked', await p.evaluate(() => lockedBays().includes(3) && document.querySelector('[data-bay-lock="3"]')?.getAttribute('aria-pressed') === 'true'));
       await p.evaluate(() => setCrewLevel('collab'));
-      const snap = await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'In Snapshot', text: 'snapshot card', pos: { x: 3100, y: 300 } }], { by: 'wright' }).createdNodes[0].id);
+      const snap = await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'In Snapshot', text: 'snapshot card', pos: { x: 3 * BAY + 100, y: 300 } }], { by: 'wright' }).createdNodes[0].id);
       r = await run([{ action: 'edit', target: snap, field: 'text', value: 'changed later' }]);
       check('kept cards in a locked lane are protected', r.locked === 1 && await p.evaluate(id => byId(id).text === 'snapshot card', snap));
       await p.evaluate(() => toggleBayLock(3)); await p.waitForTimeout(200);
@@ -1557,8 +1562,8 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       if (theme === 'light') { await p.context().close(); continue; }
       check('a source you add shows an Unrated pill you can click', (await p.locator(pill).count()) === 1 && /Unrated/.test(await p.locator(pill).innerText()));
       const seen = [];
-      for (let i = 0; i < 5; i++) { await p.click(pill); await p.waitForTimeout(150); seen.push(await w()); }
-      check('clicking the pill steps through every weight and back to unrated', seen.join() === 'observed,reported,proposed,illustrative,', seen.join());
+      for (const k of ['observed', 'reported', 'proposed', 'illustrative', '']) { await p.click(pill); await p.waitForTimeout(200); await p.click(`.w-menu .wm-i[data-w="${k}"]`); await p.waitForTimeout(200); seen.push(await w()); }
+      check('clicking the pill opens the four weights (and Unrated once rated), and each one sets it', seen.join() === 'observed,reported,proposed,illustrative,', seen.join());
       await p.evaluate(id => openFocus(id), id); await p.waitForTimeout(600);
       check('the sheet has an Evidence section with the four weights', (await p.locator('#margin .m-evidence [data-m="weight"]').count()) === 4);
       await p.click('#margin .m-evidence [data-w="reported"]'); await p.waitForTimeout(300);
@@ -1631,8 +1636,8 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.evaluate(() => { store.set('.apiHealth', null); apiHealth = { k: 'unknown', sig: '', at: 0, ms: null, detail: '' }; apiCfg = { ...apiCfg, model: 'openrouter/auto' }; renderCrew(); });
       pl = await pill();
       check('a key not checked yet shows the model\'s own name ("OpenRouter Auto", not "auto") without a healthy dot', pl.t === 'OpenRouter Auto' && !/claude|live/.test(pl.c), JSON.stringify(pl));
-      const a = await p.evaluate(() => { const d = board.nodes.find(n => n.type === 'direction' && n.status === 'sketch'); select([d.id]); const ph = placeholderFor([d]); adopt(d); return { ph, st: d.status, ad: board.adopted[d.idea] === d.id }; });
-      check('the hint on a draft direction says /adopt keeps and adopts it, and it does', /keep and adopt/.test(a.ph) && a.st === 'ink' && a.ad, JSON.stringify(a));
+      const a = await p.evaluate(() => { const d = board.nodes.find(n => n.type === 'direction' && n.status === 'sketch'); select([d.id]); const starts = paletteStarts().map(s => s.t); adopt(d); return { starts, st: d.status, ad: board.adopted[d.idea] === d.id }; });
+      check('the palette suggests adopting a draft direction, and adopting keeps it', a.starts.some(t => /Adopt this direction/.test(t)) && a.st === 'ink' && a.ad, JSON.stringify(a));
       check('the same toast twice in a row shows once', await p.evaluate(() => { toast('Twice'); toast('Twice'); return [...document.querySelectorAll('#toasts > *')].filter(x => x.innerText.includes('Twice')).length === 1; }));
       check('no page errors on first run and in the no-credit state', p.errors.length === 0, p.errors.join(' | '));
       await ctx.close();

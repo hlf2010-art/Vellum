@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vellum: your best thinking deserves more than a chat box</title>
+<meta name="description" content="Vellum is a shared thinking space for you and AI. Lay out the evidence, let a crew of agents argue it, and keep every decision with its reasons.">
+<meta name="theme-color" content="#ecedf0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#050608" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Vellum: your best thinking deserves more than a chat box">
+<meta property="og:description" content="A shared thinking space for humans and AI.">
+<link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/BricolageGrotesque-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+<script>
+  // Theme and language before first paint, so nothing flashes.
+  (function () {
+    var d = document.documentElement, t = null, l = null;
+    try { t = localStorage.getItem("vellum-site-theme"); l = localStorage.getItem("vellum-site-lang"); } catch (e) {}
+    if (t === "light" || t === "dark") d.setAttribute("data-theme", t);
+    if (!l) l = /^zh/i.test(navigator.language || "") ? "zh" : "en";
+    if (/[?&]lang=zh/.test(location.search)) l = "zh";
+    if (/[?&]lang=en/.test(location.search)) l = "en";
+    d.lang = l === "zh" ? "zh-CN" : "en";
+    d.classList.add("js");
+  })();
+</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <!-- One icon set, drawn like the app's: 24px grid, round caps and joins. Stroke width comes from CSS. -->
+  <defs>
+    <!-- The mark: the card you decided on gives off light; what holds it up is snapped to its edges. -->
+    <symbol id="i-mark" viewBox="0 0 100 100"><g transform="rotate(-8 50 50) translate(-2 -5)"><g opacity=".28"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><rect x="18" y="18" width="42" height="50" rx="13"/></g></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5.5h16v10.5H10L5.5 19.5V16H4Z"/></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M10 7c-2.6.9-4.2 2.9-4.2 6v4h4.4v-4.4H7.5M18.6 7c-2.6.9-4.2 2.9-4.2 6v4h4.4v-4.4h-2.7"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10.2 13.8a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1.2 1.2"/><path d="M13.8 10.2a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1.2-1.2"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19.5h16M7 16v-4M12 16V7M17 16v-6.5"/></symbol>
+    <symbol id="i-judge" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="3.2"/></symbol>
+    <symbol id="i-fork" viewBox="0 0 24 24"><path d="M12 20.6v-8M12 12.6C12 9.2 8.7 8.1 6.3 5.8M12 12.6c0-3.4 3.3-4.5 5.7-6.8M12 12.6V4.4"/></symbol>
+    <symbol id="i-decide" viewBox="0 0 24 24"><path d="M6 3.5h12v17l-6-4-6 4Z"/><path d="m9 10 2.2 2.2L15.5 8"/></symbol>
+    <symbol id="i-retry" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66L20 8.7M20 4v4.7h-4.7"/></symbol>
+    <symbol id="i-tray" viewBox="0 0 24 24"><path d="M3.5 13.5 6.2 5.5h11.6l2.7 8v5h-17Z"/><path d="M3.5 13.5h5l1.2 2.2h4.6l1.2-2.2h5"/></symbol>
+    <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.6"/><path d="M3 9h18"/></symbol>
+    <symbol id="i-snap" viewBox="0 0 24 24"><path d="M12 4v10m0 0-4-4m4 4 4-4M4.5 15v4.5h15V15"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9Z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.6"/><path d="m10 9.3 4.6 2.7-4.6 2.7Z"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5 13.9 10.1 20.5 12l-6.6 1.9L12 20.5l-1.9-6.6L3.5 12l6.6-1.9Z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2.6"/><path d="m4 7.5 8 6 8-6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M7.5 7.5l9 9M16.5 7.5l-9 9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5.5 12.5 4.2 4.2L18.5 8"/></symbol>
+    <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3 9.5 5.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M3.6 12h16.8M12 3.6c2.3 2.3 3.4 5.1 3.4 8.4s-1.1 6.1-3.4 8.4c-2.3-2.3-3.4-5.1-3.4-8.4S9.7 5.9 12 3.6Z"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></symbol>
+    <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path class="dot" d="M12 4a8 8 0 0 1 0 16Z"/></symbol>
+    <symbol id="i-scout" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M15.6 8.4 13.2 13.2 8.4 15.6 10.8 10.8Z"/><circle class="dot" cx="12" cy="12" r="1.1"/></symbol>
+    <symbol id="i-strategist" viewBox="0 0 24 24"><path d="M12 20.6v-8M12 12.6C12 9.2 8.7 8.1 6.3 5.8M12 12.6c0-3.4 3.3-4.5 5.7-6.8M12 12.6V5"/><circle class="dot" cx="6" cy="5.5" r="1.6"/><circle class="dot" cx="18" cy="5.5" r="1.6"/><circle class="dot" cx="12" cy="4" r="1.6"/></symbol>
+    <symbol id="i-wright" viewBox="0 0 24 24"><rect x="3.8" y="12.6" width="7.2" height="7.2" rx="1.7"/><rect x="13" y="12.6" width="7.2" height="7.2" rx="1.7"/><rect x="8.4" y="4.2" width="7.2" height="7.2" rx="1.7"/></symbol>
+    <symbol id="i-critic" viewBox="0 0 24 24"><path d="M12 5v14.6M8.4 19.6h7.2M4.8 7.8h14.4"/><path d="M4.8 7.8 2.7 12.9a2.2 2.2 0 0 0 4.2 0zM19.2 7.8l-2.1 5.1a2.2 2.2 0 0 0 4.2 0z"/><circle class="dot" cx="12" cy="4.3" r="1.35"/></symbol>
+    <symbol id="i-apple" viewBox="0 0 24 24"><path class="dot" d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.2 1-4.1 2.5-1.8 3-.5 7.6 1.3 10.1.8 1.2 1.8 2.6 3.1 2.5 1.3 0 1.7-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.2-1.2 3-2.5.9-1.4 1.3-2.7 1.3-2.8 0 0-2.6-1-2.6-4.2ZM14 5.5c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.1-.6 2.8-1.4Z"/></symbol>
+    <symbol id="i-windows" viewBox="0 0 24 24"><path class="dot" d="M3.5 5.6 10.6 4.6v6.8H3.5Zm0 12.8 7.1 1v-6.8H3.5Zm8.1 1.1 8.9 1.2v-8.1h-8.9Zm0-15 0 6.9h8.9V3.3Z"/></symbol>
+  </defs>
+</svg>
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<header class="site-head" id="top">
+  <div class="wrap head-row">
+    <a class="brand" href="#top" aria-label="Vellum"><svg class="mark" aria-hidden="true"><use href="#i-mark"/></svg><span>Vellum</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="#why" data-i18n="nav.why">Why Vellum</a>
+      <a href="#how" data-i18n="nav.how">How it works</a>
+      <a href="#crew" data-i18n="nav.crew">The crew</a>
+    </nav>
+    <div class="tools">
+      <button class="tool" id="themeBtn" type="button" aria-label="Switch theme"><svg class="ic" aria-hidden="true"><use href="#i-theme"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="#get" data-i18n="cta.get">Get Vellum</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <!-- 1. Hero. The board is the pitch. -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <h1 id="hero-title" aria-label="Your best thinking deserves more than a chat box."><span aria-hidden="true"><span data-i18n="hero.t1">Your best thinking deserves more than </span><span class="chatbox" id="heroKw"><span class="cb-text" data-i18n="hero.kw">a chat box</span><span class="cb-caret"></span><span class="cb-send"><svg viewBox="0 0 24 24"><path d="M12 18V6m0 0-5 5m5-5 5 5"/></svg></span></span><span data-i18n="hero.t2">.</span></span></h1>
+      <p class="lede hero-lede" data-i18n="hero.lede">Put the whole problem on one board. Let an AI crew argue it out. Every choice keeps its reasons.</p>
+
+      <div class="board-track" id="track">
+      <div class="board-shell">
+        <div class="board" id="board" role="group" aria-roledescription="interactive demo" aria-label="A Vellum board deciding how a camping lantern should work">
+          <div class="board-stage" id="stage"><svg class="board-lines" id="lines" aria-hidden="true"></svg></div>
+          <div class="board-hint" id="boardHint" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-move"/></svg><span data-i18n="board.hint">Drag any card</span></div>
+        </div>
+        <div class="board-foot">
+          <ol class="steps" id="steps" aria-label="Demo steps"></ol>
+          <div class="step-caption">
+            <p id="caption" aria-live="polite"></p>
+            <button class="btn btn-quiet btn-sm" id="replay" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-retry"/></svg><span data-i18n="board.replay">Play again</span></button>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Why. One contrast, four rows. -->
+  <section class="block" id="why" aria-labelledby="why-title">
+    <div class="wrap">
+      <h2 class="why-title two-tone" id="why-title"><span class="quiet" data-i18n="why.t1">Most AI canvases help you make more.</span><span data-i18n="why.t2">Vellum helps you think it through.</span></h2>
+      <div class="why-body">
+        <div class="why-side">
+          <p class="lede" data-i18n="why.lede">The best meetings skip the slides and go to the whiteboard. Then someone wipes it.</p>
+          <!-- Nothing gets wiped: each step of the thinking is a sheet of vellum, and the earlier ones show through. -->
+          <figure class="layers" id="layers" aria-hidden="true">
+            <div class="sheets">
+              <div class="sheet s1"><svg viewBox="0 0 320 180"><g class="ink-3"><rect x="34" y="40" width="58" height="34" rx="7"/><rect x="34" y="88" width="58" height="34" rx="7"/><rect x="34" y="136" width="58" height="22" rx="7"/></g></svg></div>
+              <div class="sheet s2"><svg viewBox="0 0 320 180"><path class="ink-3" d="M92 57c26 0 30 34 56 34M92 105c26 0 30-14 56-14M92 147c26 0 30-56 56-56"/><path class="ink-1" d="m160 74 17 30h-34Z"/><path class="ink-a" d="M182 84c30-6 40-30 74-34"/><path class="ink-c" d="M182 98c30 6 40 30 74 36"/></svg></div>
+              <div class="sheet s3"><svg viewBox="0 0 320 180"><path class="ink-b" d="M184 91c30 0 46 1 80 1"/><ellipse class="ink-1 loop" cx="276" cy="92" rx="22" ry="15" transform="rotate(-6 276 92)"/></svg></div>
+              <!-- Each label rides with its own sheet but sits above them all, so it stays sharp. -->
+              <div class="sheet ghost s1"><svg viewBox="0 0 320 180"><text class="tag" x="34" y="28" data-i18n="why.l1">Evidence</text></svg></div>
+              <div class="sheet ghost s2"><svg viewBox="0 0 320 180"><text class="tag" x="186" y="36" data-i18n="why.l2">Directions</text></svg></div>
+              <div class="sheet ghost s3"><svg viewBox="0 0 320 180"><text class="tag" x="276" y="128" text-anchor="middle" data-i18n="why.l3">Decision</text></svg></div>
+            </div>
+          </figure>
+        </div>
+        <table class="contrast">
+          <thead><tr><th scope="col" data-i18n="why.h1">A generator canvas</th><th scope="col" data-i18n="why.h2">Vellum</th></tr></thead>
+          <tbody>
+            <tr><td><svg class="mk" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="why.a1">Forty images and a vague feeling</span></td><td><svg class="mk" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="why.b1">Three directions, each showing what it rests on</span></td></tr>
+            <tr><td><svg class="mk" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="why.a2">Cards that just happen to be close</span></td><td><svg class="mk" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="why.b2">Relations with names: supports, counters, refines</span></td></tr>
+            <tr><td><svg class="mk" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="why.a3">Rejected ideas, lost in final_v3</span></td><td><svg class="mk" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="why.b3">Set-aside ideas, kept with the reason</span></td></tr>
+            <tr><td><svg class="mk" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="why.a4">A decision nobody remembers making</span></td><td><svg class="mk" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="why.b4">A decision that speaks up when the facts change</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. How it works. The four zones, filled in for what you make. -->
+  <section class="block" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 class="two-tone" id="how-title"><span data-i18n="how.title">Every card knows where it came from.</span><span class="quiet" data-i18n="how.lede">Pick one to see what it rests on.</span></h2>
+      </div>
+      <div class="seg tabs" role="tablist" aria-label="Use cases" id="caseTabs">
+        <button role="tab" id="tab-product" aria-controls="zb" aria-selected="true" data-case="product"><svg class="ic" aria-hidden="true"><use href="#i-cube"/></svg><span data-i18n="cases.t1">Product design</span></button>
+        <button role="tab" id="tab-video" aria-controls="zb" aria-selected="false" tabindex="-1" data-case="video"><svg class="ic" aria-hidden="true"><use href="#i-film"/></svg><span data-i18n="cases.t2">Short video</span></button>
+        <button role="tab" id="tab-ai" aria-controls="zb" aria-selected="false" tabindex="-1" data-case="ai"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg><span data-i18n="cases.t3">AI products</span></button>
+      </div>
+      <div class="zb" id="zb" role="tabpanel" aria-labelledby="tab-product">
+        <svg class="zb-lines" id="zbLines" aria-hidden="true"></svg>
+        <div class="lane" data-z="0"><div class="lane-head"><span class="lane-ic"><svg class="ic" aria-hidden="true"><use href="#i-tray"/></svg></span><h3 data-i18n="z.1">Gather</h3><p data-i18n="z.1d">What people did and said</p></div><div class="lane-cards"></div></div>
+        <div class="lane" data-z="1"><div class="lane-head"><span class="lane-ic"><svg class="ic" aria-hidden="true"><use href="#i-fork"/></svg></span><h3 data-i18n="z.2">Explore</h3><p data-i18n="z.2d">Judgments, then directions</p></div><div class="lane-cards"></div></div>
+        <div class="lane" data-z="2"><div class="lane-head"><span class="lane-ic"><svg class="ic" aria-hidden="true"><use href="#i-window"/></svg></span><h3 data-i18n="z.3">Prototype</h3><p data-i18n="z.3d">Built from one direction</p></div><div class="lane-cards"></div></div>
+        <div class="lane" data-z="3"><div class="lane-head"><span class="lane-ic"><svg class="ic" aria-hidden="true"><use href="#i-snap"/></svg></span><h3 data-i18n="z.4">Snapshot</h3><p data-i18n="z.4d">Frozen, reasons included</p></div><div class="lane-cards"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3b. What it becomes. The decision on the board, shipped in five forms; only the one in front is lit. -->
+  <section class="block" id="out" aria-labelledby="out-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 class="two-tone" id="out-title"><span data-i18n="out.title">Then make it real.</span><span class="quiet" data-i18n="out.lede">Whatever you ship remembers why.</span></h2>
+      </div>
+      <div class="seg tabs" role="tablist" id="reelTabs" aria-label="Outputs">
+        <button role="tab" id="out-plan" aria-controls="reel" aria-selected="true" data-i18n="out.plan">Plan</button>
+        <button role="tab" id="out-tasks" aria-controls="reel" aria-selected="false" tabindex="-1" data-i18n="out.tasks">Tasks</button>
+        <button role="tab" id="out-table" aria-controls="reel" aria-selected="false" tabindex="-1" data-i18n="out.table">Table</button>
+        <button role="tab" id="out-cut" aria-controls="reel" aria-selected="false" tabindex="-1" data-i18n="out.cut">Cut</button>
+        <button role="tab" id="out-site" aria-controls="reel" aria-selected="false" tabindex="-1" data-i18n="out.site">Site</button>
+      </div>
+    </div>
+    <div class="reel" id="reel" role="tabpanel" aria-labelledby="out-plan">
+      <div class="reel-track" id="reelTrack">
+        <figure class="ri" data-k="plan">
+          <div class="doc">
+            <div class="doc-h"><span class="chip B">B</span><span data-i18n="doc.h">Hook-first lantern</span></div>
+            <dl>
+              <dt data-i18n="doc.why">Why</dt><dd data-i18n="doc.whyv">8 of 10 campers hang it from the tent loop.</dd>
+              <dt data-i18n="doc.rests">Rests on</dt><dd data-i18n="doc.restsv">3 sources, 2 of them observed</dd>
+              <dt data-i18n="doc.aside">Set aside</dt><dd class="aside" data-i18n="doc.asidev">A shade dial, C glow ring</dd>
+            </dl>
+            <div class="doc-more" aria-hidden="true"><i></i><i></i><i></i></div>
+          </div>
+        </figure>
+        <figure class="ri" data-k="tasks">
+          <div class="kb">
+            <div class="kb-col"><h5><span data-i18n="kb.todo">To do</span><b>2</b></h5><div class="kb-card" data-i18n="kb.1">Widen the hook mouth</div><div class="kb-card" data-i18n="kb.2">Glove test, 5 people</div></div>
+            <div class="kb-col"><h5><span data-i18n="kb.doing">Doing</span><b>1</b></h5><div class="kb-card" data-i18n="kb.3">Order 2200K LEDs</div></div>
+            <div class="kb-col done"><h5><span data-i18n="kb.done">Done</span><b>2</b></h5><div class="kb-card" data-i18n="kb.4">Foam mock-up</div><div class="kb-card" data-i18n="kb.5">Field test</div></div>
+          </div>
+        </figure>
+        <figure class="ri" data-k="table">
+          <div class="tb">
+            <div class="tb-h"><span data-i18n="tb.h">Field test, 10 campers</span><span class="tb-seg" aria-hidden="true"><b data-i18n="tb.table">Table</b><span data-i18n="tb.chart">Chart</span></span></div>
+            <table>
+              <tr><td data-i18n="tb.r1">Found it in the dark</td><td class="v">9/10</td><td class="bar"><i style="--v:.9"></i></td></tr>
+              <tr><td data-i18n="tb.r2">Hook held, thick line</td><td class="v">10/10</td><td class="bar"><i style="--v:1"></i></td></tr>
+              <tr class="warn"><td data-i18n="tb.r3">Hook held, thin line</td><td class="v">6/10</td><td class="bar"><i style="--v:.6"></i></td></tr>
+              <tr><td data-i18n="tb.r4">Too bright up close</td><td class="v">1/10</td><td class="bar"><i style="--v:.1"></i></td></tr>
+            </table>
+          </div>
+        </figure>
+        <figure class="ri dark" data-k="cut">
+          <div class="cut">
+            <div class="cut-glow" aria-hidden="true"><span class="lamp"></span></div>
+            <div class="cut-line" data-i18n="cut.line">Find it in the dark.</div>
+            <div class="cut-bar" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5Z"/></svg><i><b></b></i><span>0:15</span></div>
+          </div>
+        </figure>
+        <figure class="ri" data-k="site">
+          <div class="br">
+            <div class="br-top" aria-hidden="true"><i></i><i></i><i></i><span>lantern.example</span></div>
+            <div class="br-page">
+              <div class="br-copy"><h5 data-i18n="site.h">Find it in the dark.</h5><p data-i18n="site.p">Hook on top. 2200K at 40 lumens.</p><span class="br-cta" data-i18n="site.cta">Pre-order</span></div>
+              <div class="br-glow" aria-hidden="true"><span class="lamp"></span></div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. The crew. -->
+  <section class="block" id="crew" aria-labelledby="crew-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="crew-title" data-i18n="crew.title">A crew that thinks with you, and sometimes against you.</h2>
+      </div>
+      <div class="crew">
+        <figure class="agent" style="--c: var(--crew-scout)">
+          <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-scout"/></svg></span><div><h3>Scout</h3><p data-i18n="crew.scout">Weighs the evidence</p></div></div>
+          <blockquote data-i18n="crew.scoutq" data-clauses>“Two of these seven sources are the same review.”</blockquote>
+        </figure>
+        <figure class="agent" style="--c: var(--crew-strategist)">
+          <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-strategist"/></svg></span><div><h3>Strategist</h3><p data-i18n="crew.strat">Forks it into directions</p></div></div>
+          <blockquote data-i18n="crew.stratq" data-clauses>“If B is right, campers find it in five seconds.”</blockquote>
+        </figure>
+        <figure class="agent" style="--c: var(--crew-wright)">
+          <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-wright"/></svg></span><div><h3>Wright</h3><p data-i18n="crew.wright">Builds the proof</p></div></div>
+          <blockquote data-i18n="crew.wrightq" data-clauses>“The foam mock-up for B is ready. Keep it?”</blockquote>
+        </figure>
+        <figure class="agent" style="--c: var(--crew-critic)">
+          <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-critic"/></svg></span><div><h3>Critic</h3><p data-i18n="crew.critic">Checks it against the sources</p></div></div>
+          <blockquote data-i18n="crew.criticq" data-clauses>“Nothing here says campers want a dial.”</blockquote>
+        </figure>
+      </div>
+      <div class="agency">
+        <p class="agency-line" data-i18n="crew.agency" data-clauses>They can challenge your decision. Only you can make it.</p>
+        <!-- The same moment on a small board, three ways. The switch sits on the board it changes, and the line under
+             the board says what you're watching, so the eye moves down, never across. -->
+        <div class="scene-col">
+          <div class="seg modes" role="radiogroup" aria-label="How much the crew joins in" id="modes">
+            <button type="button" role="radio" data-mode="focus" aria-checked="false" tabindex="-1" data-i18n="mode.focus">Focus</button>
+            <button type="button" role="radio" data-mode="listen" aria-checked="true" data-i18n="mode.listen">Listening</button>
+            <button type="button" role="radio" data-mode="team" aria-checked="false" tabindex="-1" data-i18n="mode.team">Teamwork</button>
+          </div>
+          <figure class="scene-wrap" id="scene" aria-hidden="true">
+            <div class="scene" id="sceneBox"><div class="scene-stage" id="sceneStage"></div></div>
+          </figure>
+          <p class="mode-desc" id="modeDesc" aria-live="polite"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Get Vellum. -->
+  <section class="get" id="get" aria-labelledby="get-title">
+    <div class="wrap get-wrap">
+      <!-- The mark at full size, as a light: the decided card glows; the cards that hold it are frosted glass. -->
+      <div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
+      </svg></div>
+      <div class="sec-head">
+        <h2 id="get-title" data-i18n="get.title">Get Vellum.</h2>
+      </div>
+
+      <div class="panel">
+        <div class="pblock">
+          <div class="phead">
+            <h3 data-i18n="get.dl">Download</h3>
+            <p data-i18n="get.dld">Early builds for macOS and Windows.</p>
+          </div>
+          <div class="pgrid">
+            <a class="btn btn-quiet dl" data-os="mac" href="#get"><svg class="ic" aria-hidden="true"><use href="#i-apple"/></svg><span data-i18n="get.mac">macOS</span><span class="soon" data-i18n="get.soon">Soon</span></a>
+            <a class="btn btn-quiet dl" data-os="win" href="#get"><svg class="ic" aria-hidden="true"><use href="#i-windows"/></svg><span data-i18n="get.win">Windows</span><span class="soon" data-i18n="get.soon">Soon</span></a>
+          </div>
+        </div>
+        <div class="divider" role="presentation"></div>
+        <form class="pblock waitlist" id="waitlist" novalidate>
+          <div class="phead">
+            <h3 data-i18n="get.wl">Hear about new builds</h3>
+            <p data-i18n="get.wld">One email when a build is worth your time. That's the whole newsletter.</p>
+          </div>
+          <div class="pgrid form-body">
+            <div class="field">
+              <label for="email" data-i18n="get.email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@studio.com">
+            </div>
+            <div class="field">
+              <label for="use" data-i18n="get.use">Mostly for</label>
+              <div class="select"><select id="use" name="use">
+                <option value="product" data-i18n="cases.t1">Product design</option>
+                <option value="video" data-i18n="cases.t2">Short video</option>
+                <option value="ai" data-i18n="cases.t3">AI products</option>
+                <option value="other" data-i18n="get.other">Something else</option>
+              </select></div>
+            </div>
+            <p class="form-msg span2" id="formMsg" role="alert"></p>
+            <button class="btn btn-primary submit" type="submit"><svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg><span data-i18n="cta.waitlist">Join the waitlist</span></button>
+          </div>
+          <div class="done-state" role="status">
+            <span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span>
+            <div><strong data-i18n="get.thanks">You're on the list.</strong><p id="doneText"></p></div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-row">
+    <a class="brand brand-sm" href="#top" aria-label="Vellum"><svg class="mark" aria-hidden="true"><use href="#i-mark"/></svg><span>Vellum</span></a>
+    <nav class="foot-nav" aria-label="Footer">
+      <a href="https://github.com/hlf2010-art/Vellum">GitHub</a>
+      <span>© 2026 Vellum</span>
+      <label class="lang-pick">
+        <svg class="ic" aria-hidden="true"><use href="#i-globe"/></svg>
+        <select id="langSel" aria-label="Language"><option value="en">English</option><option value="zh">简体中文</option></select>
+        <svg class="ic chev" aria-hidden="true"><use href="#i-chev"/></svg>
+      </label>
+    </nav>
+  </div>
+</footer>
+
+<script src="site.js" defer></script>
+</body>
+</html>

@@ -145,35 +145,102 @@ async function open(browser, base, theme = 'light') {
       check('no page errors (R4)', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
-    // R5. a snapped group: moves together by its clasp, and a connector onto the clasp relates to all of it
+    // R5. a snapped group is a star and its planets: the star moves them all, a planet comes out alone
     {
       const p = await open(browser, base);
-      const [a, b, c, d] = await p.cards([['note', { text: 'Grip ring' }, 200, 200], ['note', { text: 'Thumb rest' }, 700, 200], ['note', { text: 'Anodised finish' }, 200, 560], ['note', { text: 'CMF board' }, 1050, 560]]);
-      const A = await p.box(a), B = await p.box(b);
+      const [a, b, c, d, f] = await p.cards([['note', { text: 'Grip ring' }, 200, 200], ['note', { text: 'Thumb rest' }, 700, 200], ['note', { text: 'Anodised finish' }, 200, 560], ['note', { text: 'CMF board' }, 1050, 600], ['note', { text: 'Knurl depth' }, 1050, 250]]);
+      const A = await p.box(a);
       await p.drag(b, A.x + A.w + 14, A.y); await p.keyboard.press('Escape');
       const Ab = await p.box(a);
       await p.drag(c, Ab.x, Ab.y + Ab.h + 14); await p.keyboard.press('Escape');
       let es = await p.edges();
       check('three cards can snap into one group (two relations)', es.length === 2 && es.every(e => e.via === 'snap'), JSON.stringify(es));
-      const cl = await p.evaluate(id => bondCluster(id).length, a);
-      check('they read as one snapped group', cl === 3, String(cl));
-      const pos0 = await p.evaluate(ids => ids.map(i => [byId(i).x, byId(i).y]), [a, b, c]);
-      const clasp = await p.evaluate(id => { const r = document.querySelector(`#relLayer .clasp:not(.gone)[data-clasp="${id}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, es[0].id);
-      await p.mouse.move(clasp.x, clasp.y); await p.mouse.down();
-      for (let i = 1; i <= 12; i++) { await p.mouse.move(clasp.x + 5 * i, clasp.y + 3 * i); await p.waitForTimeout(12); }
-      await p.mouse.up(); await p.waitForTimeout(400);
-      const pos1 = await p.evaluate(ids => ids.map(i => [byId(i).x, byId(i).y]), [a, b, c]);
-      const moved = pos1.map((q, i) => [q[0] - pos0[i][0], q[1] - pos0[i][1]].join(','));
-      check('dragging a clasp moves the whole snapped group together and keeps it snapped', new Set(moved).size === 1 && moved[0] === '60,36' && (await p.edges()).length === 2, JSON.stringify(moved));
-      await p.mouse.click(clasp.x + 60, clasp.y + 36); await p.waitForTimeout(250);
+      const st = await p.evaluate(([a, b, c]) => ({ size: bondCluster(a).length, star: starOf(b), flag: !!byId(a).star, planets: [b, c].map(x => !!byId(x).star), mark: document.querySelectorAll('#relLayer .star-mark').length }), [a, b, c]);
+      check('the card the others snapped onto is the star of the group', st.size === 3 && st.star === a && st.flag && !st.planets[0] && !st.planets[1], JSON.stringify(st));
+      check('the star wears one small orbit mark', st.mark === 1, String(st.mark));
+      check('the star choice lives in one function (pickStar)', await p.evaluate(a => typeof pickStar === 'function' && pickStar({ movedIds: [], targetId: a }) === a, a));
+      const pos = ids => p.evaluate(ids => ids.map(i => [byId(i).x, byId(i).y]), ids);
+      // dragging the star moves the whole system
+      let p0 = await pos([a, b, c]); const As = await p.box(a);
+      await p.drag(a, As.x + 60, As.y + 36);
+      let p1 = await pos([a, b, c]); let mv = p1.map((q, i) => [q[0] - p0[i][0], q[1] - p0[i][1]].join(','));
+      check('dragging the star moves the whole group and keeps it snapped', new Set(mv).size === 1 && mv[0] === '60,36' && (await p.evaluate(() => board.edges.filter(isBonded).length)) === 2, JSON.stringify(mv));
+      await p.evaluate(() => { selectedEdgeId = null; select([]); });
+      // a clasp no longer drags anything: a press opens the relation
+      es = await p.edges(); const abId = es.find(e => (e.a === a || e.b === a) && (e.a === b || e.b === b)).id;
+      const claspAt = id => p.evaluate(id => { const r = document.querySelector(`#relLayer .clasp:not(.gone)[data-clasp="${id}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, id);
+      let cp = await claspAt(abId); p0 = await pos([a, b, c]);
+      await p.mouse.move(cp.x, cp.y); await p.mouse.down();
+      for (let i = 1; i <= 12; i++) { await p.mouse.move(cp.x + 5 * i, cp.y + 3 * i); await p.waitForTimeout(12); }
+      await p.mouse.up(); await p.waitForTimeout(350);
+      p1 = await pos([a, b, c]);
+      check('dragging a clasp moves nothing', JSON.stringify(p0) === JSON.stringify(p1), JSON.stringify([p0, p1]));
+      await p.evaluate(() => { selectedEdgeId = null; renderWirePop?.(); });
+      await p.mouse.click(cp.x, cp.y); await p.waitForTimeout(250);
       check('clicking a clasp opens its relation', await p.evaluate(() => !!selectedEdgeId && !$('wirePop').hidden));
-      await p.keyboard.press('Escape'); await p.evaluate(() => { selectedEdgeId = null; select([]); });
-      const clasp2 = await p.evaluate(id => { const r = document.querySelector(`#relLayer .clasp:not(.gone)[data-clasp="${id}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, es[0].id);
-      await p.wire(d, clasp2.x, clasp2.y);
+      await p.keyboard.press('Escape'); await p.evaluate(() => { selectedEdgeId = null; select([]); renderWirePop?.(); });
+      // tidying a planet: a small pull outward springs back and keeps it in orbit
+      let Bb = await p.box(b);
+      await p.drag(b, Bb.x + 20, Bb.y + 10);
+      const tidy = await p.evaluate(([a, b]) => ({ gap: byId(b).x - (byId(a).x + nodeW(byId(a))), bonded: isBonded(relBetween(a, b)), tr: nodeEl(b).style.translate || '' }), [a, b]);
+      check('a small tug on a planet keeps it in orbit (it springs back to the seam)', tidy.gap === 12 && tidy.bonded && tidy.tr === '', JSON.stringify(tidy));
+      // pulling a planet out: it comes alone, the relation stays as a line
+      await p.clearToasts(); p0 = await pos([a, c]); Bb = await p.box(b);
+      await p.drag(b, Bb.x + 220, Bb.y + 160);
+      p1 = await pos([a, c]);
+      const out = await p.evaluate(([a, b]) => ({ rel: !!relBetween(a, b), bonded: isBonded(relBetween(a, b)), size: bondCluster(a).length, starA: starOf(a) }), [a, b]);
+      check('dragging a planet away takes it out alone; the star and other planets stay put', JSON.stringify(p0) === JSON.stringify(p1), JSON.stringify([p0, p1]));
+      check('the pulled-out planet keeps its relation, now a line', out.rel && !out.bonded && out.size === 2 && out.starA === a, JSON.stringify(out));
+      check('the toast offers Unbind', /Unbind/.test(await p.toast()), await p.toast());
+      // snapping onto a planet joins that planet's star
+      await p.keyboard.press('Escape');
+      const Cb = await p.box(c);
+      await p.drag(f, Cb.x + Cb.w + 14, Cb.y); await p.keyboard.press('Escape');
+      const join = await p.evaluate(([a, c, f]) => ({ relCF: !!relBetween(c, f), star: starOf(f), flagF: !!byId(f).star, drags: dragSet([a]).sort().join(','), want: [a, c, f].sort().join(',') }), [a, c, f]);
+      check('a card snapped onto a planet joins that planet\'s star (one level deep)', join.relCF && join.star === a && !join.flagF && join.drags === join.want, JSON.stringify(join));
+      // Make center
+      const Cb2 = await p.box(c);
+      await p.mouse.click(Cb2.x + Cb2.w / 2, Cb2.y + 14, { button: 'right' }); await p.waitForTimeout(250);
+      const hasItem = await p.evaluate(() => !!document.querySelector('#cardMenu:not([hidden]) [data-cm="focus"]'));
+      check('a planet\'s menu offers Set as focus', hasItem);
+      if (hasItem) await p.click('#cardMenu [data-cm="focus"]'); else await p.evaluate(c => setFocus(c), c);
+      await p.waitForTimeout(300);
+      const mc = await p.evaluate(([a, c]) => ({ star: starOf(a), flagA: !!byId(a).star, log: board.log[0]?.html || board.log[board.log.length - 1]?.html || '' }), [a, c]);
+      check('Set as focus makes that card the star', mc.star === c && !mc.flagA, JSON.stringify(mc));
+      p0 = await pos([a, c, f]); const Cs = await p.box(c);
+      await p.drag(c, Cs.x - 40, Cs.y + 30);
+      p1 = await pos([a, c, f]); mv = p1.map((q, i) => [q[0] - p0[i][0], q[1] - p0[i][1]].join(','));
+      check('the new focus now moves the whole group', new Set(mv).size === 1 && mv[0] === '-40,30', JSON.stringify(mv));
+      await p.keyboard.press('Meta+z'); await p.keyboard.press('Control+z'); await p.waitForTimeout(250);
+      // a connector onto a clasp relates to every card in that snapped group
+      await p.evaluate(() => { selectedEdgeId = null; select([]); renderWirePop?.(); });
+      es = await p.edges(); const acId = es.find(e => (e.a === a || e.b === a) && (e.a === c || e.b === c)).id;
+      cp = await claspAt(acId);
+      await p.wire(d, cp.x, cp.y);
       es = await p.edges();
       const toD = es.filter(e => e.a === d || e.b === d).map(e => e.a === d ? e.b : e.a).sort().join(',');
-      check('a connector dropped on a clasp relates the card to every card in the snapped group', toD === [a, b, c].sort().join(','), JSON.stringify(es));
+      check('a connector dropped on a clasp relates the card to every card in the snapped group', toD === [a, c, f].sort().join(','), JSON.stringify(es));
       check('no page errors (R5)', p.errors.length === 0, p.errors.join(' | '));
+      await p.context().close();
+    }
+    // R5b. the star is the focus of the topic
+    {
+      const p = await open(browser, base);
+      // the focus of a topic is the star, whichever card moved: an idea snapped onto a note becomes the star
+      const [n1, i1, br] = await p.cards([['note', { text: 'Interview: grips slip when wet' }, 200, 300], ['idea', { text: 'A knurled ring fixes wet grip' }, 800, 300], ['notepad', { title: 'Project brief', text: 'Brief: a bottle for cyclists' }, 900, 650]]);
+      await p.evaluate(([n1, i1]) => { const n = byId(n1), i = byId(i1); i.x = n.x + nodeW(n) + 40; i.y = n.y; renderAll(); }, [n1, i1]);
+      const N = await p.box(n1);
+      await p.drag(i1, N.x + N.w + 14, N.y); await p.keyboard.press('Escape');
+      const r1 = await p.evaluate(([n1, i1]) => ({ star: starOf(n1), bonded: isBonded(relBetween(n1, i1)) }), [n1, i1]);
+      check('an idea snapped onto a note becomes the star (the focus of the topic), even though it moved', r1.bonded && r1.star === i1, JSON.stringify(r1));
+      const r2 = await p.evaluate(([n1, i1, br]) => {
+        const n = byId(n1), b = byId(br); b.x = n.x; b.y = n.y + nodeH(n) + 12; makeRelation(br, n1, { via: 'snap' }); settleStar([br], n1, starOf(n1)); renderAll();
+        return { star: starOf(i1), rank: focusRank(b) };
+      }, [n1, i1, br]);
+      check('a brief joining the group outranks the idea', r2.star === br && r2.rank === 2, JSON.stringify(r2));
+      const r3 = await p.evaluate(([n1, i1]) => { setFocus(i1); return starOf(n1) === i1 && byId(i1).focus === 'you'; }, [n1, i1]);
+      check('Set as focus overrides the rule', r3);
+      check('no page errors (R5b)', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
     // R6. the crew reads relations as you stated them and never changes them

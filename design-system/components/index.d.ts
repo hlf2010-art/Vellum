@@ -4,6 +4,8 @@ export type Weight = 'observed' | 'reported' | 'proposed' | 'illustrative';
 export type CrewMember = 'scout' | 'strategist' | 'wright' | 'critic';
 
 export interface CardProps {
+  /** Tooltip on the one-word eyebrow: format, model, seed, where it came from, which card a question is on. */
+  eyebrowTip?: string;
   /** Which card. Sets width, title style and body. `print` is an alias of `snapshot`. */
   kind?: 'source' | 'recording' | 'image' | 'frame' | 'audio' | 'link' | 'notepad'
        | 'idea' | 'synthesis' | 'direction' | 'question' | 'note'
@@ -11,7 +13,7 @@ export interface CardProps {
   title?: string;
   /** Body copy (`body`, `label-2`); for `group`, the child cards. */
   children?: React.ReactNode;
-  /** Kind-line text, e.g. "MD · Playtest Telemetry", "Question on Proof B v2". */
+  /** The one-word eyebrow when the kind default is not right: "Slides", "Spreadsheet", or a person's own kind ("Core thesis"). One word, no format or source. */
   eyebrow?: string;
   /** Crew byline (18px orb) for crew-made cards. */
   by?: CrewMember;
@@ -72,7 +74,8 @@ export interface CardProps {
 }
 export interface LineageChipProps { lineage?: Lineage; size?: 'md' | 'lg'; /** Ring around the chip, e.g. the active filter. */ selected?: boolean; }
 export interface EvidenceWeightProps { weight?: Weight; }
-export type CrewState = 'free' | 'working' | 'waiting';
+/** `thinking`: the member answering you breathes on `--duration-breath`. */
+export type CrewState = 'free' | 'working' | 'waiting' | 'thinking';
 export interface CrewMarkProps { member?: CrewMember; state?: CrewState; working?: boolean; size?: 'md' | 'sm' | 'xs'; }
 export interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -97,14 +100,24 @@ export interface ToolRailProps {
   disabled?: string[];
 }
 export interface ComposerProps {
-  /** Default "Write an idea, or / for commands". */
-  placeholder?: string; value?: string; hint?: string;
-  /** Who handles the request; the chip appears once there is text (or with showRoute). */
-  route?: { member?: CrewMember | null; label: string }; showRoute?: boolean;
-  /** Enter sends, Shift+Enter breaks the line; the field grows to 160px. */
-  onSend?: (text: string) => void;
-  /** Mic is recording: danger tint, aria-pressed. */
-  recording?: boolean;
+  /** false: only the hint pill ("⌘K Commands") at the bottom centre. Default true: the open palette. */
+  open?: boolean;
+  /** Default "Type a command, or search". With no cards yet the app says "Type a command, or write an idea". */
+  placeholder?: string; value?: string;
+  /** Hint pill text. Default "Commands". */
+  hintLabel?: string;
+  /** Up to three rows shown while the field is empty, each with its keycap. */
+  suggestions?: CommandItem[];
+  /** Rows listed after "/" and matched against plain words. */
+  commands?: CommandItem[];
+  /** Cards matched against plain words (two characters or more). */
+  cards?: CommandItem[];
+  /** What Enter will do once there is text, shown at the right with a ↵ keycap. Default "Run command" / "Add as an idea". */
+  route?: string;
+  /** Hides the "Type / to see every command" tip once someone has used "/" a few times. */
+  learned?: boolean;
+  autoFocus?: boolean;
+  onOpen?: () => void; onClose?: () => void; onSubmit?: (text: string) => void; onPick?: (item: CommandItem) => void;
 }
 export interface ToastAction { label: string; icon?: string; variant?: 'ghost' | 'secondary' | 'primary'; onClick?: () => void; }
 export interface ToastProps { member?: CrewMember; children?: React.ReactNode; /** Shorthand for a single Undo action. */ undo?: boolean; actions?: ToastAction[]; /** `error`: role=alert, alert icon, danger ring. */ tone?: 'neutral' | 'error'; }
@@ -168,14 +181,33 @@ export interface StageHeaderProps { step?: string; name?: string; sub?: string; 
 export interface StripItem { label: string; icon?: string; iconOnly?: boolean; danger?: boolean; lineage?: boolean; key?: string; onClick?: () => void; }
 export interface SelectionStripProps { /** Groups are separated by space, not bars. */ groups?: StripItem[][]; lineage?: Lineage; label?: string; }
 export interface CrewCursorProps { member?: CrewMember; /** Present tense, counted when possible: "Reading 3/7". */ label?: string; }
-export interface CommandItem { cmd: string; member?: CrewMember; desc: string; hint?: string; }
-export interface CommandMenuProps { title?: string; items?: CommandItem[]; active?: number; onPick?: (item: CommandItem) => void; }
+export interface CommandItem {
+  /** "/fork", or a plain action ("New sticky"), or a card title in search results. */
+  cmd: string; desc?: string; hint?: string;
+  /** Line icon in the row's tile. */
+  icon?: string;
+  /** Search results: a dot instead of an icon, in that direction's -fill; omit for a grey dot. */
+  dot?: Lineage | null;
+  /** Shown as a name at the right, in label-3. Crew have no colour of their own. */
+  member?: CrewMember;
+  /** Keycap at the right (replaces the member name), e.g. "N", "⌘.", "⌘↵". */
+  kbd?: string;
+}
+export interface CommandSection { title: string; items: CommandItem[]; }
+export interface CommandMenuProps {
+  sections?: CommandSection[]; title?: string; items?: CommandItem[]; active?: number;
+  /** Inside the palette: no surface of its own, a hairline at the top. */
+  embedded?: boolean;
+  /** The "/" list above the Copilot input: 36px rows, no names. */
+  compact?: boolean;
+  tip?: React.ReactNode; onPick?: (item: CommandItem) => void;
+}
 export interface DialogProps { title: string; children?: React.ReactNode; /** Verbs that repeat the outcome, never OK/Cancel. */ actions?: React.ReactNode; scrim?: boolean; onClose?: () => void; width?: number | string; }
 
 /* ── Primitives ────────────────────────────────────────────────────────── */
 export interface SegmentedProps { label?: string; options?: string[]; value?: string; onChange?: (v: string) => void; }
 export interface TooltipProps { label: string; /** Shown after a middle dot: "Undo · ⌘Z". */ shortcut?: string; side?: 'top' | 'bottom'; open?: boolean; children: React.ReactElement; }
-export interface KbdProps { children?: React.ReactNode; }
+export interface KbdProps { children?: React.ReactNode; /** `sm` (16px) inside a sentence of 12px copy. Default 20px. */ size?: 'sm' | 'md'; }
 export interface TagProps { tone?: 'ok' | 'warn' | 'danger' | 'lineage'; lineage?: Lineage; icon?: string; children?: React.ReactNode; }
 export interface TextFieldProps { label?: string; value?: string; placeholder?: string; help?: string; error?: string; optional?: boolean; disabled?: boolean; multiline?: boolean; rows?: number; onChange?: (v: string) => void; }
 export interface CheckboxProps { label?: string; checked?: boolean; disabled?: boolean; onChange?: (v: boolean) => void; }
@@ -243,3 +275,42 @@ export interface ProofCardProps {
   onOpen?: () => void; onFix?: () => void; onRebuild?: () => void; onTest?: () => void; onSnapshot?: () => void; /** "Change": select the card and focus the composer. */ onChange?: () => void; onIterate?: (text: string) => void;
 }
 export declare function ProofCard(p: ProofCardProps): JSX.Element;
+
+/* ── 27 Nov: palette-era parts ─────────────────────────────────────────── */
+export interface SelectionBarItem { label: string; icon?: string; kbd?: string; onClick?: () => void; }
+export interface SelectionBarProps {
+  /** Opens Copilot with the selection as one removable chip. ⌘↵ does the same. */
+  onAsk?: () => void;
+  /** The ▾ menu: make something on the canvas without opening the chat. Default Synthesize, Action list, Kanban, Tree map, Critique. */
+  make?: SelectionBarItem[];
+  /** GIF and Video join the ▾ menu after a gap, only when the selection has pictures. */
+  hasPictures?: boolean;
+  /** The ⋯ menu: arranging (align, distribute, duplicate). */
+  more?: SelectionBarItem[];
+  menu?: 'make' | 'more' | null;
+  onRelate?: () => void; onGroup?: () => void; onHide?: () => void; onDelete?: () => void;
+}
+export interface CopilotButtonProps { open?: boolean; onClick?: () => void; }
+export type EvidenceVerdict = 'mostly' | 'partly' | 'secondhand' | 'hearsay' | 'thin' | 'unrated';
+export interface EvidenceCounts { observed?: number; reported?: number; proposed?: number; none?: number; }
+export interface EvidenceLineProps {
+  /** mostly: Mostly observed · partly: Partly observed · secondhand: Mostly second-hand · hearsay: Second-hand only · thin: No evidence yet · unrated: Not rated yet. */
+  verdict?: EvidenceVerdict; sources?: number; counts?: EvidenceCounts; sentence?: string; open?: boolean;
+}
+export interface EvidenceCardProps { verdict?: EvidenceVerdict; counts?: EvidenceCounts; sentence?: string; }
+export interface AvatarProps {
+  /** A crew member (neutral orb with its glyph), or leave out for a person. */
+  member?: CrewMember; initials?: string; name?: string;
+  /** A person's own colour (the app derives it from the name). */
+  color?: string;
+  /** Drafted by the crew, confirmed by you: a small check. */
+  confirmed?: boolean; size?: 'sm' | 'md'; style?: any;
+}
+export interface Contributor extends AvatarProps { role?: string; when?: string; }
+export interface AvatarGroupProps { people?: Contributor[]; open?: boolean; }
+export declare function SelectionBar(p: SelectionBarProps): JSX.Element;
+export declare function CopilotButton(p: CopilotButtonProps): JSX.Element;
+export declare function EvidenceLine(p: EvidenceLineProps): JSX.Element;
+export declare function EvidenceCard(p: EvidenceCardProps): JSX.Element;
+export declare function Avatar(p: AvatarProps): JSX.Element;
+export declare function AvatarGroup(p: AvatarGroupProps): JSX.Element;

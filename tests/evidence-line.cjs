@@ -47,7 +47,7 @@ async function open(browser, base, opts = {}) {
       check('mostly observed: half or more of the rated sources were watched', v.strong.txt === 'Mostly observed' && v.strong.ico === 'observed' && v.half.k === 'obs', JSON.stringify(v));
       check('partly observed: some watched, more than reported', v.part.txt === 'Partly observed' && v.part.ico === 'observed', JSON.stringify(v.part));
       check('second-hand: reports outweigh what was watched; "only" when nothing was', v.mostlyRep.txt === 'Mostly second-hand' && v.repOnly.txt === 'Second-hand only' && v.repOnly.ico === 'reported' && v.mostlyRep.ico === 'reported', JSON.stringify([v.mostlyRep, v.repOnly]));
-      check('ideas and pictures are not evidence', v.ideas.txt === 'No evidence yet' && v.ideas.ico === 'proposed', JSON.stringify(v.ideas));
+      check('ideas and pictures are not evidence', v.ideas.txt === 'Proposals only' && v.ideas.ico === 'proposed', JSON.stringify(v.ideas));
       check('nothing rated says so', v.none.txt === 'Not rated yet', JSON.stringify(v.none));
 
       // signs say what kind of evidence it is, not a strength meter (bars read as a phone signal)
@@ -91,6 +91,13 @@ async function open(browser, base, opts = {}) {
       await p.waitForTimeout(700);
       const busy = await p.overflow();
       check('no card\'s bottom row runs past its edge (time and avatars stay inside)', !rest.length && !busy.length, JSON.stringify({ rest, busy }));
+      // E4b. an adopted direction's bottom row: no page-type label, and the proof is a link that takes you there
+      await p.evaluate(() => { cam = { s: 1, x: 0, y: 0 }; paintCam(); sel = []; renderAll(); });
+      const dir = await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'direction' && board.adopted[n.idea] === n.id && outputsOf(n.id).some(o => o.type === 'proof')); return n && { id: n.id, foot: document.querySelector(`[data-id="${n.id}"] .foot`)?.innerText.replace(/\s+/g, ' ') || '' }; });
+      check('an adopted direction says Adopted and links to its proof, with no page-type label', dir && /Adopted/.test(dir.foot) && /Proof/.test(dir.foot) && !/Explore Desk|Guided Tour|Slide Deck|Proof built/.test(dir.foot), JSON.stringify(dir));
+      if (dir) { await p.frame(dir.id); /* a crew draft's bar can float over the card's bottom row once the card grows (decision line, flag); press the link itself */ await p.locator(`[data-id="${dir.id}"] .foot-link`).dispatchEvent('click'); await p.waitForTimeout(800); }
+      const went = await p.evaluate(() => sel.length === 1 && byId(sel[0])?.type === 'proof');
+      check('"Proof →" selects the proof and flies to it', went);
       check('E no page errors', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }

@@ -15,10 +15,11 @@ Every object on a Vellum board is a Card: a `card` face, `radius-card` corners, 
 
 | prop | type | note |
 | --- | --- | --- |
+| `eyebrowTip` | `string` | Tooltip on the one-word eyebrow: format, model, seed, where it came from, which card a question is on. |
 | `kind` | `'source' \| 'recording' \| 'image' \| 'frame' \| 'audio' \| 'link' \| 'notepad' \| 'idea' \| 'synthesis' \| 'direction' \| 'question' \| 'note' \| 'proof' \| 'list' \| 'kanban' \| 'snapshot' \| 'print' \| 'group'` | Which card. Sets width, title style and body. `print` is an alias of `snapshot`. |
 | `title` | `string` |  |
 | `children` | `React.ReactNode` | Body copy (`body`, `label-2`); for `group`, the child cards. |
-| `eyebrow` | `string` | Kind-line text, e.g. "MD · Playtest Telemetry", "Question on Proof B v2". |
+| `eyebrow` | `string` | The one-word eyebrow when the kind default is not right: "Slides", "Spreadsheet", or a person's own kind ("Core thesis"). One word, no format or source. |
 | `by` | `CrewMember` | Crew byline (18px orb) for crew-made cards. |
 | `lineage` | `Lineage` | Direction, proof, question, snapshot, group tint. |
 | `weight` | `Weight` | Evidence pill in the footer (evidence kinds). |

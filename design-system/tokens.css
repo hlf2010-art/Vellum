@@ -36,17 +36,17 @@
   --chip-ink: #ffffff; /* Letter on a lineage chip (A–D) — white in light, near-black in dark. White passes on every light chip at 5.3:1. */
   --light: #ffffff; /* 'Light is alive': the glow colour of working crew, live drafts and the review pulse dot. */
   --bloom: rgba(255,190,110,.5); /* Warm glow around something the crew is working on or waiting on you for. Only as a soft shadow, never a fill. */
-  --crew-scout: #1d4ed8; /* Scout's ink (reads sources, weighs evidence). Avatar glyph and its tooltip icon. */
-  --crew-strategist: #6d28d9; /* Strategist's ink (forks a claim into testable directions). */
-  --crew-wright: #b45309; /* Wright's ink (builds proofs: pages, decks, action lists). */
-  --crew-critic: #047857; /* Critic's ink (checks work against its sources). */
+  --crew-scout: #3B3F47; /* Scout (compass glyph: reads sources, weighs evidence). Glyph ink in the avatar orb and its tooltip icon. Since 27 Nov all four crew inks are the same neutral: the crew are told apart by their glyph and name, never by hue, because A–D belong to directions and green/red to supports/counters. */
+  --crew-strategist: #3B3F47; /* Strategist (forking-branches glyph: forks claims into directions). Glyph ink in the avatar orb and its tooltip icon. Since 27 Nov all four crew inks are the same neutral: the crew are told apart by their glyph and name, never by hue, because A–D belong to directions and green/red to supports/counters. */
+  --crew-wright: #3B3F47; /* Wright (stacked-blocks glyph: builds proofs). Glyph ink in the avatar orb and its tooltip icon. Since 27 Nov all four crew inks are the same neutral: the crew are told apart by their glyph and name, never by hue, because A–D belong to directions and green/red to supports/counters. */
+  --crew-critic: #3B3F47; /* Critic (balance-scale glyph: checks work against its sources). Glyph ink in the avatar orb and its tooltip icon. Since 27 Nov all four crew inks are the same neutral: the crew are told apart by their glyph and name, never by hue, because A–D belong to directions and green/red to supports/counters. */
   --orb-off: #d9dade; /* An idle crew avatar's fill: unlit until that crew member is working. */
   --note-butter: #fce15d; /* Sticky note paper (butter tone, the default). Same in both themes. */
   --note-ink: #925600; /* The 6px dot in a sticky's tag, on `note-butter`. `#925600` reaches 4.52:1 on the paper, so it can also carry small text. Sticky body text is near-black ink at 88%. Same in both themes, like the paper. Deepened on 2026-11-17 from `#9a5b00` (4.15:1). Lumen matches since `main@285e8f6`. */
   --shadow-card: 0 0 0 .5px rgba(11,12,14,.07), 0 1px 1px rgba(11,12,14,.03), 0 2px 4px -1px rgba(11,12,14,.04), 0 12px 28px -16px rgba(11,12,14,.16); /* Resting card on the board. */
   --shadow-card-up: 0 0 0 .5px rgba(11,12,14,.08), 0 2px 3px rgba(11,12,14,.04), 0 8px 16px -6px rgba(11,12,14,.08), 0 34px 64px -28px rgba(11,12,14,.28); /* Hovered or dragged card; the open-card sheet. */
   --shadow-chrome: 0 0 0 .5px rgba(11,12,14,.08), 0 1px 2px rgba(11,12,14,.04), 0 12px 32px -14px rgba(11,12,14,.24); /* Floating glass chrome: composer, tool rail, toasts, menus. */
-  --shadow-field-focus: 0 0 0 4px rgba(255,190,120,.15), 0 4px 20px -2px rgba(255,165,80,.34); /* Focus on a text field: the field turns `card` and this soft warm glow surrounds it, instead of a grey ring. The same warm light the crew uses for "alive". Buttons and other controls keep the `focus` ring. */
+  --shadow-field-focus: 0 0 0 1px color-mix(in srgb, var(--focus) 46%, transparent); /* Focus on a text field (the ⌘K palette, the Copilot input, the Margin's write box): a thin 1px line in `focus` at 46%. Not a warm halo: light means something is alive, and a field you type into is not. Buttons and other controls keep the `focus` ring. */
 }
 [data-theme="dark"] {
   --canvas: #050608;
@@ -85,17 +85,17 @@
   --chip-ink: #0a0b0d;
   --light: #f4f5f7;
   --bloom: rgba(255,236,206,.55);
-  --crew-scout: #7ab3ff;
-  --crew-strategist: #c4a5ff;
-  --crew-wright: #ffb547;
-  --crew-critic: #45d49a;
+  --crew-scout: #D7DAE0;
+  --crew-strategist: #D7DAE0;
+  --crew-wright: #D7DAE0;
+  --crew-critic: #D7DAE0;
   --orb-off: #2a2b30;
   --note-butter: #fce15d;
   --note-ink: #925600;
   --shadow-card: 0 0 0 .5px rgba(255,255,255,.06), inset 0 1px 0 rgba(255,255,255,.035), 0 14px 34px -16px rgba(0,0,0,.8);
   --shadow-card-up: 0 0 0 .5px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.05), 0 34px 70px -24px rgba(0,0,0,.9);
   --shadow-chrome: 0 0 0 .5px rgba(255,255,255,.07), 0 14px 40px -14px rgba(0,0,0,.85);
-  --shadow-field-focus: 0 0 0 4px rgba(255,190,120,.09), 0 4px 22px -2px rgba(255,165,80,.24);
+  --shadow-field-focus: 0 0 0 1px color-mix(in srgb, var(--focus) 46%, transparent);
 }
 :root {
   --space-2: 2px; /* Gap between segmented-control buttons. */
@@ -133,6 +133,7 @@
   --duration-base: 240ms; /* Small layout changes, menus and popovers opening. */
   --duration-spring: 410ms; /* Snappy spring: chips and pills appearing. */
   --duration-slow: 600ms; /* Smooth spring: sheets and large layout shifts. */
+  --duration-breath: 2.4s; /* One breath. Everything that is waiting or thinking breathes at this pace: the answering crew member's avatar, a busy seat, the review dot, a reading card's sweep, a forming card. Spinners, carets and flowing wires keep their own pace because they say something else (busy, typing, moving). Stops under reduced motion. The app's `--breath`. */
   --easing-standard: cubic-bezier(.22,.8,.24,1); /* Default ease-out for transitions. */
   --z-card: 1; /* Cards on the board. */
   --z-wire: 5; /* Ports and wire handles above cards. */

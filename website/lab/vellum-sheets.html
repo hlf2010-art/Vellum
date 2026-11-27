@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vellum sheets</title>
+<!-- Parked for later polish (2026-11-27): three sheets of vellum, lit from the top left, that fan out on hover.
+     Taken off the home page because the "why it's called Vellum" section was cut. Not linked from the site. -->
+<link rel="stylesheet" href="../styles.css">
+<style>
+body { min-height: 100vh; display: grid; place-items: center; background: var(--canvas); }
+.stage { width: min(90vw, 640px); padding: 80px; box-sizing: border-box; }
+/* Three sheets of vellum, lit from the top left. Each layer shows through the one above it. */
+.sheets { position: relative; width: min(88%, 400px); aspect-ratio: 320 / 196; --mx: 0; --my: 0; }
+.sheet { position: absolute; inset: 0 8% 8% 0; border-radius: 10px; overflow: hidden;
+  background: var(--sheet); -webkit-backdrop-filter: blur(1.1px); backdrop-filter: blur(1.1px);
+  box-shadow: inset 0 1px 0 var(--sheet-edge), 0 0 0 .5px var(--hair-2), 0 18px 30px -22px rgba(0,0,0,.4);
+  transition: transform .9s var(--spring); }
+.sheet::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at calc(18% + var(--mx) * 30%) calc(0% + var(--my) * 20%), var(--sheet-edge), transparent 58%); opacity: .55; }
+.sheet svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.sheet path, .sheet rect, .sheet ellipse { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sheet .ink-1 { stroke: var(--label); }
+.sheet .ink-3 { stroke: var(--label-3); }
+.sheet .ink-a { stroke: var(--A-fill); }
+.sheet .ink-b { stroke: var(--B-fill); stroke-width: 2.6; }
+.sheet .ink-c { stroke: var(--C-fill); }
+.sheet .loop { opacity: .5; }
+.s1 { transform: translate(calc(var(--mx) * -4px), calc(var(--my) * -3px)) rotate(-2.5deg); }
+.s2 { transform: translate(calc(4% + var(--mx) * 2px), calc(5% + var(--my) * 2px)) rotate(.6deg); }
+.s3 { transform: translate(calc(8% + var(--mx) * 8px), calc(9% + var(--my) * 6px)) rotate(2.8deg); }
+.sheets:hover .s1 { transform: translate(calc(-2% + var(--mx) * -4px), calc(-3% + var(--my) * -3px)) rotate(-4.5deg); }
+.sheets:hover .s3 { transform: translate(calc(11% + var(--mx) * 8px), calc(12% + var(--my) * 6px)) rotate(4.5deg); }
+@media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+        <div class="sheets" id="sheets" aria-hidden="true">
+          <div class="sheet s1"><svg viewBox="0 0 320 180"><g class="ink-3"><rect x="34" y="40" width="58" height="34" rx="7"/><rect x="34" y="88" width="58" height="34" rx="7"/><rect x="34" y="136" width="58" height="22" rx="7"/></g></svg></div>
+          <div class="sheet s2"><svg viewBox="0 0 320 180"><path class="ink-3" d="M92 57c26 0 30 34 56 34M92 105c26 0 30-14 56-14M92 147c26 0 30-56 56-56"/><path class="ink-1" d="m160 74 17 30h-34Z"/><path class="ink-a" d="M182 84c30-6 40-30 74-34"/><path class="ink-c" d="M182 98c30 6 40 30 74 36"/></svg></div>
+          <div class="sheet s3"><svg viewBox="0 0 320 180"><path class="ink-b" d="M184 91c30 0 46 1 80 1"/><ellipse class="ink-1 loop" cx="276" cy="92" rx="22" ry="15" transform="rotate(-6 276 92)"/></svg></div>
+        </div>
+</div>
+<script>
+(function () {
+  var sheets = document.getElementById("sheets"), stage = document.getElementById("stage");
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover)").matches) return;
+  stage.addEventListener("pointermove", function (e) {
+    var r = sheets.getBoundingClientRect();
+    var mx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 1.2)));
+    var my = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 1.2)));
+    sheets.style.setProperty("--mx", mx.toFixed(3)); sheets.style.setProperty("--my", my.toFixed(3));
+  });
+  stage.addEventListener("pointerleave", function () { sheets.style.setProperty("--mx", "0"); sheets.style.setProperty("--my", "0"); });
+})();
+</script>
+</body>
+</html>

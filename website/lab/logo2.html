@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logo round two</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { background: #08090b; color: #f4f5f7; min-height: 100vh; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1280px; margin: 0 auto; padding: 56px 32px; }
+  .col { border-radius: 24px; background: #0e0f12; box-shadow: 0 0 0 .5px rgba(255,255,255,.07); padding: 28px; display: flex; flex-direction: column; gap: 26px; }
+  .col.rec { box-shadow: 0 0 0 1px rgba(255,255,255,.22); }
+  .tag { font: 600 12.5px/1 var(--sans); color: rgba(244,245,247,.55); display: flex; gap: 10px; align-items: center; }
+  .tag b { display: inline-grid; place-items: center; height: 22px; padding: 0 7px; border-radius: 6px; background: rgba(255,255,255,.07); color: #fff; }
+  .tag em { margin-left: auto; font-style: normal; color: #fff; }
+  .hero { position: relative; height: 260px; display: grid; place-items: center; border-radius: 16px; overflow: hidden; background: #08090b; }
+  .hero svg { position: relative; width: 170px; height: 170px; overflow: visible; }
+  .row { display: flex; align-items: center; gap: 18px; }
+  .tile { width: 84px; height: 84px; border-radius: 20px; display: grid; place-items: center; }
+  .tile.dark { background: linear-gradient(180deg, #1d1e23, #121317); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.12), 0 8px 20px -8px rgba(0,0,0,.8); }
+  .tile.light { background: linear-gradient(180deg, #fff, #f0f1f4); box-shadow: inset 0 0 0 .5px rgba(0,0,0,.08); }
+  .tile svg { width: 56px; height: 56px; overflow: visible; }
+  .fav { display: flex; gap: 12px; align-items: center; }
+  .fav span { display: grid; place-items: center; border-radius: 7px; background: #1b1c20; }
+  .fav .f32 { width: 32px; height: 32px; } .fav .f32 svg { width: 24px; height: 24px; }
+  .fav .f16 { width: 16px; height: 16px; border-radius: 4px; } .fav .f16 svg { width: 13px; height: 13px; }
+  .fav.l span { background: #fff; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.1); }
+  .lock { display: flex; align-items: center; gap: 9px; font: 600 19px/1 var(--display); letter-spacing: -.025em; padding: 12px 14px; border-radius: 12px; }
+  .lock.d { background: #0b0c0e; color: #f4f5f7; } .lock.l { background: #ecedf0; color: #0b0c0e; }
+  .lock svg { width: 24px; height: 24px; overflow: visible; }
+  .why { font: 400 14.5px/1.5 var(--sans); color: rgba(244,245,247,.7); margin: 0; }
+  .why strong { color: #fff; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="grid" id="grid"></div>
+<script>
+(function () {
+  // Two cards: yours, set down by hand (a little tilted), and the AI's, square to the grid.
+  // Where they overlap is the shared thinking space, and only that part is lit.
+  // The overlap has to read as a third card, never as a stroke or a letter, so the two overlap by more than half.
+  var A = '<rect x="14" y="15" width="50" height="56" rx="14" transform="rotate(-10 39 43)"/>';
+  var B = '<rect x="35" y="30" width="50" height="56" rx="14"/>';
+  var n = 0;
+  function ink(bg) { return bg === "light" ? { on: "#0b0c0e", pane: "rgba(11,12,14,.12)", edge: "rgba(11,12,14,.34)" } : { on: "#f6f7f9", pane: "rgba(255,255,255,.07)", edge: "rgba(255,255,255,.42)" }; }
+
+  // C1. Glass: two frosted panes with a lit edge; the overlap is solid light and glows.
+  function glass(bg, small) {
+    var id = "g" + (n++), c = ink(bg), glow = bg === "light" ? "" : ' filter="url(#' + id + 'f)"';
+    var s = '<defs><clipPath id="' + id + 'c">' + A + '</clipPath><linearGradient id="' + id + 'e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c.edge + '"/><stop offset="1" stop-color="' + c.pane + '"/></linearGradient>' +
+      '<filter id="' + id + 'f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+    if (small) return s + '<g fill="' + c.on + '" opacity="' + (bg === "light" ? .2 : .26) + '">' + A + B + '</g><g fill="' + c.on + '" clip-path="url(#' + id + 'c)">' + B + "</g>";
+    s += '<g fill="' + c.pane + '" stroke="url(#' + id + 'e)" stroke-width="1.2">' + A + B + "</g>";
+    return s + '<g fill="' + c.on + '" clip-path="url(#' + id + 'c)"' + glow + ">" + B + "</g>";
+  }
+  // C2. Solid: the same idea in two inks. Holds at every size, including a 16 px tab.
+  function solid(bg) {
+    var id = "s" + (n++), c = ink(bg);
+    return '<defs><clipPath id="' + id + 'c">' + A + '</clipPath></defs><g fill="' + c.on + '" opacity="' + (bg === "light" ? .2 : .26) + '">' + A + B + '</g><g fill="' + c.on + '" clip-path="url(#' + id + 'c)">' + B + "</g>";
+  }
+  // C3. Drawn: two cards outlined like marker on a whiteboard; only the shared part is filled in.
+  function drawn(bg, small) {
+    var id = "d" + (n++), c = ink(bg), w = small ? 7 : 4.2;
+    return '<defs><clipPath id="' + id + 'c">' + A + '</clipPath></defs><g fill="none" stroke="' + c.on + '" stroke-width="' + w + '" opacity=".9">' + A + B + '</g><g fill="' + c.on + '" clip-path="url(#' + id + 'c)">' + B + "</g>";
+  }
+  var OPTS = [
+    { k: "C1", name: "Glass · lit where you meet", fn: glass, rec: true,
+      why: "<strong>Recommended.</strong> Two frosted panes, yours set down by hand and the AI's square to the grid. Only the overlap is solid, and it gives off light, the same light the crew gives off while it works. Below 32 px it switches to the solid drawing, the way type has optical sizes." },
+    { k: "C2", name: "Solid · two inks", fn: solid,
+      why: "<strong>The plain version.</strong> Same shapes in two inks. Clear at every size and easy to print, but on its own it is quieter than C1 and closer to the usual overlap marks." },
+    { k: "C3", name: "Drawn · marker outlines", fn: drawn,
+      why: "<strong>The whiteboard version.</strong> Two cards outlined like marker, the shared part filled in. Most literal about the board, but outlines thicken and clog at small sizes." }
+  ];
+  function svg(fn, bg, small) { return '<svg viewBox="0 0 100 100" aria-hidden="true">' + fn(bg, small) + "</svg>"; }
+  document.getElementById("grid").innerHTML = OPTS.map(function (o) {
+    return '<section class="col' + (o.rec ? " rec" : "") + '">' +
+      '<div class="tag"><b>' + o.k + "</b>" + o.name + (o.rec ? "<em>Pick</em>" : "") + "</div>" +
+      '<div class="hero">' + svg(o.fn, "dark") + "</div>" +
+      '<div class="row"><div class="tile dark">' + svg(o.fn, "dark") + '</div><div class="tile light">' + svg(o.fn, "light") + "</div>" +
+      '<div><div class="fav"><span class="f32">' + svg(o.fn, "dark", true) + '</span><span class="f16">' + svg(o.fn, "dark", true) + '</span></div><div class="fav l" style="margin-top:10px"><span class="f32">' + svg(o.fn, "light", true) + '</span><span class="f16">' + svg(o.fn, "light", true) + "</span></div></div></div>" +
+      '<div class="row"><div class="lock d">' + svg(o.fn, "dark", true) + 'Name</div><div class="lock l">' + svg(o.fn, "light", true) + "Name</div></div>" +
+      '<p class="why">' + o.why + "</p></section>";
+  }).join("");
+})();
+</script>
+</body>
+</html>

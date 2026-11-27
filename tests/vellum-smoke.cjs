@@ -1003,7 +1003,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('your own words still change a locked card', await p.evaluate(id => byId(id).text === 'Changed because you asked', claim));
       check('the Snapshot lane starts locked', await p.evaluate(() => lockedBays().includes(3) && document.querySelector('[data-bay-lock="3"]')?.getAttribute('aria-pressed') === 'true'));
       await p.evaluate(() => setCrewLevel('collab'));
-      const snap = await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'In Snapshot', text: 'snapshot card', pos: { x: 3100, y: 300 } }], { by: 'wright' }).createdNodes[0].id);
+      const snap = await p.evaluate(() => dispatchCanvasActions([{ action: 'create', cardType: 'note', title: 'In Snapshot', text: 'snapshot card', pos: { x: 3 * BAY + 100, y: 300 } }], { by: 'wright' }).createdNodes[0].id);
       r = await run([{ action: 'edit', target: snap, field: 'text', value: 'changed later' }]);
       check('kept cards in a locked lane are protected', r.locked === 1 && await p.evaluate(id => byId(id).text === 'snapshot card', snap));
       await p.evaluate(() => toggleBayLock(3)); await p.waitForTimeout(200);

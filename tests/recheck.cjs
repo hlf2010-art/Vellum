@@ -74,14 +74,16 @@ function serve() {
     /* 1. a counter, observed: Strategist weighs it, Critic objects with a fix */
     let r = await fresh(); requests = [];
     script = [S('weaker', 'Rain hides the glow for most players, which undercuts the pager being noticed at a glance.', ['N1', 'S1'], 'Watch three players cross the rooftop in rain.'),
-      { kind: 'critic', text: { agree: false, objection: 'The rain test had six players and no haptic cue, so it says the glow alone fails, not the pager.', cites: ['N1'], fix: 'Add a short wrist buzz and rerun the rain crossing.' } }];
+      { kind: 'critic', text: { agree: false, objection: 'The rain test (N1) had six players and no haptic cue, so it says the glow alone fails, not the pager.', cites: ['N1'], fix: 'Add a short wrist buzz and rerun the rain crossing.' } }];
     const [e1] = await addEv(r, [['source', 'Playtest 3: pager missed in rain', '4 of 6 missed the glow in rain.', 'observed', 'conflicts']]);
     await settle();
     let pins = await pinsOn(r.dir);
     const req1 = requests.find(q => q.kind === 'strategist')?.flat || '';
     check('the re-check reasons from a numbered pack: the decision, what it rests on, the options set aside and the new evidence', /\[D\] chosen direction/.test(req1) && /\[S1\]/.test(req1) && /\[A1\] set aside/.test(req1) && /\[N1\] observed · designer marked it as countering · Playtest 3: pager missed in rain/.test(req1), req1.slice(0, 600));
     check('Strategist, then Critic for a counter: two calls', requests.map(q => q.kind).join() === 'strategist,critic', requests.map(q => q.kind).join());
-    check('one note on the decision: the verdict, why, Critic\'s objection with a fix, the cheapest check, and the decision stays', pins.length === 1 && pins[0].engine === 'model' && /\*\*weakens\*\*/.test(pins[0].note) && /Rain hides the glow/.test(pins[0].note) && /Critic: The rain test had six players.+Fix: Add a short wrist buzz/.test(pins[0].note) && /Cheapest check: Watch three players/.test(pins[0].note) && /The decision stays as you made it\./.test(pins[0].note), JSON.stringify(pins));
+    check('one note on the decision: the verdict, why, Critic\'s objection with a fix, the cheapest check, and the decision stays', pins.length === 1 && pins[0].engine === 'model' && /\*\*weakens\*\*/.test(pins[0].note) && /Rain hides the glow/.test(pins[0].note) && /\*\*Critic:\*\* The rain test had six players.+Fix: Add a short wrist buzz/.test(pins[0].note) && /Cheapest check: Watch three players/.test(pins[0].note) && /The decision stays as you made it\./.test(pins[0].note), JSON.stringify(pins));
+    check('pack ids never reach the designer: "(N1)" is dropped', !/\(N1\)|\bN1\b/.test(pins[0]?.note || ''), pins[0]?.note);
+    check('Strategist leads the note; it is marked as a re-check, not a board check', pins[0]?.agent === 'muse' && !!pins[0]?.recheck, JSON.stringify(pins[0]?.recheck));
     check('the note cites the cards it rests on, the new evidence first among them', pins[0]?.basis?.some(x => x.id === e1) && pins[0].basis.length >= 2, JSON.stringify(pins[0]?.basis));
     check('nothing about the decision changed on its own', await p.evaluate(r => board.adopted[r.claim] === r.dir && !byId(r.dir).held, r));
     await p.evaluate(() => openDecisions(true)); await p.waitForTimeout(400);
@@ -115,7 +117,7 @@ function serve() {
     await addEv(r, [['source', 'Night market test', '5 of 6 found the pager in the dark market.', 'observed', 'supports']]);
     await settle();
     pins = await pinsOn(r.dir);
-    check('an objection without evidence or a fix is dropped; Strategist\'s reading stands', pins.length === 1 && pins[0].engine === 'model' && /\*\*stronger\*\*/.test(pins[0].note) && !/Critic:/.test(pins[0].note), JSON.stringify(pins.map(x => x.note)));
+    check('an objection without evidence or a fix is dropped; Strategist\'s reading stands', pins.length === 1 && pins[0].engine === 'model' && /\*\*stronger\*\*/.test(pins[0].note) && !/Critic/.test(pins[0].note), JSON.stringify(pins.map(x => x.note)));
 
     /* 5. Focus: runs quietly, the note waits for the catch-up */
     r = await fresh(); requests = [];
@@ -141,7 +143,7 @@ function serve() {
     const after = await p.evaluate(id => ({ running: !!rcRunning, gone: !board.watch.rc[id] }), running);
     await settle(10000);
     pins = await pinsOn(r.dir);
-    check('a crew move pre-empts a running re-check, which runs again later', !!running && !after.running && after.gone && pins.length === 1 && /repeats what S1/.test(pins[0].note), JSON.stringify({ running, after, pins: pins.map(x => x.note) }));
+    check('a crew move pre-empts a running re-check, which runs again later', !!running && !after.running && after.gone && pins.length === 1 && /repeats what “Project Brief/.test(pins[0].note), JSON.stringify({ running, after, pins: pins.map(x => x.note) }));
 
     /* 7. Chinese: an English answer is sent back once for Chinese */
     await p.evaluate(() => store.set('.lang', 'zh'));

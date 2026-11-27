@@ -3209,6 +3209,7 @@ body.snap-skip #wall{cursor:copy}
 .dv-since .dv-row{margin:0 -6px}
 .dv-since .dv-row.old{opacity:.62}
 .dv-since .dv-row{align-items:flex-start}
+.adv-br{display:block;height:7px}
 .dv-rc{margin:8px 0 2px;padding:8px 0 0;border-top:1px solid color-mix(in srgb,var(--label) 8%,transparent);display:grid;gap:4px}
 .dv-rc p{margin:0;font:500 12.5px/1.45 var(--ui);color:var(--label)}
 .dv-rc-h{display:flex;align-items:center;gap:8px;font:600 11px/16px var(--ui);color:var(--label-2)}
@@ -4783,6 +4784,13 @@ async function rcCritic(pack,strat,signal){
   if(r)rcRunning?.job&&(rcRunning.job.rawCritic=r.raw);
   return r?r.v:null;
 }
+/* the pack's ids are for the model; the designer reads card names: "(N1)" goes, a bare "S2" becomes the card's title */
+function rcHuman(t,pack){
+  return String(t||"").trim()
+    .replace(/\s*[(（]\s*\[?(?:[DC]|[SXAN]\d)\]?(?:\s*[,，、]\s*\[?(?:[DC]|[SXAN]\d)\]?)*\s*[)）]/g,"")
+    .replace(/\[(D|C|[SXAN]\d)\]|\b([SXAN]\d)\b/g,(m,a,b)=>{const id=pack.ids[a||b];const n=id&&byId(id);return n?`“${clip(titleOf(n),48)}”`:m})
+    .replace(/\s{2,}/g," ").trim();
+}
 /* run one re-check: all waiting evidence on one decision, together */
 async function runRecheck(dirId,obs){
   const dir=byId(dirId),R=rcState(),job={id:"rc-"+uid(),dir:dirId,sigs:obs.map(o=>o.sig),status:"run",at:NOW()};
@@ -4796,13 +4804,13 @@ async function runRecheck(dirId,obs){
     job.raw=s.raw;
     const sp=rcStratProblems(s.v,pack);
     if(sp.length)return finishRc(job,"fail","watchdog: "+sp[0],{dropped:sp});
-    const strat={verdict:String(s.v.verdict).toLowerCase(),why:String(s.v.why).trim(),next:String(s.v.next||"").trim(),cites:rcCiteKeys(s.v)};
+    const strat={verdict:String(s.v.verdict).toLowerCase(),why:rcHuman(s.v.why,pack),next:rcHuman(s.v.next||"",pack),cites:rcCiteKeys(s.v)};
     const ctr=obs.some(o=>o.rel==="conflicts");
     let critic=null,dropped=[];
     if(ctr||strat.verdict!=="holds"){
       const c=await rcCritic(pack,strat,ac.signal);
       const cp=c?rcCriticProblems(c,pack):["no answer"];
-      if(c&&!cp.length&&!(c.agree===true||String(c.agree).toLowerCase()==="true"))critic={objection:String(c.objection).trim(),fix:String(c.fix).trim(),cites:rcCiteKeys(c)};
+      if(c&&!cp.length&&!(c.agree===true||String(c.agree).toLowerCase()==="true"))critic={objection:rcHuman(c.objection,pack),fix:rcHuman(c.fix,pack),cites:rcCiteKeys(c)};
       else if(c&&cp.length)dropped=cp;
       job.critic=critic?"objects":c&&!cp.length?"agrees":"none";
     }
@@ -4853,12 +4861,11 @@ function recheckPin(job,obsList){
     weaker:L(`New evidence ${ev} **weakens** part of the case for ${qTitle(d)}.`,`新证据 ${ev} **削弱**了 ${qTitle(d)} 的部分理由。`),
     reopen:L(`New evidence ${ev} may be reason to **reopen** ${qTitle(d)}.`,`新证据 ${ev} 也许值得你**重新考虑** ${qTitle(d)}。`)
   }[s.verdict];
-  const parts=[head,s.why];
-  if(c)parts.push(L(`Critic: ${c.objection} Fix: ${c.fix}`,`Critic：${c.objection} 建议：${c.fix}`));
-  if(s.next)parts.push(L(`Cheapest check: ${s.next}`,`最省事的验证：${s.next}`));
-  parts.push(L("The decision stays as you made it.","决定仍按你定的来。"));
+  const parts=[`${head} ${s.why}`];
+  if(c)parts.push(L(`**Critic:** ${c.objection} Fix: ${c.fix}`,`**Critic：**${c.objection} 建议：${c.fix}`));
+  parts.push(`${s.next?L(`Cheapest check: ${s.next} `,`最省事的验证：${s.next} `):""}${L("The decision stays as you made it.","决定仍按你定的来。")}`);
   const basis=job.cites.map(byId).filter(Boolean).slice(0,5).map(n=>({id:n.id,rev:n.rev||1,relation:"related",why:es.some(e=>e.id===n.id)?L("new evidence","新证据"):weightLabel(n.weight)||L("cited","引用")}));
-  return {id:"pin-"+uid(),agent:c||s.verdict==="weaker"||s.verdict==="reopen"?"critic":"muse",t:NOW(),note:parts.filter(Boolean).join(" "),check:"revisit",sig:job.id,sigs:job.sigs,engine:"model",recheck:{verdict:s.verdict,critic:job.critic||"none",model:job.engine},basis};
+  return {id:"pin-"+uid(),agent:"muse",t:NOW(),note:parts.join("\n"),check:"revisit",sig:job.id,sigs:job.sigs,engine:"model",recheck:{verdict:s.verdict,critic:job.critic||"none",model:job.engine},basis};
 }
 
 /* ── leaving Focus: one short catch-up instead of a burst ────────────────── */
@@ -9228,6 +9235,9 @@ function boldAdvKeywords(seg,kws){
   return String(seg||"").split(new RegExp(`(${pat})`,"gi")).map((part,idx)=>idx%2===1?`<strong class="adv-b">${esc(part)}</strong>`:esc(part)).join("");
 }
 function renderAdvNote(text,kws){
+  return String(text||"").split(/\n+/).map(line=>renderAdvLine(line,kws)).join('<span class="adv-br"></span>');
+}
+function renderAdvLine(text,kws){
   return String(text||"").split(/\*\*([^*\n]{1,48}?)\*\*/g).map((part,idx)=>idx%2===1?`<strong class="adv-b">${esc(part)}</strong>`:boldAdvKeywords(part,kws)).join("");
 }
 function renderAdvPop(){
@@ -9251,7 +9261,7 @@ function renderAdvPop(){
   const relWord={conflicts:L("Conflicts","相矛盾"),supports:L("Supports","支持"),extends:L("Builds on","延伸")};
   const basisList=(p.basis||[]).filter(b=>byId(b.id)&&!isNodeHidden(byId(b.id)));
   const basisHTML=basisList.length?`<div class="adv-basis"><b>${L("Based on","依据")}</b>${basisList.map(b=>`<p>${relWord[b.relation]?`<span class="adv-rel ${esc(b.relation)}">${esc(relWord[b.relation])}</span> · `:""}<a href="#" data-adv-basis="${esc(b.id)}" title="${esc(b.why||"")}">${esc(ctxLabel(byId(b.id)))}</a></p>`).join("")}</div>`:"";
-  const engTag=p.check?`<span class="adv-eng" title="${esc(L("Read straight off the board: relations, wires, evidence weights and shared words. No AI model wrote this.","直接从画板读出：关系、连线、证据分量和共同词语。不是 AI 模型写的。"))}">${L("board check","画板检查")}</span>`:p.engine==="rules"?`<span class="adv-eng" title="${esc(p.engineWhy?L(`${p.engineWhy}, so this thought came from built-in rules`,`${p.engineWhy}，这条建议来自内置规则`):L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
+  const engTag=p.recheck?`<span class="adv-eng" title="${esc(L(`The board check found the evidence; ${p.recheck.critic==="none"?"Strategist":"Strategist and Critic"} then re-checked the decision against the cards it rests on${p.recheck.model?` (${engineName(p.recheck.model)})`:""}. Every card it cites is listed below.`,`画板检查找到了这条证据；随后${p.recheck.critic==="none"?"Strategist":"Strategist 和 Critic"}对照决定所依据的卡片做了复核${p.recheck.model?`（${engineName(p.recheck.model)}）`:""}。引用的卡片都列在下面。`))}">${L("re-check","复核")}</span>`:p.check?`<span class="adv-eng" title="${esc(L("Read straight off the board: relations, wires, evidence weights and shared words. No AI model wrote this.","直接从画板读出：关系、连线、证据分量和共同词语。不是 AI 模型写的。"))}">${L("board check","画板检查")}</span>`:p.engine==="rules"?`<span class="adv-eng" title="${esc(p.engineWhy?L(`${p.engineWhy}, so this thought came from built-in rules`,`${p.engineWhy}，这条建议来自内置规则`):L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
   /* the buttons under the latest reply; gone once you write again or the reply is still typing */
   const lastR=reps[reps.length-1],picks=lastR&&lastR.who!=="you"&&!lastR.typing&&Array.isArray(lastR.actions)?lastR.actions:[];
   const waiting=!!lastR&&(lastR.who==="you"||!!lastR.typing);

@@ -128,7 +128,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2500);
   await p.evaluate(() => { SCOUT_GROUNDING = false; }); // sections that test Scout's look-up turn it on
   if (model) await p.evaluate(url => { apiCfg = { enabled: true, baseUrl: url + '/v1', model: 'smoke', key: 'smoke' }; }, base);
-  p.type = async (t, enter = true) => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); if (enter) await p.keyboard.press('Enter'); };
+  p.type = async (t, enter = true) => { await p.click('#lineInput'); await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); if (enter) await p.keyboard.press('Enter'); };
   p.idle = async () => { await p.waitForTimeout(400); for (let i = 0; i < 100 && await p.evaluate(() => crewBusy()); i++) await p.waitForTimeout(250); await p.waitForTimeout(500); };
   p.toast = () => p.evaluate(() => [...document.querySelectorAll('#toasts > *')].map(t => t.innerText.replace(/\s+/g, ' ')).join(' / '));
   p.newBoard = async () => { await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(800); };
@@ -586,7 +586,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('typing plain words lists the matching cards, with none picked yet', !m.hidden && m.head[0] === 'Cards' && m.rows.some(r => /Founder interviews/.test(r)) && m.rows.some(r => /Pricing idea for solo founders/.test(r)) && m.sel === -1, JSON.stringify(m));
       await p.keyboard.press('Escape');
       check('Escape closes the list and keeps what you typed', (await menu()).hidden && await p.evaluate(() => document.getElementById('lineInput').value === 'founder'));
-      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type('pricing');
+      await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.keyboard.type('pricing');
       await p.keyboard.press('ArrowDown');
       m = await menu();
       check('↓ picks the first card', m.sel === 0, JSON.stringify(m));
@@ -599,10 +599,10 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.click('#lineInput'); await p.keyboard.type('kanban');
       m = await menu();
       check('a word that names a command lists the command too', m.head.includes('Commands') && m.rows.some(r => /^\/kanban/.test(r)), JSON.stringify(m));
-      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type('/for');
+      await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.keyboard.type('/for');
       m = await menu();
       check('a slash still opens the command list, not the card search', m.head[0] === 'Moves' && !m.rows.some(r => /Founder/.test(r)), JSON.stringify(m));
-      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.press('Escape');
+      await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.keyboard.press('Escape');
 
       // the selection shows once: in the panel while it is open
       await p.evaluate(() => { openCopilot(false); select([board.nodes.find(n => n.type === 'idea').id]); renderLineCtx(); });
@@ -1484,7 +1484,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.keyboard.type(", and then enough words that it has to wrap onto another line in the composer, and then some more"); await p.waitForTimeout(200);
       const two = await rows();
       check('wrapped text gets the full width with the controls underneath', two.multi && two.share > .9 && two.sendRight && two.sendBelow, JSON.stringify(two));
-      await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.waitForTimeout(200);
+      await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.waitForTimeout(200);
       check('clearing the text returns to one row', !(await rows()).multi);
       check('no page errors in the composer', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();

@@ -79,7 +79,7 @@ async function page(browser, base, { model = true } = {}) {
   await p.evaluate(() => { SCOUT_GROUNDING = false; setCrewLevel?.('asked'); });
   if (model) await p.evaluate(url => { apiCfg = { enabled: true, baseUrl: url + '/v1', model: 'workflow', key: 'workflow' }; }, base);
   else await p.evaluate(() => { apiCfg = { ...(apiCfg || {}), enabled: false }; });
-  p.type = async t => { await p.click('#lineInput'); await p.keyboard.press('Control+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); await p.keyboard.press('Enter'); };
+  p.type = async t => { await p.click('#lineInput'); await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); await p.keyboard.press('Enter'); };
   p.cmd = async (ids, t) => { await p.evaluate(ids => select(ids), ids); await p.type(t); await p.idle(); };
   p.idle = async () => { await p.waitForTimeout(400); for (let i = 0; i < 120 && await p.evaluate(() => crewBusy()); i++) await p.waitForTimeout(250); await p.waitForTimeout(400); };
   // New board opens the template picker; pick one, optionally with a brief and constraints, and create

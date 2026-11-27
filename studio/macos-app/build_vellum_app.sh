@@ -16,8 +16,10 @@ rm -rf "$APP_DIR" "$ICONSET_DIR" "$MOD_CACHE"
 mkdir -p "$MACOS_DIR" "$APP_RES/studio/macos-app" "$ICONSET_DIR" "$MOD_CACHE"
 export CLANG_MODULE_CACHE_PATH="$MOD_CACHE"
 
-echo "1/4 Generating Vellum app icon..."
-swift -module-cache-path "$MOD_CACHE" "$SCRIPT_DIR/make_icon.swift" "$ICONSET_DIR"
+echo "1/4 Packing the app icon..."
+# The icon is drawn once in brand/sympo-icon.svg; brand/AppIcon.iconset holds its renders on
+# Apple's grid (small sizes drop the seams so the stone stays one clear shape).
+cp "$SCRIPT_DIR/brand/AppIcon.iconset/"*.png "$ICONSET_DIR/"
 python3 - "$ICONSET_DIR" "$RES_DIR/AppIcon.icns" <<'PY'
 import struct, sys
 from pathlib import Path
@@ -51,6 +53,7 @@ swiftc -O -module-cache-path "$MOD_CACHE" -framework Cocoa -framework WebKit "$S
 
 echo "3/4 Staging Vellum web UI and Python services..."
 cp "$SCRIPT_DIR/Info.plist" "$CONTENTS/Info.plist"
+cp "$SCRIPT_DIR/brand/mark.png" "$RES_DIR/mark.png"
 cp "$ROOT_DIR/Vellum-Lumen.html" "$APP_RES/Vellum-Lumen.html"
 cp "$ROOT_DIR/Start Studio AI.command" "$APP_RES/Start Studio AI.command"
 cp "$ROOT_DIR/Start MOD WORK Image Service.command" "$APP_RES/Start MOD WORK Image Service.command"

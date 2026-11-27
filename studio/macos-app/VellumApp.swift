@@ -140,42 +140,11 @@ final class SplashView: NSView {
     }
 }
 
-/// The Vellum mark, same geometry as website/assets/mark.svg: a lit card (the star)
-/// and two dimmer cards held at its edges (the planets). Drawn in that SVG's
-/// 100-unit space, y down, into `rect`.
-func drawVellumMark(in ctx: CGContext, rect: CGRect, tile: Bool) {
-    ctx.saveGState()
-    ctx.translateBy(x: rect.minX, y: rect.maxY)
-    ctx.scaleBy(x: rect.width / 100, y: -rect.height / 100)
-    if tile {
-        let t = CGPath(roundedRect: CGRect(x: 0, y: 0, width: 100, height: 100), cornerWidth: 24, cornerHeight: 24, transform: nil)
-        ctx.addPath(t)
-        ctx.setFillColor(NSColor(srgbRed: 0x16 / 255.0, green: 0x17 / 255.0, blue: 0x1b / 255.0, alpha: 1).cgColor)
-        ctx.fillPath()
-        let edge = CGPath(roundedRect: CGRect(x: 0.6, y: 0.6, width: 98.8, height: 98.8), cornerWidth: 23.4, cornerHeight: 23.4, transform: nil)
-        ctx.addPath(edge)
-        ctx.setStrokeColor(NSColor(white: 1, alpha: 0.12).cgColor)
-        ctx.setLineWidth(1.2)
-        ctx.strokePath()
-        ctx.translateBy(x: 12, y: 12)
-        ctx.scaleBy(x: 0.76, y: 0.76)
-    }
-    ctx.translateBy(x: 50, y: 50)
-    ctx.rotate(by: -8 * .pi / 180)
-    ctx.translateBy(x: -50, y: -50)
-    ctx.translateBy(x: -2, y: -5)
-    func card(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat, _ a: CGFloat) {
-        ctx.addPath(CGPath(roundedRect: CGRect(x: x, y: y, width: w, height: h), cornerWidth: r, cornerHeight: r, transform: nil))
-        ctx.setFillColor(NSColor(srgbRed: 0xf6 / 255.0, green: 0xf7 / 255.0, blue: 0xf9 / 255.0, alpha: a).cgColor)
-        ctx.fillPath()
-    }
-    card(63, 36, 23, 28, 8, 0.32)
-    card(24, 71, 25, 21, 7.5, 0.32)
-    card(18, 18, 42, 50, 13, 1)
-    ctx.restoreGState()
-}
-
+/// The app mark on the splash: the same picture as the Dock icon (brand/mark.png,
+/// rendered from brand/sympo-icon.svg), so the two can never drift apart.
 final class VellumMarkView: NSView {
+    private let image = Bundle.main.image(forResource: "mark")
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
@@ -187,9 +156,8 @@ final class VellumMarkView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
-        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         let s = min(bounds.width, bounds.height)
-        drawVellumMark(in: ctx, rect: CGRect(x: 0, y: 0, width: s, height: s), tile: true)
+        image?.draw(in: NSRect(x: (bounds.width - s) / 2, y: (bounds.height - s) / 2, width: s, height: s))
     }
 }
 

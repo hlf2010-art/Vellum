@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Crect%20width%3D%2224%22%20height%3D%2224%22%20rx%3D%226.6%22%20fill%3D%22%2316171B%22/%3E%3Cpath%20d%3D%22M3%2013.6%209.6%2011.2%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22/%3E%3Cg%20stroke-width%3D%221.4%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M14.4%2010.6%2020.8%207.2%22%20stroke%3D%22%23FFB547%22/%3E%3Cpath%20d%3D%22M14.6%2011.2%2021%209.8%22%20stroke%3D%22%235AA2FF%22/%3E%3Cpath%20d%3D%22M14.6%2011.8%2021%2012.4%22%20stroke%3D%22%2345D49A%22/%3E%3Cpath%20d%3D%22M14.4%2012.4%2020.8%2015%22%20stroke%3D%22%23FF6B95%22/%3E%3C/g%3E%3Cpath%20d%3D%22M12%205.4%2016.6%2015.4H7.4Z%22%20fill%3D%22%232a2b30%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.2%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%2296%22%20height=%2296%22%20viewBox=%220%200%20100%20100%22%3E%3Crect%20width=%22100%22%20height=%22100%22%20rx=%2224%22%20fill=%22%2316171b%22/%3E%3Cg%20transform=%22translate%2812%2012%29%20scale%28.76%29%22%20fill=%22%23f6f7f9%22%3E%3Cg%20transform=%22rotate%28-8%2050%2050%29%20translate%28-2%20-5%29%22%3E%3Cg%20opacity=%22.32%22%3E%3Crect%20x=%2263%22%20y=%2236%22%20width=%2223%22%20height=%2228%22%20rx=%228%22/%3E%3Crect%20x=%2224%22%20y=%2271%22%20width=%2225%22%20height=%2221%22%20rx=%227.5%22/%3E%3C/g%3E%3Crect%20x=%2218%22%20y=%2218%22%20width=%2242%22%20height=%2250%22%20rx=%2213%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
 <title>Vellum Lumen</title>
 <meta name="theme-color" content="#0A0B0D">
 </head>
@@ -2099,7 +2099,7 @@ dialog::backdrop{background:color-mix(in srgb,var(--canvas) 50%,transparent);-we
 ::selection{background:color-mix(in srgb,var(--label) 15%,transparent)}
 textarea,input{caret-color:var(--label)}
 
-/* the mark: white light enters a prism and leaves as four lineages */
+/* the mark: a star and its planets, same as the website (website/assets/mark.svg) */
 .project .app{width:24px;height:24px;border-radius:0;background:none;box-shadow:none;display:block}
 .project .app svg{display:block;width:24px;height:24px}
 .project{gap:9px;padding:0 10px 0 7px;height:38px;transition:background var(--d-quick)}
@@ -4152,11 +4152,7 @@ const AV={
   copilot:'<svg viewBox="0 0 24 24" data-a="copilot" aria-hidden="true"><path d="M12 4.6 19.2 17.6H4.8Z"/><path d="M2.8 13.6 8.8 11.4"/><path d="M16 11.4 21.2 9.4"/></svg>',
   you:'<svg viewBox="0 0 24 24" data-a="you" aria-hidden="true"><circle cx="12" cy="9" r="3.7"/><path d="M5.3 19.5a6.9 6.9 0 0 1 13.4 0"/></svg>',
 };
-const MARK=`<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="vl-tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A2C33"/><stop offset="1" stop-color="#0A0B0D"/></linearGradient><linearGradient id="vl-beam" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
-<rect x=".5" y=".5" width="23" height="23" rx="6.6" fill="url(#vl-tile)" stroke="rgba(255,255,255,.14)"/>
-<path d="M3 13.6 9.6 11.2" stroke="url(#vl-beam)" stroke-width="1.6" stroke-linecap="round"/>
-<g stroke-width="1.35" stroke-linecap="round"><path d="M14.4 10.6 20.8 7.2" stroke="#FFB547"/><path d="M14.6 11.2 21 9.8" stroke="#5AA2FF"/><path d="M14.6 11.8 21 12.4" stroke="#45D49A"/><path d="M14.4 12.4 20.8 15" stroke="#FF6B95"/></g>
-<path d="M12 5.4 16.6 15.4H7.4Z" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.85)" stroke-width="1.15" stroke-linejoin="round"/></svg>`;
+const MARK=`<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="1" y="1" width="98" height="98" rx="24" fill="#16171b" stroke="rgba(255,255,255,.14)" stroke-width="2"/><g transform="translate(12 12) scale(.76)" fill="#f6f7f9"><g transform="rotate(-8 50 50) translate(-2 -5)"><g opacity=".32"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><rect x="18" y="18" width="42" height="50" rx="13"/></g></g></svg>`;
 const AGENTS={
   scout:{key:"scout",name:"Scout",mk:AV.scout,craft:"Reads sources and recordings, pulls quotes, weighs how much the evidence can carry."},
   muse:{key:"muse",name:"Strategist",mk:AV.muse,craft:"Forks an idea into directions worth testing, each with a test it could fail."},

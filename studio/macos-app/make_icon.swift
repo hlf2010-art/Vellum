@@ -7,6 +7,41 @@ guard CommandLine.arguments.count > 1 else {
 let outDir = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 
+/// The Vellum mark, same geometry as website/assets/mark.svg: a lit card (the star)
+/// and two dimmer cards held at its edges (the planets). Drawn in that SVG's
+/// 100-unit space, y down, into `rect`.
+func drawVellumMark(in ctx: CGContext, rect: CGRect, tile: Bool) {
+    ctx.saveGState()
+    ctx.translateBy(x: rect.minX, y: rect.maxY)
+    ctx.scaleBy(x: rect.width / 100, y: -rect.height / 100)
+    if tile {
+        let t = CGPath(roundedRect: CGRect(x: 0, y: 0, width: 100, height: 100), cornerWidth: 24, cornerHeight: 24, transform: nil)
+        ctx.addPath(t)
+        ctx.setFillColor(NSColor(srgbRed: 0x16 / 255.0, green: 0x17 / 255.0, blue: 0x1b / 255.0, alpha: 1).cgColor)
+        ctx.fillPath()
+        let edge = CGPath(roundedRect: CGRect(x: 0.6, y: 0.6, width: 98.8, height: 98.8), cornerWidth: 23.4, cornerHeight: 23.4, transform: nil)
+        ctx.addPath(edge)
+        ctx.setStrokeColor(NSColor(white: 1, alpha: 0.12).cgColor)
+        ctx.setLineWidth(1.2)
+        ctx.strokePath()
+        ctx.translateBy(x: 12, y: 12)
+        ctx.scaleBy(x: 0.76, y: 0.76)
+    }
+    ctx.translateBy(x: 50, y: 50)
+    ctx.rotate(by: -8 * .pi / 180)
+    ctx.translateBy(x: -50, y: -50)
+    ctx.translateBy(x: -2, y: -5)
+    func card(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat, _ a: CGFloat) {
+        ctx.addPath(CGPath(roundedRect: CGRect(x: x, y: y, width: w, height: h), cornerWidth: r, cornerHeight: r, transform: nil))
+        ctx.setFillColor(NSColor(srgbRed: 0xf6 / 255.0, green: 0xf7 / 255.0, blue: 0xf9 / 255.0, alpha: a).cgColor)
+        ctx.fillPath()
+    }
+    card(63, 36, 23, 28, 8, 0.32)
+    card(24, 71, 25, 21, 7.5, 0.32)
+    card(18, 18, 42, 50, 13, 1)
+    ctx.restoreGState()
+}
+
 func renderIcon(size: Int) -> Data? {
     let s = CGFloat(size)
     let rep = NSBitmapImageRep(
@@ -24,95 +59,9 @@ func renderIcon(size: Int) -> Data? {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     let ctx = NSGraphicsContext.current!.cgContext
-
-    let inset = s * 0.075
-    let rect = CGRect(x: inset, y: inset, width: s - inset * 2, height: s - inset * 2)
-    let radius = s * 0.21
-    let squircle = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
-
-    // Deep obsidian base with subtle radial glow
-    ctx.saveGState()
-    ctx.addPath(squircle)
-    ctx.clip()
-
-    let cs = CGColorSpaceCreateDeviceRGB()
-    let bgGrad = CGGradient(
-        colorsSpace: cs,
-        colors: [
-            NSColor(srgbRed: 0.08, green: 0.09, blue: 0.12, alpha: 1).cgColor,
-            NSColor(srgbRed: 0.04, green: 0.045, blue: 0.06, alpha: 1).cgColor,
-        ] as CFArray,
-        locations: [0, 1]
-    )!
-    ctx.drawLinearGradient(bgGrad, start: CGPoint(x: s * 0.5, y: s), end: CGPoint(x: s * 0.5, y: 0), options: [])
-
-    // Soft warm amber + cool blue ambient bloom
-    let warmGlow = CGGradient(
-        colorsSpace: cs,
-        colors: [
-            NSColor(srgbRed: 1.0, green: 0.85, blue: 0.58, alpha: 0.22).cgColor,
-            NSColor(srgbRed: 1.0, green: 0.85, blue: 0.58, alpha: 0.0).cgColor,
-        ] as CFArray,
-        locations: [0, 1]
-    )!
-    ctx.drawRadialGradient(
-        warmGlow,
-        startCenter: CGPoint(x: s * 0.5, y: s * 0.58),
-        startRadius: 0,
-        endCenter: CGPoint(x: s * 0.5, y: s * 0.58),
-        endRadius: s * 0.42,
-        options: []
-    )
-
-    let blueGlow = CGGradient(
-        colorsSpace: cs,
-        colors: [
-            NSColor(srgbRed: 0.30, green: 0.56, blue: 1.0, alpha: 0.18).cgColor,
-            NSColor(srgbRed: 0.30, green: 0.56, blue: 1.0, alpha: 0.0).cgColor,
-        ] as CFArray,
-        locations: [0, 1]
-    )!
-    ctx.drawRadialGradient(
-        blueGlow,
-        startCenter: CGPoint(x: s * 0.5, y: s * 0.22),
-        startRadius: 0,
-        endCenter: CGPoint(x: s * 0.5, y: s * 0.22),
-        endRadius: s * 0.38,
-        options: []
-    )
-    ctx.restoreGState()
-
-    // Crisp glass edge
-    ctx.addPath(squircle)
-    ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.14).cgColor)
-    ctx.setLineWidth(max(1.0, s * 0.008))
-    ctx.strokePath()
-
-    // Central luminous Vellum triangle prism mark
-    let top = CGPoint(x: s * 0.50, y: s * 0.72)
-    let left = CGPoint(x: s * 0.28, y: s * 0.31)
-    let right = CGPoint(x: s * 0.72, y: s * 0.31)
-    let prism = CGMutablePath()
-    prism.move(to: top)
-    prism.addLine(to: right)
-    prism.addLine(to: left)
-    prism.closeSubpath()
-
-    ctx.saveGState()
-    ctx.addPath(prism)
-    ctx.setLineJoin(.round)
-    ctx.setStrokeColor(NSColor(srgbRed: 0.96, green: 0.97, blue: 1.0, alpha: 0.92).cgColor)
-    ctx.setLineWidth(max(1.5, s * 0.036))
-    ctx.strokePath()
-
-    // Inner diagonal refraction rays
-    ctx.move(to: top)
-    ctx.addLine(to: CGPoint(x: s * 0.50, y: s * 0.31))
-    ctx.setStrokeColor(NSColor(srgbRed: 1.0, green: 0.87, blue: 0.62, alpha: 0.78).cgColor)
-    ctx.setLineWidth(max(1.0, s * 0.022))
-    ctx.strokePath()
-    ctx.restoreGState()
-
+    // macOS icon grid: the tile sits inside a transparent margin.
+    let inset = s * 0.09
+    drawVellumMark(in: ctx, rect: CGRect(x: inset, y: inset, width: s - inset * 2, height: s - inset * 2), tile: true)
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])
 }

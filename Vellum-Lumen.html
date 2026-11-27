@@ -1396,6 +1396,8 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 
 .toasts{position:absolute;z-index:70;left:50%;top:calc(72px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:grid;gap:8px;justify-items:center;pointer-events:none;width:max-content;max-width:calc(100% - 32px)}
 .toast{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;min-height:42px;border-radius:var(--radius-media);font:550 14px/1.35 var(--ui);color:var(--label);background:var(--chrome);-webkit-backdrop-filter:blur(26px);backdrop-filter:blur(26px);box-shadow:var(--chrome-shadow);animation:drop var(--t-bouncy) var(--bouncy);max-width:520px}
+/* the tight right inset makes room for an action button; a message on its own gets the same inset on both sides */
+.toast:not(:has(> button)){padding-right:16px}
 .toast .mono{font:500 12px/1 var(--ui);color:var(--label-3)}
 .toast button{font:600 13px/1 var(--ui);padding:9px 12px;border-radius:var(--radius-sm);color:var(--label);background:var(--hover)}
 .toast.out{animation:lift .3s var(--ease) forwards}

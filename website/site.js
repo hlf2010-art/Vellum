@@ -158,7 +158,7 @@
       cards: {
         e1: { k: "Observed", t: "Field notes", b: "8 of 10 campers hung it from the tent loop.", by: "You" },
         e2: { k: "Reported", t: "Reviews", b: "“Blinding at arm's length.” 41 mentions.", by: "Scout" },
-        e3: { k: "Said", t: "Interview", b: "“I just want to find it in the dark.”", by: "You" },
+        e3: { k: "Quote", t: "Interview", b: "“I just want to find it in the dark.”", by: "You" },
         j1: { k: "Judgment", t: "It's used hanging, up close, after dark.", b: "Rests on 3 sources, mostly observed.", by: "You + Scout" },
         dA: { k: "Direction", t: "Shade dial", b: "Twist a hood to dim it.", by: "Strategist" },
         dB: { k: "Direction", t: "Hook-first, warm low glow", b: "Hook on top. 2200K at 40 lumens.", by: "Strategist" },
@@ -235,7 +235,7 @@
       },
       ai: {
         e1: { k: "Observed", t: "Logs", b: "Users rewrite 6 of 10 drafted replies." },
-        e2: { k: "Said", t: "Interviews", b: "“It sounds like a robot.”" },
+        e2: { k: "Quote", t: "Interviews", b: "“It sounds like a robot.”" },
         j: { t: "Tone is the problem, not the facts." },
         A: { t: "Tone slider", why: "One more setting nobody touches." },
         B: { t: "Mirror the sender", b: "Chosen. Writes the way they write." },
@@ -279,7 +279,7 @@
       kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", sources: "2 条依据", aside: "A、C 已搁置，附理由", by: "Wright" }
     }
   };
-  var KIND_ICON = { Observed: "eye", Reported: "msg", Said: "quote", "观察": "eye", "转述": "msg", "原话": "quote" };
+  var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "观察": "eye", "转述": "msg", "原话": "quote" };
 
   var lang = root.lang === "zh-CN" ? "zh" : "en";
   function t(key) { return (T[lang] && T[lang][key]) || T.en[key] || ""; }

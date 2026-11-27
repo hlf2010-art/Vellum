@@ -352,7 +352,8 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .bcard .more .mi { min-height: 0; overflow: hidden; }
 .bcard .more .note { margin-top: 0; padding-top: 10px; border-top: 0; color: var(--label-2); }
 .bcard.show-note .more .note { display: block; animation: none; }
-.bcard.show-note:not(.show-flag) .more .mi { margin-top: 10px; border-top: 1px solid var(--hair-2); }
+/* The divider lives inside the folded part, so it folds away with it instead of hanging under the card. */
+.bcard.show-note:not(.show-flag) .more .note { margin-top: 10px; border-top: 1px solid var(--hair-2); }
 .bcard .fb { display: none; gap: 6px; padding: 10px 0 1px; flex-wrap: wrap; }
 .bcard.show-flag:not(.resolved) .fb { display: flex; }
 .bcard.open .more, .bcard:focus-within .more { grid-template-rows: 1fr; }

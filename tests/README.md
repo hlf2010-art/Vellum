@@ -28,6 +28,10 @@ Run it before committing a change to `Vellum-Lumen.html`.
 
 `tests/reasoning-flow.cjs` checks that lanes are zones (a tinted band, a header saying what lives there, no step numbers, no lane-wide groups in the sample); that an empty lane is a way in that starts the action (Choose files / Write a note, Write your core judgment, pick a direction to prototype or branch a judgment, freeze a prototype) and stops inviting once its kind of card exists anywhere; that evidence tied to a judgment reads evidence → judgment, shows on the judgment's bottom row with counter-evidence apart, and lights up when the judgment is selected; that an adopted direction offers Prototype; and that the crew, the model and settings are one entry in the top bar.
 
+## The decision view
+
+`tests/decision-view.cjs` checks the one place for every decision on a board: the Decisions entry beside the board name (and D) opens a panel, and the tools and map step aside while it is open; each decision shows the claim, the chosen direction, your reason (also on the adopted card), what it rests on with counters apart, and the directions set aside with their reasons; reasons typed in the panel are saved, logged and undoable; evidence kept after the decision that bears on it shows as new, and a counter marks the decision Countered (a dot on the entry, but not in Focus); Still holds keeps the decision with an optional reason, Reopen the choice clears the adoption, and nothing changes on its own; claims with directions and nothing adopted are listed under Still open; the board switcher says how many decisions are made and open instead of counting cards.
+
 ## Stage and roles
 
 `stage-role-contract.md` says who does what at each stage. Group 5h checks that the stage is derived from what the designer kept (drafts do not count; adopting moves Explore to Prototype; a frozen proof makes it Snapshot), that the brief counts evidence by weight and names what is decided and open, and that Copilot, the advisor and a pin reply are each told it.

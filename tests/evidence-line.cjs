@@ -91,6 +91,13 @@ async function open(browser, base, opts = {}) {
       await p.waitForTimeout(700);
       const busy = await p.overflow();
       check('no card\'s bottom row runs past its edge (time and avatars stay inside)', !rest.length && !busy.length, JSON.stringify({ rest, busy }));
+      // E4b. an adopted direction's bottom row: no page-type label, and the proof is a link that takes you there
+      await p.evaluate(() => { cam = { s: 1, x: 0, y: 0 }; paintCam(); sel = []; renderAll(); });
+      const dir = await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'direction' && board.adopted[n.idea] === n.id && outputsOf(n.id).some(o => o.type === 'proof')); return n && { id: n.id, foot: document.querySelector(`[data-id="${n.id}"] .foot`)?.innerText.replace(/\s+/g, ' ') || '' }; });
+      check('an adopted direction says Adopted and links to its proof, with no page-type label', dir && /Adopted/.test(dir.foot) && /Proof/.test(dir.foot) && !/Explore Desk|Guided Tour|Slide Deck|Proof built/.test(dir.foot), JSON.stringify(dir));
+      if (dir) { await p.frame(dir.id); await p.click(`[data-id="${dir.id}"] .foot-link`); await p.waitForTimeout(800); }
+      const went = await p.evaluate(() => sel.length === 1 && byId(sel[0])?.type === 'proof');
+      check('"Proof →" selects the proof and flies to it', went);
       check('E no page errors', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }

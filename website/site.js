@@ -454,7 +454,7 @@
       scale = Math.min(lay.max, bw / lay.w);
       // Pin the board while the story plays if the whole board fits on screen at a readable size.
       var head = document.querySelector(".site-head"), foot = el.parentNode.querySelector(".board-foot");
-      pinTop = (head ? head.offsetHeight : 64) + 16;
+      pinTop = (head ? head.offsetHeight : 64) + 24;
       var room = window.innerHeight - pinTop - (foot ? foot.offsetHeight + 16 : 80) - 16;
       var fit = Math.min(scale, room / lay.h);
       var canPin = !reduced && mode !== "narrow" && fit >= 0.7 && fit >= scale * 0.72;

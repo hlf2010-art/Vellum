@@ -161,9 +161,13 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
   position: sticky; top: 0; z-index: 50;
   background: color-mix(in srgb, var(--canvas) 80%, transparent);
   -webkit-backdrop-filter: saturate(1.6) blur(16px); backdrop-filter: saturate(1.6) blur(16px);
-  box-shadow: 0 1px 0 transparent; transition: box-shadow .25s;
 }
-.site-head.scrolled { box-shadow: 0 1px 0 var(--hair); }
+/* No rule under the header: once you scroll, the page dissolves into it through a short, fading blur. */
+.site-head::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 28px; pointer-events: none; opacity: 0; transition: opacity .3s var(--e-out);
+  background: linear-gradient(color-mix(in srgb, var(--canvas) 70%, transparent), transparent);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  -webkit-mask-image: linear-gradient(#000, transparent); mask-image: linear-gradient(#000, transparent); }
+.site-head.scrolled::after { opacity: 1; }
 .head-row { display: flex; align-items: center; gap: var(--s5); height: 64px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-weight: 600; font-size: 19px; letter-spacing: -.025em; font-variation-settings: "opsz" 20; }
 .brand img { width: 28px; height: 28px; border-radius: 7px; }
@@ -630,7 +634,8 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 }
 
 /* ---------- Get Vellum ---------- */
-.get { margin-top: var(--section); padding: var(--section) 0; background: var(--canvas-lift); box-shadow: inset 0 1px 0 var(--hair); }
+/* The last section rises out of the page instead of starting at a line: the lighter sheet fades in from above. */
+.get { margin-top: calc(var(--section) * .5); padding: calc(var(--section) * 1.5) 0 var(--section); background: linear-gradient(var(--canvas), var(--canvas-lift) min(46%, 320px)); }
 .get-wrap { max-width: 680px; }
 .get-wrap .sec-head { justify-items: center; text-align: center; }
 
@@ -670,7 +675,8 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 @media (max-width: 520px) { .pgrid { grid-template-columns: minmax(0, 1fr); } .pgrid .dl { grid-column: auto; } }
 
 /* ---------- Footer ---------- */
-.foot { background: var(--canvas-lift); box-shadow: inset 0 1px 0 var(--hair); }
+.foot { background: var(--canvas-lift); }
+.foot .foot-row { box-shadow: inset 0 1px 0 var(--hair); }
 .foot-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); height: 72px; }
 .brand-sm { font-size: 16px; gap: var(--s2); }
 .brand-sm img { width: 22px; height: 22px; border-radius: 6px; }

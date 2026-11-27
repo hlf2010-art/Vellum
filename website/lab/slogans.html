@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headline options</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  /* One warm marker colour for every illustrated keyword: the pen you'd pick up at a whiteboard. */
+  :root { --mark: #f08a24; --mark-soft: rgba(240,138,36,.12); }
+  :root[data-theme="dark"] { --mark: #ffa24a; --mark-soft: rgba(255,162,74,.11); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mark: #ffa24a; --mark-soft: rgba(255,162,74,.11); } }
+
+  body { min-height: 100vh; }
+  .bar { position: sticky; top: 0; z-index: 20; display: flex; gap: 8px; justify-content: flex-end; padding: 14px var(--gutter); background: var(--chrome); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .bar button { height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--hover); color: var(--label-2); font: 500 13.5px/1 var(--sans); cursor: pointer; }
+  .bar button:hover { background: var(--press); color: var(--label); }
+
+  .opt { position: relative; padding: clamp(56px, 9vw, 120px) var(--gutter); border-top: 1px solid var(--hair); }
+  .opt-in { max-width: var(--max); margin: 0 auto; }
+  .tag { font: 600 12.5px/1 var(--sans); letter-spacing: .02em; color: var(--label-3); margin-bottom: 28px; display: flex; gap: 10px; align-items: center; }
+  .tag b { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--hover); color: var(--label); font-weight: 600; }
+  .opt h1 { position: relative; max-width: none; cursor: pointer; }
+  .opt .lede { margin-top: 26px; max-width: 34em; color: var(--label-2); font-size: var(--t-lede); line-height: 1.5; }
+  .kw { position: relative; display: inline-block; white-space: nowrap; isolation: isolate; }
+
+  /* A. "through": a relation line threads the word, over and under, card to card. */
+  .thread, .loopsvg { max-width: none; }
+  .opt .cursor .who { letter-spacing: 0; font-variation-settings: normal; }
+  .thread { position: absolute; pointer-events: none; overflow: visible; }
+  .thread.back { z-index: -1; }
+  .thread path { fill: none; stroke: var(--mark); stroke-linecap: round; }
+  .thread .card { fill: var(--card); stroke: var(--hair-2); }
+  .thread .nib { fill: var(--mark); }
+  .thread .end { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(.6); transition: opacity .3s var(--e-out), transform .5s var(--settle); }
+  .thread .end.on { opacity: 1; transform: none; }
+
+  /* B. "why": circled by your hand, the way you'd mark the one thing worth keeping. */
+  .loopsvg { position: absolute; pointer-events: none; overflow: visible; z-index: -1; }
+  .loopsvg path { fill: none; stroke: var(--mark); stroke-linecap: round; stroke-linejoin: round; }
+  .loopsvg .fill { fill: var(--mark-soft); stroke: none; opacity: 0; transition: opacity .8s var(--e-out); }
+  .loopsvg .fill.on { opacity: 1; }
+
+  /* C. typed by the crew: a word written, questioned, and rewritten. */
+  .typed { color: var(--label); }
+  .typed .sel { background: color-mix(in srgb, var(--crew-critic) 26%, transparent); border-radius: .08em; }
+  .typed.done { color: var(--mark); transition: color .6s var(--e-out); }
+  .caret { display: inline-block; width: .06em; height: .78em; margin-left: .03em; vertical-align: -.04em; background: var(--c, var(--label)); border-radius: 1px; }
+  .caret.blink { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .opt .cursor { transition: opacity .28s var(--e-out), transform var(--mv, .7s) var(--glide); }
+
+  @media (prefers-reduced-motion: reduce) { .thread .end, .loopsvg .fill, .typed.done { transition: none; } }
+</style>
+</head>
+<body>
+<div class="bar"><button id="lang">中文</button><button id="replay">Replay</button></div>
+
+<section class="opt" id="A"><div class="opt-in">
+  <div class="tag"><b>A</b><span data-t="tA">Think it through · the line</span></div>
+  <h1><span data-t="hA1">Think it </span><span class="kw" id="kwA" data-t="kA">through</span><span data-t="pA">.</span></h1>
+  <p class="lede" data-t="lA">A shared whiteboard for you and AI. Every option, objection and reason stays connected.</p>
+</div></section>
+
+<section class="opt" id="B"><div class="opt-in">
+  <div class="tag"><b>B</b><span data-t="tB">Never lose the why · the marker</span></div>
+  <h1><span data-t="hB1">Never lose the </span><span class="kw" id="kwB" data-t="kB">why</span><span data-t="pB">.</span></h1>
+  <p class="lede" data-t="lB">A shared thinking space for you and AI, where every decision keeps its reasons.</p>
+</div></section>
+
+<section class="opt" id="C"><div class="opt-in">
+  <div class="tag"><b>C</b><span data-t="tC">Think clearer · typed by the crew</span></div>
+  <h1><span data-t="hC1">Think </span><span class="kw" id="kwC"><span class="typed" id="typed"></span></span></h1>
+  <p class="lede" data-t="lC">AI that helps you think, not just make more. It questions, checks and remembers why.</p>
+</div></section>
+
+<script>
+(function () {
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var NS = "http://www.w3.org/2000/svg";
+  var lang = "en";
+  var T = {
+    en: { tA: "Think it through · the line", hA1: "Think it ", kA: "through", pA: ".", lA: "A shared whiteboard for you and AI. Every option, objection and reason stays connected.",
+          tB: "Never lose the why · the marker", hB1: "Never lose the ", kB: "why", pB: ".", lB: "A shared thinking space for you and AI, where every decision keeps its reasons.",
+          tC: "Think clearer · typed by the crew", hC1: "Think ", lC: "AI that helps you think, not just make more. It questions, checks and remembers why.",
+          first: "faster.", final: "clearer.", scout: "Scout", critic: "Critic", btn: "中文", replay: "Replay" },
+    zh: { tA: "想透 · 一根线", hA1: "把事情", kA: "想透", pA: "。", lA: "你和 AI 共用的白板。每个选项、反对和理由，都连在一起。",
+          tB: "留住为什么 · 一圈马克笔", hB1: "别丢了", kB: "为什么", pB: "。", lB: "人类与 AI 共同思考的空间。每个决定，都留着当初的理由。",
+          tC: "想得更清楚 · crew 当场写", hC1: "想得", lC: "AI 帮你想清楚，而不只是做出更多。它会质疑、核对，也记得为什么。",
+          first: "更快。", final: "更清楚。", scout: "Scout", critic: "Critic", btn: "EN", replay: "重播" }
+  };
+  var timers = [];
+  function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+  function clear() { timers.forEach(clearTimeout); timers = []; document.querySelectorAll(".thread,.loopsvg,.opt .cursor").forEach(function (n) { n.remove(); }); }
+  function em(el) { return parseFloat(getComputedStyle(el).fontSize); }
+  function draw(path, ms, ease) {
+    var len = path.getTotalLength();
+    path.style.strokeDasharray = len; path.style.strokeDashoffset = reduced ? 0 : len;
+    if (reduced) return;
+    path.getBoundingClientRect();
+    path.style.transition = "stroke-dashoffset " + ms + "ms " + (ease || "cubic-bezier(.65,0,.35,1)");
+    path.style.strokeDashoffset = 0;
+  }
+  function svgAt(host, cls, pad) {
+    var s = document.createElementNS(NS, "svg"), w = host.offsetWidth, h = host.offsetHeight;
+    s.setAttribute("class", cls);
+    s.setAttribute("width", w + pad * 2); s.setAttribute("height", h + pad * 2);
+    s.setAttribute("viewBox", (-pad) + " " + (-pad) + " " + (w + pad * 2) + " " + (h + pad * 2));
+    s.style.left = -pad + "px"; s.style.top = -pad + "px";
+    host.appendChild(s); return s;
+  }
+  function cursor(host, who, color) {
+    var c = document.createElement("div");
+    c.className = "cursor"; c.style.setProperty("--c", color);
+    c.innerHTML = '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2.5 1.8 15 8.4l-5.6 1.5-2.4 5.4Z"/></svg><span class="who"></span>';
+    c.querySelector(".who").textContent = who;
+    host.appendChild(c); return c;
+  }
+  function move(c, x, y, ms) { c.style.setProperty("--mv", (ms || 700) + "ms"); c.style.transform = "translate(" + x + "px," + y + "px)"; }
+
+  // A ---------------------------------------------------------------------------------------------
+  function playA() {
+    // A relation line runs under the word, from the card where the thought starts to the dot where it lands,
+    // and weaves through the descender of the g: under the stem, then over the tail.
+    var kw = document.getElementById("kwA"), f = em(kw), w = kw.offsetWidth, h = kw.offsetHeight;
+    var zh = lang === "zh", pad = Math.round(f * 1.1), base = h * (zh ? 0.93 : 0.80), sw = Math.max(2, f * 0.04);
+    var x0 = -f * 0.05, x1 = w + f * (zh ? 0.75 : 0.5), n = 60, d = "";
+    for (var i = 0; i <= n; i++) {
+      var t = i / n, x = x0 + (x1 - x0) * t;
+      var y = base + f * 0.07 + Math.sin(t * Math.PI * 2.2 + .3) * f * 0.045 * Math.sin(Math.PI * t);
+      d += (i ? " L" : "M") + x.toFixed(1) + " " + y.toFixed(1);
+    }
+    var gx = zh ? x1 + pad : w * 0.86;                                       // the g's tail sits about here
+    [["thread back", false], ["thread front", true]].forEach(function (spec) {
+      var s = svgAt(kw, spec[0], pad);
+      var p = document.createElementNS(NS, "path");
+      p.setAttribute("d", d); p.setAttribute("stroke-width", sw);
+      if (spec[1]) {
+        var cp = document.createElementNS(NS, "clipPath"), id = "weave" + Math.random().toString(36).slice(2, 7);
+        cp.setAttribute("id", id);
+        var r = document.createElementNS(NS, "rect");
+        r.setAttribute("x", -pad); r.setAttribute("y", -pad); r.setAttribute("width", gx + pad); r.setAttribute("height", h + pad * 2);
+        var r2 = document.createElementNS(NS, "rect");
+        r2.setAttribute("x", gx + f * 0.16); r2.setAttribute("y", -pad); r2.setAttribute("width", w + pad * 2); r2.setAttribute("height", h + pad * 2);
+        cp.appendChild(r); cp.appendChild(r2);
+        s.appendChild(cp); p.setAttribute("clip-path", "url(#" + id + ")");
+      }
+      s.appendChild(p);
+      later(function () { draw(p, 1400); }, 450);
+      if (!spec[1]) {
+        var a2 = document.createElementNS(NS, "circle");
+        a2.setAttribute("class", "nib end"); a2.setAttribute("cx", x1); a2.setAttribute("cy", base + f * 0.07); a2.setAttribute("r", sw * 1.8);
+        var a1 = document.createElementNS(NS, "circle");
+        a1.setAttribute("class", "nib end"); a1.setAttribute("cx", x0); a1.setAttribute("cy", base + f * 0.07); a1.setAttribute("r", sw * 1.1);
+        s.appendChild(a1); s.appendChild(a2);
+        later(function () { a1.classList.add("on"); }, 300);
+        later(function () { a2.classList.add("on"); }, reduced ? 0 : 1850);
+      }
+    });
+  }
+
+  // B ---------------------------------------------------------------------------------------------
+  function playB() {
+    var kw = document.getElementById("kwB"), f = em(kw), w = kw.offsetWidth, h = kw.offsetHeight;
+    var pad = Math.round(f * .5), cx = w * 0.5, cy = h * 0.56, rx = w * 0.6, ry = h * 0.5;
+    var pts = [], N = 72, over = 9;
+    for (var i = 0; i <= N + over; i++) {
+      var a = -2.3 + (i / N) * Math.PI * 2;
+      var wob = 1 + 0.025 * Math.sin(a * 2 + .6) + (i > N ? 0.05 * (i - N) / over : 0);
+      var co = Math.cos(a), si = Math.sin(a), e = 0.62;
+      pts.push([cx + Math.sign(co) * Math.pow(Math.abs(co), e) * rx * wob, cy + Math.sign(si) * Math.pow(Math.abs(si), e) * ry * wob]);
+    }
+    var d = "M" + pts[0][0].toFixed(1) + " " + pts[0][1].toFixed(1);
+    for (var j = 1; j < pts.length - 1; j++) {
+      var mx = (pts[j][0] + pts[j + 1][0]) / 2, my = (pts[j][1] + pts[j + 1][1]) / 2;
+      d += " Q" + pts[j][0].toFixed(1) + " " + pts[j][1].toFixed(1) + " " + mx.toFixed(1) + " " + my.toFixed(1);
+    }
+    var s = svgAt(kw, "loopsvg", pad);
+    var g = document.createElementNS(NS, "g"); g.setAttribute("transform", "rotate(-4 " + cx + " " + cy + ")");
+    var fill = document.createElementNS(NS, "ellipse");
+    fill.setAttribute("class", "fill"); fill.setAttribute("cx", cx); fill.setAttribute("cy", cy); fill.setAttribute("rx", rx * .96); fill.setAttribute("ry", ry * .92);
+    var p = document.createElementNS(NS, "path"); p.setAttribute("d", d); p.setAttribute("stroke-width", Math.max(2.4, f * 0.05));
+    g.appendChild(fill); g.appendChild(p); s.appendChild(g);
+    if (reduced) { draw(p); fill.classList.add("on"); return; }
+    p.style.strokeDasharray = p.getTotalLength(); p.style.strokeDashoffset = p.getTotalLength();
+    // Your cursor holds the pen and rides the tip of the loop.
+    var c = cursor(kw, lang === "zh" ? "你" : "You", "var(--act)"); c.classList.add("you");
+    var start = p.getPointAtLength(0);
+    move(c, start.x + w * .5, start.y - h * .4, 1);
+    later(function () { c.classList.add("on"); move(c, start.x, start.y, 650); }, 250);
+    later(function () {
+      var len = p.getTotalLength(), t0 = performance.now(), dur = 1300, m = g.getCTM(), sm = s.getCTM();
+      (function tick(now) {
+        var k = Math.min(1, (now - t0) / dur), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+        p.style.strokeDashoffset = len * (1 - e);
+        var pt = p.getPointAtLength(len * e), ang = -4 * Math.PI / 180;
+        var x = cx + (pt.x - cx) * Math.cos(ang) - (pt.y - cy) * Math.sin(ang), y = cy + (pt.x - cx) * Math.sin(ang) + (pt.y - cy) * Math.cos(ang);
+        move(c, x, y, 1);
+        if (k < 1) requestAnimationFrame(tick); else { fill.classList.add("on"); later(function () { move(c, x + w * .25, y + h * .3, 600); c.classList.remove("on"); }, 500); }
+      })(t0);
+    }, 950);
+  }
+
+  // C ---------------------------------------------------------------------------------------------
+  function playC() {
+    var kw = document.getElementById("kwC"), typed = document.getElementById("typed"), L = T[lang];
+    typed.className = "typed"; typed.textContent = "";
+    if (reduced) { typed.textContent = L.final; typed.classList.add("done"); return; }
+    var f = em(kw), h = kw.offsetHeight || f;
+    var caret = document.createElement("span"); caret.className = "caret";
+    var scout = cursor(kw, L.scout, "var(--crew-scout)"), critic = cursor(kw, L.critic, "var(--crew-critic)");
+    function text(s) { typed.textContent = s; typed.appendChild(caret); }
+    function typeOut(word, color, at, step, done) {
+      caret.style.setProperty("--c", color); caret.className = "caret";
+      for (var i = 1; i <= word.length; i++) (function (i) { later(function () { text(word.slice(0, i)); }, at + i * step); })(i);
+      later(function () { caret.className = "caret blink"; if (done) done(); }, at + word.length * step + 40);
+      return at + word.length * step;
+    }
+    var step = lang === "zh" ? 150 : 85;
+    move(scout, -f * .8, h * 1.3, 1); move(critic, f * 4.2, -h * .7, 1);
+    later(function () { scout.classList.add("on"); move(scout, 0, h * .78, 600); }, 200);
+    var t = typeOut(L.first, "var(--crew-scout)", 900, step);
+    later(function () { move(scout, -f * .3, h * 1.25, 500); scout.classList.remove("on"); }, t + 500);
+    // The Critic doesn't argue in the margin: it selects the word and offers the better one.
+    later(function () { critic.classList.add("on"); move(critic, typed.offsetWidth * .9, h * .7, 650); }, t + 650);
+    later(function () { typed.innerHTML = '<span class="sel">' + L.first + "</span>"; }, t + 1400);
+    later(function () { text(""); }, t + 2050);
+    var t2 = typeOut(L.final, "var(--crew-critic)", t + 2150, step);
+    later(function () { move(critic, typed.offsetWidth + f * .2, h * .95, 260); }, t + 2150);
+    later(function () { critic.classList.remove("on"); caret.remove(); typed.classList.add("done"); }, t2 + 900);
+  }
+
+  function play() { clear(); playA(); later(playB, 200); later(playC, 400); }
+  function setLang(l) {
+    lang = l; document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
+    document.querySelectorAll("[data-t]").forEach(function (n) { n.textContent = T[l][n.dataset.t]; });
+    document.getElementById("lang").textContent = T[l].btn; document.getElementById("replay").textContent = T[l].replay;
+    play();
+  }
+  document.getElementById("lang").onclick = function () { setLang(lang === "en" ? "zh" : "en"); };
+  document.getElementById("replay").onclick = play;
+  document.querySelectorAll(".opt h1").forEach(function (h) { h.onclick = play; });
+  var params = new URLSearchParams(location.search);
+  if (params.get("theme")) document.documentElement.dataset.theme = params.get("theme");
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(function () { setLang(params.get("lang") === "zh" ? "zh" : "en"); });
+  var rt; addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(play, 200); });
+})();
+</script>
+</body>
+</html>

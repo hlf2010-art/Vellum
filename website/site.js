@@ -44,8 +44,8 @@
       "skip": "Skip to content",
       "nav.why": "Why Vellum", "nav.how": "How it works", "nav.crew": "The crew",
       "cta.get": "Get Vellum",
-      "hero.title": "The whiteboard that remembers why.",
-      "hero.lede": "A shared thinking space for you and AI, where every decision keeps its reasons.",
+      "hero.title": "Big decisions deserve more than a chat box.", "hero.t1": "Big decisions deserve more than ", "hero.kw": "a chat box", "hero.t2": ".",
+      "hero.lede": "Put the whole problem on one board. Let an AI crew argue it out. Every choice keeps its reasons.",
       "board.hint": "Drag any card", "board.replay": "Play again",
       "why.t1": "Most AI canvases help you make more.", "why.t2": "Vellum helps you think it through.",
       "why.lede": "The best meetings skip the slides and go to the whiteboard. Then someone wipes it.",
@@ -87,15 +87,15 @@
       "get.bademail": "That doesn't look like an email address.",
       "get.fail": "That didn't go through. Try again in a moment.",
       "board.label": "A Vellum board deciding how a camping lantern should work",
-      "lang.switch": "切换到中文", "theme.switch": "Switch theme", "steps.label": "Demo steps", "cases.label": "Use cases",
-      "title": "Vellum: the whiteboard that remembers why"
+      "lang.label": "Language", "theme.switch": "Switch theme", "steps.label": "Demo steps", "cases.label": "Use cases",
+      "title": "Vellum: big decisions deserve more than a chat box"
     },
     zh: {
       "skip": "跳到正文",
       "nav.why": "为什么是 Vellum", "nav.how": "怎么用", "nav.crew": "AI 伙伴",
       "cta.get": "获取 Vellum",
-      "hero.title": "会记住\u200b「为什么」\u2060的白板。",
-      "hero.lede": "人类与 AI 共同思考的空间。每个决定，都留着当初的理由。",
+      "hero.title": "重要的决定，不该困在一个聊天框里。", "hero.t1": "重要的决定，不该困在一个", "hero.kw": "聊天框", "hero.t2": "里。",
+      "hero.lede": "把整个问题摊在一张白板上，让 AI 团队把它辩清楚。每个选择，都留着理由。",
       "board.hint": "卡片可以拖动", "board.replay": "再看一遍",
       "why.t1": "多数 AI\u00a0画布\u200b帮你做得更多。", "why.t2": "Vellum\u00a0帮你\u200b想得更清楚。",
       "why.lede": "最好的讨论不放 PPT，直接上白板。然后，有人把白板擦了。",
@@ -137,8 +137,8 @@
       "get.bademail": "这看起来不像邮箱地址。",
       "get.fail": "没有提交成功，请稍后再试。",
       "board.label": "Vellum 白板演示：决定一盏露营灯该怎么设计",
-      "lang.switch": "Switch to English", "theme.switch": "切换深浅色", "steps.label": "演示步骤", "cases.label": "使用场景",
-      "title": "Vellum：会记住「为什么」的白板"
+      "lang.label": "语言 Language", "theme.switch": "切换深浅色", "steps.label": "演示步骤", "cases.label": "使用场景",
+      "title": "Vellum：重要的决定，不该困在聊天框里"
     }
   };
 
@@ -289,15 +289,17 @@
       var v = t(el.getAttribute("data-i18n"));
       if (v) el.textContent = v;
     });
-    document.querySelectorAll(".lang-btn span[data-l]").forEach(function (s) { s.classList.toggle("on", s.getAttribute("data-l") === lang); });
+    $("langSel").value = lang;
     document.title = t("title");
-    $("langBtn").setAttribute("aria-label", t("lang.switch"));
+    $("langSel").setAttribute("aria-label", t("lang.label"));
     $("themeBtn").setAttribute("aria-label", t("theme.switch"));
     $("steps").setAttribute("aria-label", t("steps.label"));
     $("caseTabs").setAttribute("aria-label", t("cases.label"));
     $("modes").setAttribute("aria-label", t("modes.label"));
     board.relabel();
     if (scene) scene.relabel();
+    $("hero-title").setAttribute("aria-label", t("hero.title"));
+    headline.type(true);
     zones.render(false);
     renderMode(false);
     renderDownloads();
@@ -312,8 +314,9 @@
     root.setAttribute("data-theme", next);
     store.set("vellum-site-theme", next);
   });
-  $("langBtn").addEventListener("click", function () {
-    lang = lang === "zh" ? "en" : "zh";
+  // Language lives at the foot of the page, like most sites: the browser's language picks it first.
+  $("langSel").addEventListener("change", function () {
+    lang = this.value === "zh" ? "zh" : "en";
     root.lang = lang === "zh" ? "zh-CN" : "en";
     store.set("vellum-site-lang", lang);
     applyCopy();
@@ -323,6 +326,27 @@
   var head = document.querySelector(".site-head");
   function onScroll() { head.classList.toggle("scrolled", window.scrollY > 4); }
   window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
+
+  // ---- The headline's keyword ---------------------------------------------------------------
+  // "a chat box" sits inside an actual chat input, a size too small for the thought, and gets typed in the way
+  // you'd type into one. The open board right below is the "more".
+  var headline = (function () {
+    var box = $("heroKw"), txt = box.querySelector(".cb-text"), still = matchMedia("(prefers-reduced-motion: reduce)"), timers = [];
+    function type(animate) {
+      timers.forEach(clearTimeout); timers = [];
+      var full = t("hero.kw"), chars = Array.from(full);
+      box.classList.remove("typing", "sent");
+      if (!animate || still.matches) { txt.textContent = full; box.classList.add("sent"); return; }
+      // Hold the box at its final width so the line never reflows while letters arrive.
+      txt.textContent = full; box.style.width = box.getBoundingClientRect().width + "px";
+      txt.textContent = ""; box.classList.add("typing");
+      var step = lang === "zh" ? 150 : 72, at = 520;
+      chars.forEach(function (c, i) { timers.push(setTimeout(function () { txt.textContent = chars.slice(0, i + 1).join(""); }, at + i * step)); });
+      timers.push(setTimeout(function () { box.classList.remove("typing"); box.classList.add("sent"); box.style.width = ""; }, at + chars.length * step + 650));
+    }
+    window.addEventListener("resize", function () { box.style.width = ""; });
+    return { type: type };
+  })();
 
   // ---- The live board ---------------------------------------------------------------------
   var board = (function () {
@@ -360,6 +384,25 @@
       { a: "n1", b: "dB", type: "counters", at: 4, tag: true }
     ];
     var SHOW = { e1: 0, e2: 0, e3: 0, j1: 1, dA: 2, dB: 2, dC: 2, st: 2, n1: 4 };
+    // Spotlight: each step lights only what it is about. What those cards touch stays half lit, so you still
+    // see where they sit; everything else steps back but stays readable. Pointing at a card overrides it.
+    var LIT = { 0: ["e1", "e2", "e3"], 1: ["j1"], 2: ["dA", "dB", "dC", "st"], 3: ["dB"], 4: ["n1"] };
+    var CTX = { 3: ["dA", "dC"] };
+    var litSet = {};
+    function light() {
+      var lit = {}, ctx = {};
+      (LIT[step] || []).forEach(function (id) { lit[id] = 1; });
+      if (step === 4 && resolved) lit.dB = 1;
+      (CTX[step] || []).forEach(function (id) { ctx[id] = 1; });
+      RELS.forEach(function (r) { if (lit[r.a]) ctx[r.b] = 1; if (lit[r.b]) ctx[r.a] = 1; });
+      litSet = lit;
+      Object.keys(cards).forEach(function (id) {
+        cards[id].classList.toggle("lit", !!lit[id]);
+        cards[id].classList.toggle("ctx", !lit[id] && !!ctx[id]);
+      });
+      svg.querySelectorAll("path[data-a]").forEach(function (p) { p.classList.toggle("lit", !!(lit[p.dataset.a] || lit[p.dataset.b])); });
+      el.classList.add("spotlit");
+    }
     var KI = { e1: "eye", e2: "msg", e3: "quote", j1: "judge", dA: "fork", dB: "fork", dC: "fork", st: "critic", n1: "eye" };
     var CREW = { "Scout": "var(--crew-scout)", "Strategist": "var(--crew-strategist)" };
     var mode = null, scale = 1, step = -1, timer = null, playing = false, played = false, resolved = null, dragged = false;
@@ -513,6 +556,7 @@
         p.path.setAttribute("d", g.d);
         if (p.pen) { pen(p.path, p.pen); p.pen = null; }
         p.path.classList.toggle("dim", step >= 3 && !resolved && r.type === "related" && r.b !== "dB");
+        p.path.classList.toggle("lit", !!(litSet[r.a] || litSet[r.b]));
         if (p.tag) { p.tag.textContent = L()[r.type]; p.tag.style.left = g.m.x + "px"; p.tag.style.top = g.m.y + "px"; }
       });
       drawLoop(animateNew);
@@ -723,6 +767,7 @@
       if (n === 4 && prev < 4 && animate && !reduced && !held.n1) { cards.n1.classList.remove("fresh"); void cards.n1.offsetWidth; cards.n1.classList.add("fresh"); }
       relabel();
       setCaption(animate);
+      light();
       requestAnimationFrame(function () { drawLines(animate); });   // lines need the cards' final sizes
       stepsEl.querySelectorAll("button").forEach(function (b, i) {
         b.classList.toggle("done", i < n);

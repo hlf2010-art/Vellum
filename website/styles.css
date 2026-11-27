@@ -182,9 +182,6 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 }
 .tool:hover { background: var(--hover); color: var(--label); }
 .tool svg.ic { width: 18px; height: 18px; }
-.lang-btn span { opacity: .42; transition: opacity .15s; }
-.lang-btn span.on { opacity: 1; }
-.lang-btn .sep { opacity: .3; }
 .tools .btn { margin-left: var(--s2); }
 @media (max-width: 860px) { .nav { display: none; } .tools { margin-left: auto; } }
 @media (max-width: 359px) { #themeBtn { display: none; } .seg.tabs button { font-size: 13px; padding: 0 6px; } }
@@ -194,6 +191,20 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .hero h1 { max-width: 11.5em; }
 .hero-lede { margin-top: var(--s5); max-width: 27em; }
 :lang(zh) .hero h1 { max-width: none; }
+:lang(zh) .hero-lede { max-width: 31em; }
+/* The keyword: "a chat box" set inside a real chat input, slightly too small for the sentence. */
+.chatbox { display: inline-flex; align-items: center; gap: .16em; white-space: nowrap; vertical-align: .06em;
+  height: .98em; padding: 0 .1em 0 .36em; margin: 0 .02em; border-radius: .26em; box-sizing: border-box;
+  background: var(--card); box-shadow: 0 0 0 .016em var(--hair-2), 0 .06em .18em -.06em rgba(11,12,14,.12);
+  font-size: .72em; font-weight: 500; letter-spacing: -.03em; color: var(--label-2); line-height: 1; }
+:lang(zh) .chatbox { font-weight: 560; letter-spacing: 0; }
+.chatbox .cb-text { min-width: .2em; }
+.chatbox .cb-caret { width: .055em; height: .62em; margin-left: -.1em; border-radius: 1px; background: var(--label); opacity: 0; }
+.chatbox.typing .cb-caret { opacity: 1; animation: cb-blink 1s steps(1) .3s infinite; }
+@keyframes cb-blink { 50% { opacity: 0; } }
+.chatbox .cb-send { display: grid; place-items: center; width: .74em; height: .74em; margin-left: auto; border-radius: 999px; background: var(--hover); color: var(--label-3); transition: background-color .35s var(--e-out), color .35s var(--e-out); }
+.chatbox .cb-send svg { width: .46em; height: .46em; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.chatbox.sent .cb-send { background: var(--act); color: var(--on-act); }
 
 /* The live board: paper on a drafting table, lit from the top left. */
 .board-shell { margin-top: clamp(var(--s6), 4.4vw, 64px); }
@@ -201,13 +212,19 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .board-track.pinned .board-shell { position: sticky; top: var(--pin-top, 80px); }
 .board {
   position: relative; border-radius: var(--r-board); overflow: hidden; isolation: isolate;
-  background-color: var(--canvas-lift);
-  background-image: radial-gradient(var(--dot) 1px, transparent 1.3px);
-  background-size: 22px 22px; background-position: 11px 11px;
-  box-shadow: var(--shadow-board);
   touch-action: pan-y;
 }
-.board::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(70% 75% at 16% -8%, var(--lamp), transparent 72%); }
+/* No box: the drafting table fades into the page at every edge, so the board reads as a lit patch of an
+   endless canvas rather than a framed screenshot. */
+.board::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(70% 75% at 16% -8%, var(--lamp), transparent 72%),
+    radial-gradient(var(--dot) 1px, transparent 1.3px) 11px 11px / 22px 22px,
+    var(--canvas-lift);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 9%, #000 91%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 9%, #000 91%, transparent);
+  mask-composite: intersect; }
 .board-stage { position: absolute; left: 0; top: 0; z-index: 1; transform-origin: 0 0; }
 .board-lines { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
 .board-lines path { fill: none; stroke: var(--thread); stroke-width: 1.5; stroke-linecap: round; transition: stroke .3s, opacity .4s, stroke-width .2s; }
@@ -218,6 +235,14 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .board.focus .board-lines path:not(.hot):not(.marker) { opacity: .22; }
 .board.focus .bcard.on:not(.near) { opacity: .5; transition: opacity .3s var(--e-out), transform .62s var(--settle), filter .42s var(--e-out), box-shadow .25s var(--ease); }
 .board.focus .rel-tag { opacity: .4; }
+/* Spotlight: the step's own cards are lit, what they touch is half lit, the rest steps back but stays legible.
+   Pointing at a card (.focus) takes over. */
+.board.spotlit:not(.focus) .bcard.on:not(.lit):not(.ctx) { opacity: .34; }
+.board.spotlit:not(.focus) .bcard.on.ctx { opacity: .7; }
+.board.spotlit:not(.focus) .board-lines path[data-a]:not(.lit) { opacity: .2; }
+.board.spotlit:not(.focus) .rel-tag { opacity: .55; }
+/* Set-aside cards already wear a veil; dimming them again would make them unreadable. */
+.board.spotlit:not(.focus) .bcard.on.aside:not(.lit) { opacity: .66; }
 .board-lines path.out { opacity: 0; transition: opacity .2s var(--e-out); }
 .board-lines circle.pen { stroke: none; }
 .board-lines path.hot { stroke-width: 2.2; }
@@ -685,7 +710,22 @@ h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -.014
 .brand-sm img { width: 22px; height: 22px; border-radius: 6px; }
 .foot-nav { display: flex; align-items: center; gap: var(--s5); font-size: 14px; color: var(--label-3); }
 .foot-nav a { text-decoration: none; transition: color .15s; }
+.foot-nav > span { white-space: nowrap; }
 .foot-nav a:hover { color: var(--label); }
+/* Language: a quiet bordered picker at the very end of the page. The native select keeps it accessible. */
+.lang-pick { position: relative; display: inline-flex; align-items: center; height: 32px; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--hair-2); color: var(--label-2); transition: box-shadow .15s, color .15s; }
+.lang-pick:hover { color: var(--label); box-shadow: inset 0 0 0 1px var(--ink-rule); }
+.lang-pick:focus-within { box-shadow: inset 0 0 0 1px var(--ink-rule), 0 0 0 3px var(--hover); }
+.lang-pick .ic { position: absolute; width: 15px; height: 15px; pointer-events: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.lang-pick .ic:first-child { left: 10px; }
+.lang-pick .chev { right: 8px; }
+.lang-pick select { appearance: none; -webkit-appearance: none; height: 100%; padding: 0 30px 0 32px; border: 0; background: transparent; color: inherit; font: 500 13.5px/1 var(--sans); cursor: pointer; outline: none; }
+.lang-pick select option { color: #0b0c0e; }
+@media (max-width: 560px) {
+  .foot-row { flex-wrap: wrap; height: auto; padding-block: var(--s5); row-gap: var(--s4); }
+  .foot-nav { width: 100%; gap: var(--s4); }
+  .foot-nav .lang-pick { margin-left: auto; }
+}
 
 [hidden] { display: none !important; }
 

@@ -857,7 +857,7 @@ html.scrolling .zc:not(.lit):hover { transform: none; }
 .get { margin-top: calc(var(--section) * .5); padding: calc(var(--section) * 1.5) 0 var(--section); background: linear-gradient(var(--canvas), var(--canvas-lift) min(46%, 320px)); }
 .get-wrap { max-width: 680px; }
 .get-wrap .sec-head { justify-items: center; text-align: center; }
-/* The mark as a light. Panes are frosted glass; the overlap is solid and, in the dark, glows. Its light spreads
+/* The mark as a light. The two small cards are frosted glass; the decided card is solid and, in the dark, glows. Its light spreads
    down behind the heading and the panel, which is frosted so the light reads through it. */
 .get { overflow-x: clip; }
 .get-wrap { position: relative; }

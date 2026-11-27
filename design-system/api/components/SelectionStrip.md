@@ -1,7 +1,7 @@
 <!-- Generated from components/index.d.ts by scripts/build_api.py. -->
 # SelectionStrip
 
-Actions for the selected card, floating just above it: one pill of glass.
+Actions for one selected card, floating just above it: one solid pill.
 
 `Vellum.SelectionStrip` · Board
 

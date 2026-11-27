@@ -3060,6 +3060,12 @@ dialog.sheet.del-sheet{width:min(420px,calc(100% - 24px))}
 .clasp.fresh i{animation:claspIn .62s var(--bouncy) both}
 .clasp.fresh::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:calc(var(--len,30px) + 8px);border-radius:99px;border:1.5px solid var(--rc);transform:translate(-50%,-50%);animation:claspRing .72s var(--ease) both;pointer-events:none}
 .clasp.o-h.fresh::after{width:calc(var(--len,30px) + 8px);height:14px}
+.star-mark{position:absolute;left:0;top:0;width:18px;height:18px;margin:0;display:grid;place-items:center;border-radius:50%;pointer-events:auto;cursor:default;
+  transform:translate(-40%,-40%) scale(var(--inv-s,1));color:color-mix(in srgb,var(--focus) 70%,var(--label-2));background:var(--card);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--focus) 22%,transparent),0 2px 6px -2px color-mix(in srgb,var(--focus) 35%,transparent);animation:starIn .4s var(--bouncy) both}
+.star-mark svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6}
+@keyframes starIn{from{opacity:0;transform:translate(-40%,-40%) scale(.4)}}
+#world.far .star-mark{display:none}
 .clasp.gone{opacity:0;transition:opacity .2s var(--ease)}
 @keyframes claspIn{0%{transform:scale(.2,.35);opacity:0}45%{opacity:1}}
 @keyframes claspRing{0%{opacity:.75;transform:translate(-50%,-50%) scale(.7)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.1)}}
@@ -3127,7 +3133,7 @@ body.snap-skip #wall{cursor:copy}
 .wire-pop .wp-mini:hover{background:var(--hover);color:var(--label)}
 .wire-pop .wp-mini .ico{width:13px;height:13px}
 @media (prefers-reduced-motion:reduce){
-  .clasp i,.clasp.fresh i,.clasp.fresh::after,.snap-guide i,.rel-pick.in,.card.bond-pulse{animation:none!important;transition:none!important}
+  .clasp i,.clasp.fresh i,.clasp.fresh::after,.snap-guide i,.rel-pick.in,.card.bond-pulse,.star-mark{animation:none!important;transition:none!important}
   .clasp.fresh::after{display:none}
 }
 .src-pill.rel-pill{color:var(--rc);background:color-mix(in srgb,var(--rc) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 38%,transparent)}
@@ -3868,6 +3874,7 @@ const ICONS={
   alignL:'<path d="M4 4v16M8 7h12v4H8zM8 14h8v4H8z"/>',
   alignT:'<path d="M4 4h16M7 8v12h4V8zM14 8v8h4V8z"/>',
   exportFile:'<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
+  orbit:'<circle cx="12" cy="12" r="3.2"/><ellipse cx="12" cy="12" rx="9.5" ry="4.2" transform="rotate(-24 12 12)"/>',
   eyeOff:'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/>',
   settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   tag:'<path d="M12.5 2H6a2 2 0 0 0-2 2v6.5a2 2 0 0 0 .58 1.42l9.5 9.5a2 2 0 0 0 2.84 0l5.16-5.16a2 2 0 0 0 0-2.84l-9.5-9.5A2 2 0 0 0 12.5 2z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
@@ -5596,10 +5603,10 @@ function relatedRows(n,limit=5){
 }
 const relFetchOnce=new Set();
 /* a relation you made, as the crew and the Related list read it: yours, and "related" is never agreement */
-function ctxHumanRel(t,n){const e=relBetween(t,n);if(!e||e.by!=="you"||!e.rel)return {};return {you:true,rel:e.rel,from:e.a===n?"it":"this",snap:isBonded(e),note:e.note||""}}
+function ctxHumanRel(t,n){const e=relBetween(t,n);if(!e||e.by!=="you"||!e.rel)return {};const b=isBonded(e),st=b?starOf(t):null;return {you:true,rel:e.rel,from:e.a===n?"it":"this",snap:b,focus:st===n?"it":st===t?"this":"",note:e.note||""}}
 function ctxRelText(w){return ctxRelBase(w)+(w.note?L(` · your note: “${w.note}”`,` · 你的说明：“${w.note}”`):"")}
 function ctxRelBase(w){
-  const how=w.snap?L("you snapped them together","你把它们吸附在一起"):L("you linked them","你把它们连在一起");
+  const how=(w.snap?L("you snapped them together","你把它们吸附在一起"):L("you linked them","你把它们连在一起"))+(w.focus==="it"?L(" · it is the focus of this group"," · 它是这组的焦点"):w.focus==="this"?L(" · this card is the focus of the group"," · 这张卡是这组的焦点"):"");
   if(!w.rel||w.rel==="related")return how+L(" · related, not agreement"," · 有关，不代表同意");
   const v=L(...REL_VERB[w.rel]);
   return how+" · "+(w.from==="it"?L(`it ${v} this card`,`它${v}这张卡`):L(`this card ${v} it`,`这张卡${v}它`));
@@ -7944,6 +7951,66 @@ function bondCluster(id){
   }
   return [...out];
 }
+/* A snapped group is a small solar system. Its star is the focus of the topic: an idea, a claim, a direction or a
+   project brief. Evidence, failure cases, eval sets, images, notes and links are its planets. Groups are one level
+   deep: a card snapped onto a planet joins that planet's star, and each card orbits only one star. Dragging the star
+   moves the whole system; dragging a planet takes it out of orbit, and its relations stay, drawn as lines.
+   The star is stored as n.star; n.focus="you" marks one a person chose with Set as focus, which no rule overrides. */
+const isBriefCard=n=>!!n&&(n.kind==="Brief"||/\bbrief\b|简报|需求文档/i.test(`${n.tag||""} ${n.kind||""} ${n.title||""}`));
+/* how much a card reads as the focus of a topic: a brief is broader than an idea, claim or direction */
+function focusRank(n){
+  if(!n)return 0;
+  if(isBriefCard(n))return 2;
+  if(["idea","direction","synthesis"].includes(n.type))return 1;
+  return 0;
+}
+function starOf(id){
+  const c=bondCluster(id);if(c.length<2)return null;
+  const flagged=c.filter(x=>byId(x)?.star);
+  if(flagged.length)return flagged.sort((a,b)=>(byId(b).focus==="you")-(byId(a).focus==="you")||c.indexOf(a)-c.indexOf(b))[0];
+  /* saved before stars existed: the strongest focus card, then the one with the most snapped relations */
+  const deg=x=>board.edges.filter(e=>(e.a===x||e.b===x)&&isBonded(e)).length;
+  return c.slice().sort((a,b)=>focusRank(byId(b))-focusRank(byId(a))||deg(b)-deg(a)||board.nodes.findIndex(n=>n.id===a)-board.nodes.findIndex(n=>n.id===b))[0];
+}
+const isStar=id=>starOf(id)===id;
+/* what a press on this card drags: the star brings its planets, a planet comes alone */
+function dragSet(ids){
+  const out=new Set(ids);
+  for(const id of ids)if(isStar(id))for(const m of bondCluster(id))out.add(m);
+  return [...out];
+}
+/* THE rule for which card becomes the star when a snap joins cards (one place on purpose, so it is easy to change).
+   1. A focus a person set (Set as focus) wins; the stationary side's first.
+   2. Otherwise the broadest focus card: brief > idea, claim, direction.
+   3. No focus card, or a tie: the stationary side's star, else the card that was snapped onto. */
+function pickStar({movedIds,targetId,starBefore}){
+  const moved=new Set(movedIds),all=bondCluster(targetId);
+  const score=id=>{const n=byId(id);if(!n)return -1;
+    return (n.focus==="you"&&n.star?1000:0)+focusRank(n)*10+(moved.has(id)?0:2)+(id===(starBefore||targetId)?1:0)};
+  return all.slice().sort((a,b)=>score(b)-score(a))[0]||targetId;
+}
+/* after a snap: one star for the joined system, every other card gives its flag up */
+function settleStar(movedIds,targetId,starBefore){
+  const st=pickStar({movedIds,targetId,starBefore});
+  for(const id of bondCluster(targetId)){const n=byId(id);if(n&&id!==st){delete n.star;delete n.focus}}
+  const t=byId(st);if(t)t.star=true;
+}
+function setFocus(id){
+  const n=byId(id);if(!n||bondCluster(id).length<2||(isStar(id)&&n.focus==="you"))return;
+  checkpoint();for(const m of bondCluster(id)){const x=byId(m);if(x){delete x.star;delete x.focus}}n.star=true;n.focus="you";
+  sfx("pop");log("you",L(`Set <b>${esc(titleOf(n))}</b> as the focus of its group`,`把 <b>${esc(titleOf(n))}</b> 设为这组的焦点`),n.id);
+  renderAll();persist();
+  toast(L("Now the focus: drag it to move the whole group","已设为焦点：拖动它会带着整组移动"),{undo:true});
+}
+/* while a planet is held in orbit, it leans toward the pointer a little, so you can feel how far it is from letting go */
+function orbitTension(g,rawDx,rawDy,m){
+  const el=nodeEl(g.id);if(!el)return;
+  const held=g.snap&&(g.atRisk||[]).some(id=>{const e=board.edges.find(x=>x.id===id);return e&&(e.a===g.snap.id||e.b===g.snap.id)});
+  if(!held||calm()){if(el.style.translate)el.style.translate="";return}
+  const v=g.snap.side==="left"||g.snap.side==="right";
+  const k=.22,tx=v?(rawDx-m.dx)*k:0,ty=v?0:(rawDy-m.dy)*k;
+  el.style.translate=`${tx.toFixed(1)}px ${ty.toFixed(1)}px`;
+}
 /* make or confirm the one relation between two cards; returns {e, existed} */
 function makeRelation(src,dst,{via="wire",rel="related"}={}){
   const ex=relBetween(src,dst);
@@ -8004,6 +8071,8 @@ function snapPoolFor(ids){
 function snapCandidate(g,x,y){
   const p=byId(g.id);if(!p)return null;
   const W=nodeW(p),H=nodeH(p),inR=SNAP_IN/cam.s,outR=SNAP_OUT/cam.s,al=SNAP_ALIGN/cam.s;
+  /* a planet held next to its star and another planet keeps hold of its star, so tidying it never tears it from the star */
+  if(g.home===undefined){const st=starOf(g.id),e=st&&st!==g.id?relBetween(g.id,st):null;g.home=e&&isBonded(e)?st:null}
   let best=null;
   for(const t of g.snapPool||[]){
     const T=relRect(t);
@@ -8018,7 +8087,7 @@ function snapCandidate(g,x,y){
     for(const c of tries){
       const held=g.snap&&g.snap.id===t.id&&g.snap.side===c.side;
       if(c.d>(held?outR:inR)||c.ov<Math.min(SNAP_MIN_OVERLAP,(c.nx!=null?Math.min(H,T.h):Math.min(W,T.w))*.5))continue;
-      const score=c.d-(held?1e4:0);
+      const score=c.d-(held?1e4:0)-(t.id===g.home?inR:0);
       if(!best||score<best.score)best={...c,id:t.id,T,score};
     }
   }
@@ -8087,15 +8156,16 @@ function watchTear(g){
 /* the drop: a caught card becomes related to its neighbour; a pulled-away one keeps its relation as a line */
 function snapOnDrop(g){
   document.body.classList.remove("snap-skip");
+  const del=nodeEl(g.id);if(del?.style.translate){del.style.transition="translate .2s var(--bouncy)";del.style.translate="";setTimeout(()=>{del.style.transition=""},240)}
   paintSnapGuide(null);
   for(const id of g.torn||[])setTimeout(()=>freshEdges.delete(id),1000);
   let made=null;
   if(g.snap){
-    const c=g.snap,p=byId(g.id),t=byId(c.id),held=p&&t&&relBetween(p.id,t.id);
+    const c=g.snap,p=byId(g.id),t=byId(c.id),held=p&&t&&relBetween(p.id,t.id),starBefore=t&&starOf(t.id);
     if(held&&(g.atRisk||[]).includes(held.id)){g.snap=null;return {made:null,torn:[...(g.torn||[])].filter(id=>{const e=board.edges.find(x=>x.id===id);return e&&!isBonded(e)})}}
     if(p&&t){
       const {e,existed}=makeRelation(p.id,t.id,{via:"snap"});
-      if(e){made=e;
+      if(e){made=e;settleStar(g.ids,t.id,starBefore);
         log("you",existed?L(`Snapped <b>${esc(titleOf(p))}</b> to <b>${esc(titleOf(t))}</b> (already related)`,`把 <b>${esc(titleOf(p))}</b> 吸附到 <b>${esc(titleOf(t))}</b>（已有关系）`):L(`Snapped <b>${esc(titleOf(p))}</b> to <b>${esc(titleOf(t))}</b>: related`,`把 <b>${esc(titleOf(p))}</b> 吸附到 <b>${esc(titleOf(t))}</b>：有关`),t.id);
         sfx("snap");relHaptic();
         for(const id of [p.id,t.id]){const el=nodeEl(id);if(el&&!calm()){el.classList.remove("bond-pulse");void el.offsetWidth;el.classList.add("bond-pulse");setTimeout(()=>el.classList.remove("bond-pulse"),700)}}
@@ -8166,10 +8236,8 @@ const freshClasps=new Set();
 function relPointerDown(e,el){
   const id=el.dataset.clasp||el.dataset.reltag,ed=board.edges.find(x=>x.id===id);if(!ed)return false;
   closeRelPick();
-  if(el.dataset.reltag){gesture={type:"relsel",id};wall.setPointerCapture(e.pointerId);return true}
-  const ids=bondCluster(ed.a);
-  gesture={type:"drag",id:ed.a,ids,sx:e.clientX,sy:e.clientY,orig:ids.map(i=>{const n=byId(i);return {n,x:n.x,y:n.y}}),moved:false,shift:false,target:e.target,wasSel:false,editHit:false,cx:e.clientX,cy:e.clientY,fromClasp:id,noSnap:true};
-  wall.setPointerCapture(e.pointerId);return true;
+  /* a clasp or a tag opens its relation; the group moves by its star */
+  gesture={type:"relsel",id};wall.setPointerCapture(e.pointerId);return true;
 }
 function paintRelLayer(bonds,tags){
   const layer=$("relLayer");if(!layer)return;
@@ -8189,6 +8257,13 @@ function paintRelLayer(bonds,tags){
       const cls=`rel-tag rel-${e.rel}${selectedEdgeId===e.id?" sel":""}`;if(el.className!==cls)el.className=cls;
       const t=relName(e.rel)+(e.note?" · "+clip(e.note,28):"");if(el.textContent!==t)el.textContent=t;el.title=relTitle(e);
       el.style.left=x+"px";el.style.top=y+"px";
+    });
+  }
+  /* each system's star wears a small orbit mark at its top-left corner */
+  const stars=new Set();for(const {e} of bonds){const st=starOf(e.a);if(st)stars.add(st)}
+  for(const id of stars){const n=byId(id);if(!n)continue;
+    put("s"+id,()=>{const d=document.createElement("span");d.className="star-mark";d.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS.orbit}</svg>`;return d},el=>{
+      el.style.left=n.x+"px";el.style.top=n.y+"px";el.title=L("Focus of this group · drag it to move them all","这组的焦点 · 拖动它带着整组移动");
     });
   }
   for(const [k,el] of els)if(!keep.has(k)){els.delete(k);if(k[0]==="c"&&!calm()){el.classList.add("gone");setTimeout(()=>el.remove(),220)}else el.remove()}
@@ -12425,6 +12500,7 @@ function fullCardMenuActs(n){
   acts.push({k:"copilot",label:L("Ask Copilot","问问 Copilot"),ic:"ask"});
   acts.push({k:"open",label:L("Open Details","卡片全屏详情"),key:"↵",ic:"arrow"});
   acts.push({sep:true});
+  if(bondCluster(n.id).length>1&&!(isStar(n.id)&&n.focus==="you"))acts.push({k:"focus",label:L("Set as focus","设为焦点"),ic:"orbit"});
   if(n.status==="ink")acts.push({k:"lock",label:n.locked?L("Unlock","解锁"):L("Lock","锁定"),ic:"lock"});
   acts.push({k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"});
   acts.push({k:"hide",label:L("Hide from canvas","从画布隐藏"),ic:"eyeOff"});
@@ -12496,6 +12572,7 @@ $("cardMenu")?.addEventListener("click",e=>{
   if(k==="edit-tag")return startEdit(n.id,"tag",{collapseEnd:false});
   if(k==="look")return openStage(n);
   if(k==="lock")return toggleCardLock(n);
+  if(k==="focus")return setFocus(n.id);
   if(k==="dup")return duplicateSelection();
   if(k==="hide")return hideFromCanvasNodes([n.id]);
   if(k==="archive")return archiveNodes([n.id]);
@@ -19064,6 +19141,7 @@ wall.addEventListener("pointerdown",e=>{
       const inside=visibleNodes().filter(m=>m.id!==clicked.id&&m.type!=="group").filter(m=>{const cx=m.x+nodeW(m)/2,cy=m.y+nodeH(m)/2;return cx>=gx0&&cx<=gx1&&cy>=gy0&&cy<=gy1}).map(m=>m.id);
       ids=[...new Set([...ids,...inside])];
     }
+    if(clicked?.type!=="group"&&!e.altKey)ids=dragSet(ids);
     gesture={type:"drag",id,ids,sx:e.clientX,sy:e.clientY,orig:ids.map(i=>{const n=byId(i);return {n,x:n.x,y:n.y}}),moved:false,shift:e.shiftKey||e.metaKey,target:e.target,wasSel:sel.length===1&&sel[0]===id,editHit:!!e.target.closest("[data-edit='text']"),cx:e.clientX,cy:e.clientY,snapPool:snapPoolFor(ids),atRisk:bondsAtRisk(ids),torn:new Set(),noSnap:clicked?.type==="group"};
     wall.setPointerCapture(e.pointerId);return;
   }
@@ -19131,10 +19209,10 @@ wall.addEventListener("pointermove",e=>{
     drawWires();placeMargin();placeBars();return;
   }
   if(gesture.type==="drag"){const dx=(e.clientX-gesture.sx)/cam.s,dy=(e.clientY-gesture.sy)/cam.s;if(!gesture.moved&&Math.hypot(e.clientX-gesture.sx,e.clientY-gesture.sy)<4)return;
-    if(!gesture.moved){gesture.moved=true;checkpoint();if(selectedEdgeId){selectedEdgeId=null;renderWirePop?.()}if(gesture.fromClasp)select(gesture.ids,{menus:false});else if(!gesture.shift&&!sel.includes(gesture.id))select([gesture.id],{menus:false});gesture.ids.forEach(i=>{const el=nodeEl(i);if(el){el.classList.remove("born");el.classList.add("dragging")}});document.body.classList.add("is-dragging-card")}
+    if(!gesture.moved){gesture.moved=true;checkpoint();if(selectedEdgeId){selectedEdgeId=null;renderWirePop?.()}if(!gesture.shift&&!sel.includes(gesture.id))select([gesture.id],{menus:false});gesture.ids.forEach(i=>{const el=nodeEl(i);if(el){el.classList.remove("born");el.classList.add("dragging")}});document.body.classList.add("is-dragging-card")}
     const m=snapDuring(gesture,dx,dy,e);
     for(const o of gesture.orig){o.n.x=Math.round(o.x+m.dx);o.n.y=Math.round(o.y+m.dy);const el=nodeEl(o.n.id);if(el){el.style.left=o.n.x+"px";el.style.top=o.n.y+"px"}}
-    watchTear(gesture);drawWires();placeMargin();placeBars();return}
+    orbitTension(gesture,dx,dy,m);watchTear(gesture);drawWires();placeMargin();placeBars();return}
   if(gesture.type==="marquee"){
     const r=wall.getBoundingClientRect();
     gesture.w1=toWorld(e.clientX-r.left,e.clientY-r.top);
@@ -19189,7 +19267,6 @@ function endPointer(e){
     requestAnimationFrame(()=>refocusWriting(g.writing));return}
   if(g.type==="drag"){qsa(".dragging").forEach(c=>c.classList.remove("dragging","magnet"));document.body.classList.remove("is-dragging-card");
     if(g.moved){const sr=snapOnDrop(g);settleInZones(g.orig.map(o=>o.n));g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();afterSnapDrop(sr)}
-    else if(g.fromClasp){selectEdge(g.fromClasp);return}
     else{const a=g.target.closest("[data-a]");if(a&&!a.matches("button")){act(a.dataset.a,byId(g.id),a);return}const hit=byId(g.id);if(!g.shift&&g.wasSel&&g.editHit&&hit?.type==="note"&&hit.status!=="sketch"){startEdit(g.id,"text",{clientX:g.cx,clientY:g.cy});return}select(g.shift?g.ids:[g.id])}}
   if(g.type==="marquee"){
     $("marquee").hidden=true;

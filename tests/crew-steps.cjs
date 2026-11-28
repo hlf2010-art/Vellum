@@ -13,7 +13,7 @@
  */
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
-const FILE = path.resolve(__dirname, '..', 'Vellum-Lumen.html');
+const FILE = process.env.VELLUM_FILE || path.resolve(__dirname, '..', 'Vellum-Lumen.html');
 const SHOTS = process.env.SHOTS || '';
 const results = []; let failures = 0;
 function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  — ' + detail}`); if (!ok) failures++; }

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Wider zones, and cards that stay inside them.
+/* Zones sized by their content (never narrower than ZONE_MIN), and cards that stay inside them.
  * Drives the real Vellum-Lumen.html in headless Chromium.
  *
  *   node tests/zone-width.cjs            (from the repo root)
@@ -27,7 +27,7 @@ async function newBoard(p) {
 }
 /* every unit inside one zone, with ZONE_IN to spare */
 const insideAll = p => p.evaluate(() => visibleNodes().filter(n => n.type !== 'group').map(n => {
-  const z = bayOf(n), w = nodeW(n); return { t: n.text || n.title, x: n.x, w, z, ok: n.x >= z * BAY + ZONE_IN - 1 && n.x + w <= (z + 1) * BAY - ZONE_IN + 1 };
+  const z = bayOf(n), w = nodeW(n); return { t: n.text || n.title, x: n.x, w, z, ok: n.x >= zoneX(z) + ZONE_IN - 1 && n.x + w <= zoneX(z + 1) - ZONE_IN + 1 };
 }).filter(r => !r.ok));
 
 (async () => {
@@ -56,22 +56,22 @@ const insideAll = p => p.evaluate(() => visibleNodes().filter(n => n.type !== 'g
       };
       const p = await page(browser, base, { fn: b => { try { localStorage.setItem('vellum-lumen.v1.board.' + b.id, JSON.stringify(b)); localStorage.setItem('vellum-lumen.v1.active', JSON.stringify(b.id)); } catch {} }, arg: old });
       const s = await p.evaluate(() => {
-        const at = id => { const n = byId(id); return { x: n.x, y: n.y, z: bayOf(n) }; };
-        return { zoneW: board.zoneW, BAY, g1: at('g1'), e1: at('e1'), p1: at('p1'), s1: at('s1'), a: at('a'), b: at('b'), grp: at('grp'), inn: at('in'),
+        const at = id => { const n = byId(id); return { x: n.x, y: n.y, z: bayOf(n), rel: n.x - zoneX(bayOf(n)) }; };
+        return { zoneW: board.zoneW, zones: board.zones, MIN: ZONE_MIN, g1: at('g1'), e1: at('e1'), p1: at('p1'), s1: at('s1'), a: at('a'), b: at('b'), grp: at('grp'), inn: at('in'),
           bonded: isBonded(board.edges.find(e => e.id === 'r1')), moves: (board.changes || []).filter(c => c.op === 'edit' || c.op === 'move').length,
           zoneLeft: document.querySelector('.bay-1').offsetLeft, zoneWidth: document.querySelector('.bay-1').offsetWidth };
       });
-      check('zones are wider (1400 px) and drawn that wide', s.BAY === 1400 && s.zoneLeft === 1400 && s.zoneWidth === 1400, JSON.stringify(s));
+      check('light zones shrink to their minimum width and are drawn that wide', s.zones.join() === [s.MIN, s.MIN, s.MIN, s.MIN].join() && s.zoneLeft === s.MIN && s.zoneWidth === s.MIN, JSON.stringify(s));
       check('the old board is marked as moved over', s.zoneW === 1400, JSON.stringify(s));
-      check('each card stays in its zone, at the same place inside it', s.g1.x === 120 && s.e1.x === 1480 && s.p1.x === 3100 && s.s1.x === 4700 && [s.g1.z, s.e1.z, s.p1.z, s.s1.z].join() === '0,1,2,3', JSON.stringify(s));
+      check('each card stays in its zone, at the same place inside it', s.g1.rel === 120 && s.e1.rel === 80 && s.p1.rel === 300 && s.s1.rel === 500 && [s.g1.z, s.e1.z, s.p1.z, s.s1.z].join() === '0,1,2,3', JSON.stringify(s));
       check('the snapped stickies slide inside Gather together and stay snapped', s.a.x >= 36 && s.b.x - s.a.x === 252 && s.bonded, JSON.stringify(s));
-      check('a group keeps the card inside it', s.grp.x === 1500 && s.inn.x === 1550 && s.grp.z === 1, JSON.stringify(s));
+      check('a group keeps the card inside it', s.grp.rel === 100 && s.inn.x - s.grp.x === 50 && s.grp.z === 1, JSON.stringify(s));
       check('moving zones is not logged as an edit', s.moves === 0, JSON.stringify(s));
       const out = await insideAll(p);
       check('no card hangs over a zone edge after the move', !out.length, JSON.stringify(out));
       await p.reload(); await p.waitForTimeout(2000);
       const again = await p.evaluate(() => ({ e1: byId('e1').x, zoneW: board.zoneW }));
-      check('the move happens once (a reload does not shift cards again)', again.e1 === 1480 && again.zoneW === 1400, JSON.stringify(again));
+      check('the move happens once (a reload does not shift cards again)', again.e1 === s.e1.x && again.zoneW === 1400, JSON.stringify(again));
       check('no page errors (old board)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
@@ -109,12 +109,13 @@ const insideAll = p => p.evaluate(() => visibleNodes().filter(n => n.type !== 'g
       // Z5. a card dropped across the gap between two zones settles into the zone it is mostly in
       await p.evaluate(() => { node('note', { text: 'Straddler' }, { x: 300, y: 900 }); renderAll(); });
       await p.waitForTimeout(200);
-      const sb = await p.evaluate(() => { const n = board.nodes.find(n => n.text === 'Straddler'); const r = nodeEl(n.id).getBoundingClientRect(); const target = toScreen(BAY - 100, 900); return { x: r.x + r.width / 2, y: r.y + 14, tx: target.x, ty: target.y + 14 }; });
+      const sb = await p.evaluate(() => { const n = board.nodes.find(n => n.text === 'Straddler'); const r = nodeEl(n.id).getBoundingClientRect(); const target = toScreen(zoneX(1) - 100, 900); return { x: r.x + r.width / 2, y: r.y + 14, tx: target.x, ty: target.y + 14 }; });
       await p.mouse.move(sb.x, sb.y); await p.mouse.down();
       for (let i = 1; i <= 20; i++) { await p.mouse.move(sb.x + (sb.tx - sb.x) * i / 20, sb.y + (sb.ty - sb.y) * i / 20); await p.waitForTimeout(14); }
       await p.mouse.up(); await p.waitForTimeout(600);
       const z5 = await p.evaluate(() => { const n = board.nodes.find(n => n.text === 'Straddler'); return { x: n.x, w: nodeW(n), z: bayOf(n) }; });
-      check('a card dropped over the gap between zones settles inside one', z5.x + z5.w <= (z5.z + 1) * 1400 - 36 + 1 && z5.x >= z5.z * 1400 + 36 - 1, JSON.stringify(z5));
+      const z5b = await p.evaluate(() => ({ L: zoneX(bayOf(board.nodes.find(n => n.text === 'Straddler'))), R: zoneX(bayOf(board.nodes.find(n => n.text === 'Straddler')) + 1) }));
+      check('a card dropped over the gap between zones settles inside one', z5.x + z5.w <= z5b.R - 36 + 1 && z5.x >= z5b.L + 36 - 1, JSON.stringify({ z5, z5b }));
       check('no page errors (placement)', !p.errors.length, p.errors.join(' | '));
 
       // Z6. the lane lock is a real button: the size of the lane icon, a clear state, a tooltip
@@ -131,6 +132,56 @@ const insideAll = p => p.evaluate(() => visibleNodes().filter(n => n.type !== 'g
       const tipOp = await p.evaluate(() => getComputedStyle(document.querySelector('[data-bay-lock="0"]'), '::after').opacity);
       check('hovering the lock shows its tooltip', +tipOp > .9, tipOp);
       check('no page errors (lock)', !p.errors.length, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    // Z7. zones follow their content: a full zone widens, the next zones move with their cards, nothing moves mid-drag
+    {
+      const p = await page(browser, base);
+      await newBoard(p);
+      const empty = await p.evaluate(() => { const st = document.querySelector('.bay-0 .bay-start')?.getBoundingClientRect(), z = document.querySelector('.bay-0 .bay-zone').getBoundingClientRect(); return { zones: board.zones.slice(), MIN: ZONE_MIN, fits: !st || (st.right <= z.right && st.left >= z.left) }; });
+      check('an empty board starts with every zone at the minimum width', empty.zones.every(w => w === empty.MIN), JSON.stringify(empty));
+      check('the empty lane invitation fits inside a minimum-width zone', empty.fits, JSON.stringify(empty));
+      // three judgments side by side in Explore, one prototype note in Prototype
+      const a = await p.evaluate(() => {
+        const x1 = zoneX(1), x2 = zoneX(2);
+        for (let i = 0; i < 3; i++) node('note', { text: 'Explore ' + i, status: 'ink', by: 'you' }, { x: x1 + 40 + i * 300, y: 300 });
+        node('note', { text: 'Proto', status: 'ink', by: 'you' }, { x: x2 + 60, y: 300 });
+        renderAll(); finishZoneGlide();
+        const pr = board.nodes.find(n => n.text === 'Proto'), e2 = board.nodes.find(n => n.text === 'Explore 2');
+        return { zones: board.zones.slice(), protoRel: pr.x - zoneX(bayOf(pr)), protoZ: bayOf(pr), e2z: bayOf(e2), right: e2.x + nodeW(e2) - zoneX(1), pad: ZONE_PAD };
+      });
+      check('a zone with more cards than fit grows to hold them', a.zones[1] === Math.ceil(a.right + a.pad) && a.zones[1] > a.zones[0] && a.e2z === 1, JSON.stringify(a));
+      check('the next zone moves over with its card, which keeps its place inside it', a.protoZ === 2 && a.protoRel === 60, JSON.stringify(a));
+      check('quiet zones stay at the minimum', a.zones[0] === 880 && a.zones[2] === 880, JSON.stringify(a));
+      // drag "Explore 2" further right, past Explore's edge: nothing moves while dragging; the zone widens on release
+      await p.evaluate(() => { const n = board.nodes.find(n => n.text === 'Explore 1'); cam = { x: 0, y: 0, s: .5 }; cam.x = innerWidth / 2 - (zoneX(2)) * cam.s; cam.y = 200; paintCam(); });
+      await p.waitForTimeout(300);
+      const d = await p.evaluate(() => { const n = board.nodes.find(n => n.text === 'Explore 2'), r = nodeEl(n.id).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + 12 }; });
+      await p.mouse.move(d.x, d.y); await p.keyboard.down('Alt'); await p.mouse.down();
+      for (let i = 1; i <= 16; i++) { await p.mouse.move(d.x + 40 * i / 16, d.y); await p.waitForTimeout(16); }
+      const mid = await p.evaluate(() => ({ zones: board.zones.slice(), proto: board.nodes.find(n => n.text === 'Proto').x, bay2: document.querySelector('.bay-2').offsetLeft }));
+      check('mid-drag the zones hold still (no edge running away from the card)', mid.zones.join() === a.zones.join() && mid.bay2 === a.zones[0] + a.zones[1], JSON.stringify({ mid, a }));
+      await p.mouse.up(); await p.keyboard.up('Alt');
+      await p.waitForTimeout(120);
+      const glide = await p.evaluate(() => ({ w: document.querySelector('.bay-1').offsetWidth, gliding: !!zoneGlide }));
+      await p.waitForTimeout(500);
+      const after = await p.evaluate(() => { const pr = board.nodes.find(n => n.text === 'Proto'), e2 = board.nodes.find(n => n.text === 'Explore 2'); return { zones: board.zones.slice(), w: document.querySelector('.bay-1').offsetWidth, left2: document.querySelector('.bay-2').offsetLeft, protoRel: pr.x - zoneX(2), e2z: bayOf(e2), gliding: !!zoneGlide }; });
+      check('on release the zone widens to fit the moved card', after.zones[1] > a.zones[1] && after.e2z === 1 && after.w === after.zones[1] && after.left2 === after.zones[0] + after.zones[1], JSON.stringify(after));
+      check('it widens in a glide, not a jump', glide.gliding && glide.w > a.zones[1] && glide.w < after.zones[1], JSON.stringify({ glide, a: a.zones[1], after: after.zones[1] }));
+      check('the next zone keeps its card in the same place inside it', after.protoRel === 60, JSON.stringify(after));
+      // undo puts the card and the zone back together
+      await p.keyboard.press('Escape'); await p.keyboard.press('ControlOrMeta+z'); await p.waitForTimeout(500);
+      const un = await p.evaluate(() => { const pr = board.nodes.find(n => n.text === 'Proto'); return { zones: board.zones.slice(), protoRel: pr.x - zoneX(bayOf(pr)), protoZ: bayOf(pr) }; });
+      check('undo narrows the zone back and the next zone follows', un.zones.join() === a.zones.join() && un.protoRel === 60 && un.protoZ === 2, JSON.stringify({ un, a }));
+      // moving cards out narrows the zone again, back to the minimum
+      await p.evaluate(() => { for (const t of ['Explore 1', 'Explore 2']) { const n = board.nodes.find(n => n.text === t); n.x = 100 + (t === 'Explore 2' ? 300 : 0); n.y = 700; } renderAll(); finishZoneGlide(); persistNow(); });
+      const sh = await p.evaluate(() => { const pr = board.nodes.find(n => n.text === 'Proto'); return { zones: board.zones.slice(), protoRel: pr.x - zoneX(2), MIN: ZONE_MIN }; });
+      check('a zone that empties narrows back to the minimum, and the next zone follows', sh.zones[1] === sh.MIN && sh.protoRel === 60, JSON.stringify(sh));
+      await p.reload(); await p.waitForTimeout(1800);
+      const rl = await p.evaluate(() => { const pr = board.nodes.find(n => n.text === 'Proto'); return { zones: board.zones.slice(), protoRel: pr.x - zoneX(2) }; });
+      check('zone widths survive a reload without moving anything', rl.zones.join() === sh.zones.join() && rl.protoRel === 60, JSON.stringify(rl));
+      check('no page errors (content-sized zones)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
   } catch (e) { check('test ran to the end', false, String(e).split('\n').slice(0, 3).join(' ')); } finally {

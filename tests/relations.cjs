@@ -21,7 +21,7 @@ async function open(browser, base, theme = 'light') {
   await p.click('#projectBtn'); await p.waitForTimeout(300); await p.getByText('New board', { exact: true }).click(); await p.click('[data-tpl="blank"]'); await p.click('[data-tpl-go]'); await p.waitForTimeout(700);
   p.cards = specs => p.evaluate(specs => {
     const ids = specs.map(([type, f, x, y]) => { const n = node(type, f, { x, y }); n.status = 'ink'; return n.id; });
-    cam = { x: 0, y: 0, s: 1 }; paintCam(); renderAll(); return ids;
+    cam = { x: 0, y: 0, s: 1 }; paintCam(); renderAll(); finishZoneGlide(); return ids;
   }, specs);
   p.box = id => p.evaluate(id => { const r = nodeEl(id).getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; }, id);
   p.edges = () => p.evaluate(() => board.edges.map(e => ({ id: e.id, a: e.a, b: e.b, rel: e.rel, by: e.by, via: e.via, line: !!e.line })));

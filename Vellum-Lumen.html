@@ -4363,8 +4363,9 @@ const ICONS={
 };
 const ic=(n,c="ico")=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||""}</svg>`;
 
-/* A zone's width in world px. Boards laid out before zones widened (1000) are moved over once, by fitZones. */
-const BAY=1400,ZONE_W0=1000,ZONE_IN=36;
+/* Zones are as wide as what is in them, never narrower than ZONE_MIN. BAY is the old fixed width: boards laid out
+   in 1000 px zones are first moved over to 1400 by fitZones, then reflowZones sizes each zone to its cards. */
+const BAY=1400,ZONE_W0=1000,ZONE_IN=36,ZONE_MIN=880,ZONE_PAD=56;
 const BAYS=[
   {n:"01",name:"Gather",zh:"收集素材",sub:"Evidence: what people did and said",zhSub:"证据：用户做了什么、说了什么",icon:'<path d="M4 7.5 6 4h12l2 3.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 8h16M10 12h4"/>',empty:["No evidence yet","Drag recordings, screenshots, notes or text files here, then rate how strong each source is."],zhEmpty:["还没有素材","将文档、录屏、截图或便签拖到这里，并标注每份素材的证据可信度。"]},
   {n:"02",name:"Explore",zh:"探索方向",sub:"Judgments, and directions to test them",zhSub:"判断，以及检验它的方向",icon:'<path d="M12 20V11M12 11 6 4M12 11l6-7"/><circle cx="12" cy="20" r="1.5"/>',empty:["No idea yet","Write your idea in the bar below. Strategist can branch it into directions worth testing."],zhEmpty:["还没有想法","在下方输入框写下你的想法，Strategist 会帮你拆出多个待验证方向。"]},
@@ -4932,7 +4933,7 @@ const store=DEMO?{
   del(k){try{localStorage.removeItem(KEY+k)}catch{}},
 };
 if(DEMO){store.set(".lang",DEMO.lang);if(DEMO.theme)store.set(".theme",DEMO.theme);document.body.classList.add("is-demo")}
-function blank(title=""){return {id:uid(),title,speak:"matters",memory:"",mcpContext:[],nodes:[],edges:[],adopted:{},threads:{},pins:{},copilot:[],log:[],proposals:[],changes:[],cam:null,zoneW:BAY,created:NOW(),updated:NOW()}}
+function blank(title=""){return {id:uid(),title,speak:"matters",memory:"",mcpContext:[],nodes:[],edges:[],adopted:{},threads:{},pins:{},copilot:[],log:[],proposals:[],changes:[],cam:null,zoneW:BAY,zones:[ZONE_MIN,ZONE_MIN,ZONE_MIN,ZONE_MIN],created:NOW(),updated:NOW()}}
 let board, sel=[], undoStack=[], redoStack=[], saveT=0, storageOk=true, idbBoardOk=false, selectedEdgeId=null;
 const byId=id=>board.nodes.find(n=>n.id===id);
 const isNodeHidden=n=>!!(n&&(n.hidden||n.archived||n.tombstone||digFolded(n)));
@@ -4948,6 +4949,7 @@ function syncHistoryBtns(){
 function persist(){
   clearTimeout(saveT);
   saveT=setTimeout(()=>{
+    if(zoneGlide){persist();return} /* save the layout once zones have finished gliding */
     recordChanges();board.updated=NOW();
     const slim={...board,nodes:board.nodes.map(({_h,...n})=>n)};
     const lsOk=store.set(".board."+board.id,slim);
@@ -4967,8 +4969,23 @@ function persist(){
 let txSeq=0;
 const txAuthor=()=>{const w=changeActor?.who;return w&&w!=="you"?w:"you"};
 const HIST_KEYS=["nodes","edges","proposals","declined"],HIST_MAPS=["adopted","threads","pins"];
+/* History keeps a card's place inside its zone (zr: zone, offset), not its x on the board: when a zone widens and
+   the zones after it slide over, nothing in them has really moved, so undo neither sees a conflict nor drags those
+   cards back. A restored card is put back at its offset in its zone, and the zone widens first if it must. */
+function relNode(n){const {_h,x,...r}=n;if(!Number.isFinite(x))return n._h===undefined?n:r;
+  const w=nodeW(n),end=zoneX(4);let z;if(x+w<=ZONE_IN)z=-1;else if(x>=end-ZONE_IN)z=4;else z=bayOf(n);
+  return {...r,zr:[z,Math.round(z<0?x:x-zoneX(z))]}}
+function placeFromZones(){
+  const back=board.nodes.filter(n=>Array.isArray(n.zr));if(!back.length)return;
+  const ws=zoneWs().slice(),nw=ws.slice(),stay=board.nodes.filter(n=>!Array.isArray(n.zr)&&Number.isFinite(n.x)).map(n=>[n,n.x+nodeW(n)<=ZONE_IN?-1:n.x>=zoneX(4)-ZONE_IN?4:bayOf(n)]);
+  for(const n of back){const [z,rx]=n.zr;if(z>=0&&z<4)nw[z]=Math.max(nw[z],Math.ceil(rx+nodeW(n)+ZONE_PAD))}
+  const sh=[0];for(let i=0;i<4;i++)sh.push(sh[i]+nw[i]-ws[i]);
+  for(const [n,z] of stay)if(z>0)n.x+=sh[Math.min(z,4)];
+  board.zones=nw;
+  for(const n of back){const [z,rx]=n.zr;n.x=z<0?rx:zoneX(z)+rx;delete n.zr}
+}
 /* history ignores render caches such as a card's measured height (_h) */
-const histSnap=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,proposals:board.proposals||[],declined:board.declined||[]},(k,v)=>k==="_h"?undefined:v);
+const histSnap=()=>(finishZoneGlide(),JSON.stringify({nodes:board.nodes.map(relNode),edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,proposals:board.proposals||[],declined:board.declined||[]},(k,v)=>k==="_h"?undefined:v));
 function histState(){return JSON.parse(histSnap())}
 /* compare entities ignoring render caches and metadata filled in after the fact (a card's basis list) */
 const histKey=v=>JSON.stringify(v??null,(k,x)=>k==="_h"||k==="basis"?undefined:x);
@@ -5011,16 +5028,17 @@ function applyPatch(patch,dir){
     for(const [id,[before,after,idx]] of Object.entries(P)){
       const want=dir==="undo"?before:after,expect=dir==="undo"?after:before;
       const at=board[k].findIndex(x=>x.id===id),cur=at>=0?board[k][at]:null;
-      const curCmp=cur&&k==="nodes"?(({_h,...r})=>r)(cur):cur;
+      const curCmp=cur&&k==="nodes"?relNode(cur):cur;
       if(!same(curCmp,expect)){conflicts.push({k,id,title:cur?(k==="nodes"?titleOf(cur):id):(expect&&k==="nodes"?titleOf(expect):id)});continue}
       if(want&&at>=0)board[k][at]=JSON.parse(JSON.stringify(want));
       else if(want)inserts.push([idx,want]);
     }
     for(const [id,[before,after]] of Object.entries(P)){const want=dir==="undo"?before:after,expect=dir==="undo"?after:before;
       if(want)continue;const at=board[k].findIndex(x=>x.id===id);if(at<0)continue;
-      const cur=k==="nodes"?(({_h,...r})=>r)(board[k][at]):board[k][at];if(same(cur,expect))board[k].splice(at,1)}
+      const cur=k==="nodes"?relNode(board[k][at]):board[k][at];if(same(cur,expect))board[k].splice(at,1)}
     inserts.sort((a,b)=>(a[0]??Infinity)-(b[0]??Infinity)).forEach(([idx,want])=>board[k].splice(Math.min(idx??board[k].length,board[k].length),0,JSON.parse(JSON.stringify(want))));
   }
+  placeFromZones();
   for(const k of HIST_MAPS){
     const P=patch?.[k];if(!P)continue;board[k]=board[k]||{};
     for(const [id,[before,after]] of Object.entries(P)){
@@ -5775,7 +5793,15 @@ function lin(n,d=0){
   if((n.type==="list"||n.type==="kanban"||n.type==="treemap")&&n.dir)return lin(byId(n.dir),d+1);
   return null;
 }
-const bayOf=n=>clamp(Math.floor((n.x+nodeW(n)/2)/BAY),0,3);
+/* Zone widths live on the board (board.zones). A board without them was laid out in fixed BAY-wide zones. */
+const zoneWs=(b=board)=>Array.isArray(b?.zones)&&b.zones.length===4&&b.zones.every(Number.isFinite)?b.zones:[BAY,BAY,BAY,BAY];
+/* a zone's left edge (zoneX(4) is the board's right end); while zones glide, the edges drawn are the moving ones */
+const zoneX=(i,b=board)=>{const w=zoneWs(b);let x=0;for(let k=0;k<i;k++)x+=w[k];return x};
+const zoneW=(i,b=board)=>zoneWs(b)[clamp(i,0,3)];
+const zoneAt=(x,b=board)=>{const w=zoneWs(b);let e=0;for(let i=0;i<3;i++){e+=w[i];if(x<e)return i}return 3};
+const bayOf=n=>zoneAt(n.x+nodeW(n)/2);
+/* where a card w wide may sit in zone z: inside its left margin, centred within the zone, no wider than an old zone */
+const zoneClampX=(x,w,z)=>{const L=zoneX(z)+ZONE_IN;return clamp(x,L,Math.max(L,Math.min(zoneX(z)+BAY-w-ZONE_IN,zoneX(z+1)-w/2-1)))};
 /* Cards that belong together move together: a group with the cards inside it, and cards snapped to each other. */
 function zoneUnits(ns){
   const live=board.nodes.filter(n=>!n.tombstone&&Number.isFinite(n.x)),ids=new Set(live.map(n=>n.id)),up=new Map();
@@ -5788,34 +5814,78 @@ function zoneUnits(ns){
   for(const n of live){const r=root(n.id);if(!want.has(r))continue;if(!out.has(r))out.set(r,[]);out.get(r).push(n)}
   return [...out.values()];
 }
-/* How far a unit has to slide to sit inside one zone: none if it already does, if it is wider than a zone,
-   or if it lies wholly off the board (left of the first zone or right of the last), where it was put on purpose. */
-function zoneNudge(unit){
-  const b=bbox(unit);if(b.x1-b.x0>BAY-2*ZONE_IN)return 0;
-  if(b.x1<=ZONE_IN||b.x0>=4*BAY-ZONE_IN)return 0;
-  const z=clamp(Math.floor(((b.x0+b.x1)/2)/BAY),0,3),lo=z*BAY+ZONE_IN,hi=(z+1)*BAY-ZONE_IN;
-  return b.x0<lo?lo-b.x0:b.x1>hi?hi-b.x1:0;
-}
-/* After a drop or a new card: anything hanging over a zone's edge glides inside it, with what it is snapped to. */
-function settleInZones(ns){
-  const moved=[];
-  for(const u of zoneUnits(ns.filter(Boolean))){const dx=Math.round(zoneNudge(u));if(!dx)continue;for(const n of u){n.x+=dx;moved.push([n.id,dx])}}
-  if(!moved.length)return false;
-  requestAnimationFrame(()=>{if(calm())return;for(const [id,dx] of moved){const el=nodeEl(id);if(!el)continue;
-    el.style.transition="none";el.style.translate=`${-dx}px 0`;void el.offsetWidth;
-    el.style.transition="translate .24s var(--ease)";el.style.translate="0 0";
-    clearTimeout(el._zs);el._zs=setTimeout(()=>{el.style.transition="";el.style.translate=""},280)}});
+/* Zones follow their content. Each unit (a group with its cards, or cards snapped together) belongs to the zone
+   its middle is in; a zone is as wide as its rightmost unit plus a margin, never narrower than ZONE_MIN, and the
+   zones after it move by however much it grew or shrank, cards and all. A unit hanging over its zone's left edge
+   slides inside. Nothing reflows mid-drag or mid-resize: an edge that ran ahead of the card would never let it
+   cross into the next zone. On release, zones widen or narrow in one glide. Units wholly off the board stay put
+   (left of it) or keep their distance from its end (right of it). */
+function reflowZones(){
+  if(!board||!Array.isArray(board.nodes)||dragging()||document.body.classList.contains("is-resizing-w"))return false;
+  const first=!(Array.isArray(board.zones)&&board.zones.length===4);
+  /* mid-glide, measure the layout it is heading for; if that still fits, let the glide carry on untouched */
+  const g=zoneGlide?.b===board?zoneGlide:null,mid=g&&{xs:g.moves.map(([n])=>n.x),zones:board.zones};
+  if(g){for(const [n,,to] of g.moves)n.x=to;board.zones=g.toW.slice()}else finishZoneGlide();
+  const ws=zoneWs().slice(),xs=[0];for(let i=0;i<4;i++)xs.push(xs[i]+ws[i]);const end=xs[4];
+  const live=visibleNodes().filter(n=>Number.isFinite(n.x)),right=[0,0,0,0],plan=[];
+  for(const u of zoneUnits(live)){const b=bbox(u);
+    if(b.x1<=ZONE_IN){plan.push([u,0,-1]);continue}
+    if(b.x0>=end-ZONE_IN){plan.push([u,0,4]);continue}
+    const z=zoneAt((b.x0+b.x1)/2),lo=xs[z]+ZONE_IN,nudge=b.x0<lo?Math.round(lo-b.x0):0;
+    right[z]=Math.max(right[z],b.x1+nudge-xs[z]);plan.push([u,nudge,z]);
+  }
+  const nw=right.map(r=>Math.max(ZONE_MIN,Math.ceil(r+ZONE_PAD))),shift=[0];
+  for(let i=0;i<4;i++)shift.push(shift[i]+nw[i]-ws[i]);
+  const moves=[];
+  for(const [u,nudge,z] of plan){const dx=z<0?0:nudge+shift[Math.min(z,4)];if(dx)for(const n of u)moves.push([n,n.x,n.x+dx])}
+  const same=nw.every((w,i)=>w===ws[i]);
+  if(same&&!first&&!moves.length){if(g){g.moves.forEach(([n],i)=>{n.x=mid.xs[i]});board.zones=mid.zones}return false}
+  if(g)finishZoneGlide();
+  board.zones=nw;
+  /* the camera follows when everything that changed is off screen to the left, so what you are looking at stays */
+  const follow=c=>-shift[zoneAt((innerWidth/2-c.x)/c.s,{zones:ws})]*c.s;
+  let camDx=0;
+  if(camOk(cam)){const v=viewRect(),wl=(v.left-cam.x)/cam.s,k=zoneAt((innerWidth/2-cam.x)/cam.s,{zones:ws}),changed=nw.map((w,i)=>w!==ws[i]);
+    if(first||changed.every((c,i)=>!c||(i<k&&Math.max(xs[i+1],xs[i]+nw[i])<=wl)))camDx=follow(cam)}
+  if(first&&camOk(board.cam))board.cam={...board.cam,x:board.cam.x+follow(board.cam)};
+  if(first||calm()||!$("bays")?.children.length){for(const [n,,to] of moves)n.x=to;if(camDx){cam={...cam,x:cam.x+camDx};paintCam?.()}}
+  else glideZones(moves,ws,nw,camDx);
+  /* positions are not part of a card's digest, so zones making room never reads as anyone's edit */
   return true;
 }
+/* The glide: cards, the wires between them, the zone bands and (if it follows) the camera move together. Cards
+   carry their in-between x while it runs; anything that saves or snapshots the board finishes it first. */
+let zoneGlide=null;
+function glideZones(moves,fromW,toW,camDx){
+  const g={t0:performance.now(),ms:320,b:board,moves,fromW,toW,cam0:cam.x,camDx,raf:0};zoneGlide=g;
+  for(const [n,from] of moves)n.x=from;board.zones=fromW.slice();
+  const ease=t=>1-Math.pow(1-t,3);
+  const step=now=>{if(zoneGlide!==g)return;if(g.b!==board){finishZoneGlide();return}const t=Math.min(1,(now-g.t0)/g.ms),k=ease(t);
+    board.zones=g.fromW.map((w,i)=>Math.round(w+(g.toW[i]-w)*k));paintZoneEdges();
+    for(const [n,from,to] of g.moves){n.x=Math.round(from+(to-from)*k);const el=nodeEl(n.id);if(el)el.style.left=n.x+"px"}
+    if(g.camDx){cam={...cam,x:g.cam0+g.camDx*k};paintCam?.(true)}
+    drawWires();placeMargin?.();placeBars?.();
+    if(t<1)g.raf=requestAnimationFrame(step);else{finishZoneGlide();paintMap?.()}};
+  g.raf=requestAnimationFrame(step);
+}
+function finishZoneGlide(){
+  const g=zoneGlide;if(!g)return;zoneGlide=null;cancelAnimationFrame(g.raf);
+  g.b.zones=g.toW.slice();for(const [n,,to] of g.moves)n.x=to;if(g.b!==board)return;
+  for(const [n,,to] of g.moves){const el=nodeEl(n.id);if(el)el.style.left=to+"px"}
+  if(g.camDx){cam={...cam,x:g.cam0+g.camDx};paintCam?.()}
+  paintZoneEdges();drawWires();
+}
+function paintZoneEdges(){const els=$("bays")?.children;if(!els)return;for(let i=0;i<4&&i<els.length;i++){els[i].style.left=zoneX(i)+"px";els[i].style.width=zoneW(i)+"px"}}
+/* after a drop or a new card: zones make room, and anything over a zone's left edge glides inside */
+function settleInZones(){return reflowZones()}
 /* Boards laid out in narrower zones: each unit moves with its zone, keeping its place inside it, and the camera
    follows so the same zone is on screen. Runs once per board, before anything else reads the layout. */
 function fitZones(){
   const from=board?.zoneW||ZONE_W0;if(!board||from===BAY||!Array.isArray(board.nodes))return;
   const live=board.nodes.filter(n=>!n.tombstone&&Number.isFinite(n.x));
   for(const u of zoneUnits(live)){const b=bbox(u),z=clamp(Math.floor(((b.x0+b.x1)/2)/from),0,3),dx=z*(BAY-from);if(dx)for(const n of u)n.x+=dx}
-  for(const u of zoneUnits(live)){const dx=Math.round(zoneNudge(u));if(dx)for(const n of u)n.x+=dx}
   if(camOk(board.cam)){const s=board.cam.s,cx=(innerWidth/2-board.cam.x)/s,z=clamp(Math.floor(cx/from),0,3);board.cam={...board.cam,x:board.cam.x-z*(BAY-from)*s}}
-  board.zoneW=BAY;
+  board.zoneW=BAY;delete board.zones; /* reflowZones sizes them next, from 1400-wide zones */
   if(changeShadow?.id===board.id)changeShadow=shadowOf(board); /* moving zones is not an edit of anyone's */
 }
 const SLUG_ACRONYMS=new Set(["ai","api","ar","css","faq","fps","gif","gta","hd","html","hud","id","ios","json","md","npc","os","pdf","png","qa","rag","rgb","rpg","sdk","svg","ui","url","ux","vfx","vr","xr","usa","us","uk","eu","gdp","csv","kpi","roi","sku","b2b","b2c","q1","q2","q3","q4"]);
@@ -7056,11 +7126,11 @@ function viewRect(){const r=wall.getBoundingClientRect();const top=70,bottom=r.h
 function bbox(ns){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const n of ns){const w=nodeW(n),h=nodeH(n);x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x+w);y1=Math.max(y1,n.y+h)}return {x0,y0,x1,y1}}
 function camFor(b,maxS=1){const v=viewRect(),aw=v.w-v.left-v.right,ah=v.h-v.top-v.bottom;const s=clamp(Math.min(aw/(b.x1-b.x0),ah/(b.y1-b.y0),maxS),.15,2);return {s,x:v.left+(aw-(b.x1-b.x0)*s)/2-b.x0*s,y:v.top+(ah-(b.y1-b.y0)*s)/2-b.y0*s}}
 function focusNodes(ns,maxS=1,ms=650){if(!ns.length)return;const b=bbox(ns);return flyTo(camFor({x0:b.x0-40,y0:b.y0-40,x1:b.x1+40,y1:b.y1+40},maxS),ms)}
-function fitAll(){const ns=visibleNodes();if(!ns.length){flyTo(camFor({x0:0,y0:-160,x1:BAY*2,y1:900},.8));return}focusNodes(ns,.9)}
+function fitAll(){const ns=visibleNodes();if(!ns.length){flyTo(camFor({x0:0,y0:-160,x1:zoneX(2),y1:900},.8));return}focusNodes(ns,.9)}
 function flyToBay(i){
   const ns=visibleNodes().filter(n=>bayOf(n)===i);
-  if(ns.length){const b=bbox(ns);flyTo(camFor({x0:Math.min(b.x0,i*BAY+40)-30,y0:-180,x1:Math.max(b.x1,i*BAY+600)+30,y1:b.y1+30},.95));return}
-  flyTo(camFor({x0:i*BAY,y0:-170,x1:i*BAY+BAY,y1:780},.85));
+  if(ns.length){const b=bbox(ns);flyTo(camFor({x0:Math.min(b.x0,zoneX(i)+40)-30,y0:-180,x1:Math.max(b.x1,zoneX(i)+600)+30,y1:b.y1+30},.95));return}
+  flyTo(camFor({x0:zoneX(i),y0:-170,x1:zoneX(i+1),y1:780},.85));
 }
 
 /* Part 2 · rendering: bays, cards, wires, rail, crew, margin, proposal bars, toasts, ledger */
@@ -7072,11 +7142,12 @@ function renderBays(){
   /* a lane invites only while nothing of its kind exists anywhere: cards can live in any lane */
   const ink=visibleNodes().filter(n=>n.status==="ink"),used=new Set(ink.map(bayOf));
   const has=[ink.some(isMaterial),ink.some(n=>n.type==="idea"||n.type==="synthesis"),ink.some(n=>n.type==="proof"),ink.some(n=>n.type==="print")];
-  $("bays").innerHTML=BAYS.map((b,i)=>`<div class="bay bay-${i}" style="left:${i*BAY}px;width:${BAY}px">
+  /* the bands stay the same elements, so a zone that widens or narrows glides instead of being redrawn */
+  const host=$("bays");while(host.children.length<BAYS.length){const d=document.createElement("div");host.appendChild(d)}
+  BAYS.forEach((b,i)=>{const el=host.children[i];el.className=`bay bay-${i}`;el.style.left=zoneX(i)+"px";el.style.width=zoneW(i)+"px";el.innerHTML=`
     <div class="bay-zone" aria-hidden="true"></div>
     <div class="bay-head"><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" data-tip="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic(lockedBays().includes(i)?"lock":"unlock")}</button></div>
-    ${used.has(i)||has[i]?"":bayStartHTML(i)}
-  </div>`).join("");
+    ${used.has(i)||has[i]?"":bayStartHTML(i)}`});
 }
 /* the way into an empty lane: what to do next, and a control that does it */
 function bayStartHTML(i){
@@ -7112,7 +7183,7 @@ function bayGo(a,el){
 }
 /* a new judgment where the Explore lane invites one; left empty, it goes away again */
 function startClaim(at){
-  checkpoint();const pos=at||freeSpot(BAY+80,60,W.idea||320,180);
+  checkpoint();const pos=at||freeSpot(zoneX(1)+80,60,W.idea||320,180);
   const n=node("idea",{kind:"Claim",text:""},pos);sfx("create");renderAll();select([],{menus:false});
   const el=nodeEl(n.id);el?.classList.add("born");startEdit(n.id,"text");return n;
 }
@@ -9166,7 +9237,7 @@ function renderRail(){
 let railOn=-1;
 function paintRailView(){
   const r=wall.getBoundingClientRect(),x0=toWorld(0,0).x,x1=toWorld(r.width,0).x;
-  const mid=clamp(Math.floor(((x0+x1)/2)/BAY),0,3);if(mid===railOn)return;
+  const mid=zoneAt((x0+x1)/2);if(mid===railOn)return;
   const bs=qsa("#rail button"),lens=$("railLens");if(!bs.length||!lens)return;
   bs.forEach((b,i)=>b.classList.toggle("on",i===mid));
   const b=bs[mid];if(railOn>=0&&!calm()){lens.classList.add("moving");clearTimeout(lens._t);lens._t=setTimeout(()=>lens.classList.remove("moving"),260)}
@@ -10264,7 +10335,7 @@ function renderLedger(){
    <ol>${items.map(e=>{const a=AGENTS[e.who];return `<li><button type="button" data-l="goto" data-id="${e.node||""}"><time>${clock(e.t)}</time><span class="mk ${a?"":"you"}">${a?a.mk:AV.you}</span><span class="tx">${e.html}</span></button></li>`}).join("")||'<li style="padding:12px;color:var(--faint)">Nothing decided yet.</li>'}</ol>`;
 }
 
-function renderAll(){fitZones();if(board&&(!changeShadow||changeShadow.id!==board.id))changeShadow=shadowOf(board);
+function renderAll(){fitZones();reflowZones();if(board&&(!changeShadow||changeShadow.id!==board.id))changeShadow=shadowOf(board);
   litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();syncCopilotBoard?.();if(typeof renderDecisions==="function")renderDecisions();
   $("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";
   const archCount=board.nodes.filter(n=>!n.tombstone&&n.archived).length;
@@ -12976,7 +13047,7 @@ function mergeRunTx(from,ids,lifted,liftedEdges){
   const patch={nodes:{},edges:{}};let at=-1;
   for(let i=from;i<undoStack.length;i++){const tx=undoStack[i];if(!txTouches(tx,ids))continue;if(at<0)at=i;
     for(const [k,P] of Object.entries(tx.patch)){patch[k]=patch[k]||{};for(const [id,v] of Object.entries(P)){if(patch[k][id])patch[k][id]=[patch[k][id][0],v[1],patch[k][id][2]];else patch[k][id]=v}}}
-  for(const {i,n} of lifted)patch.nodes[n.id]=[n,null,i];
+  for(const {i,n} of lifted)patch.nodes[n.id]=[relNode(n),null,i];
   liftedEdges.forEach((e,i)=>{patch.edges[e.id]=[e,null,i]});
   for(let i=undoStack.length-1;i>=from;i--)if(txTouches(undoStack[i],ids))undoStack.splice(i,1);
   const tx={id:"tx"+(++txSeq),author:"you",t:NOW(),before:null,patch};
@@ -13241,7 +13312,7 @@ function pullPrint(p){
   const prev=board.nodes.find(n=>n.type==="print"&&n.proof===p.id);
   if(prev){select([prev.id]);focusNodes([p,prev],.85);return toast("This proof already has Snapshot No. "+prev.ed)}
   checkpoint();const ed=1+board.nodes.filter(n=>n.type==="print").length;
-  const spot=freeSpot(3*BAY+80,Math.max(0,p.y),W.print,300);
+  const spot=freeSpot(zoneX(3)+80,Math.max(0,p.y),W.print,300);
   const pr=node("print",{_src:p.id,proof:p.id,dir:p.dir,ed,spec:structuredClone(p.spec),fixed:structuredClone(p.fixed||[])},spot);const e=edge(p.id,pr.id,"derive","frozen");captureDepSnapshot(pr,[p]);freshEdges.add(e.id);setTimeout(()=>freshEdges.clear(),1200);
   log("you",`Pulled <b>Snapshot No. ${ed}</b> from ${esc(titleOf(p))}`,pr.id);select([pr.id],{menus:false});renderAll();persist();
   {const el=nodeEl(pr.id);if(el&&!calm()){el.style.setProperty("--fx",((p.x+W.proof/2)-(pr.x+W.print/2))+"px");el.style.setProperty("--fy",((p.y+(p._h||390)/2)-(pr.y+150))+"px");el.classList.add("born","inking");setTimeout(()=>el.classList.remove("born","inking"),1000)}}
@@ -13400,7 +13471,7 @@ function planFork(idea,count){
 function planBuild(dir){
   const ver=1+Math.max(0,...board.nodes.filter(n=>n.type==="proof"&&n.dir===dir.id).map(n=>n.ver));
   const prev=board.nodes.filter(n=>n.type==="proof"&&n.dir===dir.id).sort((a,b)=>b.ver-a.ver)[0];
-  const minX=dir.type==="treemap"?dir.x+nodeW(dir)+70:2*BAY+80;
+  const minX=dir.type==="treemap"?dir.x+nodeW(dir)+70:zoneX(2)+80;
   const base=prev?{x:prev.x,y:prev.y+(prev._h||390)+40}:{x:minX,y:dir.y};
   const s=freeSpot(Math.max(base.x,minX),base.y,W.proof,390);return {x:s.x,y:s.y,w:W.proof,h:390,ver};
 }
@@ -13431,7 +13502,7 @@ function planOf(r){
     case"video":return {agent:"wright",reads:ctx.length?ctx:[],places:planImages(1,genOpts.ratio,f||null,W.recording),label:"a video"};
     case"gif":return {agent:"wright",reads:ctx.length?ctx:[],places:planImages(1,genOpts.ratio,f||null,W.image),label:"an animated GIF"};
     case"search":return {agent:"scout",reads:[],places:planSearch(4),label:SEARCH_KINDS[searchKindOf(lineText())||searchPref][0].toLowerCase()};
-    case"claim":{const s=freeSpot(BAY+80,300,W.idea,220);return {agent:null,reads:[],places:[{x:s.x,y:s.y,w:W.idea,h:220}],label:"Your claim"}}
+    case"claim":{const s=freeSpot(zoneX(1)+80,300,W.idea,220);return {agent:null,reads:[],places:[{x:s.x,y:s.y,w:W.idea,h:220}],label:"Your claim"}}
   }
   return null;
 }
@@ -13751,7 +13822,7 @@ function paintMap(){if(mapQueued)return;mapQueued=true;requestAnimationFrame(()=
 function mapGeom(){
   // Keep a fixed world overview bounding all bays and vertical board content so the map stays anchored
   const c=$("mapCanvas"),r=c.getBoundingClientRect(),vis=visibleNodes();
-  const wx0=-60,wx1=BAY*4+60,ww=wx1-wx0;
+  const wx0=-60,wx1=zoneX(4)+60,ww=wx1-wx0;
   const ys=vis.length?vis.flatMap(n=>[n.y,n.y+nodeH(n)]):[0,900];
   const minY=Math.min(-120,...ys)-70,maxY=Math.max(1060,...ys)+90;
   const aspect=(r.height||102)/(r.width||230);
@@ -13768,13 +13839,13 @@ function drawMap(){
   const rr=(x,y,w,h,rad)=>{g.beginPath();g.roundRect?g.roundRect(x,y,w,h,rad):g.rect(x,y,w,h)};
 
   const vr=wall.getBoundingClientRect(),a=toWorld(0,0),b=toWorld(vr.width,vr.height);
-  const mid=clamp(Math.floor(((a.x+b.x)/2)/BAY),0,3);
+  const mid=zoneAt((a.x+b.x)/2);
 
   // Subtle active-stage backdrop tint and inset bay dividers
-  {const bx0=X(mid*BAY),bx1=X((mid+1)*BAY);
+  {const bx0=X(zoneX(mid)),bx1=X(zoneX(mid+1));
   g.fillStyle=dark?"rgba(255,255,255,.035)":"rgba(0,0,0,.028)";g.fillRect(bx0,0,bx1-bx0,H2)}
   g.fillStyle=col("--hair");
-  for(let i=1;i<4;i++)g.fillRect(Math.round(X(i*BAY)),6*dpr,dpr,H2-12*dpr);
+  for(let i=1;i<4;i++)g.fillRect(Math.round(X(zoneX(i))),6*dpr,dpr,H2-12*dpr);
 
   // Subtle connection threads behind nodes so Claim -> Direction -> Proof structure reads
   g.save();g.strokeStyle=col("--hair-2");g.lineWidth=.9*dpr;g.globalAlpha=.65;
@@ -15533,7 +15604,7 @@ function addMsg(n,who,text){(board.threads[n.id]=board.threads[n.id]||[]).push({
 function pinCard(type,text,props={}){
   if(!text)return toast(type==="idea"?"Write the claim after /claim":"Write the note after /note");
   checkpoint();let spot;
-  if(type==="idea"){spot=freeSpot(BAY+80,300,W.idea,220)}else{const v=viewRect(),c=toWorld(v.w/2,v.h/2-40);spot=freeSpot(c.x-W.note/2,c.y-60,W.note,150)}
+  if(type==="idea"){spot=freeSpot(zoneX(1)+80,300,W.idea,220)}else{const v=viewRect(),c=toWorld(v.w/2,v.h/2-40);spot=freeSpot(c.x-W.note/2,c.y-60,W.note,150)}
   const n=node(type,{text,...props},spot);log("you",type==="idea"?`Wrote an idea`:`Pinned a note`,n.id);sfx("create");select([n.id],{menus:false});renderAll();persist();
   const el=nodeEl(n.id);el?.classList.add("born");if(!visible(n))focusNodes([n],.9);
   scheduleAdvisor(n.id,{delay:1100});
@@ -15542,7 +15613,7 @@ function pinCard(type,text,props={}){
 async function askAnchored(text,ctx){
   const fr=ctx.find(n=>n.type==="frame");
   const target=ctx.find(n=>n.type==="proof")||ctx.find(n=>n.type==="direction")||ctx.find(n=>n.type!=="frame")||latestProof();
-  checkpoint();const anchor=fr||target;const spot=freeSpot(anchor?anchor.x+(fr?0:W[anchor.type]+60):BAY*2+500,anchor?anchor.y+(fr?(fr._h||240)+40:0):200,W.question,200);
+  checkpoint();const anchor=fr||target;const spot=freeSpot(anchor?anchor.x+(fr?0:W[anchor.type]+60):zoneX(2)+500,anchor?anchor.y+(fr?(fr._h||240)+40:0):200,W.question,200);
   const q=node("question",{text,on:target?.id||null,frame:fr?.id||null},spot);
   if(fr)edge(fr.id,q.id,"src");if(target)edge(q.id,target.id,"ask");
   log("you",`Asked${target?" on "+esc(titleOf(target)):""}: <b>${esc(clip(text,80))}</b>`,q.id);
@@ -17554,7 +17625,7 @@ function createBoardFromTemplate(id="blank",{brief="",constraints="",variant="",
   if(def.id!=="blank")b.template={id:def.id,...(def.variants?{variant:def.variants[variant]?variant:Object.keys(def.variants)[0]}:{})};
   b.constraints=String(constraints||"").trim();
   board=b;sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();
-  renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);
+  renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:zoneX(1)+240,y1:820},.85),0);
   if(String(brief||"").trim())pinCard("idea",String(brief).trim(),{kind:"Claim"});
   persist();renderCopilot?.();
   if(def.id!=="blank")log("you",`Started a <b>${esc(L(def.name[0],def.name[1]))}</b> board`);
@@ -18321,7 +18392,7 @@ async function addFiles(files,at,onto,{autoAdvisor=true,quiet=false,selectNodes=
   files=[...files];if(!files.length)return [];checkpoint();
   const v=viewRect();const base=at||toWorld(v.w/2,v.h/2);let x=base.x-150,y=base.y-100;const made=[];
   // a plain upload (no drop point, nothing to feed) is evidence: it goes in Gather, not wherever the screen centre falls
-  if(!at&&!onto&&!quiet)x=clamp(x,40,BAY-380);
+  if(!at&&!onto&&!quiet)x=clamp(x,40,zoneX(1)-380);
   for(const f of files){
     const key="u:"+uid();let n;
     const fmt=fileFormatOf({path:f.name,mime:f.type});
@@ -19475,7 +19546,7 @@ function boardThumb(b){
   // a tiny map of the board: each card a mark in its lineage colour
   const ns=(b.nodes||[]).filter(n=>n.status!=="sketch");if(!ns.length)return `<span class="bthumb empty"></span>`;
   const L=n=>n.type==="direction"?n.letter:n.dir&&b.nodes.find(d=>d.id===n.dir)?.letter;
-  return `<span class="bthumb">${ns.slice(0,40).map(n=>{const l=L(n);return `<i style="left:${clamp(n.x/(BAY*4),0,.94)*100}%;top:${clamp((n.y+200)/1700,0,.88)*100}%${l?`;background:var(--${l})`:""}"></i>`}).join("")}</span>`;
+  return `<span class="bthumb">${ns.slice(0,40).map(n=>{const l=L(n);return `<i style="left:${clamp(n.x/zoneX(4,b),0,.94)*100}%;top:${clamp((n.y+200)/1700,0,.88)*100}%${l?`;background:var(--${l})`:""}"></i>`}).join("")}</span>`;
 }
 let boardsPopOpen=false;
 function toggleBoardsPop(force){
@@ -19578,7 +19649,7 @@ function systemSettingsDialog(){
   qs("[data-export]",d).onclick=()=>{d.close();exportCurrentBoard()};
 }
 function persistNow(){
-  clearTimeout(saveT);board.updated=NOW();
+  clearTimeout(saveT);finishZoneGlide();board.updated=NOW();
   const slim={...board,nodes:board.nodes.map(({_h,...n})=>n)};
   const lsOk=store.set(".board."+board.id,slim);
   storageOk=lsOk||idbBoardOk;
@@ -20017,8 +20088,8 @@ function tidyBoard(){
     });
     let curY=MIN_Y;
     for(const n of sorted){
-      const w=nodeW(n),ln=clamp(Math.floor((colX+w/2)/BAY),0,3);
-      const tx=clamp(Math.round(colX),ln*BAY+36,(ln+1)*BAY-w-36);
+      const w=nodeW(n),ln=zoneAt(colX+w/2);
+      const tx=zoneClampX(Math.round(colX),w,ln);
       const want=useDesired?desiredY(n):MIN_Y;
       const ty=Math.max(curY,Math.max(MIN_Y,want));
       targetPos.set(n.id,{x:tx,y:ty});
@@ -20043,8 +20114,8 @@ function tidyBoard(){
   const inBay=b=>ungrouped.filter(n=>bayForCard(n)===b);
   // Bay 1: Claims & Synthesis first so sources and directions align cleanly
   const b1=inBay(1),b1Primary=b1.filter(n=>["idea","synthesis","note","notepad"].includes(n.type)),b1Sec=b1.filter(n=>!b1Primary.includes(n));
-  packColumn(b1Primary,BAY+64,false);
-  packColumn(b1Sec,BAY+490,true);
+  packColumn(b1Primary,zoneX(1)+64,false);
+  packColumn(b1Sec,zoneX(1)+490,true);
   // Bay 0: Sources & Media sorted toward their downstream cards
   const b0=inBay(0),b0Left=b0.filter(n=>["recording","source","audio","link"].includes(n.type)),b0Right=b0.filter(n=>!b0Left.includes(n));
   const packGather=(list,colX)=>{
@@ -20060,11 +20131,11 @@ function tidyBoard(){
   packGather(b0Right,480);
   // Bay 2 & Bay 3: Proofs, critiques, frames, prints aligned to upstream
   const b2=inBay(2),b2Primary=b2.filter(n=>["proof","list"].includes(n.type)),b2Sec=b2.filter(n=>!b2Primary.includes(n));
-  if(b2Primary.length&&b2Sec.length){packColumn(b2Primary,2*BAY+64,true);packColumn(b2Sec,2*BAY+480,true)}
-  else packColumn(b2,2*BAY+80,true);
+  if(b2Primary.length&&b2Sec.length){packColumn(b2Primary,zoneX(2)+64,true);packColumn(b2Sec,zoneX(2)+480,true)}
+  else packColumn(b2,zoneX(2)+80,true);
   const b3=inBay(3);
-  if(b3.length>4){const half=Math.ceil(b3.length/2);packColumn(b3.slice(0,half),3*BAY+64,true);packColumn(b3.slice(half),3*BAY+460,true)}
-  else packColumn(b3,3*BAY+80,true);
+  if(b3.length>4){const half=Math.ceil(b3.length/2);packColumn(b3.slice(0,half),zoneX(3)+64,true);packColumn(b3.slice(half),zoneX(3)+460,true)}
+  else packColumn(b3,zoneX(3)+80,true);
   // Compute compact relative layouts for non-empty groups so mixed-card groups stay intact
   const groupLayouts=new Map(),nonEmptyGroups=[],emptyGroups=[];
   for(const g of groupsList){
@@ -20082,12 +20153,12 @@ function tidyBoard(){
       maxRight=Math.max(maxRight,cx+mw);rowH=Math.max(rowH,mh);cx+=mw+CGAP;col++;
     }
     const gw=Math.max(260,Math.round(maxRight+PAD_X)),gh=Math.max(180,Math.round(cy+rowH+PAD_B));
-    const gb=bayOf(g),gx=clamp(Math.round(g.x),gb*BAY+36,Math.max(gb*BAY+36,(gb+1)*BAY-gw-36)),gy=Math.max(MIN_Y,Math.round(g.y));
+    const gb=bayOf(g),gx=zoneClampX(Math.round(g.x),gw,gb),gy=Math.max(MIN_Y,Math.round(g.y));
     targetPos.set(g.id,{x:gx,y:gy,gw,gh});
     groupLayouts.set(g.id,rel);nonEmptyGroups.push(g);
   }
   // Fallback + global 2D de-overlap solver across ungrouped cards and non-empty groups
-  for(const n of ungrouped)if(!targetPos.has(n.id)){const b=bayOf(n);targetPos.set(n.id,{x:clamp(n.x,b*BAY+36,(b+1)*BAY-nodeW(n)-36),y:Math.max(MIN_Y,n.y)})}
+  for(const n of ungrouped)if(!targetPos.has(n.id)){const b=bayOf(n);targetPos.set(n.id,{x:zoneClampX(n.x,nodeW(n),b),y:Math.max(MIN_Y,n.y)})}
   const boxW=n=>{const tg=targetPos.get(n.id);return tg?.gw!=null?tg.gw:nodeW(n)};
   const boxH=n=>{const tg=targetPos.get(n.id);return tg?.gh!=null?tg.gh:nodeH(n)};
   const topOrdered=[...ungrouped,...nonEmptyGroups].sort((a,b)=>targetPos.get(a.id).y-targetPos.get(b.id).y||targetPos.get(a.id).x-targetPos.get(b.id).x);
@@ -20107,7 +20178,7 @@ function tidyBoard(){
   for(const g of emptyGroups){
     const b=bayOf(g),bayBoxes=topOrdered.filter(n=>bayOf({x:targetPos.get(n.id).x+boxW(n)/2})===b);
     const maxY=bayBoxes.reduce((m,n)=>Math.max(m,targetPos.get(n.id).y+boxH(n)),MIN_Y);
-    targetPos.set(g.id,{x:b*BAY+64,y:maxY+GAP,gw:nodeW(g),gh:nodeH(g)});
+    targetPos.set(g.id,{x:zoneX(b)+64,y:maxY+GAP,gw:nodeW(g),gh:nodeH(g)});
     topOrdered.push(g);
   }
   const applyTargets=k=>{
@@ -20529,7 +20600,7 @@ wall.addEventListener("pointerdown",e=>{
   if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop,.tbl-block tbody td,.tbl-chart"))return;
   const card=e.target.closest(".card");const port=e.target.closest("[data-port]");const rsz=e.target.closest("[data-resize]");const wh=e.target.closest(".w-hit[data-edge]");stopCam();
   if(port&&card){selectedEdgeId=null;const n=byId(card.dataset.id);wireDrag={from:n,role:port.dataset.port==="in"?"in":"out",side:port.dataset.side||"right",d:""};gesture={type:"wire"};wall.setPointerCapture(e.pointerId);return}
-  if(rsz&&card&&tool!=="hand"&&!spaceHeld&&e.button===0){selectedEdgeId=null;const n=byId(card.dataset.id);if(n){gesture={type:"resize",id:n.id,n,mode:rsz.dataset.resize||"both",sx:e.clientX,sy:e.clientY,ox:n.x,ow:nodeW(n),oh:nodeH(n),moved:false,snap:null,handleEl:rsz,...resizeRiders(n)};wall.setPointerCapture(e.pointerId);return}}
+  if(rsz&&card&&tool!=="hand"&&!spaceHeld&&e.button===0){selectedEdgeId=null;const n=byId(card.dataset.id);if(n){finishZoneGlide();gesture={type:"resize",id:n.id,n,mode:rsz.dataset.resize||"both",sx:e.clientX,sy:e.clientY,ox:n.x,ow:nodeW(n),oh:nodeH(n),moved:false,snap:null,handleEl:rsz,...resizeRiders(n)};wall.setPointerCapture(e.pointerId);return}}
   if(wh&&tool!=="hand"&&!spaceHeld&&e.button===0){
     const eid=wh.dataset.edge;
     selectedEdgeId=selectedEdgeId===eid?null:eid;
@@ -20555,7 +20626,7 @@ wall.addEventListener("pointerdown",e=>{
       ids=[...new Set([...ids,...inside])];
     }
     if(clicked?.type!=="group"&&!e.altKey)ids=dragSet(ids);
-    gesture={type:"drag",id,ids,sx:e.clientX,sy:e.clientY,orig:ids.map(i=>{const n=byId(i);return {n,x:n.x,y:n.y}}),moved:false,shift:e.shiftKey||e.metaKey,target:e.target,wasSel:sel.length===1&&sel[0]===id,editHit:!!e.target.closest("[data-edit='text']"),cx:e.clientX,cy:e.clientY,snapPool:snapPoolFor(ids),atRisk:bondsAtRisk(ids),torn:new Set(),noSnap:clicked?.type==="group",penInk:e.pointerType==="pen"&&!e.shiftKey&&!e.metaKey&&!e.altKey};
+    finishZoneGlide();gesture={type:"drag",id,ids,sx:e.clientX,sy:e.clientY,orig:ids.map(i=>{const n=byId(i);return {n,x:n.x,y:n.y}}),moved:false,shift:e.shiftKey||e.metaKey,target:e.target,wasSel:sel.length===1&&sel[0]===id,editHit:!!e.target.closest("[data-edit='text']"),cx:e.clientX,cy:e.clientY,snapPool:snapPoolFor(ids),atRisk:bondsAtRisk(ids),torn:new Set(),noSnap:clicked?.type==="group",penInk:e.pointerType==="pen"&&!e.shiftKey&&!e.metaKey&&!e.altKey};
     wall.setPointerCapture(e.pointerId);return;
   }
   gesture={type:"pan",sx:e.clientX,sy:e.clientY,cx:cam.x,cy:cam.y,moved:false};wall.classList.add("panning");wall.setPointerCapture(e.pointerId);
@@ -20572,7 +20643,7 @@ function writingNoteDrag(e){
   if(inText&&!empty)return false;
   stopCam();e.preventDefault();keepFocusOnPress=true;
   const ids=[n.id];
-  gesture={type:"drag",id:n.id,ids,sx:e.clientX,sy:e.clientY,orig:[{n,x:n.x,y:n.y}],moved:false,shift:false,target:e.target,wasSel:false,editHit:false,cx:e.clientX,cy:e.clientY,
+  finishZoneGlide();gesture={type:"drag",id:n.id,ids,sx:e.clientX,sy:e.clientY,orig:[{n,x:n.x,y:n.y}],moved:false,shift:false,target:e.target,wasSel:false,editHit:false,cx:e.clientX,cy:e.clientY,
     snapPool:snapPoolFor(ids),atRisk:bondsAtRisk(ids),torn:new Set(),noSnap:false,writing:t,inText};
   wall.setPointerCapture(e.pointerId);return true;
 }
@@ -21154,13 +21225,13 @@ function openingShot(animate=true){
   const focus=["claim","A","B","C","proof","q","fr"],vis=visibleNodes();
   const phone=innerWidth<=640;
   const ns=board.id==="modwork"?vis.filter(n=>(phone?["idea","direction"]:["idea","direction","proof","question","frame"]).includes(n.type)):vis;
-  if(!ns.length){cam={x:0,y:0,s:.85};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);return}
+  if(!ns.length){cam={x:0,y:0,s:.85};flyTo(camFor({x0:0,y0:-160,x1:zoneX(1)+240,y1:820},.85),0);return}
   // The sample opens on its first lane at a zoom you can read (the whole board was 34%, below the label-only zoom),
   // which also keeps its waiting draft tray off screen until you get there.
   const sample=board.id==="showcase"&&!phone;
   /* the demo opens on the decision: the evidence it rests on, the judgment, and the three directions */
-  if(board.demo){const ex=vis.filter(n=>n.type==="idea"||n.type==="direction"),eb=bbox(ex.length?ex:vis);const t=phone?camFor({x0:eb.x0-20,y0:eb.y0-40,x1:eb.x1+20,y1:eb.y0+900},.9):camFor({x0:-20,y0:-150,x1:2*BAY-40,y1:1180},.9);if(!animate||calm()){cam=t;paintCam();return}const all=bbox(vis);cam=camFor({x0:all.x0-200,y0:all.y0-300,x1:all.x1+800,y1:all.y1+200},.6);paintCam();setTimeout(()=>flyTo(t,1600),350);return}
-  const b=bbox(ns),target=sample?camFor({x0:0,y0:-140,x1:clamp(bbox(ns.filter(n=>bayOf(n)===0).concat({x:0,y:0,type:'note'})).x1+60,700,BAY),y1:880},.8):camFor({x0:b.x0-30,y0:phone?b.y0-30:Math.min(b.y0-30,-170),x1:b.x1+30,y1:b.y1+30},.95);
+  if(board.demo){const ex=vis.filter(n=>n.type==="idea"||n.type==="direction"),eb=bbox(ex.length?ex:vis);const t=phone?camFor({x0:eb.x0-20,y0:eb.y0-40,x1:eb.x1+20,y1:eb.y0+900},.9):camFor({x0:-20,y0:-150,x1:zoneX(2)-40,y1:1180},.9);if(!animate||calm()){cam=t;paintCam();return}const all=bbox(vis);cam=camFor({x0:all.x0-200,y0:all.y0-300,x1:all.x1+800,y1:all.y1+200},.6);paintCam();setTimeout(()=>flyTo(t,1600),350);return}
+  const b=bbox(ns),target=sample?camFor({x0:0,y0:-140,x1:clamp(bbox(ns.filter(n=>bayOf(n)===0).concat({x:0,y:0,type:'note'})).x1+60,700,zoneX(1)),y1:880},.8):camFor({x0:b.x0-30,y0:phone?b.y0-30:Math.min(b.y0-30,-170),x1:b.x1+30,y1:b.y1+30},.95);
   if(!animate||calm()){cam=target;paintCam();return}
   const all=bbox(vis);cam=camFor({x0:all.x0-200,y0:all.y0-300,x1:all.x1+800,y1:all.y1+200},.6);paintCam();
   setTimeout(()=>flyTo(target,1600).then(()=>{
@@ -21209,7 +21280,7 @@ function showWelcome(){
   </div>`,d=>{
     qs('[data-welcome="start"]',d).onclick=()=>{d.close();
       if(typeof newBoardDialog==="function"){newBoardDialog();return tourWhenClear()}
-      persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);persist();tourWhenClear()};
+      persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:zoneX(1)+240,y1:820},.85),0);persist();tourWhenClear()};
     qs('[data-welcome="sample"]',d).onclick=()=>{d.close();tourWhenClear()};
     setTimeout(()=>qs('[data-welcome="start"]',d)?.focus({focusVisible:false}),0);  /* Enter still starts; the ring only appears once the keyboard is used */
   });

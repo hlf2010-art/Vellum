@@ -2518,6 +2518,60 @@ dialog.sheet:focus{outline:none}
 .adv-pin.thinking .adv-ico{animation:pulseDot 1.4s ease-in-out infinite}
 .adv-pop{position:fixed;z-index:36;width:min(364px,calc(100vw - 24px));max-height:min(490px,74vh);display:flex;flex-direction:column;border-radius:var(--radius-control);background:var(--orn);-webkit-backdrop-filter:blur(28px) saturate(1.5);backdrop-filter:blur(28px) saturate(1.5);box-shadow:inset 0 1px 0 var(--glass-hi),0 0 0 .5px var(--hair-2),0 22px 48px -14px rgba(0,0,0,.48);animation:ornIn .22s var(--bouncy)}
 .adv-pop[hidden]{display:none}
+/* spot comments: a numbered pin on one spot of an image or a prototype, and its thread */
+.wall.commenting,.wall.commenting .card{cursor:crosshair}
+.wall.commenting .card .thumb .open{display:none}
+.spot-layer{position:absolute;inset:0;z-index:5;pointer-events:none}
+.spot{position:absolute;pointer-events:auto;width:26px;height:26px;margin:-26px 0 0 0;padding:0;border-radius:13px 13px 13px 3px;display:grid;place-items:center;background:var(--label);color:var(--card);font:650 12px/1 var(--ui);box-shadow:0 0 0 2px var(--card),0 6px 16px -5px rgba(0,0,0,.45);transform-origin:0 100%;scale:var(--inv-s,1);transition:scale .2s var(--easing-standard),opacity .2s,background .2s}
+.spot:hover,.spot.on{scale:calc(var(--inv-s,1)*1.08)}
+.spot.draft{animation:spotIn .32s var(--bouncy)}
+.spot.done{width:20px;height:20px;margin-top:-20px;border-radius:10px 10px 10px 3px;font-size:10.5px;background:var(--card);color:var(--label-3);box-shadow:0 0 0 .5px var(--hair-2),0 3px 10px -4px rgba(0,0,0,.35);opacity:0}
+.card:hover .spot.done,.card.sel .spot.done,.spot.done.on{opacity:1}
+.spot.busy::after{content:"";position:absolute;inset:-5px;border-radius:inherit;border:1.5px solid var(--label-3);opacity:.6;animation:spotBreath 1.6s ease-in-out infinite}
+@keyframes spotIn{from{scale:.4;opacity:0}to{scale:var(--inv-s,1);opacity:1}}
+@keyframes spotBreath{0%,100%{opacity:.15;scale:.94}50%{opacity:.6;scale:1.06}}
+.spot-pop{position:fixed;z-index:var(--z-popover);width:min(340px,calc(100vw - 24px));max-height:min(480px,72vh);display:flex;flex-direction:column;padding:12px;border-radius:var(--radius-control);background:color-mix(in srgb,var(--card) 96%,transparent);-webkit-backdrop-filter:blur(28px) saturate(1.5);backdrop-filter:blur(28px) saturate(1.5);box-shadow:inset 0 1px 0 var(--glass-hi),0 0 0 .5px var(--hair-2),0 22px 48px -14px rgba(0,0,0,.48);color:var(--label);font-family:var(--ui);animation:ornIn .22s var(--bouncy)}
+.spot-pop[hidden]{display:none}
+.spot-in{width:100%;min-height:54px;resize:none;border:0;outline:0;background:transparent;padding:4px;color:var(--label);font:430 15px/1.45 var(--ui)}
+.spot-in::placeholder,.spot-own::placeholder,.spot-reply::placeholder{color:var(--label-3)}
+.spot-row{display:flex;align-items:center;gap:6px;margin-top:10px}
+.spot-row .sp{flex:1}
+.spot-to{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 3px;border-radius:13px;background:var(--hover);color:var(--label-3);font:520 12px/1 var(--ui)}
+.spot-pop .mk{width:20px;height:20px;border-radius:10px;display:inline-grid;place-items:center;background:color-mix(in srgb,var(--label) 9%,transparent);color:var(--label);flex:none}
+.spot-pop .mk svg{width:13px;height:13px}
+.spot-btn{height:30px;padding:0 12px;border-radius:15px;font:560 13px/1 var(--ui);color:var(--label-2);background:transparent;transition:background var(--duration-quick),color var(--duration-quick)}
+.spot-btn:hover{background:var(--hover);color:var(--label)}
+.spot-btn.pri{background:var(--label);color:var(--card)}
+.spot-btn.pri:hover{background:color-mix(in srgb,var(--label) 86%,var(--card))}
+.spot-send{width:30px;height:30px;border-radius:15px;display:grid;place-items:center;background:var(--label);color:var(--card);transition:background var(--duration-quick),color var(--duration-quick),opacity var(--duration-quick)}
+.spot-send:disabled{background:var(--hover);color:var(--label-3);cursor:default}
+.spot-send .ico{width:16px;height:16px;stroke-width:2}
+.spot-tools{position:absolute;top:8px;right:8px;display:flex;gap:2px;z-index:1}
+.spot-ic{width:26px;height:26px;border-radius:13px;display:grid;place-items:center;color:var(--label-3)}
+.spot-ic:hover{background:var(--hover);color:var(--label)}
+.spot-ic .ico{width:14px;height:14px}
+.spot-scroll{overflow:auto;min-height:0;margin:-2px;padding:2px}
+.spot-msg{display:grid;gap:4px;padding:2px 2px 10px}
+.spot-msg+.spot-msg{padding-top:10px;border-top:.5px solid var(--hair)}
+.spot-msg:first-child h6{padding-right:58px}
+.spot-msg h6{all:unset;display:flex;align-items:center;gap:6px;font:600 12px/1.2 var(--ui);color:var(--label-2)}
+.spot-n{width:17px;height:17px;border-radius:9px 9px 9px 2px;display:inline-grid;place-items:center;background:var(--label);color:var(--card);font:650 10px/1 var(--ui)}
+.spot-msg p{margin:0;font:430 13.5px/1.5 var(--ui);color:var(--label);overflow-wrap:anywhere}
+.spot-msg small{font:500 11.5px/1.35 var(--ui);color:var(--label-3)}
+.spot-think{color:var(--label-3)!important;animation:spotBreath 1.6s ease-in-out infinite}
+.spot-sys{margin:4px 2px 2px;font:450 12.5px/1.45 var(--ui);color:var(--label-3)}
+.spot-fix{padding:8px 10px;border-radius:var(--radius-sm);background:var(--hover);margin-top:4px!important}
+.spot-fix b{font-weight:650;margin-right:6px}
+.spot-basis{justify-self:start;max-width:100%;font:500 11.5px/1.35 var(--ui);color:var(--label-3);text-align:left;text-decoration:underline;text-decoration-color:var(--hair-2);text-underline-offset:2px}
+.spot-basis:hover:not(:disabled){color:var(--label)}
+.spot-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.spot-chip{height:28px;padding:0 11px;border-radius:14px;font:540 12.5px/1 var(--ui);color:var(--label);box-shadow:inset 0 0 0 .5px var(--hair-2)}
+.spot-chip:hover{background:var(--hover)}
+.spot-chip[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--label)}
+.spot-own,.spot-reply{width:100%;height:32px;margin-top:8px;padding:0 12px;border:0;border-radius:16px;background:var(--hover);color:var(--label);font:430 13px/1 var(--ui);outline:none}
+.spot-reply{flex:none;margin-top:6px}
+.spot-own:focus,.spot-reply:focus{box-shadow:inset 0 0 0 1px var(--hair-2)}
+@media (prefers-reduced-motion:reduce){.spot,.spot-pop,.spot.draft{animation:none;transition:none}.spot.busy::after,.spot-think{animation:none}}
 .adv-pop-tail{position:absolute;width:10px;height:10px;background:var(--orn);transform:rotate(45deg);pointer-events:none;box-shadow:-.5px -.5px 0 0 var(--hair-2)}
 .adv-pop[data-side="top"] .adv-pop-tail{top:-5px;left:var(--tail-x,50%);margin-left:-5px}
 .adv-pop[data-side="bottom"] .adv-pop-tail{bottom:-5px;left:var(--tail-x,50%);margin-left:-5px;box-shadow:.5px .5px 0 0 var(--hair-2)}
@@ -3356,6 +3410,7 @@ body.snap-skip #wall{cursor:copy}
   <div class="top-tools" id="topTools" role="toolbar" aria-label="Canvas tools" aria-orientation="vertical">
     <button type="button" data-ttool="select" aria-pressed="true" aria-label="Select / Pan (V)" data-tip="Select / Pan · V"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l12.5 7.2-5.6 1.9-1.9 5.6z"/></svg></button>
     <button type="button" data-ttool="lasso" aria-pressed="false" aria-label="Pen (P)" data-tip="Pen · P · circle to select"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.6 5.4l4 4L9 19H5v-4z"/><path d="M12.6 7.4l4 4"/></svg></button>
+    <button type="button" data-ttool="comment" aria-pressed="false" aria-label="Comment (C)" data-tip="Comment · C · on an image or prototype"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a7 7 0 0 1 7 7 7 7 0 0 1-7 7H5.5v-7a7 7 0 0 1 6.5-7z"/></svg></button>
     <button type="button" data-ttool="hand" aria-pressed="false" aria-label="Hand / Pan (H)" data-tip="Hand / Pan · H"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 13V6.8a1.3 1.3 0 0 1 2.6 0V11m0-4.2V5.3a1.3 1.3 0 0 1 2.6 0V11m0-3.7a1.3 1.3 0 0 1 2.6 0V12c0 4-2.5 6.8-6.1 6.8-2.3 0-4.1-1.1-5-3l-1.5-3.1a1.3 1.3 0 0 1 2.2-1.3L8.5 13"/></svg></button>
     <button type="button" id="snapBtn" data-tact="snap" aria-pressed="true" aria-label="Smart snap (M)" data-tip="Smart snap · M · hold ⌥ to skip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h3.4v8a2.6 2.6 0 0 0 5.2 0V4H18v8a6 6 0 0 1-12 0z"/><path d="M6 8h3.4M14.6 8H18"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
@@ -6614,7 +6669,7 @@ const toScreen=(x,y)=>({x:x*cam.s+cam.x,y:y*cam.s+cam.y});
 const toWorld=(x,y)=>({x:(x-cam.x)/cam.s,y:(y-cam.y)/cam.s});
 function flushCamAux(){
   if(camAuxRaf){cancelAnimationFrame(camAuxRaf);camAuxRaf=0}
-  paintRailView();placeMargin();placeBars();placeAdvPop?.();placeAdvStream?.();placeCursors();placeStrip();placeWirePop?.();paintMap();paintEdges();
+  paintRailView();placeMargin();placeBars();placeAdvPop?.();placeSpotPop?.();placeAdvStream?.();placeCursors();placeStrip();placeWirePop?.();paintMap();paintEdges();
 }
 function paintCam(fast=false){
   wall.classList.add("hover-off");
@@ -8087,7 +8142,8 @@ function nodeLineageSig(n){
   return refs.map(r=>`${r.sourceId}:${r.depType}:${r.status}:${r.node?(r.node.rev||1)+":"+digest(r.node):"T"}`).join("|");
 }
 
-function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.wSug&&n.wSug.w,n.splitSug&&n.splitSug.at,!!n.fmtOff,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
+function sigOf(n){return sigOf0(n)+spotSig(n)}
+function sigOf0(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.wSug&&n.wSug.w,n.splitSug&&n.splitSug.at,!!n.fmtOff,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
   n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(n.whyYes||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="direction"&&dirFlagHTML(n),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
@@ -8129,6 +8185,7 @@ function renderNodes(){
       const rszT=esc(Lang("Drag to resize · double-click resets","拖动调整宽度 · 双击复原")),rszHTML=RESIZABLE_TYPES.has(n.type)?`<span class="card-resize is-l" data-resize="wl" title="${rszT}" aria-hidden="true"></span><span class="card-resize is-r" data-resize="wr" title="${rszT}" aria-hidden="true"></span>`:"";
       const body=cardBody(n);
       el.innerHTML=lockBadgeHTML(n)+(/class="by-(seal|group)/.test(body)?"":creatorBadgeHTML(n))+body+proposalBarHTML(n)+lineageCardHTML(n)+advPinHTML(n)+'<span class="crop" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="port port-in" data-port="in" data-side="left" title="'+esc(Lang("Drag to connect","拖出连线"))+'"></span><span class="port port-out" data-port="out" data-side="right" title="'+esc(Lang("Drag to connect","拖出连线"))+'"></span>'+rszHTML;el._sig=sig;
+      mountSpots(el,n);
       const fr=el.querySelector("iframe[data-srcdoc]");if(fr){if(fr.dataset.srcdoc==="html")populateHtmlIframe(fr,n);else{fr.onload=()=>fr.parentElement?.classList.add("ready");fr.srcdoc=pageHTML(n.spec,{thumb:true})}}
       const pdfFr=el.querySelector("iframe[data-src-pdf]");if(pdfFr){pdfFr.onload=()=>pdfFr.parentElement?.classList.add("ready");pdfFr.src=pdfFr.dataset.srcPdf+"#toolbar=0&navpanes=0&scrollbar=0";setTimeout(()=>pdfFr.parentElement?.classList.add("ready"),250)}
       const urlFr=el.querySelector("iframe[data-src-url]");if(urlFr){urlFr.onload=()=>urlFr.parentElement?.classList.add("ready");urlFr.src=urlFr.dataset.srcUrl}
@@ -11966,6 +12023,7 @@ Write the real content for this prototype as the people in the test would see it
   log("wright",`Suggested <b>${isTm?(mode==="deck"?"Tree Map Deck":"Tree Map UI"):`Proof ${dir.letter}`} v${ver}</b>${live?"":" (offline)"}`,p.id);
   sel=[];renderAll();persist();typeIn([p.id]);
   follow([dir,p]);
+  return p;
 }
 function follow(ns){const v=viewRect();if(ns.every(n=>{const a=toScreen(n.x,n.y),b=toScreen(n.x+(W[n.type]||300)*.8,n.y+120);return a.x>v.left-8&&a.y>v.top-8&&b.x<v.w-v.right&&b.y<v.h-v.bottom}))return;focusNodes(ns,Math.max(cam.s,.75))}
 function frameRects(rs){if(!rs.length)return;const v=viewRect();let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const r of rs){x0=Math.min(x0,r.x);y0=Math.min(y0,r.y);x1=Math.max(x1,r.x+r.w);y1=Math.max(y1,r.y+r.h)}
@@ -12447,7 +12505,7 @@ async function redrawMove(t,ns,ins,steer=""){
   if(t.type==="list")return makeList(ins.length?ins:[srcNode].filter(Boolean));
   if(t.type==="kanban")return makeKanban(ins.length?ins:[srcNode].filter(Boolean));
   if(t.type==="note"&&t.q)return askOnWall(t.q);
-  if(t.type==="image"&&t.gen)return t.gen.format==="gif"?generateGif(t.gen.prompt,{from:byId(t._src)||null}):generateImages(t.gen.prompt,{from:byId(t._src)||null});
+  if(t.type==="image"&&t.gen)return t.gen.format==="gif"?generateGif(t.gen.prompt,{from:byId(t._src)||null}):generateImages(t.gen.prompt,{from:byId(t._src)||null,...(t.fromSpot?{count:1,quiet:true}:{})}).then(ms=>spotCarry(t,ms?.[0]));
   if(t.type==="recording"&&t.gen)return generateVideo(t.gen.prompt,{from:byId(t._src)||null});
   if(t.type==="image"&&t.src)return searchWeb(t.src.query,{nextPage:true});
 }
@@ -13659,9 +13717,9 @@ function planSearch(count){
   return places;
 }
 
-async function generateImages(prompt,{from=null}={}){
+async function generateImages(prompt,{from=null,count:countAsk=0,quiet=false}={}){
   prompt=String(prompt||"").trim();if(!prompt)return toast("Describe the image, for example: /image a product shot on a plain background");
-  const count=clamp(genOpts.count,1,4),ratio=genOpts.ratio,places=planImages(count,ratio,from);
+  const count=clamp(countAsk||genOpts.count,1,4),ratio=countAsk&&from?.gen?.ratio&&RATIOS[from.gen.ratio]?from.gen.ratio:genOpts.ratio,places=planImages(count,ratio,from);
   const seeds=Array.from({length:count},()=>Math.floor(Math.random()*1e9));
   let fellBack=false,imgErr="",tk=null;
   const res=await runAgent("wright",{read:from?[from]:[],places,label:`rendering ${count} image${count>1?"s":""}`,task:{kind:"image",title:prompt},work:async({say,stopped,task})=>{
@@ -13684,7 +13742,7 @@ async function generateImages(prompt,{from=null}={}){
   if(!liveCount){
     const why=fellBack?(imgErr?L(`The image service failed (${clip(imgErr,56)})`,`图像服务出错（${clip(imgErr,40)}）`):L("The image service failed","图像服务出错")):L("Media Studio isn't running","Media Studio 未运行");
     tk?.done({tone:"warn",label:L("No image made","未生成图像"),note:why});
-    toast(L(`${why}, so no image was made. The empty card keeps your prompt: start the image service, then press Retry.`,`${why}，未生成图像。空白卡片保留了你的提示词：启动图像服务后点“重试”。`),{ms:7000});
+    if(!quiet)toast(L(`${why}, so no image was made. The empty card keeps your prompt: start the image service, then press Retry.`,`${why}，未生成图像。空白卡片保留了你的提示词：启动图像服务后点“重试”。`),{ms:7000});
   }
   checkpoint();const pid="p-"+uid();
   const made=[];
@@ -13695,6 +13753,7 @@ async function generateImages(prompt,{from=null}={}){
   if(from)made.forEach(m=>{const e=edge(from.id,m.id,"src");if(e)freshEdges.add(e.id)});setTimeout(()=>freshEdges.clear(),1200);
   log("wright",liveCount?`Suggested ${made.length} image${made.length>1?"s":""} for <b>${esc(clip(prompt,50))}</b>`:`Could not generate an image for <b>${esc(clip(prompt,50))}</b>: no image service`,made[0].id);
   sel=[];renderAll();restack(made);persist();typeIn(made.map(m=>m.id));follow(made);
+  return made;
 }
 
 /* ── GIF89a & Video generation engine ─────────────────────────────── */
@@ -18925,7 +18984,7 @@ function helpDialog(opts={}){
   <div class="principle">${orb}<span><b>Light is alive</b>Only an agent at work, or something waiting for you, glows. Idle crew members are unlit. Work happening off-screen lights the edge of the screen.</span></div>
   <div class="principle"><i style="background:conic-gradient(var(--A),var(--B),var(--C),var(--D),var(--A))"></i><span><b>Colour is lineage</b>The crew is white light; each direction is one colour of its spectrum. Proofs and prints keep the colour of the direction they came from.</span></div>
   <div class="principle"><i style="border:1.5px dashed var(--label-3)"></i><span><b>See before you send</b>As you type, the board shows where the work will land and which cards will be read.</span></div>
-  <dl class="keys"><dt>Click / Pen</dt><dd>Select with V, draw with P (or ⌥+drag on the board, or a stylus): circle cards to select them, circle a direction to adopt it · ⇧+drag in Select draws a box · hold Space to pan · click wires to disconnect</dd><dt>↵ or double-click</dt><dd>Open a card in place · Esc closes</dd><dt>Space</dt><dd>Preview a proof, direction or recording</dd>
+  <dl class="keys"><dt>Click / Pen</dt><dd>Select with V, draw with P (or ⌥+drag on the board, or a stylus): circle cards to select them, circle a direction to adopt it · ⇧+drag in Select draws a box · hold Space to pan · click wires to disconnect</dd><dt>C</dt><dd>Comment on one spot of an image or a prototype. The crew answers, asks one question, or makes a new version beside it; the original never changes</dd><dt>↵ or double-click</dt><dd>Open a card in place · Esc closes</dd><dt>Space</dt><dd>Preview a proof, direction or recording</dd>
   <dt>/ and @</dt><dd>Actions and crew in the composer · ⇥ makes a request more specific</dd><dt>] </dt><dd>Next suggestion waiting for you</dd>
   <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · duplicate · copy &amp; paste selected cards</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
   if(!onBack){openDialog("How Lumen Works",body);return}
@@ -19169,6 +19228,7 @@ function setTool(t){
   qsa("#topTools [data-ttool]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.ttool===t)));
   wall.classList.toggle("hand",t==="hand");
   wall.classList.toggle("lasso",t==="lasso");
+  wall.classList.toggle("commenting",t==="comment");if(t!=="comment"&&spotOpen?.draft)closeSpot();
   if(t==="lasso")penFirstTip();
 }
 $("tools").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.tool)return setTool(b.dataset.tool);
@@ -19753,6 +19813,15 @@ wall.addEventListener("pointerdown",e=>{
   if(pointers.size===2){if(gesture?.type==="pen")penCancel();const [a,b]=[...pointers.values()];gesture={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y),c:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};return}
   {const rl=e.target.closest(".clasp,.rel-tag");if(rl&&e.button===0&&tool!=="hand"&&!spaceHeld){stopCam();if(relPointerDown(e,rl))return}}
   if(writingNoteDrag(e))return;
+  if(spotOpen&&!(tool==="comment"))closeSpot();
+  if(tool==="comment"&&e.button===0&&!spaceHeld&&!e.target.closest("[data-spot]")){
+    const cEl=e.target.closest(".card"),cn=cEl&&byId(cEl.dataset.id),box=spotBox(cEl);
+    if(cn&&SPOT_TYPES.has(cn.type)&&cn.status!=="sketch"&&box){const r=box.getBoundingClientRect();
+      if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){e.preventDefault();openSpotComposer(cn,clamp((e.clientX-r.left)/r.width,0,1),clamp((e.clientY-r.top)/r.height,0,1));return}}
+    closeSpot();
+    if(cn)toast(cn.status==="sketch"?L("Keep this draft first, then comment on it.","先保留这张草稿，再评论。"):L("For now, comments go on the picture of an image or a prototype.","目前评论只能放在图片或原型的画面上。"));
+    return;
+  }
   if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop,.tbl-block tbody td,.tbl-chart"))return;
   const card=e.target.closest(".card");const port=e.target.closest("[data-port]");const rsz=e.target.closest("[data-resize]");const wh=e.target.closest(".w-hit[data-edge]");stopCam();
   if(port&&card){selectedEdgeId=null;const n=byId(card.dataset.id);wireDrag={from:n,role:port.dataset.port==="in"?"in":"out",side:port.dataset.side||"right",d:""};gesture={type:"wire"};wall.setPointerCapture(e.pointerId);return}
@@ -20086,7 +20155,7 @@ addEventListener("keydown",e=>{
   const k=e.key.toLowerCase();
   if(relPickId&&["1","2","3","4"].includes(k)){e.preventDefault();setRelType(relPickId,REL_TYPES[+k-1]);armRelPick(1300);return}
   if(k==="/"||k==="@"){e.preventDefault();lineIn.focus();lineIn.value=k;updateMenu();renderRoute();return}
-  if(k==="v")setTool("select");else if(k==="p"||k==="s")setTool("lasso");else if(k==="h")setTool("hand");else if(k==="n"){e.preventDefault();newNoteAt()}else if(k==="u"){e.preventDefault();pickFilesFor("canvas")}else if(k==="t")tidy();else if(k==="m")setSnap(!snapOn);else if(k==="f")fitAll();
+  if(k==="v")setTool("select");else if(k==="p"||k==="s")setTool("lasso");else if(k==="h")setTool("hand");else if(k==="c")setTool("comment");else if(k==="n"){e.preventDefault();newNoteAt()}else if(k==="u"){e.preventDefault();pickFilesFor("canvas")}else if(k==="t")tidy();else if(k==="m")setSnap(!snapOn);else if(k==="f")fitAll();
   else if(k==="l")$("ledgerBtn").click();else if(k==="d")openDecisions();else if(k==="?")helpDialog();else if(["1","2","3","4"].includes(k))flyToBay(+k-1);
   else if(k==="="||k==="+"){const r=wall.getBoundingClientRect();zoomAt(1.2,r.width/2,r.height/2)}else if(k==="-"){const r=wall.getBoundingClientRect();zoomAt(1/1.2,r.width/2,r.height/2)}
   else if(k==="r"){const g=[...groups().keys()].pop();if(g)redraw(g)}
@@ -20258,6 +20327,288 @@ function decGo(id){
 }
 
 /* ── theme ──────────────────────────────────────────────────────────── */
+/* ── Spot comments ──────────────────────────────────────────────────────────────────────────────
+   A comment pinned to one spot of an image or a prototype goes straight to the crew. The crew does one of four
+   things: answers, asks one question (never twice), makes a new version beside the card, or, when the change would
+   undo what a decision or a test result rests on, objects with evidence and a fix and lets the designer choose.
+   A new version always goes beside the original, linked to it and numbered; the original is never touched, so the
+   history stays readable. The comment lives in the card's thread (board.threads, so the margin shows it too); it is
+   never a relation and never evidence. With no model, the comment is kept and the popover says nobody answered. */
+const SPOT_TYPES=new Set(["image","frame","proof"]);
+const spotBusy=new Set();
+let spotOpen=null; /* {id,draft:{x,y}} while writing, {id,n} while reading a thread */
+const spotBox=el=>el?el.querySelector(":scope>.media,:scope>.thumb"):null;
+function spotsOf(id){return (board.threads?.[id]||[]).filter(m=>m.spot)}
+function spotMsgs(id,no){return (board.threads?.[id]||[]).filter(m=>(m.spot&&m.spot.n===no)||m.re===no)}
+function spotRoot(id,no){return spotsOf(id).find(m=>m.spot.n===no)||null}
+function nextSpotNo(id){return 1+Math.max(0,...spotsOf(id).map(m=>m.spot.n))}
+function spotSig(n){return SPOT_TYPES.has(n?.type)?spotsOf(n.id).map(m=>`${m.spot.n}${m.spot.state}${spotBusy.has(n.id+":"+m.spot.n)?"b":""}`).join(","):""}
+/* the version a reply made: the card itself, or what replaced it on Retry (it carries the same comment link) */
+function spotMade(m,id){const x=m?.made&&byId(m.made);if(x&&!x.tombstone)return x;
+  return m?.made?board.nodes.find(y=>!y.tombstone&&y.fromSpot&&y.fromSpot.id===id&&y.fromSpot.n===m.re&&y.ver===m.ver)||null:null}
+function spotCanAct(n){return !!n&&SPOT_TYPES.has(n.type)&&n.status!=="sketch"&&!n.tombstone}
+/* the decision a prototype stands for: its direction, when that direction is the adopted one */
+function spotDecision(n){if(n?.type!=="proof")return null;const d=byId(n.dir);return d&&board.adopted[d.idea]===d.id?d:null}
+function spotWhere(x,y){const h=x<.34?"left":x>.66?"right":"",v=y<.34?"top":y>.66?"bottom":"";return v||h?[v,h].filter(Boolean).join(" "):"centre"}
+const spotZh=s=>/[㐀-鿿]/.test(String(s||""));
+const spotSend='<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>';
+
+function mountSpots(el,n){
+  if(!el||!n)return;
+  el.querySelectorAll(".spot-layer").forEach(x=>x.remove());
+  if(!SPOT_TYPES.has(n.type)||n.status==="sketch")return;
+  const box=spotBox(el),ss=spotsOf(n.id);if(!box||!ss.length)return;
+  const lay=document.createElement("div");lay.className="spot-layer";
+  lay.innerHTML=ss.map(m=>{const s=m.spot,busy=spotBusy.has(n.id+":"+s.n),on=spotOpen&&spotOpen.id===n.id&&spotOpen.n===s.n;
+    return `<button type="button" class="spot${s.state==="done"?" done":""}${busy?" busy":""}${on?" on":""}" data-spot="${n.id}" data-spot-n="${s.n}" style="left:${(s.x*100).toFixed(2)}%;top:${(s.y*100).toFixed(2)}%" aria-label="${esc(L(`Comment ${s.n}: ${clip(m.text,60)}`,`评论 ${s.n}：${clip(m.text,60)}`))}">${s.n}</button>`}).join("");
+  box.appendChild(lay);
+}
+function spotPopEl(){
+  let p=$("spotPop");if(p)return p;
+  p=document.createElement("div");p.id="spotPop";p.className="spot-pop";p.hidden=true;p.setAttribute("role","dialog");document.body.appendChild(p);
+  p.addEventListener("click",onSpotClick);
+  p.addEventListener("input",e=>{
+    if(e.target.matches(".spot-in"))qs('[data-sp="send"]',p).disabled=!e.target.value.trim();
+    if(e.target.matches(".spot-own")&&e.target.value)qsa(".spot-chip",p).forEach(c=>c.setAttribute("aria-pressed","false"));
+  });
+  p.addEventListener("keydown",e=>{
+    if(e.key!=="Enter"||e.shiftKey||e.isComposing)return;
+    if(e.target.matches(".spot-in")){e.preventDefault();sendSpot()}
+    else if(e.target.matches(".spot-own")){e.preventDefault();qs('[data-sp="go"]',p)?.click()}
+    else if(e.target.matches(".spot-reply")){e.preventDefault();replySpot(e.target.value)}
+  });
+  return p;
+}
+function placeSpotPop(){
+  const p=$("spotPop");if(!p||p.hidden||!spotOpen)return;
+  const n=byId(spotOpen.id),box=spotBox(n&&nodeEl(n.id));
+  const s=spotOpen.draft||spotRoot(spotOpen.id,spotOpen.n)?.spot;
+  if(!box||!s){p.style.visibility="hidden";return}
+  const r=box.getBoundingClientRect();if(r.width<=0){p.style.visibility="hidden";return}
+  p.style.visibility="";
+  const px=r.left+r.width*s.x,py=r.top+r.height*s.y,pw=p.offsetWidth||340,ph=p.offsetHeight||150;
+  let x=px+20;if(x+pw>innerWidth-12)x=px-20-pw;x=clamp(x,12,Math.max(12,innerWidth-pw-12));
+  p.style.left=x+"px";p.style.top=clamp(py-18,64,Math.max(64,innerHeight-ph-12))+"px";
+}
+function closeSpot(){
+  const p=$("spotPop");if(p){p.hidden=true;p.innerHTML=""}
+  qsa(".spot.draft").forEach(d=>d.remove());
+  const was=spotOpen;spotOpen=null;
+  if(was){const el=nodeEl(was.id),n=byId(was.id);if(el&&n)mountSpots(el,n)}
+}
+function openSpotComposer(n,x,y){
+  closeSpot();spotOpen={id:n.id,draft:{x,y}};
+  const box=spotBox(nodeEl(n.id));
+  if(box){let lay=box.querySelector(".spot-layer");if(!lay){lay=document.createElement("div");lay.className="spot-layer";box.appendChild(lay)}
+    const d=document.createElement("span");d.className="spot draft";d.style.left=(x*100)+"%";d.style.top=(y*100)+"%";d.textContent=nextSpotNo(n.id);lay.appendChild(d)}
+  const p=spotPopEl();
+  p.className="spot-pop is-compose";
+  p.innerHTML=`<textarea class="spot-in" rows="2" aria-label="${esc(L("Comment on this spot","评论这个位置"))}" placeholder="${esc(L("Comment on this spot…","评论这个位置…"))}"></textarea>
+    <div class="spot-row"><span class="spot-to"><span class="mk">${AGENTS.wright.mk}</span>${L("To Wright","给 Wright")}</span><span class="sp"></span><button type="button" class="spot-btn" data-sp="cancel">${L("Cancel","取消")}</button><button type="button" class="spot-send" data-sp="send" disabled aria-label="${esc(L("Send","发送"))}">${spotSend}</button></div>`;
+  p.hidden=false;placeSpotPop();requestAnimationFrame(()=>qs(".spot-in",p)?.focus());
+}
+function openSpotThread(id,no){
+  const n=byId(id);if(!n||!spotRoot(id,no))return;
+  if(spotOpen&&spotOpen.id===id&&spotOpen.n===no){closeSpot();return}
+  closeSpot();spotOpen={id,n:no};renderSpotThread();mountSpots(nodeEl(id),n);
+}
+function sendSpot(){
+  const st=spotOpen,p=$("spotPop");if(!st?.draft||!p)return;
+  const text=qs(".spot-in",p)?.value.trim();if(!text)return;
+  const n=byId(st.id);if(!n)return closeSpot();
+  checkpoint();const no=nextSpotNo(n.id);
+  (board.threads[n.id]=board.threads[n.id]||[]).push({id:"sp-"+uid(),who:"you",t:NOW(),text,spot:{n:no,x:+st.draft.x.toFixed(4),y:+st.draft.y.toFixed(4),state:"open"}});
+  log("you",`Commented on <b>${esc(titleOf(n))}</b> at spot ${no}`,n.id);
+  qsa(".spot.draft").forEach(d=>d.remove());
+  spotOpen={id:n.id,n:no};if(tool==="comment")setTool("select");
+  sfx("send");renderNodes();renderMargin();persist();renderSpotThread();
+  spotTurn(n.id,no);
+}
+function replySpot(raw){
+  const text=String(raw||"").trim(),st=spotOpen;if(!text||!st||st.draft)return;
+  if(spotBusy.has(st.id+":"+st.n))return;
+  board.threads[st.id].push({id:"sp-"+uid(),who:"you",t:NOW(),text,re:st.n});
+  const r=spotRoot(st.id,st.n);if(r){r.spot.state="open";delete r.spot.noAI}
+  persist();renderSpotThread();spotTurn(st.id,st.n);
+}
+function spotMsgHTML(n,m,last){
+  const no=m.spot?m.spot.n:m.re;
+  if(m.who==="you")return `<div class="spot-msg"><h6>${m.spot?`<span class="spot-n">${no}</span>`:""}${L("You","你")}</h6><p>${esc(m.text)}</p>${m.pickLabel?`<small>${esc(m.pickLabel)}</small>`:""}</div>`;
+  const a=AGENTS[m.who]||AGENTS.wright,btn=(sp,label,pri)=>`<button type="button" class="spot-btn${pri?" pri":""}" data-sp="${sp}">${esc(label)}</button>`;
+  let extra="";
+  if(m.mode==="ask"&&last){
+    extra=`<div class="spot-chips" role="group">${(m.options||[]).map((o,i)=>`<button type="button" class="spot-chip" data-sp="chip" data-i="${i}" aria-pressed="false">${esc(o)}</button>`).join("")}</div>
+      <input type="text" class="spot-own" placeholder="${esc(L("Or say it your way…","或者用你的话说…"))}" autocomplete="off">
+      <div class="spot-row"><span class="sp"></span>${btn("skip",L("Skip, just try","跳过，直接试"))}${btn("go",n.type==="proof"?L("Build it","开始做"):L("Draw it","开始画"),1)}</div>`;
+  }else if(m.mode==="object"){
+    const b=m.basis&&byId(m.basis.id);
+    extra=`<p class="spot-fix"><b>${L("Fix","建议")}</b>${esc(m.fix||"")}</p>${m.basis?`<button type="button" class="spot-basis" data-sp="goto" data-id="${esc(m.basis.id)}"${b?"":" disabled"}>${esc(L(`Rests on ${m.basis.title}`,`依据：${m.basis.title}`))}</button>`:""}
+      ${last&&!m.pick?`<div class="spot-row"><span class="sp"></span>${btn("anyway",L("Change it anyway","仍然照改"))}${btn("fix",L("Try the fix","按建议改"),1)}</div>`:""}`;
+  }else if(m.mode==="act"&&m.made){
+    const mk=spotMade(m,n.id),gone=!mk;
+    extra=gone?`<small>${L("Undone. The original is as it was.","已撤销，原件没有变化。")}</small>`
+      :`<div class="spot-row"><span class="sp"></span>${btn("undo",L("Undo","撤销"))}${btn("show",L(`Show v${m.ver||2}`,`查看 v${m.ver||2}`),1)}</div>`;
+  }
+  return `<div class="spot-msg" data-mode="${esc(m.mode||"")}"><h6><span class="mk">${a.mk}</span>${esc(a.name)}</h6><p>${esc(m.text||"")}</p>${extra}</div>`;
+}
+function renderSpotThread(){
+  const st=spotOpen,p=spotPopEl();if(!st||st.draft)return;
+  const n=byId(st.id),root=n&&spotRoot(st.id,st.n);if(!root){closeSpot();return}
+  const ms=spotMsgs(st.id,st.n),busy=spotBusy.has(st.id+":"+st.n),lastAi=[...ms].reverse().find(m=>m.who!=="you");
+  const keep=qs(".spot-reply",p)?.value||"",keepOwn=qs(".spot-own",p)?.value||"",focusReply=document.activeElement?.matches?.(".spot-reply");
+  const lastIsAi=ms[ms.length-1]?.who!=="you";
+  const rows=ms.map(m=>spotMsgHTML(n,m,lastIsAi&&m===lastAi&&!busy)).join("");
+  const think=busy?`<div class="spot-msg"><h6><span class="mk">${AGENTS.wright.mk}</span>Wright</h6><p class="spot-think">${L("Reading your comment…","正在看你的评论…")}</p></div>`:"";
+  const noAI=root.spot.noAI&&!busy?`<p class="spot-sys">${L("No AI answered, so this stays a comment. Connect a model and reply to send it again.","没有 AI 回复，这条先作为评论保存。连接模型后回复一句即可重新发送。")}</p>`:"";
+  const done=root.spot.state==="done";
+  const askOpen=lastIsAi&&lastAi?.mode==="ask"&&!busy;
+  p.className="spot-pop is-thread";
+  p.innerHTML=`<div class="spot-tools">${done?`<button type="button" class="spot-ic" data-sp="reopen" title="${esc(L("Reopen","重新打开"))}" aria-label="${esc(L("Reopen","重新打开"))}">${ic("undo")}</button>`:`<button type="button" class="spot-ic" data-sp="resolve" title="${esc(L("Resolve","标为已解决"))}" aria-label="${esc(L("Resolve","标为已解决"))}">${ic("check")}</button>`}<button type="button" class="spot-ic" data-sp="close" aria-label="${esc(L("Close","关闭"))}">${ic("x")}</button></div>
+    <div class="spot-scroll">${rows}${think}${noAI}</div>
+    ${busy||askOpen?"":`<input type="text" class="spot-reply" placeholder="${esc(L("Reply…","回复…"))}" autocomplete="off" value="${esc(keep)}">`}`;
+  if(keepOwn)qs(".spot-own",p)&&(qs(".spot-own",p).value=keepOwn);
+  p.hidden=false;placeSpotPop();
+  if(focusReply)qs(".spot-reply",p)?.focus();
+}
+function onSpotClick(e){
+  const b=e.target.closest("[data-sp]");if(!b)return;
+  const sp=b.dataset.sp,st=spotOpen,p=$("spotPop");
+  if(sp==="cancel"||sp==="close")return closeSpot();
+  if(sp==="send")return sendSpot();
+  if(!st||st.draft)return;
+  const n=byId(st.id),root=spotRoot(st.id,st.n),ms=spotMsgs(st.id,st.n),lastAi=[...ms].reverse().find(m=>m.who!=="you");
+  if(!n||!root)return closeSpot();
+  if(sp==="resolve"||sp==="reopen"){checkpoint();root.spot.state=sp==="resolve"?"done":"open";persist();renderNodes();if(sp==="resolve")return closeSpot();return renderSpotThread()}
+  if(sp==="chip"){qsa(".spot-chip",p).forEach(c=>c.setAttribute("aria-pressed",String(c===b)));const o=qs(".spot-own",p);if(o)o.value="";return}
+  if(sp==="go"||sp==="skip"){
+    const chip=qs('.spot-chip[aria-pressed="true"]',p),own=qs(".spot-own",p)?.value.trim();
+    const text=sp==="skip"?L("Just try","直接试"):(own||chip?.textContent||"");
+    if(!text)return qs(".spot-own",p)?.focus();
+    board.threads[n.id].push({id:"sp-"+uid(),who:"you",t:NOW(),text,re:st.n,...(sp==="skip"?{skip:true}:{})});
+    persist();renderSpotThread();return spotTurn(n.id,st.n);
+  }
+  if(sp==="anyway"||sp==="fix"){
+    if(!lastAi||lastAi.mode!=="object")return;
+    lastAi.pick=sp;
+    const text=sp==="fix"?L("Try the fix","按建议改"):L("Change it anyway","仍然照改");
+    board.threads[n.id].push({id:"sp-"+uid(),who:"you",t:NOW(),text,re:st.n,pick:sp});
+    log("you",sp==="fix"?`Took Critic's fix on <b>${esc(titleOf(n))}</b>`:`Kept the change on <b>${esc(titleOf(n))}</b> after Critic's objection`,n.id);
+    const msg={id:"sp-"+uid(),who:"wright",t:NOW(),text:"",re:st.n,mode:"act"};
+    board.threads[n.id].push(msg);persist();
+    return spotAct(n,st.n,sp==="fix"?lastAi.fix:root.text,msg,{fallback:true});
+  }
+  if(sp==="undo"){const m=lastAi?.made?lastAi:[...ms].reverse().find(x=>x.made);const mk=m&&spotMade(m,n.id);if(!mk)return;
+    erase([mk.id],{reason:"undo spot comment"}).then(()=>{root.spot.state="open";log("you",`Undid v${m.ver||2} of <b>${esc(titleOf(n))}</b>`,n.id);renderAll();persist();renderSpotThread()});return}
+  if(sp==="show"){const m=[...ms].reverse().find(x=>x.made),mk=m&&spotMade(m,n.id);if(mk){select([mk.id]);focusNodes([n,mk],Math.max(cam.s,.6))}return}
+  if(sp==="goto"){const t=byId(b.dataset.id);if(t){select([t.id]);focusNodes([t],Math.max(cam.s,.6))}return}
+}
+function spotCardText(n){
+  if(n.type==="proof"){const s=n.spec||{};return `Prototype v${n.ver||1} "${s.title||""}" (${s.mode||"page"}). ${s.lede||""}\n${(s.items||[]).map(i=>`- ${i.title}${i.tag?` [${i.tag}]`:""}: ${clip(i.body||"",160)}`).join("\n")}`}
+  return `${n.type==="frame"?"Video frame":"Image"} "${titleOf(n)}". ${n.text||""}${n.gen?.prompt?`\nIt was generated from: ${n.gen.prompt}`:""} (the image is attached)`;
+}
+function spotPack(n){
+  const dec=spotDecision(n),claim=dec&&byId(dec.idea),seen=new Set([n.id]),out=[];
+  const add=x=>{if(!x||seen.has(x.id)||x.tombstone)return;seen.add(x.id);out.push(x)};
+  if(dec){add(claim);add(dec);restsOn(dec).sup.forEach(add)}
+  (n.fixed||[]).forEach(f=>add(byId(f.id)));
+  inputsOf(n.id).forEach(add);
+  return out.slice(0,8).map((x,i)=>({ref:"P"+(i+1),id:x.id,title:titleOf(x)||clip(fullTextOf(x),40),line:`[P${i+1}] ${kindLabel(x)} "${titleOf(x)}"${x.weight&&WEIGHTS[x.weight]?` (${WEIGHTS[x.weight].label})`:""}: ${clip(String(fullTextOf(x)||x.text||"").replace(/\s+/g," "),260)}`}));
+}
+/* The code decides what the crew may do; the model only proposes. An objection needs a fix and evidence from the pack;
+   a question is asked once at most and needs answers to pick; acting is only for an image or a kept prototype. */
+function spotGate(n,v,{asked,pack}){
+  if(!v||typeof v!=="object")return {mode:"none"};
+  const cl=s=>String(s??"").replace(/\s+/g," ").trim();
+  let mode=cl(v.mode).toLowerCase();const text=cl(v.text),change=cl(v.change),fix=cl(v.fix);
+  const options=(Array.isArray(v.options)?v.options:[]).map(cl).filter(Boolean).slice(0,3);
+  const basis=pack.find(p=>p.ref===cl(v.basis).replace(/^\[|\]$/g,""))||null;
+  if(!["answer","ask","act","object"].includes(mode))mode=change?"act":"answer";
+  if(mode==="object"&&!(fix&&basis))mode="answer";
+  let said=text;
+  if(mode==="ask"&&(asked||options.length<2)){mode=asked&&(change||options[0])?"act":"answer";if(mode==="act")said=""}
+  if(mode==="act"&&!spotCanAct(n))mode="answer";
+  return {mode,text:said,change:change||(mode==="act"?options[0]||"":""),options,fix,basis:basis?{id:basis.id,title:basis.title}:null};
+}
+async function spotTurn(id,no){
+  const n=byId(id),root=spotRoot(id,no),key=id+":"+no;if(!n||!root||spotBusy.has(key))return;
+  const ms=spotMsgs(id,no),asked=ms.some(m=>m.mode==="ask"),zh=spotZh(root.text)||(!/[a-z]{3}/i.test(root.text)&&uiLang()==="zh");
+  const dec=spotDecision(n),claim=dec&&byId(dec.idea),pack=spotPack(n),lastYou=[...ms].reverse().find(m=>m.who==="you");
+  const skip=!!lastYou?.skip;
+  const hist=ms.map(m=>`${m.who==="you"?"Designer":(AGENTS[m.who]?.name||"Wright")}: ${m.text}${m.mode==="object"&&m.fix?` (fix offered: ${m.fix})`:""}`).join("\n");
+  const prompt=`The designer pinned a comment on one spot of a card and sent it to the crew. Decide what to do with it.
+
+Card: ${spotCardText(n)}
+The spot: the ${spotWhere(root.spot.x,root.spot.y)} of the ${n.type==="proof"?"page preview":"picture"} (${Math.round(root.spot.x*100)}% across, ${Math.round(root.spot.y*100)}% down).
+${dec?`This prototype stands for a decision the designer made: direction ${dec.letter} "${dec.title}" for the claim "${clip(claim?.text||"",200)}".${dec.whyYes?` Their reason: "${clip(dec.whyYes,200)}".`:""} The decision is theirs; you never change it.`:"No decision rests on this card."}
+${pack.length?`Cards on the board you may cite, by ref only:\n${pack.map(p=>p.line).join("\n")}`:"No other cards bear on it."}
+
+The thread on this spot:
+${hist}
+
+Choose one mode:
+- "answer": the comment is a question, or needs no change. "text": the answer in 1-3 sentences.
+- "act": it asks for a change you can read only one way. "change": the exact change for the new version, one sentence in English, naming the spot. "text": 1-2 sentences in past tense saying what the new version changes and what it keeps. The original is never touched; the new version goes beside it.
+- "ask": only when the change can be read in two or more ways that would give clearly different results and the thread does not settle it. "text": one short question; "options": 2-3 answers of 2-4 words.${asked||skip?" You have already asked once: do not ask again; choose act with your best reading.":""}
+- "object": only when the change would undo something a decision or a test result on this board rests on. "text": what it would undo, citing what the evidence shows; "fix": one concrete change that meets the comment and keeps what matters; "basis": the ref of the card that shows it. Never object to taste.
+Write "text", "options" and "fix" in ${zh?"Chinese (简体中文)":"English"}. Plain words, no emoji, no markdown.
+Reply with ONLY JSON: {"mode":"answer|act|ask|object","text":"","change":"","options":[],"fix":"","basis":""}`;
+  spotBusy.add(key);renderNodes();if(spotOpen?.id===id&&spotOpen.n===no)renderSpotThread();
+  let v=null,live=false;
+  try{const r=await runAgent("wright",{read:[n],places:[],label:"reading your comment",work:()=>askAI({system:`${TALK("wright")}\n${STYLE}`,prompt,images:n.type==="proof"?[]:[n],json:true,maxTokens:700,weight:"light"},()=>null)});
+    v=r?.v;live=!!r?.live}catch(e){console.warn("spot comment",e)}
+  spotBusy.delete(key);
+  const g=spotGate(n,live?v:null,{asked:asked||skip,pack});
+  if(g.mode==="none"){root.spot.noAI=true;renderNodes();persist();if(spotOpen?.id===id&&spotOpen.n===no)renderSpotThread();return}
+  delete root.spot.noAI;
+  const th=board.threads[id];
+  if(g.mode==="answer"){th.push({id:"sp-"+uid(),who:"wright",t:NOW(),text:g.text||L("Noted.","收到。"),re:no,mode:"answer"});log("wright",`Answered your comment on <b>${esc(titleOf(n))}</b>`,id)}
+  else if(g.mode==="ask"){th.push({id:"sp-"+uid(),who:"wright",t:NOW(),text:g.text,re:no,mode:"ask",options:g.options})}
+  else if(g.mode==="object"){th.push({id:"sp-"+uid(),who:"critic",t:NOW(),text:g.text,re:no,mode:"object",fix:g.fix,basis:g.basis});log("critic",`Raised an objection, with a fix, to your comment on <b>${esc(titleOf(n))}</b>`,id)}
+  else if(g.mode==="act"){const msg={id:"sp-"+uid(),who:"wright",t:NOW(),text:g.text,re:no,mode:"act"};th.push(msg);persist();return spotAct(n,no,g.change||root.text,msg)}
+  renderNodes();renderMargin();persist();if(spotOpen?.id===id&&spotOpen.n===no)renderSpotThread();
+}
+/* the new version goes beside the original: a numbered image, or the prototype's next version; the original is never changed */
+async function spotAct(n,no,change,msg,{fallback=false}={}){
+  const key=n.id+":"+no,root=spotRoot(n.id,no);
+  spotBusy.add(key);renderNodes();if(spotOpen?.id===n.id&&spotOpen.n===no)renderSpotThread();
+  const where=spotWhere(root.spot.x,root.spot.y);let made=null,empty=false;
+  try{
+    if(n.type==="proof"){
+      made=await build(n,{steer:`The designer pinned a comment on the ${where} of version ${n.ver||1}: "${root.text}". Make this change: ${change}. Keep everything else as it was.`});
+    }else{
+      const base=byId(n.versionOf)||n,prompt=`${n.gen?.prompt||titleOf(base)}. Change at the ${where}: ${change}. Keep everything else the same.`;
+      made=(await generateImages(prompt,{from:n,count:1,quiet:true}))?.[0]||null;
+      if(made){
+        const ver=1+Math.max(base.ver||1,...board.nodes.filter(x=>x.versionOf===base.id&&!x.tombstone&&x.id!==made.id).map(x=>x.ver||1));
+        base.ver=base.ver||1;made.versionOf=base.id;made.ver=ver;made.title=`${String(base.title||titleOf(base)).replace(/\s+v\d+$/,"")} v${ver}`;
+        empty=!!made.gen?.preview;
+      }
+    }
+  }catch(e){console.warn("spot act",e)}
+  spotBusy.delete(key);
+  if(made){
+    made.fromSpot={id:n.id,n:no};msg.made=made.id;msg.ver=made.ver;root.spot.state="done";
+    const said=fallback||!msg.text?L(`Made v${made.ver} beside it with that change. The original is as it was.`,`已在旁边做了 v${made.ver}，原件没有变化。`):msg.text;
+    msg.text=said+(empty?" "+L("No image service was running, so the new version is an empty frame that keeps the change. Start the service and press Retry on it.","图像服务没有运行，新版本是保留了改动说明的空白框。启动服务后在上面点重试。"):"");
+    log("wright",`Made <b>${esc(titleOf(made))}</b> from your comment on <b>${esc(titleOf(n))}</b>`,made.id);
+  }else{msg.mode="answer";msg.text=L("I couldn't make the new version. The original is as it was.","没能做出新版本，原件没有变化。")}
+  renderAll();persist();if(spotOpen?.id===n.id&&spotOpen.n===no)renderSpotThread();
+  return made;
+}
+/* Retry on a version made from a comment keeps its number, its link to the original and to the comment */
+function spotCarry(old,nu){
+  if(!old?.fromSpot||!nu)return;
+  Object.assign(nu,{versionOf:old.versionOf,ver:old.ver,title:old.title,fromSpot:{...old.fromSpot}});
+  renderAll();persist();if(spotOpen)renderSpotThread();
+}
+document.addEventListener("click",e=>{const b=e.target.closest?.("[data-spot]");if(!b)return;e.stopPropagation();openSpotThread(b.dataset.spot,+b.dataset.spotN)},true);
+addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  if(spotOpen){e.preventDefault();e.stopImmediatePropagation();closeSpot();return}
+  if(tool==="comment"&&!e.target.closest?.("textarea,input,[contenteditable='true']")){e.preventDefault();e.stopImmediatePropagation();setTool("select")}
+},true);
+addEventListener("resize",()=>placeSpotPop());
+
 function applyTheme(){const t=store.get(".theme",null);if(t)document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme}
 $("themeBtn").onclick=()=>setThemePref(effectiveTheme()==="dark"?"light":"dark");
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>{if(!document.documentElement.dataset.theme)refreshThemeViews()});
@@ -20478,7 +20829,7 @@ function syncPaletteLang(){
 }
 /* Tool tips and labels written into the page itself, said in Chinese when the interface is Chinese (and put back for English) */
 const ZH_ATTR={
-  "Select / Pan (V)":"选择 / 平移 (V)","Select / Pan · V":"选择 / 平移 · V","Pen (P)":"画笔 (P)","Pen · P · circle to select":"画笔 · P · 圈住即选中",
+  "Select / Pan (V)":"选择 / 平移 (V)","Select / Pan · V":"选择 / 平移 · V","Pen (P)":"画笔 (P)","Pen · P · circle to select":"画笔 · P · 圈住即选中","Comment (C)":"评论 (C)","Comment · C · on an image or prototype":"评论 · C · 点在图片或原型上",
   "Hand / Pan (H)":"抓手 (H)","Hand / Pan · H":"抓手 · H","Smart snap (M)":"智能吸附 (M)","Smart snap · M · hold ⌥ to skip":"智能吸附 · M · 按住 ⌥ 临时关闭",
   "Upload file or media (U)":"上传文件或媒体 (U)","Upload file or media · U":"上传文件或媒体 · U","Organize canvas (T)":"整理画布 (T)","Organize canvas · T":"整理画布 · T",
   "Search cards (⌘F)":"搜索卡片 (⌘F)","Search cards · ⌘F":"搜索卡片 · ⌘F","Undo (⌘Z)":"撤销 (⌘Z)","Undo · ⌘Z":"撤销 · ⌘Z","Redo (⌘⇧Z)":"重做 (⌘⇧Z)","Redo · ⌘⇧Z":"重做 · ⌘⇧Z",

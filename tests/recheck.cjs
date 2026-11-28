@@ -88,7 +88,7 @@ function serve() {
     check('nothing about the decision changed on its own', await p.evaluate(r => board.adopted[r.claim] === r.dir && !byId(r.dir).held, r));
     await p.evaluate(() => openDecisions(true)); await p.waitForTimeout(400);
     const dv = await p.evaluate(() => ({ h: document.querySelector('.dv-rc .dv-rc-h')?.textContent, why: document.querySelector('.dv-rc p')?.textContent, critic: document.querySelector('.dv-rc .dv-rc-c')?.textContent, acts: [...document.querySelectorAll('.dv-since .dv-act')].map(x => x.textContent).join() }));
-    check('the decision view shows the crew re-check beside the new evidence, and still leaves the choice to you', /Crew re-check\s*Weaker/.test(dv.h || '') && /Rain hides/.test(dv.why || '') && /Critic.+wrist buzz/.test(dv.critic || '') && dv.acts === 'Reopen the choice,Still holds', JSON.stringify(dv));
+    check('the decision view shows the crew re-check beside the new evidence, and still leaves the choice to you', /The crew/.test(dv.h || '') && /^Weaker\. .*Rain hides/.test(dv.why || '') && /Critic suggests: Add a short wrist buzz/.test(dv.critic || '') && dv.acts === 'Reopen the choice,Still holds', JSON.stringify(dv));
     await p.evaluate(() => openDecisions(false));
 
     /* 2. two supporting pieces at once: one re-check, one note; "holds" needs no Critic */

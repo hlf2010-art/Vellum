@@ -222,7 +222,8 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);b
 .card .foot .sp{flex:1 1 0;min-width:0}
 .card .foot-l,.card .foot-r{display:inline-flex;align-items:center;gap:6px;min-width:0}
 .card .foot-l{flex:0 1 auto}
-.card .foot-r{flex:0 0 auto;justify-content:flex-end}   /* who and when never get squeezed; the left side gives way */
+.card .foot-r{flex:0 0 auto;justify-content:flex-end}
+.card .foot-r>.foot-link+.foot-by,.card .foot-r>.foot-branch+.foot-by{margin-left:4px}   /* who and when never get squeezed; the left side gives way */
 .card .foot-l,.card .foot>span:first-child{overflow:hidden}
 .card .foot-l>.weight{flex:none}
 .card .foot-l>.foot-txt{min-width:0;overflow:hidden;text-overflow:ellipsis}   /* a count beside the weight gives way first */
@@ -2565,7 +2566,9 @@ dialog.sheet:focus{outline:none}
 .adv-lift .ico{width:12px;height:12px;stroke-width:2}
 .adv-ign{height:28px;padding:0 9px;border-radius:var(--radius-sm);font:500 12px/1 var(--ui);color:var(--label-3);transition:background var(--d-quick),color var(--d-quick)}
 .adv-ign:hover{background:var(--hover);color:var(--label)}
-.adv-reply{position:relative;display:flex;align-items:center;width:100%}
+.adv-reply{display:flex;align-items:center;gap:6px;width:100%}
+.adv-field{position:relative;flex:1;min-width:0;display:flex;align-items:center}
+.adv-reply .adv-ign{flex:none}
 .adv-reply-in{width:100%;min-width:0;height:36px;padding:0 38px 0 13px;border:0;border-radius:var(--radius-pill);background:var(--hover);box-shadow:none;color:var(--label);font:450 13px/1 var(--ui);outline:none;transition:background var(--d-quick),box-shadow var(--d-quick)}
 .adv-reply-in::placeholder{color:var(--label-3)}
 .adv-reply-in:focus{background:var(--card);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--focus) 38%,transparent)}
@@ -3289,17 +3292,16 @@ body.snap-skip #wall{cursor:copy}
 .dv-rc{margin:8px 0 2px;padding:8px 0 0;border-top:1px solid color-mix(in srgb,var(--label) 8%,transparent);display:grid;gap:4px}
 .dv-rc p{margin:0;font:500 12.5px/1.45 var(--ui);color:var(--label)}
 .dv-rc-h{display:flex;align-items:center;gap:8px;font:600 11px/16px var(--ui);color:var(--label-2)}
-.dv-rc-v{font:600 11px/16px var(--ui);padding:0 7px;border-radius:999px;background:color-mix(in srgb,var(--label) 7%,transparent);color:var(--label)}
-.dv-rc.rc-stronger .dv-rc-v{background:color-mix(in srgb,var(--ok,#2f9e61) 14%,transparent);color:var(--ok,#2f9e61)}
-.dv-rc.rc-weaker .dv-rc-v,.dv-rc.rc-reopen .dv-rc-v{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}
-.dv-rc .dv-rc-c b{font-weight:600;margin-right:4px}
+.dv-rc-v{font-weight:650;color:var(--label)}
+.dv-rc.rc-stronger .dv-rc-v{color:var(--ok,#2f9e61)}
+.dv-rc.rc-weaker .dv-rc-v,.dv-rc.rc-reopen .dv-rc-v{color:var(--danger)}
 .dv-rc .dv-rc-c span,.dv-rc .dv-rc-n{color:var(--label-2)}
 .dv-since .dv-row .ev-ico,.dv-since .dv-row time{margin-top:3px}
 .dv-since .dv-row .dv-rt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .dv-since .dv-row.ctr .dv-rt{color:inherit}
 .dv-kept{margin:6px 0 0;font:450 12.5px/1.45 var(--ui);color:var(--label-2)}
 .dv-kept q{color:var(--label);quotes:"“" "”"}
-.dv-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.dv-acts{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-top:10px}
 .dv-act{height:30px;padding:0 12px;border:0;border-radius:var(--radius-sm);background:var(--hover);color:var(--label);font:560 13px/1 var(--ui);cursor:pointer;transition:background var(--d-quick),transform var(--duration-press)}
 .dv-act:hover{background:var(--press)}
 .dv-act:active{transform:scale(.97)}
@@ -4754,12 +4756,27 @@ function linkTitleFromUrl(href){
 }
 
 /* ── board ──────────────────────────────────────────────────────────── */
+/* ── demo mode: the in-browser demo the website links to (VELLUM_DEMO, set by tools/demo/build.mjs; ?demo for a dev look) ──
+   Nothing is saved: boards, settings and files live in memory, so a refresh starts over and nothing leaves the visitor's browser.
+   No model is called: the crew replays one recorded real run (DEMO.recording), and everything that needs no model works for real. */
+const DEMO=(()=>{let q=null;try{q=new URLSearchParams(location.search)}catch{}const c=window.VELLUM_DEMO;if(!c&&!q?.has("demo"))return null;
+  const d=Object.assign({recording:null,site:"",terms:"terms.html"},typeof c==="object"&&c?c:{});
+  const lang=q?.get("lang")||((navigator.languages||[navigator.language||""]).some(l=>/^zh/i.test(l))&&!/^en/i.test(navigator.language||"")?"zh":"en");
+  d.lang=lang==="zh"?"zh":"en";d.theme=/^(light|dark)$/.test(q?.get("theme")||"")?q.get("theme"):null;return d})();
+/* NOAI: the demo as visitors get it. tools/demo/record-run.cjs sets record:true to drive the same board against a real model. */
+const NOAI=!!DEMO&&!DEMO.record;
 const KEY="vellum-lumen.v1";
-const store={
+const demoMem=new Map();
+const store=DEMO?{
+  get(k,f){return demoMem.has(k)?JSON.parse(demoMem.get(k)):f},
+  set(k,v){demoMem.set(k,JSON.stringify(v));return true},
+  del(k){demoMem.delete(k)},
+}:{
   get(k,f){try{const v=localStorage.getItem(KEY+k);return v?JSON.parse(v):f}catch{return f}},
   set(k,v){try{localStorage.setItem(KEY+k,JSON.stringify(v));return true}catch{return false}},
   del(k){try{localStorage.removeItem(KEY+k)}catch{}},
 };
+if(DEMO){store.set(".lang",DEMO.lang);if(DEMO.theme)store.set(".theme",DEMO.theme);document.body.classList.add("is-demo")}
 function blank(title=""){return {id:uid(),title,speak:"matters",memory:"",mcpContext:[],nodes:[],edges:[],adopted:{},threads:{},pins:{},copilot:[],log:[],proposals:[],changes:[],cam:null,zoneW:BAY,created:NOW(),updated:NOW()}}
 let board, sel=[], undoStack=[], redoStack=[], saveT=0, storageOk=true, idbBoardOk=false, selectedEdgeId=null;
 const byId=id=>board.nodes.find(n=>n.id===id);
@@ -5288,16 +5305,16 @@ async function rcStrategist(pack,signal){
   const lang=pack.zh?"Chinese (简体中文)":"English";
   const system=`${ROLE.muse}\nRight now you are re-checking a decision the designer already made, because new evidence was kept after it. ${RC_RULES}\nReply in ${lang}. Return only one JSON object with these keys:\n- "verdict": exactly one of these words: stronger, holds, weaker, reopen. stronger = the new evidence backs the decision; holds = it is relevant but does not change the case, or it does not really bear on it; weaker = it undercuts part of the case but the choice can still be right; reopen = it undercuts the decision's core reason, or favors an option set aside.\n- "why": one or two short sentences (max 40 words) on what the new evidence shows and how it bears on the decision's reason.\n- "cites": the ids of the cards your reading rests on, always including the new evidence, for example ["N1","S2"].\n- "next": the cheapest check that would settle any doubt (max 18 words), or "".\nExample of the shape (not of the content): {"verdict":"weaker","why":"Most tents in the test used aluminium poles, so the magnet would not hold where the decision assumed it would.","cites":["N1","S2"],"next":"Count pole materials at the next campsite visit."}`;
   const prompt=`${pack.text}\n\nRe-check the decision D against the new evidence.`;
-  return rcAsk({system,prompt,maxTokens:420,signal},v=>rcStratProblems(v,pack));
+  return rcAsk({system,prompt,maxTokens:420,signal,tag:"rc.strategist",key:demoKey(pack.text)},v=>rcStratProblems(v,pack));
 }
 /* one model call with one repair, whichever engine answers: the watchdog's problems go back once, and the answer with
    fewer problems is kept (the caller's watchdog then decides whether it may be shown) */
-async function rcAsk({system,prompt,maxTokens,signal},problems){
-  const ask=pr=>askAI({system,prompt:pr,json:true,maxTokens,quiet:true,memoryMode:"compact",signal},()=>null);
+async function rcAsk({system,prompt,maxTokens,signal,tag="",key=""},problems){
+  const ask=(pr,t=tag)=>askAI({system,prompt:pr,json:true,maxTokens,quiet:true,memoryMode:"compact",signal,tag:t,key},()=>null);
   const r=await ask(prompt);if(!r.live)return null;
   let v=r.v;const raw=[clip(JSON.stringify(v),600)];const probs=problems(v);
   if(probs.length){
-    const f=await ask(`${prompt}\n\nYour previous answer: ${JSON.stringify(v)}\nFix only these problems and return the whole JSON again: ${probs.join("; ")}.`);
+    const f=await ask(`${prompt}\n\nYour previous answer: ${JSON.stringify(v)}\nFix only these problems and return the whole JSON again: ${probs.join("; ")}.`,tag&&tag+".fix");
     if(f.live){raw.push(clip(JSON.stringify(f.v),600));if(problems(f.v).length<probs.length)v=f.v}
   }
   return {v,engine:r.engine,raw};
@@ -5306,7 +5323,7 @@ async function rcCritic(pack,strat,signal){
   const lang=pack.zh?"Chinese (简体中文)":"English";
   const system=`${ROLE.critic}\nStrategist has re-checked a decision against new evidence. Review that reading. ${RC_RULES}\nObject only when the cards give you a reason: an objection must cite the pack ids it rests on and come with a concrete fix the designer can act on. Research before objecting: read every card first. Never argue for its own sake; when the reading is sound, agree.\nReply in ${lang}. Return only one JSON object. When the reading is sound: {"agree":true}. When you object: {"agree":false,"objection":"what is wrong with the reading, max 35 words","cites":["N1"],"fix":"what the designer can do about it, max 22 words"}`;
   const prompt=`${pack.text}\n\nStrategist's reading: verdict "${strat.verdict}". ${strat.why}${strat.next?` Cheapest check: ${strat.next}`:""} (cites ${rcCiteKeys(strat).join(", ")})\n\nReview it.`;
-  const r=await rcAsk({system,prompt,maxTokens:300,signal},v=>rcCriticProblems(v,pack));
+  const r=await rcAsk({system,prompt,maxTokens:300,signal,tag:"rc.critic",key:demoKey(pack.text)},v=>rcCriticProblems(v,pack));
   if(r)rcRunning?.job&&(rcRunning.job.rawCritic=r.raw);
   return r?r.v:null;
 }
@@ -5390,7 +5407,11 @@ function recheckPin(job,obsList){
   const parts=[`${head} ${s.why}`];
   if(c)parts.push(L(`**Critic:** ${c.objection} Fix: ${c.fix}`,`**Critic：**${c.objection} 建议：${c.fix}`));
   parts.push(`${s.next?L(`Cheapest check: ${s.next} `,`最省事的验证：${s.next} `):""}${L("The decision stays as you made it.","决定仍按你定的来。")}`);
-  const basis=job.cites.map(byId).filter(Boolean).slice(0,5).map(n=>({id:n.id,rev:n.rev||1,relation:"related",why:es.some(e=>e.id===n.id)?L("new evidence","新证据"):weightLabel(n.weight)||L("cited","引用")}));
+  /* each card it cites says what it is to the decision, so "Based on" reads as reasons, not a bare list */
+  const relOf=e=>obsList.find(o=>o.about===e.id)?.rel;
+  const roleOf=n=>{if(es.some(e=>e.id===n.id)){const r=relOf(n);return r==="conflicts"?L("new evidence, counters the decision","新证据，反驳这个决定"):r==="supports"?L("new evidence, backs the decision","新证据，支持这个决定"):L("new evidence","新证据")}
+    return L("what the decision rests on","这个决定原本的依据")+(weightLabel(n.weight)?L(` · ${weightLabel(n.weight).toLowerCase()}`,` · ${weightLabel(n.weight)}`):"")};
+  const basis=job.cites.map(byId).filter(Boolean).slice(0,5).map(n=>({id:n.id,rev:n.rev||1,relation:"related",why:roleOf(n),role:roleOf(n)}));
   return {id:"pin-"+uid(),agent:"muse",t:NOW(),note:parts.join("\n"),check:"revisit",sig:job.id,sigs:job.sigs,engine:"model",recheck:{verdict:s.verdict,critic:job.critic||"none",model:job.engine},basis};
 }
 
@@ -6669,12 +6690,156 @@ function seedShowcasePins(b){
     ];
   }
 }
+/* ── demo board: an AI video-editing agent ─────────────────────────────
+   The board the in-browser demo opens on (VELLUM_DEMO). The same story as the home page, string for string: should the agent
+   hand over a finished cut, or do the busywork and leave the key moments to the editor? Its media is painted here, so the
+   demo downloads no pictures. The new evidence (Beta test) is not on the board yet: demoAddEvidence() brings it in. */
+function demoPaintTimeline(g,w,h,{long=false,t=0}={}){
+  const dark="#141518",lane="#1E2024",clip="#3A3D44",clip2="#4A4E57",ink="rgba(255,255,255,.55)",hair="rgba(255,255,255,.08)";
+  g.fillStyle=dark;g.fillRect(0,0,w,h);
+  const pad=Math.round(w*.04),top=Math.round(h*.14),rowH=Math.round(h*.17),gap=Math.round(h*.04);
+  /* ruler */
+  g.strokeStyle=hair;g.lineWidth=1;g.fillStyle=ink;g.font=`500 ${Math.round(h*.042)}px ui-monospace,Menlo,monospace`;
+  const ticks=long?12:8;
+  for(let i=0;i<=ticks;i++){const x=pad+(w-2*pad)*i/ticks;g.beginPath();g.moveTo(x+.5,top-Math.round(h*.05));g.lineTo(x+.5,top-Math.round(h*.02));g.stroke();
+    if(i<ticks&&i%2===0){const s=long?i*5:i*4;g.fillText(`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`,x+4,top-Math.round(h*.055))}}
+  /* tracks: V1, V2 and the audio */
+  const rows=[top,top+rowH+gap,top+2*(rowH+gap)];
+  rows.forEach(y=>{g.fillStyle=lane;g.fillRect(pad,y,w-2*pad,rowH)});
+  let seed=long?7:3;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280};
+  const cuts=[];let x=pad;
+  while(x<w-pad-8){const cw=(long?.035:.07)*(w-2*pad)*(.6+rnd()*.9);const x2=Math.min(w-pad,x+cw);
+    g.fillStyle=rnd()>.5?clip:clip2;g.fillRect(x+1,rows[0]+3,x2-x-2,rowH-6);cuts.push(x2);x=x2}
+  for(let i=0,xx=pad;i<4;i++){const cw=(w-2*pad)*(.12+rnd()*.12);g.fillStyle=clip;g.globalAlpha=.6;g.fillRect(xx+w*.05,rows[1]+3,cw,rowH-6);g.globalAlpha=1;xx+=cw+w*.08}
+  /* audio waveform */
+  g.strokeStyle="rgba(255,255,255,.35)";g.beginPath();
+  for(let xx=pad;xx<w-pad;xx+=2){const a=(Math.sin(xx*.09)*.5+Math.sin(xx*.023)*.5)*(.35+.65*Math.abs(Math.sin(xx*.011)));const m=rows[2]+rowH/2;g.moveTo(xx+.5,m-a*rowH*.42);g.lineTo(xx+.5,m+a*rowH*.42)}
+  g.stroke();
+  if(!long){
+    /* the agent's cuts: six of ten were undone (dashed, with a return mark) */
+    const marks=cuts.slice(0,10),undone=new Set([0,2,3,5,7,8]);
+    marks.forEach((cx,i)=>{const u=undone.has(i);g.strokeStyle=u?"#E5484D":"rgba(255,255,255,.7)";g.lineWidth=u?2:1.5;g.setLineDash(u?[4,3]:[]);
+      g.beginPath();g.moveTo(cx+.5,top-4);g.lineTo(cx+.5,rows[2]+rowH+4);g.stroke();g.setLineDash([]);
+      if(u){g.fillStyle="#E5484D";g.beginPath();g.arc(cx,rows[2]+rowH+Math.round(h*.06),Math.max(3,h*.012),0,Math.PI*2);g.fill()}});
+  }else{
+    /* a long clip: candidate moments everywhere, and the playhead still looking */
+    for(let i=0;i<34;i++){const mx=pad+(w-2*pad)*(i+.5+Math.sin(i*1.7)*.3)/34;g.fillStyle="rgba(245,196,81,.85)";g.beginPath();g.moveTo(mx,top-3);g.lineTo(mx+4,top+3);g.lineTo(mx,top+9);g.lineTo(mx-4,top+3);g.closePath();g.fill()}
+    const px=pad+(w-2*pad)*((t%1));g.strokeStyle="#fff";g.lineWidth=2;g.beginPath();g.moveTo(px,top-Math.round(h*.06));g.lineTo(px,rows[2]+rowH+6);g.stroke();
+  }
+}
+function demoPlate(opts,w,h){const c=document.createElement("canvas");c.width=w;c.height=h;demoPaintTimeline(c.getContext("2d"),w,h,opts);return c.toDataURL("image/png")}
+let demoAssetsLoading=null;
+function ensureDemoAssets(){
+  if(!userMedia.has("u:dm-timeline"))userMedia.set("u:dm-timeline",demoPlate({},640,360));
+  if(!userMedia.has("u:dm-beta-poster"))userMedia.set("u:dm-beta-poster",demoPlate({long:true,t:.38},768,432));
+  /* real media, when the build found it (demo/media): the clip and the editor's voice replace the drawn stand-ins */
+  const M=DEMO?.media||{};
+  if(M.beta&&!userMedia.has("u:dm-beta"))userMedia.set("u:dm-beta",M.beta);
+  const q=M["quote-"+uiLang()];if(q)userMedia.set("u:dm-quote",q);
+  if(userMedia.has("u:dm-beta")||demoAssetsLoading||typeof MediaRecorder==="undefined"||!HTMLCanvasElement.prototype.captureStream)return demoAssetsLoading;
+  demoAssetsLoading=(async()=>{try{
+    const vid=await encodeVideoStream((g,w,h,p)=>demoPaintTimeline(g,w,h,{long:true,t:p}),640,360,{fps:16,durSec:2.4});
+    if(vid?.blob){userMedia.set("u:dm-beta",URL.createObjectURL(vid.blob));qsa("[data-id]",nodesEl).forEach(el=>el._sig="");renderNodes()}
+  }catch{}finally{demoAssetsLoading=null}})();
+  return demoAssetsLoading;
+}
+function sampleDemo(){
+  const b=blank(L("AI video agent · How much to hand over","AI 剪辑 agent · 交出多少"));b.id="demo";b.rev=1;b.zoneW=ZONE_W0;b.demo=true;
+  b.memory=L("Deciding how much an AI video-editing agent should do on its own. Chose a rough cut with the key moments marked, over a one-click final cut and suggestions only.","决定 AI 剪辑 agent 该自己做多少。选了初剪 + 标出关键瞬间，没选一键成片和只给建议。");
+  const prevBoard=board;board=b;
+  const T=NOW(),min=60000;
+  const at=(n,ago)=>{n.created=T-ago*min;if(n.prov)n.prov.at=n.created;return n};
+  const rel=(a,d,r)=>{const e=makeRelation(a.id,d.id,{rel:r}).e;if(e){e.at=T-150*min}return e};
+
+  /* Gather */
+  const e1=at(node("image",{title:L("Session logs","操作日志"),text:L("Editors undo 6 of 10 cuts the agent makes.","剪辑师撤销了 agent 十刀里的六刀。"),media:"u:dm-timeline",weight:"observed",path:"logs/agent-cuts-week-1.png"},{x:60,y:100}),300);
+  const e2=at(node("source",{kind:L("Spreadsheet","表格"),by:"scout",weight:"reported",title:L("Reviews","用户评论"),text:L("34 reviews say it cut the best moment.","34 条评论说它剪掉了最好的瞬间。"),
+    full:L("| # | Review | Stars |\n|---|---|---|\n| 212 | Saved me an hour | ★5 |\n| 213 | It cut the punchline | ★2 |\n| 214 | Exports are quick | ★4 |\n| 215 | Dropped my best take | ★2 |\n| 216 | Cut the reaction shot | ★1 |",
+      "| # | 评论 | 评分 |\n|---|---|---|\n| 212 | 帮我省了一小时 | ★5 |\n| 213 | 把笑点剪没了 | ★2 |\n| 214 | 导出很快 | ★4 |\n| 215 | 最好的一条没了 | ★2 |\n| 216 | 反应镜头被剪了 | ★1 |"),path:"reviews-export.csv"},{x:492,y:100}),280);
+  const quote=L("“Give me a first pass. The moments are mine.”","“给我一个初剪就好，关键瞬间我自己定。”");
+  const e3=at(DEMO?.media?.["quote-"+uiLang()]?node("audio",{title:L("Editor","剪辑师"),text:quote,media:"u:dm-quote",weight:"observed",path:"editor-interview.m4a"},{x:60,y:480})
+    :node("source",{kind:L("Interview","访谈"),weight:"observed",title:L("Editor","剪辑师"),text:quote},{x:60,y:480}),260);
+
+  /* Explore */
+  const j1=at(node("idea",{kind:L("Judgment","判断"),text:L("Editors want the busywork done and the moments left to them.","剪辑师要它干杂活，关键瞬间留给自己。")},{x:1060,y:100}),240);
+  [e1,e2,e3].forEach(e=>rel(e,j1,"supports"));
+  const dA=at(node("direction",{idea:j1.id,letter:"A",mode:"story",by:"muse",weight:"proposed",title:L("One-click final cut","一键成片"),text:L("Upload, get a finished video.","上传素材，直接出成片。"),
+    whyNot:L("Fast, but it chooses the moments for you.","快，但替你决定了瞬间。"),test:L("Ten editors upload a real shoot; it passes if eight publish the cut unchanged.","十位剪辑师上传真实素材；八位原样发布成片才算通过。")},{x:1490,y:100}),200);
+  const dB=at(node("direction",{idea:j1.id,letter:"B",mode:"desk",by:"muse",weight:"proposed",title:L("Rough cut, moments marked","初剪 + 标出关键瞬间"),text:L("It trims the dead air. You pick the moments.","它剪掉冗余，你来挑瞬间。"),
+    whyYes:L("It does the cuts editors keep, and leaves them the moments.","它只做剪辑师会保留的那些刀，瞬间留给人。"),test:L("Twenty editors in beta; it passes if they keep 9 in 10 rough cuts.","二十位剪辑师内测；十个初剪留下九个才算通过。")},{x:1490,y:455}),198);
+  const dC=at(node("direction",{idea:j1.id,letter:"C",mode:"deck",by:"muse",weight:"proposed",title:L("Suggestions only","只给建议"),text:L("It comments. You make every cut.","它只提意见，每一刀都你来剪。"),
+    whyNot:L("Keeps control, saves no time.","掌控还在，时间没省。"),test:L("Time ten edits with and without the comments.","给十次剪辑计时，对比有无建议。")},{x:1490,y:840}),196);
+  [dA,dB,dC].forEach(d=>edge(j1.id,d.id));
+  const st=at(node("note",{by:"critic",text:L("One click hides the cuts editors undo most. And nobody asked for it.","一键成片藏起了剪辑师最常撤销的那些刀。而且，没人要它。")},{x:1060,y:520}),190);
+  rel(st,dA,"conflicts");
+  b.adopted[j1.id]=dB.id;dB.adoptedAt=T-120*min;
+
+  /* Prototype */
+  const spec={mode:"desk",letter:"B",title:L("Moment-marker prototype","关键瞬间标记原型"),kicker:L("Direction B · Beta, 20 editors","方向 B · 内测，20 位剪辑师"),
+    lede:L("A rough cut in minutes. You pick what stays.","几分钟出初剪，留什么你说了算。"),
+    items:[
+      {title:L("Rough cut, moments marked","初剪 + 标出关键瞬间"),tag:L("Plan","方案"),body:L("Why: editors undo 6 of 10 auto cuts. Rests on 3 sources, 2 of them observed.","原因：剪辑师撤销了十个自动剪辑里的六个。依据 3 条来源，其中 2 条是观察。")},
+      {title:L("Faster than by hand","比手剪快"),tag:L("Passed","通过"),body:L("18 of 20 editors finished sooner than cutting it themselves.","20 位剪辑师里 18 位比自己剪更快。")},
+      {title:L("Kept the rough cut","留下了初剪"),tag:L("Passed","通过"),body:L("17 of 20 kept the rough cut and only picked the moments.","20 位里 17 位留下初剪，只挑了瞬间。")},
+      {title:L("Long clips felt slow","长素材很慢"),tag:L("Failed","未通过"),body:L("9 of 20 said picking moments in a long clip took too long.","20 位里 9 位说长素材里挑瞬间太久。")},
+    ],cta:L("Run the long-clip test","跑长素材测试"),version:1};
+  const proof=at(node("proof",{dir:dB.id,ver:1,by:"wright",spec,fixed:[e1,e2,e3].map(s=>({id:s.id,title:titleOf(s),weight:s.weight,d:digest(s)}))},{x:2060,y:100}),90);
+  edge(dB.id,proof.id);
+  const tbl=at(node("table",{by:"wright",title:L("Beta, 20 editors","内测，20 位剪辑师"),weight:"observed",data:{columns:[{name:L("Finding","发现")},{name:L("Editors","人数")}],rows:[
+    [L("Faster than by hand","比手剪快"),"18/20"],[L("Kept the rough cut","留下了初剪"),"17/20"],[L("**Long clips felt slow**","**长素材很慢**"),"9/20"],[L("Agent missed a moment","agent 漏了瞬间"),"2/20"]]}},{x:2060,y:560}),70);
+  edge(proof.id,tbl.id,"derive");
+
+  /* Snapshot */
+  const print1=at(node("print",{proof:proof.id,dir:dB.id,ed:1,spec:structuredClone(spec)},{x:3052,y:100}),40);
+  edge(proof.id,print1.id);
+  const launch=at(node("note",{text:L("Launch line: Your moments. Its busywork.","发布语：瞬间归你，杂活归它。")},{x:3052,y:470}),30);
+  edge(print1.id,launch.id,"derive");
+  const kb=at(node("kanban",{by:"wright",dir:dB.id,title:L("Moment markers · next","关键瞬间标记 · 下一步"),cols:[{id:"todo",title:L("To do","待办")},{id:"doing",title:L("Doing","进行中")},{id:"done",title:L("Done","完成")}],
+    cards:[
+      {id:"k1",title:L("Pre-mark top 5 moments","预标 5 个候选瞬间"),col:"todo"},
+      {id:"k2",title:L("Long-clip test, 10 editors","长素材测试，10 位剪辑师"),col:"todo"},
+      {id:"k3",title:L("Moment markers on the timeline","时间线上的瞬间标记"),col:"doing"},
+      {id:"k4",title:L("Undo-rate tracking","撤销率统计"),col:"done"},
+      {id:"k5",title:L("Beta with 20 editors","20 位剪辑师内测"),col:"done"}
+    ]},{x:3404,y:100}),25);
+  edge(print1.id,kb.id,"derive");
+
+  b.pins[j1.id]=[{id:"pin-dm-1",agent:"critic",note:L("Nothing here says editors want one click.","这里没有证据表明，剪辑师想要一键成片。"),t:T-188*min}];
+  b.log=[
+    {t:T-300*min,who:"you",html:L("Added <b>Session logs</b> and the editor interview","添加了<b>操作日志</b>和剪辑师访谈"),node:e1.id},
+    {t:T-280*min,who:"scout",html:L("Pulled <b>Reviews</b> from the store export","从导出里整理了<b>用户评论</b>"),node:e2.id},
+    {t:T-240*min,who:"you",html:L("Wrote the judgment","写下判断"),node:j1.id},
+    {t:T-200*min,who:"muse",html:L("Suggested directions <b>A</b>, <b>B</b> and <b>C</b>","提出了方向 <b>A</b>、<b>B</b>、<b>C</b>"),node:dB.id},
+    {t:T-190*min,who:"critic",html:L("Countered <b>One-click final cut</b>","反驳了<b>一键成片</b>"),node:st.id},
+    {t:T-120*min,who:"you",html:L("Adopted <b>B Rough cut, moments marked</b>","采纳了 <b>B 初剪 + 标出关键瞬间</b>"),node:dB.id},
+    {t:T-90*min,who:"wright",html:L("Built the <b>Moment-marker prototype</b>","做出了<b>关键瞬间标记原型</b>"),node:proof.id},
+    {t:T-40*min,who:"you",html:L("Froze <b>Snapshot No. 1</b>","冻结了<b>快照 1</b>"),node:print1.id},
+  ];
+  /* the board check has already looked at what is here: only what arrives later is new */
+  b.watch={seen:b.nodes.filter(isEvidenceCard).map(n=>n.id),done:[],queue:[]};
+  board=prevBoard;
+  return b;
+}
+/* the new evidence arrives: Beta test, kept in Gather and marked as countering the decision */
+function demoAddEvidence(){
+  if(!board?.demo)return null;
+  const ex=board.nodes.find(n=>n.demoNew&&!n.tombstone);if(ex){frameRects([{x:ex.x,y:ex.y,w:nodeW(ex),h:nodeH(ex)}]);return ex}
+  const dB=board.nodes.find(n=>n.type==="direction"&&board.adopted[n.idea]===n.id);if(!dB)return null;
+  checkpoint?.();
+  const n1=node("recording",{demoNew:true,title:L("Beta test","内测"),text:L("On long clips, picking moments takes longer than cutting by hand.","长素材里，挑瞬间比自己剪还慢。"),media:"u:dm-beta",poster:"u:dm-beta-poster",dur:2.4,weight:"observed",path:"beta-long-clip.webm"},{x:492,y:480});
+  makeRelation(n1.id,dB.id,{rel:"conflicts"});
+  ensureDemoAssets();renderAll();persist();
+  frameRects([{x:n1.x,y:n1.y,w:nodeW(n1),h:nodeH(n1)},{x:dB.x,y:dB.y,w:nodeW(dB),h:nodeH(dB)}]);
+  scheduleChecks?.(400);
+  return n1;
+}
 /* The sample once named its groups Diverge / Make / Release while the lanes said Explore / Prototype / Snapshot. */
 function migrateStageNames(){
   const map={Diverge:"Explore",Make:"Prototype",Release:"Snapshot"};
   for(const n of board.nodes||[])if(n.type==="group"&&typeof n.title==="string")n.title=n.title.replace(/^(\d\d · )(Diverge|Make|Release)( · )/,(m,a,w,c)=>a+map[w]+c).replace(/^04 · Snapshot · Snapshot, /,"04 · Snapshot · ");
 }
 function loadBoard(){
+  if(DEMO){board=sampleDemo();ensureDemoAssets();return}
   let req="";try{req=new URLSearchParams(location.search).get("board")||new URLSearchParams(location.search).get("sample")||""}catch{}
   const normPins=()=>{board.pins=board.pins||{};if(board.id==="showcase"&&!Object.keys(board.pins).length)seedShowcasePins(board)};
   if(req==="showcase"){
@@ -7072,16 +7237,16 @@ function proofVersions(n){if(!n||n.type!=="proof"||n.status==="sketch")return[n]
 function setAsideFor(n){const w=n?.type==="direction"&&n.status==="ink"?board.adopted[n.idea]:null;return w&&w!==n.id?byId(w):null}
 /* the adopted direction keeps your reason for choosing it; the decision view shows the same words */
 function choseHTML(n){if(board.adopted[n.idea]!==n.id)return "";const zh=uiLang()==="zh",why=String(n.whyYes||"").trim();
-  return `<div class="chose${why?"":" empty"}"><span class="chose-k">${zh?"为什么选它":"Why this one"}</span><p class="aside-why" data-edit="whyYes" data-ph="${zh?"为什么选它？":"Why this one?"}">${esc(why)}</p><button type="button" class="aside-add" data-a="why-yes">${why?(zh?"改理由":"Edit reason"):(zh?"写下为什么选它":"Say why you chose it")}</button></div>`}
+  return `<div class="chose${why?"":" empty"}"><span class="chose-k">${zh?"为什么选它":"Why this one"}</span><p class="aside-why" data-edit="whyYes" data-ph="${zh?"为什么选它？":"Why this one?"}" title="${zh?"双击修改":"Double-click to edit"}">${esc(why)}</p>${why?"":`<button type="button" class="aside-add" data-a="why-yes">${zh?"写下为什么选它":"Say why you chose it"}</button>`}</div>`}
 function setAsideHTML(n){const w=setAsideFor(n);if(!w)return "";const zh=uiLang()==="zh",why=String(n.whyNot||"").trim();
-  return `<div class="aside"><div class="aside-h"><span>${zh?"已搁置，选了":"Set aside for"}</span><span class="chip${lin(w)?" pg-"+lin(w):""}">${esc(w.letter||"")}</span><span class="aside-w">${esc(clip(w.title||"",48))}</span></div><p class="aside-why" data-edit="whyNot" data-ph="${zh?"为什么不选它？":"Why not this one?"}">${esc(why)}</p><button type="button" class="aside-add" data-a="why-not">${why?(zh?"改理由":"Edit reason"):(zh?"写下为什么不选它":"Add a reason")}</button></div>`}
+  return `<div class="aside"><div class="aside-h"><span>${zh?"已搁置，选了":"Set aside for"}</span><span class="chip${lin(w)?" pg-"+lin(w):""}">${esc(w.letter||"")}</span><span class="aside-w">${esc(clip(w.title||"",48))}</span></div><p class="aside-why" data-edit="whyNot" data-ph="${zh?"为什么不选它？":"Why not this one?"}" title="${zh?"双击修改":"Double-click to edit"}">${esc(why)}</p>${why?"":`<button type="button" class="aside-add" data-a="why-not">${zh?"写下为什么不选它":"Add a reason"}</button>`}</div>`}
 function proofResults(n){const items=(n?.spec?.items||[]).filter(it=>/^(passed|failed|waiting)$/i.test(String(it.tag||"").trim()));if(!items.length)return null;const t=k=>items.filter(it=>String(it.tag).trim().toLowerCase()===k);return {passed:t("passed").length,failed:t("failed").length,waiting:t("waiting").length,failedTitles:t("failed").map(it=>it.title)}}
 function cardBody(n){
   const sk=n.status==="sketch",L=lin(n),tm0=timeTag(n),seal=contribGroupHTML(n),tm=seal&&tm0?`<span class="foot-by">${seal}${tm0}</span>`:tm0;
   const head=k=>sk?sketchHead(n):`<div class="card-k">${k}<span class="sp"></span>${cardVotesHTML(n)}</div>`;
   const group=(cls,...xs)=>{const a=xs.filter(Boolean);return a.length?`<span class="${cls}">${a.join('<span class="foot-sep" aria-hidden="true">·</span>')}</span>`:""};
   const fL=(...xs)=>group("foot-l",...xs);
-  const fR=(...xs)=>group("foot-r",...xs,sk?"":tm);
+  const fR=(...xs)=>{const g=group("foot-r",...xs);const t=sk?"":tm;return t?(g?g.replace(/<\/span>$/,t+"</span>"):`<span class="foot-r">${t}</span>`):g};   // the byline needs no dot: the avatars already set it apart
   const foot=(left="",right=fR())=>(left||right)?`<div class="foot">${left}<span class="sp"></span>${right}</div>`:"";
   const fmt=fileFormatOf(n);
   const thumbBadge=f=>f?`<span class="badge">${ic(f.icon)}${esc(f.id==="link"?Lang("Link","链接"):f.label)}</span>`:"";
@@ -7158,7 +7323,7 @@ function cardBody(n){
     const res=!sk&&n.outcome?.result,resHTML=res?`<span class="res ${res}"><b>${outcomeWord(res)}</b>${n.outcome.note?` · ${esc(n.outcome.note)}`:""}</span>`:"";
     return `<div class="in">${head(`<span class="chip">${esc(n.letter)}</span><span class="pgname">${uiLang()==="zh"?"探索方向":"Direction"}</span>`)}
     <h4 data-edit="title">${esc(n.title)}</h4><p data-edit="text">${esc(n.text)}</p>${n.test||resHTML?`<div class="test">${n.test?`${flagH?`<div class="test-h"><b>${uiLang()==="zh"?"验证标准":"The Test"}</b>${flagH}</div>`:`<b>${uiLang()==="zh"?"验证标准":"The Test"}</b>`}<span data-edit="test">${esc(n.test)}</span>`:""}${resHTML}</div>`:""}${flagH&&!flagInTest?`<div class="dir-flag-row">${flagH}</div>`:""}${sk?"":setAsideHTML(n)+choseHTML(n)}
-    ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<button type="button" class="foot-link" data-a="goto-proof" title="${uiLang()==="zh"?"跳到这个方向的原型":"Go to this direction's proof"}">${uiLang()==="zh"?"原型":"Proof"}${ic("arrow")}</button>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
+    ${sk?sketchActs(n):foot(fL(adopted?`<span class="stamp" data-stamp="${n.id}">${uiLang()==="zh"?"已采纳":"Adopted"}</span>`:"",counterMark(restsOn(n).ctr)),fR(hasProof?`<button type="button" class="foot-link" data-a="goto-proof" title="${uiLang()==="zh"?"跳到这个方向的原型":"Go to this direction's proof"}">${uiLang()==="zh"?"看原型":"See proof"}${ic("arrow")}</button>`:adopted?`<button type="button" class="foot-branch" data-a="build" title="${uiLang()==="zh"?`从这个方向分支出一个原型（${mode}）`:`Branch a prototype from this direction (${mode})`}">${uiLang()==="zh"?"做原型":"Prototype"}${ic("arrow")}</button>`:"",threadCount(n)))}</div>`}
   case"proof":{
     /* A proof is an experiment that tests its direction: results first, thumbnail second, one next step. */
     const zh=uiLang()==="zh",L_=(e,z)=>zh?z:e,fx=n.fixed||[],dr=driftOf(n),dir=byId(n.dir);
@@ -8873,6 +9038,7 @@ function setApiHealth(k,{cfg=apiCfg,ms=null,detail=""}={}){
 }
 /* One real, minimal request: proves the host answers, the key is accepted and the model exists. */
 async function probeApi(cfg){
+  if(NOAI)return {k:"error",ms:0,detail:"demo"};
   const t0=performance.now();
   try{
     const r=await fetch(`${String(cfg.baseUrl).replace(/\/+$/,"")}/chat/completions`,{
@@ -8888,6 +9054,7 @@ async function probeApi(cfg){
   }
 }
 async function testApi({quiet=false}={}){
+  if(NOAI)return;
   if(!hasApi())return null;
   const cfg={...apiCfg};
   if(!quiet||apiHealthNow().k==="unknown")setApiHealth("checking",{cfg});
@@ -8911,6 +9078,7 @@ function apiHealthLabel(h=apiHealthNow()){
 }
 /* What actually answers the crew right now — mirrors viaClaude's routing — plus anything wrong underneath. */
 function connSummary(){
+  if(NOAI)return {engine:"replay",dot:"ok",mode:L("Recorded run","录制回放"),issue:"",tone:""};
   const ready=studioState.status==="ready",starting=studioState.status==="loading";
   const h=apiHealthNow();
   const engine=aiPref==="local"?"rules":aiPref==="auto"&&ready?"local":apiRoutable()?"api":sampleFn?"claude":"rules";
@@ -8936,6 +9104,7 @@ function Lang(en,zh){return L(en,zh)}
 function aiSource(){
   /* Built on connSummary so the trigger, Copilot and the Connection header can never disagree. */
   const c=connSummary(),tip=c.mode+(c.issue?" · "+c.issue:"");
+  if(c.engine==="replay")return {live:true,kind:"replay",cls:"live",label:L("Recorded run","录制回放"),title:demoRunLine()};
   if(c.engine==="local")return {live:true,kind:"studio",cls:"live",label:L("Local AI","本地模型"),title:tip};
   if(c.engine==="api")return {live:true,kind:"api",cls:apiHealthNow().k==="ok"?"claude":"",label:apiModelName(),title:tip};
   if(c.engine==="claude")return {live:true,kind:"claude",cls:"claude",label:"Claude",title:tip};
@@ -9248,6 +9417,7 @@ function renderStudioPop(){
   const pop=$("studioPop");if(!pop)return;
   pop.hidden=!studioPopOpen;
   if(!studioPopOpen)return;
+  if(NOAI){pop.innerHTML=`<div class="sp-head"><div class="sp-htxt"><b>${esc(L("Recorded run","录制回放"))}</b></div></div><div class="sp-group" style="padding:2px 16px 14px;font:450 13px/1.5 var(--ui);color:var(--label-2)">${esc(L("There is no live AI in this demo. The crew replays one real re-check:","这个演示没有实时 AI。成员回放的是一次真实复核："))}<br><span style="color:var(--label)">${esc(demoRunLine().replace(/^[^·]*·\s*/,""))}</span></div>`;return}
   const mode=aiSource();
   const modelShort=(studioState.model||"").split("/").pop();
   const stReady=studioState.status==="ready",stLoad=studioState.status==="loading",stStopped=studioState.status==="stopped";
@@ -9542,6 +9712,7 @@ async function probeStudioLauncher(){
   try{const r=await fetch("/launch/studio-ai",{cache:"no-store",signal:timeoutSignal(1500)});return r.ok&&(await r.json()).available===true}catch{return false}
 }
 async function launchStudio(){
+  if(NOAI)return;
   studioLaunching=Date.now();renderStudioPop();
   try{
     const r=await fetch("/launch/studio-ai",{method:"POST",headers:{"X-Studio-Client":"canvas"},signal:timeoutSignal(5000)});
@@ -10009,14 +10180,14 @@ function renderAdvPop(){
   const repsHTML=reps.length?`<div class="adv-replies">${reps.map(r=>{const isYou=r.who==="you",ra=isYou?null:(AGENTS[r.who]||a),tm=exactTime(r.t);return `<div class="adv-rep${isYou?" you":""}" data-adv-rep="${esc(r.id||"")}"><div class="adv-rep-h"><span>${esc(isYou?L("You","我"):ra.name)}</span>${tm?`<time>${esc(tm)}</time>`:""}</div><div class="adv-rep-tx${r.typing?" typing":""}">${mdLite(r.text||"")}</div></div>`}).join("")}</div>`:"";
   const relWord={conflicts:L("Conflicts","相矛盾"),supports:L("Supports","支持"),extends:L("Builds on","延伸")};
   const basisList=(p.basis||[]).filter(b=>byId(b.id)&&!isNodeHidden(byId(b.id)));
-  const basisHTML=basisList.length?`<div class="adv-basis"><b>${L("Based on","依据")}</b>${basisList.map(b=>`<p>${relWord[b.relation]?`<span class="adv-rel ${esc(b.relation)}">${esc(relWord[b.relation])}</span> · `:""}<a href="#" data-adv-basis="${esc(b.id)}" title="${esc(b.why||"")}">${esc(ctxLabel(byId(b.id)))}</a></p>`).join("")}</div>`:"";
-  const engTag=p.recheck?`<span class="adv-eng" title="${esc(L(`The board check found the evidence; ${p.recheck.critic==="none"?"Strategist":"Strategist and Critic"} then re-checked the decision against the cards it rests on${p.recheck.model?` (${engineName(p.recheck.model)})`:""}. Every card it cites is listed below.`,`画板检查找到了这条证据；随后${p.recheck.critic==="none"?"Strategist":"Strategist 和 Critic"}对照决定所依据的卡片做了复核${p.recheck.model?`（${engineName(p.recheck.model)}）`:""}。引用的卡片都列在下面。`))}">${L("re-check","复核")}</span>`:p.check?`<span class="adv-eng" title="${esc(L("Read straight off the board: relations, wires, evidence weights and shared words. No AI model wrote this.","直接从画板读出：关系、连线、证据分量和共同词语。不是 AI 模型写的。"))}">${L("board check","画板检查")}</span>`:p.engine==="rules"?`<span class="adv-eng" title="${esc(p.engineWhy?L(`${p.engineWhy}, so this thought came from built-in rules`,`${p.engineWhy}，这条建议来自内置规则`):L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
+  const basisHTML=basisList.length?`<div class="adv-basis"><b>${L("Based on","依据")}</b>${basisList.map(b=>`<p>${relWord[b.relation]?`<span class="adv-rel ${esc(b.relation)}">${esc(relWord[b.relation])}</span> · `:""}<a href="#" data-adv-basis="${esc(b.id)}" title="${esc(b.why||"")}">${esc(ctxLabel(byId(b.id)))}</a>${b.role?`<span style="color:var(--label-3)"> · ${esc(b.role)}</span>`:""}</p>`).join("")}</div>`:"";
+  const engTag=p.recheck?`<span class="adv-eng" title="${esc(L(`The board check found the evidence; ${p.recheck.critic==="none"?"Strategist":"Strategist and Critic"} then re-checked the decision against the cards it rests on${p.recheck.model?` (${engineName(p.recheck.model)})`:""}. Every card it cites is listed below.`,`画板检查找到了这条证据；随后${p.recheck.critic==="none"?"Strategist":"Strategist 和 Critic"}对照决定所依据的卡片做了复核${p.recheck.model?`（${engineName(p.recheck.model)}）`:""}。引用的卡片都列在下面。`))}">${p.recheck.model==="replay"?L("recorded re-check","录制的复核"):L("re-check","复核")}</span>`:p.check?`<span class="adv-eng" title="${esc(L("Read straight off the board: relations, wires, evidence weights and shared words. No AI model wrote this.","直接从画板读出：关系、连线、证据分量和共同词语。不是 AI 模型写的。"))}">${L("board check","画板检查")}</span>`:p.engine==="rules"?`<span class="adv-eng" title="${esc(p.engineWhy?L(`${p.engineWhy}, so this thought came from built-in rules`,`${p.engineWhy}，这条建议来自内置规则`):L("No model answered, so this thought came from built-in rules","没有模型响应，这条建议来自内置规则"))}">${L("built-in rules","内置规则")}</span>`:"";
   /* the buttons under the latest reply; gone once you write again or the reply is still typing */
   const lastR=reps[reps.length-1],picks=lastR&&lastR.who!=="you"&&!lastR.typing&&Array.isArray(lastR.actions)?lastR.actions:[];
   const waiting=!!lastR&&(lastR.who==="you"||!!lastR.typing);
   const lift=p.liftLabel&&!picks.length&&!waiting?`<button type="button" class="adv-lift" data-adv-lift="${esc(p.id)}">${ic("arrow")}${esc(p.liftLabel)}</button>`:"";
   const picksHTML=picks.length?`<div class="adv-picks">${picks.map((x,i)=>`<button type="button" class="adv-lift" data-adv-act="${i}" data-adv-pickpin="${esc(p.id)}">${ic("arrow")}${esc(x.label)}</button>`).join("")}</div>`:"";
-  pop.innerHTML=`<span class="adv-pop-tail" aria-hidden="true"></span><div class="adv-head"><span class="mk">${a.mk}</span><b>${esc(a.name)}</b>${engTag}${tools}</div>${tabsHTML}<div class="adv-scroll">${body?`<p class="adv-note">${renderAdvNote(body,kws)}</p>`:""}${basisHTML}${repsHTML}${picksHTML}</div><div class="adv-dock"><div class="adv-reply"><input type="text" class="adv-reply-in" data-adv-in data-pin-id="${esc(p.id)}" placeholder="${esc(L(`Reply to ${a.name}…`,`回复 ${a.name}…`))}" value="${esc(keepDraft)}" autocomplete="off" spellcheck="false"><button type="button" class="adv-send" data-adv-send="${esc(p.id)}"${keepDraft.trim()?"":" disabled"} aria-label="${esc(L("Send reply","发送回复"))}" title="${esc(L("Send (Enter)","发送 (Enter)"))}">${UP_SVG}</button></div><div class="adv-acts"><button type="button" class="adv-ign" data-adv-del="${esc(p.id)}">${L("Ignore","忽略")}</button>${lift}</div></div>`;
+  pop.innerHTML=`<span class="adv-pop-tail" aria-hidden="true"></span><div class="adv-head"><span class="mk">${a.mk}</span><b>${esc(a.name)}</b>${engTag}${tools}</div>${tabsHTML}<div class="adv-scroll">${body?`<p class="adv-note">${renderAdvNote(body,kws)}</p>`:""}${basisHTML}${repsHTML}${picksHTML}</div><div class="adv-dock"><div class="adv-reply"><span class="adv-field"><input type="text" class="adv-reply-in" data-adv-in data-pin-id="${esc(p.id)}" placeholder="${esc(L(`Reply to ${a.name}…`,`回复 ${a.name}…`))}" value="${esc(keepDraft)}" autocomplete="off" spellcheck="false"><button type="button" class="adv-send" data-adv-send="${esc(p.id)}"${keepDraft.trim()?"":" disabled"} aria-label="${esc(L("Send reply","发送回复"))}" title="${esc(L("Send (Enter)","发送 (Enter)"))}">${UP_SVG}</button></span><button type="button" class="adv-ign" data-adv-del="${esc(p.id)}">${L("Ignore","忽略")}</button></div>${lift?`<div class="adv-acts">${lift}</div>`:""}</div>`;
   placeAdvPop();
   const scrollEl=qs(".adv-scroll",pop);if(scrollEl&&reps.length)scrollEl.scrollTop=scrollEl.scrollHeight;
   if(wasFocused){const ni=qs("[data-adv-in]",pop);if(ni){ni.focus();ni.setSelectionRange(ni.value.length,ni.value.length)}}
@@ -10544,6 +10715,7 @@ function timeoutSignal(ms){
   const c=new AbortController();setTimeout(()=>c.abort(),ms);return c.signal;
 }
 async function checkStudioHealth({wake=false,quiet=true}={}){
+  if(NOAI)return;
   clearTimeout(studioPollT);
   const nowMs=()=>typeof performance!=="undefined"?performance.now():Date.now();
   const prev=studioState.status,prevModel=studioState.model,t0=nowMs();
@@ -10592,6 +10764,7 @@ async function deleteStudioModel(id){
   await checkStudioHealth({wake:false,quiet:true});
 }
 async function initClaude(){
+  if(NOAI)return;
   try{if(window.claude&&typeof window.claude.use==="function"){const s=await window.claude.use("sample");if(s){sampleFn=s;renderCrew()}}}catch{}
   checkStudioHealth({wake:false,quiet:true});
 }
@@ -10726,6 +10899,7 @@ let AI_TIMEOUT_MS=95000; // a Cloud API call's time limit (Local AI uses LOCAL_A
 const STANCE_TEMP={fact:{text:.15,json:.15},create:{text:.9,json:.7}};
 const CREATE_RULE="Invent freely: characters, smaller places, events, rules and mechanics can all be made up, and surprising beats safe. Anything you present as real (an actual institution, person, street, date or event) must agree with the sources on the wall; when you are not sure something real is right, invent a fictional one instead of guessing.";
 async function studioChat({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal,stance=""}){
+  if(NOAI)throw aiFailError(L("Live AI isn't part of the demo","演示不包含实时 AI"));
   let msgs=await buildChatMessages({system,prompt,messages,images});
   /* No grammar-constrained JSON mode for Local AI: llama.cpp samples it about 16x slower (one Strategist
      fork took 443 s against 27 s as plain text on a 4-core CPU), so crew moves hit the time limit.
@@ -10877,6 +11051,7 @@ function autoPlan(weight="light"){
   return {order:local?(cloud&&st==="open"?["studio","api"]:["studio"]):(cloud&&st==="open"?["api"]:[]),why:"light"};
 }
 function engineName(eng){
+  if(eng==="replay")return demoRunLine();
   if(eng==="studio"){const m=(studioState.model||"").split("/").pop();return L("Local AI","本地模型")+(m?` · ${m}`:"")}
   if(eng==="api")return (apiCfg.model||"").split("/").pop().replace(/[-_]+/g," ").replace(/\b[a-z]/g,c=>c.toUpperCase())||L("Cloud API","云端 API");
   return eng;
@@ -10943,6 +11118,7 @@ async function apiChat(args){
   }
 }
 async function apiChatOnce({system,prompt,messages,images=[],json=false,maxTokens=2200,timeoutMs=AI_TIMEOUT_MS,onText,signal,stance=""}){
+  if(NOAI)throw aiFailError(L("Live AI isn't part of the demo","演示不包含实时 AI"));
   const msgs=await buildChatMessages({system,prompt,messages,images});
   const ctrl=new AbortController();
   const onAbort=()=>ctrl.abort();
@@ -11665,7 +11841,8 @@ function tidySmallReply(text){
   paras.push(qs&&qs.length>1?qs[0].trim():last);
   return paras.join("\n\n").trim();
 }
-async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false,small=null,check=null,stance="",weight="light"},local){
+async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,modelTier="default",signal,memoryMode="full",quiet=false,small=null,check=null,stance="",weight="light",tag="",key=""},local){
+  if(NOAI)return demoAsk({tag,key,signal},local);
   const fullSys=withMemorySystem(system,memoryMode);
   const sSys=small?withMemorySystem(small.system,memoryMode):fullSys,sPrompt=small?small.prompt:prompt;
   /* Local AI: an unreadable answer is asked once more; a readable one with obvious errors gets one targeted
@@ -11689,6 +11866,115 @@ async function askAI({system,prompt,images=[],json=false,maxTokens=2000,onText,m
     local,
     {studio,apiArgs:{system:fullSys,prompt,images,json,maxTokens,onText,signal,stance},quiet,weight}
   );
+}
+
+/* ── demo: the crew replays one recorded real run ──────────────────────
+   tools/demo/record-run.cjs drives this board against a real model and keeps each answer the crew got (by tag, with a key
+   made from the cards it read). Here the same moment gets the same answers, at the pace they came, and says it is a
+   recording. Anything that was not recorded falls back to built-in rules, as with no model at all. */
+const demoUsed=new Set();
+const DEMO_MAX_WAIT=6000;
+function demoRun(){const r=DEMO?.recording;return r&&(r.runs?.[uiLang()]||r.runs?.en)||null}
+function demoRunLine(){
+  const r=DEMO?.recording,run=demoRun();
+  if(!r||!run)return L("Recorded run","录制回放");
+  const d=r.recordedAt?new Date(r.recordedAt).toLocaleDateString(uiLang()==="zh"?"zh-CN":"en",{year:"numeric",month:"short",day:"numeric"}):"";
+  return L(`Recorded run · ${run.model||r.model||"a real model"}${d?" · "+d:""}`,`录制回放 · ${run.model||r.model||"真实模型"}${d?" · "+d:""}`);
+}
+function demoKey(text){let h=5381;for(const ch of String(text||""))h=(h*33^ch.charCodeAt(0))>>>0;return h.toString(36)}
+async function demoAsk({tag,key,signal},local){
+  const run=demoRun(),calls=run?.calls||[],lang=uiLang();
+  const i=tag?calls.findIndex((c,k)=>!demoUsed.has(lang+k)&&c.tag===tag&&(!c.key||c.key===key)):-1;
+  if(i<0)return {v:await local(),live:false,engine:"local",why:L("The demo only replays its recorded run","演示只回放录好的那一次")};
+  demoUsed.add(lang+i);const c=calls[i],who=/critic/.test(tag)?"critic":"muse";
+  setAgent(who,{busy:true,status:L("re-checking · recorded","复核中 · 录制回放")});
+  try{await new Promise((ok,no)=>{const h=setTimeout(ok,Math.max(600,Math.min(c.ms||2400,DEMO_MAX_WAIT)));signal?.addEventListener("abort",()=>{clearTimeout(h);demoUsed.delete(lang+i);no(new DOMException("Aborted","AbortError"))},{once:true})})}
+  finally{setAgent(who,{busy:false,status:""})}
+  return {v:structuredClone(c.v),live:true,engine:"replay",why:""};
+}
+
+/* the demo's own words: one chip that says what this page is, and one cue that walks through the moment the crew was
+   recorded on (new evidence arrives, the crew re-checks the decision, you decide). Everything else is the app as it is. */
+const DEMO_CSS=`
+.dm-chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;margin-left:6px;border:0;border-radius:var(--radius-pill);background:none;box-shadow:inset 0 0 0 1px var(--hair-2);color:var(--label-2);font:560 12px/1 var(--ui);cursor:pointer;transition:background var(--d-quick),color var(--d-quick)}
+.dm-chip:hover,.dm-chip[aria-expanded="true"]{background:var(--hover);color:var(--label)}
+.dm-chip i{width:6px;height:6px;border-radius:50%;background:var(--label-3)}
+.dm-pop{position:fixed;z-index:80;width:300px;padding:14px 14px 12px 16px;border-radius:var(--radius-media);background:var(--chrome);-webkit-backdrop-filter:blur(26px);backdrop-filter:blur(26px);box-shadow:var(--chrome-shadow);color:var(--label);font:450 13px/1.5 var(--ui);animation:drop var(--t-bouncy) var(--bouncy)}
+.dm-pop[hidden]{display:none}
+.dm-pop p{margin:0 0 12px;color:var(--label-2)}
+.dm-pop b{display:block;margin-bottom:4px;font-weight:620;color:var(--label)}
+.dm-row{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.dm-row a.dm-q{margin-right:auto;color:var(--label-3);font:500 12px/1 var(--ui);text-decoration:none}
+.dm-row a.dm-q:hover{color:var(--label)}
+.dm-go{display:inline-flex;align-items:center;height:32px;padding:0 14px;border:0;border-radius:var(--radius-sm);background:var(--act);color:var(--on-act);font:600 13px/1 var(--ui);text-decoration:none;cursor:pointer;white-space:nowrap;transition:transform var(--d-press)}
+.dm-go:active{transform:scale(.96)}
+.dm-cue{position:fixed;z-index:60;left:50%;bottom:calc(64px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:max-content;display:flex;align-items:center;gap:14px;max-width:min(560px,calc(100vw - 32px));min-height:48px;padding:8px 8px 8px 18px;border-radius:var(--radius-media);background:var(--chrome);-webkit-backdrop-filter:blur(26px);backdrop-filter:blur(26px);box-shadow:var(--chrome-shadow);color:var(--label);font:520 14px/1.4 var(--ui);transition:opacity .28s ease,transform .28s ease}
+.dm-cue[hidden]{display:none}
+.dm-cue.out{opacity:0;transform:translate(-50%,8px)}
+.dm-cue span{flex:1;min-width:0}
+.dm-cue .dm-go{flex:none}
+.dm-cue.wait{padding-right:18px}
+.dm-cue.wait span::before{content:"";display:inline-block;width:7px;height:7px;margin:0 10px 1px 0;border-radius:50%;background:var(--label-2);animation:dmBreathe 1.6s ease-in-out infinite}
+@keyframes dmBreathe{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.dm-cue.wait span::before{animation:none;opacity:.7}.dm-cue,.dm-pop{transition:none;animation:none}}
+@media (max-width:640px){.dm-cue{left:16px;right:16px;width:auto;max-width:none;transform:none;font-size:13px;gap:10px}.dm-cue.out{transform:translateY(8px)}.dm-chip{display:none}}
+body.is-demo [data-showcase]{display:none}
+`;
+let demoStep="intro",demoCueT=0;
+function demoCueHTML(){
+  const s={
+    intro:[L("This board has made its decision. New evidence just came in.","这块画板已经做了决定。刚刚来了一条新证据。"),L("Add the beta test","放进内测结果"),"add"],
+    wait:[L("The crew is re-checking B against it. This is a recorded run.","成员正在对照它复核 B。这是一次录制回放。"),"",""],
+    note:[L("Their reading is on B. The choice is still yours.","他们的结论在 B 上。选择权仍在你手里。"),L("Open the decision","打开决定"),"dec"],
+  }[demoStep];
+  if(!s)return "";
+  return `<span>${esc(s[0])}</span>${s[1]?`<button type="button" class="dm-go" data-dm="${s[2]}">${esc(s[1])}</button>`:""}`;
+}
+function renderDemoCue(){
+  const el=$("dmCue");if(!el)return;
+  const h=demoCueHTML();el.hidden=!h;el.classList.toggle("wait",demoStep==="wait");if(h)el.innerHTML=h;
+}
+function demoSetStep(s){demoStep=s;renderDemoCue()}
+function demoWatch(){
+  clearInterval(demoCueT);
+  demoCueT=setInterval(()=>{
+    if(!board?.demo){demoSetStep("");return clearInterval(demoCueT)}
+    const d=board.nodes.find(n=>n.type==="direction"&&board.adopted[n.idea]===n.id);
+    const note=d&&(board.pins?.[d.id]||[]).some(p=>p.check==="revisit");
+    if(note&&demoStep==="wait"){demoSetStep("note");clearInterval(demoCueT);focusNodes?.([d],.75);setTimeout(()=>{try{toggleAdvPop(d.id)}catch{}},500)}
+  },500);
+}
+function demoPopHTML(){
+  const site=DEMO?.site||"";
+  return `<b>${esc(L("Demo","演示"))}</b><p>${esc(L("Nothing here leaves your browser. Refresh to start over. The crew replays one real run; there is no live AI on this page.","这里的内容不会离开你的浏览器，刷新即可重来。成员回放的是一次真实运行的录制，本页没有实时 AI。"))}</p>
+    <div class="dm-row"><a class="dm-q" href="${esc(DEMO?.terms||"terms.html")}" target="_blank" rel="noopener">${esc(L("Terms","使用条款"))}</a>${site?`<a class="dm-go" href="${esc(site)}" target="_blank" rel="noopener">${esc(L("Join the waitlist","加入候补名单"))}</a>`:""}</div>`;
+}
+function initDemo(){
+  if(!DEMO)return;
+  const st=document.createElement("style");st.textContent=DEMO_CSS;document.head.appendChild(st);
+  const chip=document.createElement("button");chip.type="button";chip.className="dm-chip";chip.id="dmChip";chip.setAttribute("aria-expanded","false");chip.setAttribute("aria-controls","dmPop");
+  chip.innerHTML=`<i aria-hidden="true"></i><span>${esc(L("Demo","演示"))}</span>`;
+  qs(".top .brand")?.appendChild(chip);
+  const pop=document.createElement("div");pop.className="dm-pop";pop.id="dmPop";pop.hidden=true;pop.setAttribute("role","dialog");pop.setAttribute("aria-label",L("About this demo","关于这个演示"));document.body.appendChild(pop);
+  const place=()=>{const r=chip.getBoundingClientRect();pop.style.left=Math.max(16,Math.min(r.left,innerWidth-316))+"px";pop.style.top=(r.bottom+8)+"px"};
+  chip.onclick=e=>{e.stopPropagation();const open=pop.hidden;pop.innerHTML=demoPopHTML();pop.hidden=!open;chip.setAttribute("aria-expanded",String(open));if(open)place()};
+  document.addEventListener("pointerdown",e=>{if(!pop.hidden&&!pop.contains(e.target)&&e.target!==chip&&!chip.contains(e.target)){pop.hidden=true;chip.setAttribute("aria-expanded","false")}},true);
+  addEventListener("keydown",e=>{if(e.key==="Escape"&&!pop.hidden){pop.hidden=true;chip.setAttribute("aria-expanded","false")}});
+  const cue=document.createElement("div");cue.className="dm-cue";cue.id="dmCue";cue.setAttribute("role","status");document.body.appendChild(cue);
+  cue.addEventListener("click",e=>{
+    const b=e.target.closest("[data-dm]");if(!b)return;
+    if(b.dataset.dm==="add"){if(demoAddEvidence()){demoSetStep("wait");demoWatch()}}
+    else if(b.dataset.dm==="dec"){openDecisions(true);cue.classList.add("out");setTimeout(()=>demoSetStep(""),300)}
+  });
+  renderDemoCue();
+}
+/* the language changed: an untouched demo board is rebuilt in the new language */
+function demoRelang(){
+  if(!DEMO||!board?.demo)return;
+  if(board.nodes.some(n=>n.demoNew)||undoStack.length)return renderDemoCue();
+  board=sampleDemo();sel=[];renderAll();ensureDemoAssets();
+  const chip=$("dmChip");if(chip)chip.querySelector("span").textContent=L("Demo","演示");
+  renderDemoCue();
 }
 
 /* ── cursors and the pencil ──────────────────────────────────────────── */
@@ -13527,6 +13813,7 @@ let imgSvc={connected:false,models:[],videoModels:[],serviceStatus:"offline",sha
 const searchPages=new Map();
 
 async function refreshImageService({quiet=true}={}){
+  if(NOAI)return;
   const prev=imgSvc.connected,prevStatus=imgSvc.serviceStatus;
   try{
     const r=await fetch(`${IMG_URL}/health`,{signal:timeoutSignal(2500)});
@@ -15273,6 +15560,7 @@ function parseEnvText(str){
   return env;
 }
 async function studioMcpReq(path,body=null,timeoutMs=30000){
+  if(NOAI)throw aiFailError(L("Live AI isn't part of the demo","演示不包含实时 AI"));
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),timeoutMs);
   try{
     const r=await fetch(`${STUDIO_URL}${path}`,{
@@ -17749,7 +18037,15 @@ async function downloadPage(n){
 /* ── user files: kept in this browser (IndexedDB) ───────────────────── */
 const userMedia=new Map();
 let idbP=null;
-function idb(){if(idbP)return idbP;idbP=new Promise(res=>{try{const r=indexedDB.open("vellum",2);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains("blobs"))db.createObjectStore("blobs");if(!db.objectStoreNames.contains("boards"))db.createObjectStore("boards")};r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch{res(null)}});return idbP}
+/* in the demo, "this browser" means this page: the same calls, kept in memory until a refresh */
+function demoIdb(){
+  const stores={blobs:new Map(),boards:new Map()};
+  return {objectStoreNames:{contains:n=>n in stores},transaction(){
+    const t={oncomplete:null,onerror:null,onabort:null},done=()=>setTimeout(()=>t.oncomplete?.(),0);
+    t.objectStore=sn=>({put(v,k){stores[sn].set(k,v);done()},delete(k){stores[sn].delete(k);done()},get(k){const q={result:stores[sn].get(k)??null,onsuccess:null,onerror:null};setTimeout(()=>q.onsuccess?.(),0);done();return q}});
+    return t}};
+}
+function idb(){if(idbP)return idbP;if(DEMO)return idbP=Promise.resolve(demoIdb());idbP=new Promise(res=>{try{const r=indexedDB.open("vellum",2);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains("blobs"))db.createObjectStore("blobs");if(!db.objectStoreNames.contains("boards"))db.createObjectStore("boards")};r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch{res(null)}});return idbP}
 async function putBlob(k,b){const d=await idb();if(!d)return false;return new Promise(r=>{try{const t=d.transaction("blobs","readwrite");t.objectStore("blobs").put(b,k);t.oncomplete=()=>r(true);t.onerror=()=>r(false)}catch{r(false)}})}
 async function getBlob(k){const d=await idb();if(!d)return null;return new Promise(r=>{try{const q=d.transaction("blobs").objectStore("blobs").get(k);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null)}catch{r(null)}})}
 async function delBlob(k){if(!k)return false;const d=await idb();if(!d)return false;return new Promise(r=>{try{const tx=d.transaction("blobs","readwrite");tx.objectStore("blobs").delete(k);tx.oncomplete=()=>r(true);tx.onerror=tx.onabort=()=>r(false)}catch{r(false)}})}
@@ -18786,6 +19082,7 @@ function scheduleBackup(){
   backupState.t=setTimeout(()=>{backupState.t=0;runBackup()},BACKUP_EVERY_MS);
 }
 async function runBackup(){
+  if(DEMO)return;
   const b=board;if(!b||backupState.busy)return;
   if(!b.nodes.length&&!(b.copilot||[]).length)return; // an empty board is nothing to keep
   if(backupState.ok===false&&Date.now()-backupState.failedAt<BACKUP_RETRY_MS)return;
@@ -19018,7 +19315,7 @@ function systemSettingsDialog(){
   if(!dlg.open)dlg.showModal();const d=dlg;d.focus();
   d.querySelectorAll("[data-th]").forEach(b=>b.onclick=()=>{const t=b.dataset.th;if(t==="auto"){store.del(".theme");delete document.documentElement.dataset.theme}else{store.set(".theme",t);document.documentElement.dataset.theme=t}
     d.querySelectorAll("[data-th]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));qsa("[data-id]",nodesEl).forEach(el=>el._sig="");renderNodes();paintMap()});
-  d.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{const lg=b.dataset.lang==="zh"?"zh":"en";store.set(".lang",lg);document.documentElement.lang=lg==="zh"?"zh-CN":"en";renderBays();renderRail();renderStages();renderCrew();renderNodes();renderLineCtx();renderWirePop();renderAdvPop();renderFindBar();syncStaticLang();renderDecisions();if(studioPopOpen)renderStudioPop();if(agentPopKey)renderAgentPop();if(!$("genOpts")?.hidden){const rr=route(lineText());renderGenOpts(true,lineMode||rr?.kind||"image")}systemSettingsDialog()});
+  d.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{const lg=b.dataset.lang==="zh"?"zh":"en";store.set(".lang",lg);document.documentElement.lang=lg==="zh"?"zh-CN":"en";renderBays();renderRail();renderStages();renderCrew();renderNodes();renderLineCtx();renderWirePop();renderAdvPop();renderFindBar();syncStaticLang();renderDecisions();demoRelang();if(studioPopOpen)renderStudioPop();if(agentPopKey)renderAgentPop();if(!$("genOpts")?.hidden){const rr=route(lineText());renderGenOpts(true,lineMode||rr?.kind||"image")}systemSettingsDialog()});
   const sfxSw=qs("[data-sfx-sw]",d),sfxVolRow=qs("#sysSfxVolRow",d),sfxSl=qs("[data-sfx-vol]",d),sfxTxt=qs("[data-sfx-vol-txt]",d),sfxTst=qs("[data-sfx-test]",d);
   if(sfxSw)sfxSw.onclick=()=>{const on=sfxSw.getAttribute("aria-checked")!=="true";store.set(".sfx",on?"on":"off");sfxSw.setAttribute("aria-checked",String(on));sfxVolRow?.classList.toggle("is-dim",!on);if(sfxSl)sfxSl.disabled=!on;if(sfxTst)sfxTst.disabled=!on;if(on)sfx("pop")};
   if(sfxSl){const icoOn='<svg class="ico" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>',icoOff='<svg class="ico" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M3 3l18 18"/></svg>';sfxSl.oninput=()=>{const v=clamp(Number(sfxSl.value)||0,0,100);store.set(".sfxVol",v);sfxSl.style.setProperty("--p",v+"%");if(sfxTxt)sfxTxt.textContent=v+"%";if(sfxTst)sfxTst.innerHTML=v>0?icoOn:icoOff;_sfxSetGain(v)};sfxSl.onchange=()=>sfx("pop")}
@@ -20138,6 +20435,8 @@ wall.addEventListener("dblclick",e=>{
   if(under.some(x=>x.closest?.(".tbl-block tbody td,.tbl-block thead th,.tbl-addrow,.tbl-chart,button,textarea,input,audio,a,[contenteditable='true'],[data-a-item],[data-a-kb-item],[data-a-tm-item],[data-a-syn],.card-resize,.todo-add,.kb-add,.line,.margin,.tools,.top-tools,.find-bar,.find-scrim,.wire-pop,.w-hit,.zoom,.top,.pbar,.strip,.selbar,.map,.copilot-panel,.copilot-btn,.studio-pop,.ledger")))return;
   const card=under.map(x=>x.closest?.(".card")).find(c=>c&&(byId(c.dataset.id)?.type!=="group"||under.some(x=>x.closest?.(".card-k,h4,.grp-resize")?.closest?.(".card")===c)));
   if(card){const n=byId(card.dataset.id);if(n&&n.status==="sketch"){ink(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);return}
+    const whyHit=under.map(x=>x.closest?.(".aside-why[data-edit]")).find(Boolean);
+    if(whyHit&&n&&n.type==="direction"){startEdit(n.id,whyHit.dataset.edit,{collapseEnd:true});return}
     const tagHit=under.map(x=>x.closest?.(".note-tag,[data-edit='tag']")).find(Boolean);
     if(tagHit&&n&&(n.type==="note"||n.type==="notepad")){startEdit(n.id,"tag",{collapseEnd:false});return}
     if(n&&n.type==="note"&&!under.some(x=>x.closest?.(".card-k,.foot"))){startEdit(n.id,"text",{clientX:e.clientX,clientY:e.clientY});return}openFocus(card.dataset.id);return}
@@ -20351,7 +20650,8 @@ const RC_LABEL={stronger:["Stronger","更站得住"],holds:["Still holds","仍�
 function decRecheckHTML(dir,fresh){
   const r=dir.recheck;if(!r||!RC_LABEL[r.verdict])return "";
   const latest=Math.max(...fresh.map(s=>s.t||0));if(latest&&r.at+1000<latest)return "";   // newer evidence than the re-check: it is not the reading of these
-  return `<div class="dv-rc rc-${esc(r.verdict)}"><span class="dv-rc-h"><b>${esc(L("Crew re-check","成员复核"))}</b><span class="dv-rc-v">${esc(L(...RC_LABEL[r.verdict]))}</span></span><p>${esc(r.why)}</p>${r.objection?`<p class="dv-rc-c"><b>Critic</b> ${esc(r.objection)}${r.fix?` <span>${esc(L("Fix: ","建议："))}${esc(r.fix)}</span>`:""}</p>`:""}${r.next?`<p class="dv-rc-n">${esc(L("Cheapest check: ","最省事的验证："))}${esc(r.next)}</p>`:""}</div>`;
+  const crit=r.fix||r.objection;
+  return `<div class="dv-rc rc-${esc(r.verdict)}"><span class="dv-rc-h" title="${esc(DEMO?demoRunLine():"")}">${esc(DEMO?L("The crew · recorded","成员 · 录制回放"):L("The crew","成员"))}</span><p><b class="dv-rc-v">${esc(L(...RC_LABEL[r.verdict]))}${L(".","。")}</b>${L(" ","")}${esc(r.why)}</p>${crit?`<p class="dv-rc-c">${esc(L("Critic suggests: ","Critic 建议："))}${esc(crit)}</p>`:""}</div>`;
 }
 function decCardHTML(x,i){
   const {claim,dir,rests,since,fresh}=x,zh=uiLang()==="zh";
@@ -20374,9 +20674,8 @@ function decCardHTML(x,i){
     const holdOpen=decHoldOpen.has(dir.id);
     const acts=fresh.length?(holdOpen?`<div class="dv-hold"><textarea class="dv-why" rows="2" data-dv-heldwhy="${esc(dir.id)}" placeholder="${esc(L("What makes it still hold? (optional)","为什么它仍然成立？（可不填）"))}"></textarea><div class="dv-acts"><button type="button" class="dv-act" data-dv-hold-cancel="${esc(dir.id)}">${L("Cancel","取消")}</button><button type="button" class="dv-act primary" data-dv-hold-save="${esc(dir.id)}">${L("Keep the decision","保留决定")}</button></div></div>`
       :`<div class="dv-acts"><button type="button" class="dv-act" data-dv-reopen="${esc(claim.id)}">${L("Reopen the choice","重新选择")}</button><button type="button" class="dv-act primary" data-dv-hold="${esc(dir.id)}">${L("Still holds","仍然成立")}</button></div>`):"";
-    const lede=fresh.length?L("The decision stays as you made it until you change it.","除非你改，决定保持不变。"):"";
     const rows=`<ul class="dv-list">${since.map(s=>decRowHTML(s.e,{rel:s.rel,t:s.t,old:!s.fresh})).join("")}</ul>`;
-    sinceH=fresh.length?`<div class="dv-since${ctr?" ctr":""}"><span class="dv-k">${L(`New since you decided · ${fresh.length}`,`决定之后新增 · ${fresh.length} 条`)}</span><p class="dv-kept" style="margin:0 0 4px">${esc(lede)}</p>${rows}${decRecheckHTML(dir,fresh)}${kept}${acts}</div>`
+    sinceH=fresh.length?`<div class="dv-since${ctr?" ctr":""}"><span class="dv-k">${L("New since you decided","决定之后新增")}</span>${rows}${decRecheckHTML(dir,fresh)}${kept}${acts}</div>`
       :`<details class="dv-since calm dv-ev" data-dv-ev="s:${esc(dir.id)}"${decEvOpen.has("s:"+dir.id)?" open":""}><summary><span>${esc(L(`Since you decided · ${since.length} weighed`,`决定之后 · 已权衡 ${since.length} 条`))}</span>${ic("chev","ico dv-tw")}</summary>${rows}</details>${kept?`<div class="dv-sec" style="margin-top:6px">${kept}</div>`:""}`;
   }
   /* the real-world test's result, recorded on the direction; a failed one offers the two ways on (paths work) */
@@ -20475,6 +20774,8 @@ function openingShot(animate=true){
   // The sample opens on its first lane at a zoom you can read (the whole board was 34%, below the label-only zoom),
   // which also keeps its waiting draft tray off screen until you get there.
   const sample=board.id==="showcase"&&!phone;
+  /* the demo opens on the decision: the evidence it rests on, the judgment, and the three directions */
+  if(board.demo){const ex=vis.filter(n=>n.type==="idea"||n.type==="direction"),eb=bbox(ex.length?ex:vis);const t=phone?camFor({x0:eb.x0-20,y0:eb.y0-40,x1:eb.x1+20,y1:eb.y0+900},.9):camFor({x0:-20,y0:-150,x1:2*BAY-40,y1:1180},.9);if(!animate||calm()){cam=t;paintCam();return}const all=bbox(vis);cam=camFor({x0:all.x0-200,y0:all.y0-300,x1:all.x1+800,y1:all.y1+200},.6);paintCam();setTimeout(()=>flyTo(t,1600),350);return}
   const b=bbox(ns),target=sample?camFor({x0:0,y0:-140,x1:clamp(bbox(ns.filter(n=>bayOf(n)===0).concat({x:0,y:0,type:'note'})).x1+60,700,BAY),y1:880},.8):camFor({x0:b.x0-30,y0:phone?b.y0-30:Math.min(b.y0-30,-170),x1:b.x1+30,y1:b.y1+30},.95);
   if(!animate||calm()){cam=target;paintCam();return}
   const all=bbox(vis);cam=camFor({x0:all.x0-200,y0:all.y0-300,x1:all.x1+800,y1:all.y1+200},.6);paintCam();
@@ -20541,9 +20842,9 @@ applyTheme();document.documentElement.lang=uiLang()==="zh"?"zh-CN":"en";loadBoar
   document.fonts?.ready?.then(()=>{renderNodes();drawWires();placeBars();placeMargin()});
   const firstRun=!store.get(".seen",false);
   if(board.cam&&!firstRun){cam={...board.cam};paintCam()}else{openingShot(true);store.set(".seen",true)}
-  if(firstRun)setTimeout(showWelcome,900);
+  if(firstRun&&!DEMO)setTimeout(showWelcome,900);
   addEventListener("resize",()=>{paintCam();renderBars();placeStrip();autoGrow();syncLineClearance()});
-  restoreMedia();hydrateBoardFromIdb();initIsland();initCrewBub();resumePendingVideoJobs();initClaude();refreshImageService();if(hasApi()&&apiHealthNow().k==="unknown"&&!cloudDailyLimit())setTimeout(()=>testApi({quiet:true}),1500);setupVoice();renderStages();syncStaticLang();paintMap();initCopilot?.();
+  restoreMedia();hydrateBoardFromIdb();initIsland();initCrewBub();resumePendingVideoJobs();initClaude();refreshImageService();if(hasApi()&&apiHealthNow().k==="unknown"&&!cloudDailyLimit())setTimeout(()=>testApi({quiet:true}),1500);setupVoice();renderStages();syncStaticLang();paintMap();initCopilot?.();initDemo();
   setInterval(()=>{if(!gesture&&!stageOpen)qsa(".card time").length&&renderNodes()},60000);
 }
 /* ════ Design pass, 27 Nov 2026 ═════════════════════════════════════════════════════════════════════════════ */

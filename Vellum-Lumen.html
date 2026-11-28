@@ -12116,7 +12116,7 @@ async function keenableSearch(q,{maxResults=3,cfg=searchCfg}={}){
 // game databases and forums describe existing games, not the world an idea is set in
 const GAME_DB_SITES=["rpg.net","rpggeek.com","boardgamegeek.com","rpgpub.com","drivethrurpg.com","rpg.stackexchange.com","store.steampowered.com","steamcommunity.com","igdb.com","mobygames.com","giantbomb.com","reddit.com"];
 const hostOf=u=>{try{return new URL(u).host.replace(/^www\./,"")}catch{return ""}};
-const ideaCore=t=>String(t||"").replace(/\b(i|we|want|wants|to|make|build|create|an?|the|set|in|on|about|of|for|with|where|you|play|game|games|rpg|jrpg|video|story|idea|app)\b/gi," ").replace(/[^\w\s'-]/g," ").replace(/\s+/g," ").trim();
+const ideaCore=t=>String(t||"").replace(/\b(i|i'd|we|want|wants|wanna|gonna|would|like|need|to|make|build|create|an?|the|set|in|on|about|of|for|with|where|you|play|game|games|rpg|jrpg|video|story|idea|app|and|or|that|this|some|new)\b/gi," ").replace(/[^\w\s'-]/g," ").replace(/\s+/g," ").trim();
 function groundQueries(ideaText,brief,picked){
   const lang=textLang(ideaText),answers=(picked||[]).map(x=>String(x.a||"").replace(/^(?:an?|the)\s+/i,"").trim()).filter(Boolean);
   if(lang==="zh")return [...new Set([String(ideaText).replace(/我想(?:做|要做)?|一个|游戏|\b(?:RPG|rpg|game)\b|以|为背景|的/g," ").replace(/\s+/g," ").trim().slice(0,30),...answers.slice(0,2)])].filter(Boolean).slice(0,3);
@@ -12153,7 +12153,11 @@ async function groundIdea(idea,brief,picked){
   const keenQs=[...new Set([plain.trim().slice(0,300),...qs])].slice(0,3);
   const res=await runAgent("scout",{read:[idea],places:[],label:L(useKeen?"looking up background (Keenable)":"looking up background","查找背景资料"),task:{kind:"search",title:qs[0]},work:async()=>{
     const found=[],seen=new Set();
-    const take=(got,q,via)=>{let n=0;for(const it of got){const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3||++n>=2)break}};
+    /* a hit must share at least two of the idea's words (one if it has only one): "AI video editing agent"
+       once pulled a basketball trade from Wikipedia because its summary said "generation" */
+    const words=[...new Set(ideaCore(ideaText).toLowerCase().split(/\s+/).filter(w=>w.length>2))],need=Math.min(2,words.length);
+    const onTopic=it=>lang==="zh"||!words.length||(`${it.title} ${it.text}`.toLowerCase().match(new RegExp(`\\b(?:${words.map(w=>w.replace(/[^\w'-]/g,"")).filter(Boolean).join("|")})`,"g"))||[]).reduce((a,w)=>a.add(w),new Set()).size>=need;
+    const take=(got,q,via)=>{let n=0;for(const it of got){if(via==="Wikipedia"&&!onTopic(it))continue;const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3||++n>=2)break}};
     if(useKeen){
       for(const q of keenQs){
         try{take(await keenableSearch(q),q,"Keenable");reached=true}

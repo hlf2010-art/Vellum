@@ -209,6 +209,39 @@ const state = (p, ids) => p.evaluate(ids => {
       check('no page errors (R)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
+    { // A: archived cards can be found again; drafts can be covered and archived; Copy text
+      const p = await open(browser, base);
+      await p.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+      const ids = await p.evaluate(() => {
+        persistNow(); board = blank('Archive'); sel = [];
+        const a = node('note', { text: 'Hikers strap the lantern outside' }, { x: 200, y: 200 });
+        const d = ['A', 'B'].map((l, i) => node('direction', { title: 'Dir ' + l, text: 'You build a tool ' + l, test: 'Show three friends', letter: l }, { x: 640 + i * 420, y: 200, status: 'sketch', by: 'strategist', pid: 'p1' }));
+        renderAll(); focusNodes(visibleNodes(), .8); return { a: a.id, d: d.map(x => x.id) };
+      });
+      await p.waitForTimeout(400);
+      await p.evaluate(i => archiveNodes([i]), ids.a); await p.waitForTimeout(150);
+      const fly = await p.evaluate(() => { const g = document.querySelector('.arch-ghost'); return g ? getComputedStyle(g).transform !== 'none' : false; });
+      await p.waitForTimeout(700);
+      const s1 = await p.evaluate(() => ({ btn: !document.getElementById('archiveBtn').hidden, ghosts: document.querySelectorAll('.arch-ghost').length, toast: [...document.querySelectorAll('#toasts .toast span')].map(x => x.textContent).pop() }));
+      check('archiving flies a copy of the card into the box in the top bar, then the copy is gone', fly && s1.btn && !s1.ghosts, JSON.stringify(s1));
+      check('the toast says where it went', /in the box up top/.test(s1.toast || ''), s1.toast);
+      await p.keyboard.press('Meta+f'); await p.waitForTimeout(300); await p.keyboard.type('lantern'); await p.waitForTimeout(400);
+      const away = await p.evaluate(() => [...document.querySelectorAll('#findPanel [data-faway]')].map(x => x.textContent.replace(/\s+/g, ' ').trim()));
+      check('search finds the archived card under Put away', away.length === 1 && /Archived/.test(away[0]), JSON.stringify(away));
+      await p.click('[data-faway]'); await p.waitForTimeout(600);
+      check('a click puts it back where it was', await p.evaluate(i => !byId(i).archived && !!nodeEl(i) && byId(i).x === 200, ids.a));
+      await p.keyboard.press('Escape');
+      await p.evaluate(i => coverNodes([i]), ids.d[0]); await p.waitForTimeout(800);
+      await p.evaluate(i => archiveNodes([i]), ids.d[1]); await p.waitForTimeout(600);
+      check('a crew draft can be covered and archived (these did nothing before)', await p.evaluate(i => !!byId(i[0]).cl && !!byId(i[1]).archived, ids.d));
+      await p.evaluate(i => { restoreNodes(i); }, ids.d); await p.waitForTimeout(600);
+      check('the card menu offers Copy text', await p.evaluate(i => fullCardMenuActs(byId(i)).some(a => a.k === 'copytext'), ids.d[0]));
+      await p.evaluate(i => copyCardText(byId(i)), ids.d[0]); await p.waitForTimeout(200);
+      const clip = await p.evaluate(() => navigator.clipboard.readText());
+      check('Copy text puts the words on the clipboard', /Dir A/.test(clip) && /You build a tool A/.test(clip) && /Show three friends/.test(clip), JSON.stringify(clip));
+      check('no page errors (A)', !p.errors.length, p.errors.join(' | '));
+      await p.context().close();
+    }
     if (SHOTS) {
       fs.mkdirSync(SHOTS, { recursive: true });
       for (const theme of ['light', 'dark']) for (const lang of ['en', 'zh']) {

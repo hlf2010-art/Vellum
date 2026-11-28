@@ -822,6 +822,9 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .arch-btn:active{transform:scale(.96)}
 .arch-btn[aria-pressed="true"]{background:var(--card);color:var(--label);box-shadow:var(--chrome-shadow)}
 .arch-btn .ico{width:14px;height:14px;stroke-width:1.85}
+.arch-btn.arch-bump{animation:archBump .42s cubic-bezier(.3,1.6,.5,1)}
+@keyframes archBump{0%{transform:scale(1)}35%{transform:scale(1.14)}100%{transform:scale(1)}}
+.arch-ghost{contain:layout}.arch-ghost>.card{transition:none!important;animation:none!important}
 .arch-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-media);background:var(--card-2);box-shadow:none}
 .arch-row .bt{flex:1;min-width:0;display:grid;gap:2px}
 .arch-row .bt b{font:600 14px/1.25 var(--ui);color:var(--label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2793,6 +2796,7 @@ body.is-resizing-w,body.is-resizing-w *{cursor:ew-resize!important;user-select:n
 .find-item-k{font:520 11px/1 var(--mono);color:var(--label-3);flex:none}
 .find-item-sn{font:430 12px/1.35 var(--ui);color:var(--label-2);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;padding-left:13px}
 .find-item mark,.find-item-t mark{background:color-mix(in srgb,var(--A) 30%,transparent);color:var(--label);padding:0 2px;border-radius:4px}
+.find-sec{padding:10px 10px 4px;font:560 11px/1 var(--ui);color:var(--label-3)}
 .find-empty{padding:8px 10px;font:450 12px/1.3 var(--ui);color:var(--label-3)}
 .wire-pop{position:fixed;z-index:35;transform:translate(-50%,-100%);margin-top:-10px;display:inline-flex;align-items:center;padding:3px 5px 3px 10px;border-radius:var(--radius-pill);background:var(--chrome);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);box-shadow:var(--chrome-shadow);animation:rise var(--t-snappy) var(--snappy);user-select:none;white-space:nowrap}
 .wire-pop[hidden]{display:none}
@@ -4181,6 +4185,7 @@ const ICONS={
   sparkles:'<path d="M12 3l1.6 4 4 1.6-4 1.6L12 14.2l-1.6-4-4-1.6 4-1.6Z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/><path d="M5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6Z"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   link:'<path d="M10 14 20 4M15 4h5v5M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>',
+  clip:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4.5V3.6c0-.3.3-.6.6-.6h4.8c.3 0 .6.3.6.6v.9M9.5 10h5M9.5 13.5h5M9.5 17h3"/>',
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   book:'<path d="M4.5 5.5A2.5 2.5 0 0 1 7 3h12.5v16.5H7a2.5 2.5 0 0 0-2.5 2.5z"/><path d="M4.5 19.5V5.5M8.5 7.5h7M8.5 11h5"/>',
   grid:'<rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2"/>',
@@ -8206,6 +8211,11 @@ let findOpen=false,findQuery="",findIdx=0;
 function findSearchParts(n){
   const pins=(board.pins?.[n.id]||[]).flatMap(p=>[p.note,p.take,p.edge,...(p.replies||[]).map(r=>r.text)]);
   return [n.tag,titleOf(n),n.text,n.full,n.quote,n.test,n.path,n.url,n.host,WEIGHTS[n.weight]?.label,lin(n)?PIG[lin(n)]:"",...(n.items||[]).map(i=>i.t),...(n.cards||[]).map(c=>c.title),...(n.type==="treemap"?flattenTreeNodes(treeMapOf(n),[]).map(x=>x.text):[]),...(n.points||[]),...(board.threads?.[n.id]||[]).map(m=>m.text),...pins].filter(Boolean);
+}
+/* cards put away (archived or covered) still turn up in search, in their own section; a click puts one back */
+function findAwayMatches(){
+  const q=findQuery.trim().toLowerCase();if(!q)return [];
+  return board.nodes.filter(n=>n&&!n.tombstone&&(n.archived||(n.hidden&&n.cl&&n.cl.kind!=="deck"))&&n.status!=="sketch"&&findSearchParts(n).join(" ").toLowerCase().includes(q)).sort((a,b)=>(b.archivedAt||b.hiddenAt||0)-(a.archivedAt||a.hiddenAt||0)).slice(0,8);
 }
 function findMatches(){
   const q=findQuery.trim().toLowerCase();
@@ -13052,6 +13062,24 @@ function placeStrip(){
   const y=fitsTop?a.y-sh-10:Math.min(b.y+10,innerHeight-sh-18);
   s.style.left=Math.round(x)+"px";s.style.top=Math.round(y)+"px";
 }
+/* the words on a card as plain text, for pasting elsewhere; a selection inside the card wins */
+function cardCopyText(n){
+  if(!n||n.type==="group")return "";
+  const strip=v=>String(v||"").replace(/<[^>]+>/g,"").replace(/\*\*/g,"").trim();
+  const t=strip(n.title||(n.type==="idea"||n.type==="direction"?"":titleOf(n))),body=strip(n.full||n.text||n.quote||n.spec?.title||"");
+  const parts=[t&&!body.startsWith(t)?t:"",body];
+  if(n.test)parts.push(L("The test: ","检验：")+strip(n.test));
+  if(n.items?.length)parts.push(n.items.map(i=>(i.done?"[x] ":"- ")+strip(i.t)).join("\n"));
+  if(n.cards?.length)parts.push(n.cards.map(c=>"- "+strip(c.title)).join("\n"));
+  if(n.url)parts.push(n.url);
+  return parts.filter(Boolean).join("\n\n");
+}
+let menuSelText="";
+document.addEventListener("contextmenu",e=>{const c=e.target.closest?.(".card");const t=String(getSelection()||"").trim();menuSelText=c&&t&&c.contains(getSelection().anchorNode)?t:""},true);
+async function copyCardText(n){
+  const txt=menuSelText||cardCopyText(n);menuSelText="";if(!txt)return;
+  try{await navigator.clipboard.writeText(txt);toast(L("Text copied","已复制文字"))}catch{toast(L("Couldn't copy the text","无法复制文字"))}
+}
 function fullCardMenuActs(n){
   const acts=[];
   if(n.type==="note"||n.type==="notepad"){
@@ -13065,6 +13093,7 @@ function fullCardMenuActs(n){
   acts.push({sep:true});
   if(bondCluster(n.id).length>1&&!(isStar(n.id)&&n.focus==="you"))acts.push({k:"focus",label:L("Set as focus","设为焦点"),ic:"orbit"});
   if(n.status==="ink")acts.push({k:"lock",label:n.locked?L("Unlock","解锁"):L("Lock","锁定"),ic:"lock"});
+  if(cardCopyText(n))acts.push({k:"copytext",label:L("Copy text","复制文字"),ic:"clip"});
   acts.push({k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"});
   if(n.type==="notepad"&&n.status!=="sketch")acts.push({k:"roll",label:n.roll?L("Unroll","展开"):L("Roll up","卷起来"),ic:"scroll"});
   if(n.type==="group")acts.push({k:"stack",label:n.deck?L("Spread out","展开"):L("Stack","收成一摞"),ic:"layers"});
@@ -13140,6 +13169,7 @@ $("cardMenu")?.addEventListener("click",e=>{
   if(k==="focus")return setFocus(n.id);
   if(k==="dup")return duplicateSelection();
   if(k==="hide")return hideFromCanvasNodes([n.id]);
+  if(k==="copytext")return copyCardText(n);
   if(k==="stack")return n.deck?spreadGroup(n):stackGroup(n);
   if(k==="roll")return toggleRoll(n);
   if(k==="archive")return archiveNodes([n.id]);
@@ -17893,14 +17923,38 @@ function pinQuestionNode(text,ctx=[]){
   nodeEl(n.id)?.classList.add("born");if(!visible(n))focusNodes([n],.9);return n;
 }
 function archiveNodes(ids){
-  const ns=ids.map(byId).filter(n=>n&&!n.tombstone&&!n.archived&&n.status!=="sketch");if(!ns.length)return;
+  const ns=ids.map(byId).filter(n=>n&&!n.tombstone&&!n.archived);if(!ns.length)return;
   checkpoint();const now=NOW();
   ns.forEach(n=>{n.archived=true;n.archivedAt=now;delete n.hidden;delete n.hiddenAt});
   const archSet=new Set(ns.map(n=>n.id));
   if(focusId&&archSet.has(focusId))closeFocus();
   sel=sel.filter(id=>!archSet.has(id));lineExtras=lineExtras.filter(id=>!archSet.has(id));
   log("you",`Archived ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,ns.length===1?ns[0].id:null);
-  renderAll();persist();toast(`Archived ${ns.length>1?ns.length+" cards":titleOf(ns[0])} · excluded from new AI`,{undo:true});
+  const ghosts=archiveGhosts(ns);
+  renderAll();persist();flyToArchive(ghosts);
+  toast(L(`Archived${ns.length>1?" "+ns.length+" cards":""} · in the box up top`,`已归档${ns.length>1?` ${ns.length} 张`:""} · 在顶部的盒子里`),{undo:true});
+}
+/* Archiving answers "where did it go?": the card shrinks into the archive box in the top bar, which bumps once.
+   Ghosts are copies taken before the cards leave the canvas; the real cards are already archived. */
+function archiveGhosts(ns){
+  if(calm())return [];
+  return ns.slice(0,6).map(n=>{const el=nodeEl(n.id);if(!el)return null;const r=el.getBoundingClientRect();if(!r.width||r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth)return null;
+    /* the copy sits in a plain wrapper: card styles pin their own transform, the wrapper moves freely */
+    const c=el.cloneNode(true);c.removeAttribute("data-id");c.classList.remove("sel","lit");
+    Object.assign(c.style,{position:"absolute",left:"0",top:"0",margin:"0",width:r.width/cam.s+"px"});
+    const g=document.createElement("div");g.className="arch-ghost";g.setAttribute("aria-hidden","true");g.appendChild(c);
+    Object.assign(g.style,{position:"fixed",left:r.left+"px",top:r.top+"px",width:r.width/cam.s+"px",height:r.height/cam.s+"px",transformOrigin:"0 0",zIndex:60,pointerEvents:"none",transform:`scale(${cam.s})`});
+    return {g,r}}).filter(Boolean);
+}
+function flyToArchive(ghosts){
+  const btn=$("archiveBtn");
+  const bump=()=>{if(!btn||calm())return;btn.classList.remove("arch-bump");void btn.offsetWidth;btn.classList.add("arch-bump")};
+  if(!btn||btn.hidden||!ghosts.length){bump();return}
+  const b=btn.getBoundingClientRect(),tx=b.left+b.width/2,ty=b.top+b.height/2;
+  ghosts.forEach(({g,r},i)=>{document.body.appendChild(g);
+    const s=Math.min(.12,22/Math.max(r.width,r.height)),z=cam.s;
+    const a=g.animate([{transform:`translate(0,0) scale(${z})`,opacity:1},{transform:`translate(${(tx-r.left)*.55}px,${(ty-r.top)*.55-24}px) scale(${z*.42})`,opacity:.9,offset:.55},{transform:`translate(${tx-r.left-r.width*s/2}px,${ty-r.top-r.height*s/2}px) scale(${z*s})`,opacity:0}],{duration:460,delay:i*40,easing:"cubic-bezier(.5,0,.3,1)",fill:"forwards"});
+    a.onfinish=()=>{g.remove();if(i===ghosts.length-1)bump()}});
 }
 function restoreNodes(ids,{uncover=false}={}){
   const ns=ids.map(byId).filter(n=>n&&!n.tombstone&&(n.archived||n.hidden));if(!ns.length)return;
@@ -17913,7 +17967,7 @@ function restoreNodes(ids,{uncover=false}={}){
   log("you",`${verb} ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,ns[0].id);
   select(ns.map(n=>n.id),{menus:false});renderAll();persist();
   if(!uncover&&ns.length===1&&!visible(ns[0]))focusNodes([ns[0]],.9);
-  if(wasDeck&&!hadArch)toast(L(`Spread ${ns.length} cards`,`已展开 ${ns.length} 张`));else toast(covered&&!hadArch?L(ns.length>1?`Uncovered ${ns.length} cards`:`Uncovered ${titleOf(ns[0])}`,ns.length>1?`已掀开 ${ns.length} 张`:`已拿出 ${titleOf(ns[0])}`):`${verb} ${ns.length>1?ns.length+" cards":titleOf(ns[0])}`);
+  if(wasDeck&&!hadArch)toast(L(`Spread ${ns.length} cards`,`已展开 ${ns.length} 张`));else toast(covered&&!hadArch?L(ns.length>1?`Uncovered ${ns.length} cards`:`Uncovered ${titleOf(ns[0])}`,ns.length>1?`已掀开 ${ns.length} 张`:`已拿出 ${titleOf(ns[0])}`):hadArch?L(`Put back ${ns.length>1?ns.length+" cards":titleOf(ns[0])}`,`已放回${ns.length>1?` ${ns.length} 张`:`「${titleOf(ns[0])}」`}`):`${verb} ${ns.length>1?ns.length+" cards":titleOf(ns[0])}`);
 }
 /* ── cover with a cloth ──────────────────────────────────────────────────
    Covering tidies the table; it never changes a conclusion. Covered cards keep their relations, the crew still reads
@@ -17986,7 +18040,7 @@ function clothWiresSVG(){
 function hideFromCanvasNodes(ids){return coverNodes(ids)}
 let covering=false;
 function coverNodes(ids){
-  const ns=ids.map(byId).filter(n=>n&&!n.tombstone&&!n.hidden&&n.status!=="sketch"&&n.type!=="group");if(!ns.length||covering)return;
+  const ns=ids.map(byId).filter(n=>n&&!n.tombstone&&!n.hidden&&n.type!=="group");if(!ns.length||covering)return;
   const hidSet=new Set(ns.map(n=>n.id)),bb=bbox(ns);
   let star=null;
   for(const e of board.edges){
@@ -18322,17 +18376,18 @@ function upstreamDeleteDialog(ids,impact,{permanent=false}={}){
   qs('[data-imp="delete"]',dlg).onclick=()=>{dlg.close();permanent?permanentlyDeleteNodes(ids,{permanent:true}):permanentlyDeleteNodes(ids,{undoable:true})};
 }
 function archiveDialog(){
+  const ago=t=>{const a=window.ago(t);return uiLang()!=="zh"?a:a==="now"?"刚刚":a.replace(/^(\d+)min$/,"$1 分钟前").replace(/^(\d+)h$/,"$1 小时前")};
   const paint=()=>{
     const hiddenList=board.nodes.filter(n=>!n.tombstone&&n.hidden&&!n.archived&&n.cl?.kind!=="deck").sort((a,b)=>(b.hiddenAt||b.created)-(a.hiddenAt||a.created));
     const archList=board.nodes.filter(n=>!n.tombstone&&n.archived).sort((a,b)=>(b.archivedAt||b.created)-(a.archivedAt||a.created));
     const total=hiddenList.length+archList.length;
     dlg.className="sheet";
-    dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>Covered &amp; archived cards</b><small>${hiddenList.length} covered · ${archList.length} archived</small></div>
-      <div style="display:flex;align-items:center;gap:8px">${total?`<button type="button" class="cbtn" data-arch-all>Restore all</button>`:""}<button type="button" class="sh-x" data-d="close" aria-label="Close">${ic("x")}</button></div></header>
+    dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>${L("Covered &amp; archived cards","盖着的与已归档的卡片")}</b><small>${[hiddenList.length?L(`${hiddenList.length} covered`,`盖着 ${hiddenList.length} 张`):"",archList.length?L(`${archList.length} archived`,`已归档 ${archList.length} 张`):""].filter(Boolean).join(" · ")}</small></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">${total?`<button type="button" class="cbtn" data-arch-all>${L("Restore all","全部放回")}</button>`:""}<button type="button" class="sh-x" data-d="close" aria-label="${L("Close","关闭")}">${ic("x")}</button></div></header>
     <div class="sh-main"><div class="sh-list">
-      ${hiddenList.length?`<div class="arch-sec-lbl">Covered · still read and counted (${hiddenList.length})</div>${hiddenList.map(n=>`<div class="arch-row" data-arch-id="${n.id}"><div class="bt"><b>${esc(titleOf(n)||kindLabel(n))}</b><small>${esc(kindLabel(n))} · ${n.cl?"covered":"hidden"} ${ago(n.hiddenAt||n.created)}</small></div>${n.cl?`<button type="button" class="cbtn" data-cloth-find="${n.cl.id}">Find</button>`:""}<button type="button" class="cbtn" data-arch-restore="${n.id}">${n.cl?"Uncover":"Show"}</button><button type="button" class="cbtn" data-hid-arch="${n.id}">Archive</button><button type="button" class="m-iconbtn danger" data-arch-del="${n.id}" title="Delete permanently" aria-label="Delete permanently">${ic("trash")}</button></div>`).join("")}`:""}
-      ${archList.length?`<div class="arch-sec-lbl">Archived sources · Excluded from new AI (${archList.length})</div>${archList.map(n=>`<div class="arch-row" data-arch-id="${n.id}"><div class="bt"><b>${esc(titleOf(n)||kindLabel(n))}</b><small>${esc(kindLabel(n))} · archived ${ago(n.archivedAt||n.created)}</small></div><button type="button" class="cbtn" data-arch-restore="${n.id}">Reactivate</button><button type="button" class="m-iconbtn danger" data-arch-del="${n.id}" title="Delete permanently" aria-label="Delete permanently">${ic("trash")}</button></div>`).join("")}`:""}
-      ${!total?`<p style="margin:12px 0;color:var(--label-3);font:14px/1.5 var(--ui)">No covered or archived cards on this board.</p>`:""}
+      ${hiddenList.length?`<div class="arch-sec-lbl">${L(`Covered · still read and counted (${hiddenList.length})`,`盖着的 · 照常读取和计入（${hiddenList.length}）`)}</div>${hiddenList.map(n=>`<div class="arch-row" data-arch-id="${n.id}"><div class="bt"><b>${esc(titleOf(n)||kindLabel(n))}</b><small>${esc(kindLabel(n))} · ${n.cl?L("covered","盖上于"):L("hidden","隐藏于")} ${ago(n.hiddenAt||n.created)}</small></div>${n.cl?`<button type="button" class="cbtn" data-cloth-find="${n.cl.id}">${L("Find","找到")}</button>`:""}<button type="button" class="cbtn" data-hid-arch="${n.id}">${L("Archive","归档")}</button><button type="button" class="cbtn" data-arch-restore="${n.id}">${n.cl?L("Uncover","拿出来"):L("Show","显示")}</button><button type="button" class="m-iconbtn danger" data-arch-del="${n.id}" title="${L("Delete permanently","永久删除")}" aria-label="${L("Delete permanently","永久删除")}">${ic("trash")}</button></div>`).join("")}`:""}
+      ${archList.length?`<div class="arch-sec-lbl">${L(`Archived · left out of new AI work (${archList.length})`,`已归档 · 新的 AI 任务不再读取（${archList.length}）`)}</div>${archList.map(n=>`<div class="arch-row" data-arch-id="${n.id}"><div class="bt"><b>${esc(titleOf(n)||kindLabel(n))}</b><small>${esc(kindLabel(n))} · ${L("archived","归档于")} ${ago(n.archivedAt||n.created)}</small></div><button type="button" class="cbtn" data-arch-restore="${n.id}">${L("Put back","放回画布")}</button><button type="button" class="m-iconbtn danger" data-arch-del="${n.id}" title="${L("Delete permanently","永久删除")}" aria-label="${L("Delete permanently","永久删除")}">${ic("trash")}</button></div>`).join("")}`:""}
+      ${!total?`<p style="margin:12px 0;color:var(--label-3);font:14px/1.5 var(--ui)">${L("No covered or archived cards on this board.","这个画板上没有盖着或归档的卡片。")}</p>`:""}
     </div></div>`;
     if(!dlg.open)dlg.showModal();
     const allIds=[...hiddenList,...archList].map(n=>n.id);
@@ -18831,6 +18886,7 @@ function wireOmniBar(){
   }
   if(fp){
     fp.onclick=e=>{
+      const aw=e.target.closest("[data-faway]");if(aw){const n=byId(aw.dataset.faway);if(n){if(typeof palOpen!=="undefined"&&palOpen)closePalette();else setOmniMode("cmd",{focus:false,silent:true});restoreNodes([n.id])}return}
       const fid=e.target.closest("[data-fid]");if(!fid)return;
       const n=byId(fid.dataset.fid);if(n){findIdx=+fid.dataset.fidx||0;jumpToFindNode(n)}
     };
@@ -18870,8 +18926,15 @@ function syncFindStatus(){
       }
     }
   }
+  if(fp&&hasQ){const away=findAwayMatches();if(away.length){if(!matches.length)fp.innerHTML="";fp.hidden=false;fp.insertAdjacentHTML("beforeend",findAwayHTML(away,q))}}
   renderNodes();
   syncLineClearance?.();
+}
+function findAwayHTML(away,q){
+  return `<div class="find-sec">${L("Put away","收起来的")}</div><div class="find-list" role="listbox" aria-label="${L("Put away","收起来的")}">${away.map(n=>`<button type="button" class="find-item away" role="option" aria-selected="false" data-faway="${esc(n.id)}">
+    ${typeof findThumb==="function"?findThumb(n):'<span class="find-item-dot" style="--fi-c:var(--label-4)"></span>'}<div class="find-item-top"><span class="find-item-t">${highlightFindHTML(titleOf(n)||kindLabel(n),q)}</span><span class="find-item-k">${n.archived?L("Archived","已归档"):L("Covered","盖着")}</span></div>
+    <div class="find-item-sn">${n.archived?L("Click to put it back on the canvas","点一下放回画布"):L("Click to take it out","点一下拿出来")}</div>
+  </button>`).join("")}</div>`;
 }
 function renderFindBar(){
   wireOmniBar();

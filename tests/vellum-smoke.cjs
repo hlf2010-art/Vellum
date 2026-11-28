@@ -113,8 +113,8 @@ const LEGIBILITY = scope => {
 };
 function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  — ' + detail}`); if (!ok) failures++; }
 const WIKI = { query: { pages: {
-  1: { index: 1, title: 'Shanghai International Settlement', extract: 'The Shanghai International Settlement originated from the 1863 merger of the British and American enclaves in Shanghai. Extraterritoriality was abolished in 1943.', fullurl: 'https://en.wikipedia.org/wiki/Shanghai_International_Settlement' },
-  2: { index: 2, title: 'History of Shanghai', extract: 'The history of Shanghai spans over a thousand years and closely parallels the development of modern China, from fishing village to treaty port.', fullurl: 'https://en.wikipedia.org/wiki/History_of_Shanghai' } } } };
+  1: { index: 1, title: 'Shanghai International Settlement', extract: 'The Shanghai International Settlement originated from the 1863 merger of the British and American enclaves in Shanghai. Extraterritoriality was abolished in 1943. Its own Shanghai Municipal Police kept order there through the 1930s.', fullurl: 'https://en.wikipedia.org/wiki/Shanghai_International_Settlement' },
+  2: { index: 2, title: 'History of Shanghai', extract: 'The history of Shanghai spans over a thousand years and closely parallels the development of modern China, from fishing village to treaty port. In the 1930s rival police forces divided the city.', fullurl: 'https://en.wikipedia.org/wiki/History_of_Shanghai' } } } };
 const wikiRoute = (p, calls = []) => p.route(/wikipedia\.org\/w\/api\.php/, r => { calls.push(new URL(r.request().url()).searchParams.get('gsrsearch')); return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(WIKI) }); });
 const dirs = tag => ({ directions: ['A', 'B', 'C'].map(l => ({ title: `${tag} ${l}`, plan: `Plan ${l}.`, test: `Test ${l}.`, mode: 'story' })) });
 
@@ -1154,7 +1154,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         const kc = await p.evaluate(() => board.nodes.filter(n => n.type === 'source' && n.by === 'scout').map(n => n.kind + ' | ' + n.title + ' | ' + n.text));
         check('with Keenable set up, Scout searches it first, with the key, the mode and the idea in plain words', kreq.length >= 1 && kreq[0].key === 'keen_smoke' && kreq[0].body.mode === 'realtime' && /riot squad/.test(kreq[0].body.query) && kc.length === 1 && /^Background · hpchina\.blogs\.bristol\.ac\.uk \| Policing nuisance/.test(kc[0]) && /Shanghai Municipal Police, received orders to clear a slum/.test(kc[0]) && /\(2024-11-18\)$/.test(kc[0]), JSON.stringify({ kreq: kreq.slice(0, 1), kc }));
         kstatus = 401;
-        r = await forkOn('An RPG set in Shanghai about dock strikes and the families on both sides in the spring of 1927.');
+        r = await forkOn('An RPG set in Shanghai about dock strikes the police broke up in the 1930s, and the families on both sides.')  // Scout keeps only Wikipedia pages that share two words with the idea;
         check('a refused Keenable key falls back to Wikipedia and says so', r.toasts.some(t => /^Keenable rejected the API key \(HTTP 401\), so Scout used Wikipedia instead\.$/.test(t)) && await p.evaluate(() => board.nodes.filter(n => n.type === 'source' && n.by === 'scout').map(n => n.title).join() === 'Shanghai International Settlement,History of Shanghai'), JSON.stringify(r.toasts));
         await p.unroute('https://api.keenable.ai/**'); await p.unroute(/wikipedia\.org\/w\/api\.php/);
         await p.evaluate(() => { searchCfg = { provider: 'wikipedia', key: '', mode: 'pro' }; store.set('.searchCfg', searchCfg); });

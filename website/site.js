@@ -1,16 +1,18 @@
-/* Vellum website: copy (EN / 中文), theme, the live board, the zones board, the crew switch and the waitlist. No dependencies. */
+/* Sympo website (the name lives in BRAND below): copy (EN / 中文), theme, the live board, the zones board, the crew switch and the waitlist. No dependencies. */
 (function () {
   "use strict";
 
   // ---- Go-live settings -------------------------------------------------------------------
-  // Fill these in to make Download and the waitlist real. Until then the buttons say "Soon"
-  // and a sign-up only tells the visitor that this is a preview.
+  // Fill these in to make Download real. Until a build is live, everyone joins the waitlist. Sign-ups go to
+  // functions/api/waitlist.js on Cloudflare Pages; anywhere that can't take them (a local preview, or Pages with
+  // no KV bound yet), Join says sign-ups aren't open and sends nothing. It never claims a sign-up it didn't make.
   var CONFIG = {
     downloads: {
       mac: "",   // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-mac.dmg"
       win: ""    // e.g. "https://github.com/hlf2010-art/Vellum/releases/latest/download/Vellum-Setup.exe"
     },
-    waitlistEndpoint: "" // POST {email, use, lang} as JSON (Formspree, Buttondown, a Worker…)
+    demo: "",            // The in-browser demo, built from the repo. Until it's set, the Try the demo button stays hidden.
+    waitlistEndpoint: "/api/waitlist" // One POST {email, os, use, lang} as JSON; os is "mac" or "win". 404/405/501/503 = not open yet.
   };
 
   var root = document.documentElement;
@@ -28,139 +30,176 @@
   // Your own cards never stream: you put them down whole.
   function stream(el, delay, done) {
     if (!el || reduced) { if (done) done(); return 0; }
-    var text = el.textContent, parts = text.match(/[⺀-鿿＀-￯]|[^\s⺀-鿿＀-￯]+\s*|\s+/g) || [text];
-    el.innerHTML = parts.map(function (p) { return '<span class="tok">' + esc(p) + "</span>"; }).join("");
-    var toks = el.querySelectorAll(".tok"), cjk = /[⺀-鿿]/.test(text), step = cjk ? 34 : 62;
-    toks.forEach(function (t, i) { setTimeout(function () { t.classList.add("in"); }, (delay || 0) + i * step); });
-    var total = (delay || 0) + toks.length * step + 260;
-    setTimeout(function () { if (el.querySelector(".tok")) el.textContent = text; if (done) done(); }, total);
+    // Clause spans (Chinese line breaks) stay in place: words stream in inside each clause.
+    var orig = el.innerHTML, text = el.textContent, cls = el.querySelectorAll(".cl");
+    var toks = function (s) { var parts = s.match(/[⺀-鿿＀-￯]|[^\s⺀-鿿＀-￯]+\s*|\s+/g) || [s]; return parts.map(function (p) { return '<span class="tok">' + esc(p) + "</span>"; }).join(""); };
+    if (el.querySelector(".w")) {
+      // Word spans (Chinese words kept whole) stay in place too: their characters stream in inside them.
+      Array.prototype.slice.call(el.childNodes).forEach(function (n) {
+        if (n.nodeType === 3) { var f = document.createElement("span"); f.innerHTML = toks(n.textContent); while (f.firstChild) el.insertBefore(f.firstChild, n); el.removeChild(n); }
+        else n.innerHTML = toks(n.textContent);
+      });
+    } else Array.prototype.forEach.call(cls.length ? cls : [el], function (box) { box.innerHTML = toks(box.textContent); });
+    var all = el.querySelectorAll(".tok"), cjk = /[⺀-鿿]/.test(text), step = cjk ? 34 : 62;
+    all.forEach(function (t, i) { setTimeout(function () { t.classList.add("in"); }, (delay || 0) + i * step); });
+    var total = (delay || 0) + all.length * step + 260;
+    setTimeout(function () { if (el.querySelector(".tok")) el.innerHTML = orig; if (done) done(); }, total);
     return total;
   }
+
+  // An AI crew member signs with its role icon, a person with their initial, so who's who reads at a glance.
+  // Crew avatars match the app: the member's icon on its own pale plate, one hue each. People keep a letter.
+  var CREWH = { scout: 200, strategist: 305, wright: 100, critic: 262 };
+  function crewAv(name, cls) {
+    var k = name.toLowerCase();
+    return '<b class="' + (cls == null ? "av" : cls) + ' ai" style="--h:' + CREWH[k] + '" title="' + name + '"><svg aria-hidden="true"><use href="#i-' + k + '"/></svg></b>';
+  }
+
+  // The product name, in one place: the public name may still change.
+  var BRAND = "Sympo";
 
   // ---- Copy -------------------------------------------------------------------------------
   // Written in each language, not translated. One idea per line; small print only where it prevents a mistake.
   var T = {
     en: {
       "skip": "Skip to content",
-      "nav.why": "Why Vellum", "nav.how": "How it works", "nav.crew": "The crew",
-      "cta.get": "Get Vellum",
+      "nav.why": "Why {brand}", "nav.how": "How it works", "nav.crew": "The crew",
+      "cta.get": "Get {brand}",
       "hero.title": "Your best thinking deserves more than a chat box.", "hero.t1": "Your best thinking deserves more than ", "hero.kw": "a chat box", "hero.t2": ".",
       "hero.lede": "Put the whole problem on one board. Let an AI crew argue it out. Every choice keeps its reasons.",
       "board.hint": "Drag any card", "board.replay": "Play again",
-      "why.t1": "Most AI canvases help you make more.", "why.t2": "Vellum helps you think it through.",
+      "why.t1": "Most AI canvases help you make more.", "why.t2": "{brand} helps you think it through.",
       "why.lede": "The best meetings skip the slides and go to the whiteboard. Then someone wipes it.",
       "why.l1": "Evidence", "why.l2": "Directions", "why.l3": "Decision",
-      "why.h1": "A generator canvas", "why.h2": "Vellum",
+      "why.h1": "A generator canvas", "why.h2": "{brand}",
       "why.a1": "Forty images and a vague feeling", "why.b1": "Three directions, each showing what it rests on",
-      "why.a2": "Cards that just happen to be close", "why.b2": "Relations with names: supports, counters, refines",
-      "why.a3": "Rejected ideas, lost in final_v3", "why.b3": "Set-aside ideas, kept with the reason",
+      "why.a2": "Cards that just happen to sit close", "why.b2": "Relations with names: supports, counters, refines",
+      "why.a3": "Rejected ideas, lost in final_v3", "why.b3": "Ideas you passed on, kept with the reason",
       "why.a4": "A decision nobody remembers making", "why.b4": "A decision that speaks up when the facts change",
       "how.title": "Every card knows where it came from.",
-      "how.lede": "Pick one to see what it rests on.",
+      "how.lede": "Pick a card to see what it rests on.",
       "out.title": "Then make it real.", "out.lede": "Whatever you ship remembers why.", "out.label": "Outputs",
       "out.plan": "Plan", "out.tasks": "Tasks", "out.table": "Table", "out.cut": "Cut", "out.site": "Site",
-      "doc.h": "Hook-first lantern", "doc.why": "Why", "doc.whyv": "8 of 10 campers hang it from the tent loop.",
-      "doc.rests": "Rests on", "doc.restsv": "3 sources, 2 of them observed", "doc.aside": "Set aside", "doc.asidev": "A shade dial, C glow ring",
-      "kb.todo": "To do", "kb.doing": "Doing", "kb.done": "Done", "kb.1": "Widen the hook mouth", "kb.2": "Glove test, 5 people",
-      "kb.3": "Order 2200K LEDs", "kb.4": "Foam mock-up", "kb.5": "Field test",
-      "tb.h": "Field test, 10 campers", "tb.table": "Table", "tb.chart": "Chart", "tb.r1": "Found it in the dark",
-      "tb.r2": "Hook held, thick line", "tb.r3": "Hook held, thin line", "tb.r4": "Too bright up close",
-      "cut.line": "Find it in the dark.", "site.h": "Find it in the dark.", "site.p": "Hook on top. 2200K at 40 lumens.", "site.cta": "Pre-order",
+      "doc.h": "Rough cut, moments marked", "doc.why": "Why this", "doc.whyv": "Editors want the busywork done and the moments left to them.",
+      "doc.rests": "Evidence", "doc.k1": "Observed", "doc.e1": "Editors undo 6 of every 10 cuts the AI makes", "doc.k2": "Quote", "doc.e2": "“Give me a first pass. The moments are mine.”",
+      "doc.aside": "Not chosen", "doc.a1": "A, one-click cut: it picks the moments for you", "doc.a2": "C, suggestions only: saves almost no time",
+      "kb.todo": "To do", "kb.doing": "Doing", "kb.done": "Done", "kb.1": "Pre-mark top 5 moments", "kb.2": "Long-clip test, 10 editors",
+      "kb.3": "Moment markers on the timeline", "kb.4": "Undo-rate tracking", "kb.5": "Beta with 20 editors", "kb.t1": "2h ago", "kb.t2": "Yesterday", "kb.t3": "40m ago", "kb.t4": "Done Tue", "kb.t5": "Done Mon",
+      "tb.h": "Beta, 20 editors", "tb.table": "Table", "tb.chart": "Chart", "tb.r1": "Faster than by hand",
+      "tb.r2": "Kept the rough cut", "tb.r3": "Long clips felt slow", "tb.r4": "Agent missed a moment",
+      "cut.line": "Your moments. Its busywork.", "site.h": "Your moments. Its busywork.", "site.p": "A rough cut in minutes. You pick what stays.", "site.cta": "Try it free",
       "z.1": "Gather", "z.1d": "What people did and said",
       "z.2": "Explore", "z.2d": "Judgments, then directions",
       "z.3": "Prototype", "z.3d": "Built from one direction",
       "z.4": "Snapshot", "z.4d": "A version to share, reasons attached",
       "cases.t1": "Product design", "cases.t2": "Short video", "cases.t3": "AI products",
       "crew.title": "A crew that thinks with you, and sometimes against you.",
-      "crew.scout": "Weighs the evidence", "crew.scoutq": "“Two of these seven sources are the same review.”",
-      "crew.strat": "Forks it into directions", "crew.stratq": "“If B is right, campers find it in five seconds.”",
-      "crew.wright": "Builds the proof", "crew.wrightq": "“The foam mock-up for B is ready. Keep it?”",
-      "crew.critic": "Checks it against the sources", "crew.criticq": "“Nothing here says campers want a dial.”",
-      "crew.agency": "They can challenge your decision. Only you can make it.",
+      "crew.scout": "Weighs the evidence", "crew.scoutq": "“These two bad reviews came from the same person.”",
+      "crew.strat": "Forks it into directions", "crew.stratq": "“If B is right, editors keep 9 in 10 rough cuts.”",
+      "crew.wright": "Builds the proof", "crew.wrightq": "“The moment-marker prototype for B is ready. Keep it?”",
+      "crew.critic": "Checks it against the sources", "crew.criticq": "“Nothing here says editors want one click.”",
+      "crew.agency": "Constructive challenges. Faster decisions.",
       "mode.focus": "Focus", "mode.listen": "Listening", "mode.team": "Teamwork",
       "mode.focusd": "Nothing interrupts you. What they notice waits until you're back.",
       "sc.wait": "waiting", "sc.backK": "While you focused", "sc.backT": "3 notes from the crew",
-      "sc.critic": "Nothing here says campers want a dial.", "sc.draftK": "Prototype · draft", "sc.draftT": "Foam mock-up", "sc.keep": "Keep", "sc.discard": "Discard",
+      "sc.srcK": "Quote · Editor interview", "sc.srcB": "“Most of my time goes to finding the good shots the AI cut.”",
+      "sc.note": "Editing is too slow. Ship one-click final cut.",
+      "sc.critic": "The interview is about good shots getting cut, not speed. One click would cut more. Let editors pick the moments first?", "sc.draftK": "Prototype · draft", "sc.draftT": "One-click flow prototype", "sc.keep": "Keep", "sc.discard": "Discard",
       "mode.listend": "They speak up only when something doesn't add up.",
       "mode.teamd": "They draft alongside you. You keep what's good.",
       "modes.label": "How much the crew joins in",
-      "get.title": "Get Vellum.",
-      "get.dl": "Download", "get.dld": "Early builds for macOS and Windows.",
-      "get.mac": "macOS", "get.win": "Windows", "get.soon": "Soon",
-      "get.wl": "Hear about new builds", "get.wld": "One email when a build is worth your time. That's the whole newsletter.",
-      "get.email": "Email", "get.use": "Mostly for", "get.other": "Something else",
-      "cta.waitlist": "Join the waitlist",
-      "get.thanks": "You're on the list.",
-      "get.thanksd": "We'll write to {email} when a build is ready.",
-      "get.thankspreview": "This preview doesn't send sign-ups yet, so {email} stayed right here.",
+      "any.soon": "Coming soon", "any.title": "Keep thinking, wherever you are.",
+      "any.lede": "Scan the code on your computer with your tablet and the board opens. Nothing to install, no cloud in between.",
+      "any.mac": "Lay out the whole argument.", "any.pad": "Circle a direction with the pen.", "any.comp": "Computer", "any.tab": "Tablet", "any.phone": "Phone", "any.ph": "Decisions in your pocket.",
+      "any.board": "Beta cut feedback", "any.decBtn": "Decisions", "any.me": "Y", "any.chosen": "Chosen on the tablet · just now",
+      "any.toast": "Chose B", "any.undo": "Undo", "any.date": "Friday, November 27", "any.time": "10:24",
+      "any.now": "now", "any.ago": "12m ago", "any.n1t": "You chose B on your tablet",
+      "get.title": "Get {brand}.",
+      "get.l1": "Early builds for Mac and Windows are on the way.", "get.l2": "We'll email you the day yours is ready.",
+      "get.os": "Preferred system", "get.mac": "macOS", "get.win": "Windows", "get.use": "What will you use it for?", "get.email": "Email",
+      "get.useph": "A product launch, a short film…", "get.step": "Request early access", "get.close": "Close", "get.join": "Join",
+      "get.needos": "Pick a system first.", "get.needemail": "Where should we write to?", "get.needuse": "A few words on what it's for.",
+      "cta.waitlist": "Join the waitlist", "cta.demo": "Try the demo", "get.dlfor": "Download for {os}",
+      "get.thanks": "You're on the list.", "get.thanksos": "You're on the list for {os}.",
+      "get.thanksd": "We'll email {email} the day it's ready.",
+      "get.closed": "Sign-ups open soon. Nothing was sent.",
       "get.bademail": "That doesn't look like an email address.",
       "get.fail": "That didn't go through. Try again in a moment.",
-      "board.label": "A Vellum board deciding how a camping lantern should work",
+      "board.label": "A {brand} board deciding how an AI video-editing agent should work",
       "lang.label": "Language", "theme.switch": "Switch theme", "steps.label": "Demo steps", "cases.label": "Use cases",
-      "title": "Vellum: your best thinking deserves more than a chat box"
+      "title": "{brand}: your best thinking deserves more than a chat box"
     },
     zh: {
       "skip": "跳到正文",
-      "nav.why": "为什么是 Vellum", "nav.how": "怎么用", "nav.crew": "AI 伙伴",
-      "cta.get": "获取 Vellum",
-      "hero.title": "你的好想法，不该困在一个聊天框里。", "hero.t1": "你的好想法，不该困在一个", "hero.kw": "聊天框", "hero.t2": "里。",
-      "hero.lede": "把整个问题摊在一张白板上，让 AI 团队把它辩清楚。每个选择，都留着理由。",
-      "board.hint": "卡片可以拖动", "board.replay": "再看一遍",
-      "why.t1": "多数 AI\u00a0画布\u200b帮你做得更多。", "why.t2": "Vellum\u00a0帮你\u200b想得更清楚。",
-      "why.lede": "最好的讨论不放 PPT，直接上白板。然后，有人把白板擦了。",
-      "why.l1": "证据", "why.l2": "方向", "why.l3": "决定",
-      "why.h1": "生成式画布", "why.h2": "Vellum",
-      "why.a1": "四十张图，和一种说不清的感觉", "why.b1": "三个方向，各自写明依据",
-      "why.a2": "碰巧挨在一起的卡片", "why.b2": "叫得出名字的关系：支持、反驳、细化",
-      "why.a3": "被否的想法，埋在 final_v3 里", "why.b3": "搁置的想法，连同理由一起留着",
-      "why.a4": "没人记得是怎么定下的决定", "why.b4": "事实一变，决定会自己站出来",
-      "how.title": "每张卡片\u200b都知道自己从哪来。",
-      "how.lede": "选一张，看它建立在什么之上。",
-      "out.title": "然后，把它做出来。", "out.lede": "做出来的每样东西，都记得为什么。", "out.label": "产出",
+      "nav.why": "为什么选 {brand}", "nav.how": "工作方式", "nav.crew": "AI 团队",
+      "cta.get": "抢先体验",
+      "hero.title": "好想法，何必挤在对话框里。", "hero.t1": "好想法，何必挤在", "hero.kw": "对话框", "hero.t2": "里。",
+      "hero.lede": "把问题摊在白板上，让 AI 陪你聊透。怎么定的、为什么，都有据可查。",
+      "board.hint": "试试拖动卡片", "board.replay": "重播",
+      "why.t1": "别的 AI 帮你​多做一点。", "why.t2": "{brand} 帮你​想透一点。",
+      "why.lede": "最好的讨论，不放 PPT，只用白板。可白板，迟早要擦。",
+      "why.l1": "证据", "why.l2": "方向", "why.l3": "决策",
+      "why.h1": "生成式画布", "why.h2": "{brand}",
+      "why.a1": "生成四十张图，还是说不清哪张好", "why.b1": "三个方向，依据一目了然",
+      "why.a2": "卡片挨着放，关系全靠猜", "why.b2": "支持、反驳、细化，关系一清二楚",
+      "why.a3": "否掉的方案，埋在一堆“最终版”里", "why.b3": "没选的方案，理由也留着",
+      "why.a4": "当初为什么这么定，没人记得", "why.b4": "情况一变，它提醒你回头看看",
+      "how.title": "每张卡片，​都有出处。",
+      "how.lede": "点开任意一张，来龙去脉都在。",
+      "out.title": "想透了，再动手。", "out.lede": "每个方案，都说得清来龙去脉。", "out.label": "产出",
       "out.plan": "方案", "out.tasks": "任务", "out.table": "表格", "out.cut": "成片", "out.site": "网站",
-      "doc.h": "挂钩优先的营地灯", "doc.why": "为什么", "doc.whyv": "10 位露营者里，8 位把灯挂在帐篷挂环上。",
-      "doc.rests": "依据", "doc.restsv": "3 条依据，其中 2 条是观察", "doc.aside": "已搁置", "doc.asidev": "A 遮光旋钮，C 夜光定位环",
-      "kb.todo": "待办", "kb.doing": "进行中", "kb.done": "完成", "kb.1": "加宽挂钩开口", "kb.2": "5 人戴手套试用",
-      "kb.3": "订 2200K 灯珠", "kb.4": "泡沫手板", "kb.5": "实地测试",
-      "tb.h": "实地测试，10 位露营者", "tb.table": "表格", "tb.chart": "图表", "tb.r1": "黑暗里找得到",
-      "tb.r2": "挂钩稳，粗绳", "tb.r3": "挂钩稳，细绳", "tb.r4": "近看刺眼",
-      "cut.line": "在黑暗里，一眼找到。", "site.h": "在黑暗里，一眼找到。", "site.p": "挂钩在顶部。2200K，40 流明。", "site.cta": "预订",
-      "z.1": "收集", "z.1d": "人们做了什么、说了什么",
+      "doc.h": "粗剪 + 高光标记", "doc.why": "为什么选它", "doc.whyv": "剪辑师只想让 AI 干杂活，高光要自己挑。",
+      "doc.rests": "证据", "doc.k1": "实测", "doc.e1": "AI 剪的 10 刀，剪辑师撤回了 6 刀", "doc.k2": "原话", "doc.e2": "“先给我个粗剪，高光我自己挑。”",
+      "doc.aside": "没选", "doc.a1": "A 一键成片：高光被它替你挑了", "doc.a2": "C 只给建议：省不了多少时间",
+      "kb.todo": "待办", "kb.doing": "进行中", "kb.done": "已完成", "kb.1": "预标 5 个高光", "kb.2": "10 人长素材测试",
+      "kb.3": "时间线高光标记", "kb.4": "撤回率统计", "kb.5": "20 位剪辑师内测", "kb.t1": "2 小时前", "kb.t2": "昨天", "kb.t3": "40 分钟前", "kb.t4": "周二完成", "kb.t5": "周一完成",
+      "tb.h": "内测：20 位剪辑师", "tb.table": "表格", "tb.chart": "图表", "tb.r1": "比手动剪更快",
+      "tb.r2": "保留了粗剪", "tb.r3": "长素材偏慢", "tb.r4": "漏掉了高光",
+      "cut.line": "高光你来挑，杂活它来干。", "site.h": "高光你来挑，杂活它来干。", "site.p": "几分钟出粗剪，留什么你说了算。", "site.cta": "免费试用",
+      "z.1": "收集", "z.1d": "用户怎么做、怎么说",
       "z.2": "探索", "z.2d": "先下判断，再分方向",
-      "z.3": "原型", "z.3d": "从一个方向做出来",
-      "z.4": "定稿", "z.4d": "可以分享的版本，理由附在里面",
+      "z.3": "原型", "z.3d": "挑一个方向，做出来",
+      "z.4": "定稿", "z.4d": "附上理由，随时分享",
       "cases.t1": "产品设计", "cases.t2": "短视频", "cases.t3": "AI 产品",
-      "crew.title": "和你一起想，\u200b有时也和你唱反调。",
-      "crew.scout": "掂量证据", "crew.scoutq": "“这七条来源里，有两条是同一篇评论。”",
-      "crew.strat": "把判断分成方向", "crew.stratq": "“如果 B 是对的，露营者五秒就能找到灯。”",
-      "crew.wright": "做出能验证的东西", "crew.wrightq": "“B 的泡沫手板做好了，留下吗？”",
-      "crew.critic": "对照来源挑毛病", "crew.criticq": "“这里没有证据表明，露营者想要旋钮。”",
-      "crew.agency": "它们可以质疑你的决定，但只有你能做决定。",
-      "mode.focus": "专注", "mode.listen": "旁听", "mode.team": "协作",
-      "mode.focusd": "不打扰你。它们注意到的事，等你回来再说。",
-      "sc.wait": "条待看", "sc.backK": "你专注的时候", "sc.backT": "伙伴记下了 3 条",
-      "sc.critic": "这里没有证据表明，露营者想要旋钮。", "sc.draftK": "原型 · 草稿", "sc.draftT": "泡沫手板", "sc.keep": "留下", "sc.discard": "丢掉",
-      "mode.listend": "只在有地方说不通时才开口。",
-      "mode.teamd": "和你一起起草，好的你留下。",
-      "modes.label": "AI 伙伴参与的程度",
-      "get.title": "获取 Vellum。",
-      "get.dl": "下载", "get.dld": "macOS 和 Windows 早期版本。",
-      "get.mac": "macOS", "get.win": "Windows", "get.soon": "即将推出",
-      "get.wl": "新版本通知", "get.wld": "有值得一试的版本时，发你一封邮件。仅此而已。",
-      "get.email": "邮箱", "get.use": "主要用来做", "get.other": "其他",
-      "cta.waitlist": "加入等候名单",
-      "get.thanks": "已加入名单。",
-      "get.thanksd": "版本准备好后，我们会写信到 {email}。",
-      "get.thankspreview": "这是预览版，报名还没有接通，{email} 没有被发送出去。",
-      "get.bademail": "这看起来不像邮箱地址。",
-      "get.fail": "没有提交成功，请稍后再试。",
-      "board.label": "Vellum 白板演示：决定一盏露营灯该怎么设计",
-      "lang.label": "语言 Language", "theme.switch": "切换深浅色", "steps.label": "演示步骤", "cases.label": "使用场景",
-      "title": "Vellum：你的好想法，不该困在聊天框里"
+      "crew.title": "肯唱反调，​才算好搭档。",
+      "crew.scout": "核查证据", "crew.scoutq": "“这两条差评，其实是同一个人发的。”",
+      "crew.strat": "拆出几个方向", "crew.stratq": "“如果 B 成立，10 个粗剪能留下 9 个。”",
+      "crew.wright": "做原型验证", "crew.wrightq": "“B 方案的原型好了，要保留吗？”",
+      "crew.critic": "对照来源挑刺", "crew.criticq": "“没有任何证据说明，剪辑师想要一键成片。”",
+      "crew.agency": "提出建设性的质疑，让决定更快落地。",
+      "mode.focus": "专注模式", "mode.listen": "旁听模式", "mode.team": "协作模式",
+      "mode.focusd": "绝不打扰。有发现先记下，等你回来再说。",
+      "sc.wait": "条待看", "sc.backK": "专注期间", "sc.backT": "团队记下了 3 条",
+      "sc.srcK": "原话 · 剪辑师访谈", "sc.srcB": "“最花时间的，是把 AI 剪掉的好镜头一个个找回来。”",
+      "sc.note": "剪辑太费时间，那就做一键成片。",
+      "sc.critic": "访谈说的是好镜头被剪掉，不是剪得慢。一键成片只会剪掉更多。先让剪辑师自己挑高光？", "sc.draftK": "原型 · 草稿", "sc.draftT": "一键成片流程原型", "sc.keep": "保留", "sc.discard": "丢弃",
+      "mode.listend": "平时不出声，发现不对劲才开口。",
+      "mode.teamd": "和你一起起草，好的留下就行。",
+      "modes.label": "AI 团队的参与程度",
+      "any.soon": "即将推出", "any.title": "在哪儿，都能接着想。",
+      "any.lede": "用平板扫一下电脑上的码，白板就打开了。不用装 App，也不经过云端。",
+      "any.mac": "摆开整个论证。", "any.pad": "拿笔圈出一个方向。", "any.comp": "电脑", "any.tab": "平板", "any.phone": "手机", "any.ph": "决定随身带着。",
+      "any.board": "内测剪辑反馈", "any.decBtn": "决策", "any.me": "你", "any.chosen": "刚刚在平板上选定",
+      "any.toast": "已选定 B", "any.undo": "撤销", "any.date": "11月27日 星期五", "any.time": "10:24",
+      "any.now": "现在", "any.ago": "12 分钟前", "any.n1t": "你在平板上选定了 B",
+      "get.title": "抢先体验 {brand}。",
+      "get.l1": "Mac 和 Windows 内测版即将推出。", "get.l2": "留下邮箱，上线第一时间通知你。",
+      "get.os": "常用系统", "get.mac": "macOS", "get.win": "Windows", "get.use": "打算用它做什么？", "get.email": "邮箱",
+      "get.useph": "比如：新品立项、短视频脚本……", "get.step": "申请内测资格", "get.close": "关闭", "get.join": "提交",
+      "get.needos": "请先选择系统。", "get.needemail": "请填写邮箱。", "get.needuse": "简单说说你的用途。",
+      "cta.waitlist": "加入内测", "cta.demo": "在线体验", "get.dlfor": "下载 {os} 版",
+      "get.thanks": "你已加入内测名单。", "get.thanksos": "你已加入 {os} 版内测名单。",
+      "get.thanksd": "上线后，我们会第一时间发邮件到 {email}。",
+      "get.closed": "报名通道即将开放，本次信息未提交。",
+      "get.bademail": "邮箱格式好像不对。",
+      "get.fail": "提交失败，请稍后再试。",
+      "board.label": "{brand} 白板演示：AI 剪辑助手该怎么工作",
+      "lang.label": "语言 Language", "theme.switch": "切换深色或浅色外观", "steps.label": "演示步骤", "cases.label": "使用场景",
+      "title": "{brand} 思波：好想法，何必挤在对话框里"
     }
   };
 
-  // The hero board: a camping lantern, because product design is Vellum's first use case.
+  // The hero board: an AI video-editing agent deciding how much to cut on its own (Mars chose it, 2026-11-27).
   var BOARD = {
     en: {
       steps: ["Evidence", "Judgment", "Directions", "Decision", "New evidence"],
@@ -174,74 +213,86 @@
       reopened: "Reopened. Nothing was lost along the way.",
       held: "Still holds. Your reason now sits beside the counter-evidence.",
       cards: {
-        e1: { k: "Observed", t: "Field notes", b: "8 of 10 campers hung it from the tent loop.", by: "You" },
-        e2: { k: "Reported", t: "Reviews", b: "41 reviews call it blinding up close.", by: "Scout" },
-        e3: { k: "Quote", t: "Camper", b: "I just want to find it in the dark.", by: "You" },
-        j1: { k: "Judgment", t: "It's used hanging, up close, after dark.", b: "Rests on 3 sources, mostly observed.", by: "You + Scout" },
-        dA: { k: "Direction", t: "Shade dial", b: "Twist a hood to dim it.", by: "Strategist" },
-        dB: { k: "Direction", t: "Hook-first, warm low glow", b: "Hook on top. 2200K at 40 lumens.", by: "Strategist" },
-        dC: { k: "Direction", t: "Glow-ring locator", b: "A faint ring to find it at night.", by: "Strategist" },
-        st: { k: "Critic", b: "A dial is hard to turn in gloves. And nobody asked for one." },
-        n1: { k: "Observed · new", t: "Field test", b: "The hook slips on thin guylines.", by: "You" }
+        e1: { k: "Observed", t: "Session logs", b: "Editors undo 6 of 10 cuts the agent makes.", by: "You" },
+        e2: { k: "Reported", t: "Reviews", b: "34 reviews say it cut the best moment.", by: "Scout" },
+        e3: { k: "Quote", t: "Editor", b: "Give me a first pass. The moments are mine.", by: "You" },
+        j1: { k: "Judgment", t: "Editors want the busywork done and the moments left to them.", b: "Logs, reviews and an editor's own words all point here.", by: "You + Scout" },
+        dA: { k: "Direction", t: "One-click final cut", b: "Upload, get a finished video.", by: "Strategist" },
+        dB: { k: "Direction", t: "Rough cut, moments marked", b: "It trims the dead air. You pick the moments.", by: "Strategist" },
+        dC: { k: "Direction", t: "Suggestions only", b: "It comments. You make every cut.", by: "Strategist" },
+        st: { k: "Critic", b: "One click hides the cuts editors undo most. And nobody asked for it." },
+        dc: { k: "Decision", t: "Ship the rough cut. Editors mark the moments.", by: "You", rests: "Rests on", aside: "Not chosen",
+              ev: ["6 of 10 cuts undone", "“The moments are mine.”"], A: "One-click final cut", C: "Suggestions only" },
+        pB: { k: "Prototype", b: "24 minutes of footage, rough-cut to 6. You mark the moments.", by: "Wright" },
+        n1: { k: "Observed · new", t: "Beta test", b: "On long clips, picking moments takes longer than cutting by hand.", by: "You" }
       },
-      adopted: "<strong>Chosen.</strong> It fits how 8 of 10 campers hang it.",
-      asideA: "<strong>Set aside.</strong> Hard to use in gloves.",
-      asideC: "<strong>Set aside.</strong> Finds the lantern, not the glare.",
+      adopted: "<strong>Chosen.</strong> It does the cuts editors keep, and leaves them the moments.",
+      asideA: "<strong>Not chosen.</strong> Fast, but it picks the moments for you.",
+      asideC: "<strong>Not chosen.</strong> You keep control, but save no time.",
       back: "Back in play",
       flagH: "New counter since you chose",
       reopen: "Reopen", holds: "Still holds",
-      heldNote: "Still holds. Fix: a wider hook mouth.",
+      heldNote: "Still holds. Fix: the agent pre-marks its top 5 moments.",
       // The reviews Scout read, as they sit in the spreadsheet. [[...]] marks what matched.
-      sheet: { head: ["Review", "★"], rows: [[118, "Lasts the whole weekend", 5], [119, "[[Blinding]] at arm's length", 2], [120, "Hook feels a bit flimsy", 3], [121, "[[Too bright]] up close", 2], [122, "[[Blinding]] inside the tent", 1]] },
+      sheet: { head: ["Review", "★"], rows: [[212, "Saved me an hour", 5], [213, "It [[cut the punchline]]", 2], [214, "Exports are quick", 4], [215, "[[Dropped my best take]]", 2], [216, "[[Cut the reaction shot]]", 1]] },
       reopenedNote: "Reopened. A and C are back in play.",
       supports: "supports", counters: "counters"
     },
     zh: {
-      steps: ["证据", "判断", "方向", "决定", "新证据"],
+      steps: ["证据", "判断", "方向", "决策", "新证据"],
       captions: [
-        "从你知道的开始。",
-        "说出它意味着什么，以及依据是什么。",
-        "Strategist 分出方向，Critic 提出反对。",
-        "你选了 B。其余的留着，各自带着理由。",
-        "新证据反驳了 B。重新讨论，或写下它为何依然成立。"
+        "先摆出已知的事实。",
+        "得出判断，标明依据。",
+        "Strategist 拆出方向，Critic 提出质疑。",
+        "你选了 B。没选的也留着，理由都在。",
+        "新证据不利于 B。重新讨论，或写下它为何仍然成立。"
       ],
-      reopened: "已重新讨论。一路上什么都没丢。",
-      held: "依然成立。你的理由和反驳证据放在了一起。",
+      reopened: "已重新讨论，之前的思路一条没丢。",
+      held: "仍然成立。你的理由已和反证放在一起。",
       cards: {
-        e1: { k: "观察", t: "实地记录", b: "10 位露营者里，8 位把灯挂在帐篷挂环上。", by: "你" },
-        e2: { k: "转述", t: "用户评论", b: "41 条评论说它近看刺眼。", by: "Scout" },
-        e3: { k: "原话", t: "露营者", b: "我只想在黑暗里找得到它。", by: "你" },
-        j1: { k: "判断", t: "它是挂着用的：近距离，天黑以后。", b: "依据 3 条来源，大多是观察。", by: "你 + Scout" },
-        dA: { k: "方向", t: "遮光旋钮", b: "转动灯罩来调暗。", by: "Strategist" },
-        dB: { k: "方向", t: "挂钩优先，暖色低光", b: "顶部挂钩，2200K 暖光，40 流明。", by: "Strategist" },
-        dC: { k: "方向", t: "夜光定位环", b: "一圈微光，夜里也找得到。", by: "Strategist" },
-        st: { k: "Critic", b: "戴手套拧不动旋钮。而且，没人说想要它。" },
-        n1: { k: "观察 · 新", t: "实地测试", b: "挂钩挂在细防风绳上会滑脱。", by: "你" }
+        e1: { k: "实测", t: "操作日志", b: "AI 剪的 10 刀，剪辑师撤回了 6 刀。", by: "你" },
+        e2: { k: "反馈", t: "用户评价", b: "34 条评价说，最精彩的部分被剪掉了。", by: "Scout" },
+        e3: { k: "原话", t: "剪辑师", b: "先给我个粗剪，高光我自己挑。", by: "你" },
+        j1: { k: "判断", t: "剪辑师希望 AI 干杂活，高光留给自己挑。", b: "日志、评价和剪辑师原话，都指向这一点。", by: "你 + Scout" },
+        dA: { k: "方向", t: "一键成片", b: "上传素材，直接出成片。", by: "Strategist" },
+        dB: { k: "方向", t: "粗剪 + 高光标记", b: "它剪掉冗余，高光由你来挑。", by: "Strategist" },
+        dC: { k: "方向", t: "只给建议", b: "它只提意见，每一刀都由你剪。", by: "Strategist" },
+        st: { k: "Critic", b: "一键成片恰好藏起了剪辑师最常撤回的那几刀。况且，根本没人提过这个需求。" },
+        dc: { k: "决策", t: "先上线粗剪，高光交给剪辑师标。", by: "你", rests: "依据", aside: "没选",
+              ev: ["10 刀撤回 6 刀", "“高光我自己挑。”"], A: "一键成片", C: "只给建议" },
+        pB: { k: "原型", b: "24 分钟素材，粗剪到 6 分钟。高光由你来标。", by: "Wright" },
+        n1: { k: "实测 · 新", t: "内测", b: "素材一长，挑高光比自己剪还慢。", by: "你" }
       },
-      adopted: "<strong>已选定。</strong>顺着 10 位里 8 位的挂法。",
-      asideA: "<strong>已搁置。</strong>戴手套不好用。",
-      asideC: "<strong>已搁置。</strong>找得到灯，没解决刺眼。",
-      back: "重新纳入考虑",
-      flagH: "选定之后，出现 1 条反证",
-      reopen: "重新讨论", holds: "依然成立",
-      heldNote: "依然成立。改法：把挂钩开口加宽。",
-      sheet: { head: ["评论", "★"], rows: [[118, "整个周末都够用", 5], [119, "近看太[[刺眼]]", 2], [120, "挂钩有点软", 3], [121, "离近了[[晃眼睛]]", 2], [122, "在帐篷里[[刺眼]]", 1]] },
-      reopenedNote: "已重新讨论。A 和 C 重新纳入考虑。",
+      adopted: "<strong>已选定。</strong>剪辑师会保留的刀它来剪，高光留给人挑。",
+      asideA: "<strong>没选。</strong>快是快，但高光它替你挑了。",
+      asideC: "<strong>没选。</strong>掌控感有了，时间没省下。",
+      back: "重新考虑",
+      flagH: "选定后出现 1 条新反证",
+      reopen: "重新讨论", holds: "仍然成立",
+      heldNote: "仍然成立。改进：AI 先预标 5 个高光。",
+      sheet: { head: ["评价", "★"], rows: [[212, "帮我省了一小时", 5], [213, "[[笑点被剪没了]]", 2], [214, "导出挺快", 4], [215, "[[最好的一条没了]]", 2], [216, "[[反应镜头被剪掉了]]", 1]] },
+      reopenedNote: "已重新讨论，A 和 C 也重新考虑。",
       supports: "支持", counters: "反驳"
     }
+  };
+
+  // Labels for the note a card opens on the zones board.
+  var POPL = {
+    en: { label: "Why this card", src: "Source", why: "Why this one", whyNot: "Why not", rests: "Rests on", led: "Led to", tested: "Tested", notChosen: "Not chosen" },
+    zh: { label: "这张卡片的来龙去脉", src: "来源", why: "为什么选它", whyNot: "为什么没选", rests: "依据", led: "带出了", tested: "测试结果", notChosen: "没选" }
   };
 
   // The zones board: the same four zones, filled in for three kinds of work.
   var CASES = {
     en: {
       product: {
-        e1: { k: "Reported", t: "Returns", b: "“Too loud for calls.” 38 of them.", page: "Returns, last 90 days" },
-        e2: { k: "Observed", t: "Sound test", b: "48 dB on the lowest setting." },
-        j: { t: "Noise, not airflow, is why people send it back." },
-        A: { t: "Bigger, slower blades", why: "Won't fit on a desk." },
-        B: { t: "Brushless motor, call mode", b: "Chosen. Quiet enough for a meeting." },
-        C: { t: "Bladeless tower", why: "Quiet, and twice the price." },
-        P: { t: "Call-mode prototype", meta: "31 dB at full speed" },
+        e1: { k: "Reported", t: "Returns", b: "“Hurts my nose after an hour.” 38 of them.", page: "Returns, last 90 days" },
+        e2: { k: "Observed", t: "Wear time", b: "Worn 2 hours a day after the first week." },
+        j: { t: "Weight, not features, is why they come off." },
+        A: { t: "Bigger battery, same frame", why: "Even heavier." },
+        B: { t: "32 g frame, battery in the temple tips", b: "Chosen. Light enough to forget." },
+        C: { t: "Drop the camera", why: "Lighter, but loses the main use." },
+        P: { t: "32 g prototype", meta: "Worn 6 hours straight in testing" },
         S: { t: "Spec for the tooling review" }
       },
       video: {
@@ -251,7 +302,7 @@
         A: { t: "Voice-over hook", why: "Still slow to the payoff." },
         B: { t: "Open on the result", b: "Chosen. The payoff lands in second one." },
         C: { t: "Text card intro", why: "Reads as an ad." },
-        P: { t: "Storyboard, three takes", meta: "From your own video model" },
+        P: { t: "Storyboard, three takes", meta: "Take 2 holds 70% past second 3" },
         S: { t: "Final cut, 15 seconds" }
       },
       ai: {
@@ -264,40 +315,40 @@
         P: { t: "Eval, 50 real cases", meta: "46 pass" },
         S: { t: "Ship to 10% of users" }
       },
-      kinds: { judgment: "Judgment", direction: "Direction", prototype: "Prototype", snapshot: "Snapshot", sources: "2 sources", aside: "A, C set aside", by: "Wright" }
+      kinds: { judgment: "Judgment", direction: "Direction", prototype: "Prototype", snapshot: "Snapshot", sources: "Reasons attached", aside: "Not chosen: A, C", by: "Wright" }
     },
     zh: {
       product: {
-        e1: { k: "转述", t: "退货原因", b: "“开会时太吵。”38 条。", page: "退货记录，近 90 天" },
-        e2: { k: "观察", t: "噪音测试", b: "最低档也有 48 分贝。" },
-        j: { t: "退货是因为噪音，不是风量。" },
-        A: { t: "加大扇叶、降低转速", why: "放不进桌面。" },
-        B: { t: "无刷电机 + 通话模式", b: "已选定。安静到可以开会。" },
-        C: { t: "无叶塔扇", why: "很安静，价格翻倍。" },
-        P: { t: "通话模式样机", meta: "最高档 31 分贝" },
-        S: { t: "给开模评审的规格书" }
+        e1: { k: "反馈", t: "退货原因", b: "“戴一小时，鼻梁就疼。”共 38 条。", page: "退货记录 · 近 90 天" },
+        e2: { k: "实测", t: "佩戴时长", b: "第一周过后，每天只戴 2 小时。" },
+        j: { t: "让人摘下它的是重量，不是功能。" },
+        A: { t: "加大电池，镜框不变", why: "只会更重。" },
+        B: { t: "32 克镜框，电池移到镜腿末端", b: "已选定。轻到忘了自己戴着。" },
+        C: { t: "去掉摄像头", why: "轻是轻了，核心用途也没了。" },
+        P: { t: "32 克样机", meta: "实测连续佩戴 6 小时" },
+        S: { t: "开模评审规格书" }
       },
       video: {
-        e1: { k: "观察", t: "留存数据", b: "一半观众在第 3 秒离开。" },
-        e2: { k: "转述", t: "评论区", b: "“说重点。”60 条。" },
-        j: { t: "观众要先看到结果。" },
-        A: { t: "口播开场", why: "离结果还是太远。" },
-        B: { t: "成品画面开场", b: "已选定。第一秒就给结果。" },
-        C: { t: "文字卡开场", why: "一看就像广告。" },
-        P: { t: "分镜，三个版本", meta: "用你自己的视频模型生成" },
-        S: { t: "15 秒最终剪辑" }
+        e1: { k: "实测", t: "完播数据", b: "一半观众在第 3 秒划走。" },
+        e2: { k: "反馈", t: "评论区", b: "“说重点！”共 60 条。" },
+        j: { t: "观众想先看到结果。" },
+        A: { t: "口播开场", why: "结果还是来得太慢。" },
+        B: { t: "结果前置", b: "已选定。第一秒就亮出结果。" },
+        C: { t: "字幕卡开场", why: "一看就像广告。" },
+        P: { t: "分镜脚本，三个版本", meta: "第 2 版过了 3 秒还留住七成观众" },
+        S: { t: "15 秒成片" }
       },
       ai: {
-        e1: { k: "观察", t: "日志", b: "10 条草稿回复，用户改写了 6 条。" },
-        e2: { k: "原话", t: "访谈", b: "“读起来像机器人。”" },
-        j: { t: "问题出在语气，不在事实。" },
-        A: { t: "语气滑块", why: "又一个没人会动的设置。" },
-        B: { t: "跟随发件人的语气", b: "已选定。对方怎么写，它就怎么写。" },
-        C: { t: "回复模板", why: "用去掉语气来解决语气。" },
-        P: { t: "评测集，50 条真实案例", meta: "46 条通过" },
-        S: { t: "先开放给 10% 的用户" }
+        e1: { k: "实测", t: "日志", b: "AI 起草的回复，用户改写了六成。" },
+        e2: { k: "原话", t: "用户访谈", b: "“读起来像机器人。”" },
+        j: { t: "问题出在语气，不在内容。" },
+        A: { t: "语气滑块", why: "又多一个没人动的设置。" },
+        B: { t: "模仿发件人的语气", b: "已选定。对方怎么写，它就怎么回。" },
+        C: { t: "回复模板", why: "用消灭语气来解决语气问题。" },
+        P: { t: "评测集：50 条真实案例", meta: "通过 46 条" },
+        S: { t: "先灰度 10% 用户" }
       },
-      kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", sources: "2 条依据", aside: "A、C 已搁置", by: "Wright" }
+      kinds: { judgment: "判断", direction: "方向", prototype: "原型", snapshot: "定稿", sources: "附理由和证据", aside: "没选 A、C", by: "Wright" }
     }
   };
   // A quote shows where it came from: who said it, and the recording it was transcribed from.
@@ -306,42 +357,72 @@
     h.forEach(function (v, i) { o += '<i class="w' + (i < 7 ? " on" : "") + '" style="height:' + v + 'px"></i>'; });
     return o + "</span>";
   })();
-  // Evidence comes in whatever form it was captured: a photo from the field, an excerpt of a spreadsheet, a clip.
+  // Evidence comes in whatever form it was captured: a screenshot, an excerpt of a spreadsheet, a clip.
   // The label on the card still says where it came from; the picture only shows what it is.
-  // The lantern on its hook, sliding down a guyline in the clip: drawn once, ghosted twice behind itself.
-  var HOOK = '<path class="cl-hook" d="M134 52v-6.5a4 4 0 0 1 8 0v2"/><rect class="ph-cap" x="130" y="52" width="8" height="3" rx="1"/><rect class="cl-lamp" x="128.5" y="55" width="11" height="14" rx="3.5"/>';
   var MEDIA = {
+    // The agent's timeline as the editor saw it: the cuts they undid are left as dashed outlines.
     photo:
       '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<rect class="ph-bg" width="200" height="84"/><path class="ph-ground" d="M0 72c56-5 140-5 200 0v12H0Z"/>' +
-      '<path class="ph-tent" d="M0 0h200v27c-30 4-58 5-88 6-30-1-62-3-112-7Z"/><path class="ph-seam" d="M46 0l8 31M158 0l-8 32"/>' +
-      '<ellipse class="ph-wash" cx="112" cy="27" rx="54" ry="12"/><path class="ph-guy" d="M178 29l28 60"/>' +
-      '<circle class="ph-glow" cx="112" cy="52" r="22"/>' +
-      '<path class="ph-loop" d="M109.5 32v2.5a2.5 2.5 0 0 0 5 0V32"/><path class="ph-cord" d="M112 37v4"/>' +
-      '<rect class="ph-cap" x="106" y="41" width="12" height="4" rx="1.5"/><rect class="ph-lamp" x="104.5" y="44" width="15" height="19" rx="5"/></svg>',
+      '<rect class="ph-bg" width="200" height="84"/>' +
+      '<path class="tl-tick" d="M6 5v4"/><path class="tl-tick" d="M16 5v2"/><path class="tl-tick" d="M26 5v2"/><path class="tl-tick" d="M36 5v2"/><path class="tl-tick" d="M46 5v2"/><path class="tl-tick" d="M56 5v4"/><path class="tl-tick" d="M66 5v2"/><path class="tl-tick" d="M76 5v2"/><path class="tl-tick" d="M86 5v2"/><path class="tl-tick" d="M96 5v2"/><path class="tl-tick" d="M106 5v4"/><path class="tl-tick" d="M116 5v2"/><path class="tl-tick" d="M126 5v2"/><path class="tl-tick" d="M136 5v2"/><path class="tl-tick" d="M146 5v2"/><path class="tl-tick" d="M156 5v4"/><path class="tl-tick" d="M166 5v2"/><path class="tl-tick" d="M176 5v2"/><path class="tl-tick" d="M186 5v2"/><path class="tl-tick" d="M196 5v2"/>' +
+      '<rect class="tl-clip" x="6" y="16" width="40" height="18" rx="3"/><rect class="tl-undo" x="50" y="16.5" width="28" height="17" rx="3"/>' +
+      '<rect class="tl-clip" x="82" y="16" width="44" height="18" rx="3"/><rect class="tl-undo" x="130" y="16.5" width="20" height="17" rx="3"/>' +
+      '<rect class="tl-clip" x="154" y="16" width="40" height="18" rx="3"/>' +
+      '<rect class="tl-aud" x="6" y="40" width="72" height="10" rx="2.5"/><rect class="tl-aud" x="82" y="40" width="112" height="10" rx="2.5"/>' +
+      '<rect class="tl-clip dim" x="6" y="56" width="60" height="10" rx="2.5"/><rect class="tl-undo" x="70" y="56.5" width="34" height="9" rx="2.5"/><rect class="tl-clip dim" x="108" y="56" width="86" height="10" rx="2.5"/>' +
+      '<path class="tl-redo" d="M58 25.5a5 5 0 1 1 1.5 3.6M58 25.5v-3.2M58 25.5h3.2"/>' +
+      '<circle class="tl-glow" cx="104" cy="9" r="9"/><path class="tl-head" d="M104 7v74"/><path class="tl-cap" d="M100.5 4h7v4l-3.5 3-3.5-3Z"/></svg>',
+    // The beta session as it was recorded, full frame, with a real progress line under it.
     clip:
+      '<video muted loop playsinline preload="none" poster="assets/beta-clip-poster.jpg" src="assets/beta-clip.mp4"></video><i class="vprog"><b></b></i>',
+    // B's first proof: the dead air is gone, the track is one tight run of clips, and the moments you marked sit on it.
+    proto:
       '<svg class="ill" viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<rect class="ph-bg" width="200" height="84"/><path class="ph-ground" d="M0 72c56-5 140-5 200 0v12H0Z"/><path class="ph-guy" d="M-4 14 204 62"/>' +
-      '<g class="cl-ghost" style="opacity:.12" transform="translate(-30 -6.9)">' + HOOK + '</g>' +
-      '<g class="cl-ghost" style="opacity:.28" transform="translate(-15 -3.5)">' + HOOK + '</g>' + HOOK +
-      '<circle class="play" cx="70" cy="40" r="11"/><path class="play-ink" d="M66.6 34.6v10.8l9.2-5.4Z"/>' +
-      '<rect class="cl-track" x="0" y="81" width="200" height="3"/><rect class="cl-done" x="0" y="81" width="64" height="3"/>' +
-      '<rect class="cl-time" x="166" y="64" width="26" height="12" rx="6"/><text class="cl-tx" x="179" y="72.6" text-anchor="middle">0:12</text></svg>'
+      '<rect class="ph-bg" width="200" height="84"/>' +
+      (function () { var t = ""; for (var x = 6; x <= 196; x += 10) t += '<path class="tl-tick" d="M' + x + ' 9v' + ((x - 6) % 50 ? 2 : 4) + '"/>'; return t; })() +
+      '<rect class="tl-clip" x="6" y="22" width="33" height="20" rx="3"/><rect class="tl-clip" x="40" y="22" width="27" height="20" rx="3"/>' +
+      '<rect class="tl-clip" x="68" y="22" width="41" height="20" rx="3"/><rect class="tl-clip" x="110" y="22" width="22" height="20" rx="3"/>' +
+      '<rect class="tl-clip" x="133" y="22" width="31" height="20" rx="3"/><rect class="tl-clip" x="165" y="22" width="29" height="20" rx="3"/>' +
+      '<rect class="tl-aud" x="6" y="47" width="188" height="10" rx="2.5"/>' +
+      '<path class="mk-l" d="M53 19v26M88 19v26M149 19v26"/>' +
+      '<path class="mk" d="M53 14.5l3.4 3.4-3.4 3.4-3.4-3.4Z"/><path class="mk" d="M88 14.5l3.4 3.4-3.4 3.4-3.4-3.4Z"/><path class="mk" d="M149 14.5l3.4 3.4-3.4 3.4-3.4-3.4Z"/>' +
+      '<rect class="cl-time" x="164" y="64" width="30" height="12" rx="6"/><text class="cl-tx" x="179" y="72.6" text-anchor="middle">6:02</text></svg>'
   };
   function unquote(t) { return String(t).replace(/^[“"「『]|[”"」』]$/g, ""); }
-  var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "观察": "eye", "转述": "msg", "原话": "quote" };
+  var KIND_ICON = { Observed: "eye", Reported: "msg", Quote: "quote", "实测": "eye", "反馈": "msg", "原话": "quote" };
 
   var lang = root.lang === "zh-CN" ? "zh" : "en";
-  function t(key) { return (T[lang] && T[lang][key]) || T.en[key] || ""; }
+  // A language may leave a slot empty on purpose ("" is a value, not a gap), so only a missing key falls back to English.
+  function has(key) { return !!T[lang] && Object.prototype.hasOwnProperty.call(T[lang], key); }
+  function t(key) { var v = has(key) ? T[lang][key] : T.en[key]; return (v == null ? "" : String(v)).replace(/\{brand\}/g, BRAND); }
+  // Chinese may break between any two characters, which in a short line can split a word (剪/辑师).
+  // With clauses on, each clause stays whole and lines break between clauses; a clause too long for the line still wraps.
+  var ZHW = new RegExp("(一键成片|同一个人|最花时间|要保留吗|剪辑师|好镜头|一个个|找回来|被剪掉|剪得慢|挑高光|能留下|说的是|剪掉的|时间|剪辑|太费|那就|访谈|不是|只会|剪掉|更多|先让|自己|差评|其实|发的|如果|成立|粗剪|方案|原型|好了|没有|任何|证据|说明|想要)", "g");
+  function setCopy(el, v, clauses) {
+    // "w": Chinese breaks only between words (一键成片 stays whole), so lines still fill the card. Browsers' own word
+    // segmentation is uneven, so the card copy's words are listed (longest first).
+    if (lang === "zh" && clauses === "w") { el.innerHTML = esc(v).replace(ZHW, '<span class="w">$1</span>'); return; }
+    if (clauses === "w") { el.textContent = v; return; }
+    if (lang === "zh" && clauses) el.innerHTML = v.replace(/([，；：])/g, "$1\u0001").split("\u0001").map(function (c) { return '<span class="cl">' + esc(c) + "</span>"; }).join("");
+    else el.textContent = v;
+  }
+  // Shrink a wrapped block to its longest line, so a balanced paragraph leaves no empty strip on the right.
+  // Works inside scaled boards: line boxes and the element are measured in the same (scaled) space.
+  function snug(el) {
+    el.style.width = "";
+    var box = el.getBoundingClientRect();
+    if (!box.width) return;
+    var r = document.createRange(); r.selectNodeContents(el);
+    var right = 0, rects = r.getClientRects();
+    for (var i = 0; i < rects.length; i++) right = Math.max(right, rects[i].right - box.left);
+    if (right > 0 && right < box.width - 1) el.style.width = Math.ceil(right * el.offsetWidth / box.width + 1) + "px";
+  }
 
   function applyCopy() {
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
-      var v = t(el.getAttribute("data-i18n"));
-      if (!v) return;
-      // Chinese may break between any two characters, which in a short display line can split a word (决/定).
-      // Here each clause stays whole and lines break between clauses; a clause too long for the line still wraps.
-      if (lang === "zh" && el.hasAttribute("data-clauses")) el.innerHTML = v.replace(/([，；])/g, "$1\u0001").split("\u0001").map(function (c) { return '<span class="cl">' + esc(c) + "</span>"; }).join("");
-      else el.textContent = v;
+      var k = el.getAttribute("data-i18n"), v = t(k);
+      if (!v && !has(k)) return;
+      setCopy(el, v, el.hasAttribute("data-words") ? "w" : el.hasAttribute("data-clauses"));
     });
     $("langSel").value = lang;
     document.title = t("title");
@@ -353,12 +434,14 @@
     $("modes").setAttribute("aria-label", t("modes.label"));
     board.relabel();
     if (scene) scene.relabel();
+    if (anywhere) anywhere.relabel();
     $("hero-title").setAttribute("aria-label", t("hero.title"));
     headline.type(true);
     zones.render(false);
     reel.relabel();
     renderMode(false);
-    renderDownloads();
+    $("useText").setAttribute("placeholder", t("get.useph"));
+    renderPicks();
   }
 
   // ---- Theme and language ------------------------------------------------------------------
@@ -420,23 +503,24 @@
 
     // Card positions in board units: [x, y, width]. Wide reads left to right; mid and narrow read top to bottom.
     var LAYOUT = {
-      wide: { w: 1180, h: 736, loop: 20, max: 1.2, pos: {
-        e1: [28, 40, 212], e2: [28, 266, 212], e3: [28, 498, 212],
-        j1: [320, 270, 240], st: [342, 50, 196],
-        dA: [626, 40, 236], dC: [626, 456, 236],
-        dB: [904, 150, 248], n1: [926, 516, 204]
+      wide: { w: 1180, h: 768, loop: 18, max: 1.2, pos: {
+        e1: [28, 36, 212], e2: [28, 262, 212], e3: [28, 520, 212],
+        st: [312, 36, 200], j1: [300, 284, 232],
+        dA: [584, 36, 236], dB: [584, 284, 244], dC: [584, 590, 236],
+        dc: [880, 36, 284], pB: [880, 284, 252], n1: [880, 478, 236]
       } },
-      mid: { w: 760, h: 1000, loop: 15, max: 1.1, pos: {
+      mid: { w: 760, h: 1060, loop: 15, max: 1.1, pos: {
         e1: [20, 24, 228], e2: [266, 24, 228], e3: [512, 24, 228],
         st: [40, 254, 196], j1: [266, 262, 228],
         dA: [20, 480, 228], dB: [266, 480, 228], dC: [512, 480, 228],
-        n1: [266, 780, 228]
+        dc: [20, 790, 228], pB: [266, 790, 228], n1: [512, 790, 228]
       } },
-      narrow: { w: 380, h: 1118, loop: 9, max: 1.12, pos: {
-        e1: [12, 14, 172], e2: [196, 14, 172], e3: [12, 216, 172],
-        j1: [196, 216, 172], st: [20, 372, 158],
-        dA: [196, 396, 172], dB: [12, 598, 356],
-        dC: [12, 892, 172], n1: [196, 892, 172]
+      narrow: { w: 380, h: 1400, loop: 9, max: 1.12, pos: {
+        e1: [12, 14, 172], e2: [196, 14, 172], e3: [12, 196, 172],
+        j1: [196, 196, 172], st: [20, 356, 158],
+        dA: [196, 404, 172], dB: [12, 628, 356],
+        dC: [12, 864, 172], dc: [196, 864, 172],
+        pB: [12, 1092, 172], n1: [196, 1164, 172]
       } }
     };
     var RELS = [
@@ -447,12 +531,15 @@
       { a: "j1", b: "dB", type: "related", at: 2 },
       { a: "j1", b: "dC", type: "related", at: 2 },
       { a: "st", b: "dA", type: "counters", at: 2 },
+      { a: "dB", b: "dc", type: "related", at: 3 },
+      { a: "dB", b: "pB", type: "related", at: 3 },
+      { a: "pB", b: "n1", type: "related", at: 4 },
       { a: "n1", b: "dB", type: "counters", at: 4, tag: true }
     ];
-    var SHOW = { e1: 0, e2: 0, e3: 0, j1: 1, dA: 2, dB: 2, dC: 2, st: 2, n1: 4 };
+    var SHOW = { e1: 0, e2: 0, e3: 0, j1: 1, dA: 2, dB: 2, dC: 2, st: 2, dc: 3, pB: 3, n1: 4 };
     // Spotlight: each step lights only what it is about. What those cards touch stays half lit, so you still
     // see where they sit; everything else steps back but stays readable. Pointing at a card overrides it.
-    var LIT = { 0: ["e1", "e2", "e3"], 1: ["j1"], 2: ["dA", "dB", "dC", "st"], 3: ["dB"], 4: ["n1"] };
+    var LIT = { 0: ["e1", "e2", "e3"], 1: ["j1"], 2: ["dA", "dB", "dC", "st"], 3: ["dB", "dc", "pB"], 4: ["n1"] };
     var CTX = { 3: ["dA", "dC"] };
     var litSet = {}, spotOne = null, spotT = 0;
     // While a step is being built, the light follows the card that just landed; once it is all down, the
@@ -478,9 +565,20 @@
       svg.querySelectorAll("path[data-a]").forEach(function (p) { p.classList.toggle("lit", !!(lit[p.dataset.a] || lit[p.dataset.b])); });
       stage.querySelectorAll(".rel-tag[data-a]").forEach(function (g) { g.classList.toggle("lit", !!(lit[g.dataset.a] || lit[g.dataset.b])); });
       el.classList.add("spotlit");
+      clip();
     }
-    var KI = { e1: "eye", e2: "msg", e3: "quote", j1: "judge", dA: "fork", dB: "fork", dC: "fork", st: "critic", n1: "eye" };
-    var CREW = { "Scout": "var(--crew-scout)", "Strategist": "var(--crew-strategist)" };
+    // The beta footage plays only while its card is on the board and the board is on screen; still under reduced motion.
+    var inView = false;
+    function clip() {
+      var v = cards.n1 && cards.n1.querySelector("video");
+      if (!v) return;
+      if (!v._prog) { v._prog = 1; var bar = cards.n1.querySelector(".vprog b"); v.addEventListener("timeupdate", function () { if (v.duration) bar.style.transform = "scaleX(" + (v.currentTime / v.duration).toFixed(3) + ")"; }); }
+      if (inView && !reduced && cards.n1.classList.contains("on")) { if (v.paused) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } }
+      else if (!v.paused) v.pause();
+    }
+    if (window.IntersectionObserver) new IntersectionObserver(function (en) { inView = en[0].isIntersecting; clip(); }).observe(el);
+    var KI = { e1: "eye", e2: "msg", e3: "quote", j1: "judge", dA: "fork", dB: "fork", dC: "fork", st: "critic", dc: "decide", pB: "window", n1: "eye" };
+    var CREW = { "Scout": 1, "Strategist": 1, "Wright": 1 };
     var mode = null, scale = 1, step = -1, timer = null, playing = false, played = false, resolved = null, dragged = false;
     var cards = {}, moved = {}, paths = {}, loop = null, later = [];
     // Choreography: cards the director is still holding back, and who is on the board right now.
@@ -496,13 +594,16 @@
         var c = document.createElement("div");
         c.className = "vc bcard";
         if (id === "j1" || id[0] === "d") c.classList.add("ink");
+        if (id === "dc") c.classList.add("dec");
         if (id === "st") c.classList.add("sticky");
         if (id === "e3") c.classList.add("quote");
-        var pic = { e1: MEDIA.photo, e2: '<table class="xl" aria-hidden="true"></table>', n1: MEDIA.clip }[id];
+        var pic = { e1: MEDIA.photo, e2: '<table class="xl" aria-hidden="true"></table>', pB: MEDIA.proto, n1: MEDIA.clip }[id];
         if (pic) c.classList.add("has-media");
         c.dataset.id = id;
-        c.innerHTML = (pic ? '<div class="media' + (id === "e2" ? " xl-wrap" : "") + '">' + pic + "</div>" : "") + '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI[id] + '"/></svg><span class="kk"></span>' + (id === "st" ? "" : '<span class="by"></span>') + "</div>" +
+        c.innerHTML = (pic ? '<div class="media' + (id === "e2" ? " xl-wrap" : id === "n1" ? " vid" : "") + '">' + pic + "</div>" : "") + '<div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + KI[id] + '"/></svg><span class="kk"></span>' + (id === "st" ? "" : '<span class="by"></span>') + "</div>" +
           (id === "e3" ? '<div class="b"></div><div class="cite"><div class="t"></div>' + WAVE + "</div>" :
+          // The decision record: what was decided, what it rests on, what was not chosen. Reasons stay on A and C.
+          id === "dc" ? '<div class="t"></div><dl class="rec"><dt class="r1"></dt><dd class="ev"></dd><dt class="r2"></dt><dd class="ns"></dd></dl>' :
           (id === "st" || pic ? "" : '<div class="t"></div>') + '<div class="b"></div>') +
           (id === "dA" || id === "dC" ? '<div class="veil"></div><div class="note"></div><span class="back-chip"><svg class="ki" aria-hidden="true"><use href="#i-retry"/></svg><span></span></span>' : "") +
           // The chosen card shows one line; why it was chosen and what you can do open on hover, focus or tap.
@@ -533,21 +634,26 @@
       var l = L();
       Object.keys(cards).forEach(function (id) {
         var c = cards[id], d = l.cards[id];
-        var letter = { dA: "A", dB: "B", dC: "C" }[id];
+        var letter = { dA: "A", dB: "B", dC: "C", dc: "B" }[id];
         c.querySelector(".kk").textContent = d.k;
         var tt = c.querySelector(".t");
         if (tt) tt.innerHTML = (letter ? '<span class="chip ' + letter + '">' + letter + "</span>" : "") + '<span class="tt">' + esc(d.t) + "</span>";
-        c.querySelector(".b").textContent = d.b;
+        var bb = c.querySelector(".b"); if (bb) bb.textContent = d.b;
         var by = c.querySelector(".by");
         if (by) {
           var who = d.by.split(" + ");
           by.innerHTML = who.map(function (w) {
-            var col = CREW[w];
-            return '<b style="background:' + (col || "var(--label)") + (col ? "" : ";color:var(--card)") + '">' + esc(w === "你" ? "你" : w.charAt(0)) + "</b>";
+            if (CREW[w]) return crewAv(w, "");
+            return '<b class="me">' + esc(w === "你" ? "你" : w.charAt(0)) + "</b>";
           }).join("");
           by.title = d.by; by.setAttribute("role", "img"); by.setAttribute("aria-label", d.by);
         }
       });
+      var dc = l.cards.dc, ek = ["eye", "quote"];
+      cards.dc.querySelector(".r1").textContent = dc.rests;
+      cards.dc.querySelector(".r2").textContent = dc.aside;
+      cards.dc.querySelector(".ev").innerHTML = dc.ev.map(function (e, i) { return '<span class="pill"><svg class="ki" aria-hidden="true"><use href="#i-' + ek[i] + '"/></svg>' + esc(e) + "</span>"; }).join("");
+      cards.dc.querySelector(".ns").innerHTML = ["A", "C"].map(function (k) { return '<span class="pill off"><span class="chip ' + k + '">' + k + "</span>" + esc(dc[k]) + "</span>"; }).join("");
       cards.e2.querySelector(".xl").innerHTML = '<tr><th></th><th>' + esc(l.sheet.head[0]) + "</th><th>" + l.sheet.head[1] + "</th></tr>" +
         l.sheet.rows.map(function (r) {
           var hit = r[1].indexOf("[[") > -1, tx = esc(r[1]).replace(/\[\[(.+?)\]\]/g, "<mark>$1</mark>");
@@ -698,8 +804,8 @@
       })(t0);
     }
 
-    var CREWMADE = { dA: 1, dB: 1, dC: 1, st: 1 };   // written by the crew, so it streams in
-    var WHO = { you: "var(--label)", scout: "var(--crew-scout)", strategist: "var(--crew-strategist)", critic: "var(--crew-critic)" };
+    var CREWMADE = { dA: 1, dB: 1, dC: 1, st: 1, pB: 1 };   // written by the crew, so it streams in
+    var WHO = { you: "var(--label)", scout: "var(--crew-scout)", strategist: "var(--crew-strategist)", critic: "var(--crew-critic)", wright: "var(--crew-wright)" };
     function cursor(name) {
       if (cursors[name]) return cursors[name];
       var c = document.createElement("div");
@@ -821,10 +927,19 @@
         moveTo("critic", spot("st")[0], spot("st")[1], function () { press("critic", function () { reveal("st", spot("st")); spotlight("st", 1900); leave("critic", 1100); }); });
       }, 1250);
     }
+    // You circle B. The decision is written down beside it, then the Wright builds the first proof.
     function decision() {
-      holdDecide = true; go(3, true);
+      holdDecide = true; held = { dc: 1, pB: 1 }; go(3, true);
       moveTo("you", spot("dB")[0], spot("dB")[1], function () {
-        press("you", function () { holdDecide = false; go(3, true); leave("you", 1700); });
+        press("you", function () {
+          holdDecide = false; go(3, true);
+          soon(function () { reveal("dc", mid("dB")); spotlight("dc"); leave("you", 300); }, 1250);
+          soon(function () {
+            moveTo("wright", spot("pB")[0], spot("pB")[1], function () {
+              press("wright", function () { reveal("pB", spot("pB")); spotlight("pB", 1500); leave("wright", 1000); });
+            });
+          }, 1900);
+        });
       });
     }
     function news() {
@@ -874,7 +989,7 @@
       });
       replayBtn.hidden = !(n === 4 && !playing) || pinned;
     }
-    function stagger(id) { return { e1: 0, e2: 1, e3: 2, j1: 0, dA: 0, dB: 1, dC: 2, st: 4, n1: 0 }[id] || 0; }
+    function stagger(id) { return { e1: 0, e2: 1, e3: 2, j1: 0, dA: 0, dB: 1, dC: 2, st: 4, dc: 0, pB: 2, n1: 0 }[id] || 0; }
 
     function resolve(kind) {
       resolved = kind;
@@ -895,7 +1010,7 @@
       }, 2200);
     }
 
-    var DWELL = [4300, 2900, 4400, 3500];
+    var DWELL = [4300, 2900, 4400, 5200];
     function play() {
       if (playing) return;
       playing = true; played = true;
@@ -951,9 +1066,10 @@
     // Cards are paper: they lift, tilt with the drag, and settle when you let go.
     function drag(c) {
       var sx, sy, ox, oy, lx, id = c.dataset.id, active = false, tilt = 0, raf = 0;
-      c.addEventListener("pointerenter", function () { hot(id, true); });
-      c.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse" && !el.classList.contains("focus") && !active) hot(id, true); });
-      c.addEventListener("pointerleave", function () { if (!active) hot(id, false); });
+      // The card under the pointer is always at full strength, whatever the story is lighting at that moment.
+      c.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") c.classList.add("hov"); hot(id, true); });
+      c.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { c.classList.add("hov"); if (!el.classList.contains("focus") && !active) hot(id, true); } });
+      c.addEventListener("pointerleave", function () { c.classList.remove("hov"); if (!active) hot(id, false); });
       c.addEventListener("pointerdown", function (e) {
         if (e.button !== 0 || e.pointerType === "touch" || e.target.closest("button")) return;
         active = true; c.setPointerCapture(e.pointerId);
@@ -1028,20 +1144,12 @@
     var EDGES = [["e1", "j", "supports"], ["e2", "j", "supports"], ["j", "A", "aside"], ["j", "B", ""], ["j", "C", "aside"], ["B", "P", "lineB"], ["P", "S", "lineB"]];
 
     var ILL = {
-      product: // a desk fan in call mode: the blades spin when you point at the card
-        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true"><ellipse cx="100" cy="134" rx="46" ry="5" fill="currentColor" opacity=".07"/>' +
-        '<path class="line" d="M100 104v22M78 130h44"/><circle class="fill-card line" cx="100" cy="62" r="42"/>' +
-        '<g class="soft"><circle cx="100" cy="62" r="33"/><path d="M100 20v10M100 94v10M58 62h10M132 62h10M70.3 32.3l7 7M122.7 84.7l7 7M70.3 91.7l7-7M122.7 39.3l7-7"/></g>' +
-        '<g class="blades"><path class="fill-2 line" d="M100 62c-3-12 2-24 10-24 7 0 6 14-10 24ZM100 62c12-1 21 7 18 15-3 6-15 0-18-15ZM100 62c-8 9-21 10-24 3-2-7 11-12 24-3Z"/></g>' +
-        '<circle class="fill-card line" cx="100" cy="62" r="5"/>' +
-        '<g class="b-stroke"><path d="M152 50c4 3 6 7 6 12s-2 9-6 12" opacity=".9"/><path d="M161 43c6 5 9 11 9 19s-3 14-9 19" opacity=".45"/></g></svg>',
-      video: // a storyboard with the chosen opening framed in B
-        '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true">' +
-        '<g><rect class="fill-card" x="12" y="42" width="54" height="40" rx="5"/><rect class="b-stroke" x="12" y="42" width="54" height="40" rx="5"/><circle class="b-ink" cx="39" cy="62" r="9" opacity=".9"/><path class="line" d="M28 75h22" opacity=".5"/></g>' +
-        '<g><rect class="fill-card line" x="73" y="42" width="54" height="40" rx="5" opacity=".9"/><path class="soft" d="M84 70l10-12 8 8 6-6 9 10"/></g>' +
-        '<g><rect class="fill-card line" x="134" y="42" width="54" height="40" rx="5" opacity=".9"/><path class="soft" d="M144 56h34M144 63h24M144 70h28"/></g>' +
-        '<text x="12" y="98">0s</text><text x="73" y="98">1s</text><text x="134" y="98">3s</text>' +
-        '<path class="soft" d="M12 112h176"/><path class="playhead b-stroke" d="M40 106v12"/></svg>',
+      product: // the 32 g prototype, on the scale
+        '<img class="ph" src="assets/glasses-prototype.jpg" alt="" loading="lazy" decoding="async">',
+      video: // the storyboard: it opens on the result (framed in B), then shows how it was made
+        '<div class="sb">' + [["1-result", "0s"], ["2-process", "1s"], ["3-start", "3s"]].map(function (f, i) {
+          return '<figure' + (i ? "" : ' class="on"') + '><img src="assets/storyboard-' + f[0] + '.jpg" alt="" loading="lazy" decoding="async"><figcaption>' + f[1] + "</figcaption></figure>";
+        }).join("") + "</div>",
       ai: // fifty eval cases, forty-six pass
         (function () {
           var s = '<svg class="ill" viewBox="0 0 200 150" aria-hidden="true">', fails = { 7: 1, 19: 1, 33: 1, 44: 1 };
@@ -1234,13 +1342,57 @@
         })(performance.now());
       });
     }
+    // Opening a card: a small note beside it that says, in the board's own words, what it rests on, why it was
+    // or wasn't chosen, and what it led to. Hover only traces; a click (or tap, or Enter) opens the note.
+    var pop = document.createElement("div");
+    pop.className = "zpop"; pop.setAttribute("role", "dialog"); pop.hidden = true;
+    zb.appendChild(pop);
+    function said(id) {
+      var d = CASES[lang][current][id];
+      if (id === "A" || id === "B" || id === "C") return '<b class="chip ' + id + '">' + id + "</b>" + esc(d.t);
+      if (id === "e1" || id === "e2") return '<i class="zk">' + esc(d.k) + "</i>" + esc(d.page ? d.b : d.b || d.t);
+      return esc(d.t);
+    }
+    function row(label, items) { return items.length ? '<div class="zr"><span class="zl">' + esc(label) + '</span><ul>' + items.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul></div>" : ""; }
+    function showPop(id) {
+      var d = CASES[lang][current][id], P = POPL[lang], up = [], down = [];
+      EDGES.forEach(function (e) { if (e[1] === id) up.push(e[0]); if (e[0] === id) down.push(e[1]); });
+      var h = "";
+      if (id === "e1" || id === "e2") h += row(P.src, [esc(d.page || d.t)]);
+      if (id === "B") h += row(P.why, [esc(String(d.b).replace(/^(Chosen\.|已选定。)\s*/, ""))]);
+      if (id === "A" || id === "C") h += row(P.whyNot, [esc(d.why)]);
+      var data = CASES[lang][current];
+      if (id === "S") up = ["B"].map(said).concat([esc(data.P.t) + '<span class="zm"> · ' + esc(data.P.meta) + "</span>"]);
+      else up = up.map(said);
+      h += row(P.rests, up);
+      if (id === "P") h += row(P.tested, [esc(d.meta)]);
+      if (id === "S") h += row(P.notChosen, ["A", "C"].map(function (k) { return said(k) + '<span class="zm">' + (lang === "zh" ? "：" : ": ") + esc(data[k].why) + "</span>"; }));
+      if (id !== "A" && id !== "C") h += row(P.led, down.map(said));
+      pop.innerHTML = h;
+      pop.setAttribute("aria-label", P.label);
+      pop.hidden = false;
+      place(id);
+      pop.classList.remove("in"); void pop.offsetWidth; pop.classList.add("in");
+    }
+    // Beside the card where there is room (right, else left); stacked boards put it under the card.
+    function place(id) {
+      var b = box(id), W = zb.clientWidth, pw = Math.min(280, W - 24), gap = 12, x, y;
+      pop.style.width = pw + "px";
+      var ph = pop.offsetHeight;
+      if (b.x + b.w + gap + pw <= W - 8) { x = b.x + b.w + gap; y = b.y; pop.dataset.side = "r"; }
+      else if (b.x - gap - pw >= 8) { x = b.x - gap - pw; y = b.y; pop.dataset.side = "l"; }
+      else { x = Math.max(8, Math.min(W - pw - 8, b.x + (b.w - pw) / 2)); y = b.y + b.h + gap; pop.dataset.side = "b"; }
+      y = Math.max(8, Math.min(y, zb.clientHeight - ph - 8));
+      pop.style.left = Math.round(x) + "px"; pop.style.top = Math.round(y) + "px";
+    }
     function clearTrace() {
+      pop.hidden = true; pop.classList.remove("in");
       flowRun++; svg.querySelectorAll(".spark").forEach(function (d) { d.remove(); });
       zb.classList.remove("tracing");
       zb.querySelectorAll(".lit").forEach(function (n) { n.classList.remove("lit"); });
     }
 
-    // The prototype plays once when you reach it: the fan spins up, the playhead runs, the evals tick.
+    // The prototype plays once when you reach it: the glasses settle on the scale, the playhead runs, the evals tick.
     var aliveT = 0;
     function wake() {
       var c = nodes.P;
@@ -1255,12 +1407,13 @@
       c.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse" && !pinned && !scrollingNow()) { interacted = true; trace(id); } });
       c.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse" && !pinned && !c.classList.contains("lit") && !scrollingNow()) { interacted = true; trace(id); } });
       c.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse" && !pinned) clearTrace(); });
-      c.addEventListener("click", function () { interacted = true; if (pinned === id) { pinned = null; clearTrace(); } else { pinned = id; trace(id); if (id === "P") wake(); } });
+      c.addEventListener("click", function () { interacted = true; if (pinned === id) { pinned = null; clearTrace(); } else { pinned = id; trace(id); showPop(id); if (id === "P") wake(); } });
       c.addEventListener("focus", function () { if (!pinned) trace(id); });
       c.addEventListener("blur", function () { if (!pinned) clearTrace(); });
       c.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } if (e.key === "Escape") { pinned = null; clearTrace(); } });
     }
-    document.addEventListener("click", function (e) { if (pinned && !e.target.closest(".zc")) { pinned = null; clearTrace(); } });
+    document.addEventListener("click", function (e) { if (pinned && !e.target.closest(".zc") && !e.target.closest(".zpop")) { pinned = null; clearTrace(); } });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && pinned) { var n = nodes[pinned]; pinned = null; clearTrace(); if (n) n.focus({ preventScroll: true }); } });
 
     // The first time the board is seen, trace the snapshot back to its evidence once, then let go.
     function demo() {
@@ -1329,6 +1482,15 @@
       slide(tabsEl, tabs[at]);
       center();
       if (user) { touched = true; clearTimeout(timer); } else tick();
+      play();
+    }
+    // The finished cut plays its last seconds once each time it comes to the front, and rests on the landing.
+    var vid = track.querySelector(".cut-vid");
+    function play() {
+      if (!vid) return;
+      var on = items[at].contains(vid) && seen && !reduced;
+      if (on) { try { vid.currentTime = 0; } catch (e) {} var pr = vid.play(); if (pr && pr.catch) pr.catch(function () {}); }
+      else vid.pause();
     }
     function tick() {
       clearTimeout(timer);
@@ -1355,7 +1517,7 @@
     root.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") hold = true; });
     root.addEventListener("pointerleave", function () { hold = false; });
     if ("IntersectionObserver" in window) new IntersectionObserver(function (es) {
-      es.forEach(function (en) { seen = en.isIntersecting; if (seen) tick(); else clearTimeout(timer); });
+      es.forEach(function (en) { var was = seen; seen = en.isIntersecting; if (seen) tick(); else clearTimeout(timer); if (seen !== was) play(); });
     }, { threshold: 0.5 }).observe(root);
     var rz = 0;
     window.addEventListener("resize", function () { cancelAnimationFrame(rz); rz = requestAnimationFrame(function () { slide(tabsEl, tabs[at]); center(); }); });
@@ -1391,48 +1553,85 @@
     return { d: "M" + q1.x + " " + q1.y + " C" + q1.x + " " + (q1.y + v * kk) + "," + q2.x + " " + (q2.y - v * kk) + "," + q2.x + " " + q2.y, m: { x: (q1.x + q2.x) / 2, y: (q1.y + q2.y) / 2 } };
   }
 
-  // ---- The vellum layers: stacked flat until seen, then they fan out so each step shows through ----
+  // ---- The contrast table: as you scroll, each row resolves in turn ---------------------------
+  // The old way gets struck through, then the new way arrives beside it. A row resolves when it is well inside
+  // the screen; rows that arrive together queue up so they still go one by one. Rows already scrolled past on
+  // load (a reload halfway down) just show their final state. No JS or reduced motion: the final state.
+  (function () {
+    var table = document.querySelector(".contrast");
+    if (!table || reduced || !("IntersectionObserver" in window)) return;
+    var rows = Array.prototype.slice.call(table.tBodies[0].rows), queue = [], busy = false;
+    table.classList.add("reveal");
+    function pump() {
+      if (busy || !queue.length) return;
+      busy = true;
+      queue.shift().classList.add("done");
+      setTimeout(function () { busy = false; pump(); }, 340);
+    }
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        var row = en.target;
+        if (en.isIntersecting) { io.unobserve(row); queue.push(row); queue.sort(function (a, b) { return rows.indexOf(a) - rows.indexOf(b); }); pump(); }
+        else if (en.boundingClientRect.bottom < 0) { io.unobserve(row); row.classList.add("done"); }
+      });
+    }, { rootMargin: "0px 0px -18% 0px", threshold: 1 });
+    rows.forEach(function (r) { io.observe(r); });
+  })();
+
+  // ---- The layers: stacked flat until seen, then they fan out so each step shows through ----
   var layers = $("layers");
   if (reduced || !("IntersectionObserver" in window)) layers.classList.add("open");
   else {
-    var lio = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { setTimeout(function () { layers.classList.add("open"); }, 250); lio.disconnect(); } }); }, { threshold: 0.6 });
+    // Arriving: the sheets land one after another; after that, no delays, so hover answers at once.
+    var lio = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { layers.classList.add("arriving"); setTimeout(function () { layers.classList.add("open"); setTimeout(function () { layers.classList.remove("arriving"); }, 1400); }, 250); lio.disconnect(); } }); }, { threshold: 0.6 });
     lio.observe(layers);
   }
-  if (!reduced && canHover) {
-    layers.addEventListener("pointermove", function (e) {
-      var r = layers.getBoundingClientRect();
-      layers.style.setProperty("--mx", Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 1.2))).toFixed(3));
-      layers.style.setProperty("--my", Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 1.2))).toFixed(3));
+  // Point at the stack and it opens into an exploded view; leave and it settles back. On touch, a tap toggles it.
+  var sheetsEl = layers.querySelector(".sheets");
+  if (canHover) {
+    sheetsEl.addEventListener("pointerenter", function () { layers.classList.remove("arriving"); layers.classList.add("apart"); });
+    sheetsEl.addEventListener("pointerleave", function () { layers.classList.remove("apart"); layers.style.setProperty("--mx", "0"); layers.style.setProperty("--my", "0"); });
+    if (!reduced) sheetsEl.addEventListener("pointermove", function (e) {
+      var r = sheetsEl.getBoundingClientRect();
+      layers.style.setProperty("--mx", Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2))).toFixed(3));
+      layers.style.setProperty("--my", Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (r.height / 2))).toFixed(3));
     });
-    layers.addEventListener("pointerleave", function () { layers.style.setProperty("--mx", "0"); layers.style.setProperty("--my", "0"); });
-  }
+  } else sheetsEl.addEventListener("click", function () { layers.classList.toggle("apart"); });
 
   // ---- The crew scene: the same moment on a small board, played three ways --------------------------
   // You put down a direction and keep working. What the crew does about it, and when, is the whole
   // difference between the modes, so the board plays it out in time.
   var scene = (function () {
     var boxEl = $("sceneBox"), st = $("sceneStage");
-    var W = 560, H = 236, D = 5200, L, LAY = { wide: { W: 560, H: 236, mine: [40, 48], bubble: [272, 44, 248], back: [300, 92], draft: [304, 104], tip: "bl", wr: [1.01, .15],
-        hops: [[.88, .86], [.2, 1.18], [.45, 1.32], [.3, 1.42], [.62, 1.25], [.4, 1.38]] }, narrow: { W: 340, H: 300, mine: [18, 24], bubble: [44, 158, 272], back: [100, 166], draft: [116, 170], tip: "tl", wr: [.6, 1.06],
-        hops: [[.88, .86], [1.08, .3], [1.2, .55], [1.1, .8], [1.22, .4], [1.12, .62]] } }, timers = [], seen = false, running = false;
-    var TICKS = [0.06, 0.2, 0.34, 0.5, 0.66, 0.82];
+    // The source is already on the board. You read it, write your take on a sticky beside it, and the crew answers that.
+    // hops: where your pointer goes. The first is relative to your sticky (where you type), the rest are board points
+    // in a patch the crew never uses, so name tags never sit on words or on each other.
+    var W = 560, H = 252, D = 5600, L, LAY = {
+      wide: { W: 560, H: 262, src: [22, 20, 236], mine: [46, 136, 214], bubble: [280, 118, 258], back: [300, 124], draft: [326, 108], tip: "bl", wr: [1.01, .2],
+        hops: [[.9, .82], [318, 46], [376, 64], [344, 82], [430, 52], [398, 74]] },
+      narrow: { W: 340, H: 394, src: [16, 16, 250], mine: [36, 128, 214], bubble: [40, 250, 280], back: [96, 256], draft: [116, 260], tip: "tl", wr: [.62, 1.04],
+        hops: [[.9, .82], [72, 368], [150, 374], [112, 378], [222, 370], [186, 376]] } }, timers = [], seen = false, running = false;
+    var TICKS = [0.06, 0.4, 0.52, 0.64, 0.76, 0.88];   // your pointer rests while you type, then keeps working
     // Each mode: what shows on the board, and when (as a share of the run).
     var PLAN = {
       focus: [{ x: 0.96, show: "back" }],
       listen: [{ x: 0.42, show: "dot" }, { x: 0.54, show: "bubble" }],
-      team: [{ x: 0.24, show: "wright" }, { x: 0.34, show: "draft" }, { x: 0.66, show: "dot" }]
+      team: [{ x: 0.4, show: "wright" }, { x: 0.5, show: "draft" }, { x: 0.74, show: "dot" }]
     };
     var av = function (c, l) { return '<b class="av" style="--c:' + c + '">' + l + "</b>"; };
     st.innerHTML =
-      '<article class="vc ink sc-card" id="scMine" style="left:40px;top:66px;width:214px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-fork"/></svg><span data-sc="mk"></span><span class="by"><b style="background:var(--label);color:var(--card)" data-sc="me"></b></span></div>' +
-        '<div class="t"><span class="chip A">A</span><span data-sc="mt"></span></div><div class="b" data-sc="mb"></div></article>' +
-      '<span class="sc-dot" id="scDot">' + av("var(--crew-critic)", "C") + "</span>" +
-      '<div class="sc-bubble" id="scBubble" style="left:272px;top:44px;width:248px">' + av("var(--crew-critic)", "C") + '<p data-sc="critic"></p></div>' +
+      '<svg class="sc-lines" aria-hidden="true"><path id="scRel" pathLength="1"/></svg>' +
+      '<article class="vc sc-card sc-src on" id="scSrc"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-quote"/></svg><span data-sc="srcK"></span></div><div class="b" data-sc="srcB"></div></article>' +
+      // Your sticky note: you type your take on the source, and the crew answers what it says.
+      '<article class="vc sc-card sc-note" id="scMine"><p data-sc="note"></p><span class="by"><b class="me" data-sc="me"></b></span></article>' +
+      '<span class="sc-dot" id="scDot">' + crewAv("Critic") + "</span>" +
+      '<div class="sc-bubble" id="scBubble" style="left:272px;top:44px;max-width:248px">' + crewAv("Critic") + '<p data-sc="critic"></p></div>' +
       '<article class="vc sc-card sc-back" id="scBack" style="left:300px;top:92px;width:222px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-tray"/></svg><span data-sc="backK"></span></div><div class="t" data-sc="backT"></div>' +
-        '<div class="sc-avs">' + av("var(--crew-scout)", "S") + av("var(--crew-critic)", "C") + av("var(--crew-wright)", "W") + "</div></article>" +
-      '<article class="vc sc-card sc-draft" id="scDraft" style="left:304px;top:104px;width:206px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-window"/></svg><span data-sc="draftK"></span><span class="by"><b style="background:var(--crew-wright)">W</b></span></div>' +
+        '<div class="sc-avs">' + crewAv("Scout") + crewAv("Critic") + crewAv("Wright") + "</div></article>" +
+      '<article class="vc sc-card sc-draft" id="scDraft" style="left:304px;top:104px;width:206px"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-window"/></svg><span data-sc="draftK"></span><span class="by">' + crewAv("Wright", "") + '</span></div>' +
         '<div class="t"><span data-sc="draftT"></span></div><div class="sc-acts"><span data-sc="discard"></span><span class="keep" data-sc="keep"></span></div></article>';
-    var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = $("scDot");
+    var mine = $("scMine"), bubble = $("scBubble"), back = $("scBack"), draft = $("scDraft"), dot = $("scDot"), src = $("scSrc"), rel = $("scRel"), relSvg = st.querySelector(".sc-lines");
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { snug(bubble.querySelector("p")); });
 
     var cur = {};
     function cursorEl(name, color) {
@@ -1458,9 +1657,10 @@
       card.classList.add("on");
     }
     function relabel() {
-      var d = BOARD[lang].cards.dA;
-      var txt = { mk: d.k, mt: d.t, mb: d.b, me: lang === "zh" ? "你" : "Y" };
-      st.querySelectorAll("[data-sc]").forEach(function (e) { var k = e.getAttribute("data-sc"); e.textContent = txt[k] != null ? txt[k] : t("sc." + k); });
+      var txt = { me: lang === "zh" ? "你" : "Y" };
+      st.querySelectorAll("[data-sc]").forEach(function (e) { var k = e.getAttribute("data-sc"); if (k === "note" && typing) return; setCopy(e, txt[k] != null ? txt[k] : t("sc." + k), k === "critic" || k === "note" || k === "srcB" ? "w" : false); });
+      requestAnimationFrame(link);
+      snug(bubble.querySelector("p"));
       if (cur.you) cur.you.querySelector(".who").textContent = lang === "zh" ? "你" : "You";
       if (cur.wright) cur.wright.querySelector(".who").textContent = "Wright";
     }
@@ -1472,15 +1672,35 @@
       boxEl.style.aspectRatio = W + " / " + H;
       st.style.width = W + "px"; st.style.height = H + "px";
       var put = function (e, p) { e.style.left = p[0] + "px"; e.style.top = p[1] + "px"; if (p[2]) e.style.width = p[2] + "px"; };
-      put(mine, L.mine); put(bubble, L.bubble); put(back, L.back); put(draft, L.draft);
+      put(src, L.src); put(mine, L.mine); put(bubble, L.bubble.slice(0, 2)); bubble.style.maxWidth = L.bubble[2] + "px"; snug(bubble.querySelector("p")); put(back, L.back); put(draft, L.draft);
       // The Critic's pin sits exactly where its note's avatar will be, so the note opens out of it.
       put(dot, [L.bubble[0] + 2, L.bubble[1] + 3]); dot.setAttribute("data-tip", L.tip);
+      relSvg.setAttribute("viewBox", "0 0 " + W + " " + H); relSvg.setAttribute("width", W); relSvg.setAttribute("height", H);
       st.style.transform = "scale(" + (boxEl.clientWidth / W) + ")";
+      link();
+    }
+    // The line from the source to your sticky: drawn once the sticky is down.
+    function link(draw) {
+      var a = { x: src.offsetLeft, y: src.offsetTop, w: src.offsetWidth, h: src.offsetHeight }, b = mbox();
+      // From under the source to the top of the sticky, a little in from their left edges.
+      var x1 = a.x + 44, y1 = a.y + a.h, x2 = b.x + 34, y2 = b.y, k = Math.max(14, (y2 - y1) * 0.55);
+      rel.setAttribute("d", "M" + x1 + " " + y1 + " C" + x1 + " " + (y1 + k) + "," + x2 + " " + (y2 - k) + "," + x2 + " " + y2);
+      if (draw && !reduced) { rel.classList.remove("draw"); void rel.getBoundingClientRect(); rel.classList.add("draw"); }
     }
 
+    // Typing into the sticky, one character at a time, with a caret; the finished line keeps its clause breaks.
+    var typing = false, noteP = mine.querySelector("p");
+    function type(startMs) {
+      var full = t("sc.note"), chars = Array.from(full), step = lang === "zh" ? 85 : 34;
+      typing = true; noteP.textContent = ""; mine.classList.add("typing");
+      chars.forEach(function (c, i) { at(startMs + i * step, function () { noteP.textContent = chars.slice(0, i + 1).join(""); }); });
+      at(startMs + chars.length * step + 380, function () { typing = false; mine.classList.remove("typing"); setCopy(noteP, full, "w"); });
+    }
     function reset() {
       timers.forEach(clearTimeout); timers = [];
+      if (typing) { typing = false; mine.classList.remove("typing"); setCopy(noteP, t("sc.note"), "w"); }
       [mine, bubble, back, draft, dot].forEach(function (e) { e.classList.remove("on"); });
+      relSvg.classList.remove("on");
       Object.keys(cur).forEach(function (n) { cur[n].classList.remove("on"); });
     }
     function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
@@ -1497,7 +1717,7 @@
     }
     // The end state of a mode, all at once: for reduced motion, and while the board is off screen.
     function still(mode) {
-      reset(); mine.classList.add("on");
+      reset(); mine.classList.add("on"); relSvg.classList.add("on"); rel.classList.remove("draw");
       PLAN[mode].forEach(function (e) { show(e.show, true); });
     }
     function play(mode) {
@@ -1507,9 +1727,12 @@
       var m = mbox(), P = function (fx, fy) { return [m.x + m.w * fx, m.y + m.h * fy]; };
       // You put the card down from its corner, then keep working on the empty board beside it: one small move
       // per tick, in a patch the crew never uses, so name tags never sit on words or on each other.
-      var hops = L.hops.map(function (h) { return P(h[0], h[1]); });
+      var hops = L.hops.map(function (h, i) { return i ? h : P(h[0], h[1]); });
       glide(you, hops[0][0], hops[0][1], 0);
+      noteP.textContent = ""; typing = true;
       at(240, function () { land(mine, hops[0][0], hops[0][1]); });
+      at(420, function () { relSvg.classList.add("on"); link(true); });
+      type(620);
       TICKS.forEach(function (x, i) {
         if (i) at(x * D, function () { glide(you, hops[i][0], hops[i][1], 420); });
       });
@@ -1535,7 +1758,11 @@
       b.setAttribute("aria-checked", on ? "true" : "false"); b.tabIndex = on ? 0 : -1;
       if (on) { slide(modesEl, b); if (focus) b.focus(); }
     });
-    $("modeDesc").textContent = t({ focus: "mode.focusd", listen: "mode.listend", team: "mode.teamd" }[crewMode]);
+    var desc = $("modeDesc"), next = t({ focus: "mode.focusd", listen: "mode.listend", team: "mode.teamd" }[crewMode]);
+    if (desc.textContent === next) return;
+    if (reduced || !desc.textContent) { desc.textContent = next; return; }
+    clearTimeout(desc._swap); desc.classList.add("swap");
+    desc._swap = setTimeout(function () { desc.textContent = next; desc.classList.remove("swap"); }, 110);
   }
   modeBtns.forEach(function (b, i) {
     b.addEventListener("click", function () { var was = crewMode; crewMode = b.dataset.mode; renderMode(false); if (was !== crewMode || scene.idle()) scene.play(crewMode); });
@@ -1548,47 +1775,188 @@
   window.addEventListener("resize", function () { renderMode(false); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { renderMode(false); });
 
-  // ---- Downloads: one primary per card ----------------------------------------------------------
-  function renderDownloads() {
-    var live = !!(CONFIG.downloads.mac || CONFIG.downloads.win);
-    var want = /Win/i.test(navigator.platform || navigator.userAgent || "") ? "win" : "mac";
-    if (!CONFIG.downloads[want]) want = CONFIG.downloads.mac ? "mac" : "win";   // one primary, even if only one build is out
-    document.querySelectorAll(".dl").forEach(function (a) {
-      var url = CONFIG.downloads[a.dataset.os];
-      a.classList.toggle("live", !!url);
-      if (url) { a.href = url; a.removeAttribute("aria-disabled"); a.removeAttribute("tabindex"); }
-      else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); }
-      var primary = !!url && a.dataset.os === want;
-      a.classList.toggle("btn-primary", primary); a.classList.toggle("btn-quiet", !primary);
-      if (primary) a.parentNode.appendChild(a);   // the primary sits last: on the right, or at the bottom on a phone
-    });
-    var submit = document.querySelector("#waitlist button[type=submit]");
-    submit.classList.toggle("btn-primary", !live); submit.classList.toggle("btn-quiet", live);
+  // ---- Get the app: one button, then a short form ---------------------------------------------------------
+  // "Join the waitlist" opens a small dialog: email, which system (picked for you from the browser; a phone or
+  // tablet can't tell, so nothing is picked there) and, in their own words, what it's for. All three are needed.
+  // The ×, Esc or a click outside closes it without joining and keeps what was typed. Once a build is live for
+  // the visitor's system, the button becomes its download.
+  var form = $("waitlist"), email = $("email"), dlGo = $("dlGo"), openBtn = $("joinOpen");
+  var dlg = $("more"), moreForm = $("moreForm"), useText = $("useText"), moreMsg = $("moreMsg"), osChips = $("osChips");
+  var joinBtn = moreForm.querySelector("button[value=join]");
+  if (CONFIG.demo) { $("demoGo").href = CONFIG.demo; $("demoGo").hidden = false; }
+  var pick = { os: guessOS() }, sent = null, need = "";
+  function guessOS() {
+    var ua = navigator.userAgent || "", pf = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+    if (/iPhone|iPad|iPod|Android/i.test(ua) || (/Mac/i.test(pf) && navigator.maxTouchPoints > 1)) return "";
+    return /Mac/i.test(pf) ? "mac" : /Win/i.test(pf) ? "win" : "";
   }
-
-  // ---- Waitlist ---------------------------------------------------------------------------
-  var form = $("waitlist"), email = $("email"), msg = $("formMsg");
-  email.addEventListener("input", function () { email.removeAttribute("aria-invalid"); msg.textContent = ""; });
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var v = email.value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
-      email.setAttribute("aria-invalid", "true");
-      msg.textContent = t("get.bademail");
-      email.focus();
-      return;
+  function renderPicks() {
+    dlg.querySelectorAll(".pick").forEach(function (b) {
+      var on = b.dataset.os === pick.os;
+      b.setAttribute("aria-checked", on ? "true" : "false"); b.tabIndex = on || !pick.os && b.dataset.os === "mac" ? 0 : -1;
+    });
+    var url = pick.os && CONFIG.downloads[pick.os];
+    form.classList.toggle("live", !!url && !sent);
+    dlGo.hidden = !url || !!sent;
+    if (url) { dlGo.href = url; dlGo.textContent = t("get.dlfor").replace("{os}", t("get." + pick.os)); }
+    if (sent) {
+      $("doneText").textContent = t("get.thanksos").replace("{os}", t("get." + sent.os));
+      $("doneNote").textContent = t(sent.note).replace("{email}", sent.email);
     }
-    var btn = form.querySelector("button[type=submit]");
-    function done(key) { $("doneText").textContent = t(key).replace("{email}", v); form.classList.add("sent"); }
-    if (!CONFIG.waitlistEndpoint) { done("get.thankspreview"); return; }
-    btn.disabled = true;
-    fetch(CONFIG.waitlistEndpoint, {
-      method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ email: v, use: $("use").value, lang: lang })
-    }).then(function (r) { if (!r.ok) throw new Error(r.status); done("get.thanksd"); })
-      .catch(function () { msg.textContent = t("get.fail"); })
-      .then(function () { btn.disabled = false; });
+    $("emailHint").textContent = need === "get.bademail" || need === "get.needemail" ? t(need) : "";
+    $("osHint").textContent = need === "get.needos" ? t(need) : "";
+    $("useHint").textContent = need === "get.needuse" ? t(need) : "";
+    moreMsg.textContent = need === "get.fail" || need === "get.closed" ? t(need) : "";
+    moreMsg.classList.toggle("info", need === "get.closed");
+    $("moreClose").setAttribute("aria-label", t("get.close"));
+    ready();
+  }
+  function setNeed(key) {
+    need = key;
+    osChips.toggleAttribute("aria-invalid", key === "get.needos");
+    if (key === "get.needuse") useText.setAttribute("aria-invalid", "true"); else useText.removeAttribute("aria-invalid");
+    if (key === "get.bademail" || key === "get.needemail") email.setAttribute("aria-invalid", "true"); else email.removeAttribute("aria-invalid");
+    renderPicks();
+  }
+  function post(data) {
+    return fetch(CONFIG.waitlistEndpoint, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(data) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status === 404 || r.status === 405 || r.status === 501 || r.status === 503 ? "closed" : r.status); });
+  }
+  var osBtns = Array.prototype.slice.call(dlg.querySelectorAll(".pick"));
+  osBtns.forEach(function (b, i) {
+    b.addEventListener("click", function () { pick.os = b.dataset.os; if (need === "get.needos") setNeed(""); renderPicks(); });
+    b.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+      if (!d) return;
+      e.preventDefault(); var n = osBtns[(i + d + osBtns.length) % osBtns.length]; pick.os = n.dataset.os; if (need === "get.needos") setNeed(""); renderPicks(); n.focus();
+    });
   });
+  // Join stays off until all three are there: a real-looking email, a system, and what it's for.
+  function okEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  function ready() { joinBtn.disabled = busy || !(okEmail(email.value.trim()) && pick.os && useText.value.trim()); }
+  var busy = false;
+  email.addEventListener("input", function () { if ((need === "get.bademail" && okEmail(email.value.trim())) || need === "get.needemail") setNeed(""); ready(); });
+  // A typo is pointed out when you leave the field, not while you're still typing.
+  email.addEventListener("blur", function () { var v = email.value.trim(); if (v && !okEmail(v)) setNeed("get.bademail"); });
+  useText.addEventListener("input", function () { if (need === "get.needuse" && useText.value.trim()) setNeed(""); ready(); });
+  $("moreClose").addEventListener("click", function () { dlg.close("back"); });
+  openBtn.addEventListener("click", function () {
+    if (typeof dlg.showModal !== "function") return;
+    setNeed(""); dlg.returnValue = ""; dlg.showModal(); email.focus();
+  });
+  // Join checks all three answers again, then signs up. The × in the corner, Esc or a click outside just close.
+  moreForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (joinBtn.disabled) return;
+    var use = useText.value.trim(), v = email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { setNeed(v ? "get.bademail" : "get.needemail"); email.focus(); return; }
+    if (!pick.os) { setNeed("get.needos"); (osBtns[0]).focus(); return; }
+    if (!use) { setNeed("get.needuse"); useText.focus(); return; }
+    setNeed("");
+    function joined(note) { sent = { os: pick.os, email: v, note: note }; dlg.close("join"); form.classList.add("sent"); renderPicks(); }
+    if (!CONFIG.waitlistEndpoint) { setNeed("get.closed"); return; }
+    busy = true; ready();
+    post({ email: v, os: pick.os, use: use, lang: lang })
+      .then(function () { joined("get.thanksd"); })
+      .catch(function (err) { setNeed(err && err.message === "closed" ? "get.closed" : "get.fail"); })
+      .then(function () { busy = false; ready(); });
+  });
+  dlg.addEventListener("close", function () { if (!sent) setNeed(""); });
+  // Enter in a text field means Join, once Join is on.
+  [email, useText].forEach(function (f) { f.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); if (!joinBtn.disabled) moreForm.requestSubmit(joinBtn); } }); });
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close("back"); });
+
+  // ---- Anywhere: one board on a computer, a tablet and a phone, drawn at real size and scaled down, so each
+  // screen is the app in miniature. One beat: the pen circles B on the tablet, then B lights on all three at once.
+  var anywhere = (function () {
+    var box = $("devices"); if (!box) return null;
+    var uis = [].slice.call(box.querySelectorAll(".ui"));
+    // A hand-drawn loop, normalised to a 100 x 40 box, stretched around a card with some air.
+    var LOOP = [[58,2],[90,1,99,4,99,20],[99,37,85,39.5,50,39],[14,38.5,1,36,1,20],[1,4,13,2.5,44,2],[55,1.8,65,2.4,73,4.5]];
+    function loopPath(x, y, w, h, px, py) {
+      var X = x - px, Y = y - py, W = w + 2 * px, H = h + 2 * py, f = function (i, v) { return (i % 2 ? Y + v / 40 * H : X + v / 100 * W).toFixed(1); };
+      return LOOP.map(function (seg, n) { return (n ? "C" : "M") + seg.map(function (v, i) { return f(i, v); }).join(" "); }).join(" ");
+    }
+    function me() { return '<b class="me">' + esc(t("any.me")) + "</b>"; }
+    function card(id, c, cls, k, by, style, extra) {
+      return '<article class="vc u-c ' + (cls || "") + '" data-c="' + id + '" style="' + style + '"><div class="k"><svg class="ki" aria-hidden="true"><use href="#i-' + k + '"/></svg><span>' + esc(c.k) + '</span><span class="by">' + by + "</span></div>" + (extra || "") + "</article>";
+    }
+    function dir(id, L, c, style) {
+      return card(id, c, "u-dir", "fork", crewAv("Strategist", ""), style, '<div class="t"><span class="chip ' + L + '">' + L + "</span>" + esc(c.t) + '</div><div class="b">' + esc(c.b) + "</div>");
+    }
+    function tool(ic, on) { return '<i class="u-tl' + (on ? " on" : "") + '"><svg class="ic" aria-hidden="true"><use href="#i-' + ic + '"/></svg></i>'; }
+    function pc(C) {
+      return '<header class="u-top"><span class="u-board"><svg class="ic mk" aria-hidden="true"><use href="#i-mark"/></svg><b>' + esc(t("any.board")) + '</b><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg></span>' +
+        '<span class="u-crew">' + crewAv("Scout", "") + crewAv("Strategist", "") + crewAv("Wright", "") + crewAv("Critic", "") + "</span>" +
+        '<span class="u-decb"><svg class="ic" aria-hidden="true"><use href="#i-decide"/></svg>' + esc(t("any.decBtn")) + '<i class="u-badge">1</i></span></header>' +
+        '<div class="u-canvas"><svg class="u-lines" aria-hidden="true"></svg>' +
+        '<nav class="u-tools">' + tool("cursor", 1) + tool("sticky") + tool("pen") + tool("link") + tool("spark") + "</nav>" +
+        card("e1", C.e1, "", "eye", me(), "left:76px;top:30px;width:214px", '<div class="b">' + esc(C.e1.b) + "</div>") +
+        card("e2", C.e2, "", "msg", crewAv("Scout", ""), "left:76px;top:170px;width:214px", '<div class="b">' + esc(C.e2.b) + "</div>") +
+        card("e3", C.e3, "u-q", "quote", me(), "left:76px;top:310px;width:214px", '<div class="b">“' + esc(C.e3.b.replace(/[“”]/g, "")) + "”</div>") +
+        dir("dA", "A", C.dA, "left:356px;top:22px;width:240px") + dir("dB", "B", C.dB, "left:356px;top:186px;width:240px") + dir("dC", "C", C.dC, "left:356px;top:350px;width:240px") +
+        card("dc", C.dc, "u-dec", "decide", me(), "left:664px;top:176px;width:250px", '<div class="t">' + esc(C.dc.t) + '</div><div class="u-meta">' + esc(t("any.chosen")) + "</div>") +
+        '<svg class="u-mark" aria-hidden="true"><path/></svg></div>';
+    }
+    function tab(C) {
+      return '<div class="u-canvas"><nav class="u-pens">' + tool("pen", 1) + tool("marker") + tool("eraser") + tool("lasso") + '<i class="u-sep"></i>' + tool("undo") + "</nav>" +
+        dir("dA", "A", C.dA, "left:34px;top:84px;width:352px") + dir("dB", "B", C.dB, "left:34px;top:226px;width:352px") + dir("dC", "C", C.dC, "left:34px;top:368px;width:352px") +
+        '<svg class="u-loop" aria-hidden="true"><path pathLength="1"/></svg>' +
+        '<div class="u-toast"><span class="chip B">B</span>' + esc(t("any.toast")) + "<em>" + esc(t("any.undo")) + "</em></div></div>";
+    }
+    function note(time, title, body, cls) {
+      return '<div class="u-n ' + (cls || "") + '"><i class="u-app"><svg class="ic" aria-hidden="true"><use href="#i-mark"/></svg></i><div><p class="u-nh"><b>' + esc(BRAND) + "</b><span>" + esc(time) + '</span></p><p class="u-nt">' + esc(title) + '</p><p class="u-nb">' + esc(body) + "</p></div></div>";
+    }
+    function ph(C) {
+      return '<div class="u-lock"><p class="u-status"><b>' + esc(t("any.time")) + '</b><span class="u-sig"><i></i><i></i><i></i><i></i></span><span class="u-bat"><i></i></span></p>' +
+        '<p class="u-date">' + esc(t("any.date")) + '</p><p class="u-clock">' + esc(t("any.time")) + "</p>" +
+        '<div class="u-notes"><div class="u-nw"><div>' + note(t("any.now"), t("any.n1t"), C.dc.t, "new") + "</div></div>" +
+        note(t("any.ago"), "Critic", C.st.b, "old") + '</div><i class="u-home"></i></div>';
+    }
+    // Connector lines and loops are drawn from the cards' real boxes (unscaled), so they hold in both languages.
+    function geo(ui, id) { var e = ui.querySelector('[data-c="' + id + '"]'); return e ? { x: e.offsetLeft, y: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight } : null; }
+    function wire(ui) {
+      var svg = ui.querySelector(".u-lines");
+      if (svg) {
+        var B = geo(ui, "dB"), D = geo(ui, "dc"), d = "";
+        ["e1", "e2", "e3"].forEach(function (id) { var a = geo(ui, id), y1 = a.y + a.h / 2, y2 = B.y + B.h / 2, x1 = a.x + a.w, x2 = B.x, m = (x1 + x2) / 2;
+          d += '<path d="M' + x1 + " " + y1 + " C" + m + " " + y1 + " " + m + " " + y2 + " " + x2 + " " + y2 + '"/>'; });
+        var yb = B.y + B.h / 2, yd = D.y + 34;
+        d += '<path class="later" d="M' + (B.x + B.w) + " " + yb + " C" + (B.x + B.w + 34) + " " + yb + " " + (D.x - 34) + " " + yd + " " + D.x + " " + yd + '"/>';
+        svg.innerHTML = d;
+        var m = ui.querySelector(".u-mark path"); if (m) m.setAttribute("d", loopPath(B.x, B.y, B.w, B.h, 12, 10));
+      }
+      var lp = ui.querySelector(".u-loop path"); if (lp) { var b = geo(ui, "dB"); lp.setAttribute("d", loopPath(b.x, b.y, b.w, b.h, 14, 12)); }
+    }
+    function fit() {
+      uis.forEach(function (ui) { var w = ui.parentNode.clientWidth; if (w) ui.style.transform = "scale(" + (w / +ui.getAttribute("data-w")) + ")"; });
+    }
+    function relabel() {
+      var C = BOARD[lang].cards, R = { pc: pc, tab: tab, ph: ph };
+      uis.forEach(function (ui) { var k = ui.getAttribute("data-ui"); ui.style.width = ui.getAttribute("data-w") + "px"; ui.style.height = ui.getAttribute("data-h") + "px"; ui.innerHTML = R[k](C); wire(ui); });
+      fit();
+    }
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(box); else window.addEventListener("resize", fit);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { uis.forEach(wire); });
+
+    if (reduced || !window.IntersectionObserver) box.classList.add("lit", "drawn");
+    else {
+      var timers = [], on = false;
+      var later = function (fn, ms) { timers.push(setTimeout(fn, ms)); };
+      var beat = function () {
+        box.classList.remove("drawing", "drawn", "lit");
+        later(function () { box.classList.add("drawing"); }, 700);
+        later(function () { box.classList.add("drawn", "lit"); }, 2050);
+        later(beat, 8200);
+      };
+      new IntersectionObserver(function (en) {
+        var vis = en[0].isIntersecting;
+        if (vis && !on) { on = true; beat(); }
+        else if (!vis && on) { on = false; timers.forEach(clearTimeout); timers = []; box.classList.remove("drawing"); box.classList.add("drawn", "lit"); }
+      }, { threshold: 0.45 }).observe(box);
+    }
+    return { relabel: relabel };
+  })();
 
   applyCopy();
 })();

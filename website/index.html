@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vellum: your best thinking deserves more than a chat box</title>
-<meta name="description" content="Vellum is a shared thinking space for you and AI. Lay out the evidence, let a crew of agents argue it, and keep every decision with its reasons.">
+<title>Sympo: your best thinking deserves more than a chat box</title>
+<meta name="description" content="Sympo is a shared thinking space for you and AI. Lay out the evidence, let a crew of agents argue it, and keep every decision with its reasons.">
 <meta name="theme-color" content="#ecedf0" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#050608" media="(prefers-color-scheme: dark)">
-<meta property="og:title" content="Vellum: your best thinking deserves more than a chat box">
+<meta property="og:title" content="Sympo: your best thinking deserves more than a chat box">
 <meta property="og:description" content="A shared thinking space for humans and AI.">
 <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
 <link rel="preload" href="fonts/BricolageGrotesque-Variable.woff2" as="font" type="font/woff2" crossorigin>
@@ -31,8 +31,9 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <!-- One icon set, drawn like the app's: 24px grid, round caps and joins. Stroke width comes from CSS. -->
   <defs>
-    <!-- The mark: the card you decided on gives off light; what holds it up is snapped to its edges. -->
-    <symbol id="i-mark" viewBox="0 0 100 100"><g transform="rotate(-8 50 50) translate(-2 -5)"><g opacity=".28"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><rect x="18" y="18" width="42" height="50" rx="13"/></g></symbol>
+    <!-- The mark: the directions run round one stone and meet in white, the decision. The white face follows the theme (--mark-white). -->
+    <linearGradient id="ime1" gradientUnits="userSpaceOnUse" x1="45" y1="15" x2="82" y2="28"><stop offset="0" stop-color="#3fd39b"/><stop offset=".5" stop-color="#36bfd0"/><stop offset="1" stop-color="#5a9bff"/></linearGradient><linearGradient id="ime2" gradientUnits="userSpaceOnUse" x1="82" y1="28" x2="83" y2="70"><stop offset="0" stop-color="#5a9bff"/><stop offset=".5" stop-color="#9b7cff"/><stop offset="1" stop-color="#ff6b95"/></linearGradient><linearGradient id="ime3" gradientUnits="userSpaceOnUse" x1="83" y1="70" x2="36" y2="87"><stop offset="0" stop-color="#ff6b95"/><stop offset=".5" stop-color="#ff8577"/><stop offset="1" stop-color="#ffa94d"/></linearGradient><linearGradient id="ime4" gradientUnits="userSpaceOnUse" x1="36" y1="87" x2="17" y2="45"><stop offset="0" stop-color="#ffa94d"/><stop offset=".5" stop-color="#ffbf55"/><stop offset="1" stop-color="#ffd25e"/></linearGradient><radialGradient id="img" cx="57" cy="41" r="34" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0.36"/><stop offset=".55" stop-color="#fff" stop-opacity="0.09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><clipPath id="imc"><path d="M21.53 55.02 Q17 45 24.51 36.96 L37.49 23.04 Q45 15 55.38 18.65 L71.62 24.35 Q82 28 82.26 39.00 L82.74 59.00 Q83 70 72.66 73.74 L46.34 83.26 Q36 87 31.47 76.98 Z"/></clipPath>
+    <symbol id="i-mark" viewBox="0 0 100 100"><g clip-path="url(#imc)"><path d="M57 41L17 45L45 15Z" fill="var(--mark-white, #fff)"/><path d="M57 41L45 15L82 28Z" fill="url(#ime1)"/><path d="M57 41L45 15L82 28Z" fill="#fff" fill-opacity="0.043"/><path d="M57 41L82 28L83 70Z" fill="url(#ime2)"/><path d="M57 41L82 28L83 70Z" fill="#000" fill-opacity="0.062"/><path d="M57 41L83 70L36 87Z" fill="url(#ime3)"/><path d="M57 41L83 70L36 87Z" fill="#000" fill-opacity="0.069"/><path d="M57 41L36 87L17 45Z" fill="url(#ime4)"/><path d="M57 41L36 87L17 45Z" fill="#000" fill-opacity="0.008"/><rect width="100" height="100" fill="url(#img)"/></g></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></symbol>
     <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5.5h16v10.5H10L5.5 19.5V16H4Z"/></symbol>
     <symbol id="i-quote" viewBox="0 0 24 24"><path d="M10 7c-2.6.9-4.2 2.9-4.2 6v4h4.4v-4.4H7.5M18.6 7c-2.6.9-4.2 2.9-4.2 6v4h4.4v-4.4h-2.7"/></symbol>
@@ -49,7 +50,19 @@
     <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.6"/><path d="m10 9.3 4.6 2.7-4.6 2.7Z"/></symbol>
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5 13.9 10.1 20.5 12l-6.6 1.9L12 20.5l-1.9-6.6L3.5 12l6.6-1.9Z"/></symbol>
     <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2.6"/><path d="m4 7.5 8 6 8-6"/></symbol>
+    <symbol id="i-focus" viewBox="0 0 24 24"><circle class="dot" cx="12" cy="12" r="2.4"/><circle cx="12" cy="12" r="7"/></symbol>
+    <symbol id="i-listen" viewBox="0 0 24 24"><circle class="dot" cx="12" cy="12" r="2.4"/><path d="M7.4 7.4a6.5 6.5 0 0 0 0 9.2M16.6 7.4a6.5 6.5 0 0 1 0 9.2"/></symbol>
+    <symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="12" r="5.2"/><circle cx="15" cy="12" r="5.2"/></symbol>
+    <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M6.5 4.5 18 10.6l-5.1 1.6-2.3 5.3Z"/></symbol>
+    <symbol id="i-sticky" viewBox="0 0 24 24"><path d="M5 5h14v9l-5 5H5Z"/><path d="M14 19v-5h5"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M15 5.2 18.8 9 9.2 18.6H5.4v-3.8Z"/><path d="m12.8 7.4 3.8 3.8"/></symbol>
+    <symbol id="i-marker" viewBox="0 0 24 24"><path d="m9 14.8 7.6-7.6 3 3-7.6 7.6Z"/><path d="M9 14.8 6.2 19h4.2l1.6-1.2"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M9 19h10"/><path d="m5.6 14.6 7.6-7.6 4.8 4.8-6.8 6.8H9.2Z"/></symbol>
+    <symbol id="i-lasso" viewBox="0 0 24 24"><path d="M5.6 12.6C4.2 9.4 7.4 5.5 12.4 5.5S20 8 20 10.6c0 2.9-3.6 4.9-8 4.9-1.6 0-3-.2-4.2-.6"/><path d="M7.8 14.9c-1.3.8-1.4 2.4-.4 3.3"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 6.5 5 10.5l4 4"/><path d="M5 10.5h9.2a4.8 4.8 0 0 1 0 9.6H12"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M7.5 7.5l9 9M16.5 7.5l-9 9"/></symbol>
+    <symbol id="i-no" viewBox="0 0 16 16"><path d="M5.25 5.25l5.5 5.5M10.75 5.25l-5.5 5.5"/></symbol>
+    <symbol id="i-yes" viewBox="0 0 16 16"><path pathLength="1" d="M3.6 8.5l2.9 2.8 5.9-6.3"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5.5 12.5 4.2 4.2L18.5 8"/></symbol>
     <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3 9.5 5.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M3.6 12h16.8M12 3.6c2.3 2.3 3.4 5.1 3.4 8.4s-1.1 6.1-3.4 8.4c-2.3-2.3-3.4-5.1-3.4-8.4S9.7 5.9 12 3.6Z"/></symbol>
@@ -67,15 +80,15 @@
 
 <header class="site-head" id="top">
   <div class="wrap head-row">
-    <a class="brand" href="#top" aria-label="Vellum"><svg class="mark" aria-hidden="true"><use href="#i-mark"/></svg><span>Vellum</span></a>
+    <a class="brand" href="#top" aria-label="Sympo"><svg class="mark" aria-hidden="true"><use href="#i-mark"/></svg><span>Sympo</span></a>
     <nav class="nav" aria-label="Main">
-      <a href="#why" data-i18n="nav.why">Why Vellum</a>
+      <a href="#why" data-i18n="nav.why">Why Sympo</a>
       <a href="#how" data-i18n="nav.how">How it works</a>
       <a href="#crew" data-i18n="nav.crew">The crew</a>
     </nav>
     <div class="tools">
       <button class="tool" id="themeBtn" type="button" aria-label="Switch theme"><svg class="ic" aria-hidden="true"><use href="#i-theme"/></svg></button>
-      <a class="btn btn-primary btn-sm" href="#get" data-i18n="cta.get">Get Vellum</a>
+      <a class="btn btn-primary btn-sm" href="#get" data-i18n="cta.get">Get Sympo</a>
     </div>
   </div>
 </header>
@@ -85,11 +98,11 @@
   <section class="hero" aria-labelledby="hero-title">
     <div class="wrap">
       <h1 id="hero-title" aria-label="Your best thinking deserves more than a chat box."><span aria-hidden="true"><span data-i18n="hero.t1">Your best thinking deserves more than </span><span class="chatbox" id="heroKw"><span class="cb-text" data-i18n="hero.kw">a chat box</span><span class="cb-caret"></span><span class="cb-send"><svg viewBox="0 0 24 24"><path d="M12 18V6m0 0-5 5m5-5 5 5"/></svg></span></span><span data-i18n="hero.t2">.</span></span></h1>
-      <p class="lede hero-lede" data-i18n="hero.lede">Put the whole problem on one board. Let an AI crew argue it out. Every choice keeps its reasons.</p>
+      <p class="lede hero-lede" data-i18n="hero.lede" data-clauses>Put the whole problem on one board. Let an AI crew argue it out. Every choice keeps its reasons.</p>
 
       <div class="board-track" id="track">
       <div class="board-shell">
-        <div class="board" id="board" role="group" aria-roledescription="interactive demo" aria-label="A Vellum board deciding how a camping lantern should work">
+        <div class="board" id="board" role="group" aria-roledescription="interactive demo" aria-label="A Sympo board deciding how an AI video-editing agent should work">
           <div class="board-stage" id="stage"><svg class="board-lines" id="lines" aria-hidden="true"></svg></div>
           <div class="board-hint" id="boardHint" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-move"/></svg><span data-i18n="board.hint">Drag any card</span></div>
         </div>
@@ -108,30 +121,30 @@
   <!-- 2. Why. One contrast, four rows. -->
   <section class="block" id="why" aria-labelledby="why-title">
     <div class="wrap">
-      <h2 class="why-title two-tone" id="why-title"><span class="quiet" data-i18n="why.t1">Most AI canvases help you make more.</span><span data-i18n="why.t2">Vellum helps you think it through.</span></h2>
+      <h2 class="why-title two-tone" id="why-title"><span class="quiet" data-i18n="why.t1">Most AI canvases help you make more.</span><span data-i18n="why.t2">Sympo helps you think it through.</span></h2>
       <div class="why-body">
         <div class="why-side">
-          <p class="lede" data-i18n="why.lede">The best meetings skip the slides and go to the whiteboard. Then someone wipes it.</p>
-          <!-- Nothing gets wiped: each step of the thinking is a sheet of vellum, and the earlier ones show through. -->
+          <p class="lede" data-i18n="why.lede" data-clauses>The best meetings skip the slides and go to the whiteboard. Then someone wipes it.</p>
+          <!-- Nothing gets wiped: each step of the thinking is a translucent sheet, and the earlier ones show through. -->
           <figure class="layers" id="layers" aria-hidden="true">
             <div class="sheets">
-              <div class="sheet s1"><svg viewBox="0 0 320 180"><g class="ink-3"><rect x="34" y="40" width="58" height="34" rx="7"/><rect x="34" y="88" width="58" height="34" rx="7"/><rect x="34" y="136" width="58" height="22" rx="7"/></g></svg></div>
-              <div class="sheet s2"><svg viewBox="0 0 320 180"><path class="ink-3" d="M92 57c26 0 30 34 56 34M92 105c26 0 30-14 56-14M92 147c26 0 30-56 56-56"/><path class="ink-1" d="m160 74 17 30h-34Z"/><path class="ink-a" d="M182 84c30-6 40-30 74-34"/><path class="ink-c" d="M182 98c30 6 40 30 74 36"/></svg></div>
-              <div class="sheet s3"><svg viewBox="0 0 320 180"><path class="ink-b" d="M184 91c30 0 46 1 80 1"/><ellipse class="ink-1 loop" cx="276" cy="92" rx="22" ry="15" transform="rotate(-6 276 92)"/></svg></div>
+              <div class="sheet s1"><i class="paper"></i><svg viewBox="0 0 320 180"><path class="ink-3" d="M45.9 36.02Q64.5 35.82 73 36Q80 36 80 43Q79.65 51 80 59Q80 66 73 66Q49 66.15 25 66Q18 66 18 59Q17.57 51 18 43Q18 36 25 36Q33.5 36.11 49 35.93"/><path class="ink-3" d="M45.9 73.74Q64.5 73.56 73 74Q80 74 80 81Q80.01 89 80 97Q80 104 73 104Q49 103.54 25 104Q18 104 18 97Q17.93 89 18 81Q18 74 25 74Q33.5 74.27 49 73.8"/><path class="ink-3" d="M45.9 112.08Q64.5 111.92 73 112Q80 112 80 119Q80.33 127 80 135Q80 142 73 142Q49 141.62 25 142Q18 142 18 135Q17.72 127 18 119Q18 112 25 112Q33.5 112.05 49 112.22"/><path class="ink-3 thin" d="M31 58v-7M39 58v-12M47 58v-5M55 58v-14M63 58v-9"/><path class="ink-3 thin fillish" d="M35 84L36.32 87.18L39.76 87.45L37.14 89.7L37.94 93.05L35 91.25L32.06 93.05L32.86 89.7L30.24 87.45L33.68 87.18ZM49 84L50.32 87.18L53.76 87.45L51.14 89.7L51.94 93.05L49 91.25L46.06 93.05L46.86 89.7L44.24 87.45L47.68 87.18Z"/><path class="ink-3 thin" d="M63 84L64.32 87.18L67.76 87.45L65.14 89.7L65.94 93.05L63 91.25L60.06 93.05L60.86 89.7L58.24 87.45L61.68 87.18Z"/><path class="ink-3" d="M39 123c-3 1-4.5 3.4-4.5 6.6M47 123c-3 1-4.5 3.4-4.5 6.6"/><path class="ink-3 thin" d="M52 128.5q7.5 -1.2 15 0"/><path class="ink-3" d="M80 51C101.9 51 101.9 89 123.8 89"/><path class="ink-3" d="M80 89C101.9 91.6 101.9 86.4 123.8 89"/><path class="ink-3" d="M80 127C101.9 127 101.9 89 123.8 89"/><circle class="knot" cx="128" cy="89" r="4.2"/></svg></div>
+              <div class="sheet s2"><i class="paper"></i><svg viewBox="0 0 320 180"><circle class="knot" cx="128" cy="89" r="4.2"/><path class="br-a" d="M132.2 89C159.1 89 159.1 50 186 50"/><path class="br-b" d="M132.2 89C159.1 86.6 159.1 91.4 186 89"/><path class="br-c" d="M132.2 89C159.1 89 159.1 128 186 128"/><path class="chipf A" d="M196.8 38.22Q204 38.07 203.5 38Q210 38 210 44.5Q209.91 50 210 55.5Q210 62 203.5 62Q198 62.43 192.5 62Q186 62 186 55.5Q185.59 50 186 44.5Q186 38 192.5 38Q192 37.96 198 37.89"/><text class="chipl" x="198" y="53.9">A</text><path class="chipf B" d="M196.8 76.81Q204 76.68 203.5 77Q210 77 210 83.5Q209.66 89 210 94.5Q210 101 203.5 101Q198 100.83 192.5 101Q186 101 186 94.5Q186.28 89 186 83.5Q186 77 192.5 77Q192 77.19 198 77.04"/><text class="chipl" x="198" y="92.9">B</text><path class="chipf C" d="M196.8 115.74Q204 116.13 203.5 116Q210 116 210 122.5Q209.89 128 210 133.5Q210 140 203.5 140Q198 140.04 192.5 140Q186 140 186 133.5Q185.61 128 186 122.5Q186 116 192.5 116Q192 115.92 198 115.85"/><text class="chipl" x="198" y="131.9">C</text></svg></div>
+              <div class="sheet s3"><i class="paper"></i><svg viewBox="0 0 320 180"><path class="pen" d="M184.37 75.71C184.66 75.49 185.48 74.8 186.08 74.39C186.67 73.98 187.31 73.6 187.97 73.25C188.63 72.91 189.32 72.6 190.03 72.33C190.74 72.06 191.48 71.83 192.23 71.64C192.97 71.46 193.74 71.32 194.5 71.22C195.26 71.12 196.04 71.06 196.81 71.05C197.57 71.04 198.35 71.07 199.1 71.14C199.86 71.21 200.61 71.32 201.34 71.46C202.07 71.6 202.79 71.78 203.49 71.99C204.19 72.19 204.87 72.43 205.53 72.69C206.19 72.95 206.84 73.24 207.46 73.54C208.08 73.85 208.69 74.18 209.27 74.52C209.86 74.87 210.43 75.23 210.98 75.61C211.53 75.99 212.06 76.38 212.58 76.79C213.09 77.21 213.59 77.64 214.07 78.08C214.55 78.53 215.01 78.99 215.45 79.47C215.88 79.96 216.3 80.46 216.69 80.98C217.07 81.5 217.44 82.03 217.76 82.59C218.09 83.15 218.39 83.72 218.64 84.31C218.89 84.9 219.11 85.51 219.28 86.13C219.45 86.75 219.58 87.39 219.65 88.03C219.72 88.67 219.75 89.32 219.72 89.96C219.69 90.61 219.61 91.26 219.47 91.91C219.34 92.55 219.14 93.19 218.91 93.81C218.67 94.43 218.37 95.04 218.03 95.63C217.7 96.22 217.31 96.8 216.89 97.34C216.46 97.89 215.99 98.42 215.5 98.92C215 99.41 214.47 99.89 213.91 100.33C213.36 100.77 212.77 101.19 212.17 101.58C211.57 101.97 210.95 102.34 210.32 102.67C209.69 103.01 209.04 103.33 208.38 103.62C207.72 103.91 207.05 104.17 206.38 104.42C205.7 104.67 205.02 104.89 204.32 105.09C203.63 105.3 202.93 105.48 202.22 105.64C201.51 105.81 200.79 105.95 200.07 106.06C199.34 106.18 198.61 106.28 197.87 106.34C197.13 106.41 196.38 106.46 195.64 106.47C194.89 106.48 194.13 106.46 193.38 106.4C192.62 106.35 191.86 106.26 191.12 106.14C190.37 106.01 189.63 105.85 188.9 105.65C188.18 105.44 187.46 105.2 186.77 104.92C186.08 104.64 185.41 104.31 184.77 103.95C184.13 103.59 183.52 103.19 182.95 102.76C182.38 102.33 181.84 101.86 181.35 101.36C180.86 100.87 180.41 100.34 180.01 99.8C179.61 99.25 179.25 98.68 178.93 98.1C178.62 97.52 178.35 96.91 178.13 96.31C177.91 95.7 177.73 95.08 177.59 94.46C177.45 93.84 177.36 93.21 177.29 92.59C177.23 91.97 177.21 91.34 177.21 90.72C177.22 90.1 177.26 89.48 177.32 88.87C177.39 88.25 177.48 87.64 177.61 87.03C177.73 86.43 177.87 85.82 178.05 85.23C178.22 84.63 178.42 84.03 178.65 83.44C178.87 82.85 179.13 82.26 179.41 81.69C179.69 81.11 180 80.53 180.35 79.97C180.69 79.41 181.07 78.85 181.48 78.31C181.89 77.77 182.34 77.23 182.82 76.73C183.3 76.22 183.82 75.72 184.38 75.26C184.93 74.79 185.52 74.35 186.14 73.94C186.76 73.53 187.42 73.15 188.1 72.81C188.78 72.48 189.49 72.17 190.22 71.91C190.95 71.65 191.71 71.43 192.47 71.25C193.23 71.08 194.41 70.92 194.79 70.86"/><path class="ink-b" d="M219.72 89.96C240.86 92.16 240.86 86.8 262 89"/><path class="ink-1" d="M280.9 71.97Q293.5 72.18 296 72Q304 72 304 80Q303.93 89 304 98Q304 106 296 106Q283 105.81 270 106Q262 106 262 98Q262.09 89 262 80Q262 72 270 72Q272.5 71.89 283 71.9"/><path class="ink-b" d="M275.5 89.5l5 4.8 10 -10"/></svg></div>
               <!-- Each label rides with its own sheet but sits above them all, so it stays sharp. -->
-              <div class="sheet ghost s1"><svg viewBox="0 0 320 180"><text class="tag" x="34" y="28" data-i18n="why.l1">Evidence</text></svg></div>
-              <div class="sheet ghost s2"><svg viewBox="0 0 320 180"><text class="tag" x="186" y="36" data-i18n="why.l2">Directions</text></svg></div>
-              <div class="sheet ghost s3"><svg viewBox="0 0 320 180"><text class="tag" x="276" y="128" text-anchor="middle" data-i18n="why.l3">Decision</text></svg></div>
+              <div class="sheet ghost s1"><svg viewBox="0 0 320 180"><text class="tag" x="18" y="24" data-i18n="why.l1">Evidence</text></svg></div>
+              <div class="sheet ghost s2"><svg viewBox="0 0 320 180"><text class="tag" x="186" y="24" data-i18n="why.l2">Directions</text></svg></div>
+              <div class="sheet ghost s3"><svg viewBox="0 0 320 180"><text class="tag" x="262" y="24" data-i18n="why.l3">Decision</text></svg></div>
             </div>
           </figure>
         </div>
         <table class="contrast">
-          <thead><tr><th scope="col" data-i18n="why.h1">A generator canvas</th><th scope="col" data-i18n="why.h2">Vellum</th></tr></thead>
+          <thead><tr><th scope="col" data-i18n="why.h1">A generator canvas</th><th scope="col" data-i18n="why.h2">Sympo</th></tr></thead>
           <tbody>
-            <tr><td><svg class="mk" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="why.a1">Forty images and a vague feeling</span></td><td><svg class="mk" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="why.b1">Three directions, each showing what it rests on</span></td></tr>
-            <tr><td><svg class="mk" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="why.a2">Cards that just happen to be close</span></td><td><svg class="mk" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="why.b2">Relations with names: supports, counters, refines</span></td></tr>
-            <tr><td><svg class="mk" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="why.a3">Rejected ideas, lost in final_v3</span></td><td><svg class="mk" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="why.b3">Set-aside ideas, kept with the reason</span></td></tr>
-            <tr><td><svg class="mk" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="why.a4">A decision nobody remembers making</span></td><td><svg class="mk" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="why.b4">A decision that speaks up when the facts change</span></td></tr>
+            <tr><td><svg class="mk no" aria-hidden="true"><use href="#i-no"/></svg><span><span class="st" data-i18n="why.a1">Forty images and a vague feeling</span></span></td><td><svg class="mk yes" aria-hidden="true"><use href="#i-yes"/></svg><span data-i18n="why.b1">Three directions, each showing what it rests on</span></td></tr>
+            <tr><td><svg class="mk no" aria-hidden="true"><use href="#i-no"/></svg><span><span class="st" data-i18n="why.a2">Cards that just happen to be close</span></span></td><td><svg class="mk yes" aria-hidden="true"><use href="#i-yes"/></svg><span data-i18n="why.b2">Relations with names: supports, counters, refines</span></td></tr>
+            <tr><td><svg class="mk no" aria-hidden="true"><use href="#i-no"/></svg><span><span class="st" data-i18n="why.a3">Rejected ideas, lost in final_v3</span></span></td><td><svg class="mk yes" aria-hidden="true"><use href="#i-yes"/></svg><span data-i18n="why.b3">Set-aside ideas, kept with the reason</span></td></tr>
+            <tr><td><svg class="mk no" aria-hidden="true"><use href="#i-no"/></svg><span><span class="st" data-i18n="why.a4">A decision nobody remembers making</span></span></td><td><svg class="mk yes" aria-hidden="true"><use href="#i-yes"/></svg><span data-i18n="why.b4">A decision that speaks up when the facts change</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -177,46 +190,49 @@
       <div class="reel-track" id="reelTrack">
         <figure class="ri" data-k="plan">
           <div class="doc">
-            <div class="doc-h"><span class="chip B">B</span><span data-i18n="doc.h">Hook-first lantern</span></div>
+            <div class="doc-h"><span class="chip B">B</span><span data-i18n="doc.h">Rough cut, moments marked</span></div>
             <dl>
-              <dt data-i18n="doc.why">Why</dt><dd data-i18n="doc.whyv">8 of 10 campers hang it from the tent loop.</dd>
-              <dt data-i18n="doc.rests">Rests on</dt><dd data-i18n="doc.restsv">3 sources, 2 of them observed</dd>
-              <dt data-i18n="doc.aside">Set aside</dt><dd class="aside" data-i18n="doc.asidev">A shade dial, C glow ring</dd>
+              <dt data-i18n="doc.why">Why this</dt><dd data-i18n="doc.whyv">Editors want the busywork done and the moments left to them.</dd>
+              <dt data-i18n="doc.rests">Evidence</dt><dd><ul class="doc-ev">
+                <li><i data-i18n="doc.k1">Observed</i><span data-i18n="doc.e1">Editors undo 6 of every 10 cuts the AI makes</span></li>
+                <li><i data-i18n="doc.k2">Quote</i><span data-i18n="doc.e2">“Give me a first pass. The moments are mine.”</span></li></ul></dd>
+              <dt data-i18n="doc.aside">Not chosen</dt><dd class="aside"><ul class="doc-ev">
+                <li data-i18n="doc.a1">A, one-click cut: it picks the moments for you</li>
+                <li data-i18n="doc.a2">C, suggestions only: saves almost no time</li></ul></dd>
             </dl>
-            <div class="doc-more" aria-hidden="true"><i></i><i></i><i></i></div>
           </div>
         </figure>
         <figure class="ri" data-k="tasks">
           <div class="kb">
-            <div class="kb-col"><h5><span data-i18n="kb.todo">To do</span><b>2</b></h5><div class="kb-card" data-i18n="kb.1">Widen the hook mouth</div><div class="kb-card" data-i18n="kb.2">Glove test, 5 people</div></div>
-            <div class="kb-col"><h5><span data-i18n="kb.doing">Doing</span><b>1</b></h5><div class="kb-card" data-i18n="kb.3">Order 2200K LEDs</div></div>
-            <div class="kb-col done"><h5><span data-i18n="kb.done">Done</span><b>2</b></h5><div class="kb-card" data-i18n="kb.4">Foam mock-up</div><div class="kb-card" data-i18n="kb.5">Field test</div></div>
+            <div class="kb-col todo"><h5><span data-i18n="kb.todo">To do</span><b>2</b></h5><div class="kb-card"><span data-i18n="kb.1">Pre-mark top 5 moments</span><time data-i18n="kb.t1">2h ago</time></div><div class="kb-card"><span data-i18n="kb.2">Long-clip test, 10 editors</span><time data-i18n="kb.t2">Yesterday</time></div></div>
+            <div class="kb-col doing"><h5><span data-i18n="kb.doing">Doing</span><b>1</b></h5><div class="kb-card"><span data-i18n="kb.3">Moment markers on the timeline</span><time data-i18n="kb.t3">40m ago</time></div></div>
+            <div class="kb-col done"><h5><span data-i18n="kb.done">Done</span><b>2</b></h5><div class="kb-card"><span data-i18n="kb.4">Undo-rate tracking</span><time data-i18n="kb.t4">Done Tue</time></div><div class="kb-card"><span data-i18n="kb.5">Beta with 20 editors</span><time data-i18n="kb.t5">Done Mon</time></div></div>
           </div>
         </figure>
         <figure class="ri" data-k="table">
           <div class="tb">
-            <div class="tb-h"><span data-i18n="tb.h">Field test, 10 campers</span><span class="tb-seg" aria-hidden="true"><b data-i18n="tb.table">Table</b><span data-i18n="tb.chart">Chart</span></span></div>
+            <div class="tb-h"><span data-i18n="tb.h">Beta, 20 editors</span><span class="tb-seg" aria-hidden="true"><b data-i18n="tb.table">Table</b><span data-i18n="tb.chart">Chart</span></span></div>
             <table>
-              <tr><td data-i18n="tb.r1">Found it in the dark</td><td class="v">9/10</td><td class="bar"><i style="--v:.9"></i></td></tr>
-              <tr><td data-i18n="tb.r2">Hook held, thick line</td><td class="v">10/10</td><td class="bar"><i style="--v:1"></i></td></tr>
-              <tr class="warn"><td data-i18n="tb.r3">Hook held, thin line</td><td class="v">6/10</td><td class="bar"><i style="--v:.6"></i></td></tr>
-              <tr><td data-i18n="tb.r4">Too bright up close</td><td class="v">1/10</td><td class="bar"><i style="--v:.1"></i></td></tr>
+              <tr><td data-i18n="tb.r1">Faster than by hand</td><td class="v">18/20</td><td class="bar"><i style="--v:.9"></i></td></tr>
+              <tr><td data-i18n="tb.r2">Kept the rough cut</td><td class="v">17/20</td><td class="bar"><i style="--v:.85"></i></td></tr>
+              <tr class="warn"><td data-i18n="tb.r3">Long clips felt slow</td><td class="v">9/20</td><td class="bar"><i style="--v:.45"></i></td></tr>
+              <tr><td data-i18n="tb.r4">Agent missed a moment</td><td class="v">2/20</td><td class="bar"><i style="--v:.1"></i></td></tr>
             </table>
           </div>
         </figure>
         <figure class="ri dark" data-k="cut">
           <div class="cut">
-            <div class="cut-glow" aria-hidden="true"><span class="lamp"></span></div>
-            <div class="cut-line" data-i18n="cut.line">Find it in the dark.</div>
+            <video class="cut-vid" muted playsinline preload="none" poster="assets/output-landing-poster.jpg" src="assets/output-landing.mp4" aria-hidden="true"></video>
+            <div class="cut-line" data-i18n="cut.line">Your moments. Its busywork.</div>
             <div class="cut-bar" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5Z"/></svg><i><b></b></i><span>0:15</span></div>
           </div>
         </figure>
         <figure class="ri" data-k="site">
           <div class="br">
-            <div class="br-top" aria-hidden="true"><i></i><i></i><i></i><span>lantern.example</span></div>
+            <div class="br-top" aria-hidden="true"><i></i><i></i><i></i><span>roughcut.example</span></div>
             <div class="br-page">
-              <div class="br-copy"><h5 data-i18n="site.h">Find it in the dark.</h5><p data-i18n="site.p">Hook on top. 2200K at 40 lumens.</p><span class="br-cta" data-i18n="site.cta">Pre-order</span></div>
-              <div class="br-glow" aria-hidden="true"><span class="lamp"></span></div>
+              <div class="br-copy"><h5 data-i18n="site.h" data-clauses>Your moments. Its busywork.</h5><p data-i18n="site.p">A rough cut in minutes. You pick what stays.</p><span class="br-cta" data-i18n="site.cta">Try it free</span></div>
+              <div class="br-shot" aria-hidden="true"><img src="assets/hero-skate.jpg" alt="" loading="lazy" decoding="async"></div>
             </div>
           </div>
         </figure>
@@ -231,21 +247,21 @@
         <h2 id="crew-title" data-i18n="crew.title">A crew that thinks with you, and sometimes against you.</h2>
       </div>
       <div class="crew">
-        <figure class="agent" style="--c: var(--crew-scout)">
+        <figure class="agent" style="--c: var(--crew-scout); --h: 200">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-scout"/></svg></span><div><h3>Scout</h3><p data-i18n="crew.scout">Weighs the evidence</p></div></div>
-          <blockquote data-i18n="crew.scoutq" data-clauses>“Two of these seven sources are the same review.”</blockquote>
+          <blockquote data-i18n="crew.scoutq" data-words>“Two of these seven sources are the same review.”</blockquote>
         </figure>
-        <figure class="agent" style="--c: var(--crew-strategist)">
+        <figure class="agent" style="--c: var(--crew-strategist); --h: 305">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-strategist"/></svg></span><div><h3>Strategist</h3><p data-i18n="crew.strat">Forks it into directions</p></div></div>
-          <blockquote data-i18n="crew.stratq" data-clauses>“If B is right, campers find it in five seconds.”</blockquote>
+          <blockquote data-i18n="crew.stratq" data-words>“If B is right, editors keep 9 in 10 rough cuts.”</blockquote>
         </figure>
-        <figure class="agent" style="--c: var(--crew-wright)">
+        <figure class="agent" style="--c: var(--crew-wright); --h: 100">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-wright"/></svg></span><div><h3>Wright</h3><p data-i18n="crew.wright">Builds the proof</p></div></div>
-          <blockquote data-i18n="crew.wrightq" data-clauses>“The foam mock-up for B is ready. Keep it?”</blockquote>
+          <blockquote data-i18n="crew.wrightq" data-words>“The moment-marker prototype for B is ready. Keep it?”</blockquote>
         </figure>
-        <figure class="agent" style="--c: var(--crew-critic)">
+        <figure class="agent" style="--c: var(--crew-critic); --h: 262">
           <div class="who"><span class="orb"><svg class="ic" aria-hidden="true"><use href="#i-critic"/></svg></span><div><h3>Critic</h3><p data-i18n="crew.critic">Checks it against the sources</p></div></div>
-          <blockquote data-i18n="crew.criticq" data-clauses>“Nothing here says campers want a dial.”</blockquote>
+          <blockquote data-i18n="crew.criticq" data-words>“Nothing here says editors want one click.”</blockquote>
         </figure>
       </div>
       <div class="agency">
@@ -254,82 +270,107 @@
              the board says what you're watching, so the eye moves down, never across. -->
         <div class="scene-col">
           <div class="seg modes" role="radiogroup" aria-label="How much the crew joins in" id="modes">
-            <button type="button" role="radio" data-mode="focus" aria-checked="false" tabindex="-1" data-i18n="mode.focus">Focus</button>
-            <button type="button" role="radio" data-mode="listen" aria-checked="true" data-i18n="mode.listen">Listening</button>
-            <button type="button" role="radio" data-mode="team" aria-checked="false" tabindex="-1" data-i18n="mode.team">Teamwork</button>
+            <button type="button" role="radio" data-mode="focus" aria-checked="false" tabindex="-1"><svg class="ic" aria-hidden="true"><use href="#i-focus"/></svg><span data-i18n="mode.focus">Focus</span></button>
+            <button type="button" role="radio" data-mode="listen" aria-checked="true"><svg class="ic" aria-hidden="true"><use href="#i-listen"/></svg><span data-i18n="mode.listen">Listening</span></button>
+            <button type="button" role="radio" data-mode="team" aria-checked="false" tabindex="-1"><svg class="ic" aria-hidden="true"><use href="#i-team"/></svg><span data-i18n="mode.team">Teamwork</span></button>
           </div>
+          <p class="mode-desc" id="modeDesc" aria-live="polite"></p>
           <figure class="scene-wrap" id="scene" aria-hidden="true">
             <div class="scene" id="sceneBox"><div class="scene-stage" id="sceneStage"></div></div>
           </figure>
-          <p class="mode-desc" id="modeDesc" aria-live="polite"></p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 5. Get Vellum. -->
+  <!-- 4b. Anywhere (coming). One board on three devices; each shows the one thing it is best at. One motion: the pen
+       circles B on the tablet and the same card lights on all three screens at once. -->
+  <section class="block" id="anywhere" aria-labelledby="any-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="soon" data-i18n="any.soon">Coming soon</p>
+        <h2 id="any-title" data-i18n="any.title">Keep thinking, wherever you are.</h2>
+        <p class="lede" data-i18n="any.lede" data-clauses>Scan the code on your computer with your tablet and the board opens. Nothing to install, no cloud in between.</p>
+      </div>
+      <div class="devices" id="devices" aria-hidden="true">
+        <figure class="dev mac">
+          <div class="frame"><div class="screen"><div class="ui" data-ui="pc" data-w="960" data-h="600"></div></div></div>
+          <div class="base"></div>
+          <figcaption><b data-i18n="any.comp">Computer</b><span data-i18n="any.mac">Lay out the whole argument.</span></figcaption>
+        </figure>
+        <figure class="dev pad">
+          <div class="frame"><div class="screen"><div class="ui" data-ui="tab" data-w="420" data-h="560"></div></div></div>
+          <figcaption><b data-i18n="any.tab">Tablet</b><span data-i18n="any.pad">Circle a direction with the pen.</span></figcaption>
+        </figure>
+        <figure class="dev phone">
+          <div class="frame"><div class="screen"><div class="ui" data-ui="ph" data-w="320" data-h="676"></div></div></div>
+          <figcaption><b data-i18n="any.phone">Phone</b><span data-i18n="any.ph">Decisions in your pocket.</span></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Get the app. -->
   <section class="get" id="get" aria-labelledby="get-title">
     <div class="wrap get-wrap">
-      <!-- The mark at full size, as a light: the decided card glows; the cards that hold it are frosted glass. -->
-      <div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
-        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
-          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
-      </svg></div>
+      <!-- The app icon at full size, exactly as it sits in the Dock. -->
+      <div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100"><defs><linearGradient id="gmw" gradientUnits="userSpaceOnUse" x1="57" y1="41" x2="31.0" y2="30.0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6e8ec"/></linearGradient><linearGradient id="gme1" gradientUnits="userSpaceOnUse" x1="45" y1="15" x2="82" y2="28"><stop offset="0" stop-color="#3fd39b"/><stop offset=".5" stop-color="#36bfd0"/><stop offset="1" stop-color="#5a9bff"/></linearGradient><linearGradient id="gme2" gradientUnits="userSpaceOnUse" x1="82" y1="28" x2="83" y2="70"><stop offset="0" stop-color="#5a9bff"/><stop offset=".5" stop-color="#9b7cff"/><stop offset="1" stop-color="#ff6b95"/></linearGradient><linearGradient id="gme3" gradientUnits="userSpaceOnUse" x1="83" y1="70" x2="36" y2="87"><stop offset="0" stop-color="#ff6b95"/><stop offset=".5" stop-color="#ff8577"/><stop offset="1" stop-color="#ffa94d"/></linearGradient><linearGradient id="gme4" gradientUnits="userSpaceOnUse" x1="36" y1="87" x2="17" y2="45"><stop offset="0" stop-color="#ffa94d"/><stop offset=".5" stop-color="#ffbf55"/><stop offset="1" stop-color="#ffd25e"/></linearGradient><radialGradient id="gmg" cx="57" cy="41" r="34" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0.36"/><stop offset=".55" stop-color="#fff" stop-opacity="0.09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><clipPath id="gmc"><path d="M21.53 55.02 Q17 45 24.51 36.96 L37.49 23.04 Q45 15 55.38 18.65 L71.62 24.35 Q82 28 82.26 39.00 L82.74 59.00 Q83 70 72.66 73.74 L46.34 83.26 Q36 87 31.47 76.98 Z"/></clipPath><linearGradient id="gmt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#25272c"/><stop offset="1" stop-color="#101114"/></linearGradient><clipPath id="gmtc"><rect width="100" height="100" rx="22.5"/></clipPath><filter id="gmsh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="1.8" stdDeviation="2" flood-color="#000" flood-opacity=".35"/></filter></defs><g clip-path="url(#gmtc)"><rect width="100" height="100" fill="url(#gmt)"/><g transform="translate(50 51) scale(1.04) translate(-50 -50)" filter="url(#gmsh)"><g clip-path="url(#gmc)"><path d="M57 41L17 45L45 15Z" fill="url(#gmw)"/><path d="M57 41L45 15L82 28Z" fill="url(#gme1)"/><path d="M57 41L45 15L82 28Z" fill="#fff" fill-opacity="0.043"/><path d="M57 41L82 28L83 70Z" fill="url(#gme2)"/><path d="M57 41L82 28L83 70Z" fill="#000" fill-opacity="0.062"/><path d="M57 41L83 70L36 87Z" fill="url(#gme3)"/><path d="M57 41L83 70L36 87Z" fill="#000" fill-opacity="0.069"/><path d="M57 41L36 87L17 45Z" fill="url(#gme4)"/><path d="M57 41L36 87L17 45Z" fill="#000" fill-opacity="0.008"/><rect width="100" height="100" fill="url(#gmg)"/><path d="M57 41L17 45" stroke="#16171b" stroke-width="1.25" stroke-linecap="round"/><path d="M57 41L45 15" stroke="#16171b" stroke-width="1.25" stroke-linecap="round"/><path d="M57 41L82 28" stroke="#16171b" stroke-width="1.25" stroke-linecap="round"/><path d="M57 41L83 70" stroke="#16171b" stroke-width="1.25" stroke-linecap="round"/><path d="M57 41L36 87" stroke="#16171b" stroke-width="1.25" stroke-linecap="round"/></g></g><rect x=".4" y=".4" width="99.2" height="99.2" rx="22.1" fill="none" stroke="#fff" stroke-opacity=".10" stroke-width=".8"/></g></svg></div>
       <div class="sec-head">
-        <h2 id="get-title" data-i18n="get.title">Get Vellum.</h2>
+        <h2 id="get-title" data-i18n="get.title">Get Sympo.</h2>
+        <p class="get-lede"><span data-i18n="get.l1">Early builds for macOS and Windows are on the way.</span> <span data-i18n="get.l2">One email when yours is worth your time.</span></p>
       </div>
 
-      <div class="panel">
-        <div class="pblock">
-          <div class="phead">
-            <h3 data-i18n="get.dl">Download</h3>
-            <p data-i18n="get.dld">Early builds for macOS and Windows.</p>
-          </div>
-          <div class="pgrid">
-            <a class="btn btn-quiet dl" data-os="mac" href="#get"><svg class="ic" aria-hidden="true"><use href="#i-apple"/></svg><span data-i18n="get.mac">macOS</span><span class="soon" data-i18n="get.soon">Soon</span></a>
-            <a class="btn btn-quiet dl" data-os="win" href="#get"><svg class="ic" aria-hidden="true"><use href="#i-windows"/></svg><span data-i18n="get.win">Windows</span><span class="soon" data-i18n="get.soon">Soon</span></a>
-          </div>
+      <!-- One button. It opens a small form: email, which system (already picked from the browser on a computer)
+           and, in their own words, what it's for. All three are needed to join. -->
+      <div class="join" id="waitlist">
+        <div class="get-acts">
+          <a class="btn btn-quiet get-demo" id="demoGo" target="_blank" rel="noopener" hidden data-i18n="cta.demo">Try the demo</a>
+          <button class="btn btn-primary get-go" id="joinOpen" type="button" aria-haspopup="dialog" data-i18n="cta.waitlist">Join the waitlist</button>
+          <a class="btn btn-primary dl-go" id="dlGo" hidden></a>
         </div>
-        <div class="divider" role="presentation"></div>
-        <form class="pblock waitlist" id="waitlist" novalidate>
-          <div class="phead">
-            <h3 data-i18n="get.wl">Hear about new builds</h3>
-            <p data-i18n="get.wld">One email when a build is worth your time. That's the whole newsletter.</p>
-          </div>
-          <div class="pgrid form-body">
-            <div class="field">
-              <label for="email" data-i18n="get.email">Email</label>
-              <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@studio.com">
+        <div class="done-state" role="status">
+          <span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span>
+          <div><strong id="doneText"></strong><p id="doneNote"></p></div>
+        </div>
+      </div>
+      <dialog class="more" id="more" aria-labelledby="moreTitle">
+        <form method="dialog" id="moreForm">
+          <div class="mhead"><h3 id="moreTitle" data-i18n="get.step">Get early access.</h3>
+            <button class="mclose" type="button" id="moreClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+          <label class="mrow">
+            <span class="mlabel" data-i18n="get.email">Email</span>
+            <input class="mfield" id="email" name="email" type="email" autocomplete="email" inputmode="email" aria-required="true" aria-describedby="emailHint" placeholder="you@studio.com">
+            <span class="mmsg" id="emailHint" role="alert"></span>
+          </label>
+          <div class="mrow">
+            <span class="mlabel" id="osLabel" data-i18n="get.os">Preferred system</span>
+            <div class="chips" role="radiogroup" aria-labelledby="osLabel" aria-required="true" id="osChips">
+              <button type="button" class="pick" role="radio" data-os="mac" aria-checked="false"><svg class="ic" aria-hidden="true"><use href="#i-apple"/></svg><span data-i18n="get.mac">macOS</span></button>
+              <button type="button" class="pick" role="radio" data-os="win" aria-checked="false"><svg class="ic" aria-hidden="true"><use href="#i-windows"/></svg><span data-i18n="get.win">Windows</span></button>
             </div>
-            <div class="field">
-              <label for="use" data-i18n="get.use">Mostly for</label>
-              <div class="select"><select id="use" name="use">
-                <option value="product" data-i18n="cases.t1">Product design</option>
-                <option value="video" data-i18n="cases.t2">Short video</option>
-                <option value="ai" data-i18n="cases.t3">AI products</option>
-                <option value="other" data-i18n="get.other">Something else</option>
-              </select></div>
-            </div>
-            <p class="form-msg span2" id="formMsg" role="alert"></p>
-            <button class="btn btn-primary submit" type="submit"><svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg><span data-i18n="cta.waitlist">Join the waitlist</span></button>
+            <p class="mmsg" id="osHint" role="alert"></p>
           </div>
-          <div class="done-state" role="status">
-            <span class="done-ic"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span>
-            <div><strong data-i18n="get.thanks">You're on the list.</strong><p id="doneText"></p></div>
+          <label class="mrow">
+            <span class="mlabel" data-i18n="get.use">What will you use it for?</span>
+            <input class="mfield" id="useText" name="use" type="text" maxlength="200" autocomplete="off" aria-required="true" aria-describedby="useHint" placeholder="A product launch, a short film…">
+            <span class="mmsg" id="useHint" role="alert"></span>
+          </label>
+          <p class="mmsg" id="moreMsg" role="alert"></p>
+          <div class="macts">
+            <button class="btn btn-primary" type="submit" value="join" data-i18n="get.join">Join</button>
           </div>
         </form>
-      </div>
+      </dialog>
     </div>
   </section>
 </main>
 
 <footer class="foot">
   <div class="wrap foot-row">
-    <a class="brand brand-sm" href="#top" aria-label="Vellum"><svg class="mark" aria-hidden="true"><use href="#i-mark"/></svg><span>Vellum</span></a>
+    <a class="brand brand-sm" href="#top" aria-label="Sympo"><svg class="mark" aria-hidden="true"><use href="#i-mark"/></svg><span>Sympo</span></a>
     <nav class="foot-nav" aria-label="Footer">
       <a href="https://github.com/hlf2010-art/Vellum">GitHub</a>
-      <span>© 2026 Vellum</span>
+      <span>© 2026 Sympo</span>
       <label class="lang-pick">
         <svg class="ic" aria-hidden="true"><use href="#i-globe"/></svg>
         <select id="langSel" aria-label="Language"><option value="en">English</option><option value="zh">简体中文</option></select>

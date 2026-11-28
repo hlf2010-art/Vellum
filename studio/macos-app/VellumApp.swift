@@ -46,7 +46,7 @@ final class SplashView: NSView {
         card.translatesAutoresizingMaskIntoConstraints = false
         addSubview(card)
 
-        let mark = PrismMarkView()
+        let mark = VellumMarkView()
         mark.translatesAutoresizingMaskIntoConstraints = false
 
         let title = NSTextField(labelWithString: "Vellum")
@@ -140,7 +140,11 @@ final class SplashView: NSView {
     }
 }
 
-final class PrismMarkView: NSView {
+/// The app mark on the splash: the same picture as the Dock icon (brand/mark.png,
+/// rendered from brand/sympo-icon.svg), so the two can never drift apart.
+final class VellumMarkView: NSView {
+    private let image = Bundle.main.image(forResource: "mark")
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
@@ -152,40 +156,8 @@ final class PrismMarkView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
-        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         let s = min(bounds.width, bounds.height)
-        let box = CGRect(x: 1, y: 1, width: s - 2, height: s - 2)
-        let bgPath = CGPath(roundedRect: box, cornerWidth: 15, cornerHeight: 15, transform: nil)
-        ctx.saveGState()
-        ctx.addPath(bgPath)
-        ctx.setFillColor(NSColor(white: 1.0, alpha: 0.045).cgColor)
-        ctx.fillPath()
-        ctx.addPath(bgPath)
-        ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.14).cgColor)
-        ctx.setLineWidth(1.0)
-        ctx.strokePath()
-
-        let top = CGPoint(x: s * 0.50, y: s * 0.74)
-        let left = CGPoint(x: s * 0.25, y: s * 0.28)
-        let right = CGPoint(x: s * 0.75, y: s * 0.28)
-        let tri = CGMutablePath()
-        tri.move(to: top)
-        tri.addLine(to: right)
-        tri.addLine(to: left)
-        tri.closeSubpath()
-
-        ctx.addPath(tri)
-        ctx.setLineJoin(.round)
-        ctx.setStrokeColor(NSColor(srgbRed: 0.96, green: 0.97, blue: 1.0, alpha: 0.92).cgColor)
-        ctx.setLineWidth(2.4)
-        ctx.strokePath()
-
-        ctx.move(to: top)
-        ctx.addLine(to: CGPoint(x: s * 0.50, y: s * 0.28))
-        ctx.setStrokeColor(NSColor(srgbRed: 1.0, green: 0.87, blue: 0.62, alpha: 0.85).cgColor)
-        ctx.setLineWidth(1.6)
-        ctx.strokePath()
-        ctx.restoreGState()
+        image?.draw(in: NSRect(x: (bounds.width - s) / 2, y: (bounds.height - s) / 2, width: s, height: s))
     }
 }
 

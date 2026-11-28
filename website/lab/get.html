@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get Vellum options</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { background: var(--canvas); }
+  .opts { display: grid; gap: 56px; padding: 48px 0 80px; }
+  .opt { display: grid; gap: 18px; }
+  .otag { width: min(1120px, 100% - 32px); margin: 0 auto; font: 600 13px/1 var(--sans); color: var(--label-3); display: flex; gap: 10px; align-items: center; }
+  .otag b { display: inline-grid; place-items: center; height: 22px; padding: 0 8px; border-radius: 6px; background: var(--hover); color: var(--label); }
+  .otag em { margin-left: auto; font-style: normal; color: var(--label); }
+  .stage { position: relative; overflow: hidden; padding: 84px 16px 96px; background: linear-gradient(var(--canvas), var(--canvas-lift) 46%); }
+  .stage .get-mark { width: 96px; height: 96px; margin-bottom: 24px; }
+  .stage h2 { text-align: center; }
+  .inner { max-width: 600px; margin: 0 auto; display: grid; justify-items: center; align-content: start; text-align: center; }
+  .lede { margin-top: 14px; font-size: 17px; line-height: 1.45; color: var(--label-2); text-wrap: balance; max-width: 30em; }
+
+  /* A. One line: the email and the button share one pill; the button sits inside it on the right. */
+  .pill { margin-top: 32px; width: min(460px, 100%); display: flex; align-items: center; gap: 8px; height: 56px; padding: 6px 6px 6px 22px; border-radius: 999px;
+    background: color-mix(in srgb, var(--card) 82%, transparent); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    box-shadow: inset 0 0 0 1px var(--hair-2), var(--shadow-card); transition: box-shadow .2s; }
+  .pill:focus-within { box-shadow: inset 0 0 0 1px var(--label-3), 0 0 0 5px var(--hover), var(--shadow-card); }
+  .pill input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font-size: 16px; color: var(--label); outline: none; }
+  .pill input::placeholder { color: var(--label-3); }
+  .pill .btn { height: 44px; padding: 0 20px; flex: none; }
+  .done { margin-top: 32px; display: grid; justify-items: center; gap: 14px; }
+  .done-l { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
+  .done-l .ok { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--label); color: var(--card); }
+  .done-l .ok svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+  .chips span.q { font-size: 14px; color: var(--label-3); margin-right: 4px; }
+  .chip2 { height: 32px; padding: 0 14px; border-radius: 999px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; color: var(--label-2); box-shadow: inset 0 0 0 1px var(--hair-2); }
+  .chip2.on { background: var(--label); color: var(--card); box-shadow: none; }
+  .chip2 svg { width: 14px; height: 14px; fill: currentColor; margin-right: 6px; }
+  /* Labels in one column, choices in the next, so the two rows line up. */
+  .ask { display: grid; grid-template-columns: auto auto; gap: 10px 12px; align-items: center; justify-content: center; }
+  .ask .q { margin: 0; text-align: right; font-size: 14px; color: var(--label-3); }
+  .ask .chips { justify-content: flex-start; }
+  .ask.first { margin-top: 30px; }
+  .ask.first + .pill { margin-top: 22px; }
+  .frames { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; width: min(1120px, 100%); margin: 0 auto; }
+  .frames > div { display: block; min-width: 0; }
+  .cap { margin-top: 18px; font-size: 12.5px; color: var(--label-3); }
+
+  /* B. Pick your machine: two glass tiles; the one you pick opens the email line under them. */
+  .tiles { margin-top: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: min(460px, 100%); }
+  .tile { position: relative; display: grid; justify-items: start; gap: 18px; padding: 18px 18px 16px; border-radius: 20px; text-align: left;
+    background: color-mix(in srgb, var(--card) 70%, transparent); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: inset 0 0 0 1px var(--hair); }
+  .tile svg { width: 26px; height: 26px; fill: currentColor; color: var(--label-2); }
+  .tile b { display: block; font-size: 16px; font-weight: 600; }
+  .tile i { display: block; font-style: normal; font-size: 13px; color: var(--label-3); margin-top: 2px; }
+  .tile.on { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--label), var(--shadow-card); }
+  .tile.on svg { color: var(--label); }
+  .tiles + .pill { margin-top: 12px; }
+
+  /* C. One sentence: the form reads as a line of copy with two blanks. */
+  .sent { margin-top: 30px; font-family: var(--display); font-size: clamp(22px, 2.6vw, 30px); line-height: 1.6; font-weight: 520; letter-spacing: -.02em; color: var(--label-3); text-wrap: balance; max-width: 18em; }
+  .blank { display: inline-block; min-width: 7.6em; padding: 0 .1em; color: var(--label); border-bottom: 2px solid var(--label-4, var(--hair-2)); line-height: 1.15; text-align: left; }
+  .blank.ph { color: var(--label-3); opacity: .7; }
+  .blank.sel { min-width: 0; }
+  .blank.sel::after { content: ""; display: inline-block; width: .32em; height: .32em; margin: 0 .05em .18em .3em; border-right: 2px solid var(--label-3); border-bottom: 2px solid var(--label-3); transform: rotate(45deg); }
+  .sent + .row { margin-top: 26px; font-size: clamp(22px, 2.6vw, 30px); width: min(18em, 100%); display: flex; justify-content: flex-end; }
+  .sent + .row .btn { height: 48px; padding: 0 22px; font-size: 15px; }
+  .sent .go { height: 44px; padding: 0 20px; font-family: var(--sans); font-size: 15px; letter-spacing: 0; vertical-align: .18em; margin-left: .2em; }
+
+  @media (max-width: 640px) { .frames { grid-template-columns: 1fr; } .pill { padding-left: 18px; } .pill .btn { padding: 0 16px; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2.6"/><path d="m4 7.5 8 6 8-6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="m5.5 12.5 4.2 4.2L18.5 8"/></symbol><symbol id="i-apple" viewBox="0 0 24 24"><path class="dot" d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.2 1-4.1 2.5-1.8 3-.5 7.6 1.3 10.1.8 1.2 1.8 2.6 3.1 2.5 1.3 0 1.7-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.2-1.2 3-2.5.9-1.4 1.3-2.7 1.3-2.8 0 0-2.6-1-2.6-4.2ZM14 5.5c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.1-.6 2.8-1.4Z"/></symbol><symbol id="i-windows" viewBox="0 0 24 24"><path class="dot" d="M3.5 5.6 10.6 4.6v6.8H3.5Zm0 12.8 7.1 1v-6.8H3.5Zm8.1 1.1 8.9 1.2v-8.1h-8.9Zm0-15 0 6.9h8.9V3.3Z"/></symbol></svg>
+<div class="opts">
+
+<section class="opt" id="A">
+  <div class="otag"><b>A</b>One line<em>Recommended</em></div>
+  <div class="frames">
+    <div class="stage"><div class="inner"><div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
+      </svg></div>
+      <h2>Get Vellum.</h2>
+      <p class="lede">Early builds for macOS and Windows are on the way.<br>One email when one is worth your time.</p>
+      <form class="pill" onsubmit="return false"><input type="email" placeholder="you@studio.com" aria-label="Email"><button class="btn btn-primary" type="submit">Join the waitlist</button></form>
+      <p class="cap">Before</p>
+    </div></div>
+    <div class="stage"><div class="inner"><div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
+      </svg></div>
+      <h2>Get Vellum.</h2>
+      <p class="lede">Early builds for macOS and Windows are on the way.<br>One email when one is worth your time.</p>
+      <div class="done"><div class="done-l"><span class="ok"><svg viewBox="0 0 24 24"><path d="m5.5 12.5 4.2 4.2L18.5 8"/></svg></span>You're on the list.</div>
+        <div class="ask">
+          <span class="q">Your computer</span><div class="chips"><span class="chip2 on"><svg><use href="#i-apple"/></svg>macOS</span><span class="chip2"><svg><use href="#i-windows"/></svg>Windows</span></div>
+          <span class="q">Mostly for</span><div class="chips"><span class="chip2">Product design</span><span class="chip2">Short video</span><span class="chip2">AI products</span></div>
+        </div></div>
+      <p class="cap">After you join: computer already picked from the browser, change it if wrong</p>
+    </div></div>
+  </div>
+</section>
+
+
+<section class="opt" id="A2">
+  <div class="otag"><b>A2</b>Choose, then one line</div>
+  <div class="frames">
+    <div class="stage"><div class="inner"><div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
+      </svg></div>
+      <h2>Get Vellum.</h2>
+      <p class="lede">Early builds for macOS and Windows are on the way.<br>One email when yours is worth your time.</p>
+      <div class="ask first">
+        <span class="q">Your computer</span><div class="chips"><span class="chip2 on"><svg><use href="#i-apple"/></svg>macOS</span><span class="chip2"><svg><use href="#i-windows"/></svg>Windows</span></div>
+        <span class="q">Mostly for</span><div class="chips"><span class="chip2">Product design</span><span class="chip2">Short video</span><span class="chip2">AI products</span></div>
+      </div>
+      <form class="pill" onsubmit="return false"><input type="email" placeholder="you@studio.com" aria-label="Email"><button class="btn btn-primary" type="submit">Join the waitlist</button></form>
+      <p class="cap">Computer is already picked from the browser</p>
+    </div></div>
+    <div class="stage"><div class="inner"><div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
+      </svg></div>
+      <h2>Get Vellum.</h2>
+      <p class="lede">Early builds for macOS and Windows are on the way.<br>One email when yours is worth your time.</p>
+      <div class="done"><div class="done-l"><span class="ok"><svg viewBox="0 0 24 24"><path d="m5.5 12.5 4.2 4.2L18.5 8"/></svg></span>You're on the list for macOS.</div></div>
+      <p class="cap">After you join</p>
+    </div></div>
+  </div>
+</section>
+
+<section class="opt" id="B">
+  <div class="otag"><b>B</b>Pick your machine</div>
+  <div class="frames">
+    <div class="stage"><div class="inner"><div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
+      </svg></div>
+      <h2>Get Vellum.</h2>
+      <p class="lede">Early builds are on the way. Which one are you waiting for?</p>
+      <div class="tiles">
+        <div class="tile"><svg><use href="#i-apple"/></svg><span><b>macOS</b><i>Early build soon</i></span></div>
+        <div class="tile"><svg><use href="#i-windows"/></svg><span><b>Windows</b><i>Early build soon</i></span></div>
+      </div>
+      <p class="cap">Before</p>
+    </div></div>
+    <div class="stage"><div class="inner"><div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
+      </svg></div>
+      <h2>Get Vellum.</h2>
+      <p class="lede">Early builds are on the way. Which one are you waiting for?</p>
+      <div class="tiles">
+        <div class="tile on"><svg><use href="#i-apple"/></svg><span><b>macOS</b><i>Early build soon</i></span></div>
+        <div class="tile"><svg><use href="#i-windows"/></svg><span><b>Windows</b><i>Early build soon</i></span></div>
+      </div>
+      <form class="pill" onsubmit="return false"><input type="email" placeholder="you@studio.com" aria-label="Email"><button class="btn btn-primary" type="submit">Tell me</button></form>
+      <p class="cap">After you pick one</p>
+    </div></div>
+  </div>
+</section>
+
+<section class="opt" id="C">
+  <div class="otag"><b>C</b>One sentence</div>
+  <div class="frames">
+    <div class="stage"><div class="inner"><div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
+      </svg></div>
+      <h2>Get Vellum.</h2>
+      <p class="sent">Write to <span class="blank ph">you@studio.com</span> when a build is ready. I'll mostly use it for <span class="blank sel">product design</span>. <button class="btn btn-primary go" type="button">Join</button></p>
+      <p class="cap">Fill in the blanks</p>
+    </div></div>
+    <div class="stage"><div class="inner"><div class="get-mark" aria-hidden="true"><svg viewBox="0 0 100 100">
+        <defs><linearGradient id="gm-e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="gm-e1"/><stop offset="1" class="gm-e2"/></linearGradient>
+          <filter id="gm-f" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g transform="rotate(-8 50 50) translate(-2 -5)"><g class="gm-pane" stroke="url(#gm-e)" stroke-width="1"><rect x="63" y="36" width="23" height="28" rx="8"/><rect x="24" y="71" width="25" height="21" rx="7.5"/></g><g class="gm-on" filter="url(#gm-f)"><rect x="18" y="18" width="42" height="50" rx="13"/></g></g>
+      </svg></div>
+      <h2>获取 Vellum。</h2>
+      <p class="sent" lang="zh"><span class="cl">版本准备好时，</span><span class="cl">写信到 <span class="blank ph">you@studio.com</span>。</span><span class="cl">我主要用它做 <span class="blank sel">产品设计</span>。</span> <button class="btn btn-primary go" type="button">加入</button></p>
+      <p class="cap">中文</p>
+    </div></div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

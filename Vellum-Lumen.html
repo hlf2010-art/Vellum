@@ -5226,6 +5226,10 @@ function rcCriticProblems(v,pack,survey=null,strat=null){
   else if(obj&&!rcGrounded(obj,cites,pack))p.push('the objection must say what the cited cards actually say (a number or fact from them)');
   if(strat&&!rcCriticVerdict(v))p.push('"my_verdict" must be one of stronger, holds, weaker, reopen: the verdict the cards support');
   if(survey&&obj){const seen=new Set([...(survey.conflicts||[]).map(c=>c.id),...(survey.assumptions||[]).flatMap(a=>a.rests_on||[])]);if(seen.size&&!cites.some(k=>seen.has(k)))p.push(`the objection must follow from your survey: cite one of ${[...seen].join(", ")}`)}
+  if(strat&&obj&&["weaker","reopen"].includes(strat.verdict)){
+    const rank=k=>WEIGHTS[byId(pack.ids[k])?.weight]?.n??-1,newTop=Math.max(-1,...pack.newKeys.map(rank)),old=cites.filter(k=>/^[SXA]\d$/.test(k));
+    if(newTop>=3&&old.length&&old.every(k=>rank(k)<newTop))p.push("the objection sets weaker evidence against observed new evidence: an observed card outweighs a reported one, so object only with evidence as strong, or answer {\"stance\":\"none\"}");
+  }
   if(strat&&obj&&rcSameAs(obj,strat.why,zh))p.push("the objection only repeats Strategist's reading: say what it gets wrong, or answer {\"stance\":\"none\"}");
   if(!fix)p.push('an objection needs "fix": what to do about it');
   else if(!(zh?RC_DO_ZH:RC_DO_EN).test(fix)&&!(/\d/.test(fix)&&(zh?fix.length>=10:fix.split(/\s+/).length>=6)))p.push('"fix" must be something the designer can do: a check, a count, a question to ask someone, a test to run');
@@ -5303,7 +5307,9 @@ function rcRuleObjection(pack,strat,extra={}){
   const card=k=>byId(pack.ids[k]),zh=pack.zh,T=k=>`“${clip(titleOf(card(k)),48)}”`;
   const nKeys=pack.newKeys.filter(k=>card(k)),sKeys=Object.keys(pack.ids).filter(k=>/^S\d$/.test(k)&&card(k));
   const strong=w=>w==="observed";
-  if(["weaker","reopen"].includes(strat.verdict)&&nKeys.length&&nKeys.every(k=>!strong(card(k).weight))){
+  /* a "weaker" that already says the evidence is only hearsay needs no reminder */
+  const discounted=/\b(unverified|unsourced|unconfirmed|untested|anecdot\w*|hearsay|single|one (?:forum|blog|user|person|post|player|remark)|only reported|secondary)\b|未经证实|未证实|没有来源|转述|传闻|孤例|一条/i.test(String(strat.why||""));
+  if((strat.verdict==="reopen"||(strat.verdict==="weaker"&&!discounted))&&nKeys.length&&nKeys.every(k=>!strong(card(k).weight))){
     const s=sKeys.find(k=>strong(card(k).weight));
     if(s){const n=nKeys[0],nb=clip(String(fullTextOf(card(s))||"").replace(/\s+/g," ").trim().split(/(?<=[.!?])\s+|(?<=[。！？])/)[0],110).replace(/[.。…]+$/,"");
       return {stance:"object",rule:"weight",objection:L(`This reading moves the decision on ${T(n)}, which someone reported and nobody has watched happen, while ${T(s)} was observed${nb?`: ${nb}`:""}.`,`这个解读凭 ${T(n)} 就动摇了决定，可它只是转述，没人亲眼看到；而 ${T(s)} 是实测${nb?`：${nb}`:""}。`),

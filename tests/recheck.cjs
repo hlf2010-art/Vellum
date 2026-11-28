@@ -179,6 +179,21 @@ function serve() {
     pins = await pinsOn(r.dir);
     check('a reading that misses why an option was set aside gets Critic\'s objection from the words on the cards', pins.length === 1 && /\*\*Critic:\*\* “Combat test: corner toasts” speaks to why “.+” was set aside \(“Players ignore corner toasts during combat\.”\).+Fix: Check whether the reason for setting aside/.test(pins[0].note), JSON.stringify({ why, note: pins[0]?.note }));
 
+    /* 4d'. Strategist already discounts the hearsay: no reminder. An objection that sets a reported card against observed new evidence is dropped */
+    r = await fresh(); requests = [];
+    script = [S('weaker', 'One unverified remark says the glow is dim; it matters less than the observed tests.', ['N1']), { kind: 'survey', text: { conflicts: [], assumptions: [], my_verdict: 'weaker' } }];
+    await addEv(r, [['source', 'P04: glow too dim', 'One player said the rim glow is too dim to notice.', 'reported', 'conflicts']]);
+    await settle();
+    pins = await pinsOn(r.dir);
+    check('a "weaker" that already calls the evidence unverified gets no hearsay reminder', pins.length === 1 && /no strong objection/.test(pins[0].note), JSON.stringify(pins.map(x => x.note)));
+    const wd = await p.evaluate(() => {
+      const o = node('source', { title: 'Rain test', text: '4 of 6 missed the glow in rain.', weight: 'observed' }, { x: 0, y: 3000 }), q = node('source', { title: 'Retailer: players read pagers', text: 'A shop assistant said players read wrist pagers at a glance.', weight: 'reported' }, { x: 0, y: 3300 });
+      const pack = { ids: { N1: o.id, S1: q.id }, newKeys: ['N1'], zh: false };
+      const v = { my_verdict: 'weaker', stance: 'object', objection: 'The rain test shows 4 of 6 missed the glow, but the shop assistant said players read wrist pagers at a glance, so reopening goes too far.', cites: ['N1', 'S1'], fix: 'Run the rain crossing with 6 more players and count misses.' };
+      return { reopen: rcCriticProblems(v, pack, null, { verdict: 'reopen', why: 'x' }), holds: rcCriticProblems(v, pack, null, { verdict: 'holds', why: 'x' }) };
+    });
+    check('an objection that sets a reported card against observed new evidence is dropped; the same objection to "holds" is not', wd.reopen.some(x => /weaker evidence against observed/.test(x)) && !wd.holds.some(x => /weaker evidence against observed/.test(x)), JSON.stringify(wd));
+
     /* 4e. a broken survey is asked once more for Critic's verdict */
     r = await fresh(); requests = [];
     script = [S('weaker', 'Four of six players missed the glow in rain, which undercuts noticing the pager at a glance.', ['N1', 'S1']), { kind: 'survey', text: '{"conflicts":[' }, { kind: 'survey', text: { conflicts: [], assumptions: [], my_verdict: 'weaker' } }];

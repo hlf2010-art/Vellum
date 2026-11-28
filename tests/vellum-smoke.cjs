@@ -1146,7 +1146,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         const fk = userText(lastFork());
         check('before branching, Scout looks the idea up on Wikipedia with queries built from its place and period', JSON.stringify(wq) === JSON.stringify(['History of Shanghai', 'Shanghai in the 1930s']), JSON.stringify(wq));
         check('what Scout finds lands as Source drafts (Reported), linked to the idea, with the link kept', g.titles.join() === 'Shanghai International Settlement,History of Shanghai' && g.weights.every(w => w === 'reported:sketch') && g.linked && /wiki\/Shanghai_International_Settlement/.test(g.url || ''), JSON.stringify(g));
-        check('the fork reads them as background it must not contradict', /Extraterritoriality was abolished in 1943/.test(fk) && /never contradict it; it is not a checklist/.test(fk) && r.titles === 'Grounded A,Grounded B,Grounded C', fk.slice(0, 300));
+        check('the fork reads them as background it must not contradict', /Extraterritoriality was abolished in 1943/.test(fk) && /not kept it yet, so it may be off-topic/.test(fk) && /never contradict such a fact/.test(fk) && /Never change the subject/.test(fk) && r.titles === 'Grounded A,Grounded B,Grounded C', fk.slice(0, 300));
         await p.unroute(/wikipedia\.org\/w\/api\.php/);
         r = await forkOn('An RPG set in Shanghai about dock workers and the gangs who run the wharves in the 1920s and 1930s.');
         check("when Wikipedia can't be reached, Strategist still branches and says it worked from memory", r.titles === 'Grounded A,Grounded B,Grounded C' && r.toasts.some(t => /couldn't reach Wikipedia, so Strategist is working from memory/.test(t)), JSON.stringify(r));
@@ -1315,7 +1315,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         await wikiRoute(p); await p.evaluate(() => { SCOUT_GROUNDING = true; });
         await p.newBoard(); await p.type('An RPG about smugglers in 1930s Shanghai and the families who hide their goods in lane houses.'); await p.waitForTimeout(800);
         const gi = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
-        queue = [{ id: 'gr', match: 'Background Scout found on the web', text: dirs('Cloud') }];
+        queue = [{ id: 'gr', match: 'Background Scout looked up on the web', text: dirs('Cloud') }];
         await p.evaluate(id => select([id]), gi); await p.type('/fork 3'); await p.idle();
         check('with a Cloud API too, Scout looks things up first and the fork reads them', requests.some(x => x.matched === 'gr' && /Shanghai International Settlement/.test(x.full)) && await p.evaluate(() => board.nodes.filter(n => n.type === 'direction').map(n => n.title).join() === 'Cloud A,Cloud B,Cloud C'), JSON.stringify(requests.slice(-1).map(x => x.matched)));
         await p.evaluate(() => { SCOUT_GROUNDING = false; }); await p.unroute(/wikipedia\.org\/w\/api\.php/);

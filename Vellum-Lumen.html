@@ -5270,27 +5270,56 @@ async function rcCriticReview(pack,strat,signal){
   /* steps 1 and 2, and Critic's own verdict, before it sees Strategist's reading: a small model shown the reading first
      mostly agrees with it, so the comparison comes after */
   const sys1=`${ROLE.critic}\nNew evidence was kept after a decision. Before anyone's reading reaches you, survey the cards and form your own view. ${RC_RULES}\nReply in ${lang}. Return only one JSON object with these keys, in this order:\n- "conflicts": STEP 1. Every card that cuts against the decision D or its reason, as {"id":"N1","how":"what in that card cuts against it, with its numbers, max 20 words"}. Use [] when none does.\n- "assumptions": STEP 2. The two or three things D must be true about to work, as {"text":"the assumption, max 15 words","rests_on":["S2"],"status":"one of: observed, reported, untested, contradicted"}. rests_on lists the cards that back or contradict it; status says how well the cards back it.\n- "my_verdict": what the new evidence means for D, exactly one of: stronger, holds, weaker, reopen. ${RC_VERDICT_DEF}. Weigh it: one anecdote or an unsourced claim does not outweigh observed evidence.\nExample of the shape (not of the content): {"conflicts":[{"id":"N1","how":"7 of 10 tents had aluminium poles the magnet cannot hold"}],"assumptions":[{"text":"Most tents use steel poles","rests_on":["S2","N1"],"status":"contradicted"}],"my_verdict":"weaker"}`;
-  const r1=await askAI({system:sys1,prompt:`${pack.text}\n\nSurvey the cards: steps 1 and 2, then your own verdict.`,json:true,maxTokens:420,quiet:true,memoryMode:"compact",signal},()=>null);
-  if(!r1.live)return null;
-  const survey=rcSurveyClean(r1.v,pack),raw=[clip(JSON.stringify(r1.v),600)],blind=rcCriticVerdict(r1.v);
+  const survey1=()=>rcAsk({system:sys1,prompt:`${pack.text}\n\nSurvey the cards: steps 1 and 2, then your own verdict.`,maxTokens:420,signal},v=>!v||typeof v!=="object"?["not a JSON object"]:rcCriticVerdict(v)?[]:['"my_verdict" must be exactly one of: stronger, holds, weaker, reopen']);
+  const r1=await survey1()||await survey1();   // an unreadable answer is asked once more
+  if(!r1)return null;
+  const survey=rcSurveyClean(r1.v,pack),raw=[...r1.raw],blind=rcCriticVerdict(r1.v);
   survey.verdict=blind||undefined;
   /* Critic read the evidence the same way: nothing to object to, and no further call */
-  if(blind&&!rcDisagrees(blind,strat.verdict))return {stance:"quiet",verdict:blind,steps:survey,dropped:[],raw};
+  if(blind&&!rcDisagrees(blind,strat.verdict))return rcRuleObjection(pack,strat,{verdict:blind,steps:survey,raw})||{stance:"quiet",verdict:blind,steps:survey,dropped:[],raw};
   const surveyTxt=[...survey.conflicts.map(c=>`- ${c.id} cuts against D: ${c.how}`),...survey.assumptions.map(a=>`- D assumes: ${a.text} (${a.status||"?"}; cards: ${a.rests_on.join(", ")||"none"})`)].join("\n")||"- nothing cuts against D, and no assumption stands out";
   /* step 3: Critic's reading differs from Strategist's: say why with the cards and a fix, or concede */
-  const sys3=`${ROLE.critic}\nYou surveyed the cards and formed your own verdict before seeing Strategist's reading of the new evidence. ${RC_RULES}\nSTEP 3. ${blind?`Your verdict was "${blind}"; Strategist's is "${strat.verdict}".`:"Decide which verdict the cards support, then compare it with Strategist's."} Verdicts: ${RC_VERDICT_DEF}.\nRe-read the cards. If Strategist is right after all, or both verdicts say the decision stands (stronger or holds), answer stance "none": that is a full, good answer.\nIf the cards show Strategist is wrong (one anecdote or an unsourced claim treated as proof, observed evidence brushed aside, a conflict or contradicted assumption from your survey that the reading misses, or new evidence that removes the reason an option was set aside), object: say what the reading gets wrong and what the cited cards actually show (use their numbers), and give one fix the designer can do (a check, a count, a question to ask someone, a test to run). Never argue for its own sake: a thin objection is worse than none.\nReply in ${lang}. Return only one JSON object, "my_verdict" first.\nNothing to object to: {"my_verdict":"${strat.verdict}","stance":"none"}\nAn objection: {"my_verdict":"weaker","stance":"object","objection":"max 40 words","cites":["N1","S2"],"fix":"max 22 words"}\nExample of an objection (shape, not content): {"my_verdict":"weaker","stance":"object","objection":"The reading says the decision holds, but N1 found 7 of 10 tents with aluminium poles, so the steel-pole half of the reason (S2) fails.","cites":["N1","S2"],"fix":"Count pole materials at the next two campsite visits."}`;
+  const sys3=`${ROLE.critic}\nYou surveyed the cards and formed your own verdict before seeing Strategist's reading of the new evidence. ${RC_RULES}\nSTEP 3. ${blind?`Your verdict was "${blind}"; Strategist's is "${strat.verdict}".`:"Decide which verdict the cards support, then compare it with Strategist's."} Verdicts: ${RC_VERDICT_DEF}.\nExplain the difference with the cards. Answer stance "none" only if, re-reading, you find you misread a card, or both verdicts say the decision stands (stronger or holds).\nIf the cards show Strategist is wrong (one anecdote or an unsourced claim treated as proof, observed evidence brushed aside, a conflict or contradicted assumption from your survey that the reading misses, or new evidence that removes the reason an option was set aside), object: say what the reading gets wrong and what the cited cards actually show (use their numbers), and give one fix the designer can do (a check, a count, a question to ask someone, a test to run). Never argue for its own sake: a thin objection is worse than none.\nReply in ${lang}. Return only one JSON object, "my_verdict" first.\nNothing to object to: {"my_verdict":"${strat.verdict}","stance":"none"}\nAn objection: {"my_verdict":"weaker","stance":"object","objection":"max 40 words","cites":["N1","S2"],"fix":"max 22 words"}\nExample of an objection (shape, not content): {"my_verdict":"weaker","stance":"object","objection":"The reading says the decision holds, but N1 found 7 of 10 tents with aluminium poles, so the steel-pole half of the reason (S2) fails.","cites":["N1","S2"],"fix":"Count pole materials at the next two campsite visits."}`;
   const prompt3=`${pack.text}\n\nYour survey:\n${surveyTxt}${blind?`\n- your verdict: ${blind}`:""}\n\n${reading}\n\nStep 3: your verdict, then object with evidence and a fix, or answer stance "none".`;
   const mineOf=v=>rcCriticVerdict(v)||blind;
   const same=v=>!rcQuiet(v)&&!!mineOf(v)&&!rcDisagrees(mineOf(v),strat.verdict);
   const probsOf=v=>{const p=rcCriticProblems(v,pack,survey,strat);return blind?p.filter(x=>!/^"my_verdict"/.test(x)):p};
   const r=await rcAsk({system:sys3,prompt:prompt3,maxTokens:300,signal},v=>same(v)?[]:probsOf(v));
-  if(!r)return {stance:"quiet",verdict:blind,steps:survey,dropped:["no answer to step 3"],raw};
+  if(!r)return rcRuleObjection(pack,strat,{verdict:blind,steps:survey,raw})||{stance:"quiet",verdict:blind,steps:survey,dropped:["no answer to step 3"],raw};
   raw.push(...r.raw);
   const v=r.v,probs=probsOf(v),mine=mineOf(v);
   /* the same news as Strategist's: no objection, however it is worded */
-  if(same(v))return {stance:"quiet",verdict:mine,steps:survey,dropped:[`agrees on the verdict (${mine})`],raw};
+  if(same(v))return rcRuleObjection(pack,strat,{steps:survey,raw})||{stance:"quiet",verdict:mine,steps:survey,dropped:[`agrees on the verdict (${mine})`],raw};
   if(!probs.length&&!rcQuiet(v))return {stance:"object",verdict:mine,objection:String(v.objection).trim(),fix:String(v.fix).trim(),cites:rcCiteKeys(v),steps:survey,dropped:[],raw};
-  return {stance:"quiet",verdict:mine,steps:survey,dropped:probs,raw};
+  return rcRuleObjection(pack,strat,{steps:survey,raw})||{stance:"quiet",verdict:mine,steps:survey,dropped:probs,raw};
+}
+/* Two mistakes a small model makes even when it reads every card, and that the board itself can show without a model:
+   - the reading moves the decision (weaker, reopen) on new evidence nobody has watched happen, while what the decision
+     rests on was observed: the weights are on the cards
+   - the reading says the decision stands (stronger, holds) while new evidence speaks to the very reason an option was set
+     aside: the words are on the cards
+   Each comes back as Critic's objection with the cards it rests on and a fix; never as a change to the decision. */
+function rcRuleObjection(pack,strat,extra={}){
+  const card=k=>byId(pack.ids[k]),zh=pack.zh,T=k=>`“${clip(titleOf(card(k)),48)}”`;
+  const nKeys=pack.newKeys.filter(k=>card(k)),sKeys=Object.keys(pack.ids).filter(k=>/^S\d$/.test(k)&&card(k));
+  const strong=w=>w==="observed";
+  if(["weaker","reopen"].includes(strat.verdict)&&nKeys.length&&nKeys.every(k=>!strong(card(k).weight))){
+    const s=sKeys.find(k=>strong(card(k).weight));
+    if(s){const n=nKeys[0],nb=clip(String(fullTextOf(card(s))||"").replace(/\s+/g," ").trim().split(/(?<=[.!?])\s+|(?<=[。！？])/)[0],110).replace(/[.。…]+$/,"");
+      return {stance:"object",rule:"weight",objection:L(`This reading moves the decision on ${T(n)}, which someone reported and nobody has watched happen, while ${T(s)} was observed${nb?`: ${nb}`:""}.`,`这个解读凭 ${T(n)} 就动摇了决定，可它只是转述，没人亲眼看到；而 ${T(s)} 是实测${nb?`：${nb}`:""}。`),
+        fix:L(`Test the claim in ${T(n)} once yourself before weighing it against ${T(s)}.`,`先亲自测一次 ${T(n)} 里的说法，再拿它和 ${T(s)} 比较。`),cites:[n,s],...extra}}
+  }
+  if(["stronger","holds"].includes(strat.verdict)){
+    const toks=t=>zh?new Set(rcGrams(t)):new Set(rcWords(t).map(w=>w.replace(/s$/,"")));
+    for(const a of Object.keys(pack.ids).filter(k=>/^A\d$/.test(k))){
+      const why=String(card(a)?.whyNot||"").trim();if(!why)continue;
+      const A=toks(why);
+      for(const n of nKeys){const N=toks(`${titleOf(card(n))} ${fullTextOf(card(n))||""}`);let hit=0;for(const w of A)if(N.has(w))hit++;
+        if(hit>=(zh?2:3))return {stance:"object",rule:"aside",objection:L(`${T(n)} speaks to why ${T(a)} was set aside (“${clip(why,90)}”), and this reading doesn't weigh that.`,`${T(n)} 正好说到当初为什么搁置 ${T(a)}（“${clip(why,60)}”），这个解读没有考虑这一点。`),
+          fix:L(`Check whether the reason for setting aside ${T(a)} still holds against ${T(n)}, then decide whether to reopen.`,`对照 ${T(n)} 核实搁置 ${T(a)} 的理由是否还成立，再决定要不要重新选择。`),cites:[n,a],...extra}}
+    }
+  }
+  return null;
 }
 /* the pack's ids are for the model; the designer reads card names: "(N1)" goes, a bare "S2" becomes the card's title */
 function rcHuman(t,pack){
@@ -5321,6 +5350,10 @@ async function runRecheck(dirId,obs){
       if(c?.stance==="object")critic={objection:rcHuman(c.objection,pack),fix:rcHuman(c.fix,pack),cites:c.cites};
       else if(c?.dropped?.length)dropped=c.dropped;
       job.critic=critic?"objects":c?"quiet":"none";   // quiet: Critic looked and found no strong objection
+    }else{
+      /* "still holds" on evidence nobody marked as countering: no model call, but the board can still show a missed reason */
+      const c=rcRuleObjection(pack,strat);
+      if(c){critic={objection:c.objection,fix:c.fix,cites:c.cites};job.critic="objects"}
     }
     const cites=[...new Set([...strat.cites,...(critic?.cites||[])])].map(k=>pack.ids[k]).filter(Boolean);
     return finishRc(job,"done","",{strat,crit:critic,cites,engine:s.engine,ms:Math.round(performance.now()-t0),dropped});

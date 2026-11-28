@@ -11,12 +11,12 @@ const R = {
   en: {
     strat: { verdict: 'reopen', why: '8 of 10 desks had a clamp edge, which removes the reason the clip-on fan was set aside, so the choice of the tower is worth a second look.', cites: ['N1', 'A1'], next: 'Compare the noise of the clip-on fan against the tower on 3 calls.' },
     survey: { conflicts: [{ id: 'N1', how: '8 of 10 desks had a clamp edge' }], assumptions: [{ text: 'Most desks have no clamp edge', rests_on: ['N1'], status: 'contradicted' }, { text: 'Only a tower can be quiet enough', rests_on: ['S1'], status: 'untested' }] },
-    object: { stance: 'object', objection: 'Clamp edges answer whether the clip-on fits, not the noise that drove the choice: 9 of 12 people turned their fan off on calls, and nobody has measured the clip-on on a call.', cites: ['N1', 'S1'], fix: 'Measure the clip-on fan on 3 test calls and note how many participants notice it.' },
+    object: { my_verdict: 'holds', stance: 'object', objection: 'Clamp edges answer whether the clip-on fits, not the noise that drove the choice: 9 of 12 people turned their fan off on calls, and nobody has measured the clip-on on a call.', cites: ['N1', 'S1'], fix: 'Measure the clip-on fan on 3 test calls and note how many participants notice it.' },
   },
   zh: {
     strat: { verdict: 'reopen', why: '10 张桌子里 8 张有可夹的边，当初放下夹式小风扇的理由不成立了，选塔扇这件事值得再看一眼。', cites: ['N1', 'A1'], next: '在 3 次会议里对比夹式小风扇和塔扇的噪音。' },
     survey: { conflicts: [{ id: 'N1', how: '10 张桌子里 8 张有可夹的边' }], assumptions: [{ text: '大多数桌子没有能夹的边', rests_on: ['N1'], status: 'contradicted' }] },
-    object: { stance: 'object', objection: '能不能夹只回答了装得上，没回答噪音：12 名参与者中有 9 人开会时会关掉风扇，而夹式小风扇在会议里的噪音还没人测过。', cites: ['N1', 'S1'], fix: '在 3 次测试会议里试用夹式小风扇，记录有几位参会者注意到它。' },
+    object: { my_verdict: 'holds', stance: 'object', objection: '能不能夹只回答了装得上，没回答噪音：12 名参与者中有 9 人开会时会关掉风扇，而夹式小风扇在会议里的噪音还没人测过。', cites: ['N1', 'S1'], fix: '在 3 次测试会议里试用夹式小风扇，记录有几位参会者注意到它。' },
   },
 };
 const RUNS = [['light', 'en', 'object'], ['dark', 'zh', 'object'], ['light', 'zh', 'quiet'], ['dark', 'en', 'quiet']];
@@ -27,7 +27,7 @@ let cur = null;
     if (q.url.startsWith('/Vellum-Lumen.html')) { r.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return fs.createReadStream(FILE).pipe(r); }
     if (q.method === 'POST' && q.url.endsWith('/chat/completions')) {
       let b = ''; q.on('data', c => b += c); q.on('end', () => {
-        const x = R[cur[1]], v = /Survey the cards: steps 1 and 2/.test(b) ? x.survey : /Step 3: object with evidence/.test(b) ? (cur[2] === 'object' ? x.object : { stance: 'none' }) : x.strat;
+        const x = R[cur[1]], v = /Survey the cards: steps 1 and 2/.test(b) ? x.survey : /Step 3: your own verdict/.test(b) ? (cur[2] === 'object' ? x.object : { stance: 'none' }) : x.strat;
         r.writeHead(200, { 'Content-Type': 'text/event-stream' }); r.write('data: ' + JSON.stringify({ choices: [{ delta: { content: JSON.stringify(v) } }] }) + '\n\n'); r.end('data: [DONE]\n\n');
       }); return;
     }

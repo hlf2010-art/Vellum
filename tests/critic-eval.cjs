@@ -77,7 +77,7 @@ function serve() { return new Promise(res => { const s = http.createServer((q, r
       if (typeof rcCriticReview === 'function') {
         const v = await rcCriticReview(pack, strat);
         if (!v) return { stance: 'no answer', pack: pack.text };
-        return { stance: v.stance, objection: v.objection || '', fix: v.fix || '', cites: v.cites || [], steps: v.steps || null, dropped: v.dropped || [], raw: v.raw || [], pack: pack.text };
+        return { stance: v.stance, criticVerdict: v.verdict || '', objection: v.objection || '', fix: v.fix || '', cites: v.cites || [], steps: v.steps || null, dropped: v.dropped || [], raw: v.raw || [], pack: pack.text };
       }
       rcRunning = { job: {} };
       const v = await rcCritic(pack, strat); const raw = rcRunning.job.rawCritic || []; rcRunning = null;
@@ -121,7 +121,7 @@ function serve() { return new Promise(res => { const s = http.createServer((q, r
   for (const r of rows) {
     if (!r.flagged) { md.push(`### ${r.case} #${r.i + 1}: not flagged`, ''); continue; }
     md.push(`### ${r.case} #${r.i + 1}: ${r.kind} (wants: ${r.want})`, '',
-      `- **Shown:** ${r.shown ? `${r.objection} · Fix: ${r.fix} · cites ${r.cites.join(', ')}` : r.stance}`,
+      `- **Shown:** ${r.shown ? `${r.objection} · Fix: ${r.fix} · cites ${r.cites.join(', ')}` : r.stance}${r.criticVerdict ? ` · Critic's own verdict: ${r.criticVerdict} (Strategist: ${CASES.find(c => c.id === r.case).strat.verdict})` : ''}`,
       ...(r.steps ? [`- Steps: \`${JSON.stringify(r.steps).slice(0, 700)}\``] : []),
       ...(r.raw || []).map((x, k) => `- Reply ${k + 1}: \`${String(x).slice(0, 700)}\``),
       `- ${r.right ? 'right' : 'WRONG'}${r.shown ? ` · grounded: ${r.grounded ? 'yes' : 'no'} · actionable: ${r.actionable ? 'yes' : 'no'}` : ''}${(r.dropped || []).length ? ` · watchdog: ${r.dropped.join('; ')}` : ''} · ${r.seconds.toFixed(0)} s, ${r.calls} calls`, '');

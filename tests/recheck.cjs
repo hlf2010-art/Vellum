@@ -23,7 +23,7 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
 
 /* the scripted model: each reply is picked by what the request is (strategist, critic, a repair), in order */
 let script = [], requests = [];
-const kindOf = flat => /Fix only these problems/.test(flat) ? 'repair' : /Survey the cards: steps 1 and 2/.test(flat) ? 'survey' : /Step 3: object with evidence/.test(flat) ? 'critic' : /re-checking a decision/.test(flat) ? 'strategist' : 'other';
+const kindOf = flat => /Fix only these problems/.test(flat) ? 'repair' : /Survey the cards: steps 1 and 2/.test(flat) ? 'survey' : /Step 3: your own verdict/.test(flat) ? 'critic' : /re-checking a decision/.test(flat) ? 'strategist' : 'other';
 function serve() {
   return new Promise(res => {
     const srv = http.createServer((req, rsp) => {
@@ -79,7 +79,7 @@ function serve() {
     let r = await fresh(); requests = [];
     script = [S('weaker', 'Rain hides the glow for most players, which undercuts the pager being noticed at a glance.', ['N1', 'S1'], 'Watch three players cross the rooftop in rain.'),
       SV([{ id: 'N1', how: '4 of 6 missed the glow in rain' }], [{ text: 'Players notice the glow at a glance', rests_on: ['N1'], status: 'contradicted' }]),
-      { kind: 'critic', text: { stance: 'object', objection: 'The rain test (N1) had six players and no haptic cue, so it says the glow alone fails, not the pager.', cites: ['N1'], fix: 'Add a short wrist buzz and rerun the rain crossing.' } }];
+      { kind: 'critic', text: { my_verdict: 'holds', stance: 'object', objection: 'The rain test (N1) had six players and no haptic cue, so it says the glow alone fails, not the pager.', cites: ['N1'], fix: 'Add a short wrist buzz and rerun the rain crossing.' } }];
     const [e1] = await addEv(r, [['source', 'Playtest 3: pager missed in rain', '4 of 6 missed the glow in rain.', 'observed', 'conflicts']]);
     await settle();
     let pins = await pinsOn(r.dir);
@@ -130,9 +130,9 @@ function serve() {
 
     /* 4b. thin objections the old watchdog let through: vague fix, nothing from the cards, a repeat of Strategist */
     const thin = [
-      ['a fix that is only advice ("be careful")', { stance: 'object', objection: 'Five of six players finding the pager in one market does not mean it works on the rooftop route.', cites: ['N1'], fix: 'Be careful about drawing conclusions.' }, /something the designer can do/],
-      ['an objection that says nothing its cited card says', { stance: 'object', objection: 'Battery life could suffer badly when the emissive curve runs at full brightness all evening long.', cites: ['N1'], fix: 'Measure battery drain over a two-hour session.' }, /what the cited cards actually say/],
-      ['an objection that only repeats Strategist', { stance: 'object', objection: 'Players found the pager in the dark market, which is the decision\'s main reason.', cites: ['N1'], fix: 'Watch three more players in the market.' }, /only repeats Strategist/],
+      ['a fix that is only advice ("be careful")', { my_verdict: 'weaker', stance: 'object', objection: 'Five of six players finding the pager in one market does not mean it works on the rooftop route.', cites: ['N1'], fix: 'Be careful about drawing conclusions.' }, /something the designer can do/],
+      ['an objection that says nothing its cited card says', { my_verdict: 'weaker', stance: 'object', objection: 'Battery life could suffer badly when the emissive curve runs at full brightness all evening long.', cites: ['N1'], fix: 'Measure battery drain over a two-hour session.' }, /what the cited cards actually say/],
+      ['an objection that only repeats Strategist', { my_verdict: 'weaker', stance: 'object', objection: 'Players found the pager in the dark market, which is the decision\'s main reason.', cites: ['N1'], fix: 'Watch three more players in the market.' }, /only repeats Strategist/],
     ];
     for (const [name, bad, why] of thin) {
       r = await fresh(); requests = [];
@@ -143,6 +143,14 @@ function serve() {
       const rep = requests.find(q => q.kind === 'repair')?.flat || '';
       check(`dropped: ${name}`, why.test(rep) && pins.length === 1 && /\*\*Critic:\*\* no strong objection\./.test(pins[0].note) && !/Critic:\*\* (?!no strong objection)/.test(pins[0].note), JSON.stringify({ rep: rep.slice(-300), note: pins[0]?.note }));
     }
+
+    /* 4b'. an objection whose own verdict is the same news as Strategist's is no objection: quiet, and no repair */
+    r = await fresh(); requests = [];
+    script = [S('stronger', 'Players found the pager in the dark market, which is the decision\'s main reason.', ['N1', 'S1']), SV([]), { kind: 'critic', text: { my_verdict: 'holds', stance: 'object', objection: 'Six players in one night market is a small sample, so the pager might still be missed on the rooftop.', cites: ['N1'], fix: 'Watch six more players cross the rooftop at night.' } }];
+    await addEv(r, [['source', 'Night market test', '5 of 6 found the pager in the dark market.', 'observed', 'supports']]);
+    await settle();
+    pins = await pinsOn(r.dir);
+    check('Critic agreeing the decision stands ("holds" against "stronger") does not object: no repair, no objection shown', requests.map(q => q.kind).join() === 'strategist,survey,critic' && pins.length === 1 && /\*\*Critic:\*\* no strong objection\./.test(pins[0].note) && !/small sample/.test(pins[0].note), JSON.stringify({ k: requests.map(q => q.kind), note: pins[0]?.note }));
 
     /* 4c. Critic finds nothing worth saying: it says so, in one short line, and makes no repair */
     r = await fresh(); requests = [];
@@ -194,7 +202,7 @@ function serve() {
 
     /* 7b. Chinese objection: grounded in the card's own words, with a fix to do */
     r = await fresh(); requests = [];
-    script = [S('holds', '雨天测试人数太少，决定仍然成立。', ['N1']), SV([{ id: 'N1', how: '6 人中 4 人没看到光晕' }]), { kind: 'critic', text: { stance: 'object', objection: '这个解读低估了反证：雨天测试里 6 人中 4 人没看到光晕，正好打在“一眼就能注意到”这个理由上。', cites: ['N1'], fix: '雨天再找 6 名玩家走一遍屋顶路线，记录有几人注意到。' } }];
+    script = [S('holds', '雨天测试人数太少，决定仍然成立。', ['N1']), SV([{ id: 'N1', how: '6 人中 4 人没看到光晕' }]), { kind: 'critic', text: { my_verdict: 'weaker', stance: 'object', objection: '这个解读低估了反证：雨天测试里 6 人中 4 人没看到光晕，正好打在“一眼就能注意到”这个理由上。', cites: ['N1'], fix: '雨天再找 6 名玩家走一遍屋顶路线，记录有几人注意到。' } }];
     await addEv(r, [['source', '雨天测试', '6 人中 4 人没看到光晕。', 'observed', 'conflicts']]);
     await settle();
     pins = await pinsOn(r.dir);

@@ -5209,6 +5209,11 @@ function rcGrounded(t,cites,pack){
   return hit>=(zh?2:1);
 }
 function rcSameAs(a,b,zh){const A=new Set(zh?rcGrams(a):rcWords(a)),B=new Set(zh?rcGrams(b):rcWords(b));if(!A.size||!B.size)return false;let n=0;for(const w of A)if(B.has(w))n++;return n/Math.min(A.size,B.size)>.75}
+/* Critic first says which verdict the cards support. An objection counts only when that verdict differs from Strategist's in
+   a way the designer would act on: "stronger" against "holds" is the same news (the decision stands), so it is no objection */
+const RC_STANDS=new Set(["stronger","holds"]);
+function rcCriticVerdict(v){const raw=String(v?.my_verdict??"").toLowerCase().replace(/[^a-z\s-]/g," ").replace(/\s+/g," ").trim();const hit=Object.keys(RC_SYN).filter(k=>RC_SYN[k].test(raw)||raw.split(" ").includes(k));return hit.length===1?hit[0]:""}
+function rcDisagrees(mine,theirs){return !!mine&&!!theirs&&mine!==theirs&&!(RC_STANDS.has(mine)&&RC_STANDS.has(theirs))}
 const rcQuiet=v=>{const st=String(v?.stance||"").toLowerCase();return v?.agree===true||String(v?.agree).toLowerCase()==="true"||/^(none|no|agree|agrees|quiet|no strong objection|no_objection|no objection)$/.test(st)};
 function rcCriticProblems(v,pack,survey=null,strat=null){
   if(!v||typeof v!=="object")return ["not a JSON object"];
@@ -5219,6 +5224,7 @@ function rcCriticProblems(v,pack,survey=null,strat=null){
   if(!cites.length||cites.some(k=>!pack.ids[k]))p.push('an objection must cite the pack ids it rests on');
   else if(!cites.some(k=>/^[SXAN]\d$/.test(k)))p.push('cite the evidence or set-aside option the objection rests on (an S, X, A or N card), not only the decision');
   else if(obj&&!rcGrounded(obj,cites,pack))p.push('the objection must say what the cited cards actually say (a number or fact from them)');
+  if(strat&&!rcCriticVerdict(v))p.push('"my_verdict" must be one of stronger, holds, weaker, reopen: the verdict the cards support');
   if(survey&&obj){const seen=new Set([...(survey.conflicts||[]).map(c=>c.id),...(survey.assumptions||[]).flatMap(a=>a.rests_on||[])]);if(seen.size&&!cites.some(k=>seen.has(k)))p.push(`the objection must follow from your survey: cite one of ${[...seen].join(", ")}`)}
   if(strat&&obj&&rcSameAs(obj,strat.why,zh))p.push("the objection only repeats Strategist's reading: say what it gets wrong, or answer {\"stance\":\"none\"}");
   if(!fix)p.push('an objection needs "fix": what to do about it');
@@ -5267,13 +5273,16 @@ async function rcCriticReview(pack,strat,signal){
   const survey=rcSurveyClean(r1.v,pack),raw=[clip(JSON.stringify(r1.v),600)];
   const surveyTxt=[...survey.conflicts.map(c=>`- ${c.id} cuts against D: ${c.how}`),...survey.assumptions.map(a=>`- D assumes: ${a.text} (${a.status||"?"}; cards: ${a.rests_on.join(", ")||"none"})`)].join("\n")||"- nothing cuts against D, and no assumption stands out";
   /* step 3: object, or say there is no strong objection */
-  const sys3=`${ROLE.critic}\nYou are reviewing Strategist's reading of new evidence on a decision. You have already surveyed the cards. ${RC_RULES}\nSTEP 3. Decide whether the reading has a real flaw. Real flaws: the verdict is too strong or too weak for the weight of the evidence (one anecdote or an unsourced claim treated as proof, or observed evidence brushed aside); the reading misses a conflict or a contradicted assumption from your survey; or it misses that new evidence removes the reason an option was set aside. A wording quibble or a general worry is not a flaw.\nWhen there is a real flaw, object: say what the reading gets wrong and what the cited cards actually show (use their numbers), and give one fix the designer can do (a check, a count, a question to ask someone, a test to run). Never argue for its own sake: a thin objection is worse than none. When you find no real flaw, answer {"stance":"none"}.\nReply in ${lang}. Return only one JSON object. No real flaw: {"stance":"none"}. A real flaw: {"stance":"object","objection":"max 40 words","cites":["N1","S2"],"fix":"max 22 words"}\nExample of an objection (shape, not content): {"stance":"object","objection":"The reading says the decision holds, but N1 found 7 of 10 tents with aluminium poles, so the steel-pole half of the reason (S2) fails.","cites":["N1","S2"],"fix":"Count pole materials at the next two campsite visits."}`;
-  const prompt3=`${pack.text}\n\n${reading}\n\nYour survey:\n${surveyTxt}\n\nStep 3: object with evidence and a fix, or answer {"stance":"none"}.`;
-  const r=await rcAsk({system:sys3,prompt:prompt3,maxTokens:300,signal},v=>rcCriticProblems(v,pack,survey,strat));
+  const sys3=`${ROLE.critic}\nYou are reviewing Strategist's reading of new evidence on a decision. You have already surveyed the cards. ${RC_RULES}\nSTEP 3. First decide, on your own, which verdict the cards support: stronger = the new evidence backs the decision; holds = relevant but does not change the case, or does not really bear on it; weaker = undercuts part of the case; reopen = undercuts the core reason, or favors an option set aside. Then compare it with Strategist's verdict.\nWhen your verdict is the same as Strategist's, or both say the decision stands (stronger or holds), there is nothing to object to: answer stance "none", even if you have small doubts. Most readings are sound; saying "none" is the normal answer.\nObject only when your verdict differs in a way the designer would act on, for a reason the cards show: one anecdote or an unsourced claim treated as proof, observed evidence brushed aside, a conflict or contradicted assumption from your survey that the reading misses, or new evidence that removes the reason an option was set aside. Then say what the reading gets wrong and what the cited cards actually show (use their numbers), and give one fix the designer can do (a check, a count, a question to ask someone, a test to run). Never argue for its own sake: a thin objection is worse than none.\nReply in ${lang}. Return only one JSON object, "my_verdict" first.\nNothing to object to: {"my_verdict":"holds","stance":"none"}\nAn objection: {"my_verdict":"weaker","stance":"object","objection":"max 40 words","cites":["N1","S2"],"fix":"max 22 words"}\nExample of an objection (shape, not content): {"my_verdict":"weaker","stance":"object","objection":"The reading says the decision holds, but N1 found 7 of 10 tents with aluminium poles, so the steel-pole half of the reason (S2) fails.","cites":["N1","S2"],"fix":"Count pole materials at the next two campsite visits."}`;
+  const prompt3=`${pack.text}\n\n${reading}\n\nYour survey:\n${surveyTxt}\n\nStep 3: your own verdict, then object with evidence and a fix, or answer stance "none".`;
+  const same=v=>!rcQuiet(v)&&!!rcCriticVerdict(v)&&!rcDisagrees(rcCriticVerdict(v),strat.verdict);
+  const r=await rcAsk({system:sys3,prompt:prompt3,maxTokens:300,signal},v=>same(v)?[]:rcCriticProblems(v,pack,survey,strat));
   if(!r)return {stance:"quiet",steps:survey,dropped:["no answer to step 3"],raw};
   raw.push(...r.raw);
-  const v=r.v,probs=rcCriticProblems(v,pack,survey,strat);
-  if(!probs.length&&!rcQuiet(v))return {stance:"object",objection:String(v.objection).trim(),fix:String(v.fix).trim(),cites:rcCiteKeys(v),steps:survey,dropped:[],raw};
+  const v=r.v,probs=rcCriticProblems(v,pack,survey,strat),mine=rcCriticVerdict(v);
+  /* the same news as Strategist's: no objection, however it is worded */
+  if(same(v))return {stance:"quiet",verdict:mine,steps:survey,dropped:[`agrees on the verdict (${mine})`],raw};
+  if(!probs.length&&!rcQuiet(v))return {stance:"object",verdict:mine,objection:String(v.objection).trim(),fix:String(v.fix).trim(),cites:rcCiteKeys(v),steps:survey,dropped:[],raw};
   return {stance:"quiet",steps:survey,dropped:probs,raw};
 }
 /* the pack's ids are for the model; the designer reads card names: "(N1)" goes, a bare "S2" becomes the card's title */

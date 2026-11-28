@@ -148,6 +148,37 @@ const state = (p, ids) => p.evaluate(ids => {
       check('no page errors (C8)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
+    // D. a group of images stacks into a deck and spreads back
+    {
+      const p = await open(browser, base);
+      const ids = await p.evaluate(() => {
+        persistNow(); board = blank('Deck'); sel = [];
+        const keys = Object.keys(MEDIA).filter(k => String(MEDIA[k]).startsWith('data:image') || /\.(jpe?g|png|webp)/i.test(k)).slice(0, 4);
+        const g = node('group', { title: 'Shade generations' }, { x: 80, y: 100 }); g.gw = 760; g.gh = 860;
+        const ims = keys.map((k, i) => node('image', { media: k, title: 'Shade study ' + (i + 1) }, { x: 110 + (i % 2) * 350, y: 190 + Math.floor(i / 2) * 380 }));
+        const claim = node('idea', { kind: 'Claim', text: 'An accordion shade reads as friendly.' }, { x: 1000, y: 180 });
+        renderAll(); makeRelation(ims[0].id, claim.id, { rel: 'supports' }); renderAll(); focusNodes(visibleNodes(), .9);
+        return { g: g.id, ims: ims.map(n => n.id), claim: claim.id, n: keys.length, gw: nodeW(g), gh: nodeH(g) };
+      });
+      const sup0 = await p.evaluate(i => groundOf(byId(i.claim)).sup.length, ids);
+      await p.hover(`[data-id="${ids.g}"] h4`); await p.waitForTimeout(200);
+      check('a group offers Stack on its header', await p.evaluate(i => /Stack/.test(document.querySelector(`[data-id="${i.g}"] [data-a="grp-stack"]`)?.textContent || ''), ids));
+      await p.click(`[data-id="${ids.g}"] [data-a="grp-stack"]`); await p.waitForTimeout(800);
+      let s = await p.evaluate(i => ({ hid: i.ims.every(id => byId(id).hidden && byId(id).cl?.kind === 'deck'), n: document.querySelector('.cloth.deck .dk-n')?.textContent, img: !!document.querySelector('.cloth.deck .dk-top img'), w: nodeW(byId(i.g)), h: nodeH(byId(i.g)), btn: document.querySelector(`[data-id="${i.g}"] [data-a="grp-stack"]`)?.textContent, wires: document.querySelectorAll('#wires path.cloth-w').length, sup: groundOf(byId(i.claim)).sup.length, top: document.getElementById('archiveBtn')?.hidden, toast: [...document.querySelectorAll('#toasts .toast span')].map(x => x.textContent).pop() }), ids);
+      check('Stack squares the cards into one deck with the first image on top and the count on the corner', ids.n >= 2 && s.hid && s.n === String(ids.n) && s.img, JSON.stringify(s));
+      check('the group frame shrinks around the deck and its button says Spread out', s.w < ids.gw && s.h < ids.gh && /Spread out/.test(s.btn), JSON.stringify(s));
+      check('a relation from a stacked card stops at the deck; evidence still counts', s.wires === 1 && s.sup === sup0, JSON.stringify(s));
+      check('stacked cards are on the canvas as a deck, so the top bar does not count them as put away', s.top === true, String(s.top));
+      check('the toast says Stacked with Undo', /Stacked \d cards/.test(s.toast), s.toast);
+      await p.evaluate(i => { byId(i.g).x += 120; renderAll(); }, ids); await p.waitForTimeout(150);
+      await p.click('.cloth.deck'); await p.waitForTimeout(700);
+      s = await p.evaluate(i => ({ out: i.ims.every(id => !byId(id).hidden), x0: byId(i.ims[0]).x, w: nodeW(byId(i.g)), h: nodeH(byId(i.g)), deck: !!document.querySelector('.cloth.deck') }), ids);
+      check('a click spreads the deck back where the cards were, moved with the group', s.out && s.x0 === 230 && !s.deck && s.w === ids.gw && s.h === ids.gh, JSON.stringify(s));
+      await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
+      check('Undo stacks it again', await p.evaluate(i => byId(i.ims[0]).hidden && !!byId(i.g).deck, ids));
+      check('no page errors (D)', !p.errors.length, p.errors.join(' | '));
+      await p.context().close();
+    }
     if (SHOTS) {
       fs.mkdirSync(SHOTS, { recursive: true });
       for (const theme of ['light', 'dark']) for (const lang of ['en', 'zh']) {

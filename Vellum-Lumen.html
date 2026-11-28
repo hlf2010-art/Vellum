@@ -3347,6 +3347,25 @@ body.snap-skip #wall{cursor:copy}
 .cloth-peek .cp-acts{display:flex;justify-content:flex-end;padding:6px 4px 2px;margin-top:4px;border-top:1px solid var(--hair)}
 .cloth-peek .cp-go{font:550 13px/1 var(--ui);padding:9px 14px;border-radius:var(--radius-sm);border:0;background:var(--label);color:var(--card);cursor:pointer}
 @media (prefers-reduced-motion:reduce){.cloth,.cloth .cl-corner,.cloth-peek{transition:none}}
+/* a deck: real prints squared up. The sheets underneath show only their edges until hover fans them. */
+.cloth.deck{width:240px;height:180px}
+.cloth.deck .dk-top,.cloth.deck .dk-sheet{position:absolute;inset:0;border-radius:var(--radius-media);background:var(--card);box-shadow:var(--card-shadow);overflow:hidden;transition:transform var(--duration-base) var(--easing-standard)}
+.cloth.deck .dk-top{display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:16px;font:600 15px/1.3 var(--ui);color:var(--label)}
+.cloth.deck .dk-top .dk-k{font:var(--text-card-kind);color:var(--label-2)}
+.cloth.deck .dk-top.has-img{padding:0}
+.cloth.deck img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.cloth.deck .dk-s1{transform:translate(5px,5px) rotate(1.4deg)}
+.cloth.deck .dk-s2{transform:translate(10px,10px) rotate(2.6deg)}
+.cloth.deck:hover .dk-s1,.cloth.deck:focus-visible .dk-s1{transform:translate(-18px,6px) rotate(-6deg)}
+.cloth.deck:hover .dk-s2,.cloth.deck:focus-visible .dk-s2{transform:translate(22px,8px) rotate(7deg)}
+.cloth.deck:hover .dk-top,.cloth.deck:focus-visible .dk-top{transform:translateY(-4px)}
+.cloth.deck .dk-n{position:absolute;top:-9px;right:-9px;min-width:26px;height:26px;padding:0 8px;border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:center;font:650 13px/1 var(--ui);color:var(--label);background:var(--chrome);box-shadow:var(--chrome-shadow);z-index:2}
+.cloth.deck:focus-visible .dk-top{box-shadow:0 0 0 var(--ring-width) var(--focus)}
+.card.group .grp-stack{position:absolute;top:10px;right:12px;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:0;border-radius:var(--radius-pill);font:550 12px/1 var(--ui);color:var(--label-2);background:transparent;cursor:pointer;opacity:0;transition:opacity var(--duration-quick),background var(--duration-quick)}
+.card.group .grp-stack .ico{width:14px;height:14px}
+.card.group:hover .grp-stack,.card.group .grp-stack:focus-visible,.card.group .grp-stack.on{opacity:1}
+.card.group .grp-stack:hover{background:var(--hover,rgba(127,127,127,.1));color:var(--label)}
+@media (prefers-reduced-motion:reduce){.cloth.deck .dk-top,.cloth.deck .dk-sheet{transition:none}}
 </style>
 <div id="app">
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
@@ -7084,7 +7103,7 @@ function cardBody(n){
     return `${linkThumb}<div class="in">${sk?sketchHead(n):""}<div class="link-title-row"><h4 data-edit="title">${esc(n.title||host||"Link")}</h4>${linkVotes?`<span class="link-title-meta">${linkVotes}</span>`:""}</div><a class="link-url" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="${esc(href)}">${esc(rawDisp||host||href)}</a>${desc}
     ${sk?sketchActs(n):foot(weightHTML(n.weight,false,n),fR(threadCount(n)))}</div>`;}
   case"group":return `<div class="in">${head(ebHTML(n))}
-    <h4 data-edit="title">${esc(n.title||Lang("Untitled group","未命名分组"))}</h4><div class="grp-body"></div></div><span class="grp-resize" data-resize title="${Lang("Drag to resize","拖动调整大小")}" aria-hidden="true"></span>`;
+    <h4 data-edit="title">${esc(n.title||Lang("Untitled group","未命名分组"))}</h4><div class="grp-body"></div></div><button type="button" class="grp-stack${n.deck?" on":""}" data-a="grp-stack" title="${n.deck?Lang("Spread the cards back out","把卡片摊开"):Lang("Gather the cards into one stack","把卡片收成一摞")}">${ic("layers")}<span>${n.deck?Lang("Spread out","展开"):Lang("Stack","收成一摞")}</span></button><span class="grp-resize" data-resize title="${Lang("Drag to resize","拖动调整大小")}" aria-hidden="true"></span>`;
   case"image":{const g=n.gen,sr=n.src,isGif=g?.format==="gif",pv=(g&&g.preview&&!isGif)||(sr&&sr.placeholder);
     const ar=g?(RATIOS[g.ratio]||[4,3]).join("/"):sr?"3/2":"";
     const info=g?(isGif?`<span title="${esc(`GIF · ${g.dur||2}s${g.model?` · ${g.model}`:""}`)}">${g.dur||2}s</span>`:""):sr?`<span title="${esc(`${sr.source||Lang("Unknown source","来源不明")} · ${sr.license||Lang("Licence unknown","授权不明")}`)}">${esc(sr.source||Lang("Web","网络"))}</span>`:"";
@@ -9799,7 +9818,7 @@ function renderAll(){fitZones();if(board&&(!changeShadow||changeShadow.id!==boar
   litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();syncCopilotBoard?.();if(typeof renderDecisions==="function")renderDecisions();
   $("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";
   const archCount=board.nodes.filter(n=>!n.tombstone&&n.archived).length;
-  const hidCount=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived).length;
+  const hidCount=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived&&n.cl?.kind!=="deck").length;
   const offCount=archCount+hidCount;
   if($("archiveBtn")){$("archiveBtn").hidden=!offCount;$("archCount").textContent=offCount;$("archiveBtn").title=hidCount&&archCount?`Covered (${hidCount}) · Archived (${archCount})`:hidCount?`Covered cards (${hidCount})`:`Archived cards (${archCount})`}
   renderStrip();renderReview();renderNarr();paintEdges();paintMap();renderAdvPop();if(typeof findOpen!=="undefined"&&findOpen)renderFindBar?.();
@@ -12998,7 +13017,8 @@ function fullCardMenuActs(n){
   if(bondCluster(n.id).length>1&&!(isStar(n.id)&&n.focus==="you"))acts.push({k:"focus",label:L("Set as focus","设为焦点"),ic:"orbit"});
   if(n.status==="ink")acts.push({k:"lock",label:n.locked?L("Unlock","解锁"):L("Lock","锁定"),ic:"lock"});
   acts.push({k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"});
-  acts.push({k:"hide",label:L("Cover","盖起来"),key:"⇧H",ic:"cloth"});
+  if(n.type==="group")acts.push({k:"stack",label:n.deck?L("Spread out","展开"):L("Stack","收成一摞"),ic:"layers"});
+  else acts.push({k:"hide",label:L("Cover","盖起来"),key:"⇧H",ic:"cloth"});
   acts.push({k:"archive",label:L("Archive","归档卡片"),ic:"archive"});
   acts.push({k:"delete",label:L("Delete","删除卡片"),key:"⌫",cls:"danger",ic:"trash"});
   return acts;
@@ -13070,6 +13090,7 @@ $("cardMenu")?.addEventListener("click",e=>{
   if(k==="focus")return setFocus(n.id);
   if(k==="dup")return duplicateSelection();
   if(k==="hide")return hideFromCanvasNodes([n.id]);
+  if(k==="stack")return n.deck?spreadGroup(n):stackGroup(n);
   if(k==="archive")return archiveNodes([n.id]);
   if(k==="delete")return erase([n.id]);
   if(k==="copilot")return openCopilot(true,n);
@@ -17832,15 +17853,16 @@ function archiveNodes(ids){
 }
 function restoreNodes(ids,{uncover=false}={}){
   const ns=ids.map(byId).filter(n=>n&&!n.tombstone&&(n.archived||n.hidden));if(!ns.length)return;
-  checkpoint();const hadArch=ns.some(n=>n.archived),covered=ns.every(n=>n.cl);
+  checkpoint();const hadArch=ns.some(n=>n.archived),covered=ns.every(n=>n.cl),wasDeck=ns.every(n=>n.cl?.kind==="deck");
   /* a covered card comes back where it lay, carried along if its bundle moved with a star */
   const shifts=new Map(clothsOf().map(c=>[c.id,c.shift]));
   ns.forEach(n=>{if(n.cl){const d=shifts.get(n.cl.id);if(d){n.x+=d.x;n.y+=d.y}}delete n.cl;delete n.archived;delete n.archivedAt;delete n.hidden;delete n.hiddenAt});
+  settleDecks();
   const verb=hadArch?"Restored":covered?"Uncovered":"Showed";
   log("you",`${verb} ${ns.length>1?ns.length+" cards":"<b>"+esc(titleOf(ns[0]))+"</b>"}`,ns[0].id);
   select(ns.map(n=>n.id),{menus:false});renderAll();persist();
   if(!uncover&&ns.length===1&&!visible(ns[0]))focusNodes([ns[0]],.9);
-  toast(covered&&!hadArch?L(ns.length>1?`Uncovered ${ns.length} cards`:`Uncovered ${titleOf(ns[0])}`,ns.length>1?`已掀开 ${ns.length} 张`:`已拿出 ${titleOf(ns[0])}`):`${verb} ${ns.length>1?ns.length+" cards":titleOf(ns[0])}`);
+  if(wasDeck&&!hadArch)toast(L(`Spread ${ns.length} cards`,`已展开 ${ns.length} 张`));else toast(covered&&!hadArch?L(ns.length>1?`Uncovered ${ns.length} cards`:`Uncovered ${titleOf(ns[0])}`,ns.length>1?`已掀开 ${ns.length} 张`:`已拿出 ${titleOf(ns[0])}`):`${verb} ${ns.length>1?ns.length+" cards":titleOf(ns[0])}`);
 }
 /* ── cover with a cloth ──────────────────────────────────────────────────
    Covering tidies the table; it never changes a conclusion. Covered cards keep their relations, the crew still reads
@@ -17866,7 +17888,7 @@ function clothsOf(){
   }
   return [...m.values()];
 }
-const clothNode=c=>({id:"cloth:"+c.id,type:"note",x:c.x,y:c.y,_h:CLOTH_H});
+const clothNode=c=>({id:"cloth:"+c.id,type:"note",x:c.x,y:c.y,_h:c.cl.kind==="deck"?DECK_H:CLOTH_H});
 const clothLabel=c=>{const k=c.ns.length;return L(k===1?"1 card":`${k} cards`,`${k} 张`)};
 function clothSVG(w,h){
   const b=h-10,n=4;
@@ -17884,9 +17906,9 @@ function renderCloths(){
   for(const c of cs){
     keep.add(c.id);
     let el=clothLayer.querySelector(`[data-cloth="${c.id}"]`);
-    const lbl=clothLabel(c),sig=lbl+"|"+uiLang();
-    if(!el){el=document.createElement("div");el.className="cloth";el.dataset.cloth=c.id;el.tabIndex=0;el.setAttribute("role","button");clothLayer.appendChild(el)}
-    if(el._sig!==sig){el._sig=sig;el.innerHTML=clothSVG(CLOTH_W,CLOTH_H)+`<span class="cl-lbl">${esc(lbl)}</span>`;el.setAttribute("aria-label",L(`${lbl} covered. Enter uncovers.`,`盖着 ${lbl}，按回车掀开`))}
+    const deck=c.cl.kind==="deck",lbl=clothLabel(c),sig=lbl+"|"+uiLang()+(deck?"|"+c.ns.map(n=>n.id+(n.media||n.poster||"")).join():"");
+    if(!el){el=document.createElement("div");el.className="cloth"+(deck?" deck":"");el.dataset.cloth=c.id;el.tabIndex=0;el.setAttribute("role","button");clothLayer.appendChild(el)}
+    if(el._sig!==sig){el._sig=sig;el.innerHTML=deck?deckHTML(c):clothSVG(CLOTH_W,CLOTH_H)+`<span class="cl-lbl">${esc(lbl)}</span>`;el.setAttribute("aria-label",deck?L(`A stack of ${lbl}. Enter spreads it out.`,`一摞 ${lbl}，按回车展开`):L(`${lbl} covered. Enter uncovers.`,`盖着 ${lbl}，按回车掀开`))}
     if(!el._drag){el.style.left=c.x+"px";el.style.top=c.y+"px"}
   }
   qsa(".cloth",clothLayer).forEach(el=>{if(!keep.has(el.dataset.cloth))el.remove()});
@@ -17945,9 +17967,9 @@ function coverNodes(ids){
 }
 function uncoverNodes(ids){
   const ns=ids.map(byId).filter(n=>n&&n.hidden&&n.cl);if(!ns.length)return;
-  const c=clothsOf().find(x=>x.id===ns[0].cl.id),from=c?{x:c.x+CLOTH_W/2,y:c.y+CLOTH_H/2}:null;
+  const c=clothsOf().find(x=>x.id===ns[0].cl.id),from=c?{x:c.x+CLOTH_W/2,y:c.y+(c.cl.kind==="deck"?DECK_H:CLOTH_H)/2}:null;
   const all=c&&c.ns.length===ns.length;
-  if(all&&!calm()){const el=clothLayer?.querySelector(`[data-cloth="${c.id}"]`);if(el){const g=el.cloneNode(true);g.classList.add("cloth-off");g.removeAttribute("data-cloth");clothLayer.appendChild(g);g.animate([{transform:"none",opacity:1},{transform:"translate(36px,-6px) rotate(3deg)",opacity:0}],{duration:280,easing:"cubic-bezier(.4,0,.2,1)",fill:"forwards"}).onfinish=()=>g.remove()}}
+  if(all&&!calm()&&c.cl.kind!=="deck"){const el=clothLayer?.querySelector(`[data-cloth="${c.id}"]`);if(el){const g=el.cloneNode(true);g.classList.add("cloth-off");g.removeAttribute("data-cloth");clothLayer.appendChild(g);g.animate([{transform:"none",opacity:1},{transform:"translate(36px,-6px) rotate(3deg)",opacity:0}],{duration:280,easing:"cubic-bezier(.4,0,.2,1)",fill:"forwards"}).onfinish=()=>g.remove()}}
   restoreNodes(ns.map(n=>n.id),{uncover:true});
   if(from&&!calm())ns.forEach(n=>{const el=nodeEl(n.id);if(!el)return;const dx=from.x-(n.x+nodeW(n)/2),dy=from.y-(n.y+nodeH(n)/2);el.animate([{transform:`translate(${dx*.4}px,${dy*.4}px) scale(.92)`,opacity:0},{transform:"none",opacity:1}],{duration:300,easing:"cubic-bezier(.2,.8,.2,1)"})});
 }
@@ -17983,10 +18005,63 @@ function clothPointerDown(e,el){
     checkpoint();c.ns.forEach(n=>{n.cl={...n.cl,x:n.cl.x+dx,y:n.cl.y+dy};n.x+=dx;n.y+=dy});renderAll();persist()};
   addEventListener("pointermove",mv);addEventListener("pointerup",up);addEventListener("pointercancel",up);
 }
-nodesEl.parentElement.addEventListener("pointerover",e=>{const el=e.target.closest?.(".cloth[data-cloth]");if(el&&!el._drag&&clothPeekFor!==el.dataset.cloth){clearTimeout(clothPeekT);clothPeekT=setTimeout(()=>showClothPeek(el.dataset.cloth),140)}});
+nodesEl.parentElement.addEventListener("pointerover",e=>{const el=e.target.closest?.(".cloth[data-cloth]:not(.deck)");if(el&&!el._drag&&clothPeekFor!==el.dataset.cloth){clearTimeout(clothPeekT);clothPeekT=setTimeout(()=>showClothPeek(el.dataset.cloth),140)}});
 nodesEl.parentElement.addEventListener("pointerout",e=>{const el=e.target.closest?.(".cloth[data-cloth]");if(el&&!el.contains(e.relatedTarget))hideClothPeek()});
 nodesEl.parentElement.addEventListener("keydown",e=>{const el=e.target.closest?.(".cloth[data-cloth]");if(el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();const c=clothsOf().find(x=>x.id===el.dataset.cloth);if(c)uncoverNodes(c.ns.map(n=>n.id))}});
 function findCloth(id){const c=clothsOf().find(x=>x.id===id);if(!c)return;focusNodes([clothNode(c)],.9);setTimeout(()=>{const el=clothLayer?.querySelector(`[data-cloth="${id}"]`);if(el&&!calm())el.animate([{transform:"none"},{transform:"translateY(-6px)"},{transform:"none"}],{duration:420,easing:"cubic-bezier(.3,.7,.2,1)"})},660)}
+/* ── stack a group into a deck ───────────────────────────────────────────
+   A group of many like things (a pile of dropped photos, a batch of generations) can be squared up into one deck,
+   like gathering prints off a table: the cards fly in and stack, the first image is the cover, the count sits on the
+   corner. Hover fans the top few apart a little; a click spreads them back where they were. It is the cloth's
+   machinery (covered cards, n.cl, kind "deck", tied to the group as its star), so relations, evidence, Undo and the
+   Covered list work the same way. The group frame shrinks around the deck and grows back when it is spread. */
+const DECK_W=240,DECK_H=180,DECK_PAD=16,DECK_TOP=80;
+ICONS.layers=ICONS.layers||'<path d="M12 4 3.5 8.5 12 13l8.5-4.5z"/><path d="m3.5 12.5 8.5 4.5 8.5-4.5"/>';
+function groupInside(g){
+  const x0=g.x,y0=g.y,x1=x0+nodeW(g),y1=y0+nodeH(g);
+  return visibleNodes().filter(m=>m.id!==g.id&&m.type!=="group"&&m.status!=="sketch").filter(m=>{const cx=m.x+nodeW(m)/2,cy=m.y+nodeH(m)/2;return cx>=x0&&cx<=x1&&cy>=y0&&cy<=y1});
+}
+const deckCoverSrc=n=>n?(mediaSrc(n.media)||mediaSrc(n.poster)||""):"";
+let stacking=false;
+function stackGroup(g){
+  if(!g||g.type!=="group"||g.deck||stacking)return;
+  const ms=groupInside(g).sort((a,b)=>(deckCoverSrc(b)?1:0)-(deckCoverSrc(a)?1:0)||a.y-b.y||a.x-b.x);
+  if(ms.length<2)return toast(L("A stack needs at least 2 cards in the group","组里至少要有 2 张卡才能收成一摞"));
+  const dx=g.x+DECK_PAD,dy=g.y+DECK_TOP;
+  const settle=()=>{
+    stacking=false;checkpoint();const now=NOW();
+    const cl={id:"dk"+uid(),kind:"deck",group:g.id,star:g.id,sx:g.x,sy:g.y,x:dx,y:dy};
+    g.deck={gw:nodeW(g),gh:nodeH(g)};g.gw=DECK_W+DECK_PAD*2;g.gh=DECK_TOP+DECK_H+DECK_PAD+8;
+    ms.forEach((n,i)=>{n.hidden=true;n.hiddenAt=now;n.cl={...cl,i};delete n.archived;delete n.archivedAt});
+    const ids=new Set(ms.map(n=>n.id));sel=sel.filter(id=>!ids.has(id));lineExtras=lineExtras.filter(id=>!ids.has(id));
+    if(focusId&&ids.has(focusId))closeFocus();
+    log("you",`Stacked ${ms.length} cards in <b>${esc(titleOf(g))}</b>`,g.id);
+    renderAll();persist();
+    toast(L(`Stacked ${ms.length} cards`,`已收成一摞 · ${ms.length} 张`),{undo:true});
+  };
+  if(calm())return settle();
+  /* each card slides onto the pile, the last ones a beat later, so it reads as squaring up a stack */
+  stacking=true;
+  ms.forEach((n,i)=>{const el=nodeEl(n.id);if(!el)return;const sx=DECK_W/nodeW(n),tx=dx-n.x,ty=dy-n.y;el.style.transformOrigin="0 0";el.style.zIndex=String(20+ms.length-i);
+    el.animate([{transform:"none",opacity:1},{transform:`translate(${tx}px,${ty}px) scale(${sx}) rotate(${(i%3-1)*2}deg)`,opacity:i<3?1:0}],{duration:340,delay:Math.min(i*24,160),easing:"cubic-bezier(.4,0,.2,1)",fill:"forwards"})});
+  setTimeout(settle,340+Math.min(ms.length*24,160));
+}
+function spreadGroup(g){
+  const c=g&&clothsOf().find(x=>x.cl.kind==="deck"&&x.cl.group===g.id);
+  if(c)uncoverNodes(c.ns.map(n=>n.id));else if(g?.deck){g.gw=g.deck.gw;g.gh=g.deck.gh;delete g.deck;renderAll();persist()}
+}
+/* a group whose deck is gone (spread, or its cards restored from the list) takes back its size */
+function settleDecks(){
+  const live=new Set(clothsOf().filter(c=>c.cl.kind==="deck").map(c=>c.cl.group));
+  for(const g of board.nodes)if(g.type==="group"&&g.deck&&!live.has(g.id)){g.gw=g.deck.gw;g.gh=g.deck.gh;delete g.deck}
+}
+function deckHTML(c){
+  const ns=[...c.ns].sort((a,b)=>(a.cl.i??0)-(b.cl.i??0)),top=ns[0],src=deckCoverSrc(top);
+  const face=src?`<img src="${src}" alt="" draggable="false">`:`<span class="dk-k">${esc(kindLabel(top))}</span><b>${esc(clip(titleOf(top)||"",70))}</b>`;
+  const under=ns.slice(1,3).map((n,i)=>{const s=deckCoverSrc(n);return `<i class="dk-sheet dk-s${i+1}">${s?`<img src="${s}" alt="" draggable="false">`:""}</i>`}).reverse().join("");
+  return `${under}<span class="dk-top${src?" has-img":""}">${face}</span><span class="dk-n">${ns.length}</span>`;
+}
+nodesEl.addEventListener("click",e=>{const b=e.target.closest('[data-a="grp-stack"]');if(!b)return;e.stopPropagation();const g=byId(b.closest("[data-id]")?.dataset.id);if(!g)return;g.deck?spreadGroup(g):stackGroup(g)});
 
 function scrubNodeFromUndoRedo(goneSet,tombMap,scrubStrings=[]){
   const matchesScrub=html=>scrubStrings.some(s=>s&&String(html||"").includes(s));
@@ -18149,7 +18224,7 @@ function upstreamDeleteDialog(ids,impact,{permanent=false}={}){
 }
 function archiveDialog(){
   const paint=()=>{
-    const hiddenList=board.nodes.filter(n=>!n.tombstone&&n.hidden&&!n.archived).sort((a,b)=>(b.hiddenAt||b.created)-(a.hiddenAt||a.created));
+    const hiddenList=board.nodes.filter(n=>!n.tombstone&&n.hidden&&!n.archived&&n.cl?.kind!=="deck").sort((a,b)=>(b.hiddenAt||b.created)-(a.hiddenAt||a.created));
     const archList=board.nodes.filter(n=>!n.tombstone&&n.archived).sort((a,b)=>(b.archivedAt||b.created)-(a.archivedAt||a.created));
     const total=hiddenList.length+archList.length;
     dlg.className="sheet";
@@ -20710,7 +20785,7 @@ document.fonts?.ready?.then(()=>setTimeout(spaceSample,60));
 {const _ra=renderAll;renderAll=function(...a){const r=_ra.apply(this,a);
   /* the board name is said in the interface language when there is none */
   const pn=$("projectName");if(pn&&!board.title)pn.textContent=L("Untitled board","未命名画板");
-  const ab=$("archiveBtn");if(ab&&uiLang()==="zh"){const ar=board.nodes.filter(n=>!n.tombstone&&n.archived).length,hd=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived).length;ab.title=hd&&ar?`盖着 ${hd} 张 · 已归档 ${ar} 张`:hd?`盖着 ${hd} 张卡片`:`已归档 ${ar} 张卡片`}
+  const ab=$("archiveBtn");if(ab&&uiLang()==="zh"){const ar=board.nodes.filter(n=>!n.tombstone&&n.archived).length,hd=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived&&n.cl?.kind!=="deck").length;ab.title=hd&&ar?`盖着 ${hd} 张 · 已归档 ${ar} 张`:hd?`盖着 ${hd} 张卡片`:`已归档 ${ar} 张卡片`}
   if(board?.id==="showcase"&&board.spaced!==uiLang())requestAnimationFrame(()=>spaceSample());
   return r}}
 /* Messages written before the interface spoke Chinese, said again in Chinese (written for Chinese, not word for word) */

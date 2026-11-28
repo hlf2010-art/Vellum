@@ -728,6 +728,7 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
   55%{opacity:.55;transform:scale(1.035);box-shadow:0 0 0 14px transparent,0 0 34px 6px var(--pg,var(--bloom))}
   100%{opacity:0;transform:scale(1.065);box-shadow:0 0 0 26px transparent,0 0 48px 10px transparent}
 }
+.ty-off{visibility:hidden}
 .typing::after{content:"";display:inline-block;width:2px;height:1em;margin-left:2px;background:var(--label);border-radius:1px;animation:caret 1s steps(1) infinite;vertical-align:-.14em}
 @keyframes caret{50%{opacity:0}}
 .particle{position:fixed;z-index:200;width:4px;height:4px;border-radius:50%;background:var(--light);box-shadow:0 0 8px 2px var(--bloom);pointer-events:none;transition:transform .9s cubic-bezier(.2,.7,.3,1),opacity .9s ease-in}
@@ -2465,6 +2466,16 @@ dialog.sheet:focus{outline:none}
 .pbar-nav button.ib:hover{color:var(--label);background:var(--card)}
 .pbar-nav button.ib .ico{width:11px;height:11px;stroke-width:2}
 .pbar-acts{display:flex;align-items:center;gap:3px;padding-top:1px}
+.pbar-pick{display:flex;align-items:center;gap:5px;padding:2px 0 1px}
+.pbar-pick-k{flex:1;font:500 12px/1 var(--ui);color:var(--label-2)}
+.pbar button.pbar-letter{width:30px;height:var(--size-sm);padding:0;border-radius:var(--radius-pill);font:680 12px/1 var(--ui);color:var(--label);background:var(--hover);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--pg,var(--label-3)) 45%,transparent)}
+.pbar button.pbar-letter:hover,.pbar button.pbar-letter:focus-visible{color:var(--on-act);background:var(--pg,var(--act));box-shadow:none}
+.pbar button.sec.later{margin-left:auto}
+.card.direction.pick-hint{outline-style:solid;box-shadow:0 0 0 1px color-mix(in srgb,var(--pg) 60%,transparent),0 0 46px -12px color-mix(in srgb,var(--pg) 70%,transparent)}
+.pbar-brace{position:absolute;z-index:33;width:6px;pointer-events:none;border:1px solid var(--hair-2);border-left:0;border-radius:0 5px 5px 0;opacity:.9;animation:braceIn .24s var(--ease) both}
+@keyframes braceIn{from{opacity:0}}
+.pbar-brace[data-side="right"]{border-left:1px solid var(--hair-2);border-right:0;border-radius:5px 0 0 5px}
+.pbar-brace[hidden]{display:none}
 .pbar button{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:var(--size-sm);border-radius:var(--radius-pill);font:580 12px/1 var(--ui);letter-spacing:-.008em;white-space:nowrap;
   transition:transform var(--d-press) ease-out,background-color var(--d-quick) ease,color var(--d-quick) ease,box-shadow var(--d-quick) ease}
 .pbar button:active{transform:scale(.95)}
@@ -2712,7 +2723,7 @@ dialog.sheet:focus{outline:none}
   .m-title{font-size:21px}.m-title.is-note{font-size:19px}
   .sh-choices{grid-template-columns:1fr}
   .bay-head h2{font-size:28px}.bay-head p{display:none}
-  .pbar{left:50%!important;top:auto!important;bottom:var(--line-clear,calc(84px + env(safe-area-inset-bottom,0px)));transform:translateX(-50%);width:min(340px,calc(100% - 16px))}.pbar-tail{display:none}
+  .pbar{left:50%!important;top:auto!important;bottom:var(--line-clear,calc(84px + env(safe-area-inset-bottom,0px)));transform:translateX(-50%);width:min(340px,calc(100% - 16px))}.pbar-tail,.pbar-brace{display:none}
   .strip{left:50%!important;transform:translateX(-50%);top:auto!important;bottom:var(--line-clear,calc(84px + env(safe-area-inset-bottom,0px)));max-width:calc(100% - 16px);overflow-x:auto}
   .s-title .mono{display:none}.s-body{padding:66px 8px 8px}.transport{bottom:10px}
   .toasts{top:calc(62px + env(safe-area-inset-top,0px))}
@@ -3499,6 +3510,9 @@ body.snap-skip #wall{cursor:copy}
 .card.sketch::before{display:none}
 .card.sketch h4,.card.sketch p,.card.sketch li,.card.sketch .test{color:var(--label-2)}
 .card.inking{animation:set .5s var(--ease)}
+/* the test is supporting detail: a size smaller and a step dimmer than the plan above it */
+.card.direction .test>span[data-edit="test"],.card.direction .test .test-tx{font-size:13px;line-height:18px;color:var(--label-3)}
+.card.direction.sketch .test>span[data-edit="test"]{color:var(--label-3)}
 .card.inking h4,.card.inking p,.card.inking li,.card.inking .test{animation:inkIn .5s var(--ease) both}
 @keyframes inkIn{from{color:var(--label-3)}}
 /* far out, a card is its title */
@@ -9714,18 +9728,25 @@ function relateSelection(ns){
 }
 function groups(){const g=new Map();for(const n of visibleNodes())if(n.status==="sketch"&&n.pid){if(!g.has(n.pid))g.set(n.pid,[]);g.get(n.pid).push(n)}return g}
 const latestPid=()=>{let best=null,t=-1;for(const [pid,ns] of groups()){const c=Math.max(...ns.map(n=>n.created));if(c>t){t=c;best=pid}}return best};
+/* pids of Scout background pinned as one step of a fork; their review waits until the fork has drafted */
+const movePids=new Set();
 function renderBars(){
   const host=$("overlays");let h="";const lp=currentPid(),keys=[...groups().keys()],total=keys.length;
   for(const [pid,ns] of groups()){if(pid!==lp||stageOpen)continue;
+    // Scout's background for a fork is reviewed after Strategist has drafted, not while it is still writing on top of it
+    if(movePids.has(pid)&&crewState.muse?.busy)continue;
     const a=AGENTS[ns[0].by]||AGENTS.muse,what=uiLang()==="zh"?nounZh(ns[0].type,ns.length):ns.length>1?`${ns.length} ${noun(ns[0].type)}s`:`1 ${noun(ns[0].type)}`;
     const L=lin(ns[0]),idx=keys.indexOf(pid);
+    /* directions are a single choice: the bar asks which one to go with; keeping all of them is "decide later" */
+    const pick=ns.length>1&&ns.every(n=>n.type==="direction"&&n.idea===ns[0].idea)?[...ns].sort((a,b)=>String(a.letter).localeCompare(String(b.letter))):null;
     const nav=total>1?`<span class="pbar-nav"><button type="button" class="ib" data-p="prev" title="${Lang("Previous · [","上一份 · [")}" aria-label="${Lang("Previous suggestion","上一份草稿")}"><svg class="ico" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></svg></button><span class="count">${idx+1} / ${total}</span><button type="button" class="ib" data-p="next" title="${Lang("Next · ]","下一份 · ]")}" aria-label="${Lang("Next suggestion","下一份草稿")}"><svg class="ico" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button></span>`:"";
     h+=`<div class="pbar${L?" pg-"+L:""}" data-pid="${pid}" role="group" aria-label="${Lang(`${a.name}’s suggestion`,`${a.name} 的草稿`)}"><span class="pbar-tail" aria-hidden="true"></span><div class="pbar-top"><span class="mk">${a.mk}</span><div class="pbar-copy"><span class="pbar-title"><b>${a.name}</b> · ${what}</span></div>${nav}</div>
-      <div class="pbar-acts"><button type="button" class="sec danger" data-p="erase" title="${Lang("Discard · ⌘⌫","丢弃 · ⌘⌫")}">${ic("x")}<span>${Lang("Discard","丢弃")}</span></button><button type="button" class="sec" data-p="redraw" title="${Lang("Retry · R","重来 · R")}">${ic("redo")}<span>${Lang("Retry","重来")}</span></button><button type="button" class="primary" data-p="ink" title="${Lang("Keep · ⌘↵","保留 · ⌘↵")}">${ic("check")}<span>${ns.length>1?Lang("Keep all","全部保留"):Lang("Keep","保留")}</span></button></div></div>`;
+      ${pick?`<div class="pbar-pick" role="radiogroup" aria-label="${Lang("Go with one direction","选一个方向")}"><span class="pbar-pick-k">${Lang("Go with","选择")}</span>${pick.map(d=>`<button type="button" class="pbar-letter${lin(d)?" pg-"+lin(d):""}" role="radio" aria-checked="false" data-p="pick" data-id="${d.id}" title="${esc(Lang(`Go with ${d.letter} · ${d.title}. The others stay, set aside.`,`选 ${d.letter} · ${d.title}，其余保留为已搁置`))}">${esc(d.letter)}</button>`).join("")}</div>`:""}
+      <div class="pbar-acts"><button type="button" class="sec danger" data-p="erase" title="${Lang("Discard · ⌘⌫","丢弃 · ⌘⌫")}">${ic("x")}<span>${Lang("Discard","丢弃")}</span></button><button type="button" class="sec" data-p="redraw" title="${Lang("Retry · R","重来 · R")}">${ic("redo")}<span>${Lang("Retry","重来")}</span></button>${pick?`<button type="button" class="sec later" data-p="ink" title="${Lang("Keep all and decide later · ⌘↵","全部保留，稍后再选 · ⌘↵")}">${ic("check")}<span>${Lang("Decide later","稍后再选")}</span></button>`:`<button type="button" class="primary" data-p="ink" title="${Lang("Keep · ⌘↵","保留 · ⌘↵")}">${ic("check")}<span>${ns.length>1?Lang("Keep all","全部保留"):Lang("Keep","保留")}</span></button>`}</div></div>${ns.length>1?`<span class="pbar-brace" data-brace="${pid}" aria-hidden="true"></span>`:""}`;
   }
   host.innerHTML=h;placeBars();
 }
-const noun=t=>({image:"image",direction:"direction",proof:"proof",note:"note",notepad:"notepad",list:"action list",kanban:"kanban board",treemap:"tree map",synthesis:"synthesis",question:"question",audio:"audio card",link:"link",group:"group"})[t]||"card";
+const noun=t=>({image:"image",direction:"direction",proof:"proof",note:"note",notepad:"notepad",list:"action list",kanban:"kanban board",treemap:"tree map",synthesis:"synthesis",question:"question",audio:"audio card",link:"link",group:"group",source:"source"})[t]||"card";
 function uiObs(){
   const list=[],add=(el,pad=8)=>{if(!el||el.hidden)return;const cs=getComputedStyle(el);if(cs.display==="none"||cs.visibility==="hidden")return;const r=el.getBoundingClientRect();if(r.width>0&&r.height>0)list.push({x0:r.left-pad,y0:r.top-pad,x1:r.right+pad,y1:r.bottom+pad})};
   add($("map"),10);add($("line"),8);add($("copilotPanel"),8);add($("margin"),8);
@@ -9754,7 +9775,15 @@ function placeBars(){
     const maxR=Math.min(!$("margin").hidden?$("margin").offsetLeft-12:innerWidth-14,copilotOpen&&cp&&!cp.hidden?cp.getBoundingClientRect().left-12:innerWidth-14);
     const minX=14,maxX=Math.max(14,maxR-w),minY=74,maxY=Math.max(74,innerHeight-hh-20);
     const obs=uiObs(),self={x0:a0.x-4,y0:a0.y-4,x1:a1.x+4,y1:a1.y+4};
-    const cands=[
+    /* A bar for several cards sits to the right of the whole set, centred on it, with a thin brace from the
+       first card to the last, so it reads as being about all of them and not the card it happens to touch. */
+    const set=ns.length>1,brace=set?qs(`[data-brace="${el.dataset.pid}"]`,$("overlays")):null;
+    const cands=set?[
+      {x:a1.x+26,y:(a0.y+a1.y)/2-hh/2,bias:0,side:"left"},
+      {x:a0.x-26-w,y:(a0.y+a1.y)/2-hh/2,bias:1,side:"right"},
+      {x:cx-w/2,y:a1.y+14,bias:3,side:"top"},
+      {x:cx-w/2,y:a0.y-hh-14,bias:4,side:"bottom"}
+    ]:[
       {x:cx-w/2,y:a1.y+14,bias:0,side:"top"},
       {x:cx-w/2,y:a0.y-hh-14,bias:1,side:"bottom"},
       {x:a1.x+16,y:(a0.y+a1.y)/2-hh/2,bias:2,side:"left"},
@@ -9769,7 +9798,13 @@ function placeBars(){
     el.dataset.side=best.side;
     el.style.setProperty("--tail-x",clamp(cx-best.x,22,Math.max(22,w-22))+"px");
     el.style.setProperty("--tail-y",clamp((a0.y+a1.y)/2-best.y,22,Math.max(22,hh-22))+"px");
-    el.style.left=best.x+"px";el.style.top=best.y+"px"});
+    el.style.left=best.x+"px";el.style.top=best.y+"px";
+    if(brace){const sideways=best.side==="left"||best.side==="right",top=Math.max(a0.y,64),bot=Math.min(a1.y,innerHeight-12);
+      brace.hidden=!on||!sideways||bot-top<40;
+      if(!brace.hidden){brace.dataset.side=best.side;brace.style.left=(best.side==="left"?a1.x+10:a0.x-16)+"px";brace.style.top=top+"px";brace.style.height=(bot-top)+"px";
+        // the tail meets the brace at its middle, so bar, brace and cards read as one piece
+        el.style.setProperty("--tail-y",clamp((top+bot)/2-best.y,22,Math.max(22,hh-22))+"px")}}
+  });
 }
 
 /* ── toasts ─────────────────────────────────────────────────────────── */
@@ -11510,7 +11545,13 @@ function buildProblems(v,ctxText,isTm){
   out.push(...textProblems(all,textLang(ctxText),"the page"));
   return out;
 }
-function forkProblems(v,count,ideaText){
+/* Proper names from a background card's title (not its first word) that the idea never mentions: a direction
+   that uses them has taken its subject from the background instead of the idea. */
+function offTopicNames(n,ideaText){
+  const idea=String(ideaText||"").toLowerCase(),words=String(n?.title||"").split(/[\s–—:,()]+/).slice(1);
+  return words.filter(w=>/^\p{Lu}[\p{L}'’-]{2,}$/u.test(w)&&!idea.includes(w.toLowerCase()));
+}
+function forkProblems(v,count,ideaText,background=[]){
   const list=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:null);
   if(!list)return ['reply with {"directions": [...]}'];
   const out=[],home=placesIn(ideaText),seen=new Set();
@@ -11523,6 +11564,7 @@ function forkProblems(v,count,ideaText){
     const t=String(d.title||"").toLowerCase();if(t&&seen.has(t))out.push(`${k} repeats a title`);seen.add(t);
     const all=`${d.title||""} ${d.plan||d.text||""} ${d.test||""}`;
     if(home.length){const other=placesIn(all).filter(p=>!home.some(h=>h.toLowerCase()===p.toLowerCase()));if(other.length)out.push(`${k} is set in ${other[0]}, but the idea is in ${home[0]}`)}
+    for(const b of background){const hit=offTopicNames(b,ideaText).find(w=>all.toLowerCase().includes(w.toLowerCase()));if(hit){out.push(`${k} is about "${clip(b.title,40)}", a background card that is not about the idea; write a direction about the idea itself`);break}}
     if(/\b(fewer|less) than (one|1|zero|0)\b/i.test(d.test||""))out.push(`${k}: the test uses an impossible number ("fewer than one")`);
     if(/Night Market Ledger|Shilin|Shed on Every Street/i.test(all))out.push(`${k} copies the example; write a new one`);
     if(/\b(remember|recall|memori[sz]e|forgets?)\b/i.test(d.test||""))out.push(`${k}: the test checks what people remember; test what they feel or do instead`);
@@ -11646,12 +11688,19 @@ async function typeIn(ids){
   ids.forEach((id,i)=>{const el=nodeEl(id),nn=byId(id),src=nn&&byId(nn._src);if(!el)return;
     if(src){el.style.setProperty("--fx",((src.x+(W[src.type]||300)/2)-(nn.x+(W[nn.type]||300)/2))+"px");el.style.setProperty("--fy",((src.y+(src._h||200)/2)-(nn.y+(nn._h||200)/2))+"px")}
     el.style.animationDelay=(i*90)+"ms";el.classList.add("born");setTimeout(()=>{el.style.animationDelay=""},900+i*90)});
-  for(const id of ids){const el=nodeEl(id);if(!el)continue;
-    const tgts=qsa("h4,p,.test span,.syn li,.todo li span",el).slice(0,6);const full=tgts.map(t=>t.innerHTML);tgts.forEach(t=>t.innerHTML="");
-    for(let i=0;i<tgts.length;i++){const t=tgts[i],txt=full[i];t.classList.add("typing");const plain=/<[^>]+>/.test(txt);const n=plain?1:txt.length,step=Math.max(1,Math.ceil(n/26));
-      if(plain){t.innerHTML=txt}else for(let c=0;c<=n;c+=step){t.textContent=decodeEnt(txt.slice(0,c));await wait(16)}
-      t.innerHTML=txt;t.classList.remove("typing")}
-    setTimeout(()=>el.classList.remove("born"),600);placeBars();
+  /* Every card's text is hidden up front, then the cards type one after another. The untyped rest stays in
+     place but invisible, so no card shows its full text, blanks and types again (the later cards used to), and
+     no card changes height while it types. Text with markup appears whole. */
+  const jobs=ids.map(id=>{const el=nodeEl(id);if(!el)return null;
+    const parts=qsa("h4,p,.test span,.syn li,.todo li span",el).slice(0,6).filter(t=>!/<[^>]+>/.test(t.innerHTML)&&t.textContent).map(t=>{
+      const txt=t.textContent,full=t.innerHTML,on=document.createElement("span"),off=document.createElement("span");
+      on.className="typing";off.className="ty-off";off.textContent=txt;t.textContent="";t.append(on,off);return {t,txt,full,on,off}});
+    return {el,parts}}).filter(Boolean);
+  for(const j of jobs){
+    for(const p of j.parts){const n=p.txt.length,step=Math.max(1,Math.ceil(n/26));
+      for(let c=step;c<n;c+=step){if(!p.t.isConnected)break;p.on.textContent=p.txt.slice(0,c);p.off.textContent=p.txt.slice(c);await wait(16)}
+      if(p.t.isConnected)p.t.innerHTML=p.full}
+    setTimeout(()=>j.el.classList.remove("born"),600);placeBars();
   }
 }
 const decodeEnt=s=>{const d=document.createElement("textarea");d.innerHTML=s;return d.value};
@@ -11821,9 +11870,10 @@ async function groundIdea(idea,brief,picked){
   }});
   if(keenWhy&&(res?.found||[]).length)toast((res.found.some(x=>x.via==="Wikipedia")?L(`${keenWhy}, so Scout used Wikipedia instead.`,`${keenWhy}，Scout 已改用维基百科。`):L(`${keenWhy}; Scout kept what it had already found.`,`${keenWhy}；Scout 保留了已找到的资料。`)));
   const found=res?.found||[];
-  if(!found.length){if(keenWhy)toast(L(`${keenWhy}.`,`${keenWhy}。`));toast(reached?L("Scout found no background on Wikipedia, so Strategist is working from memory.","Scout 在维基百科没找到相关背景，Strategist 将凭记忆作答。"):L("Scout couldn't reach Wikipedia, so Strategist is working from memory.","Scout 无法连接维基百科，Strategist 将凭记忆作答。"));return []}
+  if(!found.length){if(keenWhy)toast(L(`${keenWhy}.`,`${keenWhy}。`));toast(reached?L("Scout found nothing relevant to this idea, so Strategist is working from your card alone.","Scout 没找到和这个想法相关的资料，Strategist 只根据你的卡片来发散。"):L("Scout couldn't reach Wikipedia, so Strategist is working from memory.","Scout 无法连接维基百科，Strategist 将凭记忆作答。"));return []}
   checkpoint();
-  const pid="p-"+uid(),spots=planSources(found.length,idea),made=found.map((it,i)=>{
+  const pid="p-"+uid(),spots=planSources(found.length,idea);movePids.add(pid); // only fork calls this
+  const made=found.map((it,i)=>{
     const via=it.via==="Keenable"?(hostOf(it.url)||"Keenable"):L("Wikipedia","维基百科");
     const n=node("source",{_src:idea.id,kind:L(`Background · ${via}`,`背景 · ${via}`),title:clip(it.title,64),text:it.text+(it.published?` (${it.published.slice(0,10)})`:""),weight:"reported",path:it.url,src:{query:it.q,url:it.url,source:it.via||"Wikipedia"},by:"scout",status:"sketch",pid},spots[i]);
     const e=edge(n.id,idea.id,"src","live");if(e)freshEdges.add(e.id);return n;
@@ -11925,15 +11975,20 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
   if(SCOUT_GROUNDING&&connSummary().engine!=="rules"&&!sourcesFor(idea).length&&!scoutSrcs().length)await groundIdea(idea,brief,idea.clarified||null);
   count=clamp(count,1,free.length);
   const places=planFork(idea,count).places.map(({x,y,w,h})=>({x,y,w,h}));
-  const srcs=[...new Map([...sourcesFor(idea),...scoutSrcs()].map(n=>[n.id,n])).values()];
-  const groundNote=srcs.some(n=>n.by==="scout"&&n.type==="source")?"\nBackground Scout found on the web is on the wall. Draw on it where it helps and never contradict it; it is not a checklist, so do not build a direction around a single fact.\n":"";
+  /* The idea card is the anchor. Scout's background that the designer has not kept yet is a suggestion, not
+     evidence: it goes in its own block, marked unchecked, and may only add facts about the idea. With two
+     off-topic Wikipedia hits on the wall (an NBA trade, a cartoon episode list), all three directions for
+     "an AI video editing agent" were about the trade and the cartoon. */
+  const srcs=[...new Map([...sourcesFor(idea),...scoutSrcs().filter(n=>n.status==="ink")].map(n=>[n.id,n])).values()];
+  const unkept=scoutSrcs().filter(n=>n.status!=="ink"&&!srcs.some(s=>s.id===n.id));
+  const groundNote=(unkept.length?`\nBackground Scout looked up on the web. The designer has not kept it yet, so it may be off-topic:\n${wallText(unkept)}\nUse a fact from it only when it is clearly about the idea itself, never contradict such a fact, and ignore the rest.\n`:srcs.some(n=>n.by==="scout"&&n.type==="source")?"\nBackground Scout found on the web is on the wall. Draw on it where it helps and never contradict it; it is not a checklist, so do not build a direction around a single fact.\n":"")+(unkept.length||srcs.length?"Every direction is a way to do the idea above, in its own subject. Never change the subject to something from the wall or the background.\n":"");
   const imgNodes=[idea,...srcs].filter(n=>n&&(n.type==="image"||n.type==="frame"));
   const prompt=`The ${idea.type==="notepad"?"project brief / document":"claim or idea"}:\n"${(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"")}"\n\nWhat is on the wall that feeds it:\n${wallText(srcs)||"(nothing yet)"}\n${groundNote}${existing.length?`\nDirections that already exist (do not repeat them):\n${existing.map(d=>"- "+d.title+": "+d.text+(d.outcome?` (its test ${d.outcome.result}${d.outcome.note?": "+d.outcome.note:""})`:"")).join("\n")}\n`:""}${earlierRoundsBlock(idea)}${declinedPromptBlock(declinedFor(idea,{limit:4,kinds:["draft","passed-over","retried","failed"]}))}
 ${brief?`\nThe designer added: "${brief}"\n`:""}${templateForkNote()}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
   const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,(wallText(srcs)||"")+groundNote+earlierRoundsBlock(idea)):null;
-  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({weight:"heavy",system:`${ROLE.muse}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
+  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({weight:"heavy",system:`${ROLE.muse}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",small,check:small?v=>forkProblems(v,count,ideaText,unkept):null},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const held=[];
   const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count).filter(d=>{const e=echoOfDeclined(`${d.title||""} — ${d.plan||d.text||""}`,{kinds:["draft","passed-over","failed"]});if(e&&!e.answeredBy){held.push(e.d);holdBack("direction",{target:idea.id,who:"muse",text:`${d.title||""} — ${d.plan||d.text||""}`,payload:{title:d.title,plan:d.plan||d.text||"",test:d.test||"",mode:d.mode},declined:e.d});return false}if(e)d._revisits={id:e.d.id,by:e.answeredBy.id};return true});
@@ -18315,7 +18370,17 @@ $("margin").addEventListener("keydown",e=>{
 $("overlays").addEventListener("click",e=>{const b=e.target.closest("[data-p]");if(!b)return;const pid=b.closest(".pbar").dataset.pid;const ids=board.nodes.filter(n=>n.pid===pid).map(n=>n.id);
   if(b.dataset.p==="prev")return nextReview(-1);
   if(b.dataset.p==="next")return nextReview(1);
+  if(b.dataset.p==="pick")return goWith(byId(b.dataset.id),ids);
   if(b.dataset.p==="ink")ink(ids);else if(b.dataset.p==="erase")erase(ids);else redraw(pid)});
+/* hovering a letter lights its card, so the choice is made looking at the direction, not the letter */
+$("overlays").addEventListener("pointerover",e=>{const b=e.target.closest('[data-p="pick"]');qsa(".card.pick-hint").forEach(x=>x.classList.remove("pick-hint"));if(b)nodeEl(b.dataset.id)?.classList.add("pick-hint")});
+$("overlays").addEventListener("pointerout",e=>{if(e.target.closest('[data-p="pick"]')&&!e.relatedTarget?.closest?.('[data-p="pick"]'))qsa(".card.pick-hint").forEach(x=>x.classList.remove("pick-hint"))});
+/* Go with one direction from a fresh set: the set is kept, the chosen one adopted, the rest set aside (with room
+   for why), so the decision and what it was chosen over both stay on the board. */
+function goWith(d,ids){
+  if(!d)return;qsa(".card.pick-hint").forEach(x=>x.classList.remove("pick-hint"));
+  ink(ids,{quiet:true});adopt(d);
+}
 /* what the selection bar and the selection menu (right-click on several selected cards) can do to the whole selection */
 function selectionActions(ns){
   return {copilot:()=>openCopilot(true),gather:()=>gather(ns),list:()=>makeList(ns),kanban:()=>makeKanban(ns),treemap:()=>makeTreeMap(ns),gif:()=>generateGif("",{sources:ns,from:ns[0]}),video:()=>generateVideo("",{sources:ns,from:ns[0]}),critique:()=>critique(ns[0]),"align-x":()=>alignSelected("x"),"align-y":()=>alignSelected("y"),grid:tidySelectedGrid,dup:duplicateSelection,group:()=>wrapSelectionInGroup(ns),hide:()=>hideFromCanvasNodes(ns.map(n=>n.id)),archive:()=>archiveNodes(ns.map(n=>n.id)),delete:()=>erase(ns.map(n=>n.id))};

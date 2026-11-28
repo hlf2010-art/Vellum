@@ -126,8 +126,11 @@ async function dragEdge(p, id, side, dx) {
     {
       await view(p, 'edge');
       await dragEdge(p, 'edge', 'r', 500);
-      const r = await p.evaluate(() => { const n = byId('edge'), z = bayOf(n); return { x: n.x, w: nodeW(n), z, right: (z + 1) * BAY - ZONE_IN }; });
-      check('R6 a card widened past its zone settles back inside it', r.x + r.w <= r.right + 1, JSON.stringify(r));
+      // with content-sized zones (zoneX) the zone grows to fit instead; either way the card ends up inside its zone
+      await p.evaluate(() => { if (typeof finishZoneGlide === 'function') finishZoneGlide(); }); await p.waitForTimeout(400);
+      const r = await p.evaluate(() => { const n = byId('edge'), z = bayOf(n), edge = i => typeof zoneX === 'function' ? zoneX(i) : i * BAY;
+        return { x: n.x, w: nodeW(n), z, left: edge(z) + ZONE_IN, right: edge(z + 1) - ZONE_IN }; });
+      check('R6 a card widened past its zone ends up inside it', r.x >= r.left - 1 && r.x + r.w <= r.right + 1, JSON.stringify(r));
     }
     check('R7 no page errors', !p.errors.length, p.errors.join(' | '));
 

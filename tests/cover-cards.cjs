@@ -179,6 +179,36 @@ const state = (p, ids) => p.evaluate(ids => {
       check('no page errors (D)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
+    { // R: roll up a long notepad: only the display changes; lines follow the edge; evidence and undo hold
+      const p = await open(browser, base);
+      const ids = await p.evaluate(() => {
+        persistNow(); board = blank('Roll'); sel = [];
+        const np = node('notepad', { title: 'Interview', text: Array.from({ length: 6 }, (_, i) => `Q${i + 1}: how do you pack it?\n\nIt never fits, so I strap it outside.`).join('\n\n') }, { x: 120, y: 140 });
+        const star = node('idea', { kind: 'Claim', text: 'A pocket lantern wins hikers.' }, { x: 640, y: 160 });
+        renderAll(); makeRelation(np.id, star.id, { rel: 'supports' }); renderAll(); select([]); focusNodes(visibleNodes(), .9);
+        return { np: np.id, star: star.id };
+      });
+      await p.waitForTimeout(500);
+      const st = () => p.evaluate(i => { const el = nodeEl(i.np); return { h: el.offsetHeight, _h: byId(i.np)._h, roll: byId(i.np).roll || 0, rolled: el.classList.contains('rolled'), sup: groundOf(byId(i.star)).sup.length, text: byId(i.np).text.length }; }, ids);
+      const s0 = await st();
+      check('a long notepad offers Roll up in its menu', await p.evaluate(i => fullCardMenuActs(byId(i.np)).some(a => a.k === 'roll' && /Roll up/.test(a.label)), ids));
+      await p.evaluate(i => toggleRoll(byId(i.np)), ids); await p.waitForTimeout(600);
+      const s1 = await st();
+      check('Roll up leaves the title and first lines, and the card shrinks', s1.rolled && s1.roll === 46 && s1.h < s0.h - 100, JSON.stringify([s0, s1]));
+      check('the line follows the rolled edge and evidence still counts; the text is untouched', s1._h === s1.h && s1.sup === s0.sup && s1.text === s0.text, JSON.stringify(s1));
+      const bb = await (await p.$(`[data-id="${ids.np}"] [data-roll]`)).boundingBox();
+      await p.mouse.move(bb.x + bb.width / 2, bb.y + 10); await p.mouse.down(); await p.mouse.move(bb.x + bb.width / 2, bb.y + 110, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(500);
+      const s2 = await st();
+      check('pulling the roll down opens as far as you pull and stays there', s2.rolled && s2.roll > 120 && s2.h > s1.h + 80 && s2.h < s0.h, JSON.stringify(s2));
+      await p.click(`[data-id="${ids.np}"] [data-roll]`); await p.waitForTimeout(600);
+      const s3 = await st();
+      check('a click on the roll opens it all the way', !s3.rolled && !s3.roll && Math.abs(s3.h - s0.h) < 16, JSON.stringify(s3));
+      await p.keyboard.press('Control+z'); await p.waitForTimeout(600);
+      const s4 = await st();
+      check('Undo rolls it back to where it was and the line follows', s4.roll === s2.roll && s4._h === s4.h && Math.abs(s4.h - s2.h) < 3, JSON.stringify(s4));
+      check('no page errors (R)', !p.errors.length, p.errors.join(' | '));
+      await p.context().close();
+    }
     if (SHOTS) {
       fs.mkdirSync(SHOTS, { recursive: true });
       for (const theme of ['light', 'dark']) for (const lang of ['en', 'zh']) {

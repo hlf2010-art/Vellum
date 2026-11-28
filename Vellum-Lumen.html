@@ -3366,6 +3366,25 @@ body.snap-skip #wall{cursor:copy}
 .card.group:hover .grp-stack,.card.group .grp-stack:focus-visible,.card.group .grp-stack.on{opacity:1}
 .card.group .grp-stack:hover{background:var(--hover,rgba(127,127,127,.1));color:var(--label)}
 @media (prefers-reduced-motion:reduce){.cloth.deck .dk-top,.cloth.deck .dk-sheet{transition:none}}
+/* a rolled note: the paper wraps into a roll at the bottom; nothing else changes */
+:root{--rl-a:#F4F1EB;--rl-b:#DCD6CB;--rl-c:#C9C2B5;--rl-edge:rgba(60,50,35,.22)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--rl-a:#4A4C52;--rl-b:#36383D;--rl-c:#2A2B2F;--rl-edge:rgba(255,255,255,.18)}}
+:root[data-theme="dark"]{--rl-a:#4A4C52;--rl-b:#36383D;--rl-c:#2A2B2F;--rl-edge:rgba(255,255,255,.18)}
+.card.notepad .notepad-body{transition:max-height var(--duration-spring) var(--easing-standard)}
+.card.notepad.roll-drag .notepad-body{transition:none}
+.card.notepad.rolled .notepad-body{overflow:hidden;-webkit-mask:linear-gradient(#000 55%,transparent);mask:linear-gradient(#000 55%,transparent)}
+.card.notepad.rolled .foot{display:none}
+.card.notepad .np-roll{position:relative;display:none;height:22px;margin:8px -8px -4px;border-radius:11px;background:linear-gradient(var(--rl-a),var(--rl-b) 55%,var(--rl-c));box-shadow:0 -3px 6px -4px rgba(0,0,0,.18),inset 0 0 0 1px var(--rl-edge),0 3px 6px rgba(0,0,0,.08);cursor:ns-resize;touch-action:none}
+.card.notepad .np-roll::before,.card.notepad .np-roll::after{content:"";position:absolute;top:3px;bottom:3px;width:6px;border-radius:3px;background:linear-gradient(var(--rl-c),var(--rl-b));box-shadow:inset 0 0 0 1px var(--rl-edge)}
+.card.notepad .np-roll::before{left:4px}.card.notepad .np-roll::after{right:4px}
+.card.notepad .np-roll i{position:absolute;left:18px;right:18px;top:8px;height:1px;background:var(--rl-edge);opacity:.6}
+.card.notepad .np-roll .np-roll-n{position:absolute;right:10px;bottom:calc(100% + 6px);font:500 12px/1 var(--ui);color:var(--label-2);background:var(--chrome);box-shadow:var(--chrome-shadow);padding:5px 8px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity var(--duration-quick)}
+.card.notepad.rolled .np-roll{display:block}
+.card.notepad.rolled .np-roll:hover .np-roll-n{opacity:1}
+.card.notepad.np-long:not(.rolled):not(.sketch):hover .np-roll{display:block;height:10px;margin-top:6px;opacity:.85}
+.card.notepad.np-long:not(.rolled) .np-roll::before,.card.notepad.np-long:not(.rolled) .np-roll::after,.card.notepad.np-long:not(.rolled) .np-roll i{display:none}
+.card.notepad.roll-drag .np-roll{box-shadow:0 -3px 6px -4px rgba(0,0,0,.18),inset 0 0 0 1px var(--rl-edge),0 8px 16px rgba(0,0,0,.14)}
+@media (prefers-reduced-motion:reduce){.card.notepad .notepad-body{transition:none}}
 </style>
 <div id="app">
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
@@ -7062,7 +7081,7 @@ function cardBody(n){
   case"notepad":{const defPadTag=uiLang()==="zh"?"记事本":"Notepad",padTag=esc(n.tag||formatTagOf(n)||defPadTag),padTitle=esc(uiLang()==="zh"?"点击编辑记事本标签":"Click to edit tag");
     const npHead=sk?head(`${byline(n)}<span class="note-tag notepad-tag"><span>${padTag}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag notepad-tag" data-a="edit-tag" title="${padTitle}"><span data-edit="tag" spellcheck="false">${padTag}</span></span><span class="sp"></span>${cardVotesHTML(n)}</div>`;
     return `<div class="in">${npHead}
-    <h4 data-edit="title">${esc(n.title||"")}</h4>${!n.fmtOff&&hasBlocks(n.text)?`<div class="notepad-body pb" data-edit="text" data-raw="1">${blocksHTML(n)}</div>`:`<div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>`}${sk?sketchActs(n):foot(fL(weightHTML(n.weight,false,n),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
+    <h4 data-edit="title">${esc(n.title||"")}</h4>${!n.fmtOff&&hasBlocks(n.text)?`<div class="notepad-body pb" data-edit="text" data-raw="1">${blocksHTML(n)}</div>`:`<div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>`}${sk?"":`<div class="np-roll" data-roll title="${esc(n.roll?Lang("Pull down to open · click to open all","往下拉展开 · 点一下全部展开"):Lang("Pull up to roll · click to roll up","往上推卷起 · 点一下卷起来"))}"><i></i>${n.roll?`<span class="np-roll-n">${esc(Lang("about ","约 ")+fmtPadStat(n.text))}</span>`:""}</div>`}${sk?sketchActs(n):foot(fL(weightHTML(n.weight,false,n),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
   case"table":{/* L is shadowed by lin(n) in cardBody, so translate locally */const tr=(en,zh)=>uiLang()==="zh"?zh:en;const ds=n.data||{columns:[],rows:[]},src=ds.source||{};
     const from=[src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.kind==="paste"?tr("Pasted","粘贴"):src.label||"",src.edited?tr("edited","已编辑"):"",
       src.total>(ds.rows||[]).length?tr(`first ${(ds.rows||[]).length} of ${src.total.toLocaleString()} rows`,`前 ${(ds.rows||[]).length} 行，共 ${src.total.toLocaleString()} 行`):src.more?tr(`first ${(ds.rows||[]).length} rows`,`前 ${(ds.rows||[]).length} 行`):""].filter(Boolean).join(" · ");
@@ -13017,6 +13036,7 @@ function fullCardMenuActs(n){
   if(bondCluster(n.id).length>1&&!(isStar(n.id)&&n.focus==="you"))acts.push({k:"focus",label:L("Set as focus","设为焦点"),ic:"orbit"});
   if(n.status==="ink")acts.push({k:"lock",label:n.locked?L("Unlock","解锁"):L("Lock","锁定"),ic:"lock"});
   acts.push({k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"});
+  if(n.type==="notepad"&&n.status!=="sketch")acts.push({k:"roll",label:n.roll?L("Unroll","展开"):L("Roll up","卷起来"),ic:"scroll"});
   if(n.type==="group")acts.push({k:"stack",label:n.deck?L("Spread out","展开"):L("Stack","收成一摞"),ic:"layers"});
   else acts.push({k:"hide",label:L("Cover","盖起来"),key:"⇧H",ic:"cloth"});
   acts.push({k:"archive",label:L("Archive","归档卡片"),ic:"archive"});
@@ -13091,6 +13111,7 @@ $("cardMenu")?.addEventListener("click",e=>{
   if(k==="dup")return duplicateSelection();
   if(k==="hide")return hideFromCanvasNodes([n.id]);
   if(k==="stack")return n.deck?spreadGroup(n):stackGroup(n);
+  if(k==="roll")return toggleRoll(n);
   if(k==="archive")return archiveNodes([n.id]);
   if(k==="delete")return erase([n.id]);
   if(k==="copilot")return openCopilot(true,n);
@@ -17912,6 +17933,7 @@ function renderCloths(){
     if(!el._drag){el.style.left=c.x+"px";el.style.top=c.y+"px"}
   }
   qsa(".cloth",clothLayer).forEach(el=>{if(!keep.has(el.dataset.cloth))el.remove()});
+  syncRolls();
   if(clothPeekFor&&!keep.has(clothPeekFor))hideClothPeek(true);
 }
 /* a line to a covered card stops at its bundle: thin, dashed, still coloured by its relation; one line per pair */
@@ -18009,6 +18031,53 @@ nodesEl.parentElement.addEventListener("pointerover",e=>{const el=e.target.close
 nodesEl.parentElement.addEventListener("pointerout",e=>{const el=e.target.closest?.(".cloth[data-cloth]");if(el&&!el.contains(e.relatedTarget))hideClothPeek()});
 nodesEl.parentElement.addEventListener("keydown",e=>{const el=e.target.closest?.(".cloth[data-cloth]");if(el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();const c=clothsOf().find(x=>x.id===el.dataset.cloth);if(c)uncoverNodes(c.ns.map(n=>n.id))}});
 function findCloth(id){const c=clothsOf().find(x=>x.id===id);if(!c)return;focusNodes([clothNode(c)],.9);setTimeout(()=>{const el=clothLayer?.querySelector(`[data-cloth="${id}"]`);if(el&&!calm())el.animate([{transform:"none"},{transform:"translateY(-6px)"},{transform:"none"}],{duration:420,easing:"cubic-bezier(.3,.7,.2,1)"})},660)}
+/* ── roll up a long notepad ──────────────────────────────────────────────
+   A long note (a transcript, a pasted brief) rolls up like a scroll: the title and its first lines stay, the rest goes
+   into a paper roll at the bottom. Pull the roll down to open as much as you want and let go; a click opens or rolls
+   it all the way. The roll shows on hover of any long note, so the same gesture rolls it back up. Rolling changes only
+   what is shown: the crew reads the whole text and evidence counts the same. n.roll holds the open height. */
+const ROLL_MIN=46;
+{const _s=sigOf;sigOf=function(n){const s=_s(n);return n&&n.type==="notepad"&&n.roll?s+"|roll:"+n.roll:s}}
+const rollBodyOf=el=>el?.querySelector(".notepad-body");
+/* the open height a note can reach: its text, up to the note's own cap */
+function rollFull(el){const b=rollBodyOf(el);if(!b)return 0;const cap=parseFloat(getComputedStyle(b).maxHeight);const prev=b.style.maxHeight;b.style.maxHeight="none";const h=b.scrollHeight;b.style.maxHeight=prev;return Math.min(h,el.classList.contains("rolled")||!Number.isFinite(cap)?260:cap)}
+const rollSeen=new Map();
+function syncRolls(){
+  for(const n of board.nodes){
+    if(n.type!=="notepad"||isNodeHidden(n))continue;const el=nodeEl(n.id),b=rollBodyOf(el);if(!b)continue;
+    el.classList.toggle("rolled",!!n.roll);
+    if(n.roll)b.style.maxHeight=n.roll+"px";else if(!el._rollDrag)b.style.maxHeight="";
+    el.classList.toggle("np-long",!!n.roll||b.scrollHeight>ROLL_MIN+90);
+    /* undo/redo or a reload changed the roll: let lines follow the new edge */
+    const r=n.roll||0;if(rollSeen.has(n.id)&&rollSeen.get(n.id)!==r&&!el._rollDrag)rollTrack(n,calm()?0:340);rollSeen.set(n.id,r);
+  }
+}
+/* lines follow the note's bottom edge while it changes height */
+function rollTrack(n,ms){const t0=performance.now(),step=()=>{const el=nodeEl(n.id);if(el)n._h=el.offsetHeight;drawWires();if(performance.now()-t0<ms)requestAnimationFrame(step)};requestAnimationFrame(step)}
+function setRoll(n,v,{log:lg=true}={}){
+  if(!n||n.type!=="notepad")return;const was=n.roll||0;v=v?Math.round(v):0;if(was===v)return;
+  checkpoint();if(v)n.roll=v;else delete n.roll;
+  if(lg)log("you",`${v?(was?"Opened":"Rolled up"):"Unrolled"} <b>${esc(titleOf(n))}</b>`,n.id);
+  renderAll();persist();rollTrack(n,calm()?0:320);
+}
+const toggleRoll=n=>n&&setRoll(n,n.roll?0:ROLL_MIN);
+function rollPointerDown(e,h){
+  const card=h.closest(".card[data-id]"),n=byId(card?.dataset.id),b=rollBodyOf(card);if(!n||!b)return false;
+  e.preventDefault();e.stopPropagation();
+  const full=rollFull(card),start=b.getBoundingClientRect().height/cam.s,sy=e.clientY;let moved=false,cur=start;
+  const mv=ev=>{const d=(ev.clientY-sy)/cam.s;if(!moved&&Math.abs(ev.clientY-sy)<4)return;
+    if(!moved){moved=true;card._rollDrag=true;card.classList.add("roll-drag")}
+    cur=clamp(start+d,ROLL_MIN,full);b.style.maxHeight=cur+"px";card.classList.toggle("rolled",cur<full-1);n._h=card.offsetHeight;drawWires()};
+  const up=ev=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);pointers.delete(ev.pointerId);
+    card._rollDrag=false;card.classList.remove("roll-drag");
+    if(!moved)return toggleRoll(n);
+    setRoll(n,cur>=full-8?0:cur<=ROLL_MIN+8?ROLL_MIN:cur)};
+  addEventListener("pointermove",mv);addEventListener("pointerup",up);addEventListener("pointercancel",up);
+  return true;
+}
+/* writing in a rolled note opens it first */
+nodesEl.addEventListener("focusin",e=>{const b=e.target.closest?.(".card.rolled .notepad-body");if(!b)return;const n=byId(b.closest("[data-id]")?.dataset.id);if(n?.roll)setRoll(n,0,{log:false})});
+ICONS.scroll='<path d="M7 4h10a2 2 0 0 1 2 2v10"/><path d="M5 8v10a2 2 0 0 0 2 2h10"/><rect x="3" y="16" width="18" height="4" rx="2"/><path d="M9 8h6M9 11h6"/>';
 /* ── stack a group into a deck ───────────────────────────────────────────
    A group of many like things (a pile of dropped photos, a batch of generations) can be squared up into one deck,
    like gathering prints off a table: the cards fly in and stack, the first image is the cover, the count sits on the
@@ -19997,6 +20066,7 @@ wall.addEventListener("pointerdown",e=>{
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2){if(gesture?.type==="pen")penCancel();const [a,b]=[...pointers.values()];gesture={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y),c:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};return}
   {const rl=e.target.closest(".clasp,.rel-tag");if(rl&&e.button===0&&tool!=="hand"&&!spaceHeld){stopCam();if(relPointerDown(e,rl))return}}
+  {const rh=e.target.closest(".card [data-roll]");if(rh&&e.button===0&&tool!=="hand"&&!spaceHeld){stopCam();if(rollPointerDown(e,rh))return}}
   {const cl=e.target.closest(".cloth[data-cloth]");if(cl&&e.button===0&&tool!=="hand"&&!spaceHeld){stopCam();clothPointerDown(e,cl);return}}
   if(writingNoteDrag(e))return;
   if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop,.tbl-block tbody td,.tbl-chart"))return;

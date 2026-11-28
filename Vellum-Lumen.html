@@ -188,7 +188,10 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);b
 #wall.lasso,#wall.lasso .card,body.alt-ink #wall:not(.hand):not(.panning),body.is-inking #wall,body.is-inking #wall *{cursor:var(--pen-cur)}
 #lasso{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:12;overflow:visible}
 #lasso .ink-live{fill:var(--label);opacity:.9}
-#lasso .ink-live.dry{opacity:0;transition:opacity .48s cubic-bezier(.3,0,.2,1)}
+#lasso .ink-live.dry{opacity:0;transition:opacity .3s cubic-bezier(.3,0,.2,1)}
+/* while the pen is down: faint round what the stroke is curling round, firm round what lifting would select */
+#nodes .card.ink-near{box-shadow:0 0 0 1px color-mix(in srgb,var(--focus) 42%,transparent),var(--card-shadow)}
+#nodes .card.ink-hit{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--focus) 68%,transparent),0 0 0 5px color-mix(in srgb,var(--focus) 12%,transparent),var(--card-shadow)}
 #lasso .ink-live.handed{opacity:0;transition:opacity .24s linear}
 .card>svg.ink-marks{position:absolute;left:0;top:0;width:1px;height:1px;z-index:6;overflow:visible;pointer-events:none}
 .card[data-inked]:not(.dragging):not(.resizing){z-index:4}
@@ -19620,7 +19623,7 @@ function penEncloses(n,poly){
 /* what lifting the pen now would do */
 function penRead(g){
   const loop=penLoop(g.raw);
-  if(!loop){g.state=null;penPreview(g,[]);penTip(null);return null}
+  if(!loop){g.state=null;penPreview(g,[],penNear(g));penTip(null);return null}
   const wpoly=loop.map(p=>toWorld(p.x,p.y));
   const hits=visibleNodes().filter(n=>penEncloses(n,wpoly)).map(n=>n.id);
   const cards=hits.map(byId).filter(n=>n&&n.type!=="group");
@@ -19630,11 +19633,28 @@ function penRead(g){
     act=cur===d.id&&d.status==="ink"?"remark":cur&&byId(cur)&&!byId(cur).tombstone?"switch":"adopt";
   }
   g.state={loop,hits,act,d};
-  penPreview(g,act==="select"?hits:[d.id]);
+  penPreview(g,act==="select"?hits:[d.id],[]);
   penTip(act==="adopt"||act==="switch"?{text:act==="switch"?L(`Switch to ${d.letter}`,`改选 ${d.letter}`):L(`Adopt ${d.letter}`,`采纳 ${d.letter}`),at:g.raw[g.raw.length-1]}:null);
   return g.state;
 }
-function penPreview(g,ids){const hit=new Set(g.add?[...g.base,...ids]:ids.length?ids:sel);qsa(".card",nodesEl).forEach(el=>el.classList.toggle("sel",hit.has(el.dataset.id)))}
+/* While the pen is down, the cards it would catch carry a soft outline: faint while the stroke is still curling round
+   them, firm once the loop has closed, which is exactly what lifting would select. The old selection steps back while a
+   new one is forming (unless ⇧ adds to it) and returns if the stroke catches nothing. */
+function penPreview(g,hits,near=[]){
+  const hitS=new Set(hits),nearS=new Set(near.filter(id=>!hitS.has(id))),forming=hitS.size||nearS.size;
+  const selS=new Set(g.add?g.base:forming?[]:sel);
+  qsa(".card",nodesEl).forEach(el=>{const id=el.dataset.id;el.classList.toggle("sel",selS.has(id));el.classList.toggle("ink-hit",hitS.has(id));el.classList.toggle("ink-near",nearS.has(id))});
+}
+/* the cards inside a stroke that is curling into a loop but has not closed: the gap is bridged with a straight line,
+   and only once the pen has turned at least half way round, so a plain line or a tick lights nothing */
+function penNear(g){
+  const pts=g.raw;if(pts.length<8||g.len<90)return [];
+  const q=[];for(const p of pts)if(!q.length||Math.hypot(p.x-q[q.length-1].x,p.y-q[q.length-1].y)>=6)q.push(p);if(q.length<5)return [];
+  let turn=0;for(let i=2;i<q.length;i++){const a1=Math.atan2(q[i-1].y-q[i-2].y,q[i-1].x-q[i-2].x),a2=Math.atan2(q[i].y-q[i-1].y,q[i].x-q[i-1].x);let d=a2-a1;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;turn+=d}
+  if(Math.abs(turn)<Math.PI)return [];
+  const wpoly=q.map(p=>toWorld(p.x,p.y));
+  return visibleNodes().filter(n=>n.type!=="group"&&penEncloses(n,wpoly)).map(n=>n.id);
+}
 function penTip(t){
   if(!t){if(penTipEl)penTipEl.classList.remove("on");return}
   if(!penTipEl){penTipEl=document.createElement("div");penTipEl.className="ink-tip";penTipEl.setAttribute("aria-live","polite");wall.appendChild(penTipEl)}
@@ -19648,9 +19668,9 @@ function penLift(g,how){
   const p=g.path;g.path=null;document.body.classList.remove("is-inking");penTip(null);
   if(!p)return;
   if(calm()){p.remove();return}
-  p.classList.add(how==="keep"?"handed":"dry");setTimeout(()=>p.remove(),how==="keep"?260:520);
+  p.classList.add(how==="keep"?"handed":"dry");setTimeout(()=>p.remove(),how==="keep"?260:340);
 }
-function penCancel(){const g=gesture;if(g?.type!=="pen")return;if(g.raf)cancelAnimationFrame(g.raf);gesture=null;penLift(g,"dry");penPreview(g,[])}
+function penCancel(){const g=gesture;if(g?.type!=="pen")return;if(g.raf)cancelAnimationFrame(g.raf);gesture=null;penLift(g,"dry");penPreview({add:false},[])}
 function penEnd(g,e){
   if(g.raf){cancelAnimationFrame(g.raf);g.raf=0}
   const moved=Math.hypot(e.clientX-g.sx,e.clientY-g.sy)>5||g.len>8;
@@ -19661,10 +19681,12 @@ function penEnd(g,e){
     return;
   }
   const st=penRead(g);
-  if(!st||(!st.hits.length&&!st.d)){penLift(g,"dry");penPreview(g,[]);penFirstTip();return}
-  if(st.act==="select"){penLift(g,"dry");select(g.add?[...new Set([...g.base,...st.hits])]:st.hits);return}
+  // nothing caught: the ink simply did not take, and fades. No message, nothing changes.
+  if(!st||(!st.hits.length&&!st.d)){penLift(g,"dry");penPreview({add:false},[]);return}
+  if(st.act==="select"){penLift(g,"dry");penPreview({add:false},[]);select(g.add?[...new Set([...g.base,...st.hits])]:st.hits);return}
   const d=st.d,box={x:d.x,y:d.y,w:nodeW(d)||1,h:nodeH(d)||1}; // the card as it was circled: adopting can change its height
-  if(st.act==="adopt"||st.act==="switch"){adopt(d);if(board.adopted[d.idea]!==d.id||d.status!=="ink"){penLift(g,"dry");penPreview(g,[]);return}}
+  penPreview({add:false},[]);
+  if(st.act==="adopt"||st.act==="switch"){adopt(d);if(board.adopted[d.idea]!==d.id||d.status!=="ink"){penLift(g,"dry");return}}
   else checkpoint();
   penSaveMark(d,st.loop,box);d.updated=NOW();persist();
   select([d.id]);penLift(g,"keep");drawInkMarks({fresh:d.id});

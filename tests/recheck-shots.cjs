@@ -27,7 +27,7 @@ let cur = null;
     if (q.url.startsWith('/Vellum-Lumen.html')) { r.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return fs.createReadStream(FILE).pipe(r); }
     if (q.method === 'POST' && q.url.endsWith('/chat/completions')) {
       let b = ''; q.on('data', c => b += c); q.on('end', () => {
-        const x = R[cur[1]], v = /Survey the cards: steps 1 and 2/.test(b) ? x.survey : /Step 3: your own verdict/.test(b) ? (cur[2] === 'object' ? x.object : { stance: 'none' }) : x.strat;
+        const x = R[cur[1]], v = /Survey the cards: steps 1 and 2/.test(b) ? x.survey : /Step 3: your verdict, then object/.test(b) ? (cur[2] === 'object' ? x.object : { stance: 'none' }) : x.strat;
         r.writeHead(200, { 'Content-Type': 'text/event-stream' }); r.write('data: ' + JSON.stringify({ choices: [{ delta: { content: JSON.stringify(v) } }] }) + '\n\n'); r.end('data: [DONE]\n\n');
       }); return;
     }

@@ -23,7 +23,7 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
 
 /* the scripted model: each reply is picked by what the request is (strategist, critic, a repair), in order */
 let script = [], requests = [];
-const kindOf = flat => /Fix only these problems/.test(flat) ? 'repair' : /Survey the cards: steps 1 and 2/.test(flat) ? 'survey' : /Step 3: your own verdict/.test(flat) ? 'critic' : /re-checking a decision/.test(flat) ? 'strategist' : 'other';
+const kindOf = flat => /Fix only these problems/.test(flat) ? 'repair' : /Survey the cards: steps 1 and 2/.test(flat) ? 'survey' : /Step 3: your verdict, then object/.test(flat) ? 'critic' : /re-checking a decision/.test(flat) ? 'strategist' : 'other';
 function serve() {
   return new Promise(res => {
     const srv = http.createServer((req, rsp) => {
@@ -151,6 +151,16 @@ function serve() {
     await settle();
     pins = await pinsOn(r.dir);
     check('Critic agreeing the decision stands ("holds" against "stronger") does not object: no repair, no objection shown', requests.map(q => q.kind).join() === 'strategist,survey,critic' && pins.length === 1 && /\*\*Critic:\*\* no strong objection\./.test(pins[0].note) && !/small sample/.test(pins[0].note), JSON.stringify({ k: requests.map(q => q.kind), note: pins[0]?.note }));
+
+    /* 4b''. Critic forms its own verdict before it sees Strategist's; when it reads the evidence the same way, that is the end */
+    r = await fresh(); requests = [];
+    script = [S('weaker', 'Four of six players missed the glow in rain, which undercuts noticing the pager at a glance.', ['N1', 'S1']), { kind: 'survey', text: { conflicts: [{ id: 'N1', how: '4 of 6 missed the glow in rain' }], assumptions: [], my_verdict: 'Weaker' } }];
+    await addEv(r, [['source', 'Rain test', '4 of 6 missed the glow in rain.', 'observed', 'conflicts']]);
+    await settle();
+    pins = await pinsOn(r.dir);
+    const sv = requests.find(q => q.kind === 'survey')?.flat || '';
+    check('Critic surveys and forms its own verdict without seeing Strategist\'s reading', !!sv && !/Strategist's reading/.test(sv) && !/undercuts noticing/.test(sv) && /"my_verdict"/.test(sv), sv.slice(-400));
+    check('the same verdict as Strategist: no objection and no further call', requests.map(q => q.kind).join() === 'strategist,survey' && pins.length === 1 && /\*\*Critic:\*\* no strong objection\./.test(pins[0].note), JSON.stringify({ k: requests.map(q => q.kind), note: pins[0]?.note }));
 
     /* 4c. Critic finds nothing worth saying: it says so, in one short line, and makes no repair */
     r = await fresh(); requests = [];

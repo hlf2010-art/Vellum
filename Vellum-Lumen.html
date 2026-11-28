@@ -12156,7 +12156,8 @@ async function groundIdea(idea,brief,picked){
     /* a hit must share at least two of the idea's words (one if it has only one): "AI video editing agent"
        once pulled a basketball trade from Wikipedia because its summary said "generation" */
     const words=[...new Set(ideaCore(ideaText).toLowerCase().split(/\s+/).filter(w=>w.length>2))],need=Math.min(2,words.length);
-    const onTopic=it=>lang==="zh"||!words.length||(`${it.title} ${it.text}`.toLowerCase().match(new RegExp(`\\b(?:${words.map(w=>w.replace(/[^\w'-]/g,"")).filter(Boolean).join("|")})`,"g"))||[]).reduce((a,w)=>a.add(w),new Set()).size>=need;
+    const place=(placesIn(ideaText)[0]||"").toLowerCase();   /* a setting's own place is on topic by itself ("History of Shanghai") */
+    const onTopic=it=>lang==="zh"||!words.length||(place&&`${it.title} ${it.text}`.toLowerCase().includes(place))||(`${it.title} ${it.text}`.toLowerCase().match(new RegExp(`\\b(?:${words.map(w=>w.replace(/[^\w'-]/g,"")).filter(Boolean).join("|")})`,"g"))||[]).reduce((a,w)=>a.add(w),new Set()).size>=need;
     const take=(got,q,via)=>{let n=0;for(const it of got){if(via==="Wikipedia"&&!onTopic(it))continue;const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3||++n>=2)break}};
     if(useKeen){
       for(const q of keenQs){

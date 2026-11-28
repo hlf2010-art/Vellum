@@ -113,8 +113,8 @@ const LEGIBILITY = scope => {
 };
 function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  — ' + detail}`); if (!ok) failures++; }
 const WIKI = { query: { pages: {
-  1: { index: 1, title: 'Shanghai International Settlement', extract: 'The Shanghai International Settlement originated from the 1863 merger of the British and American enclaves in Shanghai. Extraterritoriality was abolished in 1943.', fullurl: 'https://en.wikipedia.org/wiki/Shanghai_International_Settlement' },
-  2: { index: 2, title: 'History of Shanghai', extract: 'The history of Shanghai spans over a thousand years and closely parallels the development of modern China, from fishing village to treaty port.', fullurl: 'https://en.wikipedia.org/wiki/History_of_Shanghai' } } } };
+  1: { index: 1, title: 'Shanghai International Settlement', extract: 'The Shanghai International Settlement originated from the 1863 merger of the British and American enclaves in Shanghai. Extraterritoriality was abolished in 1943. Its own Shanghai Municipal Police kept order there through the 1930s.', fullurl: 'https://en.wikipedia.org/wiki/Shanghai_International_Settlement' },
+  2: { index: 2, title: 'History of Shanghai', extract: 'The history of Shanghai spans over a thousand years and closely parallels the development of modern China, from fishing village to treaty port. In the 1930s rival police forces divided the city.', fullurl: 'https://en.wikipedia.org/wiki/History_of_Shanghai' } } } };
 const wikiRoute = (p, calls = []) => p.route(/wikipedia\.org\/w\/api\.php/, r => { calls.push(new URL(r.request().url()).searchParams.get('gsrsearch')); return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(WIKI) }); });
 const dirs = tag => ({ directions: ['A', 'B', 'C'].map(l => ({ title: `${tag} ${l}`, plan: `Plan ${l}.`, test: `Test ${l}.`, mode: 'story' })) });
 
@@ -126,7 +126,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
   const p = await ctx.newPage();
   p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
   await p.goto(base + '/Vellum-Lumen.html'); await p.waitForTimeout(2500);
-  await p.evaluate(() => { SCOUT_GROUNDING = false; }); // sections that test Scout's look-up turn it on
+  await p.evaluate(() => { SCOUT_GROUNDING = false; ALIGN_BEFORE = false; }); // sections that test Scout's look-up or asking first turn them on
   if (model) await p.evaluate(url => { apiCfg = { enabled: true, baseUrl: url + '/v1', model: 'smoke', key: 'smoke' }; }, base);
   p.type = async (t, enter = true) => { await p.click('#lineInput'); await p.keyboard.press('ControlOrMeta+a'); await p.keyboard.press('Backspace'); await p.keyboard.type(t); if (enter) await p.keyboard.press('Enter'); };
   p.idle = async () => { await p.waitForTimeout(400); for (let i = 0; i < 100 && await p.evaluate(() => crewBusy()); i++) await p.waitForTimeout(250); await p.waitForTimeout(500); };
@@ -423,35 +423,28 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       await p.context().close();
     }
 
-    // 5f. the questions Strategist asks offer suggestions, not the only answers: each takes the designer's own words too
+    // 5f. the questions Strategist asks sit on the canvas as a card; each offers suggestions and also takes the designer's own words
     {
       const p = await page(browser, base);
       await p.newBoard();
       const items = [{ q: 'Who is the player?', options: ['An outsider', 'Someone with power', 'An ordinary person'] }, { q: 'When does it happen?', options: ['The past', 'The present', 'The near future'] }, { q: 'How does it play?', options: ['Story', 'Tactics', 'Exploring'] }];
-      const open = async () => { const r = p.evaluate(it => clarifyDialog(it), items); await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify] [data-clarify-own]')); return r; };
-      const own = i => p.locator(`[data-clarify-q="${i}"] [data-clarify-own]`);
-      const chip = (i, j) => p.locator(`[data-clarify-q="${i}"] [data-clarify-opt="${j}"]`);
-      const pressed = i => p.evaluate(i => [...document.querySelectorAll(`[data-clarify-q="${i}"] [data-clarify-opt]`)].map(b => b.getAttribute('aria-pressed') === 'true').join(), i);
-      let res = open();
-      await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify] [data-clarify-own]'));
-      check('every question has a row for your own answer, and the dialog says so', await p.locator('[data-clarify-own]').count() === 3 && /write your own/i.test(await p.locator('dialog[data-clarify] .sh-id small').innerText()));
-      const edges = await p.evaluate(() => { const d = document.querySelector('dialog[open][data-clarify]'), x = d.querySelector('.sh-head .sh-x').getBoundingClientRect(), m = d.querySelector('.sh-main'), mr = m.getBoundingClientRect(); return { x: Math.round(x.right), content: Math.round(mr.right - parseFloat(getComputedStyle(m).paddingRight)) }; });
-      check('the close button is right-aligned with the content below it (a head with no back button left it in the middle column)', Math.abs(edges.x - edges.content) <= 1, JSON.stringify(edges));
-      await chip(0, 1).click(); await own(1).fill('Right now, in a sleeping port city'); await own(2).fill('  ');
-      check('typing clears the chosen chip for that question only; a blank row counts as nothing', await pressed(0) === 'false,true,false' && await pressed(1) === 'false,false,false' && await own(1).evaluate(e => e.classList.contains('has')) && !await own(2).evaluate(e => e.classList.contains('has')));
-      await own(1).press('Enter');
-      const a = await res;
-      check('a typed answer comes back like a chosen one, and Enter submits', JSON.stringify(a) === JSON.stringify([{ q: 'Who is the player?', a: 'Someone with power' }, { q: 'When does it happen?', a: 'Right now, in a sleeping port city' }]), JSON.stringify(a));
-      res = open(); await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify] [data-clarify-own]'));
-      await own(0).fill('A retired smuggler'); await chip(0, 2).click();
-      check('choosing a chip after typing clears what was typed', await own(0).inputValue() === '' && await pressed(0) === 'false,false,true' && !await own(0).evaluate(e => e.classList.contains('has')));
-      await chip(0, 2).click(); await own(0).fill('x'.repeat(300));
-      check('what you type is capped', await own(0).evaluate(e => e.value.length) <= 140);
-      await p.locator('[data-clarify-skip]').click();
-      check('Skip still skips everything', JSON.stringify(await res) === '[]');
-      // closing one dialog and opening the next in the same tick: the first one's queued close event must not close the second
-      const quick = await p.evaluate(async it => { const a = clarifyDialog(it); document.querySelector('[data-clarify-skip]').click(); const b = clarifyDialog(it); await new Promise(r => setTimeout(r, 300)); const stillOpen = !!document.querySelector('dialog[open][data-clarify]'); document.querySelector('[data-clarify-x]').click(); return { first: await a, stillOpen, second: await b }; }, items);
-      check('a dialog opened right after another closed is not closed by the first one\'s stale close event', JSON.stringify(quick) === JSON.stringify({ first: [], stillOpen: true, second: null }), JSON.stringify(quick));
+      const id = await p.evaluate(it => { const idea = node('idea', { text: 'A game' }, { x: 0, y: 0 }); window.__forked = []; fork = async (idea, count, brief, o) => { window.__forked.push({ count, brief, ask: o?.ask, clarified: idea.clarified || null }); }; const n = alignCreate({ qs: it.map(q => alignClean({ kind: 'pick', q: q.q, options: q.options })), then: { act: 'fork', idea: idea.id, count: 3, brief: '' }, from: idea, by: 'muse', title: 'A game' }); cam = { s: 1, x: 640 - (n.x + 210), y: 300 - n.y }; paintCam(); renderAll(); return n.id; }, items);
+      const card = `.card[data-id="${id}"]`;
+      check('the questions are a card on the canvas, linked to the idea, one question at a time', await p.evaluate(id => { const n = byId(id); return n.type === 'align' && inputsOf(id).length === 1 && document.querySelectorAll('.card.align .al-q').length === 1 && !document.querySelector('dialog[open]'); }, id));
+      check('every question has a row for your own answer', await p.locator(`${card} .al-own`).count() === 1);
+      const pressed = () => p.evaluate(c => [...document.querySelectorAll(c + ' .al-pick')].map(b => b.getAttribute('aria-pressed') === 'true').join(), card);
+      await p.locator(`${card} .al-pick`).nth(1).click(); await p.waitForTimeout(80);
+      await p.locator(`${card} [data-a="al-next"]`).click(); await p.waitForTimeout(80);
+      await p.locator(`${card} .al-pick`).nth(0).click(); await p.locator(`${card} .al-own`).fill('Right now, in a sleeping port city');
+      check('typing clears the chosen option for that question only', await pressed() === 'false,false,false' && await p.evaluate(id => byId(id).qs[0].a === 1, id));
+      await p.locator(`${card} .al-own`).fill('x'.repeat(300));
+      check('what you type is capped', await p.locator(`${card} .al-own`).evaluate(e => e.value.length) <= 140);
+      await p.locator(`${card} .al-own`).fill('Right now, in a sleeping port city');
+      await p.locator(`${card} .al-own`).press('Enter'); await p.waitForTimeout(80);
+      await p.locator(`${card} [data-a="al-skip"]`).click(); await p.waitForTimeout(300);
+      const f = await p.evaluate(() => window.__forked);
+      check('a typed answer goes in like a chosen one, Enter moves on, Skip leaves a question out, and the fork runs without asking again', f.length === 1 && f[0].ask === false && JSON.stringify(f[0].clarified) === JSON.stringify([{ q: 'Who is the player?', a: 'Someone with power' }, { q: 'When does it happen?', a: 'Right now, in a sleeping port city' }]) && /The designer chose: Who is the player\? Someone with power; When does it happen\? Right now/.test(f[0].brief), JSON.stringify(f));
+      check('the card stays as Agreed with the answers', await p.evaluate(id => byId(id).state === 'agreed' && document.querySelectorAll('.card.align .al-row').length === 2, id));
       check('no page errors', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }
@@ -641,7 +634,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('right-click on the empty gap inside the selection opens the same menu', m.open && /^2 /.test(m.head) && m.sm.includes('copilot'), JSON.stringify(m));
       await p.keyboard.press('Escape'); await p.waitForTimeout(150);
       m = await right(r2.cx, Math.min(r2.b + 160, 760));
-      check('right-click on empty canvas away from the selection opens nothing', !m.open, JSON.stringify(m));
+      check('right-click on empty canvas away from the selection opens the canvas menu, not the selection menu', m.open && !m.sm.length && !m.cm && await p.evaluate(() => !!document.querySelector('#cardMenu [data-wm="files"]')), JSON.stringify(m));
       m = await right(r2.cx, r2.cy);
       check('right-click on a card outside the selection still selects just it and opens its own menu', m.open && m.cm > 0 && m.sm.length === 0 && await p.evaluate(id => sel.length === 1 && sel[0] === id, ids[2]), JSON.stringify(m));
       await p.keyboard.press('Escape'); await p.waitForTimeout(150);
@@ -911,7 +904,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('connection health shows once: with a working model the entry has no words, the model row inside names it', await p.evaluate(() => !document.querySelector('#crewSetBtn .conn-dot') && !document.querySelector('#crewSetBtn .hub-l') && document.querySelector('#crewModeBtn small').textContent.trim() === apiModelName()), await p.evaluate(() => document.getElementById('crewModeBtn').outerHTML.slice(0, 200)));
       check('its label names what the crew may do, not the participation level (that is the top-bar switch)', !/Listening|Joins in/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))) && /Only drafts/.test(await p.evaluate(() => document.getElementById('crewSetBtn').getAttribute('aria-label'))));
       const pinCard = await p.evaluate(() => { const id = board.nodes.find(n => n.type === 'note').id; board.pins = { [id]: [{ id: 'pin-show', agent: 'critic', note: 'Read me', t: NOW(), seen: false }] }; renderAll(); renderCrew(); return id; });
-      check('the entry shows the crew is waiting for you', await p.evaluate(() => { const g = $('crewSetBtn'); return g.classList.contains('quiet-pacing') && /read the last thought/.test(g.title); }));
+      check('the entry shows the crew is waiting for you', await p.evaluate(() => { const g = $('crewSetBtn'); return g.classList.contains('quiet-pacing') && /read the last thought/.test(g.getAttribute('aria-label')); }));
       await p.click('#crewSetBtn'); await p.waitForTimeout(300);
       const segs = await p.evaluate(() => ['speak', 'act'].map(a => [...document.querySelectorAll(`#crewPop [data-crew-${a}]`)].map(b => b.dataset['crew' + a[0].toUpperCase() + a.slice(1)] + (b.getAttribute('aria-pressed') === 'true' ? '*' : '')).join(',')).join(' | '));
       check('the popover has one segmented axis (acts on the board); participation lives only in the top-bar switch', segs === ' | drafts*,create' && await p.evaluate(() => document.querySelectorAll('#crewPop .sp-seg').length === 1 && !/Focus|Listening|Teamwork/.test($('crewPop').innerText)), segs);
@@ -1085,9 +1078,9 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         await p.newBoard(); await p.type(label); await p.waitForTimeout(800);
         const id = await p.evaluate(() => board.nodes.find(n => n.type === 'idea').id);
         await p.evaluate(id => select([id]), id); await p.type('/fork 3');
-        await p.waitForFunction(() => document.querySelector('dialog[open][data-clarify]') || board.nodes.some(n => n.type === 'direction'), null, { timeout: 20000 }).catch(() => {});
-        const asked = await p.evaluate(() => document.querySelector('dialog[open][data-clarify]') ? [...document.querySelectorAll('[data-clarify-q] > b')].map(b => b.textContent) : null);
-        if (asked) await p.evaluate(a => { const d = document.querySelector('dialog[open][data-clarify]'); if (a) { d.querySelectorAll('[data-clarify-q]').forEach(g => g.querySelector('[data-clarify-opt]').click()); d.querySelector('[data-clarify-go]').click(); } else d.querySelector('[data-clarify-skip]').click(); }, !!answer);
+        await p.waitForFunction(() => board.nodes.some(n => (n.type === 'align' && n.state === 'open') || n.type === 'direction'), null, { timeout: 20000 }).catch(() => {});
+        const asked = await p.evaluate(() => { const n = board.nodes.find(n => n.type === 'align' && n.state === 'open'); return n ? n.qs.map(q => q.q) : null; });
+        if (asked) await p.evaluate(a => { const n = board.nodes.find(n => n.type === 'align' && n.state === 'open'); for (let i = 0; i < n.qs.length; i++) { if (a) { n.qs[n.step].a = 0; alignAct(n.step < n.qs.length - 1 ? 'al-next' : 'al-agree', n, null); } else alignAct('al-skip', n, null); } }, !!answer);
         await p.idle();
         return p.evaluate(asked => ({ asked, titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join(','), engines: board.nodes.filter(n => n.type === 'direction').map(n => n.prov?.engine).join(','), task: ISL.tasks.filter(t => t.kind === 'directions').at(-1)?.state, toasts: __toasts.splice(0), clarified: board.nodes.find(n => n.type === 'idea')?.clarified || null }), asked);
       };
@@ -1161,7 +1154,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
         const kc = await p.evaluate(() => board.nodes.filter(n => n.type === 'source' && n.by === 'scout').map(n => n.kind + ' | ' + n.title + ' | ' + n.text));
         check('with Keenable set up, Scout searches it first, with the key, the mode and the idea in plain words', kreq.length >= 1 && kreq[0].key === 'keen_smoke' && kreq[0].body.mode === 'realtime' && /riot squad/.test(kreq[0].body.query) && kc.length === 1 && /^Background · hpchina\.blogs\.bristol\.ac\.uk \| Policing nuisance/.test(kc[0]) && /Shanghai Municipal Police, received orders to clear a slum/.test(kc[0]) && /\(2024-11-18\)$/.test(kc[0]), JSON.stringify({ kreq: kreq.slice(0, 1), kc }));
         kstatus = 401;
-        r = await forkOn('An RPG set in Shanghai about dock strikes and the families on both sides in the spring of 1927.');
+        r = await forkOn('An RPG set in Shanghai about dock strikes the police broke up in the 1930s, and the families on both sides.')  // Scout keeps only Wikipedia pages that share two words with the idea;
         check('a refused Keenable key falls back to Wikipedia and says so', r.toasts.some(t => /^Keenable rejected the API key \(HTTP 401\), so Scout used Wikipedia instead\.$/.test(t)) && await p.evaluate(() => board.nodes.filter(n => n.type === 'source' && n.by === 'scout').map(n => n.title).join() === 'Shanghai International Settlement,History of Shanghai'), JSON.stringify(r.toasts));
         await p.unroute('https://api.keenable.ai/**'); await p.unroute(/wikipedia\.org\/w\/api\.php/);
         await p.evaluate(() => { searchCfg = { provider: 'wikipedia', key: '', mode: 'pro' }; store.set('.searchCfg', searchCfg); });
@@ -1394,7 +1387,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       queue = [{ id: 'copen', match: '"directions"', text: dirs('Open') }];
       await p.newBoard(); await p.type('Shanghai game'); await p.waitForTimeout(800);
       await p.evaluate(() => select([board.nodes.find(n => n.type === 'idea').id])); await p.type('/fork 3'); await p.idle();
-      const open = await p.evaluate(() => ({ dialog: !!document.querySelector('dialog[open][data-clarify]'), titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join() }));
+      const open = await p.evaluate(() => ({ dialog: board.nodes.some(n => n.type === 'align'), titles: board.nodes.filter(n => n.type === 'direction').map(n => n.title).join() }));
       check('an open idea is branched by the cloud without the small-model questions', !open.dialog && open.titles === 'Open A,Open B,Open C', JSON.stringify(open));
       // heavy: the fork goes to the cloud, Local AI is not asked
       let n0 = sgens.length;
@@ -1609,9 +1602,12 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       const p = await ctx.newPage(); p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
       await p.goto(base + '/Vellum-Lumen.html?welcome=1'); await p.waitForTimeout(2600);
       const w = await p.evaluate(() => ({ open: dlg.open, txt: dlg.innerText, s: cam.s, far: world.classList.contains('far'), tray: [...document.querySelectorAll('.pbar')].filter(e => e.style.visibility !== 'hidden').length }));
-      check('first run: a welcome says what Vellum is and offers Start a board or Explore the sample', w.open && /Start a board/.test(w.txt) && /Explore the sample/.test(w.txt) && /Gather, Explore, Prototype, Snapshot/.test(w.txt), w.txt.slice(0, 160));
+      check('first run: a welcome says what Vellum is and offers Start a board or Explore the sample', w.open && /Start a board/.test(w.txt) && /Explore the sample/.test(w.txt) && /think an idea through/.test(w.txt) && !/Double-click/.test(w.txt), w.txt.slice(0, 160));
       check('first run: the sample opens on its first lane at a readable zoom (not label-only), with no draft tray waiting', w.s >= 0.6 && !w.far && w.tray === 0, JSON.stringify(w));
       await p.click('[data-welcome="sample"]'); await p.waitForTimeout(300);
+      const tw = await p.evaluate(() => new Promise(r => setTimeout(() => r({ at: tourAt, t: document.querySelector('.tour-t')?.textContent || '' }), 600)));
+      check('the sample starts the walkthrough on its first step, the four stages', tw.at === 0 && /Four stages/.test(tw.t), JSON.stringify(tw));
+      await p.evaluate(() => endTour());
       const g = await p.evaluate(() => board.nodes.filter(n => n.type === 'group').map(n => n.title).join(' | '));
       check('the sample has no lane-wide groups repeating the lane names (the lanes are the zones), and none uses Diverge / Make / Release', !/^\d\d · (Gather|Explore|Prototype|Snapshot) · /m.test(g.split(' | ').join('\n')) && !/Diverge|Make ·|Release/.test(g), g);
       check('the /claim command is described with the same words', await p.evaluate(() => /Add an idea to Explore/.test(JSON.stringify(CMDS))));

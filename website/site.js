@@ -234,7 +234,7 @@
       reopen: "Reopen", holds: "Still holds",
       heldNote: "Still holds. Fix: the agent pre-marks its top 5 moments.",
       // The reviews Scout read, as they sit in the spreadsheet. [[...]] marks what matched.
-      sheet: { head: ["Review", "★"], rows: [[212, "Saved me an hour", 5], [213, "It [[cut the punchline]]", 2], [214, "Exports are quick", 4], [215, "[[Dropped my best take]]", 2], [216, "[[Cut the reaction shot]]", 1]] },
+      sheet: { head: ["Review", "★"], rows: [[212, "Saved me a whole hour", 5], [213, "It [[cut the punchline]], sadly", 2], [214, "Exports are quick and clean", 4], [215, "[[Dropped my best take]], ugh", 2], [216, "Also [[cut the reaction shot]]", 1]] },
       reopenedNote: "Reopened. A and C are back in play.",
       supports: "supports", counters: "counters"
     },
@@ -270,7 +270,7 @@
       flagH: "选定后出现 1 条新反证",
       reopen: "重新讨论", holds: "仍然成立",
       heldNote: "仍然成立。改进：AI 先预标 5 个高光。",
-      sheet: { head: ["评价", "★"], rows: [[212, "帮我省了一小时", 5], [213, "[[笑点被剪没了]]", 2], [214, "导出挺快", 4], [215, "[[最好的一条没了]]", 2], [216, "[[反应镜头被剪掉了]]", 1]] },
+      sheet: { head: ["评价", "★"], rows: [[212, "帮我省了整整一小时", 5], [213, "就是[[笑点被剪没了]]", 2], [214, "导出挺快，没卡过", 4], [215, "偏偏[[最好的一条没了]]", 2], [216, "我的[[反应镜头被剪掉了]]", 1]] },
       reopenedNote: "已重新讨论，A 和 C 也重新考虑。",
       supports: "支持", counters: "反驳"
     }

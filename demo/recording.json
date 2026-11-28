@@ -1,0 +1,116 @@
+{
+  "real": false,
+  "note": "Placeholder written by hand to build the replay; not a model's answer. Replace with a real run: node tools/demo/record-run.cjs",
+  "recordedAt": "2026-11-27T13:00:00Z",
+  "model": "Placeholder, not a real run",
+  "runs": {
+    "en": {
+      "model": "Placeholder, not a real run",
+      "calls": [
+        {
+          "tag": "rc.strategist",
+          "ms": 2400,
+          "v": {
+            "verdict": "holds",
+            "why": "Picking moments is slow only on long clips; the cuts editors keep still save time.",
+            "cites": [
+              "N1",
+              "S1"
+            ],
+            "next": "Time five editors on one long clip."
+          }
+        },
+        {
+          "tag": "rc.critic.survey",
+          "ms": 1600,
+          "v": {
+            "conflicts": [
+              {
+                "id": "N1",
+                "how": "On long clips, picking moments takes longer than cutting by hand."
+              }
+            ],
+            "assumptions": [
+              {
+                "text": "Editors save time when the agent picks the moments",
+                "rests_on": [
+                  "S1",
+                  "N1"
+                ],
+                "status": "contradicted"
+              }
+            ],
+            "my_verdict": "weaker"
+          }
+        },
+        {
+          "tag": "rc.critic",
+          "ms": 1800,
+          "v": {
+            "my_verdict": "weaker",
+            "stance": "object",
+            "objection": "On long clips the moment-picking step costs more time than the rough cut saves.",
+            "cites": [
+              "N1"
+            ],
+            "fix": "Have the agent pre-mark its top 5 moments."
+          }
+        }
+      ]
+    },
+    "zh": {
+      "model": "占位，不是真实运行",
+      "calls": [
+        {
+          "tag": "rc.strategist",
+          "ms": 2400,
+          "v": {
+            "verdict": "holds",
+            "why": "只有长素材挑瞬间慢；剪辑师保留的那些刀仍然省时间。",
+            "cites": [
+              "N1",
+              "S1"
+            ],
+            "next": "找五位剪辑师剪同一段长素材并计时。"
+          }
+        },
+        {
+          "tag": "rc.critic.survey",
+          "ms": 1600,
+          "v": {
+            "conflicts": [
+              {
+                "id": "N1",
+                "how": "长素材里，挑瞬间比自己剪还慢。"
+              }
+            ],
+            "assumptions": [
+              {
+                "text": "agent 挑瞬间能给剪辑师省时间",
+                "rests_on": [
+                  "S1",
+                  "N1"
+                ],
+                "status": "contradicted"
+              }
+            ],
+            "my_verdict": "weaker"
+          }
+        },
+        {
+          "tag": "rc.critic",
+          "ms": 1800,
+          "v": {
+            "my_verdict": "weaker",
+            "stance": "object",
+            "objection": "长素材里，挑瞬间花的时间比初剪省下的还多。",
+            "cites": [
+              "N1"
+            ],
+            "fix": "让 agent 先预标出 5 个候选瞬间。"
+          }
+        }
+      ]
+    }
+  }
+}

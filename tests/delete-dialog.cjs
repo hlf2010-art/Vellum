@@ -94,7 +94,7 @@ const st = (p, ids) => p.evaluate(ids => {
       check('it says in plain words what happens to the card made from it', /1 card was made from it\. It stays on the board, marked so you can review it\./.test(d.txt), d.txt);
       check('no engineering words (downstream, lineage, edges, snapshots, AI runs)', !/downstream|lineage|edges|snapshot|AI runs|scrub/i.test(d.txt), d.txt);
       check('the card made from it is a readable chip: kind, gap, name', d.chipKind === 'Sticky' && d.chipName === 'Hook prototype v2' && d.chipGap >= 4 && d.chipH >= 26, JSON.stringify(d));
-      check('three choices only: Hide instead, Cancel, Delete (plus close)', JSON.stringify(d.btns) === JSON.stringify(['Close', 'Hide instead', 'Cancel', 'Delete']), JSON.stringify(d.btns));
+      check('three choices only: Cover instead, Cancel, Delete (plus close)', JSON.stringify(d.btns) === JSON.stringify(['Close', 'Cover instead', 'Cancel', 'Delete']), JSON.stringify(d.btns));
       check('Delete is the focused, red primary button', d.focused && d.goBg !== 'rgba(0, 0, 0, 0)' && d.dangerBg, JSON.stringify(d));
       await p.keyboard.press('Enter'); await p.waitForTimeout(700);
       let s = await st(p, ids);
@@ -118,14 +118,14 @@ const st = (p, ids) => p.evaluate(ids => {
       check('Cancel closes and changes nothing', !s.open && s.a && !s.a.tomb && !s.a.hidden && s.edge, JSON.stringify(s));
       await p.evaluate(id => select([id]), ids.a);
       await p.keyboard.press('Delete'); await p.waitForTimeout(500);
-      await p.getByRole('button', { name: 'Hide instead' }).click(); await p.waitForTimeout(400);
+      await p.getByRole('button', { name: 'Cover instead' }).click(); await p.waitForTimeout(700);
       s = await st(p, ids);
-      check('Hide instead hides the card and keeps its link', !s.open && s.a?.hidden && !s.a.tomb && s.edge, JSON.stringify(s));
+      check('Cover instead covers the card and keeps its link', !s.open && s.a?.hidden && !s.a.tomb && s.edge, JSON.stringify(s));
       // D4. from Hidden & Archived, "Delete permanently" uses the same sheet, says it can't be undone, and scrubs
       await p.evaluate(() => archiveDialog()); await p.waitForTimeout(300);
       await p.click('[data-arch-del]'); await p.waitForTimeout(500);
       const d = await p.evaluate(() => ({ txt: dlg.innerText, btns: [...dlg.querySelectorAll('button')].map(b => (b.textContent || '').trim()) }));
-      check('permanent delete: same sheet, says it cannot be undone, no Hide instead', /can't be undone/.test(d.txt) && d.btns.includes('Delete permanently') && !d.btns.includes('Hide instead'), JSON.stringify(d));
+      check('permanent delete: same sheet, says it cannot be undone, no Cover instead', /can't be undone/.test(d.txt) && d.btns.includes('Delete permanently') && !d.btns.includes('Cover instead'), JSON.stringify(d));
       await p.getByRole('button', { name: 'Delete permanently' }).click(); await p.waitForTimeout(700);
       s = await st(p, ids);
       check('permanent delete leaves a marker and scrubs the words from Undo', s.a?.tomb && !s.undo.includes('Lantern should hang'), s.undo.slice(Math.max(0,s.undo.indexOf('Lantern')-400), s.undo.indexOf('Lantern')+100));

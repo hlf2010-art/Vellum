@@ -12,63 +12,27 @@
  *   node tests/recheck-eval.cjs --api http://127.0.0.1:8080/v1 --model mlx-community/Qwen3.5-9B-4bit   # any OpenAI-compatible server
  *   node tests/recheck-eval.cjs                      # Vellum's Studio AI at 127.0.0.1:59631, ready with a model
  *   options: --n 2 (runs per case)  --cases lantern-counter,fan-aside  --out recheck-eval-results  --label name  --timeout 300
+ *            --file path/to/Vellum-Lumen.html (another build, for before/after runs)
  * Exit code is 0 when it ran; the score is in the report. */
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, x, i, all) => (x.startsWith('--') ? a.concat([[x.slice(2), all[i + 1] && !all[i + 1].startsWith('--') ? all[i + 1] : true]]) : a), []));
 const N = +args.n || 2, OUT = path.resolve(args.out || 'recheck-eval-results');
 const LABEL = String(args.label || (args.api ? String(args.model).split('/').pop() : 'studio-ai')).replace(/[^\w.-]+/g, '-');
-const FILE = path.resolve(__dirname, '..', 'Vellum-Lumen.html');
+const FILE = path.resolve(args.file || path.join(__dirname, '..', 'Vellum-Lumen.html'));
 
-/* ------------------------------------------------------------------ the boards */
-const LANTERN = {
-  title: 'Camping lantern', claim: 'Campers need a lantern they can put up hands-free in seconds.',
-  dirs: [
-    { title: 'Hook-and-strap lantern', text: 'A fabric strap and hook that wraps any branch or pole.', test: '8 of 10 campers hang it in under 10 s.', whyNot: 'Straps tangle in the bag; slower than we hoped in the first try.' },
-    { title: 'Magnetic-base lantern', text: 'A strong magnet in the base sticks to car roofs, tailgates and steel tent poles.', test: '8 of 10 campers stick it up in under 5 s.' },
-  ], chosen: 1, why: 'Most campers we watched set up beside their car, and steel tent poles are common.',
-  rests: [
-    { title: 'Campsite visit: car-side setups', text: '11 of 14 groups we watched pitched within 3 m of their car.', weight: 'observed' },
-    { title: 'Retailer: steel poles in budget tents', text: 'A shop assistant said most budget tents still use steel poles.', weight: 'reported' },
-  ],
-};
-const FAN = {
-  title: 'Desk fan', claim: 'Home workers want cooling at the desk without the noise that ruins calls.',
-  dirs: [
-    { title: 'Clip-on fan', text: 'A small fan that clamps to the desk edge or a monitor arm.', test: '7 of 10 can clip it within reach in under a minute.', whyNot: 'We assumed most desks have no clamp edge.' },
-    { title: 'Quiet bladeless tower', text: 'A bladeless tower under 30 dB at full speed.', test: 'No call participant notices it in 5 test calls.' },
-  ], chosen: 1, why: 'Noise on calls was the top complaint we heard.',
-  rests: [
-    { title: 'Diary study: fan noise on calls', text: '9 of 12 participants turned their fan off during calls.', weight: 'observed' },
-    { title: 'Survey: noise is the top complaint', text: 'Noise was the most named complaint about desk fans (41%).', weight: 'reported' },
-  ],
-};
-const NOTES = {
-  title: 'Field notes app', claim: 'Field researchers lose notes when the network drops.',
-  dirs: [
-    { title: 'Cloud-first with retry', text: 'Notes save to the cloud and retry when the network returns.', test: 'No note lost in 20 offline sessions.', whyNot: 'Retry queues failed in two pilot sites.' },
-    { title: 'Offline-first sync', text: 'Notes live on the device and sync when a network is available.', test: 'No note lost in 20 offline sessions.' },
-  ], chosen: 1, why: 'Researchers are offline for hours at a time.',
-  rests: [{ title: 'Pilot logs: offline time', text: 'Median offline stretch was 3.5 hours across 6 sites.', weight: 'observed' }],
-};
-const LANTERN_ZH = {
-  title: '露营灯', claim: '露营的人需要几秒内就能免手持挂好的灯。', zh: true,
-  dirs: [
-    { title: '挂钩绑带灯', text: '用布带和挂钩缠在树枝或杆子上。', test: '10 人中 8 人能在 10 秒内挂好。', whyNot: '绑带在包里容易缠住，第一次试用比预期慢。' },
-    { title: '磁吸底座灯', text: '底座有强磁铁，能吸在车顶、尾门和钢制帐篷杆上。', test: '10 人中 8 人能在 5 秒内吸好。' },
-  ], chosen: 1, why: '我们观察到的大多数人都在车旁扎营，钢制帐篷杆也很常见。',
-  rests: [{ title: '营地走访：车旁扎营', text: '我们观察的 14 组人里有 11 组在离车 3 米内扎营。', weight: 'observed' }],
-};
+const { LANTERN, FAN, NOTES, LANTERN_ZH, EV, buildBoard } = require('./eval-boards.cjs');
+
 /* the new evidence and the verdicts that read it right */
 const CASES = [
-  { id: 'lantern-counter', board: LANTERN, ev: { title: 'Field test: aluminium tent poles', text: 'At two campsites, 7 of 10 tents had aluminium poles; the magnet did not stick to any of them.', weight: 'observed', rel: 'conflicts' }, ok: ['weaker', 'reopen'], kind: 'counters the core reason' },
-  { id: 'lantern-support', board: LANTERN, ev: { title: 'Field test: stuck to the car in 3 s', text: '9 of 12 campers stuck the lantern to their car roof or tailgate, median 3 seconds.', weight: 'observed', rel: 'supports' }, ok: ['stronger', 'holds'], kind: 'backs it' },
-  { id: 'lantern-unrelated', board: LANTERN, ev: { title: 'Supplier quote: USB-C port', text: 'Switching the charging port to USB-C saves $0.40 per unit.', weight: 'reported', rel: 'related' }, ok: ['holds'], kind: 'does not bear on it' },
-  { id: 'lantern-myth', board: LANTERN, ev: { title: 'Blog: magnets drain lantern batteries', text: 'A camping blog claims a magnet in the base drains the battery faster. No test or source is given.', weight: 'reported', rel: 'conflicts' }, ok: ['holds', 'weaker'], kind: 'a doubtful, unsourced counter' },
-  { id: 'fan-aside', board: FAN, ev: { title: 'Home office visits: clamp edges', text: 'In 10 home offices, 8 desks had a free edge or a monitor arm a clip-on fan could clamp to.', weight: 'observed', rel: 'related' }, ok: ['reopen', 'weaker'], kind: 'removes the reason an option was set aside' },
-  { id: 'fan-anecdote', board: FAN, ev: { title: 'One forum post: bladeless fans feel weak', text: 'A forum user said bladeless fans move less air than cheap blade fans.', weight: 'reported', rel: 'conflicts' }, ok: ['holds', 'weaker'], kind: 'one anecdote against observed evidence' },
-  { id: 'lantern-counter-zh', board: LANTERN_ZH, ev: { title: '实地测试：铝制帐篷杆', text: '两个营地里 10 顶帐篷中有 7 顶是铝杆，磁铁一个都吸不住。', weight: 'observed', rel: 'conflicts' }, ok: ['weaker', 'reopen'], kind: '反驳核心理由（中文）' },
-  { id: 'notes-support', board: NOTES, ev: { title: 'Pilot: zero lost notes offline', text: 'Over 24 offline sessions at 3 sites, the offline-first build lost no notes.', weight: 'observed', rel: 'supports' }, ok: ['stronger', 'holds'], kind: 'backs it' },
+  { id: 'lantern-counter', board: LANTERN, ev: EV.lanternCounter, ok: ['weaker', 'reopen'], kind: 'counters the core reason' },
+  { id: 'lantern-support', board: LANTERN, ev: EV.lanternSupport, ok: ['stronger', 'holds'], kind: 'backs it' },
+  { id: 'lantern-unrelated', board: LANTERN, ev: EV.lanternUnrelated, ok: ['holds'], kind: 'does not bear on it' },
+  { id: 'lantern-myth', board: LANTERN, ev: EV.lanternMyth, ok: ['holds', 'weaker'], kind: 'a doubtful, unsourced counter' },
+  { id: 'fan-aside', board: FAN, ev: EV.fanAside, ok: ['reopen', 'weaker'], kind: 'removes the reason an option was set aside' },
+  { id: 'fan-anecdote', board: FAN, ev: EV.fanAnecdote, ok: ['holds', 'weaker'], kind: 'one anecdote against observed evidence' },
+  { id: 'lantern-counter-zh', board: LANTERN_ZH, ev: EV.lanternCounterZh, ok: ['weaker', 'reopen'], kind: '反驳核心理由（中文）' },
+  { id: 'notes-support', board: NOTES, ev: EV.notesSupport, ok: ['stronger', 'holds'], kind: 'backs it' },
 ];
 const pick = args.cases ? CASES.filter(c => String(args.cases).split(',').includes(c.id)) : CASES;
 
@@ -92,22 +56,7 @@ function serve() { return new Promise(res => { const s = http.createServer((q, r
   for (const cs of pick) for (let i = 0; i < N; i++) {
     calls = 0; const t0 = Date.now();
     /* build the board, decide, let board checks learn it, then keep the new evidence */
-    const ids = await p.evaluate(([B, ev]) => {
-      abortRecheck(); store.set('.lang', B.zh ? 'zh' : 'en');
-      board = blank(B.title); sel = []; setSpeak('matters');
-      const claim = node('idea', { title: B.claim, text: B.claim }, { x: 0, y: 0 });
-      const dirs = B.dirs.map((d, k) => node('direction', { idea: claim.id, letter: 'ABC'[k], title: d.title, text: d.text, test: d.test }, { x: 460 * k, y: 420 }));
-      B.rests.forEach((e, k) => { const n = node('source', { title: e.title, text: e.text, weight: e.weight }, { x: -620, y: k * 320 }); makeRelation(n.id, claim.id, { via: 'wire' }).e.rel = 'supports'; });
-      adopt(dirs[B.chosen]); dirs[B.chosen].whyYes = B.why; B.dirs.forEach((d, k) => { if (d.whyNot && k !== B.chosen) dirs[k].whyNot = d.whyNot; });
-      board.nodes.forEach(n => { n.created = NOW() - 7200e3; }); dirs[B.chosen].adoptedAt = NOW() - 3600e3;
-      renderAll(); runBoardChecks();
-      const e = node('source', { title: ev.title, text: ev.text, ...(ev.weight ? { weight: ev.weight } : {}) }, { x: 460 * B.chosen, y: 1100 });
-      if (ev.rel) { const r = makeRelation(e.id, dirs[B.chosen].id, { via: 'wire' }); r.e.rel = ev.rel; }
-      renderAll();
-      /* before: what board checks alone would put on the decision */
-      const obs = runBoardChecks().filter(o => o.kind === 'revisit'), before = obs.map(o => checkPin(o)?.note || '').join(' ');
-      return { dir: dirs[B.chosen].id, claim: claim.id, ev: e.id, before, flagged: obs.length };
-    }, [cs.board, cs.ev]);
+    const ids = await p.evaluate(buildBoard, [cs.board, cs.ev]);
     if (!ids.flagged) { rows.push({ case: cs.id, i, flagged: false }); console.log(`${cs.id} #${i + 1}  not flagged by board checks`); continue; }
     /* after: let the crew re-check it, as after a pause */
     const max = Date.now() + 600000;
@@ -132,7 +81,7 @@ function serve() { return new Promise(res => { const s = http.createServer((q, r
   const objections = done.filter(r => r.critic === 'objects');
   const sum = {
     label: LABEL, engine, runs: ran.length, shown: done.length, right: done.filter(r => r.right).length,
-    fellBack: ran.length - done.length, objections: objections.length, droppedObjections: done.filter(r => (r.dropped || []).length).length,
+    fellBack: ran.length - done.length, objections: objections.length, criticQuiet: done.filter(r => r.critic === 'quiet').length, droppedObjections: done.filter(r => (r.dropped || []).length).length,
     medianSeconds: med(ran.map(r => r.seconds)), medianCalls: med(ran.map(r => r.calls)), decisionsChanged: ran.filter(r => !r.adoptedSame).length, pageErrors: errs.length,
   };
   const md = [`# Re-check eval · ${LABEL}`, '', `Engine: ${engine} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC · ${N} run(s) per case`, '',
@@ -141,7 +90,7 @@ function serve() { return new Promise(res => { const s = http.createServer((q, r
     `| Verdict in the right range, of those shown | ${sum.right} of ${sum.shown} (${pct(sum.right, sum.shown)}) |`,
     `| Verdict in the right range, of all runs | ${pct(sum.right, sum.runs)} |`,
     `| Fell back to the board check | ${sum.fellBack} |`,
-    `| Critic objections shown (each with evidence and a fix) | ${sum.objections} · dropped by the watchdog: ${sum.droppedObjections} |`,
+    `| Critic objections shown (each with evidence and a fix) | ${sum.objections} · dropped by the watchdog: ${sum.droppedObjections} · "no strong objection": ${sum.criticQuiet} |`,
     `| Median time / model calls per re-check | ${sum.medianSeconds.toFixed(0)} s / ${sum.medianCalls} |`,
     `| Decisions changed without the designer | ${sum.decisionsChanged} |`,
     '', 'Before (board checks only) the note can say only how the evidence was linked ("counters", "supports", "bears on"); it never says whether the decision still holds or why.', '',

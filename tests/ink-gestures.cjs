@@ -69,7 +69,7 @@ const state = p => p.evaluate(() => ({ adopted: Object.values(board.adopted), se
       let mid = null;
       await drawMouse(p, loop(a), { mid: async () => { mid = await state(p); await p.shot(`${tag}-1-drawing`); } });
       check(`[${tag}] while the loop closes around A, the nib says what lifting will do`, lang === 'en' ? /^Switch to A$/.test(mid.tip) : /^改选 A$/.test(mid.tip), mid.tip);
-      check(`[${tag}] and A lights up before anything is decided`, mid.sel.length === 0 || true && mid.adopted.join() === before.adopted.join(), JSON.stringify(mid));
+      check(`[${tag}] and nothing is decided before the pen lifts`, mid.adopted.join() === before.adopted.join(), JSON.stringify(mid));
       await p.waitForTimeout(80); let s = await state(p);
       check(`[${tag}] lifting adopts A (B is set aside)`, s.adopted.includes(a.id) && !s.adopted.includes(b0.id), JSON.stringify(s.adopted));
       check(`[${tag}] the stroke stays on A as its mark`, s.marks.length === 1 && s.marks[0].id === a.id, JSON.stringify(s.marks));
@@ -129,6 +129,41 @@ const state = p => p.evaluate(() => ({ adopted: Object.values(board.adopted), se
       await p.keyboard.press('Escape'); await p.mouse.up(); await p.waitForTimeout(80);
       s = await state(p);
       check('Esc while drawing drops the stroke', s.adopted.includes(b.id) && !s.adopted.includes(a.id), JSON.stringify(s));
+      check('no page errors', !p.errors.length, p.errors.join(' | '));
+      await p.context().close();
+    }
+
+    /* 2b. while drawing: what the loop would catch is outlined; a loop round nothing just fades, with no message */
+    {
+      const p = await open(browser, base);
+      await p.keyboard.press('p');
+      const a = await rectOf(p, 'A'), b = await rectOf(p, 'B');
+      const pts = loop(union(a, b), 30);
+      const marks = () => p.evaluate(() => ({ near: [...document.querySelectorAll('#nodes .card.ink-near')].map(e => e.dataset.id), hit: [...document.querySelectorAll('#nodes .card.ink-hit')].map(e => e.dataset.id), sel: [...document.querySelectorAll('#nodes .card.sel')].map(e => e.dataset.id), shadow: (() => { const e = document.querySelector('#nodes .card.ink-hit,#nodes .card.ink-near'); return e ? getComputedStyle(e).boxShadow : ''; })() }));
+      const cut = Math.round(pts.length * .62), snaps = {};
+      await p.mouse.move(...pts[0]); await p.mouse.down();
+      for (let i = 1; i < pts.length; i++) { await p.mouse.move(...pts[i], { steps: 2 }); if (i === 12) snaps.early = await marks(); if (i === cut) { await p.waitForTimeout(40); snaps.half = await marks(); await p.shot('light-en-5-curling'); } if (i === pts.length - 2) { await p.waitForTimeout(40); snaps.closed = await marks(); await p.shot('light-en-6-closed'); } }
+      await p.mouse.up(); await p.waitForTimeout(80); snaps.after = await marks();
+      check('at the start of a stroke nothing is outlined yet', !snaps.early.near.length && !snaps.early.hit.length, JSON.stringify(snaps.early));
+      check('half way round, the cards inside get a faint outline', snaps.half.near.includes(a.id) && snaps.half.near.includes(b.id) && !snaps.half.hit.length, JSON.stringify(snaps.half));
+      check('once the loop closes, they get the firm outline of what lifting will select', snaps.closed.hit.includes(a.id) && snaps.closed.hit.includes(b.id) && !snaps.closed.near.length, JSON.stringify(snaps.closed));
+      check('the outline is light, thinner than a selection', /1\.5px/.test(snaps.closed.shadow), snaps.closed.shadow);
+      check('after lifting, the outlines give way to the selection', !snaps.after.hit.length && !snaps.after.near.length && snaps.after.sel.length === 2, JSON.stringify(snaps.after));
+      // a straight line across cards lights nothing
+      const line = []; for (let i = 0; i <= 40; i++) line.push([a.x - 40 + i * (a.w + 80) / 40, a.y + a.h / 2]);
+      let lit = null; await p.mouse.move(...line[0]); await p.mouse.down(); for (let i = 1; i < line.length; i++) { await p.mouse.move(...line[i]); if (i === 35) lit = await marks(); } await p.mouse.up();
+      check('a straight stroke across cards outlines nothing', !lit.near.length && !lit.hit.length, JSON.stringify(lit));
+      await p.waitForTimeout(400);
+      // a loop round empty board: no message, the ink fades, the selection stays
+      const sel0 = (await state(p)).sel;
+      const toasts0 = await p.evaluate(() => document.querySelectorAll('.toast').length);
+      const empty = loop({ x: 1240, y: 170, w: 120, h: 70 }, 16);
+      await drawMouse(p, empty); await p.waitForTimeout(60);
+      const live1 = (await state(p)).live; await p.waitForTimeout(340);
+      const after = await state(p), toasts1 = await p.evaluate(() => document.querySelectorAll('.toast').length);
+      check('a loop round nothing shows no message', toasts1 === toasts0, `${toasts0} → ${toasts1}`);
+      check('it fades out in about 300 ms', live1 === 1 && after.live === 0, JSON.stringify({ live1, live2: after.live }));
+      check('and the selection is left as it was', after.sel.join() === sel0.join() && (await marks()).sel.length === sel0.length, JSON.stringify(after.sel));
       check('no page errors', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }

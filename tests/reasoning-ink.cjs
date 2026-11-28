@@ -36,11 +36,14 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
       await p.click(`[data-id="${A}"] .aside-add`); await p.waitForTimeout(300);
       check('Add a reason opens the reason for typing', await p.evaluate(id => document.querySelector(`[data-id="${id}"] .aside-why`).contentEditable === 'true', A));
       await p.keyboard.type('Testers already ignore the top-right corner, so a louder chime only adds noise during combat.'); await p.keyboard.press('Enter'); await p.waitForTimeout(500);
-      const saved = await p.evaluate(id => ({ why: byId(id).whyNot, shown: document.querySelector(`[data-id="${id}"] .aside-why`).textContent, btn: document.querySelector(`[data-id="${id}"] .aside-add`).textContent, rec: (board.declined || []).filter(r => r.kind === 'passed-over' && r.ref === id).map(r => r.reason) }), A);
-      check('the reason is kept on the card', /louder chime/.test(saved.why) && saved.shown === saved.why && saved.btn === 'Edit reason', JSON.stringify(saved));
+      const saved = await p.evaluate(id => ({ why: byId(id).whyNot, shown: document.querySelector(`[data-id="${id}"] .aside-why`).textContent, btn: document.querySelector(`[data-id="${id}"] .aside-add`)?.textContent || '', rec: (board.declined || []).filter(r => r.kind === 'passed-over' && r.ref === id).map(r => r.reason) }), A);
+      check('the reason is kept on the card', /louder chime/.test(saved.why) && saved.shown === saved.why && saved.btn === '', JSON.stringify(saved));
       check('the crew learns the reason (passed-over record)', saved.rec.length === 1 && /louder chime[\s\S]*Adopted B/.test(saved.rec[0]), JSON.stringify(saved.rec));
       const gap1 = await p.evaluate(id => { const n = byId(id), w = byId(board.adopted[n.idea]); return w.y - (n.y + nodeEl(n.id).offsetHeight); }, A);
       check('the card below moves down instead of being covered', gap1 >= 20, `before ${gap0}, after ${gap1}`);
+      await p.dblclick(`[data-id="${A}"] .aside-why`); await p.waitForTimeout(300);
+      check('no Edit reason link; double-clicking the reason edits it', await p.evaluate(id => document.querySelector(`[data-id="${id}"] .aside-why`).contentEditable === 'true', A));
+      await p.keyboard.press('Escape'); await p.waitForTimeout(300);
       await p.evaluate(() => document.activeElement?.blur?.()); await p.keyboard.press('Control+z'); await p.waitForTimeout(400);
       { const u = await p.evaluate(id => ({ why: byId(id).whyNot || '', btn: document.querySelector(`[data-id="${id}"] .aside-add`)?.textContent }), A); check('undo takes the reason back', !u.why && u.btn === 'Add a reason', JSON.stringify(u)); }
       check('lines do not take stage colours', await p.evaluate(() => { const ws = [...document.querySelectorAll('#wires path.w.pgB:not(.rel)')]; const t = getComputedStyle(document.documentElement).getPropertyValue('--thread').trim(); return ws.length > 0 && ws.every(w => getComputedStyle(w).stroke === getComputedStyle(document.querySelector('#wires path.w:not([class*="pg"]):not(.rel)') || w).stroke); }));

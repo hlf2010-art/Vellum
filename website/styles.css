@@ -344,7 +344,7 @@ b.ai svg .dot { fill: currentColor; stroke: none; }
 .bcard .xl-wrap { background: var(--card); }
 .bcard .xl-wrap::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 18px; background: linear-gradient(transparent, var(--card)); pointer-events: none; }
 .xl { width: 100%; border-collapse: collapse; table-layout: fixed; font: 500 10.5px/14px var(--sans); color: var(--label-3); }
-.xl th, .xl td { height: 14px; padding: 0 6px; border-bottom: 1px solid var(--hair); white-space: nowrap; overflow: hidden; text-align: left; }
+.xl th, .xl td { height: 14px; padding: 0 6px; border-bottom: 1px solid var(--hair); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
 .xl th { font-weight: 600; color: var(--label-3); background: color-mix(in srgb, var(--label) 5%, transparent); }
 .xl .n, .xl th:first-child { width: 26px; padding: 0; text-align: center; color: var(--label-4); border-right: 1px solid var(--hair); }
 .xl .st, .xl th:last-child { width: 22px; padding: 0; text-align: center; border-left: 1px solid var(--hair); }

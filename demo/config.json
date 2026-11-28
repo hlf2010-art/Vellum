@@ -1,0 +1,50 @@
+{
+  "title": "Vellum · Demo",
+  "description": "A shared thinking space for people and AI. Try it in your browser: nothing leaves it.",
+  "site": "",
+  "media": {
+    "beta": "beta-clip.mp4",
+    "quote-en": "editor-quote-en.m4a",
+    "quote-zh": "editor-quote-zh.m4a"
+  },
+  "strip": {
+    "minPromptLength": 120,
+    "functions": {
+      "studioChat": "throw",
+      "apiChat": "throw",
+      "apiChatOnce": "throw",
+      "buildChatMessages": "throw",
+      "readChatStream": "throw",
+      "viaClaude": "throw",
+      "probeApi": "null",
+      "testApi": "null",
+      "checkStudioHealth": "null",
+      "launchStudio": "null",
+      "stopLocalStudio": "null",
+      "switchStudioModel": "null",
+      "deleteStudioModel": "null",
+      "refreshStudioFromPop": "null",
+      "probeStudioLauncher": "null",
+      "studioMcpReq": "throw",
+      "refreshImageService": "null",
+      "stopModelService": "null",
+      "runBackup": "null",
+      "initClaude": "null",
+      "fetchDataText": "throw",
+      "ctxEnsureEmbeddings": "false"
+    },
+    "endpoints": [
+      "http://127.0.0.1:59631",
+      "http://127.0.0.1:59639",
+      "127.0.0.1:59631",
+      "127.0.0.1:59639",
+      "https://api.openai.com/v1",
+      "https://openrouter.ai/api/v1",
+      "https://openrouter.ai/settings/credits"
+    ],
+    "keepInside": [
+      "renderMargin",
+      "WORKFLOW_TEMPLATES"
+    ]
+  }
+}

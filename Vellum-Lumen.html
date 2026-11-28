@@ -3090,6 +3090,45 @@ dialog.sheet.del-sheet{width:min(420px,calc(100% - 24px))}
 @media (max-width:760px){.island{top:calc(64px + env(safe-area-inset-top,0px))}.island[data-mode="open"]~.toasts,.island[data-mode="flash"]~.toasts{top:calc(var(--isl-h,36px) + 76px + env(safe-area-inset-top,0px))}}
 @media (prefers-reduced-transparency:reduce){.island{-webkit-backdrop-filter:none;backdrop-filter:none;--isl-bg:var(--card)}}
 @media (prefers-reduced-motion:reduce){.island,.isl-face{transition-duration:.01ms!important}.isl-av.ind .isl-ring,.isl-av.queued .isl-ring{animation:none}.isl-bar.ind i{animation:none;width:100%;opacity:.45}}
+/* ── Steps: one status set wherever work runs in steps (crew runs on the island, Copilot's helpers) ──
+   The small icon alone carries the state; the words never change colour or gain a label. Done steps stay,
+   muted and struck through, so the path is kept without competing with what is running now. */
+.vsteps{display:grid;gap:0;margin:0;padding:0;list-style:none;min-width:0}
+.vstep{display:grid;grid-template-columns:16px minmax(0,1fr);column-gap:9px;align-items:start;padding:3px 0;font:500 12.5px/1.4 var(--ui);color:var(--label);min-width:0}
+.vstep-i{width:16px;height:16px;margin-top:1.5px;display:block;overflow:visible;flex:none}
+.vstep-i circle,.vstep-i path,.vstep-i rect{vector-effect:non-scaling-stroke}
+.vstep-i .d{fill:color-mix(in srgb,var(--label) 11%,transparent)}
+.vstep-i .k{fill:none;stroke:var(--label-2);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.vstep-i .tr{fill:none;stroke:var(--label-4);stroke-width:1.5}
+.vstep-i .arc{fill:none;stroke:var(--label-2);stroke-width:1.5;stroke-linecap:round;transform-origin:8px 8px;animation:vstepSpin .9s linear infinite}
+.vstep-i .w{fill:none;stroke:var(--label-3);stroke-width:1.7;stroke-linecap:round;stroke-dasharray:0 1}
+.vstep-i .y{fill:none;stroke:var(--label-2);stroke-width:1.3}
+.vstep-i .yd{fill:var(--label-2);transform-origin:8px 8px;animation:vstepYou 2.4s ease-in-out infinite}
+.vstep-i .f{fill:none;stroke:color-mix(in srgb,var(--danger) 80%,var(--label));stroke-width:1.4;stroke-linecap:round}
+.vstep-i .s{fill:none;stroke:var(--label-3);stroke-width:1.3}
+.vstep-i .sq{fill:var(--label-3)}
+.vstep-t{min-width:0;overflow-wrap:anywhere}
+/* the strike is drawn, not toggled: when a step finishes, a hairline runs through it once */
+.vstep-t>span{background:linear-gradient(currentColor,currentColor) no-repeat 0 56%/0 1px;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:color .3s ease}
+.vstep[data-s="done"] .vstep-t{color:var(--label-3)}
+.vstep[data-s="done"] .vstep-t>span{background-size:100% 1px}
+.vstep[data-s="wait"] .vstep-t,.vstep[data-s="stop"] .vstep-t{color:var(--label-2)}
+.vstep.flip[data-s="done"] .vstep-t>span{animation:vstepStrike .42s cubic-bezier(.32,.72,0,1) both}
+.vstep.flip[data-s="done"] .vstep-i .d{animation:vstepPop .34s cubic-bezier(.32,.72,0,1) both;transform-origin:8px 8px}
+.vstep.flip[data-s="done"] .vstep-i .k{stroke-dasharray:12;stroke-dashoffset:12;animation:islDraw .38s .08s cubic-bezier(.32,.72,0,1) forwards}
+.vstep.enter{animation:vstepIn .32s cubic-bezier(.32,.72,0,1) both}
+.vsteps-more{justify-self:start;margin:2px 0 0 25px;padding:3px 6px 3px 0;border:0;background:none;font:500 12px/1.3 var(--ui)!important;color:var(--label-3)!important;cursor:pointer;border-radius:var(--radius-xs)}
+.vsteps-more:hover{color:var(--label)!important}
+.vsteps-more:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@keyframes vstepSpin{to{transform:rotate(360deg)}}
+@keyframes vstepYou{0%,100%{opacity:.45;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+@keyframes vstepStrike{from{background-size:0 1px}to{background-size:100% 1px}}
+@keyframes vstepPop{from{transform:scale(.55);opacity:.3}}
+@keyframes vstepIn{from{opacity:0;transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.vstep-i .arc{animation:none}.vstep-i .yd{animation:none}.vstep.flip *,.vstep.enter{animation:none!important}.vstep.flip[data-s="done"] .vstep-i .k{stroke-dashoffset:0}}
+/* on the island: a crew run's checklist sits under its title, aligned with the words */
+.isl-steps{grid-column:2/4;padding:1px 0 2px}
+.isl-steps[hidden]{display:none}
 
 /* ── relations: clasps on seams, snap preview, the type picker ─────────── */
 .rel-related{--rc:color-mix(in srgb,var(--label) 46%,var(--card))}
@@ -3971,6 +4010,11 @@ body.snap-skip #wall{cursor:copy}
 @keyframes uv{from{opacity:0;filter:blur(1.5px)}to{opacity:1;filter:none}}
 .cp-trace-dot,.cp-trace-dot.live{display:none}
 .cp-trace-step.live,.cp-trace-step.handoff{border-left-color:var(--label-3)}
+/* Copilot's helper steps use the same status icons as crew runs, so the rule on the left goes */
+.cp-trace-step,.cp-trace-step.live,.cp-trace-step.handoff{padding-left:0;border-left:0}
+.cp-trace-route .vstep-i{margin:0 1px 0 0}
+.cp-trace-head>.vstep-i{margin:0}
+.cp-trace-step>:not(.cp-trace-top){margin-left:22px}
 .cp-ui-building{color:var(--label-3)}
 @media (prefers-reduced-motion:reduce){.cp-msg.ai.is-thinking .cp-who .mk{animation:none;box-shadow:0 0 0 1px rgba(255,255,255,.4),0 0 10px 2px var(--bloom)}}
 /* ── First screen: the top bar fades the canvas out; it does not blur what you are about to read ── */
@@ -4161,6 +4205,72 @@ const AGENTS={
 };
 /* makers that are not crew seats: Copilot can put cards on the board too */
 const CREATORS={copilot:{key:"copilot",name:"Copilot"}};
+/* ── Steps: the one status set for work that runs in steps ─────────────────
+   done (a soft disc with a check; the words stay, muted and struck through), run (a turning arc),
+   wait (a dotted ring: planned, not started), you (a ring with a breathing dot: waiting for your answer),
+   fail and stop. Only the icon changes; the words keep their colour and gain no label. A long list keeps
+   the step that is moving in view and folds the rest under "Show N more". */
+const STEP_ICON={
+  done:'<svg class="vstep-i" viewBox="0 0 16 16" aria-hidden="true"><circle class="d" cx="8" cy="8" r="7"/><path class="k" d="m5.1 8.3 2 2 3.9-4.2"/></svg>',
+  run:'<svg class="vstep-i" viewBox="0 0 16 16" aria-hidden="true"><circle class="tr" cx="8" cy="8" r="6.2"/><circle class="arc" cx="8" cy="8" r="6.2" pathLength="100" stroke-dasharray="30 100"/></svg>',
+  wait:'<svg class="vstep-i" viewBox="0 0 16 16" aria-hidden="true"><circle class="w" cx="8" cy="8" r="6.2" pathLength="10"/></svg>',
+  you:'<svg class="vstep-i" viewBox="0 0 16 16" aria-hidden="true"><circle class="y" cx="8" cy="8" r="6.2"/><circle class="yd" cx="8" cy="8" r="2.2"/></svg>',
+  fail:'<svg class="vstep-i" viewBox="0 0 16 16" aria-hidden="true"><circle class="f" cx="8" cy="8" r="6.2"/><path class="f" d="M8 4.9v3.6M8 10.9v.1"/></svg>',
+  stop:'<svg class="vstep-i" viewBox="0 0 16 16" aria-hidden="true"><circle class="s" cx="8" cy="8" r="6.2"/><rect class="sq" x="5.9" y="5.9" width="4.2" height="4.2" rx="1"/></svg>',
+};
+const STEP_SAY={done:["done","已完成"],run:["in progress","进行中"],wait:["not started","未开始"],you:["waiting for you","等你回复"],fail:["stopped by an error","出错停止"],stop:["stopped","已停止"]};
+const STEP_LIMIT=4;
+function stepsWindow(steps,limit=STEP_LIMIT,all=false){
+  // never fold a single step away: "Show 1 more" costs as much room as the step itself
+  if(all||steps.length<=limit+1)return {show:steps,hidden:0};
+  const cur=steps.findIndex(x=>x.state!=="done"),at=cur<0?steps.length-1:cur;
+  const a=clamp(at-1,0,steps.length-limit);
+  return {show:steps.slice(a,a+limit),hidden:steps.length-limit};
+}
+function stepLiHTML(st,{flip=false,enter=false}={}){
+  const k=STEP_ICON[st.state]?st.state:"wait";
+  return `<li class="vstep${flip?" flip":""}${enter?" enter":""}" data-s="${k}" data-k="${esc(st.key)}">${STEP_ICON[k]}<span class="vstep-t"><span>${esc(st.label)}</span><span class="sr">, ${esc(L(STEP_SAY[k][0],STEP_SAY[k][1]))}</span></span></li>`;
+}
+function stepsMoreLabel(n,all){return all?L("Show less","收起"):L(`Show ${n} more`,`再显示 ${n} 项`)}
+/* static markup, for lists that are redrawn whole */
+function stepsHTML(steps,{limit=STEP_LIMIT,all=false,more=""}={}){
+  const w=stepsWindow(steps,limit,all),extra=steps.length>limit+1;
+  return `<ul class="vsteps">${w.show.map(x=>stepLiHTML(x)).join("")}${extra&&more?`<li style="display:contents"><button type="button" class="vsteps-more" ${more} aria-expanded="${all}">${esc(stepsMoreLabel(w.hidden,all))}</button></li>`:""}</ul>`;
+}
+/* keyed patch, for lists that change while you watch: a step that finishes keeps its row and draws its check */
+function stepsSync(ul,steps,{limit=STEP_LIMIT,all=false,more=""}={}){
+  if(!ul)return;
+  const w=stepsWindow(steps,limit,all),extra=steps.length>limit+1;
+  const have=new Map([...ul.querySelectorAll(":scope>li.vstep")].map(el=>[el.dataset.k,el]));
+  const first=!ul.dataset.ready;ul.dataset.ready="1";
+  w.show.forEach((st,i)=>{
+    let el=have.get(st.key);const k=STEP_ICON[st.state]?st.state:"wait";
+    if(!el){const t=document.createElement("template");t.innerHTML=stepLiHTML(st,{enter:!first});el=t.content.firstChild}
+    else{have.delete(st.key);
+      if(el.dataset.s!==k){const t=document.createElement("template");t.innerHTML=stepLiHTML(st,{flip:k==="done"});const nu=t.content.firstChild;el.replaceWith(nu);el=nu}
+      else{const sp=el.querySelector(".vstep-t>span");if(sp&&sp.textContent!==st.label)sp.textContent=st.label}}
+    if(ul.children[i]!==el)ul.insertBefore(el,ul.children[i]||null);
+  });
+  have.forEach(el=>el.remove());
+  let btn=ul.querySelector(":scope>li.vsteps-li");
+  if(extra&&more){
+    if(!btn){btn=document.createElement("li");btn.className="vsteps-li";btn.style.display="contents";btn.innerHTML=`<button type="button" class="vsteps-more" ${more}></button>`}
+    const b=btn.firstChild,txt=stepsMoreLabel(w.hidden,all);if(b.textContent!==txt)b.textContent=txt;b.setAttribute("aria-expanded",String(all));
+    if(ul.lastChild!==btn)ul.appendChild(btn);
+  }else btn?.remove();
+}
+/* crew phases are written in English in code; the island and the checklist say them in the interface language */
+const PHASE_ZH=[[/^reading (\d+) cards?$/i,"阅读 $1 张卡片"],[/^reading visual card$/i,"阅读图像卡片"],[/^reading card$/i,"阅读卡片"],[/^reading (.+)$/i,"阅读「$1」"],
+  [/^drafting with (.+)$/i,"用 $1 起草"],[/^drafting$/i,"起草"],[/^forking into (\d+)$/i,"发散成 $1 个方向"],[/^building (deck|UI) v(\d+)$/i,"构建 $1 v$2"],[/^building (.+) v(\d+)$/i,"构建方向 $1 v$2"],
+  [/^synthesizing (\d+)$/i,"综合 $1 张卡片"],[/^listing next steps$/i,"列出下一步"],[/^organizing Kanban tasks$/i,"整理看板任务"],[/^mapping mind branches$/i,"整理导图分支"],
+  [/^drafting expanded brief$/i,"起草扩展简报"],[/^expanding brief with Wright$/i,"Wright 扩写简报"],[/^checking sources$/i,"核对来源"],[/^writing in the margin$/i,"在页边回复"],
+  [/^looking it up$/i,"查资料"],[/^replying to comment$/i,"回复评论"],[/^rendering (\d+) images?$/i,"生成 $1 张图像"],[/^rendering (\d+)\/(\d+)(.*)$/i,"生成第 $1/$2 张$3"],
+  [/^waiting for queue \((\d+)\/(\d+)\)$/i,"排队中（$1/$2）"],[/^generating animated GIF$/i,"生成 GIF 动图"],[/^generating video$/i,"生成视频"],[/^sampling video frames$/i,"采样视频帧"],
+  [/^sampling frame (.+)$/i,"采样第 $1 帧"],[/^encoding GIF(.*)$/i,"编码 GIF$1"],[/^rendering frames (.+)$/i,"渲染帧 $1"],[/^rendering video(.*)$/i,"渲染视频$1"],
+  [/^searching (.+)$/i,"搜索 $1"],[/^looking up background(.*)$/i,"查找背景资料$1"],[/^asking first$/i,"先问几个问题"],[/^stopping…$/,"正在停止…"]];
+function phaseL(x){const s=String(x||"");if(uiLang()!=="zh"||/[一-鿿]/.test(s))return s;for(const [re,zh] of PHASE_ZH)if(re.test(s))return s.replace(re,zh);return s}
+/* "rendering 2/4 · 40%" and "rendering 3/4" are one step whose words move on */
+const phaseKey=x=>"p:"+String(x||"").toLowerCase().replace(/\d+(\s*\/\s*\d+)?/g,"#").replace(/\s*·.*$/,"").trim();
 /* ── Task Island: one place to watch long-running agent work ───────────────
    Every entry is a real job: a crew run (runAgent), an H3 video job on the image service, a PromptLens
    reverse or shot split, or a Copilot research turn with sub-agents. A ring fills only when the job
@@ -4188,11 +4298,15 @@ const islShown=t=>t.revealed||t.state==="queued"||NOW()-t.started>=ISL_GRACE;
 const islCap=s=>s?String(s)[0].toUpperCase()+String(s).slice(1):"";
 function islClock(ms){const s=Math.max(0,Math.floor(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
 
-function taskOpen({kind="agent",agent=null,title="",phase="",cancel=null,show=null,key=null,nodeIds=[],ownsNodes=false,started=0,generic=false}={}){
+function taskOpen({kind="agent",agent=null,title="",phase="",cancel=null,show=null,key=null,nodeIds=[],ownsNodes=false,started=0,generic=false,steps=[]}={}){
   if(key){const ex=ISL.tasks.find(t=>t.key===key&&islLive(t));if(ex)return ex}
   const t={id:uid(),key,kind:ISL_KIND[kind]?kind:"agent",agent,title:String(title||"").trim(),phase:String(phase||""),pct:null,
-    state:"running",started:started||NOW(),ended:0,cancel,show,nodeIds:[...nodeIds],note:"",error:"",tone:"",revealed:false,stopping:false,ownsNodes:ownsNodes||nodeIds.length>0,generic};
+    state:"running",started:started||NOW(),ended:0,cancel,show,nodeIds:[...nodeIds],note:"",error:"",tone:"",revealed:false,stopping:false,ownsNodes:ownsNodes||nodeIds.length>0,generic,
+    // a plan known up front shows what is left (dotted rings); otherwise steps appear as the work reaches them
+    steps:steps.map(x=>({key:x.key,label:String(x.label||""),who:x.who||null,state:"wait"})),planned:steps.length>0,stepsAll:false};
   t.update=p=>taskUpdate(t,p);
+  t.step=(key,label,o)=>taskStep(t,key,label,o);
+  t.stepDone=key=>taskStepEnd(t,key);
   t.done=p=>taskEnd(t,"done",p);
   t.fail=(msg,p)=>taskEnd(t,"failed",{...p,error:String(msg||L("Something went wrong","出现错误"))});
   t.cancelled=p=>taskEnd(t,"cancelled",p);
@@ -4209,6 +4323,18 @@ function taskUpdate(t,p={}){
   if(p.queued!=null)t.state=p.queued?"queued":"running";
   islSchedule();
 }
+/* start (or move on to) a step: whatever was running before it is done, planned steps it skipped never happened */
+function taskStep(t,key,label,{who=null,state="run"}={}){
+  if(!t||!islLive(t)||!key)return null;
+  let st=t.steps.find(x=>x.key===key);
+  if(!st){st={key,label:String(label||""),who,state};const i=t.steps.findIndex(x=>x.state==="wait");if(i<0)t.steps.push(st);else t.steps.splice(i,0,st)}
+  else{st.state=state;if(label)st.label=String(label);if(who)st.who=who}
+  const at=t.steps.indexOf(st);
+  t.steps=t.steps.filter((x,i)=>!(i<at&&x.state==="wait"));
+  t.steps.forEach(x=>{if(x!==st&&(x.state==="run"||x.state==="you"))x.state="done"});
+  islSchedule();return st;
+}
+function taskStepEnd(t,key){const st=t?.steps.find(x=>x.key===key);if(st&&st.state!=="done"){st.state="done";islSchedule()}}
 function taskEnd(t,state,p={}){
   if(!t)return;
   // a caller may correct the outcome right after runAgent returns (done → failed); allow that briefly
@@ -4220,6 +4346,9 @@ function taskEnd(t,state,p={}){
   if(p.error!=null)t.error=String(p.error);
   if(p.label)t.endLabel=String(p.label);
   t.tone=state==="failed"?"fail":state==="cancelled"?"stop":(p.tone||"ok");
+  // the checklist ends where the work ended: all checked, or the step it stopped on says how
+  if(state==="done")t.steps.forEach(x=>x.state="done");
+  else t.steps.forEach(x=>{if(x.state==="run"||x.state==="you")x.state=state==="failed"?"fail":"stop"});
   if(t._wasShown==null)t._wasShown=wasShown;
   clearTimeout(t._ann);t._ann=setTimeout(()=>islAnnounce(t),140);
   islSchedule();
@@ -4229,6 +4358,8 @@ function taskAdopt(n){
   if(ISL.noAdopt||!n||!n.by||!AGENTS[n.by])return;
   for(let i=ISL.tasks.length-1;i>=0;i--){const t=ISL.tasks[i];
     if(t.agent!==n.by||t.ownsNodes)continue;
+    // a planned move owns only what its last step makes (Scout's background on the way is not "directions drafted")
+    if(t.planned&&t.steps.length&&t.steps[t.steps.length-1].state==="wait")continue;
     if(islLive(t)||NOW()-t.ended<8000){if(!t.nodeIds.includes(n.id))t.nodeIds.push(n.id);islSchedule();return}
   }
 }
@@ -4307,14 +4438,25 @@ function islGlyph(t){
   return `<span class="isl-g ${tone}" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6.5v6.8M12 17.4v.1"/></svg></span>`;
 }
 function islVerb(t){return islCap(L(ISL_KIND[t.kind].v[0],ISL_KIND[t.kind].v[1]))}
-function islTitle(t){return t.generic?`${islWho(t)} · ${t.title}`:t.title||islCap(t.phase)||islVerb(t)}
+function islTitle(t){return t.generic?`${islWho(t)} · ${islCap(phaseL(t.title))}`:t.title||islCap(phaseL(t.phase))||islVerb(t)}
 function islWho(t){return AGENTS[t.agent]?.name||(t.agent==="copilot"?"Copilot":"Vellum")}
 function islPhase(t){
-  if(t.state==="queued")return t.phase||L("Queued","排队中");
-  const ph=islCap(t.phase);
+  if(t.state==="queued")return phaseL(t.phase)||L("Queued","排队中");
+  const ph=islCap(phaseL(t.phase));
   return ph&&ph!==t.title?ph:islWho(t);
 }
-function islCompactText(t){return clip(t.generic?islCap(t.phase)||t.title:t.title||islCap(t.phase),40)}
+function islCompactText(t){const cur=t.planned&&t.steps.find(x=>x.state==="run"||x.state==="you");if(cur)return clip(cur.label,40);return clip(t.generic?islCap(phaseL(t.phase))||islCap(phaseL(t.title)):t.title||islCap(phaseL(t.phase)),40)}
+/* a planned move counts its steps ("2/3"); anything else shows its own number or the clock */
+function islRight(t){
+  if(t.state==="queued")return L("Queued","排队");
+  if(t.planned&&t.steps.length>1){const i=t.steps.findIndex(x=>x.state!=="done");return `${(i<0?t.steps.length:i+1)}/${t.steps.length}`}
+  return t.of||(t.pct!=null?Math.round(t.pct)+"%":islClock(NOW()-t.started));
+}
+/* a checklist earns its room once there are two steps; a finished job folds it away, a stopped one keeps it to show where */
+/* under the title of a job with a checklist: who is on the current step (the step itself says what) */
+function islStepWho(t){const cur=t.steps.find(x=>x.state==="run"||x.state==="you");if(cur?.state==="you")return L("Waiting for you","等你回复");
+  const w=AGENTS[cur?.who||t.agent]?.name||islWho(t);return t.pct!=null?`${w} · ${Math.round(t.pct)}%`:w}
+const islStepsShown=t=>t.steps.length>=2&&(islLive(t)||t.state==="failed"||t.state==="cancelled");
 function islPrimary(live){
   // the job that best represents the moment: one with real progress, else the newest
   return live.filter(t=>t.state==="running"&&t.pct!=null).sort((a,b)=>b.started-a.started)[0]||live.slice().sort((a,b)=>b.started-a.started)[0];
@@ -4329,7 +4471,7 @@ function islFaceHTML(mode,live){
   if(mode==="compact"){
     const p=islPrimary(live),others=live.length-1;
     const avs=live.length>1?`<span class="isl-stack">${[p,...live.filter(x=>x!==p)].slice(0,3).map(islAv).join("")}</span>`:islAv(p);
-    const right=p.state==="queued"?L("Queued","排队"):p.of||(p.pct!=null?Math.round(p.pct)+"%":islClock(NOW()-p.started));
+    const right=islRight(p);
     return `<button type="button" class="isl-pill" data-isl="toggle" aria-expanded="false" aria-label="${esc(L(`${live.length} background task${live.length>1?"s":""} running. Show details`,`${live.length} 个后台任务进行中，展开详情`))}">${avs}<span class="isl-lbl"><b>${esc(p.generic?islWho(p):islVerb(p))}</b><span>${esc(islCompactText(p))}</span></span>${others>0?`<span class="isl-more">+${others}</span>`:""}<span class="isl-num">${esc(right)}</span></button>`;
   }
   if(mode==="flash"){
@@ -4375,7 +4517,7 @@ function islPatchRow(el,t){
     const acts=(live&&t.cancel&&!t.stopping?`<button type="button" class="isl-ib" data-isl-stop="${t.id}" aria-label="${esc(L("Stop","停止"))}: ${esc(islTitle(t))}" title="${esc(L("Stop","停止"))}"><i></i></button>`:"")
       +(canShow?`<button type="button" class="isl-btn" data-isl-show="${t.id}">${esc(L("Show","查看"))}</button>`:"")
       +(!live?`<button type="button" class="isl-ib" data-isl-dismiss="${t.id}" aria-label="${esc(L("Dismiss","移除"))}" title="${esc(L("Dismiss","移除"))}"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></svg></button>`:"");
-    el.innerHTML=`<span class="isl-lead"></span><span class="isl-tx"><span class="isl-t"></span><span class="isl-s"><span class="ph"></span><span class="el"></span></span></span><span class="isl-acts">${acts}</span>${live?`<span class="isl-bar"><i></i></span>`:""}`;
+    el.innerHTML=`<span class="isl-lead"></span><span class="isl-tx"><span class="isl-t"></span><span class="isl-s"><span class="ph"></span><span class="el"></span></span></span><span class="isl-acts">${acts}</span><ul class="vsteps isl-steps" aria-label="${esc(L("Steps","步骤"))}" hidden></ul>${live?`<span class="isl-bar"><i></i></span>`:""}`;
     el.classList.toggle("ended",!live);
   }
   const lead=el.querySelector(".isl-lead"),leadHTML=live?islAv(t):islGlyph(t),leadKey=live?`${t.agent}|${t.state}|${t.pct==null}`:"g"+t.state+t.tone;
@@ -4383,11 +4525,14 @@ function islPatchRow(el,t){
   else if(live&&t.pct!=null){const pg=lead.querySelector(".pg");if(pg)pg.style.strokeDasharray=`${Math.max(2,t.pct).toFixed(1)} 100`}
   const set=(sel,txt,cls)=>{const e=el.querySelector(sel);if(!e)return;if(e.textContent!==txt)e.textContent=txt;if(cls!=null)e.className=cls};
   set(".isl-t",islTitle(t));
-  const ph=live?islPhase(t)+(t.state!=="running"?"":t.of?` · ${t.of}`:t.pct!=null?` · ${Math.round(t.pct)}%`:""):t.error?t.error:t.note?islEndText(t)+" · "+t.note:islEndText(t);
+  const ph=live?(islStepsShown(t)&&t.state==="running"?islStepWho(t):islPhase(t)+(t.state!=="running"?"":t.of?` · ${t.of}`:t.pct!=null?` · ${Math.round(t.pct)}%`:"")):t.error?t.error:t.note?islEndText(t)+" · "+t.note:islEndText(t);
   set(".ph",ph,"ph"+(t.error?" err":t.tone==="warn"&&!live?" warn":""));
   set(".el",live?islClock(NOW()-t.started):islClock(t.ended-t.started));
   el.title=t.error||"";
-  const bar=el.querySelector(".isl-bar");
+  const stUl=el.querySelector(".isl-steps"),showSteps=islStepsShown(t);
+  if(stUl){stUl.hidden=!showSteps;if(showSteps)stepsSync(stUl,t.steps,{all:t.stepsAll,more:`data-isl-steps="${t.id}"`})}
+  // the checklist already says how far along the work is; the bar stays only for a real percentage
+  const bar=el.querySelector(".isl-bar");if(bar)bar.hidden=showSteps&&t.pct==null;
   if(bar){const a=t.agent==="copilot"?"copilot":t.agent||"";bar.className="isl-bar"+(t.state==="queued"?" queued":t.pct==null?" ind":"");
     bar.style.setProperty("--tint",{scout:"var(--B)",wright:"var(--A)",critic:"var(--C)",muse:"var(--isl-muse)"}[a]||"var(--label-2)");
     bar.style.setProperty("--p",(t.pct||0)+"%")}
@@ -4427,7 +4572,7 @@ function islRender(){
   }else if(mode==="compact"){
     // light patch: numbers and words only
     const p=islPrimary(live),num=face.querySelector(".isl-num"),lbl=face.querySelector(".isl-lbl span");
-    const right=p.state==="queued"?L("Queued","排队"):p.of||(p.pct!=null?Math.round(p.pct)+"%":islClock(NOW()-p.started));
+    const right=islRight(p);
     if(num&&num.textContent!==right)num.textContent=right;
     const tt=islCompactText(p);if(lbl&&lbl.textContent!==tt)lbl.textContent=tt;
     face.querySelectorAll(".isl-av").forEach((av,i)=>{const t=[p,...live.filter(x=>x!==p)][i];const pg=av.querySelector(".pg");if(t&&pg&&t.pct!=null)pg.style.strokeDasharray=`${Math.max(2,t.pct).toFixed(1)} 100`});
@@ -4452,6 +4597,7 @@ function initIsland(){
     if(b.dataset.islStop){islStop(find(b.dataset.islStop));return}
     if(b.dataset.islShow){islShow(find(b.dataset.islShow));return}
     if(b.dataset.islDismiss){islDismiss(find(b.dataset.islDismiss));return}
+    if(b.dataset.islSteps){const t=find(b.dataset.islSteps);if(t){t.stepsAll=!t.stepsAll;islSchedule()}return}
   });
   shell.addEventListener("pointerenter",()=>{ISL.hover=true;clearTimeout(ISL.closeT);ISL.closeT=0;islSchedule()});
   shell.addEventListener("pointerleave",()=>{ISL.hover=false;islSchedule()});
@@ -11574,36 +11720,57 @@ function drawOutlineOld(pl){
 const STALL=()=>new Promise(()=>{});
 function seatWorld(k){const s=qs(`[data-agent="${k}"]`);if(!s||!s.offsetParent)return null;const r=s.getBoundingClientRect(),w=wall.getBoundingClientRect();return toWorld(r.left+r.width/2-w.left,r.top+r.height/2-w.top)}
 function goHome(k){const c=cursors[k];if(!c)return;const h=seatWorld(k);if(h&&!calm()){moveCursor(k,h.x,h.y);clearTimeout(c._hide);c._hide=setTimeout(()=>{if(!crewState[k].busy)c.classList.remove("on")},620)}else c.classList.remove("on")}
+const MEDIA_TASK=new Set(["image","gif","video","search"]);
 async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   preemptBackgroundAdvisors?.();
   crewState[k].cancel=false;setAgent(k,{busy:true,status:label});recordChanges();
-  // every crew run is a task on the island; prog carries only progress the work really reports
-  const task=taskOpen({kind:tk.kind||ISL_AGENT_KIND[k]||"agent",agent:k,title:tk.title||islCap(label),generic:!tk.title,phase:label,cancel:()=>stopAgent(k)});
-  const c=cursorEl(k);const say=(s,prog)=>{setAgent(k,{status:s});c.querySelector(".lbl").textContent=s[0].toUpperCase()+s.slice(1);
-    task.update(prog?{...prog,phase:prog.pct!=null?s.replace(/\s*·\s*\d+%$/,""):s}:{phase:s})};say(label);
+  // every crew run is a task on the island; prog carries only progress the work really reports.
+  // A run that is one step of a larger move (tk.parent) reports into that move's checklist instead of opening its own.
+  const parent=tk.parent&&islLive(tk.parent)?tk.parent:null,media=MEDIA_TASK.has(tk.kind);
+  const task=parent||taskOpen({kind:tk.kind||ISL_AGENT_KIND[k]||"agent",agent:k,title:tk.title||label,generic:!tk.title,phase:label,cancel:()=>stopAgent(k)});
+  if(parent){parent.agent=k;parent.cancel=()=>stopAgent(k);if(tk.step)parent.step(tk.step,null,{who:k})}
+  const c=cursorEl(k);
+  // voice: what the cursor and the island say now. say (handed to the work) also checks off a step when the words move on
+  const voice=(s,prog)=>{const w=phaseL(s);setAgent(k,{status:s});c.querySelector(".lbl").textContent=w[0].toUpperCase()+w.slice(1);
+    task.update(prog?{...prog,phase:prog.pct!=null?s.replace(/\s*·\s*\d+%$/,""):s}:{phase:s})};
+  const say=(s,prog)=>{voice(s,prog);if(!parent)task.step(phaseKey(s),islCap(phaseL(s).replace(/\s*·\s*\d+%$/,"")))};voice(label);
   const stopped=()=>crewState[k].cancel;
   const t0=performance.now();let res,err,fin=false;const p=work({say,stopped,task}).then(r=>res=r,e=>err=e).finally(()=>fin=true);
   if(places.length)frameRects([...places,...read.slice(0,1).map(n=>({x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)}))]);
   const home=seatWorld(k);if(home&&!calm()){c.classList.add("launch");moveCursor(k,home.x,home.y);void c.offsetWidth;c.classList.remove("launch");c.classList.add("on");await wait(40)}
   const start=read[0]||places[0];if(start){moveCursor(k,(start.x||0)-60,(start.y||0)-80);await wait(30);c.classList.add("on")}
-  for(const n of read.slice(0,5)){if(stopped()||fin)break;say("reading "+clip(titleOf(n),34));moveCursor(k,n.x+(W[n.type]||300)*.62,n.y+46);const el=nodeEl(n.id);if(el){el.dataset.extra="reading";el.classList.add("reading")}await wait(calm()?0:260)}
+  const toRead=read.slice(0,5);
+  // one step for the reading, however many cards it looks at; the cursor still names each card
+  if(toRead.length&&!media&&!parent&&!stopped()&&!fin)task.step("read",toRead.length===1?L("Reading the card","阅读卡片"):L(`Reading ${toRead.length} cards`,`阅读 ${toRead.length} 张卡片`));
+  for(const n of toRead){if(stopped()||fin)break;voice("reading "+clip(titleOf(n),34));moveCursor(k,n.x+(W[n.type]||300)*.62,n.y+46);const el=nodeEl(n.id);if(el){el.dataset.extra="reading";el.classList.add("reading")}await wait(calm()?0:260)}
   const outlines=[];
   // with both engines in Auto, either may draft: the note at the end says which one did
   const aiLbl=aiPref==="auto"&&studioState.status==="ready"&&apiRoutable()&&cloudState()!=="out"?"drafting":aiPref!=="local"&&studioState.status==="ready"?"drafting with Studio AI":aiPref!=="local"&&sampleFn?"drafting with Claude":"drafting";
-  if(places.length&&!stopped())say(aiLbl);
+  if(places.length&&!stopped())voice(aiLbl);
+  // then the work itself, in the words of the job (media jobs report their own steps as they go)
+  if(!media&&!parent&&!fin&&!stopped()&&task.steps.length)task.step("work",islCap(phaseL(places.length?aiLbl:label)));
   for(const pl of places){moveCursor(k,pl.x+pl.w*.85,pl.y+pl.h*.4);outlines.push(drawOutline(pl));await wait(calm()||fin?0:180)}
   let dots=0;const tick=setInterval(()=>{if(!places.length)return;const pl=places[dots%places.length];dots++;moveCursor(k,pl.x+pl.w*(.3+Math.random()*.6),pl.y+40+Math.random()*(pl.h-60))},900);
   await Promise.race([p,new Promise(res=>{const iv=setInterval(()=>{if(stopped()){clearInterval(iv);res()}},120);p.then(()=>clearInterval(iv))})]);clearInterval(tick);
   if(stopped()){read.forEach(n=>{const e=nodeEl(n.id);if(e){delete e.dataset.extra;e.classList.remove("reading")}});outlines.forEach(o=>o.remove());goHome(k);
     for(const t of Object.values(board.threads))for(let i=t.length-1;i>=0;i--)if(t[i].who===k&&t[i].typing)t.splice(i,1);
     crewState[k].cancel=false;setAgent(k,{busy:false,status:""});renderAll();task.cancelled();return STALL()}
+  if(parent){parent.cancel=null}
   const min=calm()?0:500,el=performance.now()-t0;if(el<min)await wait(min-el);
   read.forEach(n=>{const e=nodeEl(n.id);if(e){delete e.dataset.extra;e.classList.remove("reading")}});
   outlines.forEach(o=>{o.style.transition="opacity .3s";o.style.opacity=0;setTimeout(()=>o.remove(),320)});
   goHome(k);setAgent(k,{busy:false,status:""});
   crewState[k].lastRun={t:NOW(),live:err?false:(res&&typeof res==="object"&&"live" in res?!!res.live:null)};
   if(err){task.fail(err?.message);throw err}
-  task.done(res&&res.live===false&&res.why?{tone:"warn",note:L("Built-in rules answered","内置规则作答")}:res&&res.route?{note:res.route}:{});return res;
+  const endNote=res&&res.live===false&&res.why?{tone:"warn",note:L("Built-in rules answered","内置规则作答")}:res&&res.route?{note:res.route}:{};
+  if(parent){
+    // a step of a move: check it off; the move ends when its last planned step does (tk.hold keeps the step open, e.g. for your answers)
+    if(tk.step&&!tk.hold)parent.stepDone(tk.step);
+    if(endNote.tone)parent._warn=endNote;else if(endNote.note&&!parent._warn)parent._route=endNote;
+    if(parent.steps.length&&parent.steps.every(x=>x.state==="done"))parent.done(parent._warn||parent._route||{});
+    return res;
+  }
+  task.done(endNote);return res;
 }
 function freeSpot(x,y,w,h,ignore=[]){
   for(let i=0;i<80;i++){
@@ -11666,7 +11833,7 @@ function clarifyProblems(v,ctx=null){
     if(bad)out.push(`question ${i+1} brings in "${bad}", which the idea never mentioned: ask about the idea itself`)});
   return out;
 }
-async function clarifyFork(idea,brief){
+async function clarifyFork(idea,brief,{move=null}={}){
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
   const kind=projectKind(`${ideaText} ${brief}`),home=placesIn(ideaText),ctx=`${ideaText} ${brief}`;
   const strict=kind!=="game"&&!home.length; // an idea with no place or period of its own gets questions about the idea, not invented settings
@@ -11676,8 +11843,9 @@ async function clarifyFork(idea,brief){
   const aboutIdea=`Ask about the idea itself, in its own terms: who it is for, what it does, how it would be used or paid for, how big the first version is. Every option must be a plausible answer to its question for THIS idea. Do not mention any city, country, year, company or person that the idea did not mention.`;
   const sys=strict?`You are Strategist on a small creative crew, about to ask the designer three quick questions before you suggest directions.\n${aboutIdea}\nWrite plainly and concretely. Do not use vague words such as immersive, unique, rich, dynamic, engaging or vibrant.`:smallStrategistSystem(kind);
   const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}The idea is still open. Ask the designer three quick questions whose answers would most change what this becomes${kind==="game"?" (for example who the player is, when and where it happens, and how it plays)":""}. Each question has 4 short, concrete options under 8 words, as different from each other as possible. ${strict?aboutIdea:`Use only real places and periods${home.length?`, and stay in ${home.join(" / ")}`:""}.`} ${langLine(textLang(ideaText))}\nReturn {"questions": [{"q": "...", "options": ["...", "...", "...", "..."]}, ... 3 items]}`;
-  const res=await runAgent("muse",{read:[idea],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:sys,prompt,json:true,stance:"create",maxTokens:900,small:{system:sys,prompt},check:v=>clarifyProblems(v,strict?ctx:null)},()=>({questions:fallback}))});
+  const res=await runAgent("muse",{read:[idea],places:[],label:"asking first",task:{parent:move,step:"ask",hold:true},work:()=>askAI({system:sys,prompt,json:true,stance:"create",maxTokens:900,small:{system:sys,prompt},check:v=>clarifyProblems(v,strict?ctx:null)},()=>({questions:fallback}))});
   if(!res)return null;
+  if(move)move.step("ask",null,{state:"you"}),move.update({phase:L("waiting for your answers","等你回答")}),move.cancel=null;
   const got=(Array.isArray(res.v?.questions)?res.v.questions:[]).map(q=>({q:String(q?.q||"").trim(),options:(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4)})).filter(q=>q.q&&q.options.length>=2).slice(0,3);
   /* whichever engine answered, a question whose options bring in places, years or companies the idea never mentioned is dropped */
   const kept=strict?got.filter(q=>!clarifyInvented(q,ctx)):got;
@@ -11762,9 +11930,9 @@ function planSources(count,near){
   for(let i=0;i<count;i++){const s=freeSpot(80+(i%2)*(W.source+28),y0+Math.floor(i/2)*260,W.source,230);places.push({x:s.x,y:s.y,w:W.source,h:230})}
   return places;
 }
-async function groundIdea(idea,brief,picked){
+async function groundIdea(idea,brief,picked,{move=null}={}){
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||""),lang=textLang(ideaText);
-  const qs=groundQueries(ideaText,brief,picked);if(!qs.length)return [];
+  const qs=groundQueries(ideaText,brief,picked);if(!qs.length){if(move)move.steps=move.steps.filter(x=>x.key!=="ground");return []}
   let reached=false,keenWhy="";
   const useKeen=keenableOn(),answers=(picked||[]).map(x=>x.a).filter(Boolean);
   /* Keenable is semantic, so it also gets the idea in plain words, but asked for its real history and daily
@@ -11772,7 +11940,7 @@ async function groundIdea(idea,brief,picked){
      are not background and invite copying an existing game. */
   const plain=lang==="zh"?`${qs[0]||ideaText} 真实历史 日常生活`:`${[ideaCore(ideaText),...answers].join(" ")} real history and daily life`;
   const keenQs=[...new Set([plain.trim().slice(0,300),...qs])].slice(0,3);
-  const res=await runAgent("scout",{read:[idea],places:[],label:L(useKeen?"looking up background (Keenable)":"looking up background","查找背景资料"),task:{kind:"search",title:qs[0]},work:async()=>{
+  const res=await runAgent("scout",{read:[idea],places:[],label:L(useKeen?"looking up background (Keenable)":"looking up background","查找背景资料"),task:{kind:"search",title:qs[0],parent:move,step:"ground"},work:async()=>{
     const found=[],seen=new Set();
     const take=(got,q,via)=>{let n=0;for(const it of got){const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3||++n>=2)break}};
     if(useKeen){
@@ -11885,15 +12053,26 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
   if(!free.length)return toast(L("This claim has four directions. Start a new round to explore more; these stay on the board.","这个论点已有四个方向。开始新一轮继续探索，现有方向会保留在画板上。"),{onAct:()=>newRound(byId(idea.id)),actLabel:L("New round","新一轮")});
   if(count>free.length)toast(free.length===1?`Room for one more direction. Strategist will suggest ${free[0]}.`:`Room for ${free.length} more directions.`);
   // the questions make up for a small model; when Auto sends the fork to the cloud there is nothing to make up for
-  if(ask&&smallModelOn()&&autoPlan("heavy").order[0]==="studio"&&!existing.length&&forkIsOpen(idea,brief,sourcesFor(idea))){
-    const picked=await clarifyFork(idea,brief);
-    if(picked===null)return;
-    if(picked.length){idea.clarified=picked;brief=`${brief?brief+"\n":""}The designer chose: ${picked.map(x=>`${x.q} ${x.a}`).join("; ")}. Keep every direction inside these choices.`}
-  }
+  const willAsk=ask&&smallModelOn()&&autoPlan("heavy").order[0]==="studio"&&!existing.length&&forkIsOpen(idea,brief,sourcesFor(idea));
   // Scout looks up the real background first (any model; built-in rules couldn't use it), once per idea
   const scoutSrcs=()=>inputsOf(idea.id).filter(n=>n.type==="source"&&n.by==="scout"&&!n.archived&&!n.hidden);
-  if(SCOUT_GROUNDING&&connSummary().engine!=="rules"&&!sourcesFor(idea).length&&!scoutSrcs().length)await groundIdea(idea,brief,idea.clarified||null);
+  const willGround=()=>SCOUT_GROUNDING&&connSummary().engine!=="rules"&&!sourcesFor(idea).length&&!scoutSrcs().length;
   count=clamp(count,1,free.length);
+  /* When more than one of the crew takes part, the fork is one move with a plan: one row on the island whose
+     checklist shows who is on which step and what is left, instead of three jobs that start and end on their own. */
+  const nDir=count;
+  const plan=[...(willAsk?[{key:"ask",who:"muse",label:L("Ask you a few questions","先问你几个问题")}]:[]),
+    ...(willGround()?[{key:"ground",who:"scout",label:L("Look up the real background","查找真实背景资料")}]:[]),
+    {key:"draft",who:"muse",label:nDir===1?L("Draft a direction","起草 1 个方向"):L(`Draft ${nDir} directions`,`起草 ${nDir} 个方向`)}];
+  const move=plan.length>1?taskOpen({kind:"directions",agent:plan[0].who,title:clip(titleOf(idea),60),steps:plan}):null;
+  if(willAsk){
+    const picked=await clarifyFork(idea,brief,{move});
+    if(picked===null){move?.cancelled();return}
+    move?.stepDone("ask");
+    if(picked.length){idea.clarified=picked;brief=`${brief?brief+"\n":""}The designer chose: ${picked.map(x=>`${x.q} ${x.a}`).join("; ")}. Keep every direction inside these choices.`}
+  }
+  if(willGround())await groundIdea(idea,brief,idea.clarified||null,{move});
+  else if(move)move.steps=move.steps.filter(x=>x.key!=="ground");
   const places=planFork(idea,count).places.map(({x,y,w,h})=>({x,y,w,h}));
   const srcs=[...new Map([...sourcesFor(idea),...scoutSrcs()].map(n=>[n.id,n])).values()];
   const groundNote=srcs.some(n=>n.by==="scout"&&n.type==="source")?"\nBackground Scout found on the web is on the wall. Draw on it where it helps and never contradict it; it is not a checklist, so do not build a direction around a single fact.\n":"";
@@ -11903,7 +12082,7 @@ ${brief?`\nThe designer added: "${brief}"\n`:""}${templateForkNote()}
 Fork it into exactly ${count} distinct directions. Reply with ONLY valid JSON: {"directions": [${count} objects with keys: "title" (2-4 words, no trailing punctuation), "plan" (one sentence: what we would build or do), "test" (one sentence: a concrete test with people that could fail), "mode" ("story" | "desk" | "deck")]}.`;
   const ideaText=(idea.title?idea.title+" — ":"")+(fullTextOf(idea)||idea.text||"");
   const small=smallModelOn()?smallForkPrompt(ideaText,count,brief,existing,(wallText(srcs)||"")+groundNote+earlierRoundsBlock(idea)):null;
-  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,work:()=>askAI({weight:"heavy",system:`${ROLE.muse}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
+  const {v,live}=await runAgent("muse",{read:[idea,...srcs.slice(0,3)],places,label:`forking into ${count}`,task:{parent:move,step:"draft"},work:()=>askAI({weight:"heavy",system:`${ROLE.muse}\n${STYLE}\n${CREATE_RULE}`,prompt,images:imgNodes,json:true,stance:"create",small,check:small?v=>forkProblems(v,count,ideaText):null},()=>forkLocal(idea,count))});
   const rawList=Array.isArray(v)?v:(Array.isArray(v?.directions)?v.directions:Array.isArray(v?.items)?v.items:null);
   const held=[];
   const list=(rawList&&rawList.length?rawList:forkLocal(idea,count)).slice(0,count).filter(d=>{const e=echoOfDeclined(`${d.title||""} — ${d.plan||d.text||""}`,{kinds:["draft","passed-over","failed"]});if(e&&!e.answeredBy){held.push(e.d);holdBack("direction",{target:idea.id,who:"muse",text:`${d.title||""} — ${d.plan||d.text||""}`,payload:{title:d.title,plan:d.plan||d.text||"",test:d.test||"",mode:d.mode},declined:e.d});return false}if(e)d._revisits={id:e.d.id,by:e.answeredBy.id};return true});
@@ -15982,8 +16161,9 @@ function renderCopilotTrace(m){
   const body=tr.steps.map(s=>{
     const fa=traceActorInfo(s.from),ta=traceActorInfo(s.to);
     const ms=s.ms?`${(s.ms/1000).toFixed(1)}s`:(s.status==="running"?L("working…","处理中…"):"");
-    return `<div class="cp-trace-step${s.handoff?" handoff":""}${s.status==="running"?" live":""}">
-      <div class="cp-trace-top"><span class="cp-trace-route"><span class="mk">${fa.mk}</span><span>${esc(fa.name)} → ${esc(ta.name)}${s.handoff?L(" (review)","（复核）"):""}</span></span><span class="cp-trace-tag">${esc(ms)}</span></div>
+    const st=s.status==="running"?"run":s.status==="done"?"done":s.status==="skipped"||s.status==="stopped"?"stop":s.status==="error"||s.status==="failed"?"fail":"wait";
+    return `<div class="cp-trace-step${s.handoff?" handoff":""}${s.status==="running"?" live":""}" data-s="${st}">
+      <div class="cp-trace-top"><span class="cp-trace-route">${STEP_ICON[st]}<span class="sr">${esc(L(STEP_SAY[st][0],STEP_SAY[st][1]))}: </span><span class="mk">${fa.mk}</span><span>${esc(fa.name)} → ${esc(ta.name)}${s.handoff?L(" (review)","（复核）"):""}</span></span><span class="cp-trace-tag">${esc(ms)}</span></div>
       ${s.contextTag?`<div class="cp-trace-ctx">${esc(s.contextTag)}</div>`:""}
       ${s.task?`<div class="cp-trace-task">${esc(s.task)}</div>`:""}
       ${s.output?`<div class="cp-trace-out">${mdLite(s.output)}</div>`:""}
@@ -15991,7 +16171,7 @@ function renderCopilotTrace(m){
   }).join("");
   return `<div class="cp-trace${tr.open?" open":""}" data-cp-trace-wrap="${m.id}">
     <button type="button" class="cp-trace-head" data-cp-trace="${m.id}" aria-expanded="${!!tr.open}">
-      <span class="cp-trace-dot${live?" live":""}"></span>
+      ${STEP_ICON[live?"run":tr.steps.some(x=>x.status==="skipped")?"stop":"done"]}
       ${mks?`<span class="cp-trace-mks">${mks}</span>`:""}
       <span class="cp-trace-lbl">${esc(headLbl)}</span>
       ${stat?`<span class="cp-trace-stat">${esc(stat)}</span>`:""}
@@ -16466,9 +16646,11 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         const traceT0=performance.now();
         aiMsg.trace={open:false,totalMs:0,docsActivated:[],steps:subSteps};
         paintCopilotTrace(aiMsg);
-        cpTask=taskOpen({kind:"research",agent:"copilot",title:clip(text,90),phase:L("Planning","规划中"),cancel:()=>stopCopilot(),show:()=>openCopilot(true)});
+        cpTask=taskOpen({kind:"research",agent:"copilot",title:clip(text,90),phase:L("Planning","规划中"),cancel:()=>stopCopilot(),show:()=>openCopilot(true),
+          // the same checklist as a crew move: who is asked what, then the answer
+          steps:[...subSteps.map(st=>({key:"cp:"+st.id,who:st.to,label:`${traceActorInfo(st.to).name}${st.handoff?L(" (review)","（复核）"):""}: ${clip(st.task||"",48)}`})),{key:"cp:answer",who:"copilot",label:L("Write the answer","写出回答")}]});
         for(const [si,step] of subSteps.entries()){
-          cpTask.update({phase:`${traceActorInfo(step.to).name}${step.handoff?L(" (review)","（复核）"):""} · ${clip(step.task||"",56)}`,pct:si/(subSteps.length+1)*100,of:`${si+1}/${subSteps.length+1}`});
+          cpTask.update({phase:`${traceActorInfo(step.to).name}${step.handoff?L(" (review)","（复核）"):""} · ${clip(step.task||"",56)}`,pct:si/(subSteps.length+1)*100,of:`${si+1}/${subSteps.length+1}`});cpTask.step("cp:"+step.id);
           const prior=step.handoffFromId?subSteps.find(s=>s.id===step.handoffFromId):null;
           const scoped=scopeSubAgentContext(step.to,text,ctx,prior);
           scoped.docNames.forEach(d=>{if(!aiMsg.trace.docsActivated.includes(d))aiMsg.trace.docsActivated.push(d)});
@@ -16476,7 +16658,7 @@ async function sendCopilotMessage(raw,ctxOverride=null){
         }
         aiMsg.trace.totalMs=Math.max(10,Math.round(performance.now()-traceT0));
         paintCopilotTrace(aiMsg);
-        cpTask.update({phase:L("Writing the synthesis","撰写综合结论"),pct:subSteps.length/(subSteps.length+1)*100,of:`${subSteps.length+1}/${subSteps.length+1}`});
+        cpTask.update({phase:L("Writing the synthesis","撰写综合结论"),pct:subSteps.length/(subSteps.length+1)*100,of:`${subSteps.length+1}/${subSteps.length+1}`});cpTask.step("cp:answer");
       }
       const imgNodes=isCasual?[]:ctx.filter(n=>n.type==="image"||n.type==="frame");
       const selectedText=ctx.length?wallText(ctx,{docCap:2200,shortCap:280,totalCap:4200}):"(none selected)";

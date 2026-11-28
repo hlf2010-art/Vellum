@@ -5222,7 +5222,7 @@ function rcCriticProblems(v,pack,survey=null,strat=null){
   if(survey&&obj){const seen=new Set([...(survey.conflicts||[]).map(c=>c.id),...(survey.assumptions||[]).flatMap(a=>a.rests_on||[])]);if(seen.size&&!cites.some(k=>seen.has(k)))p.push(`the objection must follow from your survey: cite one of ${[...seen].join(", ")}`)}
   if(strat&&obj&&rcSameAs(obj,strat.why,zh))p.push("the objection only repeats Strategist's reading: say what it gets wrong, or answer {\"stance\":\"none\"}");
   if(!fix)p.push('an objection needs "fix": what to do about it');
-  else if(!(zh?RC_DO_ZH:RC_DO_EN).test(fix))p.push('"fix" must be something the designer can do: a check, a count, a question to ask someone, a test to run');
+  else if(!(zh?RC_DO_ZH:RC_DO_EN).test(fix)&&!(/\d/.test(fix)&&(zh?fix.length>=10:fix.split(/\s+/).length>=6)))p.push('"fix" must be something the designer can do: a check, a count, a question to ask someone, a test to run');
   if(RC_ACTED.test(obj))p.push("never say you changed the decision");
   if(rcLangOff(obj,zh)||rcLangOff(fix,zh))p.push(zh?"write it in Chinese":"write it in English");
   return p;

@@ -8360,10 +8360,26 @@ const MATERIAL_T=["source","image","recording","audio","link","frame","note","no
 const JUDGMENT_T=["idea","synthesis","direction","question"];
 const isMaterial=n=>!!n&&MATERIAL_T.includes(n.type)&&n.status==="ink"&&!n.tombstone&&!n.archived;
 const isJudgment=n=>!!n&&JUDGMENT_T.includes(n.type);
+/* Upstream backing, read through judgments: material that counters a judgment on the way up is never backing for the
+   cards built on it. It comes up as a counter instead (it weakens a leg the card stands on), and the walk does not pass
+   through a counter. A synthesis keeps its own list of what it read. */
+const SRC_T=["source","image","recording","audio","link","frame","note","notepad","synthesis"];
+const isCounterEdge=e=>e.rel==="conflicts"&&e.by==="you";
+function upstreamBacking(n){
+  if(n?.type==="synthesis")return {sup:evSourcesOf(n),ctr:[]};
+  const sup=new Map(),ctr=new Map(),seen=new Set();
+  const walk=(id,d)=>{if(seen.has(id)||d>8)return;seen.add(id);
+    for(const e of board.edges){if(e.b!==id)continue;const p=byId(e.a);if(!p)continue;
+      const live=p.status==="ink"&&!p.tombstone&&!p.archived;
+      if(isCounterEdge(e)){if(d>0&&live&&SRC_T.includes(p.type))ctr.set(p.id,p);continue}
+      if(live&&SRC_T.includes(p.type))sup.set(p.id,p);walk(p.id,d+1)}};
+  walk(n.id,0);for(const id of ctr.keys())sup.delete(id);
+  return {sup:[...sup.values()],ctr:[...ctr.values()]};
+}
 function restsOn(n){
-  const sup=new Map(evSourcesOf(n).map(s=>[s.id,s])),ctr=new Map();
+  const up=upstreamBacking(n),sup=new Map(up.sup.map(s=>[s.id,s])),ctr=new Map(up.ctr.map(s=>[s.id,s]));
   for(const e of board.edges){if(!e.rel||e.by!=="you")continue;const o=e.a===n.id?e.b:e.b===n.id?e.a:null;const m=o&&byId(o);if(!isMaterial(m))continue;
-    if(e.rel==="conflicts"){ctr.set(m.id,m);sup.delete(m.id)}else sup.set(m.id,m)}
+    if(e.rel==="conflicts"){ctr.set(m.id,m);sup.delete(m.id)}else{sup.set(m.id,m);ctr.delete(m.id)}}
   return {sup:[...sup.values()],ctr:[...ctr.values()]};
 }
 /* ── grounding: one reading of "what does this rest on?" for every surface ──

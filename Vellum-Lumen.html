@@ -3858,8 +3858,8 @@ body.snap-skip #wall{cursor:copy}
 /* ── Dig in: research chains grown from one line of a card ─────────────
    The words of a selected card can be selected; a dig hangs off those words with a hairline. A chain line is never
    evidence, so it stays neutral grey. Folded chains leave a dotted underline and a small count beside the words. */
-.card.sel:not(.sketch):not(.is-editing) :is(.rs-ans,.notepad-body,p[data-edit="text"],h4[data-edit],.pb){user-select:text;-webkit-user-select:text;cursor:text}
-.card.sel:not(.sketch) :is(.rs-ans,.notepad-body,p[data-edit="text"],h4[data-edit],.pb) ::selection{background:color-mix(in srgb,var(--B-fill) 24%,transparent)}
+.card.sel:not(.is-editing) :is(.rs-ans,.notepad-body,p[data-edit="text"],h4[data-edit],.pb){user-select:text;-webkit-user-select:text;cursor:text}
+.card.sel :is(.rs-ans,.notepad-body,p[data-edit="text"],h4[data-edit],.pb) ::selection{background:color-mix(in srgb,var(--B-fill) 24%,transparent)}
 .card.research .rs-ans{font-size:13.5px;line-height:1.6;color:var(--label-2);margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .card.research .rs-ans:empty::before{content:attr(data-ph);color:var(--label-3)}
 .card.research .rs-wait{color:var(--label-3)}
@@ -4148,6 +4148,7 @@ const ICONS={
   plus:'<path d="M12 5v14M5 12h14"/>',
   link:'<path d="M10 14 20 4M15 4h5v5M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>',
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  copyText:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1M12 13h5M12 16.5h3.2"/>',
   book:'<path d="M4.5 5.5A2.5 2.5 0 0 1 7 3h12.5v16.5H7a2.5 2.5 0 0 0-2.5 2.5z"/><path d="M4.5 19.5V5.5M8.5 7.5h7M8.5 11h5"/>',
   grid:'<rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2"/>',
   archive:'<rect x="3" y="4.5" width="18" height="4" rx="1.2"/><path d="M5 8.5v9.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5M10 13h4"/>',
@@ -5671,6 +5672,30 @@ function defaultAgentFor(n){
   if(["source","image","recording","frame","synthesis","audio","link"].includes(n.type))return"scout";
   if(n.type==="direction"||n.type==="idea")return"muse";
   return"critic";
+}
+/* Copy text: everything a card says, as plain words, including what the card face cuts off */
+function cardPlainText(n){
+  if(!n)return "";const parts=[],push=v=>{const t=String(v??"").trim();if(t&&!parts.includes(t))parts.push(t)};
+  if(n.type==="note")push(n.text);
+  else{
+    push(n.type==="direction"?titleOf(n):n.type==="treemap"?"":n.title);
+    if(n.type==="link")push(n.url);
+    push(n.text);
+    if(n.type==="direction"&&n.whyNot)push(n.whyNot);
+    if(Array.isArray(n.items))push(n.items.map(i=>"- "+(typeof i==="string"?i:i?.t||"")).join("\n"));
+    if(Array.isArray(n.points))push(n.points.map(x=>"- "+x).join("\n"));
+    if(n.type==="kanban")push(kanbanColsOf(n).map(c=>{const ks=(n.cards||[]).filter(k=>k.col===c.id);return c.title+(ks.length?"\n"+ks.map(k=>"- "+k.title).join("\n"):"")}).join("\n\n"));
+    if(n.type==="treemap"&&n.tree){const out=[],walk=(t,d)=>{if(!t)return;out.push("  ".repeat(Math.max(0,d-1))+(d?"- ":"")+(t.text||""));(t.children||[]).forEach(c=>walk(c,d+1))};walk(n.tree,0);push(out.join("\n"))}
+    if(n.type==="table"&&n.data?.columns?.length)push([n.data.columns,...(n.data.rows||[])].map(r=>r.map(c=>String(c??"").replace(/[\t\n]+/g," ")).join("\t")).join("\n"));
+    if(n.spec?.items?.length)push(n.spec.items.map(it=>"- "+[it.title,it.tag].filter(Boolean).join(" · ")).join("\n"));
+  }
+  return parts.join("\n\n");
+}
+async function copyCardText(ns){
+  const txt=ns.map(cardPlainText).filter(Boolean).join("\n\n");if(!txt)return;
+  let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch{}
+  if(!ok){const ta=document.createElement("textarea");ta.value=txt;ta.setAttribute("readonly","");ta.style.cssText="position:fixed;left:-9999px;top:0;opacity:0";document.body.appendChild(ta);ta.select();try{ok=document.execCommand("copy")}catch{}ta.remove()}
+  toast(ok?L("Text copied","已复制文本"):L("Couldn't copy the text","无法复制文本"));
 }
 function titleOf(n){
   if(!n)return"";
@@ -13031,6 +13056,7 @@ function fullCardMenuActs(n){
   acts.push({sep:true});
   if(bondCluster(n.id).length>1&&!(isStar(n.id)&&n.focus==="you"))acts.push({k:"focus",label:L("Set as focus","设为焦点"),ic:"orbit"});
   if(n.status==="ink")acts.push({k:"lock",label:n.locked?L("Unlock","解锁"):L("Lock","锁定"),ic:"lock"});
+  if(cardPlainText(n))acts.push({k:"copy-text",label:L("Copy text","复制文本"),ic:"copyText"});
   acts.push({k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"});
   acts.push({k:"hide",label:L("Hide from canvas","从画布隐藏"),ic:"eyeOff"});
   acts.push({k:"archive",label:L("Archive","归档卡片"),key:"⇧H",ic:"archive"});
@@ -13060,7 +13086,7 @@ function openSelectionMenu(x,y){
   const acts=[{k:"copilot",label:L("Ask Copilot","问问 Copilot"),ic:"ask",key:"⌘."},{sep:true},
     {k:"gather",label:L("Synthesize","综合"),ic:"sparkles"},{k:"list",label:L("Action list","行动清单"),ic:"list"},{k:"kanban",label:L("Kanban","看板"),ic:"kanban"},{k:"treemap",label:L("Tree map","树状图"),ic:"treemap"},{k:"critique",label:L("Critique","找漏洞"),ic:"check"},
     ...(visual?[{k:"gif",label:L("GIF","动图"),ic:"video"},{k:"video",label:L("Video","视频"),ic:"video"}]:[]),
-    {sep:true},{k:"group",label:L("Group","成组"),ic:"grid"},{k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"},{k:"hide",label:L("Hide from canvas","从画布隐藏"),ic:"eyeOff"},{k:"archive",label:L("Archive","归档卡片"),ic:"archive"},{k:"delete",label:L("Delete","删除"),ic:"trash"}];
+    {sep:true},{k:"group",label:L("Group","成组"),ic:"grid"},...(ns.some(cardPlainText)?[{k:"copy-text",label:L("Copy text","复制文本"),ic:"copyText"}]:[]),{k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"},{k:"hide",label:L("Hide from canvas","从画布隐藏"),ic:"eyeOff"},{k:"archive",label:L("Archive","归档卡片"),ic:"archive"},{k:"delete",label:L("Delete","删除"),ic:"trash"}];
   const head=`<div class="cm-head"><b>${ns.length} ${L("cards","张卡片")}</b><span class="chip">${L("selected","已选中")}</span></div>`;
   cm.innerHTML=head+acts.map(a=>a.sep?`<div class="cm-sep"></div>`:`<button type="button" data-sm="${a.k}"><span class="cm-lbl">${ic(a.ic)}<span>${esc(a.label)}</span></span>${a.key?`<kbd>${a.key}</kbd>`:""}</button>`).join("");
   cm.hidden=false;cardMenuOpen=true;
@@ -13102,6 +13128,7 @@ $("cardMenu")?.addEventListener("click",e=>{
   if(k==="look")return openStage(n);
   if(k==="lock")return toggleCardLock(n);
   if(k==="focus")return setFocus(n.id);
+  if(k==="copy-text")return copyCardText([n]);
   if(k==="dup")return duplicateSelection();
   if(k==="hide")return hideFromCanvasNodes([n.id]);
   if(k==="archive")return archiveNodes([n.id]);
@@ -18353,7 +18380,7 @@ $("overlays").addEventListener("click",e=>{const b=e.target.closest("[data-p]");
   if(b.dataset.p==="ink")ink(ids);else if(b.dataset.p==="erase")erase(ids);else redraw(pid)});
 /* what the selection bar and the selection menu (right-click on several selected cards) can do to the whole selection */
 function selectionActions(ns){
-  return {copilot:()=>openCopilot(true),gather:()=>gather(ns),list:()=>makeList(ns),kanban:()=>makeKanban(ns),treemap:()=>makeTreeMap(ns),gif:()=>generateGif("",{sources:ns,from:ns[0]}),video:()=>generateVideo("",{sources:ns,from:ns[0]}),critique:()=>critique(ns[0]),"align-x":()=>alignSelected("x"),"align-y":()=>alignSelected("y"),grid:tidySelectedGrid,dup:duplicateSelection,group:()=>wrapSelectionInGroup(ns),hide:()=>hideFromCanvasNodes(ns.map(n=>n.id)),archive:()=>archiveNodes(ns.map(n=>n.id)),delete:()=>erase(ns.map(n=>n.id))};
+  return {copilot:()=>openCopilot(true),gather:()=>gather(ns),list:()=>makeList(ns),kanban:()=>makeKanban(ns),treemap:()=>makeTreeMap(ns),gif:()=>generateGif("",{sources:ns,from:ns[0]}),video:()=>generateVideo("",{sources:ns,from:ns[0]}),critique:()=>critique(ns[0]),"align-x":()=>alignSelected("x"),"align-y":()=>alignSelected("y"),grid:tidySelectedGrid,"copy-text":()=>copyCardText(ns),dup:duplicateSelection,group:()=>wrapSelectionInGroup(ns),hide:()=>hideFromCanvasNodes(ns.map(n=>n.id)),archive:()=>archiveNodes(ns.map(n=>n.id)),delete:()=>erase(ns.map(n=>n.id))};
 }
 $("selbar").addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(!b)return;const ns=selected();
   selectionActions(ns)[b.dataset.s]?.()});
@@ -20050,7 +20077,7 @@ addEventListener("copy",e=>{
   if(txtSel.length||!sel.length)return;
   const payload=cloneNodesPayload(selected());
   if(!payload?.nodes?.length)return;
-  const plain=payload.nodes.map(n=>titleOf(n)+(n.text?" — "+n.text:"")).join("\n");
+  const plain=selected().map(n=>cardPlainText(n)||titleOf(n)).join("\n\n");
   internalCardClip={payload,plain,ts:Date.now()};
   try{
     e.clipboardData?.setData("application/x-vellum-nodes",JSON.stringify(payload));
@@ -20849,7 +20876,7 @@ function digSelText(s){return s&&!s.isCollapsed?digNorm(s.toString()).slice(0,40
 function digInSel(s,x,y){for(let i=0;i<s.rangeCount;i++)for(const r of s.getRangeAt(i).getClientRects())if(x>=r.left-2&&x<=r.right+2&&y>=r.top-2&&y<=r.bottom+2)return true;return false}
 function digTextDown(e,card){
   if(!card||e.button!==0||tool!=="select"||spaceHeld||e.shiftKey||e.metaKey||e.ctrlKey||e.altKey||e.pointerType==="pen")return false;
-  const id=card.dataset.id,n=byId(id);if(!n||n.status==="sketch"||n.type==="group"||!(sel.length===1&&sel[0]===id))return false;
+  const id=card.dataset.id,n=byId(id);if(!n||n.type==="group"||!(sel.length===1&&sel[0]===id))return false;
   if(e.target.closest(".dig-mk,.dig-chip,[data-a]:not(p):not(h4):not(.notepad-body)"))return false;
   const txt=e.target.closest(DIG_TXT);if(!txt||!card.contains(txt)||txt.isContentEditable)return false;
   const s=getSelection();
@@ -20860,7 +20887,7 @@ addEventListener("pointerup",e=>{
   if(!digPress)return;const p=digPress;digPress=null;
   setTimeout(()=>{
     const s=getSelection(),t=digSelText(s),el=nodeEl(p.id),n=byId(p.id);
-    if(t&&el&&el.contains(s.anchorNode)&&el.contains(s.focusNode))openDigBar(p.id,s,t);
+    if(t&&el&&el.contains(s.anchorNode)&&el.contains(s.focusNode)){if(n?.status!=="sketch")openDigBar(p.id,s,t)}
     else if(Math.hypot(e.clientX-p.x,e.clientY-p.y)<4&&n?.type==="note"&&n.status!=="sketch")startEdit(p.id,"text",{clientX:e.clientX,clientY:e.clientY});
   },0);
 },true);

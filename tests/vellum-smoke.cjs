@@ -641,7 +641,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('right-click on the empty gap inside the selection opens the same menu', m.open && /^2 /.test(m.head) && m.sm.includes('copilot'), JSON.stringify(m));
       await p.keyboard.press('Escape'); await p.waitForTimeout(150);
       m = await right(r2.cx, Math.min(r2.b + 160, 760));
-      check('right-click on empty canvas away from the selection opens nothing', !m.open, JSON.stringify(m));
+      check('right-click on empty canvas away from the selection opens the canvas menu, not the selection menu', m.open && !m.sm.length && !m.cm && await p.evaluate(() => !!document.querySelector('#cardMenu [data-wm="files"]')), JSON.stringify(m));
       m = await right(r2.cx, r2.cy);
       check('right-click on a card outside the selection still selects just it and opens its own menu', m.open && m.cm > 0 && m.sm.length === 0 && await p.evaluate(id => sel.length === 1 && sel[0] === id, ids[2]), JSON.stringify(m));
       await p.keyboard.press('Escape'); await p.waitForTimeout(150);
@@ -1609,9 +1609,12 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       const p = await ctx.newPage(); p.errors = []; p.on('pageerror', e => p.errors.push(String(e).split('\n')[0]));
       await p.goto(base + '/Vellum-Lumen.html?welcome=1'); await p.waitForTimeout(2600);
       const w = await p.evaluate(() => ({ open: dlg.open, txt: dlg.innerText, s: cam.s, far: world.classList.contains('far'), tray: [...document.querySelectorAll('.pbar')].filter(e => e.style.visibility !== 'hidden').length }));
-      check('first run: a welcome says what Vellum is and offers Start a board or Explore the sample', w.open && /Start a board/.test(w.txt) && /Explore the sample/.test(w.txt) && /Gather, Explore, Prototype, Snapshot/.test(w.txt), w.txt.slice(0, 160));
+      check('first run: a welcome says what Vellum is and offers Start a board or Explore the sample', w.open && /Start a board/.test(w.txt) && /Explore the sample/.test(w.txt) && /think an idea through/.test(w.txt) && !/Double-click/.test(w.txt), w.txt.slice(0, 160));
       check('first run: the sample opens on its first lane at a readable zoom (not label-only), with no draft tray waiting', w.s >= 0.6 && !w.far && w.tray === 0, JSON.stringify(w));
       await p.click('[data-welcome="sample"]'); await p.waitForTimeout(300);
+      const tw = await p.evaluate(() => new Promise(r => setTimeout(() => r({ at: tourAt, t: document.querySelector('.tour-t')?.textContent || '' }), 600)));
+      check('the sample starts the walkthrough on its first step, the four stages', tw.at === 0 && /Four stages/.test(tw.t), JSON.stringify(tw));
+      await p.evaluate(() => endTour());
       const g = await p.evaluate(() => board.nodes.filter(n => n.type === 'group').map(n => n.title).join(' | '));
       check('the sample has no lane-wide groups repeating the lane names (the lanes are the zones), and none uses Diverge / Make / Release', !/^\d\d · (Gather|Explore|Prototype|Snapshot) · /m.test(g.split(' | ').join('\n')) && !/Diverge|Make ·|Release/.test(g), g);
       check('the /claim command is described with the same words', await p.evaluate(() => /Add an idea to Explore/.test(JSON.stringify(CMDS))));

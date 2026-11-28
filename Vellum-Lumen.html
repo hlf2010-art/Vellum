@@ -21,6 +21,8 @@
 /* Design-system scales (design-system/tokens.json): sizes, radii, motion, layers, type. */
 :root{--space-2:2px;--space-4:4px;--space-6:6px;--space-8:8px;--space-10:10px;--space-12:12px;--space-16:16px;--space-18:18px;--space-20:20px;--space-24:24px;--space-32:32px;--radius-xs:6px;--radius-chip:5.5px;--radius-sm:10px;--radius-md:12px;--radius-media:14px;--radius-control:16px;--radius-card:20px;--radius-field:22px;--radius-sheet:28px;--radius-pill:999px;--size-xs:20px;--size-sm:28px;--size-md:32px;--size-lg:36px;--size-touch:44px;--icon-xs:12px;--icon-sm:14px;--icon-md:16px;--icon-lg:20px;--duration-press:90ms;--duration-quick:150ms;--duration-base:240ms;--duration-spring:410ms;--duration-slow:600ms;--easing-standard:cubic-bezier(.22,.8,.24,1);--z-card:1;--z-wire:5;--z-chrome:30;--z-popover:50;--z-dialog:60;--z-toast:70;--z-tooltip:80;--ring-width:2.5px;--ring-offset:3px;--font-ui:var(--ui);--font-mono:var(--mono);--text-display:700 46px/1 var(--font-ui);--text-heading:650 28px/34px var(--font-ui);--text-direction-title:650 21px/25px var(--font-ui);--text-idea-title:620 19px/27px var(--font-ui);--text-card-title:600 17px/22px var(--font-ui);--text-note-text:470 16px/24px var(--font-ui);--text-body-lg:400 16px/24px var(--font-ui);--text-body:400 14px/20px var(--font-ui);--text-toast:550 14px/20px var(--font-ui);--text-label:600 13px/1 var(--font-ui);--text-tooltip:400 12px/18px var(--font-ui);--text-card-kind:550 12px/16px var(--font-ui);--text-meta:500 12px/16px var(--font-ui);--text-weight:560 12px/1 var(--font-ui);--text-caption:500 11px/14px var(--font-ui);--text-eyebrow:600 11px/1 var(--font-ui);--text-chip:750 10px/1 var(--font-ui);--text-mono:500 12px/1.3 var(--font-mono);--text-mono-small:450 11px/1.35 var(--font-mono);}
 :root{
+  /* veils behind dialogs, sheets and the palette: milky white in light mode, not grey */
+  --veil:color-mix(in srgb,#FFFFFF 72%,transparent); --veil-soft:color-mix(in srgb,#FFFFFF 50%,transparent);
   --canvas:#ECEDF0; --canvas-lift:#F8F8FA; --card:#FFFFFF; --card-2:#F5F6F8; --card-3:#ECEDF1;
   --label:#0B0C0E; --label-2:rgba(11,12,14,.70); --label-3:rgba(11,12,14,.58); --label-4:rgba(11,12,14,.14);
   --hair:rgba(11,12,14,.075); --hair-2:rgba(11,12,14,.13); --thread:rgba(11,12,14,.2); --hover:rgba(11,12,14,.045); --press:rgba(11,12,14,.08);
@@ -46,6 +48,7 @@
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --veil:color-mix(in srgb,var(--canvas) 52%,transparent); --veil-soft:color-mix(in srgb,var(--canvas) 34%,transparent);
   --canvas:#050608; --canvas-lift:#0A0B0E; --card:#1B1C20; --card-2:#22242A; --card-3:#2A2C33;
   --label:#F4F5F7; --label-2:rgba(244,245,247,.68); --label-3:rgba(244,245,247,.52); --label-4:rgba(244,245,247,.11);
   --seg-on:#34363E; --seg-on-shadow:0 1px 2px rgba(0,0,0,.22),0 0 0 .5px rgba(255,255,255,.10); --seg-track:#22242A; --seg-sm-on:#34363E;
@@ -63,6 +66,7 @@
   --chrome-shadow:0 0 0 .5px rgba(255,255,255,.07),0 14px 40px -14px rgba(0,0,0,.85);
   color-scheme:dark}}
 :root[data-theme="dark"]{
+  --veil:color-mix(in srgb,var(--canvas) 52%,transparent); --veil-soft:color-mix(in srgb,var(--canvas) 34%,transparent);
   --canvas:#050608; --canvas-lift:#0A0B0E; --card:#1B1C20; --card-2:#22242A; --card-3:#2A2C33;
   --label:#F4F5F7; --label-2:rgba(244,245,247,.68); --label-3:rgba(244,245,247,.52); --label-4:rgba(244,245,247,.11);
   --seg-on:#34363E; --seg-on-shadow:0 1px 2px rgba(0,0,0,.22),0 0 0 .5px rgba(255,255,255,.10); --seg-track:#22242A; --seg-sm-on:#34363E;
@@ -134,20 +138,21 @@ kbd{font:500 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);b
 .bay-head p{margin:0;font:500 calc(17px * var(--inv-s,1))/1.25 var(--ui);color:var(--label-2);letter-spacing:-.012em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bay-head .bay-lock{margin-left:auto;flex:none}
 /* the way into an empty lane */
-.bay-start{position:absolute;left:62px;top:300px;width:600px;box-sizing:border-box;pointer-events:auto;display:flex;gap:22px;align-items:flex-start;padding:30px 32px;border-radius:var(--radius-sheet);
+.bay-start{position:absolute;left:62px;top:300px;width:max-content;max-width:600px;box-sizing:border-box;pointer-events:auto;display:flex;flex-direction:column;gap:16px;align-items:stretch;padding:30px 32px;border-radius:var(--radius-sheet);
   background:color-mix(in srgb,var(--card) 72%,transparent);border:2px dashed var(--zone-dash);color:var(--label);text-align:left;
   transition:border-color var(--d-quick),background var(--d-quick),transform var(--t-bouncy) var(--bouncy),box-shadow var(--d-quick)}
 .bay-start[data-bay-go]{cursor:pointer}
 .bay-start[data-bay-go]:hover,.bay-start:focus-visible,.bay-start.bs-drop:hover{border-color:var(--focus);background:var(--card);box-shadow:0 14px 40px -18px rgba(11,12,14,.28)}
 .bay-start[data-bay-go]:active{transform:scale(.99)}
 .bay-start.bs-pick{border-style:solid;border-color:var(--zone-edge)}
-.bs-ico{width:56px;height:56px;flex:none;display:grid;place-items:center;border-radius:var(--radius-control);background:var(--card-2);color:var(--label-2)}
-.bs-ico .ico{width:28px;height:28px;stroke-width:1.6}
+/* the icon says what kind of thing goes here; it sits on top, bare, so the card reads icon, title, then what to do */
+.bs-ico{display:block;flex:none;line-height:0;color:var(--label-2)}
+.bs-ico .ico{width:34px;height:34px;stroke-width:1.5}
 .bay-start:hover .bs-ico,.bay-start:focus-visible .bs-ico{color:var(--focus)}
 .bs-txt{display:grid;gap:8px;min-width:0}
 .bs-txt h3{margin:0;font:650 26px/1.15 var(--ui);letter-spacing:-.03em;color:var(--label)}
 .bs-txt p{margin:0;font:450 17px/1.45 var(--ui);color:var(--label-2);max-width:38ch}
-.bs-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.bs-acts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:10px}
 .bs-btn,.bs-chip{font:550 16px/1 var(--ui);height:42px;padding:0 18px;border-radius:var(--radius-md);background:var(--card-2);color:var(--label);display:inline-flex;align-items:center;gap:8px;max-width:100%;box-sizing:border-box;
   transition:background var(--d-quick),transform var(--t-bouncy) var(--bouncy)}
 .bs-btn:hover,.bs-chip:hover{background:var(--hover);transform:translateY(-1px)}
@@ -595,14 +600,18 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .m-sec .todo-bar{margin-top:2px;margin-bottom:4px}
 .kb-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;align-items:start}
 .kb-col{--kb-c:var(--label-3);background:color-mix(in srgb,var(--kb-c) 7%,var(--hover));box-shadow:none;border-radius:var(--radius-sm);padding:7px;min-width:0;display:flex;flex-direction:column;gap:6px;transition:box-shadow .18s var(--ease),background .18s var(--ease),transform .18s var(--ease)}
-.kb-col:nth-child(1){--kb-c:var(--A)}
-.kb-col:nth-child(2){--kb-c:var(--B)}
-.kb-col:nth-child(3){--kb-c:var(--C)}
+/* status, not lineage: to do = neutral empty ring, in progress = blue half ring, done = green solid dot (same as the website and the table status tags) */
+.kb-col:nth-child(1){--kb-s:var(--label-3)}
+.kb-col:nth-child(2){--kb-s:var(--B)}
+.kb-col:nth-child(3){--kb-s:var(--C)}
 .kb-col.kb-drop{box-shadow:inset 0 0 0 1.5px var(--kb-c);background:color-mix(in srgb,var(--kb-c) 14%,var(--hover));transform:translateY(-1px)}
 .kb-col.kb-drop .kb-empty{display:none}
 .kb-col-h{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:1px 3px 3px;font:600 12px/1.2 var(--ui);color:color-mix(in srgb,var(--kb-c) 72%,var(--label));letter-spacing:.01em}
 .kb-col-h span:first-child{display:inline-flex;align-items:center;gap:5px;min-width:0}
-.kb-col-h span:first-child::before{content:"";width:6px;height:6px;border-radius:50%;flex:none;background:var(--kb-c);box-shadow:0 0 6px color-mix(in srgb,var(--kb-c) 55%,transparent)}
+.kb-col-h span:first-child::before{content:"";width:8px;height:8px;box-sizing:border-box;border-radius:50%;flex:none;border:1.5px solid var(--kb-s,var(--kb-c));background:transparent}
+.kb-col:nth-child(2) .kb-col-h span:first-child::before{background:linear-gradient(90deg,var(--kb-s) 50%,transparent 50%)}
+.kb-col:nth-child(3) .kb-col-h span:first-child::before{background:var(--kb-s)}
+.kb-at{display:block;margin-top:3px;font:500 11px/1.2 var(--ui);color:var(--label-3);font-variant-numeric:tabular-nums}
 .kb-col-h span:last-child{font:600 11px/1 var(--mono);color:color-mix(in srgb,var(--kb-c) 82%,var(--label));padding:2px 6px;border-radius:var(--radius-pill);background:color-mix(in srgb,var(--kb-c) 14%,transparent)}
 .kb-cards{list-style:none;margin:0;padding:0;display:grid;gap:5px;min-height:4px}
 .kb-item{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:6px 8px;border-radius:var(--radius-xs);background:var(--card-2);border-left:2.5px solid color-mix(in srgb,var(--kb-c) 68%,transparent);box-shadow:0 1px 2px rgba(0,0,0,.08);font:13px/1.38 var(--ui);color:var(--label);cursor:grab;user-select:none;transition:transform .16s var(--ease),box-shadow .16s var(--ease),opacity .16s var(--ease),border-color .2s var(--ease)}
@@ -1238,7 +1247,7 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 .cm-sep{height:.5px;background:transparent;margin:4px 6px}
 
 /* open: the card itself grows into a full view */
-#scrim{position:absolute;inset:0;z-index:49;background:color-mix(in srgb,var(--canvas) 55%,transparent);-webkit-backdrop-filter:blur(6px) saturate(.9);backdrop-filter:blur(6px) saturate(.9);animation:fade .3s var(--ease) both}
+#scrim{position:absolute;inset:0;z-index:49;background:var(--veil);-webkit-backdrop-filter:blur(6px) saturate(.9);backdrop-filter:blur(6px) saturate(.9);animation:fade .3s var(--ease) both}
 @keyframes fade{from{opacity:0}}
 .margin{position:absolute;z-index:50;left:50%;top:50%;width:min(560px,calc(100% - 32px));max-height:min(86%,860px);transform:translate(-50%,-50%);display:flex;flex-direction:column;
   background:var(--card);border-radius:var(--radius-sheet);box-shadow:var(--card-shadow-up),0 60px 120px -40px rgba(0,0,0,.45);overflow:hidden;padding:0}
@@ -1406,6 +1415,8 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 
 .toasts{position:absolute;z-index:70;left:50%;top:calc(72px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:grid;gap:8px;justify-items:center;pointer-events:none;width:max-content;max-width:calc(100% - 32px)}
 .toast{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;min-height:42px;border-radius:var(--radius-media);font:550 14px/1.35 var(--ui);color:var(--label);background:var(--chrome);-webkit-backdrop-filter:blur(26px);backdrop-filter:blur(26px);box-shadow:var(--chrome-shadow);animation:drop var(--t-bouncy) var(--bouncy);max-width:520px}
+/* the tight right inset makes room for an action button; a message on its own gets the same inset on both sides */
+.toast:not(:has(> button)){padding-right:16px}
 .toast .mono{font:500 12px/1 var(--ui);color:var(--label-3)}
 .toast button{font:600 13px/1 var(--ui);padding:9px 12px;border-radius:var(--radius-sm);color:var(--label);background:var(--hover)}
 .toast.out{animation:lift .3s var(--ease) forwards}
@@ -2072,13 +2083,13 @@ html[data-theme="dark"] .cp-ui{box-shadow:0 0 0 .5px var(--hair-2),0 6px 18px rg
 
 dialog{border:0;padding:6px;border-radius:var(--radius-sheet);color:var(--label);width:min(520px,calc(100% - 32px));max-height:calc(100% - 64px);background:var(--card);box-shadow:var(--card-shadow-up),0 60px 120px -40px rgba(0,0,0,.5)}
 dialog[open]{animation:rise var(--t-bouncy) var(--bouncy)}
-dialog::backdrop{background:color-mix(in srgb,var(--canvas) 50%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+dialog::backdrop{background:var(--veil);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .d-head{display:flex;align-items:center;padding:18px 12px 6px 20px}
 .d-head h2{flex:1;margin:0;font:650 28px/1.1 var(--ui);letter-spacing:-.04em}
 .d-head .ibtn{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--hover);color:var(--label-2)}
 .d-head .ibtn .ico{width:14px;height:14px;stroke-width:2.2}
 .d-body{padding:6px 14px 14px;display:grid;gap:12px}
-.d-body>p{margin:0 6px;color:var(--label-3);font:14px/1.5 var(--ui)}
+.d-body>p{margin:0;color:var(--label-3);font:14px/1.5 var(--ui)}
 .boards{display:grid;border-radius:var(--radius-control);background:var(--card-2);overflow:hidden}
 .boards button{display:flex;align-items:center;gap:12px;padding:13px 16px;text-align:left;border-bottom:0}
 .boards button:last-child{border-bottom:0}
@@ -2372,7 +2383,8 @@ kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 
 .toast.timed::after{content:"";position:absolute;left:14px;right:14px;bottom:3px;height:2px;border-radius:2px;background:var(--label-4);transform-origin:left;animation:countdown var(--life,6s) linear forwards}
 @keyframes countdown{to{transform:scaleX(0)}}
 .m-body{scrollbar-width:thin;scrollbar-color:var(--label-4) transparent}
-.d-head{padding:20px 14px 8px 22px}
+/* one edge on each side: the title, the body and the buttons start where the body starts and end where the close button ends */
+.d-head{padding:20px 14px 8px 14px}
 .d-body{gap:14px}
 
 /* motion: light travels, matter settles */
@@ -2785,6 +2797,7 @@ body.is-resizing-w,body.is-resizing-w *{cursor:ew-resize!important;user-select:n
 .find-in{flex:1;min-width:0;height:36px;border:0;outline:0;background:transparent;font:450 16px/1.3 var(--ui);color:var(--label);padding:0 6px;letter-spacing:-.014em}
 .find-in::placeholder{color:var(--label-3)}
 .find-in::-webkit-search-cancel-button{-webkit-appearance:none}
+.find-ctrls [hidden]{display:none!important}
 .find-ctrls{display:inline-flex;align-items:center;align-self:center;gap:2px;flex:none}
 .find-cnt{font:550 12px/1 var(--mono);color:var(--label-3);padding:0 6px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .find-cnt:empty{display:none}
@@ -3327,6 +3340,27 @@ body.snap-skip #wall{cursor:copy}
 .card.direction .chose.empty:not(:has([contenteditable="true"])) .chose-k{display:none}
 .card.direction .chose.empty .aside-add{margin-top:0}
 @media (max-width:640px){.dec-btn .dec-l{display:none}.dec-panel{left:8px;right:8px;width:auto;bottom:8px}}
+
+/* first-run walkthrough */
+#tour{position:fixed;inset:0;z-index:70;pointer-events:none}
+#tour[hidden]{display:none}
+.tour-hole{position:fixed;box-shadow:0 0 36px 200vmax var(--tour-dim);transition:left .36s cubic-bezier(.2,.8,.2,1),top .36s cubic-bezier(.2,.8,.2,1),width .36s cubic-bezier(.2,.8,.2,1),height .36s cubic-bezier(.2,.8,.2,1),border-radius .36s,opacity .2s}
+.tour-card{position:fixed;width:300px;max-width:calc(100vw - 32px);padding:16px 16px 12px;border-radius:16px;background:var(--card);box-shadow:var(--card-shadow-up),0 24px 60px -24px rgba(0,0,0,.4);pointer-events:auto;transition:left .36s cubic-bezier(.2,.8,.2,1),top .36s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.tour-card.tour-in{animation:tourIn .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes tourIn{from{opacity:0;transform:translateY(4px)}}
+.tour-t{margin:0 0 4px;font:650 14px/1.35 var(--ui);color:var(--label)}
+.tour-b{margin:0;font:500 13px/1.5 var(--ui);color:var(--label-2)}
+.tour-foot{display:flex;align-items:center;gap:8px;margin-top:14px}
+.tour-foot .sp{flex:1}
+.tour-dots{display:flex;gap:5px}
+.tour-dots i{width:5px;height:5px;border-radius:50%;background:var(--label-3);opacity:.35;transition:opacity .2s,width .2s}
+.tour-dots i.on{opacity:1;width:14px;border-radius:3px}
+#tour.tour-away .tour-hole,#tour.tour-away .tour-card,#tour.tour-out .tour-hole,#tour.tour-out .tour-card{opacity:0;pointer-events:none}
+:root{--tour-dim:rgba(16,17,20,.07)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--tour-dim:rgba(0,0,0,.55)}}
+:root[data-theme="dark"]{--tour-dim:rgba(0,0,0,.55)}
+@media (prefers-reduced-motion:reduce){.tour-hole,.tour-card{transition:none}.tour-card.tour-in{animation:none}}
+.tour-again{display:flex;justify-content:flex-end;margin-top:12px}
 </style>
 <div id="app">
   <main id="wall" aria-label="Board. Drag empty space to pan; pinch, or hold Command and scroll, to zoom.">
@@ -3370,9 +3404,8 @@ body.snap-skip #wall{cursor:copy}
     <button type="button" data-ttool="hand" aria-pressed="false" aria-label="Hand / Pan (H)" data-tip="Hand / Pan · H"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 13V6.8a1.3 1.3 0 0 1 2.6 0V11m0-4.2V5.3a1.3 1.3 0 0 1 2.6 0V11m0-3.7a1.3 1.3 0 0 1 2.6 0V12c0 4-2.5 6.8-6.1 6.8-2.3 0-4.1-1.1-5-3l-1.5-3.1a1.3 1.3 0 0 1 2.2-1.3L8.5 13"/></svg></button>
     <button type="button" id="snapBtn" data-tact="snap" aria-pressed="true" aria-label="Smart snap (M)" data-tip="Smart snap · M · hold ⌥ to skip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h3.4v8a2.6 2.6 0 0 0 5.2 0V4H18v8a6 6 0 0 1-12 0z"/><path d="M6 8h3.4M14.6 8H18"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
-    <button type="button" id="uploadMediaBtn" data-tact="files" aria-label="Upload file or media (U)" data-tip="Upload file or media · U"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.4"/><path d="m21 15.5-4.5-4.5-6.5 6.5L7 14.5l-4 4"/></svg></button>
     <button type="button" id="organizeBtn" data-tact="tidy" aria-label="Organize canvas (T)" data-tip="Organize canvas · T"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2"/></svg></button>
-    <button type="button" id="findBtn" onclick="setOmniMode('search')" aria-label="Search cards (⌘F)" data-tip="Search cards · ⌘F"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
+    <button type="button" id="findBtn" onclick="openPalette({search:true,from:this.getBoundingClientRect()})" aria-label="Search cards (⌘F)" data-tip="Search cards · ⌘F"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
     <span class="tt-sep" aria-hidden="true"></span>
     <button type="button" id="topUndoBtn" data-tact="undo" disabled aria-label="Undo (⌘Z)" data-tip="Undo · ⌘Z"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button type="button" id="topRedoBtn" data-tact="redo" disabled aria-label="Redo (⌘⇧Z)" data-tip="Redo · ⌘⇧Z"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
@@ -3726,7 +3759,7 @@ header.top .part-b[aria-checked="true"] .part-l>span{padding-left:7px}
 .crew-pop .crew-lock .ico{width:11px;height:11px}
 .crew-pop .crew-lock[aria-pressed="true"]{color:var(--on-act);background:var(--act);box-shadow:none}
 .crew-pop .crew-lock:focus-visible{outline:2px solid var(--focus,#5b8cff);outline-offset:1px}
-.crew-pop .crew-foot{display:flex;gap:8px;flex-wrap:wrap}
+.crew-pop .crew-foot{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .crew-pop .crew-foot .cbtn{height:var(--size-md);font-size:12px}
 .au-row .au-seg{width:auto;min-width:228px}
 :root{--seal-bg:var(--card);--seal-ink:var(--label-2);--seal-solid:var(--label)}  /* resolved at the root: a sticky's own ink colours must not reach the seal */
@@ -3810,13 +3843,15 @@ header.top .part-b[aria-checked="true"] .part-l>span{padding-left:7px}
 .card .lock-badge .ico{width:12px;height:12px}
 /* the lane lock: a tile the size of the lane's own icon, open when anyone may change kept cards, filled when only you may */
 .bay-lock{--bl:calc(44px * max(1, var(--inv-s,1) * .8));pointer-events:auto;position:relative;align-self:center;width:var(--bl);height:var(--bl);display:grid;place-items:center;border-radius:14px;
-  color:var(--label-3);background:transparent;box-shadow:inset 0 0 0 1.5px var(--zone-edge);cursor:pointer;
+  color:var(--label-3);background:transparent;cursor:pointer;
   transition:color var(--d-quick),background var(--d-quick),box-shadow var(--d-quick),transform var(--t-bouncy) var(--bouncy)}
 .bay-lock .ico{width:calc(var(--bl) * .48);height:calc(var(--bl) * .48);stroke-width:1.7}
-.bay-lock:hover,.bay-lock:focus-visible{color:var(--label);background:var(--card);box-shadow:inset 0 0 0 1.5px var(--zone-rule),0 6px 18px -10px rgba(11,12,14,.3)}
+/* a bare icon: no frame at rest, a soft wash under the pointer; locked, it is drawn in full ink */
+.bay-lock:hover,.bay-lock:focus-visible{color:var(--label-2);background:var(--hover)}
 .bay-lock:active{transform:scale(.94)}
-.bay-lock.on{color:var(--card);background:var(--label);box-shadow:none}
-.bay-lock.on:hover,.bay-lock.on:focus-visible{color:var(--card);background:var(--label-2)}
+.bay-lock.on{color:var(--label)}
+.bay-lock.on .ico{stroke-width:2.1}
+.bay-lock.on:hover,.bay-lock.on:focus-visible{color:var(--label);background:var(--hover)}
 .bay-lock::after{content:attr(data-tip);position:absolute;right:0;top:calc(100% + 10px);width:max-content;max-width:calc(260px * var(--inv-s,1));padding:calc(7px * var(--inv-s,1)) calc(11px * var(--inv-s,1));border-radius:calc(10px * var(--inv-s,1));
   font:560 calc(13px * var(--inv-s,1))/1.35 var(--ui);letter-spacing:-.01em;text-align:left;white-space:normal;color:var(--card);background:var(--label);
   opacity:0;transform:translateY(-4px);pointer-events:none;transition:opacity var(--d-quick),transform var(--d-quick);z-index:5}
@@ -3955,20 +3990,30 @@ header.top .part-b[aria-checked="true"] .part-l>span{padding-left:7px}
 #line:not(.palette) .line-row:active~.pal-hint{transform:scale(.97)}
 #line.palette :is(.pal-hint,#narr,#lineQueue,.line-hint){display:none!important}
 .pal-foot{display:none}
-#palScrim{position:fixed;inset:0;z-index:68;background:color-mix(in srgb,var(--canvas) 34%,transparent)}
+#palScrim{position:fixed;inset:0;z-index:68;background:var(--veil-soft)}
 #palScrim[hidden]{display:none}
-#line.palette{position:fixed;z-index:70;top:max(76px,17vh);bottom:auto;left:50%;right:auto;margin:0;transform:translateX(-50%);width:min(640px,calc(100vw - 32px));max-width:none;gap:0;border-radius:var(--radius-control);overflow:hidden;
+#line.palette{position:fixed;z-index:70;top:max(76px,17vh);bottom:auto;left:0;right:0;margin:0 auto;transform:none;width:min(640px,calc(100vw - 32px));max-width:none;gap:0;border-radius:var(--radius-control);overflow:hidden;
   background:var(--card);box-shadow:var(--card-shadow-up);transition:none;animation:palIn var(--t-snappy) var(--snappy) both}
-@keyframes palIn{from{opacity:0;transform:translateX(-50%) translateY(-6px) scale(.985)}}
-@media (min-width:961px){body.copilot-open #line.palette{left:calc((100vw - var(--copilot-w) - 16px) / 2)}}
+/* without an origin the vars fall back to a small settle in place (0.98 → 1) */
+@keyframes palIn{from{opacity:0;transform:translate(var(--pal-dx,0px),var(--pal-dy,0px)) scale(var(--pal-sx,.98),var(--pal-sy,.98))}40%{opacity:1}}
+@keyframes palOut{to{opacity:0;transform:translate(var(--pal-dx,0px),var(--pal-dy,0px)) scale(var(--pal-sx,.98),var(--pal-sy,.98))}}
+#line.palette{animation-duration:200ms;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
+#line.palette.pal-closing{animation:palOut 160ms cubic-bezier(.4,0,.8,.4) both;pointer-events:none}
+#line.palette.pal-measure{animation:none!important;transform:none!important}
+@media (prefers-reduced-motion:reduce){#line.palette,#line.palette.pal-closing{animation:none}}
+@media (min-width:961px){body.copilot-open #line.palette{right:calc(var(--copilot-w) + 16px)}}
 #line .line-field::before{display:none!important}
 #line.palette .line-row{order:1}
 #line.palette #lineCtx{order:2;padding:0 14px 10px}
 #line.palette #lineCtx:empty{display:none}
 #line.palette :is(#sharpen,#genOpts){order:3;margin:0 10px 10px}
-#line.palette :is(#menu,#plusMenu,#findPanel){order:4;position:static;margin:0;max-height:min(372px,52vh);border-radius:0;padding:6px;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:inset 0 .5px 0 var(--hair-2);animation:none;transform:none}
-#line.palette .pal-foot{order:5;display:flex;align-items:center;justify-content:flex-end;gap:14px;height:36px;padding:0 14px;box-shadow:inset 0 .5px 0 var(--hair-2);font:500 12px/1 var(--ui);color:var(--label-3);white-space:nowrap}
+#line.palette :is(#menu,#plusMenu,#findPanel){order:4;position:static;margin:0;max-height:min(372px,52vh);border-radius:0;padding:6px;background:var(--pal-tint);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;animation:none;transform:none}
+/* zones are told apart by space and one faint change of tone, not by rules: the field on the card, results and the key hints on a slightly deeper wash */
+#line.palette{--pal-tint:color-mix(in srgb,var(--label) 2.5%,transparent)}
+#line.palette .pal-foot{order:5;display:flex;align-items:center;justify-content:flex-end;gap:14px;height:32px;padding:0 14px 4px;background:var(--pal-tint);font:500 12px/1 var(--ui);color:var(--label-3);white-space:nowrap}
 #line.palette .pal-foot span{display:inline-flex;align-items:center;gap:5px}
+/* nothing to move through, nothing to say about moving */
+#line.palette:not(:has(#menu:not([hidden]) [data-mi],#findPanel:not([hidden]) .find-item)) .pal-foot{display:none}
 #line.palette .pal-foot kbd{min-width:18px;height:18px;font-size:11px}
 #line.palette .line-field{min-height:0;padding:8px 10px 8px 12px;border-radius:0;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none!important}
 #line.palette .line-main{align-items:center;min-height:40px}
@@ -3992,7 +4037,16 @@ header.top .part-b[aria-checked="true"] .part-l>span{padding-left:7px}
 .menu button.pal-row,#line.palette .menu button.pal-row{grid-template-columns:24px 1fr auto}
 .menu button.pal-row kbd{justify-self:end}
 .menu button.pal-row .cmd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wl-keys{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:2px 0 0;padding:10px 12px;border-radius:var(--radius-md);background:var(--hover);font:500 13px/1.35 var(--ui)}
+.wl-keys dt{color:var(--label);font-weight:600}.wl-keys dd{margin:0;color:var(--label-2)}
+.wl-keys kbd{font:550 11px/1 var(--ui);padding:3px 5px;border-radius:var(--radius-chip);background:var(--card);box-shadow:inset 0 0 0 .5px var(--hair-2)}
 .menu .pal-tip{padding:8px 10px 4px;font:450 12px/1.3 var(--ui);color:var(--label-3)}
+/* card kinds: one quiet row of small chips under the suggestions */
+.menu .pal-types{display:flex;flex-wrap:wrap;gap:4px;padding:0 6px 4px}
+#line .menu .pal-types button{min-height:0;width:auto;flex:none;justify-content:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px 0 7px;border-radius:var(--radius-sm);font:500 12.5px/1 var(--ui);color:var(--label-2);background:transparent;transition:background var(--d-quick),color var(--d-quick)}
+#line .menu .pal-types button:hover,#line .menu .pal-types button:focus-visible{background:var(--hover);color:var(--label)}
+#line .menu .pal-types .pal-ic{display:inline-grid;place-items:center;width:16px;height:16px;background:none;box-shadow:none}
+#line .menu .pal-types .ico{width:15px;height:15px;stroke-width:1.7}
 .menu .pal-tip kbd{display:inline-grid;place-items:center;min-width:16px;height:16px;margin:0 2px;padding:0 4px;border-radius:4px;font:600 11px/1 var(--ui);color:var(--label-2);background:var(--hover)}
 #line.palette.is-search .find-ctrls{align-self:center}
 #line.palette [data-f="close"]{display:none}
@@ -4000,7 +4054,13 @@ header.top .part-b[aria-checked="true"] .part-l>span{padding-left:7px}
 .find-item-k{font:500 12px/1 var(--ui);color:var(--label-3)}
 .find-item[aria-selected="true"]{box-shadow:none}
 .find-item-dot{background:var(--fi-c,var(--label-4))}
-.find-item mark,.find-item-t mark{background:none;color:inherit;font-weight:650;padding:0;border-radius:0;box-shadow:inset 0 -1.5px 0 color-mix(in srgb,var(--label) 34%,transparent)}
+.find-item mark,.find-item-t mark{background:color-mix(in srgb,var(--label) 18%,transparent);color:var(--label);font-weight:600;padding:0 1px;margin:0 -1px;border-radius:3px;box-shadow:none}
+.find-item{grid-template-columns:40px minmax(0,1fr);column-gap:12px;align-items:center}
+.find-item .find-th{grid-row:1 / span 2;width:40px;height:40px;border-radius:8px;overflow:hidden;display:grid;place-items:center;background:var(--hover);color:var(--label-3)}
+.find-item .find-th img{width:100%;height:100%;object-fit:cover;display:block}
+.find-item .find-th .ico{width:18px;height:18px;stroke-width:1.6}
+.find-item .find-item-top,.find-item .find-item-sn{grid-column:2}
+.find-item .find-item-sn{padding-left:0}
 @media (max-width:640px){#line.palette{top:max(64px,10vh)}#line.palette .pal-foot{display:none}}
 .pal-foot b{font-weight:500}
 /* "/" in the Copilot input lists the same commands, right above the field */
@@ -4093,7 +4153,7 @@ header.top .part-b[aria-checked="true"] .part-l>span{padding-left:7px}
 .isl-av[data-a]{--tint:var(--label-2)!important}
 .part-b[aria-checked="true"] .ico{color:var(--label)!important}
 .catch-pop .cu-ico{color:var(--label-2);background:var(--hover)}
-.kb-col{--kb-c:var(--label-3)!important}
+.kb-col{--kb-c:var(--label-3)!important}  /* columns and cards stay neutral; only the status dot carries colour (--kb-s) */
 .kb-item{border-left:0}
 .kb-col-h span:first-child::before{box-shadow:none}
 .vote-btn.up.active,.vote-btn.dn.active{color:var(--label);background:var(--hover)}
@@ -6919,7 +6979,7 @@ function renderBays(){
   const has=[ink.some(isMaterial),ink.some(n=>n.type==="idea"||n.type==="synthesis"),ink.some(n=>n.type==="proof"),ink.some(n=>n.type==="print")];
   $("bays").innerHTML=BAYS.map((b,i)=>`<div class="bay bay-${i}" style="left:${i*BAY}px;width:${BAY}px">
     <div class="bay-zone" aria-hidden="true"></div>
-    <div class="bay-head"><span class="bay-ico" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24">${b.icon}</svg></span><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" data-tip="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic(lockedBays().includes(i)?"lock":"unlock")}</button></div>
+    <div class="bay-head"><h2>${esc(bayName(b))}</h2><p>${esc(baySub(b))}</p><button type="button" class="bay-lock${lockedBays().includes(i)?" on":""}" data-bay-lock="${i}" aria-pressed="${lockedBays().includes(i)}" data-tip="${esc(lockedBays().includes(i)?L("Locked: only you can change kept cards here. Click to unlock.","已锁定：只有你能修改这里已确认的卡片。点击解锁。"):L("Lock this lane so only you can change its kept cards","锁定此泳道，只有你能修改其中已确认的卡片"))}" aria-label="${esc(L(`Lock ${bayName(b)}`,`锁定${bayName(b)}`))}">${ic(lockedBays().includes(i)?"lock":"unlock")}</button></div>
     ${used.has(i)||has[i]?"":bayStartHTML(i)}
   </div>`).join("");
 }
@@ -6930,7 +6990,7 @@ function bayStartHTML(i){
   const tile=(cls,act,ico,h,p,extra="")=>`<div class="bay-start ${cls}" ${act?`data-bay-go="${act}" role="button" tabindex="0"`:""} aria-label="${esc(h)}"><span class="bs-ico" aria-hidden="true">${ico}</span><div class="bs-txt"><h3>${esc(h)}</h3><p>${esc(p)}</p>${extra}</div></div>`;
   if(i===0)return tile("bs-drop","files",'<svg class="ico" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 14v4a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></svg>',
     L("Drop a recording, screenshot or note","拖入一条录音、截图或笔记"),L("Then say what it is: watched first-hand, or what someone told you.","再标明它是什么：亲眼看到的，还是别人告诉你的。"),
-    `<div class="bs-acts"><button type="button" class="bs-btn solid" data-bay-go="files">${esc(L("Choose files","选择文件"))}</button><button type="button" class="bs-btn" data-bay-go="note">${esc(L("Write a note","写一条笔记"))}</button></div>`);
+    `<div class="bs-acts"><button type="button" class="bs-btn" data-bay-go="note">${esc(L("Write a note","写一条笔记"))}</button><button type="button" class="bs-btn solid" data-bay-go="files">${esc(L("Choose files","选择文件"))}</button></div>`);
   if(i===1)return tile("bs-write","claim",'<svg class="ico" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>',
     L("Write your core judgment","写下你的核心判断"),L("One sentence you believe and could be wrong about. Evidence you drag beside it backs it or counters it.","一句你相信、但可能是错的话。拖到它旁边的证据会支持或反驳它。"));
   if(i===2){const ds=ink("direction").filter(d=>!setAsideFor(d)&&!outputsOf(d.id).some(o=>o.type==="proof")).slice(0,4);
@@ -7428,13 +7488,15 @@ function setKbSel(id){
   kbSelId=id||null;
   qsa(".kb-item[data-kb-id]").forEach(el=>el.classList.toggle("kb-sel",el.dataset.kbId===kbSelId));
 }
+/* when the item reached its column (moving it restamps); older items fall back to the card's own time */
+function kbAtHTML(c,n){const t=c.at||n.updated||n.created;if(!t)return "";const full=new Date(t).toLocaleString(uiLang()==="zh"?"zh-CN":"en-US",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});return `<time class="kb-at" datetime="${new Date(t).toISOString()}" title="${esc(full)}">${esc(relDate(t))}</time>`}
 function kanbanHTML(n,forMargin=false){
   const cols=kanbanColsOf(n),cards=n.cards||[],sk=n.status==="sketch",attr=forMargin?"m":"a";
   return `<div class="kb-cols">${cols.map((col,ci)=>{
     const list=cards.filter(c=>c.col===col.id||(ci===0&&!cols.some(x=>x.id===c.col)));
     return `<div class="kb-col" data-kb-col="${esc(col.id)}" data-kb-node="${n.id}">
       <div class="kb-col-h"><span>${esc(col.title)}</span><span>${list.length}</span></div>
-      <ul class="kb-cards">${list.length?list.map(c=>`<li class="kb-item${kbSelId===c.id?" kb-sel":""}${kbLandId===c.id?" kb-land":""}" data-kb-id="${esc(c.id)}"><span class="kb-txt" data-${attr}-kb-item="${esc(c.id)}"${sk?"":` title="${Lang("Drag to move · double-click to edit","拖动移动 · 双击编辑")}"`}>${esc(c.title)}</span>${sk?"":`<span class="kb-acts"><button type="button" class="kb-mv" data-${attr}="kb-mv-l" data-cid="${esc(c.id)}"${ci===0?" disabled":""} title="${Lang("Move left","左移")}" aria-label="${Lang("Move left","左移")}">${ic("left")}</button><button type="button" class="kb-mv" data-${attr}="kb-mv-r" data-cid="${esc(c.id)}"${ci===cols.length-1?" disabled":""} title="${Lang("Move right","右移")}" aria-label="${Lang("Move right","右移")}">${ic("right")}</button><button type="button" class="kb-del" data-${attr}="kb-del" data-cid="${esc(c.id)}" title="${Lang("Remove","移除")}" aria-label="${Lang("Remove","移除")}">${ic("trash")}</button></span>`}</li>`).join(""):`<li class="kb-empty">${Lang("Empty","空")}</li>`}</ul>
+      <ul class="kb-cards">${list.length?list.map(c=>`<li class="kb-item${kbSelId===c.id?" kb-sel":""}${kbLandId===c.id?" kb-land":""}" data-kb-id="${esc(c.id)}"><span class="kb-txt" data-${attr}-kb-item="${esc(c.id)}"${sk?"":` title="${Lang("Drag to move · double-click to edit","拖动移动 · 双击编辑")}"`}>${esc(c.title)}</span>${kbAtHTML(c,n)}${sk?"":`<span class="kb-acts"><button type="button" class="kb-mv" data-${attr}="kb-mv-l" data-cid="${esc(c.id)}"${ci===0?" disabled":""} title="${Lang("Move left","左移")}" aria-label="${Lang("Move left","左移")}">${ic("left")}</button><button type="button" class="kb-mv" data-${attr}="kb-mv-r" data-cid="${esc(c.id)}"${ci===cols.length-1?" disabled":""} title="${Lang("Move right","右移")}" aria-label="${Lang("Move right","右移")}">${ic("right")}</button><button type="button" class="kb-del" data-${attr}="kb-del" data-cid="${esc(c.id)}" title="${Lang("Remove","移除")}" aria-label="${Lang("Remove","移除")}">${ic("trash")}</button></span>`}</li>`).join(""):`<li class="kb-empty">${Lang("Empty","空")}</li>`}</ul>
       ${sk?"":`<div class="kb-add"><input type="text" data-kb-add="${n.id}" data-kb-col="${esc(col.id)}" placeholder="${Lang("+ Add…","+ 添加…")}" aria-label="${esc(Lang(`Add to ${col.title}`,`添加到「${col.title}」`))}"><button type="button" data-${attr}="kb-add" data-kb-col="${esc(col.id)}" hidden>${Lang("Add","添加")}</button></div>`}
     </div>`;
   }).join("")}</div>`;
@@ -7442,7 +7504,7 @@ function kanbanHTML(n,forMargin=false){
 function addKanbanCard(n,colId,title){
   const t=String(title||"").trim();if(!n||!t)return;
   const cols=kanbanColsOf(n),cid=cols.some(c=>c.id===colId)?colId:cols[0].id;
-  checkpoint();n.cols=cols;n.cards=n.cards||[];n.cards.push({id:"k-"+uid(),title:t,col:cid});n.updated=NOW();renderAll();persist();
+  checkpoint();n.cols=cols;n.cards=n.cards||[];n.cards.push({id:"k-"+uid(),title:t,col:cid,at:NOW()});n.updated=NOW();renderAll();persist();
 }
 function moveKanbanCard(n,cardId,dirOrCol){
   if(!n?.cards)return;const card=n.cards.find(c=>c.id===cardId);if(!card)return;
@@ -7455,7 +7517,7 @@ function moveKanbanCard(n,cardId,dirOrCol){
     targetCol=dirOrCol;
   }
   if(!targetCol||targetCol===card.col)return;
-  checkpoint();card.col=targetCol;n.updated=NOW();kbLandId=cardId;renderAll();persist();
+  checkpoint();card.col=targetCol;card.at=NOW();n.updated=NOW();kbLandId=cardId;renderAll();persist();
   clearTimeout(moveKanbanCard._t);moveKanbanCard._t=setTimeout(()=>{if(kbLandId===cardId)kbLandId=null},450);
 }
 function editKanbanCard(n,cardId,text){
@@ -13444,6 +13506,54 @@ function pointInSelection(e){
 function closeCardMenu(){
   const cm=$("cardMenu");if(cm&&!cm.hidden){cm.hidden=true;cardMenuOpen=false}
 }
+/* Right-click on empty canvas holds only what no pointer gesture already does (Mars, 27 Nov): a sticky is a double-click,
+   a paste is ⌘V. An upload lands where you clicked, not wherever the middle of the screen happens to be. */
+let canvasMenuAt=null;
+function openCanvasMenu(x,y){
+  const cm=$("cardMenu");if(!cm)return;
+  const r=wall.getBoundingClientRect();canvasMenuAt=toWorld(x-r.left,y-r.top);
+  const mac=/Mac|iP(hone|ad)/.test(navigator.platform||navigator.userAgent||""),mod=mac?"⌘":"Ctrl ";
+  const empty=!visibleNodes().length;
+  const acts=[
+    {k:"files",label:L("Upload files","上传文件"),ic:"upload",key:"U"},
+    {sep:true},
+    {k:"all",label:L("Select all","全选"),ic:"selAll",key:mod+"A",off:empty},
+    {k:"fit",label:L("Fit to screen","适应屏幕"),ic:"fitView",key:"F",off:empty}];
+  cm.innerHTML=acts.map(a=>a.sep?`<div class="cm-sep"></div>`:`<button type="button" role="menuitem" data-wm="${a.k}"${a.off?" disabled":""}><span class="cm-lbl">${ic(a.ic)}<span>${esc(a.label)}</span></span><kbd>${a.key}</kbd></button>`).join("");
+  cm.setAttribute("aria-label",L("Canvas actions","画布操作"));
+  cm.hidden=false;cardMenuOpen=true;
+  const cw=cm.offsetWidth||210,ch=cm.offsetHeight||200;
+  cm.style.left=clamp(x,10,innerWidth-cw-12)+"px";cm.style.top=clamp(y,10,innerHeight-ch-12)+"px";
+}
+function selectAllCards(){const ids=visibleNodes().map(n=>n.id);if(ids.length)select(ids)}
+/* ⌘V and anything else that pastes share one set of rules */
+function pasteData({payload=null,files=[],text=""},at=null){
+  if(payload?.nodes?.length){
+    const made=insertClonedPayload(payload,at?{at}:{centerInView:true});
+    if(made.length){log("you",`Pasted ${made.length} card${made.length>1?"s":""}`,made[0].id);toast(`Pasted ${made.length} card${made.length>1?"s":""}`,{undo:true})}
+    return true;
+  }
+  if(files.length){addFiles(files,at||undefined);return true}
+  const s=(text||"").trim();if(!s){if(at)toast(L("Nothing to paste","剪贴板是空的"));return false}
+  const lines=s.split(/\r?\n/).length,before=new Set(board.nodes.map(n=>n.id));
+  if(/^https?:\/\/\S+$/i.test(s)&&looksLikeNotionDb(s))tableFromNotion(s).then(n=>{if(!n)createLinkNode(s,at||undefined)});
+  else if(/^https?:\/\/\S+$/i.test(s)&&looksLikeDataUrl(s))tableFromUrl(s).then(n=>{if(!n)createLinkNode(s,at||undefined)});
+  else if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s,at||undefined);
+  else if(looksTabular(s)){const ds=datasetFromText(s);if(ds){checkpoint();const v=viewRect(),n=makeTableCard(ds,{title:L("Pasted table","粘贴的表格"),source:{kind:"paste"},at:at||toWorld(v.w/2,v.h/2)});sel=[n.id];renderAll();persist();follow([n]);toast(L("Pasted as a table","已粘贴为表格"),{undo:true})}else createNotepadNode(s,at||undefined)}
+  else{
+    if(s.length>280||lines>=4||parsePaste(s))createPastedCard(s);else pinCard("note",s);
+    /* these two place themselves; move what they made to the click */
+    const made=at?board.nodes.filter(n=>!before.has(n.id)):[];
+    if(made.length){const x0=Math.min(...made.map(n=>n.x)),y0=Math.min(...made.map(n=>n.y));made.forEach(n=>{n.x=Math.round(n.x-x0+at.x-(nodeW(n)||280)/2);n.y=Math.round(n.y-y0+at.y-40)});settleInZones(made);renderAll();persist()}
+  }
+  return true;
+}
+function canvasMenuAct(k){
+  const at=canvasMenuAt;
+  if(k==="files"){filePickAt=at;return pickFilesFor("point")}
+  if(k==="all")return selectAllCards();
+  if(k==="fit")return fitAll();
+}
 $("strip").addEventListener("click",e=>{
   const td=e.target.closest("[data-tone]");if(td){const n=one();if(!n)return;checkpoint();if(td.dataset.tone)n.tone=td.dataset.tone;else delete n.tone;n.updated=NOW();sfx("tick");renderAll();persist();return}
   const b=e.target.closest("[data-k]");if(!b)return;const n=one();if(!n)return;const k=b.dataset.k;
@@ -13459,6 +13569,8 @@ $("strip").addEventListener("click",e=>{
   act(k,n,b);
 });
 $("cardMenu")?.addEventListener("click",e=>{
+  const wm=e.target.closest("[data-wm]");
+  if(wm){closeCardMenu();canvasMenuAct(wm.dataset.wm);return}
   const sm=e.target.closest("[data-sm]");
   if(sm){const ns=selected();closeCardMenu();selectionActions(ns)[sm.dataset.sm]?.();return}
   const b=e.target.closest("[data-cm]");if(!b)return;
@@ -13670,7 +13782,7 @@ function renderReviewPop(){
       const first=ns[0];if(!first)return "";
       const ag=AGENTS[first.by]||{mk:"✦",name:"Crew"};
       const sub=`${ag.name}${ns.length>1?` · ${ns.length} cards`:""}`;
-      return `<div class="rp-item"><button type="button" class="rp-go" data-rp-go="${esc(pid)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(titleOf(first))}</strong><span>${esc(sub)}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn keep" data-rp-keep="${esc(pid)}" title="${L("Keep draft","保留草稿")}" aria-label="${L("Keep draft","保留草稿")}">${ic("check")}</button><button type="button" class="rp-btn drop" data-rp-drop="${esc(pid)}" title="${L("Discard draft","丢弃草稿")}" aria-label="${L("Discard draft","丢弃草稿")}">${ic("close")}</button></div></div>`;
+      return `<div class="rp-item"><button type="button" class="rp-go" data-rp-go="${esc(pid)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(titleOf(first))}</strong><span>${esc(sub)}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn drop" data-rp-drop="${esc(pid)}" title="${L("Discard draft","丢弃草稿")}" aria-label="${L("Discard draft","丢弃草稿")}">${ic("close")}</button><button type="button" class="rp-btn keep" data-rp-keep="${esc(pid)}" title="${L("Keep draft","保留草稿")}" aria-label="${L("Keep draft","保留草稿")}">${ic("check")}</button></div></div>`;
     }).join("")}</div>`+(props.length?`<div class="rp-sub">${L("Suggested changes to your cards","对你卡片的修改建议")}</div><div class="rp-list">${props.map(pr=>{const n=byId(pr.target),ag=AGENTS[pr.who]||{mk:COPILOT_ICO,name:"Copilot"};return `<div class="rp-item"><button type="button" class="rp-go" data-rp-prop-go="${esc(pr.id)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(n?titleOf(n):L("Missing card","卡片已不存在"))}</strong><span>${esc(ag.name)} · ${pr.op==="delete"?L("delete","删除"):pr.op==="link"?L("link","连线"):L("edit","修改")}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn" data-rp-prop-reject="${esc(pr.id)}" title="${esc(L("Decline","拒绝"))}" aria-label="${esc(L("Decline","拒绝"))}">${ic("x")}</button><button type="button" class="rp-btn keep" data-rp-prop-accept="${esc(pr.id)}" title="${esc(L("Accept","接受"))}" aria-label="${esc(L("Accept","接受"))}">${ic("check")}</button></div></div>`}).join("")}</div>`:"");
 }
 function toggleReviewPop(force){
@@ -14691,7 +14803,7 @@ document.addEventListener("click",e=>{if(e.detail!==0)return;const b=e.target.cl
 /* ── selection ──────────────────────────────────────────────────────── */
 let lineExtras=[];
 let linePending=[];
-let filePickTarget="canvas";
+let filePickTarget="canvas",filePickAt=null;
 let selMenusSuppressed=false;
 function select(ids,{menus=true}={}){sel=[...new Set(ids)].filter(byId);if(!sel.length)closeCardMenu();if(sel.length===1){const sn=byId(sel[0]);if(sn?.status==="sketch"&&sn.pid&&sn.pid!==currentPid()){reviewPid=sn.pid;renderBars()}}if(sel.length)selectedEdgeId=null;selMenusSuppressed=!menus||!sel.length;litCache=null;renderNodes();drawWires();renderMargin();renderSelbar();renderLineCtx();renderStrip();renderWirePop?.();paintMap();syncCopilotContext?.()}
 const ctxNodes=()=>[...new Set([...sel,...lineExtras])].map(byId).filter(Boolean);
@@ -15177,7 +15289,7 @@ function renderLineHint(){
   if(selectedEdgeId){h.textContent=L("Click Ref / Live / Frozen above to control update tracking · Esc to deselect","点击上方「引用 / 活依赖 / 冻结」切换联动方式 · Esc 取消");return}
   const ns=ctxNodes();
   if(linePending.length&&!ns.length){h.textContent=L("Image staged in composer — type your prompt and press Enter / Send, or click × to remove","图片已挂载到输入框 — 输入指令后按回车或点击 Send 随指令发出，点击 × 可取消");return}
-  h.textContent=board.nodes.length?"":L("Double-click the canvas for a sticky","双击画布新建便签");
+  h.textContent="";  /* gestures are taught once, in the welcome, not on the canvas every day */
 }
 function syncStaticLang(){
   const mt=qs(".map-title");if(mt)mt.textContent=L("Overview","画板总览");
@@ -15799,8 +15911,8 @@ function mcpDialog(startProv="",opts={}){
             <input id="mcpManUrl" class="mcp-in mcp-mono" placeholder="Source URL (optional)">
             <textarea id="mcpManBody" rows="3" class="mcp-in" placeholder="Paste extracted notes, NotebookLM briefing guide, or doc excerpt…"></textarea>
             <div style="display:flex;gap:8px;justify-content:flex-end">
-              <button type="button" class="mcp-mini-btn pri" id="mcpManAdd">${ic("plus")} Attach to Copilot</button>
               <button type="button" class="mcp-mini-btn" id="mcpManPin">${ic("notepad")} Attach &amp; Pin</button>
+              <button type="button" class="mcp-mini-btn pri" id="mcpManAdd">${ic("plus")} Attach to Copilot</button>
             </div>
           </div>
         </details>
@@ -17935,7 +18047,7 @@ function roomImage(n,fr){
 function roomRecording(n){
   const st=$("stage");st.className="stage";
   const lifted=outputsOf(n.id).filter(o=>o.type==="frame"),sk=n.status==="sketch";
-  const rActs=`<button type="button" class="s-btn" data-s="download-attach">${ic("down")}Download</button><button type="button" class="s-btn" data-s="shot-split">${ic("frame")}Split Shots</button><button type="button" class="s-btn" data-s="to-gif">${ic("gif")}Make GIF</button><button type="button" class="s-btn solid" data-s="lift">${ic("frame")}Lift Frame</button>`+(sk?`<button type="button" class="s-btn" data-s="erase">Discard</button><button type="button" class="s-btn solid" data-s="ink">Keep</button>`:"");
+  const rActs=`<button type="button" class="s-btn" data-s="download-attach">${ic("down")}Download</button><button type="button" class="s-btn" data-s="shot-split">${ic("frame")}Split Shots</button><button type="button" class="s-btn" data-s="to-gif">${ic("gif")}Make GIF</button><button type="button" class="s-btn${sk?"":" solid"}" data-s="lift">${ic("frame")}Lift Frame</button>`+(sk?`<button type="button" class="s-btn" data-s="erase">Discard</button><button type="button" class="s-btn solid" data-s="ink">Keep</button>`:"");
   st.innerHTML=`<div class="s-bar"><button type="button" class="glass circle" data-s="close" aria-label="Close" title="Close (Esc)" style="width:48px;height:48px">${ic("x")}</button>
     <div class="s-title glass"><b>${esc(n.title)}</b><span class="mono">${n.gen?`${esc(n.gen.ratio||"16:9")} · ${esc(n.gen.model||"Motion")}`:(WEIGHTS[n.weight]?.label||"Unmarked")} · ${lifted.length} frame${lifted.length===1?"":"s"} lifted</span></div>
     <div class="s-grp glass">${rActs}</div></div>
@@ -18809,16 +18921,17 @@ function cloneNodesPayload(ns){
   const threads={};for(const id of ids)if(board.threads?.[id]?.length)threads[id]=JSON.parse(JSON.stringify(board.threads[id]));
   return {v:1,nodes,edges,threads};
 }
-function insertClonedPayload(payload,{offsetX=36,offsetY=36,centerInView=false}={}){
+function insertClonedPayload(payload,{offsetX=36,offsetY=36,centerInView=false,at=null}={}){
   if(!payload?.nodes?.length)return [];
   checkpoint();
   const map=new Map(),now=NOW();
   let dx=offsetX,dy=offsetY;
-  if(centerInView){
+  if(centerInView||at){
     const x0=Math.min(...payload.nodes.map(n=>n.x)),y0=Math.min(...payload.nodes.map(n=>n.y));
     const x1=Math.max(...payload.nodes.map(n=>n.x+(nodeW(n)||320))),y1=Math.max(...payload.nodes.map(n=>n.y+(n.gh||300)));
-    const vr=viewRect(),c=toWorld(vr.w/2,vr.h/2);
-    dx=Math.round(c.x-(x0+x1)/2);dy=Math.round(c.y-(y0+y1)/2);
+    const vr=viewRect(),c=at||toWorld(vr.w/2,vr.h/2);
+    /* at a click point the cards hang from it (top edge near the pointer); centred in view they sit around the middle */
+    dx=Math.round(c.x-(x0+x1)/2);dy=Math.round(at?c.y-y0-24:c.y-(y0+y1)/2);
   }
   const created=[];
   for(const raw of payload.nodes){
@@ -18842,16 +18955,28 @@ function duplicateSelection(){
   const made=insertClonedPayload(cloneNodesPayload(ns),{offsetX:36,offsetY:36});
   if(made.length){log("you",`Duplicated ${made.length>1?made.length+" cards":"<b>"+esc(titleOf(made[0]))+"</b>"}`,made[0].id);toast(made.length>1?`Duplicated ${made.length} cards`:`Duplicated ${titleOf(made[0])}`,{undo:true})}
 }
+/* each result leads with a small picture of the card: the image itself for visual cards, its kind otherwise */
+const FIND_KIND_IC={note:"note",notepad:"notepad",idea:"claim",question:"question",direction:"fork",link:"link",table:"table",list:"list",kanban:"kanban",treemap:"treemap",group:"group",synthesis:"synth",proof:"build",print:"stamp",audio:"audio",recording:"video",video:"video"};
+function findThumb(n){
+  const key=n.poster||(["image","frame"].includes(n.type)?n.media:"");const src=key?mediaSrc(key)||(/^(data:image|https?:|blob:)/.test(key)?key:""):"";
+  const Ltr=lin(n);
+  if(src)return `<span class="find-th"><img src="${esc(src)}" alt="" loading="lazy" decoding="async"></span>`;
+  return `<span class="find-th kind"${Ltr?` style="color:var(--${Ltr})"`:""}>${ic(FIND_KIND_IC[n.type]||"note")}</span>`;
+}
 function highlightFindHTML(text,q){
   const s=String(text||"");if(!q)return esc(s);
   const ek=q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
   return s.split(new RegExp(`(${ek})`,"gi")).map((p,i)=>i%2===1?`<mark>${esc(p)}</mark>`:esc(p)).join("");
 }
 function findSnippetFor(n,q){
-  const candidates=[n.quote,n.text,n.full,n.test,...(n.items||[]).map(i=>i.t),...(n.cards||[]).map(c=>c.title),...(board.pins?.[n.id]||[]).flatMap(p=>[p.note,...(p.replies||[]).map(r=>r.text)]),n.url,n.path].filter(Boolean).map(x=>String(x).replace(/\s+/g," ").trim());
+  const flat=x=>String(x).replace(/\*\*|__/g,"").replace(/\s+/g," ").trim();
+  const candidates=[n.quote,n.text,n.full,n.test,...(n.items||[]).map(i=>i.t),...(n.cards||[]).map(c=>c.title),...(board.pins?.[n.id]||[]).flatMap(p=>[p.note,...(p.replies||[]).map(r=>r.text)]),n.url,n.path].filter(Boolean).map(flat);
   const lq=(q||"").toLowerCase();
   if(lq){
-    const hit=candidates.find(c=>c.toLowerCase().includes(lq));
+    /* the row must show why it matched: when the title doesn't hold the words, fall back to every searched field (points, tree, threads…) */
+    const title=String(titleOf(n)||"");
+    const rest=title.toLowerCase().includes(lq)?[]:findSearchParts(n).filter(x=>x!==title).map(flat);
+    const hit=candidates.find(c=>c.toLowerCase().includes(lq))||rest.find(c=>c.toLowerCase().includes(lq));
     if(hit){
       const idx=hit.toLowerCase().indexOf(lq);
       const start=Math.max(0,idx-26);
@@ -18945,22 +19070,24 @@ function syncFindStatus(){
   findIdx=matches.length?clamp(findIdx,0,matches.length-1):0;
   const curId=hasQ?(matches[findIdx]?.id||null):null;
   const cnt=$("findCount");
-  if(cnt)cnt.textContent=hasQ?(matches.length?`${findIdx+1} / ${matches.length}`:L("0 hits","0 条")):"";
+  if(cnt)cnt.textContent=hasQ&&matches.length?`${findIdx+1} / ${matches.length}`:"";  /* no hits: the panel already says so */
   const prev=qs('.find-ctrls [data-f="prev"]',line),next=qs('.find-ctrls [data-f="next"]',line),clr=qs('.find-ctrls [data-f="clear"]',line);
-  if(prev)prev.disabled=matches.length<2;
-  if(next)next.disabled=matches.length<2;
+  if(prev){prev.disabled=matches.length<2;prev.hidden=!matches.length}
+  if(next){next.disabled=matches.length<2;next.hidden=!matches.length}
   if(clr)clr.hidden=!hasQ;
-  if(fp){
+  const nothing=!visibleNodes().length;
+  if(fp&&nothing){
+    fp.hidden=false;
+    fp.innerHTML=`<div class="find-empty">${L("Nothing to search yet. Cards you add will turn up here.","还没有可搜索的卡片。加上卡片后，就能在这里找到。")}</div>`;
+  }else if(fp){
     fp.hidden=!hasQ;
     if(hasQ){
       if(matches.length){
         fp.innerHTML=`<div class="find-list" role="listbox" aria-label="Search matches">${matches.map((n,i)=>{
           const selRow=n.id===curId;
           const sn=findSnippetFor(n,q);
-          const Ltr=lin(n);
-          const fiCol=Ltr?`var(--${Ltr})`:"var(--label-4)";
           return `<button type="button" class="find-item" role="option" aria-selected="${selRow}" data-fid="${esc(n.id)}" data-fidx="${i}">
-            <div class="find-item-top"><span class="find-item-dot" style="--fi-c:${fiCol}"></span><span class="find-item-t">${highlightFindHTML(titleOf(n)||kindLabel(n),q)}</span><span class="find-item-k">${esc(kindLabel(n))}</span></div>
+            ${findThumb(n)}<div class="find-item-top"><span class="find-item-t">${highlightFindHTML(titleOf(n)||kindLabel(n),q)}</span><span class="find-item-k">${esc(kindLabel(n))}</span></div>
             ${sn?`<div class="find-item-sn">${sn}</div>`:""}
           </button>`;
         }).join("")}</div>`;
@@ -19370,9 +19497,10 @@ function helpDialog(opts={}){
   <div class="principle">${orb}<span><b>Light is alive</b>Only an agent at work, or something waiting for you, glows. Idle crew members are unlit. Work happening off-screen lights the edge of the screen.</span></div>
   <div class="principle"><i style="background:conic-gradient(var(--A),var(--B),var(--C),var(--D),var(--A))"></i><span><b>Colour is lineage</b>The crew is white light; each direction is one colour of its spectrum. Proofs and prints keep the colour of the direction they came from.</span></div>
   <div class="principle"><i style="border:1.5px dashed var(--label-3)"></i><span><b>See before you send</b>As you type, the board shows where the work will land and which cards will be read.</span></div>
+  <div class="tour-again"><button type="button" class="sh-btn" data-tour-again>${L("Show the walkthrough again","重新看一遍引导")}</button></div>
   <dl class="keys"><dt>Click / Pen</dt><dd>Select with V, draw with P (or ⌥+drag on the board, or a stylus): circle cards to select them, circle a direction to adopt it · ⇧+drag in Select draws a box · hold Space to pan · click wires to disconnect</dd><dt>↵ or double-click</dt><dd>Open a card in place · Esc closes</dd><dt>Space</dt><dd>Preview a proof, direction or recording</dd>
   <dt>/ and @</dt><dd>Actions and crew in the composer · ⇥ makes a request more specific</dd><dt>] </dt><dd>Next suggestion waiting for you</dd>
-  <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · duplicate · copy &amp; paste selected cards</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
+  <dt>1–4 and F</dt><dd>Go to a stage, or fit the board</dd><dt>N · U · T · ⇧H</dt><dd>New note · upload media · organize canvas · archive selected</dd><dt>⌘F · ⌘A · ⌘D · ⌘C/V</dt><dd>Find &amp; filter cards · select all · duplicate · copy &amp; paste selected cards</dd><dt>Right-click</dt><dd>On empty canvas: upload files to where you clicked, select all, fit the board · double-click for a sticky</dd><dt>⌘Z · ⌘⇧Z</dt><dd>Undo · Redo</dd><dt>M · ⌥+drag</dt><dd>Smart snap on or off · drag without snapping. Cards that touch become related; drag from a card's dot to relate cards far apart. Either way it is one relation you can type: related, supports, counters, refines</dd></dl>`;
   if(!onBack){openDialog("How Lumen Works",body);return}
   dlg.className="sheet mem-sheet in-settings";
   dlg.innerHTML=`<header class="sh-head">${onBack?shBackBtn(onBack):`<span class="sys-ico" aria-hidden="true">${ic("question")}</span>`}
@@ -19662,7 +19790,7 @@ $("archiveBtn")?.addEventListener("click",archiveDialog);
 qs(".zoom").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const r=wall.getBoundingClientRect();
   ({zout:()=>zoomAt(1/1.25,r.width/2,r.height/2),zin:()=>zoomAt(1.25,r.width/2,r.height/2),z100:()=>{const c=toWorld(r.width/2,r.height/2);flyTo({s:1,x:r.width/2-c.x,y:r.height/2-c.y},350)},fit:fitAll})[b.dataset.act]?.()});
 $("fileIn").addEventListener("change",e=>{
-  const target=filePickTarget;filePickTarget="canvas";
+  const target=filePickTarget,at=filePickAt;filePickTarget="canvas";filePickAt=null;
   const all=[...(e.target.files||[])];e.target.value="";
   if(!all.length)return;
   if(target==="line"){
@@ -19672,6 +19800,7 @@ $("fileIn").addEventListener("change",e=>{
     return;
   }
   if(target==="gather"){addFiles(all,{x:80+150+40,y:60+100});return}
+  if(target==="point"&&at){addFiles(all,at);return}
   addFiles(all);
 });
 $("projectBtn").onclick=boardsDialog;
@@ -20443,6 +20572,8 @@ wall.addEventListener("dblclick",e=>{
   const r=wall.getBoundingClientRect();newNoteAt(toWorld(e.clientX-r.left,e.clientY-r.top));
 });
 wall.addEventListener("contextmenu",e=>{
+  /* text being written keeps the system menu: spelling, copy, paste and look up live there */
+  if(e.target.closest?.("textarea,input,[contenteditable='true']")){closeCardMenu();return}
   const card=e.target.closest(".card");
   if(card){
     e.preventDefault();
@@ -20455,7 +20586,7 @@ wall.addEventListener("contextmenu",e=>{
   }else if(sel.length>1&&pointInSelection(e)){
     e.preventDefault();openSelectionMenu(e.clientX,e.clientY);
   }else{
-    closeCardMenu();
+    e.preventDefault();openCanvasMenu(e.clientX,e.clientY);
   }
 });
 
@@ -20504,23 +20635,7 @@ addEventListener("paste",e=>{
   let clipPayload=null;
   if(rawClip){try{clipPayload=JSON.parse(rawClip)}catch{}}
   else if(!fs.length&&internalCardClip&&Date.now()-internalCardClip.ts<300000&&(!t||t===internalCardClip.plain)){clipPayload=internalCardClip.payload}
-  if(clipPayload?.nodes?.length){
-    e.preventDefault();
-    const made=insertClonedPayload(clipPayload,{centerInView:true});
-    if(made.length){log("you",`Pasted ${made.length} card${made.length>1?"s":""}`,made[0].id);toast(`Pasted ${made.length} card${made.length>1?"s":""}`,{undo:true})}
-    return;
-  }
-  if(fs.length){e.preventDefault();addFiles(fs);return}
-  if(t&&t.trim()){
-    e.preventDefault();
-    const s=t.trim(),lines=s.split(/\r?\n/).length;
-    if(/^https?:\/\/\S+$/i.test(s)&&looksLikeNotionDb(s))tableFromNotion(s).then(n=>{if(!n)createLinkNode(s)});
-    else if(/^https?:\/\/\S+$/i.test(s)&&looksLikeDataUrl(s))tableFromUrl(s).then(n=>{if(!n)createLinkNode(s)});
-    else if(/^https?:\/\/\S+$/i.test(s))createLinkNode(s);
-    else if(looksTabular(s)){const ds=datasetFromText(s);if(ds){checkpoint();const v=viewRect(),n=makeTableCard(ds,{title:L("Pasted table","粘贴的表格"),source:{kind:"paste"},at:toWorld(v.w/2,v.h/2)});sel=[n.id];renderAll();persist();follow([n]);toast(L("Pasted as a table","已粘贴为表格"),{undo:true})}else createNotepadNode(s)}
-    else if(s.length>280||lines>=4||parsePaste(s))createPastedCard(s);
-    else pinCard("note",s);
-  }
+  if(clipPayload?.nodes?.length||fs.length||(t&&t.trim())){e.preventDefault();pasteData({payload:clipPayload,files:fs,text:t})}
 });
 
 $("line").addEventListener("paste",e=>{
@@ -20558,7 +20673,8 @@ $("lineQueue")?.addEventListener("click",e=>{
   if(e.target.closest("[data-lq-clear]")){lineQueue=[];lineQueuePaused=false;renderLineQueue();return}
   if(e.target.closest("[data-lq-run]")){lineQueuePaused=false;renderLineQueue();drainLineQueue();return}
 });
-$("menu").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-mi]");if(b){e.preventDefault();pickMenu(+b.dataset.mi,{run:true})}});
+$("menu").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-mi]");if(b){e.preventDefault();pickMenu(+b.dataset.mi,{run:true});return}const t=e.target.closest("[data-pt]");if(t){e.preventDefault();palType(t.dataset.pt)}});
+$("menu").addEventListener("keydown",e=>{const t=e.target.closest?.("[data-pt]");if(t&&(e.key==="Enter"||e.key===" ")){e.preventDefault();palType(t.dataset.pt)}});
 $("line").addEventListener("submit",e=>{e.preventDefault();sendLine()});
 $("micBtn").onclick=()=>toggleVoice(lineIn);
 addEventListener("keydown",e=>{
@@ -20570,6 +20686,7 @@ addEventListener("keydown",e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="f"){e.preventDefault();toggleFindBar(true);return}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="z"&&!typing){e.preventDefault();if(e.shiftKey)redo();else undo();return}
   if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&e.key.toLowerCase()==="y"&&!typing){e.preventDefault();redo();return}
+  if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==="a"&&!typing&&!focusId){e.preventDefault();selectAllCards();return}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="d"&&!typing&&sel.length){e.preventDefault();duplicateSelection();return}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();if(findOpen)setOmniMode("cmd",{focus:true});else lineIn.focus();return}
   if((e.metaKey||e.ctrlKey)&&e.shiftKey&&(e.code==="Period"||e.key==="."||e.key===">")){e.preventDefault();toggleFocus("key");return}
@@ -20815,21 +20932,92 @@ function initGlass(){
 function showWelcome(){
   let force=false;try{force=new URLSearchParams(location.search).get("welcome")==="1"}catch{}
   if((navigator.webdriver&&!force)||dlg.open)return;
-  openDialog(L("Welcome to Vellum","欢迎使用 Vellum"),`<div class="welcome" style="display:grid;gap:12px;max-width:440px">
-    <p style="margin:0;font:500 14px/1.5 var(--ui);color:var(--label)">${L("Turn an idea into directions you can test, a working prototype, and a snapshot to share. Four stages run left to right: Gather, Explore, Prototype, Snapshot.","把一个想法变成可验证的方向、可交互的原型和可分享的定稿快照。四个阶段从左到右：收集素材、探索方向、制作原型、定稿分享。")}</p>
-    <p style="margin:0;font:500 13px/1.45 var(--ui);color:var(--label-2)">${L("A crew helps at each step: Scout finds sources, Strategist branches ideas, Wright builds, Critic tests. Without an AI model they fall back to simple built-in rules and say so. Connect one any time from the pill at the top right.","每一步都有成员协助：Scout 查资料，Strategist 发散想法，Wright 动手制作，Critic 负责检验。没有连接 AI 模型时，它们只能使用简单的内置规则，并会明确告诉你。随时可以从右上角的状态按钮连接模型。")}</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px">
+  /* one sentence here; the rest is taught one step at a time, pointing at the real thing (startTour) */
+  openDialog(L("Welcome to Vellum","欢迎使用 Vellum"),`<div class="welcome" style="display:grid;gap:20px">
+    <p style="margin:0;font:500 14px/1.5 var(--ui);color:var(--label-2)">${L("A board where you and an AI crew think an idea through, from first evidence to a prototype you can test.","在这块白板上，你和 AI 成员一起把一个想法想清楚：从最初的证据，到一个能验证的原型。")}</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
       <button type="button" class="sh-btn" data-welcome="sample">${L("Explore the sample","先看看示例")}</button>
       <button type="button" class="sh-btn" style="background:var(--act);color:var(--on-act)" data-welcome="start">${L("Start a board","新建画板")}</button>
     </div>
   </div>`,d=>{
     qs('[data-welcome="start"]',d).onclick=()=>{d.close();
-      if(typeof newBoardDialog==="function")return newBoardDialog();
-      persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);persist();setTimeout(()=>lineIn.focus(),100)};
-    qs('[data-welcome="sample"]',d).onclick=()=>d.close();
-    setTimeout(()=>qs('[data-welcome="start"]',d)?.focus(),0);
+      if(typeof newBoardDialog==="function"){newBoardDialog();return tourWhenClear()}
+      persistNow();board=blank("");sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();cam={x:0,y:0,s:.8};flyTo(camFor({x0:0,y0:-160,x1:BAY+240,y1:820},.85),0);persist();tourWhenClear()};
+    qs('[data-welcome="sample"]',d).onclick=()=>{d.close();tourWhenClear()};
+    setTimeout(()=>qs('[data-welcome="start"]',d)?.focus({focusVisible:false}),0);  /* Enter still starts; the ring only appears once the keyboard is used */
   });
 }
+/* ── First-run walkthrough: one step at a time, each pointing at what it explains. Never blocks the board:
+   the spotlight is a feathered shadow with no hit area, and every step can be done for real or skipped. */
+const TOUR_STEPS=[
+  {k:"lanes",t:["Four stages, left to right","四个阶段，从左到右"],b:["Gather evidence, explore directions, build a prototype, keep a snapshot. Move between them any time.","收集素材、探索方向、制作原型、定稿快照。随时可以来回走。"],
+   rect:()=>{const hs=qsa(".bay-head").map(e=>e.getBoundingClientRect()).filter(r=>r.right>0&&r.left<innerWidth&&r.bottom>0&&r.top<innerHeight);if(!hs.length)return null;return {l:Math.max(8,Math.min(...hs.map(r=>r.left))),t:Math.min(...hs.map(r=>r.top)),r:Math.min(innerWidth-8,Math.max(...hs.map(r=>r.right))),b:Math.max(...hs.map(r=>r.bottom))}}},
+  {k:"sticky",t:["Double-click for a sticky","双击，新建便签"],b:["Try it on any empty spot. Write whatever is on your mind.","在任意空白处试一下，想到什么写什么。"],
+   rect:()=>{const pt=tourSpot();return pt?{l:pt.x-44,t:pt.y-44,r:pt.x+44,b:pt.y+44,round:true}:null}},
+  {k:"palette",t:["⌘K finds everything","⌘K 什么都能找到"],b:["Every command and every kind of card, from tables to tree maps.","所有命令和所有卡片类型，从表格到树状图。"],
+   rect:()=>{const e=qs("#line .pal-hint");const r=e?.getBoundingClientRect();return r&&r.width?{l:r.left,t:r.top,r:r.right,b:r.bottom,pill:true}:null}},
+  {k:"crew",t:["Your crew","你的 AI 成员"],b:["Scout, Strategist, Wright and Critic help at each step. Without an AI model they use simple built-in rules, and say so.","Scout、Strategist、Wright 和 Critic 在每一步协助你。没连 AI 模型时，它们只用简单的内置规则，并会说明。"],
+   rect:()=>{const r=$("crewSetBtn")?.getBoundingClientRect();return r&&r.width?{l:r.left,t:r.top,r:r.right,b:r.bottom,pill:true}:null}}
+];
+let tourAt=-1,tourTick=0,tourSpotPt=null,tourDirty=false;
+const tourOn=()=>tourAt>=0;
+function tourWhenClear(){setTimeout(()=>{if(tourOn()||store.get(".tourDone",false))return;if(dlg.open){dlg.addEventListener("close",()=>setTimeout(tourWhenClear,420),{once:true});return}startTour()},60)}
+function tourSpot(){
+  /* an empty patch of board near the middle of the screen, kept while the step lasts so the spotlight doesn't hop */
+  if(tourSpotPt&&!document.elementFromPoint(tourSpotPt.x,tourSpotPt.y)?.closest(".card,button,[class^='bs-'],.bay-start"))return tourSpotPt;
+  const cx=innerWidth/2,cy=innerHeight/2;
+  for(let rad=0;rad<420;rad+=40)for(let a=0;a<(rad?16:1);a++){
+    const x=Math.round(cx+rad*Math.cos(a*Math.PI/8)),y=Math.round(cy+rad*Math.sin(a*Math.PI/8));
+    const el=document.elementFromPoint(x,y);
+    if(el&&wall.contains(el)&&!el.closest(".card,button,.bay-start,.bay-head,[class^='bs-']"))return tourSpotPt={x,y};
+  }
+  return tourSpotPt=null;
+}
+function startTour({force=false}={}){
+  if(!force&&store.get(".tourDone",false))return;
+  let root=$("tour");
+  if(!root){root=document.createElement("div");root.id="tour";root.innerHTML=`<div class="tour-hole" aria-hidden="true"></div><div class="tour-card" role="dialog" aria-live="polite"></div>`;document.body.appendChild(root)}
+  tourAt=0;tourSpotPt=null;root.hidden=false;root.classList.remove("tour-out");
+  paintTour(true);clearInterval(tourTick);tourTick=setInterval(()=>paintTour(),200);
+}
+function endTour(){
+  if(!tourOn())return;tourAt=-1;clearInterval(tourTick);store.set(".tourDone",true);
+  const root=$("tour");if(!root)return;
+  if(calm()){root.hidden=true;return}
+  root.classList.add("tour-out");setTimeout(()=>{if(!tourOn())root.hidden=true},220);
+}
+function tourNext(){if(!tourOn())return;if(tourAt>=TOUR_STEPS.length-1)return endTour();tourAt++;tourSpotPt=null;paintTour(true)}
+function paintTour(fresh){
+  const root=$("tour");if(!root||!tourOn())return;
+  let st=TOUR_STEPS[tourAt];const card=qs(".tour-card",root),hole=qs(".tour-hole",root);
+  /* step it out of the way while something else has the stage: a dialog, the palette, or a sticky being written */
+  const busy=dlg.open||(typeof palOpen!=="undefined"&&palOpen);
+  if(st.k==="palette"&&busy&&!dlg.open){tourAt++;tourSpotPt=null;tourDirty=true;root.classList.add("tour-away");return}  /* opening ⌘K is the step done */
+  root.classList.toggle("tour-away",busy);if(busy)return;
+  if(tourDirty){fresh=true;tourDirty=false}
+  if(fresh){
+    const n=TOUR_STEPS.length,last=tourAt===n-1;
+    card.innerHTML=`<p class="tour-t">${esc(L(st.t[0],st.t[1]))}</p><p class="tour-b">${esc(L(st.b[0],st.b[1]))}</p>
+      <div class="tour-foot"><span class="tour-dots" aria-label="${esc(L(`Step ${tourAt+1} of ${n}`,`第 ${tourAt+1} 步，共 ${n} 步`))}">${TOUR_STEPS.map((_,i)=>`<i${i===tourAt?' class="on"':""}></i>`).join("")}</span><span class="sp"></span>
+      ${last?"":`<button type="button" class="sh-btn" data-tour="skip">${L("Skip","跳过")}</button>`}<button type="button" class="sh-btn solid" data-tour="next">${last?L("Done","完成"):L("Next","下一步")}</button></div>`;
+    card.classList.remove("tour-in");void card.offsetWidth;card.classList.add("tour-in");
+  }
+  const r=st.rect();
+  if(!r){hole.style.opacity="0";card.style.left=Math.round(innerWidth/2-card.offsetWidth/2)+"px";card.style.top=Math.round(innerHeight/2-card.offsetHeight/2)+"px";return}
+  const pad=r.round?0:10,hl=r.l-pad,ht=r.t-pad,hw=r.r-r.l+pad*2,hh=r.b-r.t+pad*2;
+  Object.assign(hole.style,{opacity:"1",left:hl+"px",top:ht+"px",width:hw+"px",height:hh+"px",borderRadius:r.round||r.pill?"999px":"16px"});
+  /* the card sits beside its target: below when there's room, else above, clamped to a 16px gutter */
+  const cw=card.offsetWidth,ch=card.offsetHeight,gap=14;
+  let top=ht+hh+gap;if(top+ch>innerHeight-16)top=Math.max(16,ht-gap-ch);
+  let left=hl+hw/2-cw/2;
+  left=clamp(left,16,innerWidth-16-cw);
+  card.style.left=Math.round(left)+"px";card.style.top=Math.round(top)+"px";
+}
+document.addEventListener("click",e=>{const b=e.target.closest?.("[data-tour]");if(!b)return;b.dataset.tour==="next"?tourNext():endTour()});
+document.addEventListener("click",e=>{if(!e.target.closest?.("[data-tour-again]"))return;dlg.open&&dlg.close();setTimeout(()=>startTour({force:true}),260)});
+/* doing the step for real counts as finishing it */
+addEventListener("dblclick",e=>{if(tourOn()&&TOUR_STEPS[tourAt].k==="sticky"&&wall.contains(e.target))setTimeout(tourNext,350)},true);
+addEventListener("keydown",e=>{if(!tourOn()||e.key!=="Escape")return;const t=e.target;if(dlg.open||(typeof palOpen!=="undefined"&&palOpen)||t?.isContentEditable||/^(INPUT|TEXTAREA)$/.test(t?.tagName))return;endTour()},true);
 function boot(){
   // the board never scrolls; focus moving to an off-screen control must not shift it under the floating UI
   for(const el of [wall,$("app")])el.addEventListener("scroll",()=>{if(el.scrollLeft||el.scrollTop){el.scrollLeft=0;el.scrollTop=0}});
@@ -20865,21 +21053,40 @@ Object.assign(ICONS,{
   template:'<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M3.5 9h17M9 9v11.5"/>',
   relate:'<path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1"/><path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1"/>',
   image:'<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-4.5-4.5-7.5 7.5"/>',
+  fitView:'<path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3"/>',
+  selAll:'<rect x="4" y="4" width="16" height="16" rx="2.5" stroke-dasharray="2.6 2.6"/><path d="m9 12 2.2 2.2L15.5 10"/>',
 });
 /* ── Command palette ───────────────────────────────────────────────────────────────────────────────────────────
    ⌘K, "/" on the canvas, or the hint at the bottom opens one field in the middle of the screen. Esc or a click
    outside puts it away, and so does running a command. Empty, it offers three next steps that fit what is
    selected, so the first click teaches the rest. Talking to the crew happens in the Copilot panel only. */
 let palOpen=false,palTok=0;
-function showPalette(){
+/* The panel grows out of whatever opened it: the ⌘K pill at the bottom rises into it, the toolbar's search button
+   pushes it out sideways. With the keyboard there is nothing on screen to come from, so it only settles in place.
+   Closing runs the same path back. */
+let palFrom=null,palCloseT=0;
+function palOriginVars(line,from){
+  line.style.removeProperty("--pal-dx");line.style.removeProperty("--pal-dy");line.style.removeProperty("--pal-sx");line.style.removeProperty("--pal-sy");
+  if(!from||calm())return;
+  line.classList.add("pal-measure");const r=line.getBoundingClientRect();line.classList.remove("pal-measure");
+  if(!r.width)return;
+  const dx=(from.left+from.width/2)-(r.left+r.width/2),dy=(from.top+from.height/2)-(r.top+r.height/2);
+  line.style.setProperty("--pal-dx",Math.round(dx)+"px");line.style.setProperty("--pal-dy",Math.round(dy)+"px");
+  line.style.setProperty("--pal-sx",clamp(from.width/r.width,.08,1).toFixed(3));line.style.setProperty("--pal-sy",clamp(from.height/r.height,.08,1).toFixed(3));
+}
+function showPalette(from=palFrom){
+  palFrom=null;
   if(palOpen)return;palOpen=true;palTok++;
-  const line=$("line");line.classList.add("palette");$("palScrim").hidden=false;document.body.classList.add("pal-open");
+  const line=$("line");clearTimeout(palCloseT);line.classList.remove("pal-closing");
+  line.classList.add("palette");palOriginVars(line,from);
+  line.style.animation="none";void line.offsetWidth;line.style.animation="";
+  $("palScrim").hidden=false;document.body.classList.add("pal-open");
   try{hideTip()}catch{}
   if(lineIn.value)requestAnimationFrame(()=>{if(document.activeElement===lineIn)lineIn.select()});
   syncLineClearance();
 }
-function openPalette({text=null,search=false}={}){
-  showPalette();
+function openPalette({text=null,search=false,from=null}={}){
+  showPalette(from);
   if(search){if(!findOpen)setOmniMode("search",{focus:true});else requestAnimationFrame(()=>{$("findIn")?.focus();$("findIn")?.select()});return}
   if(findOpen)setOmniMode("cmd",{focus:false,silent:true});
   if(text!=null){lineIn.value=text;autoGrow()}
@@ -20896,10 +21103,14 @@ function closePalette(){
   closeMenu();
   /* like Spotlight: a search you walked away from is gone next time; a prompt typed into a mode (an image, a search) waits */
   if(!lineMode&&lineIn.value){lineIn.value="";autoGrow();renderRoute()}
-  line.classList.remove("palette");$("palScrim").hidden=true;document.body.classList.remove("pal-open");
+  $("palScrim").hidden=true;document.body.classList.remove("pal-open");
   if(line.contains(document.activeElement))document.activeElement.blur();
-  syncLineClearance();
+  if(calm()){line.classList.remove("palette");syncLineClearance();return}
+  line.classList.add("pal-closing");clearTimeout(palCloseT);
+  palCloseT=setTimeout(()=>{if(!palOpen){line.classList.remove("palette","pal-closing");syncLineClearance()}},170);
 }
+/* clicking the ⌘K pill focuses the field inside it; remember the pill so the panel rises out of it */
+$("line").addEventListener("pointerdown",e=>{if(!palOpen&&e.target.closest?.(".line-row")){const h=qs("#line .pal-hint");if(h)palFrom=h.getBoundingClientRect()}},true);
 /* what to offer before anything is typed: three things, chosen for the selection */
 function paletteStarts(){
   const ns=selected().filter(n=>!n.archived),out=[],run=c=>()=>{lineIn.value=c;autoGrow();sendLine()};
@@ -20927,8 +21138,23 @@ function showStartMenu(){
   menuItems=items;menuIdx=clamp(menuIdx,0,items.length-1);
   const learned=(+store.get(".slashSeen",0)||0)>=3,el=$("menu");el.hidden=false;
   el.innerHTML=`<div class="mh">${L("Suggestions","建议")}</div>`+items.map((it,i)=>`<button type="button" role="option" class="pal-row" data-mi="${i}" aria-selected="${i===menuIdx}"><span class="pal-ic">${ic(it.ico)}</span><span class="cmd">${esc(it.t)}</span>${it.k?`<kbd>${it.k}</kbd>`:"<span></span>"}</button>`).join("")
+    +(selected().length?"":`<div class="mh">${L("New card","新建卡片")}</div><div class="pal-types" role="group" aria-label="${L("New card","新建卡片")}">${PAL_TYPES.map(t=>`<button type="button" data-pt="${t.k}" title="${esc(L(t.en,t.zh))}"><span class="pal-ic">${ic(t.ico)}</span><span>${esc(L(t.en,t.zh))}</span></button>`).join("")}</div>`)
     +(learned?"":`<div class="pal-tip">${L("Type <kbd>/</kbd> to see every command","输入 <kbd>/</kbd> 查看全部命令")}</div>`);
   syncLineClearance();
+}
+/* every kind of card you can start by hand, one click from ⌘K (a sticky is the double-click, so it stays in the suggestions) */
+const PAL_TYPES=[
+  {k:"claim",ico:"claim",en:"Idea",zh:"想法"},{k:"notepad",ico:"notepad",en:"Notepad",zh:"记事本"},{k:"question",ico:"question",en:"Question",zh:"问题"},
+  {k:"list",ico:"list",en:"Checklist",zh:"清单"},{k:"kanban",ico:"kanban",en:"Kanban",zh:"看板"},{k:"treemap",ico:"treemap",en:"Tree map",zh:"树状图"},
+  {k:"table",ico:"table",en:"Table",zh:"表格"},{k:"link",ico:"link",en:"Link",zh:"链接"},{k:"group",ico:"group",en:"Group",zh:"分组"},{k:"image",ico:"image",en:"Image",zh:"图片"}];
+function palType(k){
+  const typeCmd=c=>{lineIn.value=c;autoGrow();lineIn.focus();renderRoute();updateMenu()};
+  if(k==="claim")return typeCmd("/claim ");
+  if(k==="question")return typeCmd("/question ");
+  if(k==="table")return typeCmd("/table ");
+  if(k==="image"){lineIn.value="";setLineMode("image");lineIn.focus();return}
+  closePalette();
+  ({notepad:()=>createNotepadNode(),list:()=>createActionListNode(),kanban:()=>createKanbanNode(),treemap:()=>createTreeMapNode(),link:()=>openLinkDialog(),group:()=>createGroupNode()})[k]?.();
 }
 /* Ask Copilot: the panel opens (or stays open), the selection rides along as one removable chip, the cursor waits in the input */
 function askCopilotAbout(ns){

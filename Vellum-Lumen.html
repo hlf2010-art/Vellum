@@ -513,13 +513,72 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .cbtn:hover{background:var(--card-3)}
 .cbtn:active{transform:scale(.95)}
 .cbtn.solid{background:var(--act);color:var(--on-act);box-shadow:none}
-.clar{display:grid;gap:18px}.clar-q{display:grid;gap:8px}.clar-q>b{font:600 13px/1.35 var(--ui);color:var(--label)}
-.clar-opts{display:flex;flex-wrap:wrap;gap:6px}.clar-opt{height:auto;min-height:var(--size-md);padding:6px 12px;white-space:normal;text-align:left;line-height:1.3}
-.clar-opt[aria-pressed="true"]{background:var(--act);color:var(--on-act);box-shadow:none}
-.clar-own{width:100%;height:var(--size-md);padding:0 12px;border:0;border-radius:var(--radius-sm);background:var(--hover);color:var(--label);font:450 13px/1 var(--ui);outline:none;transition:box-shadow var(--d-quick)}
-.clar-own::placeholder{color:var(--label-2)}
-.clar-own:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--B) 55%,transparent)}
-.clar-own.has{box-shadow:0 0 0 2px var(--act)}
+/* Before drawing: the align card. One question at a time; every block is drawn by the app, so siblings always match */
+.card.align{--al-panel:color-mix(in srgb,var(--card) 95%,var(--label));--al-wire:color-mix(in srgb,var(--label) 17%,transparent);--al-line:color-mix(in srgb,var(--label) 24%,transparent)}
+.al .al-title{font:var(--text-card-title);margin:2px 0 12px}
+.al .al-q{display:flex;align-items:baseline;gap:10px;font:550 14px/20px var(--ui);margin-bottom:12px}
+.al .al-pips{margin-left:auto;display:flex;gap:4px;align-items:center;flex:none}
+.al .al-pip{width:6px;height:6px;padding:0;border:0;border-radius:3px;background:var(--label-4);cursor:pointer;transition:width var(--duration-base) var(--ease),background var(--duration-quick)}
+.al .al-pip.on{width:16px;background:var(--label-2)}
+.al .al-panel{background:var(--al-panel);border-radius:var(--radius-media);padding:14px 16px}
+.al .al-viz{position:relative;height:124px;margin-bottom:4px}
+.al .al-viz svg{position:absolute;inset:0;margin:auto;transition:opacity 60ms linear}
+.al .al-glow{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--A-fill) 55%,transparent) 0,transparent 68%);pointer-events:none}
+.al .al-glyph.al-big{height:112px;stroke:var(--label);stroke-width:1.1}
+.al .al-glyph{width:100%;height:68px;fill:none;stroke:var(--label-2);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.al .al-track{position:relative;height:28px;margin:2px 8px 0;cursor:pointer;touch-action:none;outline:none}
+.al .al-line{position:absolute;left:0;right:0;top:13px;height:1.5px;border-radius:1px;background:var(--al-line)}
+.al .al-track i{position:absolute;top:10px;width:1px;height:8px;background:var(--al-line)}
+.al .al-knob{position:absolute;top:4px;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:var(--card);box-shadow:0 0 0 .5px var(--hair-2),0 1px 3px rgba(0,0,0,.14),0 4px 10px -4px rgba(0,0,0,.2);transition:transform var(--duration-quick) var(--ease)}
+:root[data-theme="dark"] .al .al-knob{background:#4A4D55}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .al .al-knob{background:#4A4D55}}
+.al .al-track.drag .al-knob,.al .al-track:focus-visible .al-knob{transform:scale(1.12)}
+.al .al-track:focus-visible .al-knob{box-shadow:0 0 0 2px var(--focus)}
+.al .al-poles{display:flex;justify-content:space-between;gap:12px;font:var(--text-meta);color:var(--label-2)}
+.al .al-reads{margin:10px 0 0;text-align:center;font:470 13px/18px var(--ui);color:var(--label-2)}
+.al .al-picks{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:8px}
+.al .al-pick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:12px 8px 10px;border:0;border-radius:var(--radius-media);background:var(--al-panel);box-shadow:inset 0 0 0 .5px var(--hair);color:var(--label-2);font:550 12.5px/16px var(--ui);cursor:pointer;text-align:center;transition:box-shadow var(--duration-quick),background var(--duration-quick)}
+.al .al-pick:hover{box-shadow:inset 0 0 0 .5px var(--hair-2)}
+.al .al-pick.on{background:var(--card);color:var(--label);box-shadow:0 0 0 1.5px var(--label)}
+.al .al-pick img{width:100%;height:68px;object-fit:cover;border-radius:8px}
+.al .al-picks.words{grid-template-columns:1fr 1fr}
+.al .al-picks.words .al-pick{padding:10px 12px;align-items:flex-start;text-align:left}
+.al .al-own{display:block;width:100%;height:var(--size-md);margin-top:8px;padding:0 12px;border:0;border-radius:var(--radius-sm);background:transparent;box-shadow:inset 0 0 0 .5px var(--hair-2);color:var(--label);font:450 13px/1 var(--ui);outline:none}
+.al .al-own.al-text{margin-top:0;height:40px}
+.al .al-own::placeholder{color:var(--label-3)}
+.al .al-own:focus-visible{box-shadow:inset 0 0 0 1.5px var(--label)}
+.al .al-flow{display:flex;align-items:flex-start;padding:16px 10px 12px}
+.al .al-step{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0;border:0;background:none;cursor:pointer;color:var(--label);font:550 12px/15px var(--ui)}
+.al .al-step b{font:inherit;max-width:100%;overflow-wrap:anywhere}
+.al .al-scr{position:relative;width:52px;height:86px;border-radius:9px;background:var(--card);box-shadow:0 0 0 .5px var(--hair-2);padding:8px 6px;display:flex;flex-direction:column;gap:4px}
+.al .al-scr i{display:block;height:4px;border-radius:2px;background:var(--al-wire)}
+.al .al-scr i.s{width:60%}.al .al-scr i.b{height:14px;border-radius:4px}.al .al-scr i.t{height:26px}.al .al-scr i.x{height:38px}
+.al .al-scr i.c{margin-top:auto;height:8px;border-radius:4px;background:color-mix(in srgb,var(--label) 34%,transparent)}
+.al .al-tog{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:var(--act);display:grid;place-items:center;box-shadow:0 0 0 2px var(--al-panel)}
+.al .al-tog svg{width:9px;height:9px;fill:none;stroke:var(--on-act);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.al .al-step.off .al-tog{background:var(--al-panel);box-shadow:0 0 0 2px var(--al-panel),inset 0 0 0 1.2px var(--label-3)}
+.al .al-step.off b{color:var(--label-3);text-decoration:line-through;text-decoration-color:var(--label-3)}
+.al .al-arrow{width:12px;flex:none;margin-top:38px;fill:none;stroke:var(--al-line);stroke-width:1.2}
+.al .al-why{margin:10px 2px 0;font:470 13px/19px var(--ui);color:var(--label-2)}
+.al .al-cmp{display:grid;grid-template-columns:88px 1fr 1fr;border-top:.5px solid var(--hair)}
+.al .al-cmp>*{padding:9px 6px 9px 0;border-bottom:.5px solid var(--hair);font:470 13px/18px var(--ui)}
+.al .al-cmp .k{font:var(--text-meta);color:var(--label-3)}
+.al .al-col{border:0;border-radius:0;background:none;text-align:left;font:600 12.5px/16px var(--ui);color:var(--label-2);cursor:pointer}
+.al .al-col.on{color:var(--label);box-shadow:inset 0 -2px 0 var(--label)}
+.al .al-foot{display:flex;align-items:center;gap:8px;margin-top:16px}
+.al .al-foot .sp{flex:1}
+.al .al-skip{height:var(--size-md);padding:0 6px;border:0;background:none;color:var(--label-3);font:600 13px/1 var(--ui);cursor:pointer;border-radius:var(--radius-pill)}
+.al .al-skip:hover{color:var(--label)}
+.al .al-take{margin:-4px 0 14px;padding-left:12px;border-left:2px solid var(--label-4);font:520 18px/26px var(--ui);letter-spacing:-.005em;color:var(--label)}
+.al .al-rows{border-top:.5px solid var(--hair)}
+.al .al-row{display:grid;grid-template-columns:76px 1fr auto;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--hair)}
+.al .al-row .k{font:var(--text-meta);color:var(--label-3);overflow-wrap:anywhere}
+.al .al-row .v{font:470 14px/20px var(--ui);overflow-wrap:anywhere}
+.al .al-yours{display:inline-flex;align-items:center;height:20px;margin-left:6px;padding:0 7px;border-radius:var(--radius-xs);background:var(--card-3);font:500 11.5px/1 var(--ui);color:var(--label-2);vertical-align:1px}
+.al .al-mini{width:40px;height:26px;fill:none;stroke:var(--label-3);stroke-width:1.4;stroke-linecap:round}
+.al svg.al-mini circle{fill:var(--card)}
+.al .al-none{font:470 13px/19px var(--ui);color:var(--label-2);margin:0}
+@media (prefers-reduced-motion:reduce){.al .al-pip,.al .al-knob{transition:none}}
 .cbtn.pg{background:var(--pg,var(--act));color:#fff;box-shadow:0 0 18px -4px color-mix(in srgb,var(--pg,transparent) 70%,transparent)}
 .cbtn.solid:hover,.cbtn.pg:hover{filter:brightness(1.08)}
 .cbtn .ico{width:14px;height:14px;stroke-width:2}
@@ -4887,7 +4946,7 @@ function labelPopHTML(n){
   const s=n.wSug;if(!s)return"";
   return `<div class="lp-head">${evIconHTML(s.w,"ev-ico lp-ico "+s.w)}<b>${esc(weightLabel(s.w))}</b><span class="lp-by">${AV.scout}Scout</span></div><p class="lp-why">${esc(s.why||weightDesc(s.w))}</p><div class="lp-acts"><button type="button" class="ev-act" data-lp-act="change">${esc(L("Change","更改"))}</button><button type="button" class="ev-act pri" data-lp-act="keep">${esc(L("Keep","保留"))}</button></div>`;
 }
-const W={table:480,note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,research:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
+const W={align:420,table:480,note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,research:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
 const HGUESS={table:260,note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,research:240,direction:330,proof:390,print:300,list:260,kanban:280,treemap:280,synthesis:300,group:440};
 const visibleNodes=()=>board.nodes.filter(n=>n&&!n.hidden&&!n.archived&&!n.tombstone&&!digFolded(n));
 /* how narrow and wide each card may be dragged: narrow enough to tuck beside another, never so narrow its own row of
@@ -7058,6 +7117,40 @@ function demoAddEvidence(){
   scheduleChecks?.(400);
   return n1;
 }
+/* ── sample: camping lantern, the "ask first, then draw" card worked through once ─────────────────
+   A second sample board (Mars 2026-11-28): one brief, one evidence note and the open "Before drawing" card with
+   its drawings already made, so people can drag, pick and press Draw to see how the card behaves. The drawings
+   are hand-written SVG in the same 0–100 box the model writes into, so they read exactly like a live run. */
+const LANTERN_ART={
+  cosy:'<path d="M50 6v9"/><path d="M41 15h18"/><path d="M30 34a20 18 0 0 1 40 0v36a8 8 0 0 1-8 8H38a8 8 0 0 1-8-8z"/><path d="M30 41h40M30 67h40"/><ellipse cx="50" cy="54" rx="7" ry="10"/><path d="M36 88h28"/>',
+  trail:'<path d="M42 7h16v8H42z"/><path d="M34 15h32l4 12v44l-4 11H34l-4-11V27z"/><path d="M30 27h40M30 71h40"/><rect x="44" y="35" width="12" height="28" rx="2"/><path d="M37 35v28M63 35v28"/>',
+  dome:'<path d="M50 8v12"/><path d="M28 52a22 22 0 0 1 44 0v26H28z"/><path d="M22 78h56"/><path d="M38 52h24"/>',
+  stick:'<rect x="41" y="10" width="18" height="80" rx="9"/><path d="M41 32h18"/><circle cx="50" cy="77" r="2.5"/>',
+  fold:'<path d="M32 25h36M32 75h36"/><path d="M35 25c-8 9-8 41 0 50M65 25c8 9 8 41 0 50"/><path d="M34 42h32M34 58h32"/><path d="M50 11v14"/>'
+};
+function sampleLantern(){
+  const b=blank(L("Camping lantern · Sample","露营灯 · 示例"));b.id="lantern";b.rev=1;b.zoneW=ZONE_W0;
+  b.template={id:"product",variant:"physical"};
+  b.constraints=L("Charges by USB-C","USB-C 充电");
+  const prevBoard=board;board=b;
+  const T=NOW(),min=60000,at=(n,ago)=>{n.created=n.updated=T-ago*min;return n};
+  const brief=at(node("idea",{kind:"Claim",status:"ink",title:L("A lantern for cabin weekends","周末木屋用的露营灯"),text:L("Light for a small cabin or a tent at night: easy to hang, easy to charge, nice enough to leave out.","晚上给小木屋或帐篷照明：好挂、好充电，好看到可以一直摆着。")},{x:60,y:80}),40);
+  const note=at(node("source",{kind:"Interview",weight:"reported",status:"ink",title:L("Two cabin hosts","两位木屋房东"),text:L("Both hang their lanterns from a hook or a beam. Neither carries one on walks; phones do that.","两位都把灯挂在钩子或横梁上。散步时没人拿灯，手机就够了。")},{x:60,y:420}),30);
+  makeRelation(note.id,brief.id,{rel:"supports"});
+  const qs=[
+    {kind:"spectrum",key:L("Feel","感觉"),q:L("Which feel is closer?","更接近哪种感觉？"),left:L("Cabin cosy","木屋温暖"),right:L("Trail gear","户外装备"),
+     reads:[L("Amber glow, wood and canvas, soft edges","琥珀色暖光，木头和帆布，圆润边角"),L("Warm light, a few rugged details","暖光，带一点硬朗细节"),L("Cool white beam, rubber and aluminium","冷白光束，橡胶和铝")],
+     v:.5,art:{left:LANTERN_ART.cosy,right:LANTERN_ART.trail}},
+    {kind:"pick",key:L("Form","形态"),q:L("Which form should we start from?","从哪种形态开始？"),
+     options:[{label:L("Hanging dome","吊挂圆顶"),art:LANTERN_ART.dome},{label:L("Pocket stick","口袋灯棒"),art:LANTERN_ART.stick},{label:L("Folding lantern","折叠灯笼"),art:LANTERN_ART.fold}]},
+    {kind:"text",key:L("Must keep","必须保留"),q:L("Anything it must keep?","有什么必须保留的吗？")}
+  ];
+  const al=at(withProv({engine:"model"},()=>node("align",{title:L("Camping lantern concepts","露营灯概念图"),qs,step:0,state:"open",by:"wright",status:"ink",
+    then:{act:"image",prompt:L("camping lantern concepts for cabin weekends","周末木屋用的露营灯概念图"),count:3},drawn:{ms:0,ref:false,by:"sample"}},{x:560,y:80})),2);
+  edge(brief.id,al.id,"derive");
+  board=prevBoard;
+  return b;
+}
 /* The sample once named its groups Diverge / Make / Release while the lanes said Explore / Prototype / Snapshot. */
 function migrateStageNames(){
   const map={Diverge:"Explore",Make:"Prototype",Release:"Snapshot"};
@@ -7067,6 +7160,10 @@ function loadBoard(){
   if(DEMO){board=sampleDemo();ensureDemoAssets();return}
   let req="";try{req=new URLSearchParams(location.search).get("board")||new URLSearchParams(location.search).get("sample")||""}catch{}
   const normPins=()=>{board.pins=board.pins||{};if(board.id==="showcase"&&!Object.keys(board.pins).length)seedShowcasePins(board)};
+  if(req==="lantern"){
+    const ex=store.get(".board.lantern",null);board=ex&&Array.isArray(ex.nodes)?ex:sampleLantern();
+    board.memory=typeof board.memory==="string"?board.memory:"";board.mcpContext=Array.isArray(board.mcpContext)?board.mcpContext:[];board.threads=board.threads||{};board.copilot=Array.isArray(board.copilot)?board.copilot:[];board.log=board.log||[];board.adopted=board.adopted||{};board.pins=board.pins||{};persist();return;
+  }
   if(req==="showcase"){
     const ex=store.get(".board.showcase",null);
     board=ex&&Array.isArray(ex.nodes)&&ex.rev===2?ex:sampleShowcase();
@@ -7542,6 +7639,7 @@ function cardBody(n){
     <div class="in">${head(recHead)}<h4 data-edit="title">${esc(n.title)}</h4>${n.text&&!isAuto?`<p data-edit="text">${esc(n.text)}</p>`:""}
     ${sk?sketchActs(n):foot(fL(weightHTML(n.weight,false,n),!g&&frCnt?`<span class="foot-txt">${Lang(`${frCnt} ${frCnt===1?"frame":"frames"} lifted`,`已截取 ${frCnt} 帧`)}</span>`:""),fR(threadCount(n)))}</div>`;}
   case"frame":{const r=byId(n.from),plChip=plBusyNodes.has(n.id)?`<span class="foot-pl busy">${Lang("Reading…","正在反推…")}</span>`:n.plPack?.positive?`<button type="button" class="foot-pl" data-a="reverse-prompt" title="${esc(Lang("View the extracted prompt","查看反推出的提示词"))}">${ic("sparkles")}${Lang("Prompt","提示词")}</button>`:"";return `<div class="media"><img src="${mediaSrc(n.media)}" alt="" draggable="false"><span class="tc">@ ${tc(n.t)}</span></div><div class="in">${head(ebHTML(n))}<h4 data-edit="title">${esc(n.title||Lang("Frame ","帧 ")+tc(n.t))}</h4>${foot(fL(n.weight?weightHTML(n.weight,sk):"",plChip),fR(threadCount(n)))}</div>`}
+  case"align":return alignCardHTML(n,head(ebHTML(n)),"");
   case"question":{const on=byId(n.on);return `<div class="in"><span class="qmark" aria-hidden="true">?</span>${head(ebHTML(n))}<h4 data-edit="text">${esc(n.text)}</h4>${foot("",fR(threadCount(n)))}</div>`}
   case"research":{/* one layer of a dig: the question on top, Scout's answer below; the answer stays editable, and empty when no AI is connected */
     const busy=!!n.digBusy,txt=String(n.text||""),kept=digKeptOf(n).length;
@@ -8583,7 +8681,7 @@ function nodeLineageSig(n){
   return refs.map(r=>`${r.sourceId}:${r.depType}:${r.status}:${r.node?(r.node.rev||1)+":"+digest(r.node):"T"}`).join("|");
 }
 
-function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.wSug&&n.wSug.w,n.splitSug&&n.splitSug.at,!!n.fmtOff,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
+function sigOf(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([n.type==="align"?JSON.stringify([n.step,n.state,n.qs,n.take,outputsOf(n.id).length]):"",isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.wSug&&n.wSug.w,n.splitSug&&n.splitSug.at,!!n.fmtOff,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
   n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(n.whyYes||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="direction"&&dirFlagHTML(n),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
 const iframeDocs=new Map();
 function advPinHTML(n){
@@ -12364,37 +12462,318 @@ async function clarifyFork(idea,brief){
   const prompt=`The idea: "${ideaText}"\n${brief?`The designer added: "${brief}"\n`:""}The idea is still open. Ask the designer three quick questions whose answers would most change what this becomes${kind==="game"?" (for example who the player is, when and where it happens, and how it plays)":""}. Each question has 4 short, concrete options under 8 words, as different from each other as possible. ${strict?aboutIdea:`Use only real places and periods${home.length?`, and stay in ${home.join(" / ")}`:""}.`} ${langLine(textLang(ideaText))}\nReturn {"questions": [{"q": "...", "options": ["...", "...", "...", "..."]}, ... 3 items]}`;
   const res=await runAgent("muse",{read:[idea],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:sys,prompt,json:true,stance:"create",maxTokens:900,small:{system:sys,prompt},check:v=>clarifyProblems(v,strict?ctx:null)},()=>({questions:fallback}))});
   if(!res)return null;
-  const got=(Array.isArray(res.v?.questions)?res.v.questions:[]).map(q=>({q:String(q?.q||"").trim(),options:(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4)})).filter(q=>q.q&&q.options.length>=2).slice(0,3);
+  const got0=(Array.isArray(res.v?.questions)?res.v.questions:[]).map(q=>({q:String(q?.q||"").trim(),options:(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4)})).filter(q=>q.q&&q.options.length>=2).slice(0,3);
   /* whichever engine answered, a question whose options bring in places, years or companies the idea never mentioned is dropped */
-  const kept=strict?got.filter(q=>!clarifyInvented(q,ctx)):got;
-  if(kept.length<2)return clarifyDialog(fallback);
+  const kept=strict?got0.filter(q=>!clarifyInvented(q,ctx)):got0;
+  if(kept.length<2)return {items:fallback,live:false};
   const items=[...kept];for(const f of fallback){if(items.length>=3)break;if(!items.some(x=>x.q.toLowerCase()===f.q.toLowerCase()))items.push(f)}
-  return clarifyDialog(items);
+  return {items,live:!!res.live};
 }
-function clarifyDialog(items){
-  return new Promise(resolve=>{
-    /* a "close" event is queued when a dialog closes; if another question dialog has opened by the time it arrives,
-       it is stale and must not close the new one, so the listener only acts when the dialog really is closed */
-    let done=false;const onClose=()=>{if(!dlg.open)finish(null)};
-    const finish=v=>{if(done)return;done=true;dlg.removeEventListener("close",onClose);delete dlg.dataset.clarify;if(dlg.open)dlg.close();resolve(v)};
-    dlg.className="sheet";dlg.dataset.clarify="1";
-    dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b>${L("Before Strategist branches this","在 Strategist 发散之前")}</b><small>${L("Pick what fits, or write your own. Skip any question you are unsure about.","选出合适的，或自己写；拿不准的可以不选。")}</small></div><button type="button" class="sh-x" data-clarify-x aria-label="${L("Close","关闭")}">${ic("x")}</button></header>
-    <div class="sh-main clar">${items.map((q,i)=>`<div class="clar-q" role="group" aria-label="${esc(q.q)}" data-clarify-q="${i}"><b>${esc(q.q)}</b><div class="clar-opts">${q.options.map((o,j)=>`<button type="button" class="cbtn clar-opt" data-clarify-opt="${j}" aria-pressed="false">${esc(o)}</button>`).join("")}</div><input type="text" class="clar-own" data-clarify-own maxlength="140" autocomplete="off" spellcheck="false" placeholder="${esc(L("Or write your own…","或者自己写…"))}" aria-label="${esc(q.q)}: ${esc(L("your own answer","你自己的答案"))}"></div>`).join("")}</div>
-    <footer class="sh-foot"><button type="button" class="cbtn" data-clarify-skip>${L("Skip, just branch","跳过，直接发散")}</button><span class="sp"></span><button type="button" class="cbtn solid" data-clarify-go>${L("Branch with these","按这些发散")}</button></footer>`;
-    qsa("[data-clarify-opt]",dlg).forEach(b=>b.onclick=()=>{const g=b.closest("[data-clarify-q]");const on=b.getAttribute("aria-pressed")!=="true";qsa("[data-clarify-opt]",g).forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed",String(on));const own=qs("[data-clarify-own]",g);if(own&&on){own.value="";own.classList.remove("has")}});
-    /* the options are suggestions, not the only answers: each question also takes the designer's own words */
-    qsa("[data-clarify-own]",dlg).forEach(inp=>{
-      inp.addEventListener("input",()=>{const typed=!!inp.value.trim();inp.classList.toggle("has",typed);if(typed)qsa("[data-clarify-opt]",inp.closest("[data-clarify-q]")).forEach(x=>x.setAttribute("aria-pressed","false"))});
-      inp.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing&&e.keyCode!==229){e.preventDefault();qs("[data-clarify-go]",dlg).click()}});
-    });
-    qs("[data-clarify-go]",dlg).onclick=()=>finish(qsa("[data-clarify-q]",dlg).map((g,i)=>{const typed=clip(qs("[data-clarify-own]",g)?.value||"",140);if(typed)return {q:items[i].q,a:typed};const b=qs('[data-clarify-opt][aria-pressed="true"]',g);return b?{q:items[i].q,a:items[i].options[+b.dataset.clarifyOpt]}:null}).filter(Boolean));
-    qs("[data-clarify-skip]",dlg).onclick=()=>finish([]);
-    qs("[data-clarify-x]",dlg).onclick=()=>finish(null);
-    dlg.addEventListener("close",onClose);
-    if(!dlg.open)dlg.showModal();
-    qs("[data-clarify-opt]",dlg)?.focus();
-  });
+/* ── Before drawing: a card on the canvas that settles, before anything is generated, the choices words can't ──
+   Learned from ChatGPT's Intelligent UI (a fixed set of components the model only fills) and from Chance AI
+   (one takeaway first, visuals taken from the subject itself). The model never writes markup: it fills one of
+   five block kinds (spectrum, pick, flow, compare, text), and the app draws every block itself, so a 9B model
+   and the built-in rules give the same look. One question shows at a time; answers stay on the card, and what
+   gets made links back to it, so the choice and its reasons stay on the board. */
+let ALIGN_BEFORE=true; // the smoke test turns it off outside the section that tests it
+const AL_KINDS=["spectrum","pick","flow","compare","text"];
+const AL_GLYPH={
+  grid:'<rect x="12" y="12" width="56" height="56" rx="6"/><rect x="19" y="19" width="18" height="18" rx="3"/><rect x="43" y="19" width="18" height="18" rx="3"/><rect x="19" y="43" width="18" height="18" rx="3"/><rect x="43" y="43" width="18" height="18" rx="3"/>',
+  list:'<rect x="12" y="12" width="56" height="56" rx="6"/><path d="M20 24h40M20 36h40M20 48h40M20 60h24"/>',
+  hero:'<rect x="12" y="12" width="56" height="56" rx="6"/><rect x="19" y="19" width="42" height="26" rx="3"/><path d="M19 53h30M19 61h20"/>',
+  split:'<rect x="12" y="12" width="56" height="56" rx="6"/><path d="M40 12v56"/><path d="M18 22h16M18 30h12M46 22h16M46 30h12M46 38h14"/>',
+  portrait:'<rect x="27" y="10" width="26" height="60" rx="5"/><path d="M33 58h14" opacity=".5"/>',
+  landscape:'<rect x="8" y="24" width="64" height="34" rx="5"/><path d="M14 50h18" opacity=".5"/>',
+  square:'<rect x="16" y="16" width="48" height="48" rx="5"/><path d="M22 54h16" opacity=".5"/>'
+};
+const alGlyph=(k,cls="al-glyph")=>AL_GLYPH[k]?`<svg class="${cls}" viewBox="0 0 80 80" aria-hidden="true">${AL_GLYPH[k]}</svg>`:"";
+/* Pictures only where one drawing is true for every product: screen layouts and video frames. A lamp, a pair of
+   glasses and a phone have nothing in common to draw, so a physical form is offered in words, never as a glyph
+   that looks like the wrong thing. */
+/* the built-in questions: one per kind of thing being made, written for each language */
+const AL_TEMPLATES={
+  object:{en:[
+    {kind:"spectrum",key:"Feel",q:"Which feel is closer?",left:"Warm and soft",right:"Cool and technical",reads:["Warm light, natural materials, soft edges","Warm, with a few precise details","Cool tones, metal and crisp edges"]},
+    {kind:"pick",key:"Form",q:"Which form should we start from?",options:[{label:"Rounded"},{label:"Upright"},{label:"Flat"},{label:"Angular"}]},
+    {kind:"text",key:"Must keep",q:"Anything it must keep?"}],
+  zh:[
+    {kind:"spectrum",key:"感觉",q:"更接近哪种感觉？",left:"温暖柔和",right:"冷静精密",reads:["暖光，天然材料，圆润边角","偏暖，带一点精密细节","冷色调，金属和利落的边"]},
+    {kind:"pick",key:"形态",q:"从哪种形态开始？",options:[{label:"圆润"},{label:"挺拔"},{label:"扁平"},{label:"硬朗"}]},
+    {kind:"text",key:"必须保留",q:"有什么必须保留的吗？"}]},
+  screen:{en:[
+    {kind:"spectrum",key:"Feel",q:"Which feel is closer?",left:"Calm and spacious",right:"Dense and powerful",reads:["Lots of space, one thing at a time","Room to breathe, the key tools in reach","Everything on one screen, built for experts"]},
+    {kind:"pick",key:"Layout",q:"Which layout should we start from?",options:[{label:"Grid",sketch:"grid"},{label:"List",sketch:"list"},{label:"One big picture",sketch:"hero"},{label:"Split view",sketch:"split"}]},
+    {kind:"text",key:"Must keep",q:"Anything it must keep?"}],
+  zh:[
+    {kind:"spectrum",key:"感觉",q:"更接近哪种感觉？",left:"安静留白",right:"信息密集",reads:["大量留白，一次只做一件事","留有余地，常用工具随手可得","一屏看全，为熟手设计"]},
+    {kind:"pick",key:"布局",q:"从哪种布局开始？",options:[{label:"网格",sketch:"grid"},{label:"列表",sketch:"list"},{label:"一张大图",sketch:"hero"},{label:"左右分栏",sketch:"split"}]},
+    {kind:"text",key:"必须保留",q:"有什么必须保留的吗？"}]},
+  video:{en:[
+    {kind:"spectrum",key:"Pace",q:"Which pace is closer?",left:"Slow and quiet",right:"Fast and punchy",reads:["Long takes, room to look","A steady rhythm with a few cuts","Quick cuts that land on the beat"]},
+    {kind:"pick",key:"Frame",q:"Where will people watch it?",options:[{label:"Phone, upright",sketch:"portrait"},{label:"Wide screen",sketch:"landscape"},{label:"Square feed",sketch:"square"}]},
+    {kind:"text",key:"Must keep",q:"Anything it must keep?"}],
+  zh:[
+    {kind:"spectrum",key:"节奏",q:"更接近哪种节奏？",left:"缓慢安静",right:"快速有力",reads:["长镜头，留时间看","节奏平稳，偶尔切换","快切，卡在节拍上"]},
+    {kind:"pick",key:"画幅",q:"大家会在哪里看？",options:[{label:"手机竖屏",sketch:"portrait"},{label:"横屏宽画面",sketch:"landscape"},{label:"方形信息流",sketch:"square"}]},
+    {kind:"text",key:"必须保留",q:"有什么必须保留的吗？"}]}
+};
+const AL_SCREEN=/\b(app|apps|screen|screens|website|site|web ?page|landing|dashboard|ui|interface|onboarding|checkout|signup|sign-up|login)\b|界面|页面|网站|网页|应用|小程序|仪表盘|后台|注册|登录|结账/i;
+function alignSubject(kind,prompt){return kind==="video"?"video":AL_SCREEN.test(prompt)?"screen":"object"}
+/* when to ask first: something is about to be generated, the request is short enough that big choices are still
+   open, nothing already settled them, and it isn't a retry or a variation of something made before */
+function alignWanted(kind,prompt,from){
+  if(!ALIGN_BEFORE||board.alignOff)return false;
+  const p=String(prompt||"").trim();if(!p)return false;
+  if(from&&["image","frame","recording","align","proof"].includes(from.type))return false;
+  const words=p.replace(/[一-鿿]/g," x ").split(/\s+/).filter(Boolean).length;
+  if(words>(textLang(p)==="zh"?24:14))return false;
+  return !board.nodes.some(n=>n.type==="align"&&!n.tombstone&&n.then?.prompt===p&&n.state!=="open");
 }
+function alignClean(q,lang){
+  const s=x=>String(x??"").replace(/\s+/g," ").trim();
+  const kind=AL_KINDS.includes(String(q?.kind||"").toLowerCase())?String(q.kind).toLowerCase():(Array.isArray(q?.options)?"pick":"");
+  if(!kind)return null;
+  const o={kind,q:clip(s(q.q),90),key:clip(s(q.key),16)};if(!o.q)return null;
+  if(kind==="spectrum"){o.left=clip(s(q.left),28);o.right=clip(s(q.right),28);o.reads=(Array.isArray(q.reads)?q.reads:[]).map(x=>clip(s(x),70)).filter(Boolean).slice(0,3);o.v=.5;
+    if(!o.left||!o.right)return null}
+  if(kind==="pick"){o.options=(Array.isArray(q.options)?q.options:[]).map(x=>typeof x==="string"?{label:x}:x).map(x=>({label:clip(s(x?.label),40),...(AL_GLYPH[x?.sketch]?{sketch:x.sketch}:{}),...(x?.img?{img:x.img}:{})})).filter(x=>x.label).slice(0,4);o.a=null;o.own="";
+    if(o.options.length<2)return null}
+  if(kind==="flow"){o.steps=(Array.isArray(q.steps)?q.steps:[]).map(x=>typeof x==="string"?{label:x}:x).map(x=>({label:clip(s(x?.label),24),on:x?.on!==false})).filter(x=>x.label).slice(0,6);o.why=clip(s(q.why),140);
+    if(o.steps.length<2)return null}
+  if(kind==="compare"){o.cols=(Array.isArray(q.cols)?q.cols:[q.left,q.right]).map(s).filter(Boolean).slice(0,2);o.rows=(Array.isArray(q.rows)?q.rows:[]).map(r=>({dim:clip(s(r?.dim),24),a:clip(s(r?.a),40),b:clip(s(r?.b),40)})).filter(r=>r.dim&&(r.a||r.b)).slice(0,4);o.a=null;
+    if(o.cols.length<2||!o.rows.length)return null}
+  if(kind==="text")o.own="";
+  return o;
+}
+/* what the model must get right; anything left wrong falls back to the built-in questions */
+function alignProblems(v,ctx){
+  const qs=Array.isArray(v?.questions)?v.questions:null;if(!qs)return ['reply with {"questions": [...]}'];
+  const out=[];if(qs.length<2||qs.length>3)out.push("ask 2 or 3 questions");
+  qs.forEach((q,i)=>{const k=String(q?.kind||"");
+    if(!AL_KINDS.includes(k))out.push(`question ${i+1}: "kind" must be one of ${AL_KINDS.join(", ")}`);
+    if(!String(q?.q||"").trim())out.push(`question ${i+1} needs "q"`);
+    if(k==="spectrum"&&(!q.left||!q.right||String(q.left).split(/\s+/).length>5||String(q.right).split(/\s+/).length>5))out.push(`question ${i+1}: "left" and "right" are 2-4 words each`);
+    if(k==="spectrum"&&(!Array.isArray(q.reads)||q.reads.length!==3))out.push(`question ${i+1}: "reads" has exactly 3 short lines`);
+    if(k==="pick"){const o=Array.isArray(q.options)?q.options:[];if(o.length<2||o.length>4)out.push(`question ${i+1} needs 2-4 options`);if(o.some(x=>x?.sketch&&!AL_GLYPH[x.sketch]))out.push(`question ${i+1}: "sketch" must be one of ${Object.keys(AL_GLYPH).join(", ")}`)}
+    const bad=inventedSpecifics(JSON.stringify(q),ctx);if(bad)out.push(`question ${i+1} brings in "${bad}", which the request never mentioned`)});
+  return out;
+}
+async function alignQuestions(kind,prompt,from){
+  const lang=textLang(prompt),subj=alignSubject(kind,prompt),fallback=()=>({questions:AL_TEMPLATES[subj][lang]});
+  const ctx=`${prompt} ${from?fullTextOf(from)||from.text||"":""}`;
+  const sketches=Object.keys(AL_GLYPH).join(", ");
+  const sys=`You are Wright on a small creative crew, about to make ${kind==="video"?"a video":"concept images"} for a designer. First ask 2 or 3 quick questions whose answers would most change what you make, and that words alone settle poorly. Use "spectrum" (a slider between two ends) for feel, mood or pace. Use "pick" for form, layout or framing. Only for a screen layout or a video frame, give each option a "sketch" from: ${sketches}; for anything else leave "sketch" out. End with a "text" question about anything it must keep. Ask about the request itself; never bring in places, years, brands or people it does not mention. Plain, concrete words.`;
+  const p=`The request: "${prompt}"\n${from?`It is about this card: "${clip(fullTextOf(from)||from.text||titleOf(from),300)}"\n`:""}Return {"questions": [{"kind": "spectrum", "key": "one word", "q": "...", "left": "2-4 words", "right": "2-4 words", "reads": ["what the left end looks like", "the middle", "the right end"]}, {"kind": "pick", "key": "one word", "q": "...", "options": [{"label": "2-4 words"}]}, {"kind": "text", "key": "one or two words", "q": "..."}]}. ${langLine(lang)}`;
+  const res=await runAgent("wright",{read:from?[from]:[],places:[],label:L("asking first","先问几个问题"),work:()=>askAI({system:sys,prompt:p,json:true,stance:"create",maxTokens:900,small:{system:sys,prompt:p},check:v=>alignProblems(v,ctx)},fallback)});
+  if(!res)return null;
+  let qs=(Array.isArray(res.v?.questions)?res.v.questions:[]).map(q=>alignClean(q,lang)).filter(Boolean).slice(0,3);
+  if(qs.length<2)qs=fallback().questions.map(q=>alignClean(q,lang));
+  return {qs,live:!!res.live};
+}
+/* In "ref" mode Scout first finds one real photo per option on Wikimedia Commons and the drawing is traced from it. */
+async function alPhoto(query){
+  const u=`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query+" filetype:bitmap")}&gsrnamespace=6&gsrlimit=4&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=320&format=json&origin=*`;
+  try{const r=await fetch(u,{signal:timeoutSignal(6500)});if(!r.ok)return null;const d=await r.json();
+    const p=Object.values(d.query?.pages||{}).sort((a,b)=>(a.index||0)-(b.index||0)).map(p=>p.imageinfo?.[0]).find(i=>i&&/^https:\/\//.test(i.thumburl||"")&&!/\.(svg|tiff?|pdf)(\?|$)/i.test(i.thumburl));
+    if(!p)return null;const m=p.extmetadata||{},strip=x=>String(x||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+    return {img:p.thumburl,src:/^https:\/\//.test(p.descriptionurl||"")?p.descriptionurl:"",credit:[strip(m.Artist?.value),strip(m.LicenseShortName?.value)].filter(Boolean).join(" · ")||"Wikimedia Commons"};
+  }catch{return null}
+}
+/* Drawings the model writes as vector code, so they can answer the controls: a pick option gets one line drawing; a
+   slider gets one drawing for each end, and the app cross-fades between them (and shifts the light colour) as it
+   moves. The app keeps only plain shapes and geometry and draws them in its own hairline style, so every model's
+   drawing looks like the rest of the card; anything else (colours, styles, scripts, links) is dropped. */
+let ALIGN_ART="plain"; // "plain" draws from words, "ref" first finds a photo per option and draws from it, "off" draws nothing
+const AL_TAGS=new Set(["g","path","rect","circle","ellipse","line","polyline","polygon"]);
+const AL_ATTRS=new Set(["d","x","y","width","height","rx","ry","cx","cy","r","x1","y1","x2","y2","points","opacity","transform"]);
+function alSafeSVG(src){
+  const raw=String(src||"").trim();if(!raw||raw.length>6000)return "";
+  let doc;try{doc=new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${raw.replace(/^<svg[^>]*>|<\/svg>\s*$/gi,"")}</svg>`,"image/svg+xml")}catch{return ""}
+  if(doc.querySelector("parsererror"))return "";
+  let count=0;
+  const walk=el=>{const tag=el.localName;if(!AL_TAGS.has(tag)||++count>40)return "";
+    const at=[...el.attributes].filter(a=>AL_ATTRS.has(a.name)&&/^[-\d.,\s a-zA-Z()]*$/.test(a.value)&&!(a.name==="transform"&&!/^(\s*(translate|scale|rotate)\([-\d.,\s]+\)\s*)+$/.test(a.value))).map(a=>` ${a.name}="${a.value.replace(/"/g,"")}"`).join("");
+    const kids=[...el.children].map(walk).join("");
+    return tag==="g"?(kids?`<g${at}>${kids}</g>`:""):`<${tag}${at}/>`};
+  const out=[...doc.documentElement.children].map(walk).join("");
+  return count>=1&&count<=40&&/<(path|rect|circle|ellipse|line|polyline|polygon)\b/.test(out)?out:"";
+}
+const alArt=(art,cls="al-glyph")=>art?`<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">${art}</svg>`:"";
+async function alignDraw(n,subject){
+  if(ALIGN_ART==="off"||!n||connSummary().engine==="rules")return;
+  const pick=(n.qs||[]).find(x=>x.kind==="pick"&&!x.options.some(o=>o.sketch)),spec=(n.qs||[]).find(x=>x.kind==="spectrum");
+  if(!pick&&!spec)return;
+  const t0=performance.now();let refs=[];
+  if(ALIGN_ART==="ref"&&pick){const found=await Promise.all(pick.options.map(o=>alPhoto(`${o.label} ${subject}`)));if(found.every(Boolean))refs=found}
+  const imgs=refs.length?(await Promise.all(refs.map(r=>nodeImageDataURL({data:r.img},384)))).filter(Boolean):[];
+  const ask=[pick?`"pick": one drawing for each of these options, in order: ${pick.options.map(o=>`"${o.label}"`).join(", ")}${imgs.length===pick.options.length?" (photo "+pick.options.map((_,i)=>i+1).join(", ")+" shows each one in turn: trace its silhouette)":""}`:"",spec?`"left" and "right": the same ${subject} drawn at each end of "${spec.left}" ↔ "${spec.right}"`:""].filter(Boolean).join("; ");
+  const sys=`You draw simple line drawings as SVG code for a designer's card. Each drawing is the inside of an <svg viewBox="0 0 100 100">: 3 to 12 elements, only <path>, <rect>, <circle>, <ellipse>, <line>, <polyline>, <polygon> and <g>, outlines only, no text, no colours, no styles. Centre the object, fill about 70% of the box, front view, clear silhouette, a few inner lines for key parts.`;
+  const p=`The object: ${subject}.\nDraw ${ask}.\nReturn {${pick?`"pick": ["<path d=\\"...\\"/>...", ...]`:""}${pick&&spec?", ":""}${spec?`"left": "...", "right": "..."`:""}}.`;
+  const res=await askAI({system:sys,prompt:p,images:imgs,json:true,maxTokens:2600,quiet:true,stance:"create",small:{system:sys,prompt:p},check:v=>{const out=[];if(pick&&(!Array.isArray(v?.pick)||v.pick.length!==pick.options.length||v.pick.some(x=>!alSafeSVG(x))))out.push(`"pick" needs ${pick.options.length} drawings made only of the allowed shapes`);if(spec&&(!alSafeSVG(v?.left)||!alSafeSVG(v?.right)))out.push(`"left" and "right" each need a drawing made only of the allowed shapes`);return out}},()=>null).catch(()=>null);
+  const v=res?.live?res.v:null;   /* askAI answers {v, live}; a fallback draws nothing, so the options stay in words */
+  if(!v||!byId(n.id))return;
+  const ms=Math.round(performance.now()-t0);
+  if(pick&&Array.isArray(v.pick)){const arts=v.pick.map(alSafeSVG);if(arts.length===pick.options.length&&arts.every(Boolean))pick.options.forEach((o,i)=>{o.art=arts[i];if(refs[i]){o.ref=refs[i].src;o.credit=refs[i].credit}})}
+  if(spec){const l=alSafeSVG(v.left),r=alSafeSVG(v.right);if(l&&r)spec.art={left:l,right:r}}
+  n.drawn={ms,ref:refs.length>0,by:connSummary().engine};
+  n.updated=NOW();renderAll();persist();
+}
+function alignTitle(kind,prompt){const t=clip(String(prompt||"").replace(/^(?:please\s+)?(?:draw|render|paint|sketch|make|generate|create)\s+(?:me\s+)?(?:an?\s+|some\s+|\d+\s+)?/i,"").replace(/^(?:画|生成|做)(?:一?[张个幅段])?/,""),48);return t?t[0].toUpperCase()+t.slice(1):L("New concepts","新概念")}
+function alignCreate({qs,then,from=null,by="wright",title,live=null}){
+  checkpoint();
+  const w=W.align,h=440,b=from?{x:from.x,y:from.y,w:nodeW(from)}:null,spot=b?freeSpot(b.x+b.w+60,b.y,w,h,[]):planCenter(w,h,0,0);
+  const n=withProv({engine:live===false?"rules":live?"model":undefined},()=>node("align",{title,qs,step:0,state:"open",then,by,status:"ink",...(from?{_src:from.id}:{})},spot));
+  if(from){const e=edge(from.id,n.id,"derive","live");if(e)freshEdges.add(e.id);setTimeout(()=>freshEdges.clear(),1200)}
+  log(by,`Asked first before ${then.act==="fork"?"branching":"making"} <b>${esc(title)}</b>`,n.id);
+  sel=[n.id];renderAll();persist();follow(from?[from,n]:[n]);
+  return n;
+}
+async function alignStart(kind,prompt,from=null){
+  const got=await alignQuestions(kind,prompt,from);if(!got)return;
+  const n=alignCreate({qs:got.qs,then:{act:kind,prompt,count:kind==="image"?clamp(genOpts.count,1,4):1},from,title:alignTitle(kind,prompt),live:got.live});
+  if(alignSubject(kind,prompt)==="object")alignDraw(n,alignTitle(kind,prompt).toLowerCase());
+  return n;
+}
+/* the place every generate request goes through: ask first when it helps, otherwise make it straight away */
+function alignOrMake(kind,prompt,from,extra={}){
+  if(alignWanted(kind,prompt,from))return alignStart(kind,prompt,from);
+  return kind==="video"?generateVideo(prompt,{from,...extra}):generateImages(prompt,{from});
+}
+const alQ=n=>n?.qs?.[clamp(n.step||0,0,(n.qs?.length||1)-1)];
+function alSpecWord(q){const v=q.v??.5;return v<.34?L(`Mostly ${q.left.toLowerCase()}`,`偏${q.left}`):v>.66?L(`Mostly ${q.right.toLowerCase()}`,`偏${q.right}`):L(`Between ${q.left.toLowerCase()} and ${q.right.toLowerCase()}`,`介于${q.left}和${q.right}之间`)}
+const alRead=q=>q.reads?.[(q.v??.5)<.34?0:(q.v??.5)>.66?2:1]||"";
+/* one answer per question, in words; a skipped or empty question has none */
+function alAnswer(q){
+  if(!q||q.skipped)return "";
+  if(q.kind==="spectrum")return q.touched?alSpecWord(q):"";
+  if(q.kind==="pick")return String(q.own||"").trim()||(q.a!=null?q.options[q.a]?.label:"")||"";
+  if(q.kind==="flow"){const on=q.steps.filter(s=>s.on).map(s=>s.label);return on.length?on.join(" → "):""}
+  if(q.kind==="compare")return q.a!=null?q.cols[q.a]:"";
+  return String(q.own||"").trim();
+}
+const alignAnswers=n=>(n.qs||[]).map(q=>({q:q.q,key:q.key,a:alAnswer(q)})).filter(x=>x.a);
+function alignBrief(n){
+  return (n.qs||[]).map(q=>{const a=alAnswer(q);if(!a)return "";const k=q.key||q.q;
+    if(q.kind==="spectrum")return `${k}: ${alRead(q)||a}`;
+    if(q.kind==="flow"){const off=q.steps.filter(s=>!s.on).map(s=>s.label);return `${k}: only these steps, in order: ${a}${off.length?`; leave out ${off.join(", ")}`:""}`}
+    return `${k}: ${a}`}).filter(Boolean).join(". ");
+}
+function alignTake(n){
+  if(n.take)return n.take;
+  const xs=alignAnswers(n).filter(x=>!/must|保留/i.test(x.key||"")).map(x=>x.a);
+  if(!xs.length)return "";
+  const zh=uiLang()==="zh"||textLang(xs.join(""))==="zh";
+  return zh?xs.join("，")+"。":(xs.join(", ")+".").replace(/^./,c=>c.toUpperCase());
+}
+function alignPrimaryLabel(n){
+  const t=n.then||{},c=t.count||1,again=n.state==="agreed"&&outputsOf(n.id).length;
+  if(t.act==="fork")return again?L("Branch again","再发散一次"):L("Branch with these","按这些发散");
+  if(t.act==="video")return again?L("Make it again","再做一次"):L("Make the video","生成视频");
+  return again?L("Draw again","再画一次"):L(`Draw ${c} concept${c>1?"s":""}`,`画 ${c} 张概念图`);
+}
+function alignEyebrow(n){
+  if(n.state==="agreed")return L("Agreed","已对齐");
+  return n.then?.act==="fork"?L("Before branching","发散之前"):L("Before drawing","开画之前");
+}
+function alBlockHTML(n,q,i){
+  if(q.kind==="spectrum"){
+    const v=q.v??.5,viz=q.art?`<div class="al-viz"><span class="al-glow" style="opacity:${(.25+.5*(1-v)).toFixed(2)}"></span>${alArt(q.art.left,"al-glyph al-big al-l").replace("<svg",`<svg style="opacity:${(1-v).toFixed(2)}"`)}${alArt(q.art.right,"al-glyph al-big al-r").replace("<svg",`<svg style="opacity:${v.toFixed(2)}"`)}</div>`:"";
+    return `<div class="al-panel al-spec">${viz}<div class="al-track" data-al-track="${i}" role="slider" tabindex="0" aria-label="${esc(q.q)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(v*100)}" aria-valuetext="${esc(alSpecWord(q))}"><span class="al-line"></span><i style="left:0"></i><i style="left:50%"></i><i style="left:100%"></i><span class="al-knob" style="left:${v*100}%"></span></div><div class="al-poles"><span>${esc(q.left)}</span><span>${esc(q.right)}</span></div>${q.reads?.length?`<p class="al-reads">${esc(alRead(q))}</p>`:""}</div>`;
+  }
+  if(q.kind==="pick"){
+    const vis=q.options.every(o=>o.sketch||o.art);
+    return `<div class="al-picks${vis?"":" words"}" style="--n:${q.options.length}">${q.options.map((o,j)=>`<button type="button" class="al-pick${q.a===j&&!q.own?" on":""}" data-a="al-pick" data-i="${j}" aria-pressed="${q.a===j&&!q.own}">${o.art?alArt(o.art):alGlyph(o.sketch)}<b>${esc(o.label)}</b></button>`).join("")}</div><input class="al-own" data-al-own="${n.id}" maxlength="140" autocomplete="off" spellcheck="false" value="${esc(q.own||"")}" placeholder="${esc(L("Or describe your own…","或者自己描述…"))}">`;
+  }
+  if(q.kind==="flow")return `<div class="al-panel al-flow">${q.steps.map((s,j)=>`${j?'<svg class="al-arrow" viewBox="0 0 14 10" aria-hidden="true"><path d="M1 5h11M9 2l3 3-3 3"/></svg>':""}<button type="button" class="al-step${s.on?"":" off"}" data-a="al-step" data-i="${j}" aria-pressed="${s.on}"><span class="al-scr">${alScreen(j)}<span class="al-tog">${s.on?'<svg viewBox="0 0 10 10"><path d="M2 5.2l2 2 4-4.4"/></svg>':""}</span></span><b>${esc(s.label)}</b></button>`).join("")}</div>${q.why?`<p class="al-why">${esc(q.why)}</p>`:""}`;
+  if(q.kind==="compare")return `<div class="al-cmp" style="--c:2"><span></span>${q.cols.map((c,j)=>`<button type="button" class="al-col${q.a===j?" on":""}" data-a="al-col" data-i="${j}" aria-pressed="${q.a===j}">${esc(c)}</button>`).join("")}${q.rows.map(r=>`<span class="k">${esc(r.dim)}</span><span>${esc(r.a)}</span><span>${esc(r.b)}</span>`).join("")}</div>`;
+  return `<input class="al-own al-text" data-al-own="${n.id}" maxlength="140" autocomplete="off" spellcheck="false" value="${esc(q.own||"")}" placeholder="${esc(L("Type it here, or skip","写在这里，或者跳过"))}">`;
+}
+function alScreen(j){return ['<i class="b"></i><i></i><i class="s"></i><i class="b"></i><i class="c"></i>','<i></i><i class="b t"></i><i class="s"></i><i class="c"></i>','<i></i><i class="s"></i><i></i><i class="s"></i><i class="c"></i>','<i class="s"></i><i class="b"></i><i></i><i class="c"></i>','<i class="b x"></i><i class="s"></i><i class="c"></i>','<i></i><i class="b"></i><i class="s"></i><i class="c"></i>'][j%6]}
+function alignCardHTML(n,head,foot){
+  const qs=n.qs||[];
+  if(n.state!=="open"){
+    const rows=qs.map(q=>{const a=alAnswer(q);if(!a)return "";const po=q.kind==="pick"&&q.a!=null&&!q.own?q.options[q.a]:null,pk=po?.sketch||"";
+      const mini=q.kind==="spectrum"?`<svg class="al-mini" viewBox="0 0 44 28" aria-hidden="true"><path d="M4 14h36"/><circle cx="${4+36*(q.v??.5)}" cy="14" r="4"/></svg>`:po?.art?alArt(po.art,"al-mini"):pk?alGlyph(pk,"al-mini"):"";
+      const yours=(q.kind==="text"||(q.kind==="pick"&&q.own))?`<span class="al-yours">${esc(L("your words","你写的"))}</span>`:"";
+      return `<div class="al-row"><span class="k">${esc(q.key||q.q)}</span><span class="v">${esc(a)}${yours}</span>${mini}</div>`}).join("");
+    const take=alignTake(n);
+    return `<div class="in al">${head}<h4 class="al-title">${esc(n.title)}</h4>${take?`<p class="al-take">${esc(take)}</p>`:""}${rows?`<div class="al-rows">${rows}</div>`:`<p class="al-none">${esc(L("Skipped: made without extra choices.","已跳过：没有额外的选择。"))}</p>`}<div class="al-foot"><button type="button" class="cbtn" data-a="al-change">${esc(L("Change","修改"))}</button><span class="sp"></span><button type="button" class="cbtn solid" data-a="al-again">${esc(alignPrimaryLabel(n))}</button></div>${foot}</div>`;
+  }
+  const i=clamp(n.step||0,0,qs.length-1),q=qs[i],last=i===qs.length-1;
+  const pips=qs.length>1?`<span class="al-pips" role="tablist">${qs.map((_,j)=>`<button type="button" class="al-pip${j===i?" on":""}" data-a="al-go" data-i="${j}" aria-label="${esc(L(`Question ${j+1}`,`第 ${j+1} 问`))}"></button>`).join("")}</span>`:"";
+  return `<div class="in al">${head}<h4 class="al-title">${esc(n.title)}</h4><div class="al-q"><span>${esc(q.q)}</span>${pips}</div>${alBlockHTML(n,q,i)}<div class="al-foot"><button type="button" class="al-skip" data-a="al-skip">${esc(L("Skip","跳过"))}</button><span class="sp"></span><button type="button" class="cbtn solid" data-a="${last?"al-agree":"al-next"}">${esc(last?alignPrimaryLabel(n):L("Next","下一个"))}</button></div>${foot}</div>`;
+}
+function alignAct(a,n,el){
+  if(!n||n.type!=="align")return;
+  const q=alQ(n),i=el?.dataset?.i!=null?+el.dataset.i:null,save=()=>{n.updated=NOW();renderAll();persist()};
+  if(a==="al-pick"&&q?.kind==="pick"){q.a=q.a===i?null:i;q.own="";return save()}
+  if(a==="al-step"&&q?.kind==="flow"){const s=q.steps[i];if(s){if(s.on&&q.steps.filter(x=>x.on).length<=1)return toast(L("Keep at least one step.","至少保留一步。"));s.on=!s.on}return save()}
+  if(a==="al-col"&&q?.kind==="compare"){q.a=q.a===i?null:i;return save()}
+  if(a==="al-go"){n.step=clamp(i,0,n.qs.length-1);return save()}
+  if(a==="al-skip"){if(q)q.skipped=true;if(n.step<n.qs.length-1){n.step++;return save()}return alignAgree(n)}
+  if(a==="al-next"){if(q)delete q.skipped;n.step=Math.min(n.step+1,n.qs.length-1);return save()}
+  if(a==="al-agree"){if(q)delete q.skipped;return alignAgree(n)}
+  if(a==="al-change"){checkpoint();n.state="open";n.step=0;delete n.take;return save()}
+  if(a==="al-again")return alignRun(n);
+}
+function alignAgree(n){
+  checkpoint();n.state=alignAnswers(n).length?"agreed":"skipped";n.updated=NOW();sfx?.("tick");
+  log("you",n.state==="agreed"?`Agreed on <b>${esc(n.title)}</b>: ${esc(clip(alignAnswers(n).map(x=>x.a).join("; "),120))}`:`Skipped the questions for <b>${esc(n.title)}</b>`,n.id);
+  noteChange({op:"align",id:n.id,type:"align",title:clip(n.title,60),who:"you",engine:"human",...(n.state==="agreed"?{reason:clip(alignBrief(n),120)}:{})});
+  renderAll();persist();
+  return alignRun(n);
+}
+async function alignRun(n){
+  const t=n.then||{},brief=alignBrief(n);
+  if(t.act==="fork"){
+    const idea=byId(t.idea);if(!idea)return toast(L("The idea it was about is gone.","相关的想法已不存在。"));
+    const picked=alignAnswers(n).map(x=>({q:x.q,a:x.a}));if(picked.length)idea.clarified=picked;
+    return fork(idea,t.count||3,`${t.brief?t.brief+"\n":""}${picked.length?`The designer chose: ${picked.map(x=>`${x.q} ${x.a}`).join("; ")}. Keep every direction inside these choices.`:""}`,{ask:false,from:n});
+  }
+  const prompt=brief?`${t.prompt}. ${brief}`:t.prompt;
+  if(t.act==="video")await generateVideo(prompt,{from:n});else await generateImages(prompt,{from:n});
+  alignSumUp(n);
+}
+/* the one-line takeaway, written by the model when there is one; the rules join the answers instead */
+async function alignSumUp(n){
+  if(n.take||n.state!=="agreed"||connSummary().engine==="rules")return;
+  const xs=alignAnswers(n);if(xs.length<2)return;
+  const lang=textLang(n.title+xs.map(x=>x.a).join(" "));
+  const sys="You write one short line that sums up what a designer agreed to make. Under 12 words. Concrete, a little dry, no exclamation marks, no quotes.";
+  const p=`Making: ${n.title}\nThey chose: ${xs.map(x=>`${x.key||x.q} ${x.a}`).join("; ")}\nReturn {"take": "..."}. ${langLine(lang)}`;
+  try{const v=await askAI({system:sys,prompt:p,json:true,maxTokens:120,quiet:true,small:{system:sys,prompt:p},check:v=>{const s=String(v?.take||"");return !s?['reply with {"take": "..."}']:s.length>(lang==="zh"?28:90)?["make it shorter"]:/[!！]/.test(s)?["no exclamation marks"]:[]}},()=>null);
+    const s=String(v?.take||"").trim().replace(/^["“「]|["”」]$/g,"");if(s&&byId(n.id)&&!n.take){n.take=s;renderAll();persist()}}catch{}
+}
+/* the slider: drag or arrow keys; the preview and the words answer as it moves, the card saves on release */
+function alSpecSet(n,track,v){
+  const q=alQ(n);if(!q||q.kind!=="spectrum")return;q.v=Math.round(clamp(v,0,1)*100)/100;q.touched=true;
+  const card=track.closest(".al");track.querySelector(".al-knob").style.left=q.v*100+"%";
+  track.setAttribute("aria-valuenow",Math.round(q.v*100));track.setAttribute("aria-valuetext",alSpecWord(q));
+  const r=card.querySelector(".al-reads");if(r)r.textContent=alRead(q);
+  const l=card.querySelector(".al-viz .al-l"),rr=card.querySelector(".al-viz .al-r"),g=card.querySelector(".al-viz .al-glow");if(l&&rr){l.style.opacity=1-q.v;rr.style.opacity=q.v;if(g)g.style.opacity=.25+.5*(1-q.v)}
+}
+nodesEl.addEventListener("pointerdown",e=>{
+  const tr=e.target.closest("[data-al-track]");if(!tr||e.button!==0)return;e.stopPropagation();e.preventDefault();
+  const n=byId(tr.closest("[data-id]")?.dataset.id);if(!n)return;checkpoint();
+  const at=ev=>{const r=tr.getBoundingClientRect();alSpecSet(n,tr,(ev.clientX-r.left)/Math.max(1,r.width))};at(e);tr.classList.add("drag");
+  const mv=ev=>at(ev),up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up);tr.classList.remove("drag");n.updated=NOW();el_sigReset(n);persist()};
+  addEventListener("pointermove",mv);addEventListener("pointerup",up);
+});
+nodesEl.addEventListener("pointerdown",e=>{if(e.target.closest("[data-al-own]"))e.stopPropagation()});
+nodesEl.addEventListener("keydown",e=>{
+  const tr=e.target.closest("[data-al-track]");
+  if(tr&&/^Arrow(Left|Right|Up|Down)$/.test(e.key)){e.preventDefault();e.stopPropagation();const n=byId(tr.closest("[data-id]")?.dataset.id),q=alQ(n);if(!q)return;alSpecSet(n,tr,(q.v??.5)+(/Right|Up/.test(e.key)?.1:-.1));n.updated=NOW();el_sigReset(n);persist();return}
+  const inp=e.target.closest("[data-al-own]");
+  if(inp&&e.key==="Enter"&&!e.isComposing&&e.keyCode!==229){e.preventDefault();e.stopPropagation();const n=byId(inp.dataset.alOwn);inp.blur();if(n)alignAct(n.step<n.qs.length-1?"al-next":"al-agree",n,null)}
+  else if(inp&&e.key==="Escape"){inp.blur()}
+});
+nodesEl.addEventListener("input",e=>{
+  const inp=e.target.closest("[data-al-own]");if(!inp)return;const n=byId(inp.dataset.alOwn),q=alQ(n);if(!q)return;
+  q.own=inp.value.slice(0,140);if(q.kind==="pick"&&q.own.trim()){q.a=null;inp.closest(".al").querySelectorAll(".al-pick.on").forEach(b=>{b.classList.remove("on");b.setAttribute("aria-pressed","false")})}
+  n.updated=NOW();persist();
+});
+/* the slider and the typed answer change the card without a full redraw; the next redraw must still pick them up */
+function el_sigReset(n){const el=nodeEl(n.id);if(el)el._sig=null}
 /* Before Strategist branches an idea that has nothing on the wall, Scout looks up its real background on
    Wikipedia and pins what it finds as Source drafts linked to the idea (weight: Reported). The fork reads
    them, so directions rest on facts rather than on what a model half-remembers, and the designer can open
@@ -12423,7 +12802,7 @@ async function keenableSearch(q,{maxResults=3,cfg=searchCfg}={}){
 // game databases and forums describe existing games, not the world an idea is set in
 const GAME_DB_SITES=["rpg.net","rpggeek.com","boardgamegeek.com","rpgpub.com","drivethrurpg.com","rpg.stackexchange.com","store.steampowered.com","steamcommunity.com","igdb.com","mobygames.com","giantbomb.com","reddit.com"];
 const hostOf=u=>{try{return new URL(u).host.replace(/^www\./,"")}catch{return ""}};
-const ideaCore=t=>String(t||"").replace(/\b(i|we|want|wants|to|make|build|create|an?|the|set|in|on|about|of|for|with|where|you|play|game|games|rpg|jrpg|video|story|idea|app)\b/gi," ").replace(/[^\w\s'-]/g," ").replace(/\s+/g," ").trim();
+const ideaCore=t=>String(t||"").replace(/\b(i|i'd|we|want|wants|wanna|gonna|would|like|need|to|make|build|create|an?|the|set|in|on|about|of|for|with|where|you|play|game|games|rpg|jrpg|video|story|idea|app|and|or|that|this|some|new)\b/gi," ").replace(/[^\w\s'-]/g," ").replace(/\s+/g," ").trim();
 function groundQueries(ideaText,brief,picked){
   const lang=textLang(ideaText),answers=(picked||[]).map(x=>String(x.a||"").replace(/^(?:an?|the)\s+/i,"").trim()).filter(Boolean);
   if(lang==="zh")return [...new Set([String(ideaText).replace(/我想(?:做|要做)?|一个|游戏|\b(?:RPG|rpg|game)\b|以|为背景|的/g," ").replace(/\s+/g," ").trim().slice(0,30),...answers.slice(0,2)])].filter(Boolean).slice(0,3);
@@ -12460,7 +12839,11 @@ async function groundIdea(idea,brief,picked){
   const keenQs=[...new Set([plain.trim().slice(0,300),...qs])].slice(0,3);
   const res=await runAgent("scout",{read:[idea],places:[],label:L(useKeen?"looking up background (Keenable)":"looking up background","查找背景资料"),task:{kind:"search",title:qs[0]},work:async()=>{
     const found=[],seen=new Set();
-    const take=(got,q,via)=>{let n=0;for(const it of got){const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3||++n>=2)break}};
+    /* a hit must share at least two of the idea's words (one if it has only one): "AI video editing agent"
+       once pulled a basketball trade from Wikipedia because its summary said "generation" */
+    const words=[...new Set(ideaCore(ideaText).toLowerCase().split(/\s+/).filter(w=>w.length>2))],need=Math.min(2,words.length);
+    const onTopic=it=>lang==="zh"||!words.length||(`${it.title} ${it.text}`.toLowerCase().match(new RegExp(`\\b(?:${words.map(w=>w.replace(/[^\w'-]/g,"")).filter(Boolean).join("|")})`,"g"))||[]).reduce((a,w)=>a.add(w),new Set()).size>=need;
+    const take=(got,q,via)=>{let n=0;for(const it of got){if(via==="Wikipedia"&&!onTopic(it))continue;const k=(it.url||it.title).toLowerCase();if(seen.has(k))continue;seen.add(k);found.push({...it,q,via});if(found.length>=3||++n>=2)break}};
     if(useKeen){
       for(const q of keenQs){
         try{take(await keenableSearch(q),q,"Keenable");reached=true}
@@ -12572,9 +12955,9 @@ async function fork(idea,count=3,brief="",{ask=true}={}){
   if(count>free.length)toast(free.length===1?`Room for one more direction. Strategist will suggest ${free[0]}.`:`Room for ${free.length} more directions.`);
   // the questions make up for a small model; when Auto sends the fork to the cloud there is nothing to make up for
   if(ask&&smallModelOn()&&autoPlan("heavy").order[0]==="studio"&&!existing.length&&forkIsOpen(idea,brief,sourcesFor(idea))){
-    const picked=await clarifyFork(idea,brief);
-    if(picked===null)return;
-    if(picked.length){idea.clarified=picked;brief=`${brief?brief+"\n":""}The designer chose: ${picked.map(x=>`${x.q} ${x.a}`).join("; ")}. Keep every direction inside these choices.`}
+    /* the questions go on the canvas, beside the idea; answering them there runs the fork */
+    const got=await clarifyFork(idea,brief);if(!got)return;
+    return alignCreate({qs:got.items.map(q=>alignClean({kind:"pick",q:q.q,options:q.options},textLang(q.q))).filter(Boolean),then:{act:"fork",idea:idea.id,count,brief},from:idea,by:"muse",title:clip(titleOf(idea),48),live:got.live});
   }
   // Scout looks up the real background first (any model; built-in rules couldn't use it), once per idea
   const scoutSrcs=()=>inputsOf(idea.id).filter(n=>n.type==="source"&&n.by==="scout"&&!n.archived&&!n.hidden);
@@ -14797,8 +15180,8 @@ function resumePendingVideoJobs(){
 }
 async function generateMedia({kind="image",prompt="",from=null,sources=[]}={}){
   const k=String(kind||"image").toLowerCase()==="video"?"video":"image";
-  if(k==="video")return generateVideo(prompt,{from,sources});
-  return generateImages(prompt,{from});
+  if(k==="video")return sources.length>1?generateVideo(prompt,{from,sources}):alignOrMake("video",prompt,from,{sources});
+  return alignOrMake("image",prompt,from);
 }
 async function generateVideo(prompt,{from=null,sources=[]}={}){
   const srcs=sources.length?sources:(from?[from]:[]);
@@ -15541,9 +15924,9 @@ async function execLineRequest(text){
     case"link":return body?createLinkNode(body):openLinkDialog();
     case"table":return body?(isNotionUrl(body)||/^[0-9a-f-]{32,36}$/i.test(body.trim())?tableFromNotion(body):tableFromUrl(body)):toast(L("Paste a CSV, JSON, Google Sheet or Notion database address after /table","请在 /table 后粘贴 CSV、JSON、Google 表格或 Notion 数据库的网址"));
     case"group":return ctx.length>1?wrapSelectionInGroup(ctx,body||"Group"):createGroupNode(body||"Group");
-    case"image":return generateImages(body,{from:f||null});
+    case"image":return alignOrMake("image",body,f||null);
     case"reverse":{const im=has("image")||has("frame");return im?reversePromptNode(im):toast("Select an image or frame card first")}
-    case"video":return generateVideo(body,{sources:ctx,from:f||null});
+    case"video":return ctx.length>1?generateVideo(body,{sources:ctx,from:f||null}):alignOrMake("video",body,f||null,{sources:ctx});
     case"split":{const rec=has("recording");return rec?splitRecordingShots(rec):toast("Select a recording card first")}
     case"gif":return generateGif(body,{sources:ctx,from:f||null});
     case"search":{const kind=searchKindOf(text)||searchPref,q=stripSearchKind(body);
@@ -18819,6 +19202,7 @@ function act(a,n,el){
     case"del-syn":return deleteSynPoint(n,+el.dataset.i);
     case"cycle-weight":return el?openWeightMenu(n,el):cycleWeight(n);
     case"split-paste":return splitPaste(n);
+    case"al-pick":case"al-step":case"al-col":case"al-go":case"al-skip":case"al-next":case"al-agree":case"al-change":case"al-again":return alignAct(a,n,el);
     case"edit-note":return startEdit(n.id,"text",{collapseEnd:true});
     case"edit-tag":return startEdit(n.id,"tag",{collapseEnd:false});
   }
@@ -19568,8 +19952,9 @@ function renderBoardsPop(){
   const curRow=`<button type="button" class="bp-row cur" data-bp-close><span class="bp-chk">${ic("check")}</span><b>${esc(board.title||"Untitled board")}</b><small>${count(board)}</small></button>`;
   const row=b=>`<button type="button" class="bp-row" data-open="${esc(b.id)}"><span class="bp-chk"></span><b>${esc(b.title||"Untitled board")}</b><small>${count(b)}</small></button>`;
   const showcaseRow=board.id==="showcase"?`<button type="button" class="bp-row bp-sample" data-showcase title="${esc(L("Put the sample back the way it shipped","把示例画板恢复成初始状态"))}"><span class="bp-chk">${ic("redo")}</span><b>${L("Reset the sample","重置示例画板")}</b><small>${L("Sample","示例")}</small></button>`:`<button type="button" class="bp-row bp-sample" data-showcase><span class="bp-chk"></span><b>ASHEN CROWN</b><small>${L("Sample","示例")}</small></button>`;
+  const lanternRow=board.id==="lantern"?`<button type="button" class="bp-row bp-sample" data-lantern title="${esc(L("Put the sample back the way it shipped","把示例画板恢复成初始状态"))}"><span class="bp-chk">${ic("redo")}</span><b>${L("Reset the lantern sample","重置露营灯示例")}</b><small>${L("Sample","示例")}</small></button>`:`<button type="button" class="bp-row bp-sample" data-lantern><span class="bp-chk"></span><b>${L("Camping lantern","露营灯")}</b><small>${L("Sample","示例")}</small></button>`;
   const seedRow="";   /* the MOD WORK study belongs to another project; it is no longer offered on every board list */
-  pop.innerHTML=`<div class="bp-list">${curRow}${others.filter(b=>b.id!=="showcase").map(row).join("")}${showcaseRow}${seedRow}</div>
+  pop.innerHTML=`<div class="bp-list">${curRow}${others.filter(b=>b.id!=="showcase"&&b.id!=="lantern").map(row).join("")}${showcaseRow}${lanternRow}${seedRow}</div>
     <div class="bp-sep"></div>
     <button type="button" class="bp-act" data-new><svg class="ico" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg><span>${L("New board","新建画板")}</span></button>
     <button type="button" class="bp-act" data-import>${ic("down")}<span>${L("Open a board file…","打开画板文件…")}</span></button>
@@ -19590,6 +19975,7 @@ function renderBoardsPop(){
   qs("[data-import]",pop).onclick=()=>{toggleBoardsPop(false);$("boardImportIn").click()};
   qs("[data-seed]",pop)?.addEventListener("click",()=>{persistNow();const ex=store.get(".board.modwork",null);if(ex&&ex.nodes)board=ex;else board=seed();sel=[];undoStack=[];redoStack=[];clearLineAttachments();syncHistoryBtns();renderAll();openingShot(false);persist();toggleBoardsPop(false)});
   qs("[data-showcase]",pop)?.addEventListener("click",()=>{const reset=board.id==="showcase";persistNow();const ex=!reset&&store.get(".board.showcase",null);if(ex&&ex.nodes){board=ex;migrateStageNames()}else board=sampleShowcase();sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();ensureShowcaseAssets();restoreMedia();renderCopilot?.();openingShot(false);persist();toggleBoardsPop(false);if(reset)toast(L("Sample board restored","示例画板已恢复"))});
+  qs("[data-lantern]",pop)?.addEventListener("click",()=>{const reset=board.id==="lantern";persistNow();const ex=!reset&&store.get(".board.lantern",null);board=ex&&ex.nodes?ex:sampleLantern();sel=[];undoStack=[];redoStack=[];lineExtras=[];clearLineAttachments();syncHistoryBtns();renderAll();renderCopilot?.();openingShot(false);persist();toggleBoardsPop(false);if(reset)toast(L("Sample board restored","示例画板已恢复"))});
   const del=qs("[data-del]",pop);del.onclick=()=>{if(del.dataset.sure){store.del(".board."+board.id);delBoardIdb(board.id);store.set(".list",store.get(".list",[]).filter(b=>b.id!==board.id));const nxt=store.get(".list",[])[0];if(nxt)switchBoard(nxt.id);else{board=seed();renderAll();openingShot(false);persist()}toggleBoardsPop(false);toast(L("Board deleted","画板已删除"))}
     else{del.dataset.sure=1;del.classList.add("sure");qs("span",del).textContent=L("Delete this board?","确认删除当前画板?");setTimeout(()=>{if(del.isConnected){delete del.dataset.sure;del.classList.remove("sure");qs("span",del).textContent=L("Delete board","删除当前画板")}},4000)}};
 }
@@ -21659,6 +22045,7 @@ const EB_FILE={pdf:["Document","文档"],word:["Document","文档"],txt:["Docume
 const EB_KIND={claim:["Claim","论点"],"core thesis":["Core thesis","核心论点"],idea:["Idea","想法"],html:["Page","网页"],source:["File","文件"],file:["File","文件"],attachment:["File","文件"]};
 const ebT=p=>uiLang()==="zh"?p[1]:p[0];
 function ebWord(n,fmt,customKind){
+  if(n.type==="align")return alignEyebrow(n);
   const k=String((n.type==="idea"||n.type==="source")&&n.kind||"").trim(),known=EB_KIND[k.toLowerCase()];
   if(n.type==="idea")return k?(known?ebT(known):k):ebT(EB_WORD.idea);
   if(n.type==="source"){

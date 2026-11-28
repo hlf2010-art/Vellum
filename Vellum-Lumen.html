@@ -4185,7 +4185,6 @@ const ICONS={
   sparkles:'<path d="M12 3l1.6 4 4 1.6-4 1.6L12 14.2l-1.6-4-4-1.6 4-1.6Z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/><path d="M5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6Z"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   link:'<path d="M10 14 20 4M15 4h5v5M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>',
-  clip:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4.5V3.6c0-.3.3-.6.6-.6h4.8c.3 0 .6.3.6.6v.9M9.5 10h5M9.5 13.5h5M9.5 17h3"/>',
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   book:'<path d="M4.5 5.5A2.5 2.5 0 0 1 7 3h12.5v16.5H7a2.5 2.5 0 0 0-2.5 2.5z"/><path d="M4.5 19.5V5.5M8.5 7.5h7M8.5 11h5"/>',
   grid:'<rect x="3.5" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="3.5" width="7.2" height="7.2" rx="2"/><rect x="3.5" y="13.3" width="7.2" height="7.2" rx="2"/><rect x="13.3" y="13.3" width="7.2" height="7.2" rx="2"/>',
@@ -13062,24 +13061,6 @@ function placeStrip(){
   const y=fitsTop?a.y-sh-10:Math.min(b.y+10,innerHeight-sh-18);
   s.style.left=Math.round(x)+"px";s.style.top=Math.round(y)+"px";
 }
-/* the words on a card as plain text, for pasting elsewhere; a selection inside the card wins */
-function cardCopyText(n){
-  if(!n||n.type==="group")return "";
-  const strip=v=>String(v||"").replace(/<[^>]+>/g,"").replace(/\*\*/g,"").trim();
-  const t=strip(n.title||(n.type==="idea"||n.type==="direction"?"":titleOf(n))),body=strip(n.full||n.text||n.quote||n.spec?.title||"");
-  const parts=[t&&!body.startsWith(t)?t:"",body];
-  if(n.test)parts.push(L("The test: ","检验：")+strip(n.test));
-  if(n.items?.length)parts.push(n.items.map(i=>(i.done?"[x] ":"- ")+strip(i.t)).join("\n"));
-  if(n.cards?.length)parts.push(n.cards.map(c=>"- "+strip(c.title)).join("\n"));
-  if(n.url)parts.push(n.url);
-  return parts.filter(Boolean).join("\n\n");
-}
-let menuSelText="";
-document.addEventListener("contextmenu",e=>{const c=e.target.closest?.(".card");const t=String(getSelection()||"").trim();menuSelText=c&&t&&c.contains(getSelection().anchorNode)?t:""},true);
-async function copyCardText(n){
-  const txt=menuSelText||cardCopyText(n);menuSelText="";if(!txt)return;
-  try{await navigator.clipboard.writeText(txt);toast(L("Text copied","已复制文字"))}catch{toast(L("Couldn't copy the text","无法复制文字"))}
-}
 function fullCardMenuActs(n){
   const acts=[];
   if(n.type==="note"||n.type==="notepad"){
@@ -13093,7 +13074,6 @@ function fullCardMenuActs(n){
   acts.push({sep:true});
   if(bondCluster(n.id).length>1&&!(isStar(n.id)&&n.focus==="you"))acts.push({k:"focus",label:L("Set as focus","设为焦点"),ic:"orbit"});
   if(n.status==="ink")acts.push({k:"lock",label:n.locked?L("Unlock","解锁"):L("Lock","锁定"),ic:"lock"});
-  if(cardCopyText(n))acts.push({k:"copytext",label:L("Copy text","复制文字"),ic:"clip"});
   acts.push({k:"dup",label:L("Duplicate","复制卡片"),key:"⌘D",ic:"copy"});
   if(n.type==="notepad"&&n.status!=="sketch")acts.push({k:"roll",label:n.roll?L("Unroll","展开"):L("Roll up","卷起来"),ic:"scroll"});
   if(n.type==="group")acts.push({k:"stack",label:n.deck?L("Spread out","展开"):L("Stack","收成一摞"),ic:"layers"});
@@ -13169,7 +13149,6 @@ $("cardMenu")?.addEventListener("click",e=>{
   if(k==="focus")return setFocus(n.id);
   if(k==="dup")return duplicateSelection();
   if(k==="hide")return hideFromCanvasNodes([n.id]);
-  if(k==="copytext")return copyCardText(n);
   if(k==="stack")return n.deck?spreadGroup(n):stackGroup(n);
   if(k==="roll")return toggleRoll(n);
   if(k==="archive")return archiveNodes([n.id]);

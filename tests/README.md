@@ -282,4 +282,4 @@ The same file checks stacking a group (D): Stack on a group's header (or the car
 
 It also checks rolling up a long notepad (R): Roll up (card menu, or a click on the roll at the bottom) leaves the title and first lines with a paper roll under them; pulling the roll down opens as far as you pull and stays there, a click opens it all the way, and typing in a rolled note opens it. Rolling changes only the display: the text, relations and evidence are untouched, and the line follows the card's new bottom edge, also after Undo.
 
-And it checks finding archived cards again (A): archiving flies a copy of the card into the box in the top bar and the toast says where it went; search lists archived and covered cards under Put away, and a click puts one back where it was; crew drafts can be covered and archived; the card menu's Copy text puts the card's words on the clipboard.
+And it checks finding archived cards again (A): archiving flies a copy of the card into the box in the top bar and the toast says where it went; search lists archived and covered cards under Put away, and a click puts one back where it was; crew drafts can be covered and archived.

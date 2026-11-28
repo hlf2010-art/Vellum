@@ -209,9 +209,8 @@ const state = (p, ids) => p.evaluate(ids => {
       check('no page errors (R)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }
-    { // A: archived cards can be found again; drafts can be covered and archived; Copy text
+    { // A: archived cards can be found again; drafts can be covered and archived
       const p = await open(browser, base);
-      await p.context().grantPermissions(['clipboard-read', 'clipboard-write']);
       const ids = await p.evaluate(() => {
         persistNow(); board = blank('Archive'); sel = [];
         const a = node('note', { text: 'Hikers strap the lantern outside' }, { x: 200, y: 200 });
@@ -235,10 +234,6 @@ const state = (p, ids) => p.evaluate(ids => {
       await p.evaluate(i => archiveNodes([i]), ids.d[1]); await p.waitForTimeout(600);
       check('a crew draft can be covered and archived (these did nothing before)', await p.evaluate(i => !!byId(i[0]).cl && !!byId(i[1]).archived, ids.d));
       await p.evaluate(i => { restoreNodes(i); }, ids.d); await p.waitForTimeout(600);
-      check('the card menu offers Copy text', await p.evaluate(i => fullCardMenuActs(byId(i)).some(a => a.k === 'copytext'), ids.d[0]));
-      await p.evaluate(i => copyCardText(byId(i)), ids.d[0]); await p.waitForTimeout(200);
-      const clip = await p.evaluate(() => navigator.clipboard.readText());
-      check('Copy text puts the words on the clipboard', /Dir A/.test(clip) && /You build a tool A/.test(clip) && /Show three friends/.test(clip), JSON.stringify(clip));
       check('no page errors (A)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }

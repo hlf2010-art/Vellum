@@ -20061,7 +20061,13 @@ addEventListener("copy",e=>{
   toast(`Copied ${payload.nodes.length} card${payload.nodes.length>1?"s":""}`);
 });
 addEventListener("paste",e=>{
-  if(e.target.closest?.("textarea,input,[contenteditable='true']"))return;
+  /* writing in a card takes words, not formatting: a rich paste (even text copied out of the same sticky) used to bring the
+     source element's box along, with its min-height and background, and left a tall empty block under the last line */
+  const ce=e.target.closest?.("[contenteditable='true']");
+  if(ce){const dt=e.clipboardData,txt=dt?.getData("text/plain")||"";
+    if(dt&&txt&&!(dt.files&&dt.files.length)){e.preventDefault();document.execCommand("insertText",false,txt.replace(/\r\n?/g,"\n"))}
+    return}
+  if(e.target.closest?.("textarea,input"))return;
   const rawClip=e.clipboardData?.getData("application/x-vellum-nodes")||"";
   const fs=[...(e.clipboardData?.files||[])];
   const t=e.clipboardData?.getData("text")||"";

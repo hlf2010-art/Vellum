@@ -531,6 +531,12 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .lineage-bar.danger{background:color-mix(in srgb,var(--danger) 12%,transparent);color:color-mix(in srgb,var(--danger) 85%,var(--label))}
 .lineage-bar.muted{background:var(--hover);color:var(--label-2)}
 .card > .lineage-bar{margin:-6px 14px 14px}
+/* where a card came from: one quiet line at its foot; the dotted mark echoes the origin line it draws when selected */
+.card > .from-line{display:flex;align-items:center;gap:6px;max-width:calc(100% - 28px);margin:-6px 14px 12px;padding:2px 0;border:0;background:none;color:var(--label-3);font:500 11.5px/1.35 var(--ui);text-align:left;cursor:pointer;min-width:0}
+.card > .from-line span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.card > .from-line i{flex:none;width:12px;border-top:1.5px dotted currentColor;opacity:.8}
+.card > .from-line:hover{color:var(--label-2)}
+.card > .from-line:focus-visible{outline:2px solid var(--focus,var(--B));outline-offset:2px;border-radius:4px}
 .card.print > .lineage-bar{background:rgba(0,0,0,.28);color:#fff}
 .lineage-bar .ico{width:13px;height:13px;flex:none}
 .lineage-bar .sp{flex:1;min-width:0}
@@ -3871,6 +3877,10 @@ body.snap-skip #wall{cursor:copy}
 #wires path.w-flow:is(.pgA,.pgB,.pgC,.pgD){stroke:color-mix(in srgb,var(--label) 26%,transparent)}
 #wires path.w[data-dep="frozen"]:not(.rel-conflicts){stroke-dasharray:none}
 #wires path.w.sk{stroke-dasharray:1.5 5}
+/* origin: where a card came from. A dotted hairline with a small arrow, shown only while one of its cards is selected */
+#wires path.w.origin:not(.rel){stroke:color-mix(in srgb,var(--label) 42%,transparent);stroke-width:1.25;stroke-dasharray:1.5 4.5;stroke-linecap:round}
+#wires path.origin-arrow{fill:none;stroke:color-mix(in srgb,var(--label) 55%,transparent);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none}
+#wires path.w.origin.edge-sel:not(.rel){stroke:color-mix(in srgb,var(--label) 70%,transparent)}
 #wires path.faded,#wires path.w-root.faded{opacity:.4}
 
 /* "No AI connected" is said once, on the connection chip, not as a dot on the participation switch too */
@@ -5524,9 +5534,13 @@ function ackEdgeDep(srcId,dstId){
   b.depAck=b.depAck||{};
   b.depAck[srcId]={rev:a.rev,digest:digest(a),title:prettyTitle(a,48)};
 }
+/* Two kinds of line, stored apart. A relation (e.rel set: related, supports, counters, refines) is what a person says
+   about two cards, one per pair, and it counts in the reasoning. An origin (no e.rel) says a card was made from another;
+   it is lineage, never evidence. A pair can have both, so neither ever overwrites the other. */
+const isRelEdge=e=>!!e&&!!e.rel;
 function edge(a,b,kind="derive",depType=null){
   if(!a||!b||a===b)return;
-  const ex=board.edges.find(e=>e.a===a&&e.b===b);
+  const ex=board.edges.find(e=>e.a===a&&e.b===b&&!e.rel);
   if(ex){
     if(depType&&DEP_TYPES.has(depType)&&ex.depType!==depType){ex.depType=depType;if(depType!=="reference")ackEdgeDep(a,b)}
     return ex;
@@ -5707,7 +5721,8 @@ function sourcesFor(n,optsOrSeen={}){
   const isSet=optsOrSeen instanceof Set;
   const seen=isSet?optsOrSeen:new Set();
   const includeArchived=!isSet&&!!optsOrSeen?.includeArchived;
-  const out=[];const walk=(id,d)=>{if(seen.has(id)||d>8)return;seen.add(id);for(const p of inputsOf(id)){if(["source","image","recording","audio","link","frame","note","notepad","synthesis"].includes(p.type)&&p.status==="ink"&&!p.tombstone&&(includeArchived||!p.archived))out.push(p);walk(p.id,d+1)}};
+  const out=[];const ins=id=>board.edges.filter(e=>e.b===id&&e.rel!=="conflicts").map(e=>byId(e.a)).filter(x=>x&&!x.tombstone);   // a card that counters this one is not its material
+  const walk=(id,d)=>{if(seen.has(id)||d>8)return;seen.add(id);for(const p of ins(id)){if(["source","image","recording","audio","link","frame","note","notepad","synthesis"].includes(p.type)&&p.status==="ink"&&!p.tombstone&&(includeArchived||!p.archived))out.push(p);walk(p.id,d+1)}};
   walk(n.id,0);return [...new Map(out.map(o=>[o.id,o])).values()];
 }
 function structuralUpstreamRefs(n){
@@ -5726,7 +5741,7 @@ function inspectNodeDependencies(n){
   if(!n||n.tombstone)return[];
   const map=new Map();
   for(const e of board.edges||[]){
-    if(e.b!==n.id||!e.a||e.a===n.id)continue;
+    if(e.b!==n.id||!e.a||e.a===n.id||e.rel)continue;   // a relation is not where a card came from
     const src=byId(e.a);
     const dt=edgeDepType(e,src,n);
     const fe=Array.isArray(n.fixed)?n.fixed.find(f=>f.id===e.a):null;
@@ -5797,7 +5812,7 @@ function directChildrenOf(id,{includeSketch=false,skipRelations=false}={}){
   };
   for(const e of board.edges||[])if(e.a===id){const dst=byId(e.b),dt=edgeDepType(e,byId(id),dst);
     /* a relation you drew or snapped (related, supports…) says two cards belong together; nothing was made from it, so deleting one end is not a downstream loss */
-    if(skipRelations&&e.rel&&e.by==="you"&&dt==="reference")continue;
+    if(skipRelations&&e.rel)continue;
     add(e.b,dt)}
   for(const x of board.nodes||[]){
     if(!x||x.tombstone||x.id===id)continue;
@@ -6903,7 +6918,7 @@ function cardVotesHTML(n){
   const upT=L("Helpful · Copilot remembers you like this direction","认可 · Copilot 会记住你偏爱此类方向"),dnT=L("Not helpful · Dims card & steers Copilot away","不认可 · 淡化此卡并让 Copilot 避开此类建议");
   return `<span class="card-votes${n.vote?" has-vote":""}"><button type="button" class="vote-btn up${n.vote==="up"?" active":""}" data-a="vote-up" aria-pressed="${n.vote==="up"}" title="${esc(upT)}" aria-label="${esc(upT)}">${ic("thumbUp")}</button><button type="button" class="vote-btn dn${n.vote==="down"?" active":""}" data-a="vote-dn" aria-pressed="${n.vote==="down"}" title="${esc(dnT)}" aria-label="${esc(dnT)}">${ic("thumbDown")}</button></span>`;
 }
-function sketchHead(n){const a=creatorOf(n)||AGENTS[n.by]||AGENTS.muse;const tag=n.type==="direction"?`<span class="chip">${esc(n.letter)}</span>`:n.type==="image"?`<span style="color:var(--label-3);font-weight:500">${esc(ebWord(n))}</span>`:"";return `<div class="card-k sketch-by"><span class="sparkle"></span><b>${L(`Suggested by ${a.name}`,`由 ${a.name} 建议`)}</b>${tag}${n.prov?.engine==="rules"?`<span class="prov-rules" title="${esc(L("Made by the built-in rules because no model answered","没有模型响应，由内置规则生成"))}">${L("built-in rules","内置规则")}</span>`:""}<span class="sp"></span>${cardVotesHTML(n)}</div>`}
+function sketchHead(n){const a=creatorOf(n)||AGENTS[n.by]||AGENTS.muse;const tag=n.type==="direction"?`<span class="chip">${esc(n.letter)}</span>`:n.type==="image"?`<span style="color:var(--label-3);font-weight:500">${esc(ebWord(n))}</span>`:"";return `<div class="card-k sketch-by"><span class="sparkle"></span><b>${L(`Suggested by ${a.name}`,`由 ${a.name} 建议`)}</b>${tag}${n.prov?.engine==="rules"?`<span class="prov-rules" title="${esc(L("Made by the built-in rules because no model answered","没有模型响应，由内置规则生成"))}">${L("built-in rules","内置规则")}</span>`:""}<span class="sp"></span></div>`}
 function timeTag(n){const ts=n?.created,t=exactTime(ts);if(!t)return"";const full=new Date(ts).toLocaleString(uiLang()==="zh"?"zh-CN":"en-US",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});return `<time title="${esc(full)}">${esc(t)}</time>`}
 
 const htmlDocs=new Map();
@@ -8222,7 +8237,8 @@ function pathBetween(a,b){const p=edgeEndpoints(a,b);return `M${p.x1},${p.y1} C$
 function edgeMidpoint(a,b){const p=edgeEndpoints(a,b);return {x:0.125*p.x1+0.375*p.cx1+0.375*p.cx2+0.125*p.x2,y:0.125*p.y1+0.375*p.cy1+0.375*p.cy2+0.125*p.y2}}
 const freshEdges=new Set();
 function lineageCardHTML(n){
-  if(!n||n.tombstone||n.status==="sketch"||n.type==="group")return"";
+  if(!n||n.tombstone||n.type==="group")return"";
+  if(n.status==="sketch")return fromLineHTML(n);
   const s=nodeLineageSummary(n);
   if(s.unavailable.length){
     const txt=s.unavailable.length===1?L("Source unavailable · Review required","上游来源已删除 · 需审阅"):L(`${s.unavailable.length} sources unavailable · Review required`,`${s.unavailable.length} 个来源已删除 · 需审阅`);
@@ -8236,7 +8252,30 @@ function lineageCardHTML(n){
     const txt=s.archived.length===1?L("Source archived","上游来源已归档"):L(`${s.archived.length} sources archived`,`${s.archived.length} 个上游已归档`);
     return`<div class="lineage-bar muted" data-lin-st="archived">${ic("archive")}<span>${txt}</span></div>`;
   }
-  return"";
+  return fromLineHTML(n,s);
+}
+/* "From …": where a card came from, in one quiet line at its foot, instead of a line drawn across the board.
+   Clicking it selects the card it came from, which also draws the origin line. A card can come from several (a synthesis
+   reads many): the main one is named, the rest are counted. Evidence a prototype froze is not where it came from. */
+function originOf(n,s=null){
+  if(!n||n.type==="group"||n.type==="research")return null;
+  if(n.type==="source"&&n.by==="scout"&&n._src){const t=byId(n._src);return t&&!t.tombstone?{node:t,more:0,verb:"found"}:null}
+  const deps=(s||nodeLineageSummary(n)).deps.filter(d=>d.node&&!d.fixedEntry);
+  if(!deps.length)return null;
+  const prim=[n.idea,n.dir,n.proof,n.on,n.from,n.versionOf].filter(Boolean);
+  const main=deps.find(d=>prim.includes(d.sourceId))||deps[0];
+  return {node:main.node,more:deps.length-1,verb:n.type==="question"||main.depType==="reference"&&n.on===main.sourceId?"about":"from"};
+}
+function fromLineHTML(n,s=null){
+  const o=originOf(n,s);if(!o)return"";
+  const t=clip(prettyTitle(o.node,40)||titleOf(o.node)||kindLabel(o.node),40);
+  const txt=o.verb==="found"?L(`Found for “${t}”`,`为「${t}」找到`):o.verb==="about"?L(`About “${t}”`,`关于「${t}」`):L(`From “${t}”`,`来自「${t}」`);
+  const more=o.more>0?L(` +${o.more}`,` 等 ${o.more+1} 张`):"";
+  return `<button type="button" class="from-line" data-a="go-origin" data-oid="${esc(o.node.id)}" title="${esc(L("Show where it came from","查看它从哪来"))}"><i aria-hidden="true"></i><span>${esc(txt)}${esc(more)}</span></button>`;
+}
+function originShown(e){
+  if(sel.includes(e.a)||sel.includes(e.b))return true;
+  return litSet().edges.has(e.id);
 }
 function drawWires(){
   let h="",hits="";const outSide=new Map(),inSide=new Map();
@@ -8244,6 +8283,9 @@ function drawWires(){
   for(const e of board.edges){
     const a=byId(e.a),b=byId(e.b);if(!a||!b||isNodeHidden(a)||isNodeHidden(b))continue;
     if(e.rel&&!e.line){const s=seamOf(a,b);if(s){bonds.push({e,s});continue}}
+    /* an origin line ("made from") stays out of the way: the card's footer says where it came from, and the line is
+       drawn only while one of its two cards is selected (or lit as the selection's lineage) */
+    if(!e.rel&&!originShown(e))continue;
     visEdges.push({e,a,b});
     const sp=autoSidePair(a,b);
     if(!outSide.has(a.id))outSide.set(a.id,sp.sa);
@@ -8256,16 +8298,15 @@ function drawWires(){
     const L=lin(b)||lin(a),sk=a.status==="sketch"||b.status==="sketch";
     const faded=b.type==="direction"&&board.adopted[b.idea]&&board.adopted[b.idea]!==b.id;
     const ep=edgeEndpoints(a,b,...wireSides(a,b,outSide.get(a.id),inSide.get(b.id))),d=`M${ep.x1},${ep.y1} C${ep.cx1},${ep.cy1} ${ep.cx2},${ep.cy2} ${ep.x2},${ep.y2}`,dt=edgeDepType(e,a,b);
-    const cls=["w",e.kind==="src"||dt==="reference"?"src":"",L&&e.kind!=="src"?"pg"+L:"",sk?"sk":"",faded?"faded":"",selectedEdgeId===e.id?"edge-sel":"",freshEdges.has(e.id)?"grow":"",e.rel?"rel rel-"+e.rel:"",Math.abs(bayOf(a)-bayOf(b))>1?"far":""].filter(Boolean).join(" ");
+    const cls=["w",e.rel?"":"origin",e.kind==="src"||dt==="reference"?"src":"",L&&e.kind!=="src"?"pg"+L:"",sk?"sk":"",faded?"faded":"",selectedEdgeId===e.id?"edge-sel":"",freshEdges.has(e.id)?"grow":"",e.rel?"rel rel-"+e.rel:"",Math.abs(bayOf(a)-bayOf(b))>1?"far":""].filter(Boolean).join(" ");
     if(e.rel&&(e.rel!=="related"||e.note))tags.push({e,x:.125*ep.x1+.375*ep.cx1+.375*ep.cx2+.125*ep.x2,y:.125*ep.y1+.375*ep.cy1+.375*ep.cy2+.125*ep.y2});
     const far=Math.abs(bayOf(a)-bayOf(b))>1?"far":"";
     const rcls=["w-root",L&&e.kind!=="src"?"pg"+L:"",faded?"faded":"",far].filter(Boolean).join(" ");
-    const fcls=["w-flow",L&&e.kind!=="src"?"pg"+L:"",faded?"faded":"",far].filter(Boolean).join(" ");
-    h+=`<path class="${cls}" data-dep="${dt}" d="${d}" ${freshEdges.has(e.id)?'style="--len:900"':""}/>`;
-    if(!freshEdges.has(e.id))h+=`<path class="${rcls}" d="${taperRootPath(ep)}"/>${e.rel?"":`<path class="${fcls}" d="${d}"/>`}`;
+    h+=`<path class="${cls}" data-dep="${dt}" d="${d}" ${e.rel?"":'marker-end="url(#originArrow)"'} ${freshEdges.has(e.id)?'style="--len:900"':""}/>`;
+    if(!freshEdges.has(e.id)&&e.rel)h+=`<path class="${rcls}" d="${taperRootPath(ep)}"/>`;
     hits+=`<path class="w-hit" data-edge="${e.id}" d="${d}"/>`;
   }
-  h+=provenanceSVG()+hits;
+  h=`<defs><marker id="originArrow" viewBox="0 0 10 10" refX="16" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path class="origin-arrow" d="M1.5 1.5 L8.5 5 L1.5 8.5"/></marker></defs>`+h+provenanceSVG()+hits;
   if(wireDrag)h+=`<path class="w temp" d="${wireDrag.d}"/>`;
   wiresEl.innerHTML=h;
   qsa(".card[data-id]",nodesEl).forEach(el=>{
@@ -8384,7 +8425,7 @@ const SNAP_IN=18,SNAP_OUT=34; // screen px: how close a card must come to catch,
 const SNAP_ALIGN=10;          // screen px: edges and centres this close line up
 const SNAP_MIN_OVERLAP=28;    // world px of shared edge before two cards count as side by side
 let snapOn=store.get(".snap",true)!==false;
-const relBetween=(x,y)=>board.edges.find(e=>(e.a===x&&e.b===y)||(e.a===y&&e.b===x))||null;
+const relBetween=(x,y)=>board.edges.find(e=>e.rel&&((e.a===x&&e.b===y)||(e.a===y&&e.b===x)))||null;
 const relRect=n=>({x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)});
 const relCardOk=n=>!!n&&!n.tombstone&&n.type!=="group"&&!isNodeHidden(n);
 /* the seam between two cards that sit edge to edge (gap up to BOND_GAP plus slack), or null */
@@ -8474,9 +8515,16 @@ function makeRelation(src,dst,{via="wire",rel="related"}={}){
   if(ex){if(!ex.rel)ex.rel=rel;ex.by="you";if(via==="snap")delete ex.line;return {e:ex,existed:true}}
   /* evidence tied to a judgment reads evidence -> judgment, whichever card was dragged: "this recording supports that claim" */
   if(isJudgment(byId(src))&&isMaterial(byId(dst)))[src,dst]=[dst,src];
-  const e=edge(src,dst,"src","reference");if(!e)return {e:null,existed:false};
-  e.rel=rel;e.by="you";e.via=via;e.at=NOW();
+  if(!src||!dst||src===dst)return {e:null,existed:false};
+  const e={id:uid(),a:src,b:dst,kind:"src",depType:"reference",rel,by:"you",via,at:NOW()};board.edges.push(e);
   return {e,existed:false};
+}
+/* a relation an agent proposes (Scout's background sources): the same object, authored by the agent until the person
+   snaps, retypes or confirms it, which makes it theirs */
+function suggestRelation(src,dst,who){
+  if(!src||!dst||src===dst)return null;
+  const ex=relBetween(src,dst);if(ex)return ex;
+  const e={id:uid(),a:src,b:dst,kind:"src",depType:"reference",rel:"related",by:who,via:"wire",at:NOW()};board.edges.push(e);return e;
 }
 function relSentence(e){
   const a=byId(e.a),b=byId(e.b),ta=clip(a?titleOf(a):"",40),tb=clip(b?titleOf(b):"",40);
@@ -9561,11 +9609,11 @@ function renderMargin(){queueMicrotask(placeBars);
   if(n.type==="proof"||n.type==="print"){
     const verLabel=n.type==="print"?`No. ${n.ed}`:`v${n.ver}`;
     const hasDriftNote=linSum.frozenChanged.length||linSum.unavailable.length||linSum.unavailableAcked.length;
-    srcs=`<div class="m-sec"><h5><span>Built From</span><span>${esc(verLabel)}</span></h5><div class="srcs">${linSum.deps.map(d=>renderSrcRow(d,true)).join("")||`<p style="margin:0;font:13px/1.5 var(--ui);color:var(--label-3)">No upstream sources.</p>`}</div>${hasDriftNote?`<p style="margin:10px 0 0;font:13px/1.5 var(--ui);color:var(--label-3)">This snapshot stays frozen as built.${n.type==="proof"?` Build v${n.ver+1} to include upstream changes.`:""}</p>`:""}</div>`;
+    srcs=`<div class="m-sec"><h5><span>${L("Built from","生成自")}</span><span>${esc(verLabel)}</span></h5><div class="srcs">${linSum.deps.map(d=>renderSrcRow(d,true)).join("")||`<p style="margin:0;font:13px/1.5 var(--ui);color:var(--label-3)">No upstream sources.</p>`}</div>${hasDriftNote?`<p style="margin:10px 0 0;font:13px/1.5 var(--ui);color:var(--label-3)">This snapshot stays frozen as built.${n.type==="proof"?` Build v${n.ver+1} to include upstream changes.`:""}</p>`:""}</div>`;
   }else if(linSum.deps.length){
     const s=sourcesFor(n,{includeArchived:true}),t=tally(s);
     const reviewActs=linSum.needsReview?`<button type="button" class="m-clear" data-m="new-version" title="Fork updated v${(n.rev||1)+1} without overwriting">New v${(n.rev||1)+1}</button><button type="button" class="m-clear" data-m="mark-reviewed" title="Mark upstream changes as reviewed">Mark reviewed</button>`:"";
-    srcs=`<div class="m-sec"><h5><span>Based On</span><span class="m-hmeta"><span>${linSum.deps.length}</span>${reviewActs}</span></h5><div class="srcs">${linSum.deps.map(d=>renderSrcRow(d,true)).join("")}</div>${s.length?scaleLabeledHTML(t):""}</div>`;
+    srcs=`<div class="m-sec"><h5><span>${L("Based on","基于")}</span><span class="m-hmeta"><span>${linSum.deps.length}</span>${reviewActs}</span></h5><div class="srcs">${linSum.deps.map(d=>renderSrcRow(d,true)).join("")}</div>${s.length?scaleLabeledHTML(t):""}</div>`;
   }
   const relHTML=(()=>{
     if(n.type==="group")return "";
@@ -9725,7 +9773,7 @@ function renderBars(){
   }
   host.innerHTML=h;placeBars();
 }
-const noun=t=>({image:"image",direction:"direction",proof:"proof",note:"note",notepad:"notepad",list:"action list",kanban:"kanban board",treemap:"tree map",synthesis:"synthesis",question:"question",audio:"audio card",link:"link",group:"group"})[t]||"card";
+const noun=t=>({source:"source",image:"image",direction:"direction",proof:"proof",note:"note",notepad:"notepad",list:"action list",kanban:"kanban board",treemap:"tree map",synthesis:"synthesis",question:"question",audio:"audio card",link:"link",group:"group"})[t]||"card";
 function uiObs(){
   const list=[],add=(el,pad=8)=>{if(!el||el.hidden)return;const cs=getComputedStyle(el);if(cs.display==="none"||cs.visibility==="hidden")return;const r=el.getBoundingClientRect();if(r.width>0&&r.height>0)list.push({x0:r.left-pad,y0:r.top-pad,x1:r.right+pad,y1:r.bottom+pad})};
   add($("map"),10);add($("line"),8);add($("copilotPanel"),8);add($("margin"),8);
@@ -9794,7 +9842,24 @@ function renderLedger(){
    <ol>${items.map(e=>{const a=AGENTS[e.who];return `<li><button type="button" data-l="goto" data-id="${e.node||""}"><time>${clock(e.t)}</time><span class="mk ${a?"":"you"}">${a?a.mk:AV.you}</span><span class="tx">${e.html}</span></button></li>`}).join("")||'<li style="padding:12px;color:var(--faint)">Nothing decided yet.</li>'}</ol>`;
 }
 
-function renderAll(){fitZones();if(board&&(!changeShadow||changeShadow.id!==board.id))changeShadow=shadowOf(board);
+/* Boards saved before relations and origins were stored apart kept one edge per pair, so a relation drawn on a pair
+   the crew had made from each other took the origin edge over (or the other way round). Split those back into one
+   relation and one origin, and turn Scout's old background-source edges (source -> idea, "made from") into the
+   relation Scout meant. Runs once per board; cheap and idempotent. */
+function splitRelOrigin(){
+  if(!board||board.edgesV>=2||!Array.isArray(board.edges))return;
+  const add=[];
+  for(const e of board.edges){
+    if(e.rel&&(e.kind!=="src"||(e.depType&&e.depType!=="reference"))){
+      add.push({id:uid(),a:e.a,b:e.b,kind:e.kind,depType:e.depType});e.kind="src";e.depType="reference";
+    }else if(!e.rel&&e.kind==="src"&&e.depType==="live"){
+      const a=byId(e.a),b=byId(e.b);
+      if(a?.type==="source"&&a.by==="scout"&&a._src===e.b&&["idea","note","notepad","treemap"].includes(b?.type)){e.depType="reference";e.rel="related";e.by="scout";e.via="wire"}
+    }
+  }
+  board.edges.push(...add);board.edgesV=2;
+}
+function renderAll(){splitRelOrigin();fitZones();if(board&&(!changeShadow||changeShadow.id!==board.id))changeShadow=shadowOf(board);
   litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();syncCopilotBoard?.();if(typeof renderDecisions==="function")renderDecisions();
   $("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";
   const archCount=board.nodes.filter(n=>!n.tombstone&&n.archived).length;
@@ -10404,13 +10469,14 @@ async function execAdvisorLift(nodeId,pinId,opts={}){
     const targets=related.length?[n,...related.slice(0,3)]:[n];
     await gather(targets);return;
   }
-  // Default: turn the suggestion into a translucent Sketch Note linked cleanly to .pbar
-  const pid="p-"+uid(),spot=freeSpot(n.x+nodeW(n)+42,n.y,W.note,160,[n.id]);
+  /* Default: the thought becomes a note beside its card. You pressed the button, so it lands kept, not as a second
+     draft to review; its maker still shows, and Undo takes it back */
+  const spot=freeSpot(n.x+nodeW(n)+42,n.y,W.note,160,[n.id]);
   checkpoint();
   const noteTxt=String(opts.text||pin.note||pin.edge||pin.take||"").replace(/\*\*([^*\n]+?)\*\*/g,"$1");
-  const sk=node("note",{by:pin.agent||"critic",status:"sketch",pid,text:noteTxt},spot);
+  const sk=node("note",{by:pin.agent||"critic",text:noteTxt,inked:NOW()},spot);
   edge(n.id,sk.id,"derive");
-  log(pin.agent||"critic",`Drafted a suggestion note from <b>${esc(titleOf(n))}</b>`,sk.id);
+  log(pin.agent||"critic",`Noted a thought from <b>${esc(titleOf(n))}</b>`,sk.id);
   renderAll();persist();typeIn([sk.id]);follow([sk]);
 }
 
@@ -11826,7 +11892,9 @@ async function groundIdea(idea,brief,picked){
   const pid="p-"+uid(),spots=planSources(found.length,idea),made=found.map((it,i)=>{
     const via=it.via==="Keenable"?(hostOf(it.url)||"Keenable"):L("Wikipedia","维基百科");
     const n=node("source",{_src:idea.id,kind:L(`Background · ${via}`,`背景 · ${via}`),title:clip(it.title,64),text:it.text+(it.published?` (${it.published.slice(0,10)})`:""),weight:"reported",path:it.url,src:{query:it.q,url:it.url,source:it.via||"Wikipedia"},by:"scout",status:"sketch",pid},spots[i]);
-    const e=edge(n.id,idea.id,"src","live");if(e)freshEdges.add(e.id);return n;
+    /* a source found for an idea is not made from it, and the idea is not made from the source: Scout suggests they
+       are related, a relation it authored (by:"scout") that the person can retype or unbind */
+    const e=suggestRelation(n.id,idea.id,"scout");if(e)freshEdges.add(e.id);return n;
   });
   setTimeout(()=>freshEdges.clear(),1200);
   log("scout",`Found ${made.length} background source${made.length>1?"s":""} for <b>${esc(clip(titleOf(idea),50))}</b>: ${made.map(n=>esc(n.title)).join(", ")}`,made[0].id);
@@ -12886,7 +12954,8 @@ function litSet(){
 }
 function provenanceSVG(){
   const {edges,depth}=litSet();let h="";const stamp=sel[0];const replay=provenanceSVG._for!==stamp;provenanceSVG._for=stamp;
-  for(const e of board.edges){if(!edges.has(e.id))continue;const a=byId(e.a),b=byId(e.b);if(!a||!b)continue;const d=pathBetween(a,b);const st=replay?`style="--d:${(depth.get(e.id)||0)*110}ms;--len:100"`:'style="animation:none"';
+  /* the light runs along relations; an origin line keeps its own look (dotted, with an arrow) so the two never blur */
+  for(const e of board.edges){if(!edges.has(e.id)||!e.rel)continue;const a=byId(e.a),b=byId(e.b);if(!a||!b)continue;const d=pathBetween(a,b);const st=replay?`style="--d:${(depth.get(e.id)||0)*110}ms;--len:100"`:'style="animation:none"';
     h+=`<path class="glow" pathLength="100" ${st} d="${d}"/><path class="pulse" style="--d:${replay?(depth.get(e.id)||0)*110+250:0}ms" d="${d}"/>`}
   return h;
 }
@@ -13243,9 +13312,10 @@ function currentPid(){const g=groups();if(reviewPid&&g.has(reviewPid))return rev
 function sortedReviewPids(){
   return [...groups().keys()].sort((a,b)=>Math.max(...board.nodes.filter(n=>n.pid===b).map(n=>n.created))-Math.max(...board.nodes.filter(n=>n.pid===a).map(n=>n.created)));
 }
-function reviewLabel(d,p){const parts=[];if(d)parts.push(L(`${d} ${d===1?"draft":"drafts"}`,`${d} 组草稿`));if(p)parts.push(L(`${p} ${p===1?"edit":"edits"}`,`${p} 处修改`));return parts.join(" · ")}
+function reviewLabel(d,p){const parts=[];if(d)parts.push(L(`${d} ${d===1?"draft":"drafts"}`,`${d} 张草稿`));if(p)parts.push(L(`${p} ${p===1?"edit":"edits"}`,`${p} 处修改`));return parts.join(" · ")}
 function renderReview(){
-  const nd=groups().size,np=openProps().length,n=nd+np,b=$("reviewBtn");if(n&&b._n!==undefined&&n!==b._n&&!calm()){b.classList.remove("bump");void b.offsetWidth;b.classList.add("bump")}
+  /* counts cards, not batches: three directions are three drafts */
+  const nd=[...groups().values()].reduce((k,ns)=>k+ns.length,0),np=openProps().length,n=nd+np,b=$("reviewBtn");if(n&&b._n!==undefined&&n!==b._n&&!calm()){b.classList.remove("bump");void b.offsetWidth;b.classList.add("bump")}
   b._n=n;b.hidden=!n;
   $("reviewTxt").textContent=reviewLabel(nd,np);
   b.title=n<=1?L("Click to jump to this draft","点击跳转到该草稿"):L("Click to inspect all pending drafts","点击查看所有待审草稿");
@@ -13260,14 +13330,18 @@ function renderReviewPop(){
   const pids=sortedReviewPids(),props=openProps();
   if(!pids.length&&!props.length){reviewPopOpen=false;pop.hidden=true;return}
   if(btn){const r=btn.getBoundingClientRect();pop.style.top=Math.round(r.bottom+8)+"px";pop.style.right=Math.max(14,Math.round(innerWidth-r.right))+"px"}
-  pop.innerHTML=`<div class="rp-head"><b>${esc(reviewLabel(pids.length,props.length))}</b>${pids.length?`<div class="rp-acts"><button type="button" class="sp-mini on" data-rp-keep-all>${L("Keep all","全部保留")}</button><button type="button" class="sp-mini danger" data-rp-drop-all>${L("Discard all","全部丢弃")}</button></div>`:""}</div>`
+  /* the list only takes you to what is waiting: keeping and discarding happen in one place, the bar beside each group,
+     and a suggested change is accepted on the card it would change */
+  const nCards=pids.reduce((k,pid)=>k+board.nodes.filter(n=>n.pid===pid&&n.status==="sketch").length,0);
+  pop.innerHTML=`<div class="rp-head"><b>${esc(reviewLabel(nCards,props.length))}</b></div>`
     +`<div class="rp-list">${pids.map(pid=>{
       const ns=board.nodes.filter(n=>n.pid===pid&&n.status==="sketch");
       const first=ns[0];if(!first)return "";
       const ag=AGENTS[first.by]||{mk:"✦",name:"Crew"};
-      const sub=`${ag.name}${ns.length>1?` · ${ns.length} cards`:""}`;
-      return `<div class="rp-item"><button type="button" class="rp-go" data-rp-go="${esc(pid)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(titleOf(first))}</strong><span>${esc(sub)}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn keep" data-rp-keep="${esc(pid)}" title="${L("Keep draft","保留草稿")}" aria-label="${L("Keep draft","保留草稿")}">${ic("check")}</button><button type="button" class="rp-btn drop" data-rp-drop="${esc(pid)}" title="${L("Discard draft","丢弃草稿")}" aria-label="${L("Discard draft","丢弃草稿")}">${ic("close")}</button></div></div>`;
-    }).join("")}</div>`+(props.length?`<div class="rp-sub">${L("Suggested changes to your cards","对你卡片的修改建议")}</div><div class="rp-list">${props.map(pr=>{const n=byId(pr.target),ag=AGENTS[pr.who]||{mk:COPILOT_ICO,name:"Copilot"};return `<div class="rp-item"><button type="button" class="rp-go" data-rp-prop-go="${esc(pr.id)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(n?titleOf(n):L("Missing card","卡片已不存在"))}</strong><span>${esc(ag.name)} · ${pr.op==="delete"?L("delete","删除"):pr.op==="link"?L("link","连线"):L("edit","修改")}</span></span></button><div class="rp-btns"><button type="button" class="rp-btn" data-rp-prop-reject="${esc(pr.id)}" title="${esc(L("Decline","拒绝"))}" aria-label="${esc(L("Decline","拒绝"))}">${ic("x")}</button><button type="button" class="rp-btn keep" data-rp-prop-accept="${esc(pr.id)}" title="${esc(L("Accept","接受"))}" aria-label="${esc(L("Accept","接受"))}">${ic("check")}</button></div></div>`}).join("")}</div>`:"");
+      const what=uiLang()==="zh"?nounZh(first.type,ns.length):ns.length>1?`${ns.length} ${noun(first.type)}s`:`1 ${noun(first.type)}`;
+      const sub=ns.slice(0,3).map(n=>clip(n.type==="direction"&&n.letter?`${n.letter} ${n.title||""}`:titleOf(n),40)).join(" · ");
+      return `<div class="rp-item"><button type="button" class="rp-go" data-rp-go="${esc(pid)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(`${ag.name} · ${what}`)}</strong><span>${esc(sub)}</span></span></button></div>`;
+    }).join("")}</div>`+(props.length?`<div class="rp-sub">${L("Suggested changes to your cards","对你卡片的修改建议")}</div><div class="rp-list">${props.map(pr=>{const n=byId(pr.target),ag=AGENTS[pr.who]||{mk:COPILOT_ICO,name:"Copilot"};return `<div class="rp-item"><button type="button" class="rp-go" data-rp-prop-go="${esc(pr.id)}"><span class="mk">${ag.mk}</span><span class="rp-meta"><strong>${esc(n?titleOf(n):L("Missing card","卡片已不存在"))}</strong><span>${esc(ag.name)} · ${pr.op==="delete"?L("delete","删除"):pr.op==="link"?L("link","连线"):L("edit","修改")}</span></span></button></div>`}).join("")}</div>`:"");
 }
 function toggleReviewPop(force){
   const next=force===undefined?!reviewPopOpen:!!force;
@@ -17693,7 +17767,7 @@ async function addFiles(files,at,onto,{autoAdvisor=true,quiet=false,selectNodes=
     else if(f.type==="text/html"||/\.html?$/i.test(f.name)){await putBlob(key,f);const raw=await f.text();htmlDocs.set(key,raw);n=node("source",{kind:"HTML",fmt:"HTML",mime:f.type,size:f.size,title:f.name,text:"",media:key,html:raw.length<=40000?raw:undefined,weight:null,path:f.name},freeSpot(x,y,W.source,265))}
     else if(/^text\/|json|markdown/.test(f.type)||/\.(txt|md|json|log)$/i.test(f.name)){await putBlob(key,f);const t=(await f.text()).slice(0,20000);n=node("source",{kind:fmt?.label||"TXT",fmt:fmt?.label||"TXT",mime:f.type,size:f.size,media:key,title:cleanTitle,text:clip(t,420),full:t.length>420?t:undefined,weight:null,path:f.name},freeSpot(x,y,W.source,250))}
     else{await putBlob(key,f);n=node("source",{kind:fmt?.label||"File",fmt:fmt?.label||"File",mime:f.type,size:f.size,title:cleanTitle,text:`${fmt?.fullName||f.type||"Attached file"}${f.size?` · ${fmtFileSize(f.size)}`:""}`,media:key,weight:null,path:f.name},freeSpot(x,y,W.source,220))}
-    made.push(n);y=n.y+nodeH(n)+40;if(onto&&onto.id!==n.id)edge(n.id,onto.id,"src");
+    made.push(n);y=n.y+nodeH(n)+40;if(onto&&onto.id!==n.id)makeRelation(n.id,onto.id,{via:"wire"});
   }
   log("you",`Pinned ${made.length>1?made.length+" files":"<b>"+esc(made[0].title)+"</b>"}${onto?" feeding "+esc(titleOf(onto)):""}`,made[0].id);
   if(selectNodes)select(mergeSel?[...sel,...made.map(m=>m.id)]:made.map(m=>m.id),{menus:false});
@@ -17995,7 +18069,7 @@ function upstreamDeleteDialog(ids,impact,{permanent=false}={}){
   const keep=L(`They stay on the board, marked so you can review them${others>0?` (plus ${others} further along)`:""}.`,`这些卡片会保留，并标记为待审阅${others>0?`（另有 ${others} 张间接关联）`:""}。`);
   const keep1=L(`It stays on the board, marked so you can review it${others>0?` (plus ${others} further along)`:""}.`,`它会保留，并标记为待审阅${others>0?`（另有 ${others} 张间接关联）`:""}。`);
   const list=(direct.length?direct:impact.items);const shown=list.slice(0,3),more=list.length-shown.length;
-  const chip=d=>`<li class="del-ref" title="${esc(titleOf(d)||kindLabel(d))}"><span class="del-kind">${esc(kindLabel(d))}</span><span class="del-name">${esc(prettyTitle(d,60)||kindLabel(d))}</span></li>`;
+  const chip=d=>`<li class="del-ref" title="${esc(titleOf(d)||kindLabel(d))}"><span class="del-kind">${esc(ebWord(d)+(d.type==="direction"&&d.letter?" "+d.letter:""))}</span><span class="del-name">${esc(prettyTitle(d,60)||kindLabel(d))}</span></li>`;
   dlg.className="sheet del-sheet";
   dlg.innerHTML=`<header class="sh-head"><div class="sh-id"><b class="del-title">${esc(head)}</b></div><button type="button" class="sh-x" data-d="close" aria-label="${esc(L("Close","关闭"))}">${ic("x")}</button></header>
   <div class="sh-main del-main">
@@ -18045,6 +18119,7 @@ function beginInlineTextEdit(span,initial,onCommit){
 function act(a,n,el){
   if(!n)return;
   switch(a){
+    case"go-origin":{const o=byId(el?.dataset?.oid);if(!o||o.tombstone)return;if(isNodeHidden(o))return toast(L("It came from a covered card.","它来自一张被盖起来的卡片。"));select([o.id],{menus:false});if(!visible(o))focusNodes([o],.9);return}
     case"why-not":return startEdit(n.id,"whyNot",{collapseEnd:true});
     case"why-yes":return startEdit(n.id,"whyYes",{collapseEnd:true});
     case"ink":return ink(n.pid?board.nodes.filter(x=>x.pid===n.pid).map(x=>x.id):[n.id]);
@@ -20111,10 +20186,9 @@ lineIn.addEventListener("keydown",e=>{
   if(e.key==="Backspace"&&lineMode&&lineIn.selectionStart===0&&lineIn.selectionEnd===0){e.preventDefault();setLineMode(null);return}
   if(e.key==="Escape"){if(genPop){genPop=null;renderGenOpts(true);return}if(sharpened||!$("sharpen").hidden){closeSharpen();return}if(lineMode&&!lineIn.value){setLineMode(null);return}lineIn.blur();return}
   if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();
-    // an empty composer means the ↵ on the decision bar: keep what's waiting
+    /* an empty composer sends nothing. It used to keep the drafts waiting, which nobody could see coming */
     const hasPrompt=!!(lineIn.value.trim()||MODES_LINE[lineMode]?.crew||linePending.length);
-    if(!hasPrompt&&!crewBusy()&&groups().size){ink(groups().get(currentPid()).map(n=>n.id));return}
-    if(!hasPrompt&&crewBusy())return;
+    if(!hasPrompt)return;
     sendLine()}
 });
 $("lineQueue")?.addEventListener("click",e=>{
@@ -20146,7 +20220,8 @@ addEventListener("keydown",e=>{
   if(focusId)return;
   if(e.key==="]"&&groups().size){e.preventDefault();nextReview(1);return}
   if(e.key==="Enter"&&sel.length===1){const n=one();if(n&&n.status!=="sketch"){e.preventDefault();openFocus(n.id);return}}
-  if(e.key==="Enter"&&latest&&(e.metaKey||e.ctrlKey)){e.preventDefault();ink(latest.map(n=>n.id));return}
+  /* ⌘↵ keeps what you pointed at: the drafts you selected, else the group under review */
+  if(e.key==="Enter"&&latest&&(e.metaKey||e.ctrlKey)){e.preventDefault();const picked=sel.map(byId).filter(n=>n?.status==="sketch");ink((picked.length?picked:latest).map(n=>n.id));return}
   if(e.key==="Backspace"||e.key==="Delete"){if(selectedEdgeId){e.preventDefault();deleteEdgeById(selectedEdgeId);return}if(sel.length){e.preventDefault();erase([...sel]);return}if(latest&&(e.metaKey||e.ctrlKey)){e.preventDefault();erase(latest.map(n=>n.id));return}}
   if(e.shiftKey&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&e.key.toLowerCase()==="h"){if(sel.length){e.preventDefault();archiveNodes([...sel])}return}
   if(e.metaKey||e.ctrlKey||e.altKey)return;
@@ -20610,8 +20685,7 @@ function paletteStarts(){
     else out.push({ico:"gather",t:L("Weigh the evidence","掂量其中的依据"),act:run("/gather")});
     out.push({ico:"critique",t:L("Critique","找漏洞"),act:run("/critique")});
   }else{
-    const pend=groups().get(currentPid());
-    if(pend?.length)out.push({ico:"check",t:pend.length>1?L(`Keep the ${pend.length} drafts`,`保留这 ${pend.length} 份草稿`):L("Keep the draft","保留这份草稿"),k:"⌘↵",act:()=>ink(pend.map(n=>n.id))});
+    /* drafts are kept in one place, the bar beside them; the composer does not offer a second way */
     out.push({ico:"note",t:L("New sticky","新建便签"),k:"N",act:()=>newNoteAt()});
     out.push({ico:"upload",t:L("Add files","添加文件"),k:"U",act:()=>pickFilesFor("canvas")});
     out.push({ico:"copilot",t:L("Ask Copilot","问问 Copilot"),k:"⌘.",act:()=>openCopilot(true)});
@@ -20829,7 +20903,7 @@ function actLabel(l){
   if(ACT_LBL[en])return ACT_LBL[en];for(const [rx,t] of ACT_RX)if(rx.test(en))return en.replace(rx,t);return en;
 }
 /* the draft tray in Chinese: "Strategist · 3 个方向" */
-function nounZh(t,n){const w={image:"图片",direction:"方向",proof:"原型",note:"便签",notepad:"记事本",list:"行动清单",kanban:"看板",treemap:"树状图",synthesis:"综合",question:"追问",audio:"音频",link:"链接",group:"分组"}[t]||"卡片";const c={image:"张",note:"张",direction:"个",proof:"个",question:"个",link:"个",group:"个"}[t]||"份";return `${n} ${c}${w}`}
+function nounZh(t,n){const w={source:"来源",image:"图片",direction:"方向",proof:"原型",note:"便签",notepad:"记事本",list:"行动清单",kanban:"看板",treemap:"树状图",synthesis:"综合",question:"追问",audio:"音频",link:"链接",group:"分组"}[t]||"卡片";const c={source:"个",image:"张",note:"张",direction:"个",proof:"个",question:"个",link:"个",group:"个"}[t]||"份";return `${n} ${c}${w}`}
 /* the board list names an untitled board in the interface language */
 {const _rbp=renderBoardsPop;renderBoardsPop=function(...a){const r=_rbp.apply(this,a);if(uiLang()==="zh")qsa("#boardsPop .bp-row b").forEach(b=>{if(b.textContent==="Untitled board")b.textContent="未命名画板"});return r}}
 /* the Copilot header gets its hairline only once the messages scroll under it */

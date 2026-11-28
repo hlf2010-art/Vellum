@@ -226,7 +226,7 @@ const grey = c => { const m = String(c).match(/[\d.]+/g); if (!m) return false; 
         const b = node('note', { text: 'Right', status: 'ink', by: 'you' }, { x: 1400, y: 200 });
         const c = node('note', { text: 'Lower left', status: 'ink', by: 'you' }, { x: 500, y: 700 });
         board.edges.push({ id: 'e1', a: a.id, b: b.id, kind: 'dep', line: true }, { id: 'e2', a: a.id, b: c.id, kind: 'dep', line: true });
-        renderAll();
+        renderAll(); select([a.id]); paintEdges(); // origin lines are drawn only while one end is selected
         const d = document.querySelector('#wires .w-hit[data-edge="e2"]').getAttribute('d'), x1 = +d.match(/^M([\d.-]+)/)[1];
         return { x1, left: a.x, right: a.x + nodeW(a) };
       });

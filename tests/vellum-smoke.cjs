@@ -343,7 +343,7 @@ async function page(browser, base, { model = true, theme = 'dark' } = {}) {
       check('a reply with no buttons is shown as it is', b.txt === 'Plain answer with no buttons.' && b.picks.length === 0, JSON.stringify(b));
       await reply('Go on');
       await p.click('#advPop .adv-picks .adv-lift >> nth=0'); await p.waitForTimeout(600);
-      check('tapping a button does it: the note becomes a sketch note and the thread closes', await p.evaluate(([id, NOTE]) => !board.pins[id] && !!board.nodes.find(n => n.status === 'sketch' && n.text === NOTE) && document.getElementById('advPop').hidden, [id, NOTE]));
+      check('tapping a button does it: the note lands kept (you asked for it) and the thread closes', await p.evaluate(([id, NOTE]) => !board.pins[id] && !!board.nodes.find(n => n.status === 'ink' && n.text === NOTE) && document.getElementById('advPop').hidden, [id, NOTE]));
       check('no page errors in pin threads', p.errors.length === 0, p.errors.join(' | '));
       await p.context().close();
     }

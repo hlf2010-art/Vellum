@@ -1511,7 +1511,8 @@ button.sp-m-tag{padding:6px 8px 6px 4px;background:transparent;border-radius:0 9
 /* the tight right inset makes room for an action button; a message on its own gets the same inset on both sides */
 .toast:not(:has(> button)){padding-right:16px}
 .toast .mono{font:500 12px/1 var(--ui);color:var(--label-3)}
-.toast button{font:600 13px/1 var(--ui);padding:9px 12px;border-radius:var(--radius-sm);color:var(--label);background:var(--hover)}
+.toast button{font:600 13px/1 var(--ui);padding:9px 12px;border-radius:var(--radius-sm);color:var(--label);background:var(--hover);white-space:nowrap;flex:none}
+.toast>span{min-width:0}
 .toast.out{animation:lift .3s var(--ease) forwards}
 @keyframes drop{from{opacity:0;transform:translateY(-14px) scale(.96)}}@keyframes lift{to{opacity:0;transform:translateY(-10px)}}
 

@@ -157,6 +157,8 @@ async function open(browser, base, { theme = 'light', zh = false, scale = 1 } = 
       check('Chinese: 4 cards, recruited, sample line in Chinese', r.n === 4 && r.sample.every(s => s === 'recruited') && /5 人作答，样本偏小.*招募样本/.test(r.txt), JSON.stringify(r));
       check('Chinese: the summary sentence is in Chinese', r.sum === '5 人中有 3 人（60%）选了“会”。', r.sum);
       check('Chinese: the eyebrow says 问卷', r.eb === '问卷', r.eb);
+      const tb = await p.evaluate(() => { const b = [...document.querySelectorAll('#toasts .toast button')].at(-1); if (!b) return null; const r = b.getBoundingClientRect(); return { w: r.width, h: r.height, t: b.textContent }; });
+      check('Chinese: the toast\'s 撤销 stays on one line beside a long message', tb && tb.t === '撤销' && tb.h < 40 && tb.w > tb.h, JSON.stringify(tb));
       check('no page errors (Chinese)', !p.errors.length, p.errors.join(' | '));
       await p.context().close();
     }

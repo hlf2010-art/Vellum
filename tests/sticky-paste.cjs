@@ -29,21 +29,21 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
     const h = () => p.evaluate(() => document.querySelector('.card.note.is-editing h4').offsetHeight);
     const before = await h();
     // copy everything out of the same sticky (a real rich copy), then paste it at the end
-    await p.keyboard.press('Control+A');
-    await p.keyboard.press('Control+C'); await p.keyboard.press('Control+End');
+    await p.keyboard.press('ControlOrMeta+A');
+    await p.keyboard.press('ControlOrMeta+C'); await p.evaluate(() => { const t = document.querySelector('.card.note.is-editing h4'), r = document.createRange(); r.selectNodeContents(t); r.collapse(false); const g = getSelection(); g.removeAllRanges(); g.addRange(r); }); // caret to the end, same on every OS
     const clip = await p.evaluate(() => navigator.clipboard.read().then(async it => (await it[0].getType('text/html')).text()).catch(() => ''));
     check('the copy really is rich (carries the sticky box)', /min-height/.test(clip), clip.slice(0, 120));
-    await p.keyboard.press('Control+V'); await p.waitForTimeout(200);
+    await p.keyboard.press('ControlOrMeta+V'); await p.waitForTimeout(200);
     const s = await p.evaluate(() => { const t = document.querySelector('.card.note.is-editing h4'); return { nested: t.querySelectorAll('[style],h4,[data-edit]').length, h: t.offsetHeight, lineH: parseFloat(getComputedStyle(t).lineHeight) }; });
     check('paste adds no styled or nested elements', s.nested === 0, JSON.stringify(s));
     check('the writing box grows by the pasted lines only, no empty block', s.h - before <= s.lineH * 8 + 2, JSON.stringify({ before, ...s }));
-    await p.keyboard.press('Control+Enter'); await p.waitForTimeout(400);
+    await p.keyboard.press('ControlOrMeta+Enter'); await p.waitForTimeout(400);
     const text = await p.evaluate(() => board.nodes.find(n => n.type === 'note').text);
     check('the saved text has all six lines', text.split('\n').filter(l => l.trim() === line).length === 6, JSON.stringify(text));
     // a plain-text paste of several lines into a fresh sticky
     await p.evaluate(() => navigator.clipboard.writeText('one\r\ntwo\nthree'));
     await p.mouse.dblclick(900, 300); await p.waitForTimeout(450);
-    await p.keyboard.press('Control+V'); await p.keyboard.press('Control+Enter'); await p.waitForTimeout(400);
+    await p.keyboard.press('ControlOrMeta+V'); await p.keyboard.press('ControlOrMeta+Enter'); await p.waitForTimeout(400);
     const t2 = await p.evaluate(() => board.nodes.filter(n => n.type === 'note').map(n => n.text));
     check('plain multi-line paste keeps its lines', t2.includes('one\ntwo\nthree'), JSON.stringify(t2));
     check('no page errors', errors.length === 0, errors.join(' | '));

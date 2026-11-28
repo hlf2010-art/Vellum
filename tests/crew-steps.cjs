@@ -108,7 +108,12 @@ async function shot(p, name) { if (SHOTS) await p.screenshot({ path: path.join(S
       const ns = board.nodes.filter(n => !n.archived && n.type !== 'group').slice(0, 2);
       window._run = runAgent('critic', { read: ns, places: [], label: 'checking sources', work: () => new Promise(r => setTimeout(() => r({ live: true }), 2200)) });
     });
-    await p.waitForTimeout(1500);
+    await p.waitForTimeout(150);
+    const lbl1 = await p.evaluate(() => cursors.critic?.querySelector('.lbl')?.textContent);
+    check('the pill beside the crew cursor says only the verb, not the card it is reading', lbl1 === 'Reading', lbl1);
+    await p.waitForTimeout(1350);
+    const lbl2 = await p.evaluate(() => ({ cur: cursors.critic?.querySelector('.lbl')?.textContent, seat: crewState.critic.status, v: [phaseVerb('reading I wanna build an AI video editing agent'), phaseVerb('rendering 2/4 · 40%'), phaseVerb('drafting with Claude'), phaseVerb('synthesizing 3')] }));
+    check('then the job, still one word; the island keeps the full words', lbl2.cur === 'Checking' && lbl2.seat === 'checking sources' && lbl2.v.join(',') === 'Reading,Rendering,Drafting,Analyzing', JSON.stringify(lbl2));
     let rows = await p.rows();
     const r3 = rows.find(r => /Critic/.test(r.title));
     check('a crew run lists the steps it reached: reading done, the job running', r3 && r3.steps.join('|') === 'done:Reading 2 cards|run:Checking sources', JSON.stringify(rows));
@@ -209,6 +214,7 @@ async function shot(p, name) { if (SHOTS) await p.screenshot({ path: path.join(S
     for (const [theme, lang] of [['dark', 'en'], ['light', 'zh'], ['dark', 'zh']]) {
       const q = await open(b, base, { theme, lang });
       const zh = await q.evaluate(() => ({ a: phaseL('reading 3 cards'), b: phaseL('rendering 2/4 · 40%'), c: phaseL('drafting with Claude'), d: phaseL('已经是中文') }));
+      if (lang === 'zh') { const v = await q.evaluate(() => [phaseVerb('reading I wanna build an AI video editing agent'), phaseVerb('synthesizing 3'), phaseVerb('rendering 2/4')].join(',')); check('the cursor pill says the verb in Chinese', v === '读取中,分析中,生成中', v); }
       if (lang === 'zh') check('phases follow the interface language', zh.a === '阅读 3 张卡片' && zh.b === '生成第 2/4 张 · 40%' && zh.c === '用 Claude 起草' && zh.d === '已经是中文', JSON.stringify(zh));
       await q.openIsland();
       await q.evaluate(zh => {
@@ -241,6 +247,16 @@ async function shot(p, name) { if (SHOTS) await p.screenshot({ path: path.join(S
       const tr = await q.evaluate(() => [...document.querySelectorAll('.cp-trace-step')].map(e => e.dataset.s + ':' + !!e.querySelector('.vstep-i')).join(','));
       check(`${theme} ${lang}: Copilot's helper steps use the same icons`, tr === 'done:true,run:true', tr);
       if (SHOTS) { const bx = await q.locator('.cp-trace').first().boundingBox(); if (bx) await q.screenshot({ path: path.join(SHOTS, `${theme}-${lang}-3-copilot-steps.png`), clip: { x: bx.x - 16, y: bx.y - 16, width: bx.width + 32, height: bx.height + 32 } }); }
+      await q.evaluate(() => { openCopilot(false); });
+      /* the crew cursor on a card: one word */
+      await q.evaluate(zh => { const n = node('note', { text: zh ? '我想做一个 AI 视频剪辑与生成 agent' : 'I wanna build an AI video editing & generation agent' }, { x: 0, y: 0 }); renderAll(); focusNodes([n], 1); window._sn = n.id; }, lang === 'zh');
+      await q.waitForTimeout(500);
+      await q.evaluate(() => { window._cr = runAgent('muse', { read: [byId(window._sn)], places: [], label: 'forking into 3', work: () => new Promise(r => setTimeout(() => r({ live: true }), 2500)) }); });
+      await q.waitForTimeout(250);
+      const cl = await q.evaluate(() => cursors.muse?.querySelector('.lbl')?.textContent);
+      check(`${theme} ${lang}: the crew cursor on a card says one word`, cl === (lang === 'zh' ? '读取中' : 'Reading'), cl);
+      if (SHOTS) { const el = await q.$(`.card[data-id="${await q.evaluate(() => window._sn)}"]`); const bx = el && await el.boundingBox(); if (bx) await q.screenshot({ path: path.join(SHOTS, `${theme}-${lang}-4-cursor-on-card.png`), clip: { x: Math.max(0, bx.x - 60), y: Math.max(0, bx.y - 60), width: Math.min(760, bx.width + 420), height: bx.height + 120 } }); }
+      await q.evaluate(() => window._cr); await q.waitForTimeout(300); await q.evaluate(() => { ISL.tasks = []; islSchedule(); });
       check(`no page errors (${theme} ${lang})`, !q.errs.length, q.errs.join(' | '));
       await q.context().close();
     }

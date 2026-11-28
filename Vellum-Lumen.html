@@ -4269,6 +4269,16 @@ const PHASE_ZH=[[/^reading (\d+) cards?$/i,"阅读 $1 张卡片"],[/^reading vis
   [/^sampling frame (.+)$/i,"采样第 $1 帧"],[/^encoding GIF(.*)$/i,"编码 GIF$1"],[/^rendering frames (.+)$/i,"渲染帧 $1"],[/^rendering video(.*)$/i,"渲染视频$1"],
   [/^searching (.+)$/i,"搜索 $1"],[/^looking up background(.*)$/i,"查找背景资料$1"],[/^asking first$/i,"先问几个问题"],[/^stopping…$/,"正在停止…"]];
 function phaseL(x){const s=String(x||"");if(uiLang()!=="zh"||/[一-鿿]/.test(s))return s;for(const [re,zh] of PHASE_ZH)if(re.test(s))return s.replace(re,zh);return s}
+/* On the board (the pill beside a crew cursor, the crew seats and their tip) a crew member says only what it is
+   doing: "Reading", not "Reading I wanna build an AI video…". The card it is on is already lit, and the island
+   keeps the full words and the checklist for anyone who wants them. */
+const PHASE_VERB={reading:["Reading","读取中"],drafting:["Drafting","起草中"],forking:["Branching","发散中"],building:["Building","构建中"],synthesizing:["Analyzing","分析中"],
+  checking:["Checking","核对中"],rendering:["Rendering","生成中"],generating:["Generating","生成中"],searching:["Searching","搜索中"],looking:["Looking up","查找中"],
+  listing:["Listing","整理中"],organizing:["Organizing","整理中"],mapping:["Mapping","整理中"],expanding:["Expanding","扩写中"],writing:["Writing","撰写中"],
+  replying:["Replying","回复中"],asking:["Asking","提问中"],waiting:["Queued","排队中"],sampling:["Sampling","采样中"],encoding:["Encoding","编码中"],
+  stopping:["Stopping","正在停止"],reversing:["Analyzing","分析中"],reverse:["Analyzing","分析中"],splitting:["Splitting","拆分中"],thinking:["Thinking","思考中"]};
+function phaseVerb(x){const s=String(x||"").trim();if(!s)return "";const w=s.split(/[\s·…]+/)[0].toLowerCase(),v=PHASE_VERB[w];
+  if(v)return L(v[0],v[1]);if(/[\u4e00-\u9fff]/.test(s))return s.length>6?L("Working","处理中"):s;return L(islCap(w),"处理中")}
 /* "rendering 2/4 · 40%" and "rendering 3/4" are one step whose words move on */
 const phaseKey=x=>"p:"+String(x||"").toLowerCase().replace(/\d+(\s*\/\s*\d+)?/g,"#").replace(/\s*·.*$/,"").trim();
 /* ── Task Island: one place to watch long-running agent work ───────────────
@@ -5065,7 +5075,7 @@ function paintHub(mode){
   const box=$("hubSeats");if(!box)return;
   mode=mode||aiSource();
   box.innerHTML=`<div class="hub-seats" role="group" aria-label="${L("Crew","成员")}">${Object.values(AGENTS).map(a=>{const st=crewState[a.key];const waiting=board.nodes.some(n=>n.status==="sketch"&&n.by===a.key);
-      const stt=st?.busy?(st.status||L("working","工作中")):waiting?L("waiting for you","等你确认"):L("free","空闲");
+      const stt=st?.busy?(phaseVerb(st.status).toLowerCase()||L("working","工作中")):waiting?L("waiting for you","等你确认"):L("free","空闲");
       return `<button type="button" class="seat hub-seat${st?.busy?" busy":""}" data-agent="${a.key}" aria-label="${a.name}: ${esc(stt)}"><span class="mk">${a.mk}</span><span class="hub-seat-t"><b>${a.name}</b><small>${esc(clip(stt,24))}</small></span></button>`}).join("")}</div>
     <button type="button" id="crewModeBtn" class="hub-row crew-mode ${mode.cls||""}" aria-haspopup="dialog" aria-expanded="${studioPopOpen}" title="${esc(mode.title)}"><b></b><span class="hub-row-t"><span>${L("Model","模型")}</span><small>${esc(mode.label)}</small></span>${ic("chev","ico hub-go")}</button>`;
 }
@@ -9591,7 +9601,7 @@ function setAgent(k,patch){
 }
 function showAgentTip(k,anchor){
   const a=AGENTS[k],s=crewState[k],tip=$("tip");const waiting=board.nodes.filter(n=>n.status==="sketch"&&n.by===k).length;
-  const st=s.busy?s.status[0].toUpperCase()+s.status.slice(1):waiting?`${waiting} draft${waiting>1?"s":""}`:"";
+  const st=s.busy?(phaseVerb(s.status)||L("Working","处理中")):waiting?`${waiting} draft${waiting>1?"s":""}`:"";
   tip.innerHTML=`<div class="tip-hd"><span class="tip-ico">${a.mk}</span><b>${a.name}</b></div><p class="tip-desc">${esc(a.craft)}</p>${st?`<small>${esc(st)}</small>`:""}`;
   tip.dataset.for=k;
   const el=anchor||qs(`[data-agent="${k}"]`);if(!el)return;const r=el.getBoundingClientRect();
@@ -11731,7 +11741,7 @@ async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   if(parent){parent.agent=k;parent.cancel=()=>stopAgent(k);if(tk.step)parent.step(tk.step,null,{who:k})}
   const c=cursorEl(k);
   // voice: what the cursor and the island say now. say (handed to the work) also checks off a step when the words move on
-  const voice=(s,prog)=>{const w=phaseL(s);setAgent(k,{status:s});c.querySelector(".lbl").textContent=w[0].toUpperCase()+w.slice(1);
+  const voice=(s,prog)=>{setAgent(k,{status:s});c.querySelector(".lbl").textContent=phaseVerb(s);
     task.update(prog?{...prog,phase:prog.pct!=null?s.replace(/\s*·\s*\d+%$/,""):s}:{phase:s})};
   const say=(s,prog)=>{voice(s,prog);if(!parent)task.step(phaseKey(s),islCap(phaseL(s).replace(/\s*·\s*\d+%$/,"")))};voice(label);
   const stopped=()=>crewState[k].cancel;
@@ -11746,7 +11756,8 @@ async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   const outlines=[];
   // with both engines in Auto, either may draft: the note at the end says which one did
   const aiLbl=aiPref==="auto"&&studioState.status==="ready"&&apiRoutable()&&cloudState()!=="out"?"drafting":aiPref!=="local"&&studioState.status==="ready"?"drafting with Studio AI":aiPref!=="local"&&sampleFn?"drafting with Claude":"drafting";
-  if(places.length&&!stopped())voice(aiLbl);
+  // after the reading, the pill says what the job is doing (it used to keep saying "reading" for a job with no drafts to place)
+  if(!stopped()&&!fin)voice(places.length?aiLbl:label);
   // then the work itself, in the words of the job (media jobs report their own steps as they go)
   if(!media&&!parent&&!fin&&!stopped()&&task.steps.length)task.step("work",islCap(phaseL(places.length?aiLbl:label)));
   for(const pl of places){moveCursor(k,pl.x+pl.w*.85,pl.y+pl.h*.4);outlines.push(drawOutline(pl));await wait(calm()||fin?0:180)}

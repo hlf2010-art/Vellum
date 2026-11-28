@@ -19610,7 +19610,7 @@ function renderCloths(){
     if(el._sig!==sig){el._sig=sig;el.innerHTML=deck?deckHTML(c):clothSVG(CLOTH_W,CLOTH_H)+`<span class="cl-lbl">${esc(lbl)}</span>`;el.setAttribute("aria-label",deck?L(`A stack of ${lbl}. Enter spreads it out.`,`一摞 ${lbl}，按回车展开`):L(`${lbl} covered. Enter uncovers.`,`盖着 ${lbl}，按回车掀开`))}
     if(!el._drag){el.style.left=c.x+"px";el.style.top=c.y+"px"}
   }
-  qsa(".cloth",clothLayer).forEach(el=>{if(!keep.has(el.dataset.cloth))el.remove()});
+  qsa(".cloth[data-cloth]",clothLayer).forEach(el=>{if(!keep.has(el.dataset.cloth))el.remove()});  /* a falling drape or lifting cloth has no id and finishes its own animation */
   syncRolls();
   if(clothPeekFor&&!keep.has(clothPeekFor))hideClothPeek(true);
 }

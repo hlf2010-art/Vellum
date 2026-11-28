@@ -211,7 +211,7 @@ function serve() {
     check('"no strong objection" is a full answer: no repair, one short line in the note', requests.map(q => q.kind).join() === 'strategist,survey,critic' && pins.length === 1 && /\*\*Critic:\*\* no strong objection\./.test(pins[0].note) && pins[0].recheck?.critic === 'quiet', JSON.stringify({ k: requests.map(q => q.kind), note: pins[0]?.note }));
     await p.evaluate(() => openDecisions(true)); await p.waitForTimeout(400);
     const dvq = await p.evaluate(() => document.querySelector('.dv-rc .dv-rc-c')?.textContent || '');
-    check('the decision view says it too', /Critic\s*No strong objection\./.test(dvq), dvq);
+    check('the decision view says it too', /Critic:?\s*no strong objection\./i.test(dvq), dvq);
     await p.evaluate(() => openDecisions(false));
 
     /* 5. Focus: runs quietly, the note waits for the catch-up */

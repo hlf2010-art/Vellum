@@ -78,7 +78,8 @@ const around = (pt, r) => ({ x: Math.max(0, pt.x - 120), y: Math.max(0, pt.y - 1
     // a sticky is a double-click
     await p.mouse.dblclick(pt.x, pt.y); await p.waitForTimeout(400);
     let n = await p.evaluate(() => { const n = board.nodes[board.nodes.length - 1]; const r = nodeEl(n.id).getBoundingClientRect(); return { type: n.type, r: r.toJSON(), editing: document.activeElement?.isContentEditable || document.activeElement?.tagName }; });
-    check('double-click still makes a sticky under the pointer', n.type === 'note' && pt.x > n.r.left && pt.x < n.r.right, JSON.stringify(n));
+    // a sticky near a zone's edge is nudged inside the zone's margin (ZONE_IN), so it may sit a little right of the pointer
+    check('double-click still makes a sticky under the pointer', n.type === 'note' && pt.x > n.r.left - 40 && pt.x < n.r.right, JSON.stringify(n));
     const nativeKept = await p.evaluate(() => { const el = document.activeElement; const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 10, clientY: 10 }); el.dispatchEvent(ev); return !ev.defaultPrevented && $('cardMenu').hidden; });
     check('right-click in text being written keeps the system menu', nativeKept);
     await p.keyboard.type('Battery lasts a weekend'); await p.mouse.click(pt.x + 300, pt.y + 260); await p.waitForTimeout(300);

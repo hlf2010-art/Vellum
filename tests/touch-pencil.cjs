@@ -59,6 +59,8 @@ const emptyNear = (p, x, y) => p.evaluate(([x, y]) => { for (let r = 0; r < 400;
     /* 2. a finger moves a card; two fingers tapped together undo it, three redo it */
     const B = await cardRect(p, "n=>n.type==='direction'&&n.letter==='B'");
     const bc = [B.x + B.w / 2, B.y + 30];
+    /* snap off (quietly, no toast): with zones sized by content the proof next door is close enough to snap to */
+    await p.evaluate(() => { snapOn = false; });
     await swipe(p, bc, [bc[0] + 80, bc[1] + 40], 8);
     let nb = await p.evaluate(id => { const n = byId(id); return { x: n.x, y: n.y }; }, B.id);
     check('one finger moves a card', Math.abs(nb.x - B.nx - 80 / .9) < 4 && Math.abs(nb.y - B.ny - 40 / .9) < 4, JSON.stringify([B, nb]));
@@ -72,6 +74,7 @@ const emptyNear = (p, x, y) => p.evaluate(([x, y]) => { for (let r = 0; r < 400;
     await wait(150);
     nb = await p.evaluate(id => { const n = byId(id); return { x: n.x, y: n.y }; }, B.id);
     check('a three-finger tap redoes', nb.x !== B.nx, JSON.stringify(nb));
+    await p.evaluate(() => { snapOn = true; });
     await p.evaluate(() => undo()); await wait(100);
 
     /* 3. pinch zooms around the fingers; a pinch that began on a card leaves the card where it was */

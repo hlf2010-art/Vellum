@@ -36,7 +36,7 @@ const BOARD = {
 
 async function open(browser, base, { theme = 'light', lang = 'en' } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: theme, locale: lang === 'zh' ? 'zh-CN' : 'en-US' });
-  await ctx.route('http://127.0.0.1:59631/**', r => r.abort());
+  await ctx.route(/127\.0\.0\.1:5963[19]/, r => r.abort());
   await ctx.route(/wikipedia\.org|example\.com/, r => r.abort());
   await ctx.addInitScript(([b, theme, lang]) => { try {
     localStorage.setItem('vellum-lumen.v1.board.' + b.id, JSON.stringify(b)); localStorage.setItem('vellum-lumen.v1.active', JSON.stringify(b.id));
@@ -101,7 +101,7 @@ async function dragEdge(p, id, side, dx) {
     // R4. Undo puts the width back; double-click on an edge resets to the default
     {
       await p.evaluate(() => { document.activeElement?.blur?.(); });
-      await p.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z'); await p.waitForTimeout(300);
+      await p.keyboard.press('ControlOrMeta+z'); await p.waitForTimeout(300);
       const u = await rect(p, 'star');
       check('R4a Undo restores the previous width', u.w > 400, JSON.stringify(u));
       await p.hover('.card[data-id="star"]');

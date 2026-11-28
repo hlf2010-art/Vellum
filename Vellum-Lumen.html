@@ -4984,6 +4984,7 @@ const speakOfBoard=b=>SPEAK_LEVELS.includes(b?.speak)?b.speak:crewSpeak;
 function setSpeak(level,{from="switch"}={}){
   const next=SPEAK_LEVELS.includes(level)?level:"matters",prev=crewSpeak;
   if(board){if(next==="never"&&prev!=="never"){board.focusAt=NOW();board.speakBefore=prev}board.speak=next}
+  if(next!==prev)sfx("speak-"+next);   // only from the person's own switch or shortcut: every caller is one
   crewSpeak=next;store.set(".crewSpeak",crewSpeak);
   advisorMode=crewSpeak!=="never";advisorAuto=crewSpeak==="often";advQuietMs=SPEAK_QUIET[crewSpeak];
   store.set(".advisor",advisorMode);store.set(".advisorAuto",advisorAuto);
@@ -18944,7 +18945,7 @@ let tool="select",spaceHeld=false,spacePanned=false;
 /* ── airy physical micro-acoustics (vellum, glass & felt UI sounds) ───── */
 let _sfxCtx=null,_sfxBus=null,_sfxGain=null,_sfxNoise=null;
 const _sfxLast=Object.create(null);
-const sfxEnabled=()=>store.get(".sfx","off")==="on";
+const sfxEnabled=()=>store.get(".sfx","on")==="on";   // on by default (Mars, 2026-11-27); Settings turns it off
 function sfxVolume(){const v=Number(store.get(".sfxVol",75));return Number.isFinite(v)?clamp(Math.round(v),0,100):75}
 function _sfxSetGain(v){
   if(!_sfxGain||!_sfxCtx)return;
@@ -18996,6 +18997,20 @@ function _sfxEnsureBus(ctx){
   }catch{_sfxNoise=null}
   _sfxBus=hp;
   return _sfxBus;
+}
+// A small soft room, built once per audio context, so the switch tine has a tail to ring into
+let _sfxRoom=null,_sfxRoomCtx=null;
+function _sfxEnsureRoom(ctx,bus){
+  if(_sfxRoomCtx===ctx)return _sfxRoom;
+  _sfxRoomCtx=ctx;_sfxRoom=null;
+  try{
+    const n=Math.floor(ctx.sampleRate*1.4),ir=ctx.createBuffer(2,n,ctx.sampleRate);let r=777;
+    for(let ch=0;ch<2;ch++){const c=ir.getChannelData(ch);for(let i=0;i<n;i++){r=(r*1103515245+12345)&0x7fffffff;const x=i/n;c[i]=(r/0x3fffffff-1)*Math.pow(1-x,3)*Math.exp(-x*3)}}
+    const cv=ctx.createConvolver(),lp=ctx.createBiquadFilter(),wet=ctx.createGain();
+    cv.buffer=ir;lp.type="lowpass";lp.frequency.value=4200;wet.gain.value=.32;
+    cv.connect(lp);lp.connect(wet);wet.connect(bus);_sfxRoom=cv;
+  }catch{_sfxRoom=null}
+  return _sfxRoom;
 }
 function sfx(kind){
   try{
@@ -19052,6 +19067,18 @@ function sfx(kind){
       g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
       src.connect(flt);flt.connect(g);g.connect(bus);
       src.start(t,Math.random()*.04,dur+.01);
+    };
+
+    // Kalimba tine for the participation switch: a sine body, a quick metallic shimmer and a faint octave, sent into a soft generated room
+    const tine=(freq,ring,delay=0,level=1)=>{
+      const room=_sfxEnsureRoom(ctx,bus),t=t0+delay,f=freq*drift;
+      const part=(mul,peak,atk,decay)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type="sine";o.frequency.setValueAtTime(f*mul,t);
+        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+atk);g.gain.setTargetAtTime(0,t+atk,decay/4.6);
+        o.connect(g);g.connect(bus);if(room)g.connect(room);o.start(t);o.stop(t+decay+.9);
+      };
+      part(1,.009*level,.004,ring);part(5.4,.0025*level,.002,.12);part(2.01,.0015*level,.002,ring*.6);
     };
 
     switch(kind){
@@ -19139,6 +19166,17 @@ function sfx(kind){
         bell(880,.135,.0115,.032,{over:2,overGain:.22,atk:.003});
         bell(1318.51,.165,.0105,.064,{over:2,overGain:.18,atk:.004});
         bell(1479.98,.21,.008,.098,{over:1,atk:.006});
+        break;
+      /* The participation switch: a soft kalimba tine (Mars chose it, 2026-11-27) whose pitch follows how much the crew joins in.
+         Focus settles down (C6 to D5), Listening is one G5, Teamwork opens up (G5 to C6). The last note rings about 0.7 s into a small room. */
+      case"speak-never":
+        tine(1046.5,.45,0,.75);tine(587.33,.75,.11);
+        break;
+      case"speak-matters":
+        tine(783.99,.75,0);
+        break;
+      case"speak-often":
+        tine(783.99,.45,0,.8);tine(1046.5,.75,.11,.9);
         break;
       // Gentle silk inhalation into focus mode
       case"focus":

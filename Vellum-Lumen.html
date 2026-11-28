@@ -4655,7 +4655,10 @@ function labelPopHTML(n){
 const W={table:480,note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
 const HGUESS={table:260,note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,direction:330,proof:390,print:300,list:260,kanban:280,treemap:280,synthesis:300,group:440};
 const visibleNodes=()=>board.nodes.filter(n=>n&&!n.hidden&&!n.archived&&!n.tombstone);
-const resizeBounds=n=>n?.type==="kanban"||n?.type==="treemap"?[360,920]:n?.type==="note"?[200,580]:[220,760];
+/* how narrow and wide each card may be dragged: narrow enough to tuck beside another, never so narrow its own row of
+   controls breaks (a proof keeps its bar and buttons on one line, a link its address) */
+const RESIZE_MIN={note:200,image:200,frame:200,recording:220,audio:240,link:240,print:260,proof:280};
+const resizeBounds=n=>n?.type==="kanban"||n?.type==="treemap"?[360,920]:n?.type==="note"?[200,580]:[RESIZE_MIN[n?.type]||220,760];
 const nodeW=n=>n?(n.type==="group"?Math.max(240,n.gw||W.group):(n.gw?clamp(n.gw,...resizeBounds(n)):W[n.type]||320)):320;
 const nodeH=n=>n?(n.type==="group"?Math.max(160,n.gh||HGUESS.group):(n._h||(isHtmlSource(n)?290:HGUESS[n.type]||200))):200;
 const unwrapRedirectUrl=u=>{try{const p=new URL(String(u||""),location.href);if(!/^https?:$/i.test(p.protocol))return String(u||"");if(/(?:^|\.)google\./i.test(p.hostname)&&(p.pathname==="/url"||p.pathname==="/imgres")){const t=p.searchParams.get("url")||p.searchParams.get("q")||p.searchParams.get("imgurl");if(t){const tp=new URL(t);if(/^https?:$/i.test(tp.protocol))return tp.href}}return p.href}catch{return String(u||"")}};
@@ -8102,7 +8105,8 @@ function advPinHTML(n){
   const cntHTML=`<span class="adv-cnt">${msgTotal}</span>`;
   return `<button type="button" class="adv-pin${unread?"":" read"}" data-adv-pin="${n.id}" aria-expanded="${exp}" aria-label="${unread?"Unread crew thought":"Crew thought"} on ${esc(titleOf(n))}" title="${L(`${msgTotal} comment${msgTotal>1?"s":""} · click to read & reply`,`${msgTotal} 条 AI 留言 · 点击查看或回复`)}"><span class="adv-orbs">${uniq.map(p=>{const a=AGENTS[p.agent]||AGENTS.critic;return `<span class="adv-ico" data-ag="${a.key}">${a.mk}</span>`}).join("")}</span>${cntHTML}${dotHTML}</button>`;
 }
-const RESIZABLE_TYPES=new Set(["note","notepad","kanban","treemap","source","synthesis","list","idea","direction","question"]);
+/* every card but a table (its width follows its columns; double-click fits it) and a group (its own corner) */
+const RESIZABLE_TYPES=new Set(["note","notepad","kanban","treemap","source","synthesis","list","idea","direction","question","image","frame","recording","audio","link","proof","print"]);
 let findOpen=false,findQuery="",findIdx=0;
 function findSearchParts(n){
   const pins=(board.pins?.[n.id]||[]).flatMap(p=>[p.note,p.take,p.edge,...(p.replies||[]).map(r=>r.text)]);
@@ -19738,10 +19742,33 @@ function paintResizeHud(el,w,label,sym){
   const pre=sym?"↔ ":"";
   hud.innerHTML=`<i></i>${label?`<span>${pre}${label} ·</span> `:pre?`<span>${pre}</span>`:""}${Math.round(w)} px`;
 }
+/* Cards snapped to a card being resized stay snapped: the ones beyond the edge that moves travel with it, and the
+   ones below follow its height as the text reflows. Everything else in the system stays where it is. A seam the new
+   size still cannot keep is let go the way a drag lets go: the relation stays, shown as a line, and a toast says so. */
+function resizeRiders(n){
+  const x0=n.x,x1=n.x+nodeW(n),y1=n.y+nodeH(n),riders=[];
+  for(const id of bondCluster(n.id)){if(id===n.id)continue;const m=byId(id);if(!m)continue;
+    let side=m.x>=x1-2?"r":m.x+nodeW(m)<=x0+2?"l":"";const below=!side&&m.y>=y1-2;
+    /* one lined up under the card keeps the edge it shares, so a narrower card does not slide off it */
+    if(below)side=Math.abs(m.x-x0)<=2?"l":Math.abs(m.x+nodeW(m)-x1)<=2?"r":"";
+    if(side||below)riders.push({n:m,x:m.x,y:m.y,side,below})}
+  const ids=new Set([n.id,...riders.map(r=>r.n.id)]);
+  return {riders,bonds:board.edges.filter(e=>(ids.has(e.a)||ids.has(e.b))&&isBonded(e)).map(e=>e.id)};
+}
+function rideResize(g){
+  if(!g?.riders?.length)return;
+  const n=g.n,w=nodeW(n),dl=n.x-g.ox,dr=n.x+w-(g.ox+g.ow),dh=nodeH(n)-g.oh;
+  for(const r of g.riders){
+    r.n.x=Math.round(r.x+(r.side==="r"?dr:r.side==="l"?dl:0));r.n.y=Math.round(r.y+(r.below?dh:0));
+    const el=nodeEl(r.n.id);if(el){el.style.left=r.n.x+"px";el.style.top=r.n.y+"px"}
+  }
+}
 function resetCardWidth(n){
   if(n?.type==="table"&&n.data){const fit=tblCardWidth(n.data);if(n.gw===fit)return false;checkpoint();n.gw=fit;n.updated=NOW();sfx("pop");renderAll();persist();toast(L(`Fitted to the table (${fit} px)`,`已贴合表格宽度（${fit} px）`));return true}
   if(!n||n.gw==null)return false;
-  checkpoint();delete n.gw;n.updated=NOW();sfx("pop");renderAll();persist();
+  const g={n,ox:n.x,ow:nodeW(n),oh:nodeH(n),...resizeRiders(n)};
+  checkpoint();delete n.gw;n.updated=NOW();sfx("pop");renderAll();rideResize(g);
+  if(g.riders.length){settleInZones([n,...g.riders.map(r=>r.n)]);renderAll()}persist();
   toast(L(`Width reset (${nodeW(n)} px)`,`已恢复默认宽度（${nodeW(n)} px）`));
   return true;
 }
@@ -19756,7 +19783,7 @@ wall.addEventListener("pointerdown",e=>{
   if(e.target.closest("button,textarea,input,audio,a,[contenteditable='true'],.aud-bar,.kb-item,.kb-add,.tm-node,.tm-acts,.tm-tog,.todo li[data-todo-key],.todo-add,.wire-pop,.tbl-block tbody td,.tbl-chart"))return;
   const card=e.target.closest(".card");const port=e.target.closest("[data-port]");const rsz=e.target.closest("[data-resize]");const wh=e.target.closest(".w-hit[data-edge]");stopCam();
   if(port&&card){selectedEdgeId=null;const n=byId(card.dataset.id);wireDrag={from:n,role:port.dataset.port==="in"?"in":"out",side:port.dataset.side||"right",d:""};gesture={type:"wire"};wall.setPointerCapture(e.pointerId);return}
-  if(rsz&&card&&tool!=="hand"&&!spaceHeld&&e.button===0){selectedEdgeId=null;const n=byId(card.dataset.id);if(n){gesture={type:"resize",id:n.id,n,mode:rsz.dataset.resize||"both",sx:e.clientX,sy:e.clientY,ox:n.x,ow:nodeW(n),oh:nodeH(n),moved:false,snap:null,handleEl:rsz};wall.setPointerCapture(e.pointerId);return}}
+  if(rsz&&card&&tool!=="hand"&&!spaceHeld&&e.button===0){selectedEdgeId=null;const n=byId(card.dataset.id);if(n){gesture={type:"resize",id:n.id,n,mode:rsz.dataset.resize||"both",sx:e.clientX,sy:e.clientY,ox:n.x,ow:nodeW(n),oh:nodeH(n),moved:false,snap:null,handleEl:rsz,...resizeRiders(n)};wall.setPointerCapture(e.pointerId);return}}
   if(wh&&tool!=="hand"&&!spaceHeld&&e.button===0){
     const eid=wh.dataset.edge;
     selectedEdgeId=selectedEdgeId===eid?null:eid;
@@ -19841,6 +19868,7 @@ wall.addEventListener("pointermove",e=>{
         gesture.n._h=el.offsetHeight||gesture.n._h;
         paintResizeHud(el,w,label,sym);
       }
+      rideResize(gesture);
       drawWires();placeMargin();placeBars();return;
     }
     gesture.n.gw=Math.max(240,Math.round(gesture.ow+dx));gesture.n.gh=Math.max(160,Math.round(gesture.oh+dy));gesture.n._h=gesture.n.gh;
@@ -19884,7 +19912,10 @@ function endPointer(e){
     paintResizeHud(el,null);
     if(g.moved){
       if(g.mode!=="both"&&g.n.gw===clamp(W[g.n.type]||320,...resizeBounds(g.n)))delete g.n.gw;
-      g.n.updated=NOW();renderAll();persist();
+      g.n.updated=NOW();renderAll();rideResize(g);
+      settleInZones([g.n,...(g.riders||[]).map(r=>r.n)]);renderAll();persist();
+      const torn=(g.bonds||[]).filter(id=>{const x=board.edges.find(z=>z.id===id);return x&&!isBonded(x)});
+      if(torn.length)afterSnapDrop({made:null,torn});
     }else select([g.id]);
     return;
   }

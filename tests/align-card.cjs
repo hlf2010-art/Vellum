@@ -130,7 +130,7 @@ const overflow = p => p.evaluate(() => { const bad = []; for (const c of documen
         await p.evaluate(broken => {
           window.__asked = null;
           if (!window.__cs) { window.__cs = connSummary; connSummary = () => ({ ...window.__cs(), engine: 'studio' }); }
-          if (!window.__ask) window.__ask = askAI; askAI = async (o, local) => { if (/line drawings/.test(o.system)) { window.__asked = o; const one = '<rect x="30" y="20" width="40" height="60" rx="8"/>'; const v = { pick: [one, one, broken ? '<script/>' : one, one], left: '<circle cx="50" cy="50" r="30"/>', right: '<rect x="25" y="25" width="50" height="50"/>' }; const probs = o.check(v); return broken ? (probs.length ? null : v) : v; } return window.__ask(o, local); };
+          if (!window.__ask) window.__ask = askAI; askAI = async (o, local) => { if (/line drawings/.test(o.system)) { window.__asked = o; const one = '<rect x="30" y="20" width="40" height="60" rx="8"/>'; const v = { pick: [one, one, broken ? '<script/>' : one, one], left: '<circle cx="50" cy="50" r="30"/>', right: '<rect x="25" y="25" width="50" height="50"/>' }; const probs = o.check(v); return broken ? (probs.length ? null : { v, live: true }) : { v, live: true }; } return window.__ask(o, local); };
           board.nodes.filter(n => n.type === 'align').forEach(n => n.tombstone = true);
           generateImages = async () => {}; return alignOrMake('image', broken ? 'a pair of glasses' : 'a desk lamp', null);
         }, broken);

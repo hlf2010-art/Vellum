@@ -163,6 +163,9 @@ const state = p => p.evaluate(() => ({ adopted: Object.values(board.adopted), se
     /* 4. touch: a finger in the Pen tool draws; two fingers cancel the stroke and pinch */
     {
       const p = await open(browser, base, { touch: true });
+      // fit A and B (direction cards carry a "From …" line, so two of them stack taller than the viewport at .9)
+      await p.evaluate(() => { const ab = board.nodes.filter(n => n.type === 'direction' && 'AB'.includes(n.letter)), r = wall.getBoundingClientRect(), y0 = Math.min(...ab.map(n => n.y)), y1 = Math.max(...ab.map(n => n.y + nodeH(n))), x = ab[0].x + nodeW(ab[0]) / 2; cam.s = .7; cam.x = r.width * .45 - x * cam.s; cam.y = r.height / 2 - (y0 + y1) / 2 * cam.s; paintCam(); });
+      await p.waitForTimeout(300);
       const a = await rectOf(p, 'A'), b = await rectOf(p, 'B');
       await p.evaluate(() => setTool('lasso'));
       await drawTouch(p, loop(union(a, b), 26)); await p.waitForTimeout(200);

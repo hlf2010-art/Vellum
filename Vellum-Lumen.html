@@ -3959,15 +3959,15 @@ header.top .part-b[aria-checked="true"] .part-l>span{padding-left:7px}
 /* ── Thinking is drawn in ink ────────────────────────────────────────────
    Material (files, media, notes) is plain paper. Thinking (a claim, a synthesis, a direction, a question, a proof)
    carries an ink rule. Drafts stay pencil (dashed). A direction set aside keeps full words but loses its ink. */
-.card:is(.idea,.synthesis,.direction,.question,.proof):not(.sketch){
+.card:is(.idea,.synthesis,.direction,.question,.research,.proof):not(.sketch){
   --ink-rule:color-mix(in srgb,var(--label) 20%,transparent);
   --card-shadow:0 0 0 1.25px var(--ink-rule),0 1px 2px rgba(11,12,14,.04),0 10px 22px -16px rgba(11,12,14,.18);
   --card-shadow-up:0 0 0 1.25px var(--ink-rule),0 2px 3px rgba(11,12,14,.04),0 8px 16px -6px rgba(11,12,14,.08),0 34px 64px -28px rgba(11,12,14,.28)}
-:root[data-theme="dark"] .card:is(.idea,.synthesis,.direction,.question,.proof):not(.sketch){
+:root[data-theme="dark"] .card:is(.idea,.synthesis,.direction,.question,.research,.proof):not(.sketch){
   --ink-rule:color-mix(in srgb,var(--label) 46%,transparent);
   --card-shadow:0 0 0 1.25px var(--ink-rule),0 14px 34px -16px rgba(0,0,0,.8);
   --card-shadow-up:0 0 0 1.25px var(--ink-rule),0 34px 70px -24px rgba(0,0,0,.9)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .card:is(.idea,.synthesis,.direction,.question,.proof):not(.sketch){
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .card:is(.idea,.synthesis,.direction,.question,.research,.proof):not(.sketch){
   --ink-rule:color-mix(in srgb,var(--label) 46%,transparent);
   --card-shadow:0 0 0 1.25px var(--ink-rule),0 14px 34px -16px rgba(0,0,0,.8);
   --card-shadow-up:0 0 0 1.25px var(--ink-rule),0 34px 70px -24px rgba(0,0,0,.9)}}
@@ -4003,6 +4003,64 @@ header.top .part-b[aria-checked="true"] .part-l>span{padding-left:7px}
 .part.nomodel .part-b[aria-checked="true"] .part-l>span::after{display:none}
 /* the background-task pill appears once something has run */
 .island[data-empty]{opacity:0!important;pointer-events:none}
+
+/* ── Dig in: research chains grown from one line of a card ─────────────
+   The words of a selected card can be selected; a dig hangs off those words with a hairline. A chain line is never
+   evidence, so it stays neutral grey. Folded chains leave a dotted underline and a small count beside the words. */
+.card.sel:not(.sketch):not(.is-editing) :is(.rs-ans,.notepad-body,p[data-edit="text"],h4[data-edit],.pb){user-select:text;-webkit-user-select:text;cursor:text}
+.card.sel:not(.sketch) :is(.rs-ans,.notepad-body,p[data-edit="text"],h4[data-edit],.pb) ::selection{background:color-mix(in srgb,var(--B-fill) 24%,transparent)}
+.card.research .rs-ans{font-size:13.5px;line-height:1.6;color:var(--label-2);margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.card.research .rs-ans:empty::before{content:attr(data-ph);color:var(--label-3)}
+.card.research .rs-wait{color:var(--label-3)}
+.rs-dots{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}
+.rs-dots b{width:4px;height:4px;border-radius:50%;background:currentColor;animation:rsDot 1.2s ease-in-out infinite}
+.rs-dots b:nth-child(2){animation-delay:.15s}.rs-dots b:nth-child(3){animation-delay:.3s}
+@keyframes rsDot{0%,80%,100%{opacity:.25}40%{opacity:.9}}
+@media (prefers-reduced-motion:reduce){.rs-dots b{animation:none;opacity:.5}}
+.dig-mk{color:var(--label);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--label) 38%,transparent);text-decoration-thickness:1.5px;text-underline-offset:4px;cursor:pointer;border-radius:3px;transition:background .16s,text-decoration-color .16s}
+.dig-mk:hover,.dig-mk.hot{text-decoration-color:var(--label);background:var(--hover)}
+.dig-mk.is-folded{text-decoration-style:dotted}
+.dig-chip{display:inline-flex;align-items:center;gap:3px;margin-left:4px;padding:0 6px 0 4px;height:18px;vertical-align:1px;border-radius:999px;font-size:11px;font-weight:550;line-height:1;color:var(--label-2);box-shadow:inset 0 0 0 .75px var(--hair-2);cursor:pointer;user-select:none;-webkit-user-select:none;font-variant-numeric:tabular-nums}
+.dig-chip .ico{width:12px;height:12px}
+.dig-chip:hover{background:var(--hover);color:var(--label)}
+#wires path.w.dig-line{stroke:var(--thread);stroke-width:1.25}
+#wires path.w.dig-line.hot{stroke:color-mix(in srgb,var(--label) 55%,transparent)}
+#wires circle.dig-end{fill:var(--thread)}
+.dig-kept{display:inline-flex;align-items:center;gap:4px;color:var(--label-3);font-size:11.5px}
+.dig-kept .ico{width:12px;height:12px}
+.dig-trail{font:inherit;font-size:11.5px;font-weight:550;display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px 0 6px;border:0;border-radius:999px;background:transparent;color:var(--label-2);box-shadow:inset 0 0 0 .75px var(--hair-2);cursor:pointer}
+.dig-trail .ico{width:13px;height:13px}
+.dig-trail:hover{background:var(--hover);color:var(--label)}
+.card.dig-twin{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--focus) 45%,transparent),var(--card-shadow-up)}
+.card.notepad h4[data-edit="title"][data-ph]:empty::before{content:attr(data-ph);color:var(--label-3);font-weight:500}
+.card.dig-home{transition:left .38s var(--snappy),top .38s var(--snappy)}
+.card.dig-fold-out{transition:transform .24s var(--ease),opacity .2s ease;opacity:0;pointer-events:none}
+#digBar{position:fixed;z-index:96;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:var(--card);-webkit-backdrop-filter:blur(28px) saturate(1.4);backdrop-filter:blur(28px) saturate(1.4);box-shadow:var(--chrome-shadow),0 16px 36px -14px rgba(0,0,0,.35);transform:translate(-50%,-100%);animation:ornIn .15s var(--snappy)}
+#digBar[hidden]{display:none}
+#digBar button{font:inherit;font-size:12.5px;font-weight:550;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:var(--label-2);cursor:pointer;white-space:nowrap}
+#digBar button:hover{background:var(--hover);color:var(--label)}
+#digBar button.pri{background:var(--act);color:var(--on-act)}
+#digBar button.pri:hover{background:var(--act);opacity:.9}
+#digBar button .ico{width:14px;height:14px}
+#digBar kbd{font:inherit;font-size:11px;opacity:.55}
+#digBar input{font:inherit;font-size:13px;width:260px;height:28px;padding:0 10px;border:0;outline:0;background:transparent;color:var(--label)}
+#digBar input::placeholder{color:var(--label-3)}
+.dig-ghost{position:fixed;left:0;top:0;z-index:97;max-width:260px;padding:6px 10px;border-radius:12px;background:var(--card);box-shadow:var(--chrome-shadow),0 12px 28px -12px rgba(0,0,0,.35);font-size:12.5px;line-height:1.4;color:var(--label);pointer-events:none;opacity:0;transition:opacity .12s}
+.dig-ghost.on{opacity:1}
+#digTrail{position:fixed;z-index:96;width:300px;padding:14px 16px 12px;border-radius:16px;background:var(--card);-webkit-backdrop-filter:blur(28px) saturate(1.4);backdrop-filter:blur(28px) saturate(1.4);box-shadow:var(--chrome-shadow),0 20px 48px -12px rgba(0,0,0,.4);animation:ornIn .15s var(--snappy)}
+#digTrail[hidden]{display:none}
+#digTrail h5{margin:0 0 10px;font-size:12px;font-weight:600;color:var(--label-3)}
+#digTrail ol{list-style:none;margin:0;padding:0}
+#digTrail li{position:relative;padding-left:18px;margin-bottom:10px;font-size:13px;line-height:1.45;color:var(--label-2);overflow-wrap:anywhere}
+#digTrail li::before{content:"";position:absolute;left:3px;top:6px;width:7px;height:7px;border-radius:50%;box-shadow:inset 0 0 0 1.25px var(--label-3)}
+#digTrail li::after{content:"";position:absolute;left:6.5px;top:15px;bottom:-11px;width:1px;background:var(--hair-2)}
+#digTrail li:last-child::after{display:none}
+#digTrail li.me{color:var(--label);font-weight:550}
+#digTrail li.me::before{background:var(--label);box-shadow:none}
+#digTrail li small{display:block;font-size:11.5px;font-weight:450;color:var(--label-3)}
+#digTrail .dt-act{display:flex;justify-content:flex-end;margin-top:2px}
+#digTrail .dt-act button{font:inherit;font-size:12.5px;font-weight:550;height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:var(--label-2);box-shadow:inset 0 0 0 .75px var(--hair-2);cursor:pointer}
+#digTrail .dt-act button:hover{background:var(--hover);color:var(--label)}
 </style>
 <style id="audit-1127">
 /* ════ Design pass, 27 Nov 2026 ═════════════════════════════════════════
@@ -4828,9 +4886,9 @@ function labelPopHTML(n){
   const s=n.wSug;if(!s)return"";
   return `<div class="lp-head">${evIconHTML(s.w,"ev-ico lp-ico "+s.w)}<b>${esc(weightLabel(s.w))}</b><span class="lp-by">${AV.scout}Scout</span></div><p class="lp-why">${esc(s.why||weightDesc(s.w))}</p><div class="lp-acts"><button type="button" class="ev-act" data-lp-act="change">${esc(L("Change","更改"))}</button><button type="button" class="ev-act pri" data-lp-act="keep">${esc(L("Keep","保留"))}</button></div>`;
 }
-const W={table:480,note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
-const HGUESS={table:260,note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,direction:330,proof:390,print:300,list:260,kanban:280,treemap:280,synthesis:300,group:440};
-const visibleNodes=()=>board.nodes.filter(n=>n&&!n.hidden&&!n.archived&&!n.tombstone);
+const W={table:480,note:240,notepad:380,idea:360,source:320,image:320,recording:360,audio:320,link:320,frame:280,question:320,research:320,direction:360,proof:360,print:320,list:320,kanban:540,treemap:540,synthesis:360,group:680};
+const HGUESS={table:260,note:240,notepad:300,idea:220,source:230,image:420,recording:340,audio:190,link:290,frame:240,question:200,research:240,direction:330,proof:390,print:300,list:260,kanban:280,treemap:280,synthesis:300,group:440};
+const visibleNodes=()=>board.nodes.filter(n=>n&&!n.hidden&&!n.archived&&!n.tombstone&&!digFolded(n));
 /* how narrow and wide each card may be dragged: narrow enough to tuck beside another, never so narrow its own row of
    controls breaks (a proof keeps its bar and buttons on one line, a link its address) */
 const RESIZE_MIN={note:200,image:200,frame:200,recording:220,audio:240,link:240,print:260,proof:280};
@@ -4877,7 +4935,7 @@ if(DEMO){store.set(".lang",DEMO.lang);if(DEMO.theme)store.set(".theme",DEMO.them
 function blank(title=""){return {id:uid(),title,speak:"matters",memory:"",mcpContext:[],nodes:[],edges:[],adopted:{},threads:{},pins:{},copilot:[],log:[],proposals:[],changes:[],cam:null,zoneW:BAY,created:NOW(),updated:NOW()}}
 let board, sel=[], undoStack=[], redoStack=[], saveT=0, storageOk=true, idbBoardOk=false, selectedEdgeId=null;
 const byId=id=>board.nodes.find(n=>n.id===id);
-const isNodeHidden=n=>!!(n&&(n.hidden||n.archived||n.tombstone));
+const isNodeHidden=n=>!!(n&&(n.hidden||n.archived||n.tombstone||digFolded(n)));
 const selected=()=>sel.map(byId).filter(n=>n&&!isNodeHidden(n));
 const one=()=>{const s=selected();return s.length===1?s[0]:null};
 const snapOfBoard=()=>JSON.stringify({nodes:board.nodes,edges:board.edges,adopted:board.adopted,threads:board.threads,pins:board.pins,log:board.log,proposals:board.proposals||[]});
@@ -7352,10 +7410,10 @@ function cardBody(n){
     const noteHead=sk?head(`${byline(n)}<span class="note-tag"><span>${tagTxt}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag" data-a="edit-tag" title="${tagTitle}"><span data-edit="tag" spellcheck="false">${tagTxt}</span></span><span class="sp"></span>${cardVotesHTML(n)}</div>`;
     return `<div class="in">${sk?"":'<span class="note-grain" aria-hidden="true"></span><span class="note-grip" aria-hidden="true"></span>'}${noteHead}
     <h4 data-edit="text">${esc(n.text)}</h4>${sk?sketchActs(n):foot(n.weight?weightHTML(n.weight,false,n):"",fR(threadCount(n)))}</div>`;}
-  case"notepad":{const defPadTag=uiLang()==="zh"?"记事本":"Notepad",padTag=esc(n.tag||formatTagOf(n)||defPadTag),padTitle=esc(uiLang()==="zh"?"点击编辑记事本标签":"Click to edit tag");
+  case"notepad":{const defPadTag=uiLang()==="zh"?"记事本":"Notepad",padTag=esc(n.tag||(n.dug?(uiLang()==="zh"?"来自调研":"From research"):"")||formatTagOf(n)||defPadTag),padTitle=esc(uiLang()==="zh"?"点击编辑记事本标签":"Click to edit tag");
     const npHead=sk?head(`${byline(n)}<span class="note-tag notepad-tag"><span>${padTag}</span></span>`):`<div class="card-k">${byline(n)}<span class="note-tag notepad-tag" data-a="edit-tag" title="${padTitle}"><span data-edit="tag" spellcheck="false">${padTag}</span></span><span class="sp"></span>${cardVotesHTML(n)}</div>`;
     return `<div class="in">${npHead}
-    <h4 data-edit="title">${esc(n.title||"")}</h4>${!n.fmtOff&&hasBlocks(n.text)?`<div class="notepad-body pb" data-edit="text" data-raw="1">${blocksHTML(n)}</div>`:`<div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>`}${sk?sketchActs(n):foot(fL(weightHTML(n.weight,false,n),`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
+    <h4 data-edit="title">${esc(n.title||"")}</h4>${!n.fmtOff&&hasBlocks(n.text)?`<div class="notepad-body pb" data-edit="text" data-raw="1">${blocksHTML(n)}</div>`:`<div class="notepad-body" data-edit="text">${esc(n.text||"")}</div>`}${sk?sketchActs(n):foot(fL(weightHTML(n.weight,false,n),n.dug?digTrailBtn(n):`<span>${fmtPadStat(n.text)}</span>`),fR(threadCount(n)))}</div>`;}
   case"table":{/* L is shadowed by lin(n) in cardBody, so translate locally */const tr=(en,zh)=>uiLang()==="zh"?zh:en;const ds=n.data||{columns:[],rows:[]},src=ds.source||{};
     const from=[src.kind==="copilot"?tr("From Copilot","来自 Copilot"):src.kind==="paste"?tr("Pasted","粘贴"):src.label||"",src.edited?tr("edited","已编辑"):"",
       src.total>(ds.rows||[]).length?tr(`first ${(ds.rows||[]).length} of ${src.total.toLocaleString()} rows`,`前 ${(ds.rows||[]).length} 行，共 ${src.total.toLocaleString()} 行`):src.more?tr(`first ${(ds.rows||[]).length} rows`,`前 ${(ds.rows||[]).length} 行`):""].filter(Boolean).join(" · ");
@@ -7414,6 +7472,12 @@ function cardBody(n){
     ${sk?sketchActs(n):foot(fL(weightHTML(n.weight,false,n),!g&&frCnt?`<span class="foot-txt">${Lang(`${frCnt} ${frCnt===1?"frame":"frames"} lifted`,`已截取 ${frCnt} 帧`)}</span>`:""),fR(threadCount(n)))}</div>`;}
   case"frame":{const r=byId(n.from),plChip=plBusyNodes.has(n.id)?`<span class="foot-pl busy">${Lang("Reading…","正在反推…")}</span>`:n.plPack?.positive?`<button type="button" class="foot-pl" data-a="reverse-prompt" title="${esc(Lang("View the extracted prompt","查看反推出的提示词"))}">${ic("sparkles")}${Lang("Prompt","提示词")}</button>`:"";return `<div class="media"><img src="${mediaSrc(n.media)}" alt="" draggable="false"><span class="tc">@ ${tc(n.t)}</span></div><div class="in">${head(ebHTML(n))}<h4 data-edit="title">${esc(n.title||Lang("Frame ","帧 ")+tc(n.t))}</h4>${foot(fL(n.weight?weightHTML(n.weight,sk):"",plChip),fR(threadCount(n)))}</div>`}
   case"question":{const on=byId(n.on);return `<div class="in"><span class="qmark" aria-hidden="true">?</span>${head(ebHTML(n))}<h4 data-edit="text">${esc(n.text)}</h4>${foot("",fR(threadCount(n)))}</div>`}
+  case"research":{/* one layer of a dig: the question on top, Scout's answer below; the answer stays editable, and empty when no AI is connected */
+    const busy=!!n.digBusy,txt=String(n.text||""),kept=digKeptOf(n).length;
+    const ans=busy&&!txt.trim()?`<p class="rs-ans rs-wait">${Lang("Scout is looking into it","Scout 正在查")}<span class="rs-dots" aria-hidden="true"><b></b><b></b><b></b></span></p>`
+      :`<p class="rs-ans" data-edit="text" data-ph="${esc(n.digOffline?Lang("No AI connected. Write what you find here.","没有连接 AI，可以把你查到的写在这里。"):Lang("Nothing came back. Write what you find here.","没有查到结果，可以把你查到的写在这里。"))}">${esc(txt)}</p>`;
+    const keptH=kept?`<span class="dig-kept" data-dig-twin="${n.id}">${ic("check")}${Lang("Brought back","已带回")}</span>`:"";
+    return `<div class="in">${head(ebHTML(n))}<h4 data-edit="title">${esc(n.title||"")}</h4>${ans}${foot(fL(keptH),fR(threadCount(n)))}</div>`}
   case"direction":{const adopted=board.adopted[n.idea]===n.id,hasProof=outputsOf(n.id).some(o=>o.type==="proof"),mode=esc(modeLabel(n.mode));
     /* the flag sits on the test when there is one: the test is how the assumption gets settled */
     const flagH=sk?"":dirFlagHTML(n),flagInTest=!!(flagH&&n.test);
@@ -8575,6 +8639,7 @@ function drawWires(){
   const visEdges=[],bonds=[],tags=[];
   for(const e of board.edges){
     const a=byId(e.a),b=byId(e.b);if(!a||!b||isNodeHidden(a)||isNodeHidden(b))continue;
+    if(e.kind==="ask"&&b.type==="research"&&!e.rel)continue;
     if(e.rel&&!e.line){const s=seamOf(a,b);if(s){bonds.push({e,s});continue}}
     visEdges.push({e,a,b});
     const sp=autoSidePair(a,b);
@@ -8597,7 +8662,7 @@ function drawWires(){
     if(!freshEdges.has(e.id))h+=`<path class="${rcls}" d="${taperRootPath(ep)}"/>${e.rel?"":`<path class="${fcls}" d="${d}"/>`}`;
     hits+=`<path class="w-hit" data-edge="${e.id}" d="${d}"/>`;
   }
-  h+=provenanceSVG()+hits;
+  h+=digLinesSVG()+provenanceSVG()+hits;
   if(wireDrag)h+=`<path class="w temp" d="${wireDrag.d}"/>`;
   wiresEl.innerHTML=h;
   qsa(".card[data-id]",nodesEl).forEach(el=>{
@@ -10203,7 +10268,7 @@ function renderAll(){fitZones();if(board&&(!changeShadow||changeShadow.id!==boar
   litCache=null;renderBays();renderNodes();drawWires();renderRail();renderCrew();renderMargin();renderSelbar();renderBars();renderLineCtx();renderWirePop?.();syncHistoryBtns?.();syncCopilotBoard?.();if(typeof renderDecisions==="function")renderDecisions();
   $("projectName").textContent=board.title||"Untitled board";document.title=(board.title?board.title+" · ":"")+"Vellum";
   const archCount=board.nodes.filter(n=>!n.tombstone&&n.archived).length;
-  const hidCount=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived).length;
+  const hidCount=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived&&!digFolded(n)).length;
   const offCount=archCount+hidCount;
   if($("archiveBtn")){$("archiveBtn").hidden=!offCount;$("archCount").textContent=offCount;$("archiveBtn").title=hidCount&&archCount?`Hidden (${hidCount}) · Archived (${archCount})`:hidCount?`Hidden cards (${hidCount})`:`Archived cards (${archCount})`}
   renderStrip();renderReview();renderNarr();paintEdges();paintMap();renderAdvPop();if(typeof findOpen!=="undefined"&&findOpen)renderFindBar?.();
@@ -12153,7 +12218,7 @@ async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   goHome(k);setAgent(k,{busy:false,status:""});
   crewState[k].lastRun={t:NOW(),live:err?false:(res&&typeof res==="object"&&"live" in res?!!res.live:null)};
   if(err){task.fail(err?.message);throw err}
-  task.done(res&&res.live===false&&res.why?{tone:"warn",note:L("Built-in rules answered","内置规则作答")}:res&&res.route?{note:res.route}:{});return res;
+  task.done(res&&res.live===false&&res.why?{tone:"warn",note:res.why==="no model"?L("No AI connected","没有连接 AI"):L("Built-in rules answered","内置规则作答")}:res&&res.route?{note:res.route}:{});return res;
 }
 function freeSpot(x,y,w,h,ignore=[]){
   for(let i=0;i<80;i++){
@@ -20480,6 +20545,7 @@ wall.addEventListener("pointerdown",e=>{
     gesture={type:"marquee",sx:e.clientX,sy:e.clientY,w0:wp,w1:wp,base:[...sel]};
     wall.setPointerCapture(e.pointerId);return;
   }
+  if(digTextDown(e,card))return;
   if(card&&tool!=="hand"&&!spaceHeld&&e.button===0){
     const id=card.dataset.id,clicked=byId(id);let ids=sel.includes(id)?[...sel]:[id];
     if(e.shiftKey||e.metaKey){ids=sel.includes(id)?sel.filter(x=>x!==id):[...sel,id]}
@@ -20610,7 +20676,7 @@ function endPointer(e){
     else if(!g.inText){const a=g.target.closest("[data-a]");if(a&&!a.matches("button")&&a.dataset.a!=="edit-note"){act(a.dataset.a,byId(g.id),a);return}}
     requestAnimationFrame(()=>refocusWriting(g.writing));return}
   if(g.type==="drag"){qsa(".dragging").forEach(c=>c.classList.remove("dragging","magnet"));document.body.classList.remove("is-dragging-card");
-    if(g.moved){const sr=snapOnDrop(g);settleInZones(g.orig.map(o=>o.n));g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();afterSnapDrop(sr)}
+    if(g.moved){if(digDropBack(g))return;const sr=snapOnDrop(g);settleInZones(g.orig.map(o=>o.n));g.orig.forEach(o=>{o.n.updatedPos=NOW()});renderAll();persist();afterSnapDrop(sr)}
     else{const a=g.target.closest("[data-a]");if(a&&!a.matches("button")){act(a.dataset.a,byId(g.id),a);return}const hit=byId(g.id);if(!g.shift&&g.wasSel&&g.editHit&&hit?.type==="note"&&hit.status!=="sketch"){startEdit(g.id,"text",{clientX:g.cx,clientY:g.cy});return}select(g.shift?g.ids:[g.id])}}
   if(g.type==="marquee"){
     $("marquee").hidden=true;
@@ -21471,7 +21537,7 @@ document.fonts?.ready?.then(()=>setTimeout(spaceSample,60));
 {const _ra=renderAll;renderAll=function(...a){const r=_ra.apply(this,a);
   /* the board name is said in the interface language when there is none */
   const pn=$("projectName");if(pn&&!board.title)pn.textContent=L("Untitled board","未命名画板");
-  const ab=$("archiveBtn");if(ab&&uiLang()==="zh"){const ar=board.nodes.filter(n=>!n.tombstone&&n.archived).length,hd=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived).length;ab.title=hd&&ar?`已隐藏 ${hd} 张 · 已归档 ${ar} 张`:hd?`已隐藏 ${hd} 张卡片`:`已归档 ${ar} 张卡片`}
+  const ab=$("archiveBtn");if(ab&&uiLang()==="zh"){const ar=board.nodes.filter(n=>!n.tombstone&&n.archived).length,hd=board.nodes.filter(n=>!n.tombstone&&isNodeHidden(n)&&!n.archived&&!digFolded(n)).length;ab.title=hd&&ar?`已隐藏 ${hd} 张 · 已归档 ${ar} 张`:hd?`已隐藏 ${hd} 张卡片`:`已归档 ${ar} 张卡片`}
   if(board?.id==="showcase"&&board.spaced!==uiLang())requestAnimationFrame(()=>spaceSample());
   return r}}
 /* Messages written before the interface spoke Chinese, said again in Chinese (written for Chinese, not word for word) */
@@ -21517,7 +21583,7 @@ function zhToast(m){if(uiLang()!=="zh"||typeof m!=="string"||/[\u4e00-\u9fff]/.t
 /* ── Card eyebrows ─────────────────────────────────────────────────────
    One word for what a card is, in the interface language. A format appears once, on the thumbnail badge;
    model, source and file type go in the hover title. Only cards on a direction's line carry its letter. */
-const EB_WORD={note:["Sticky","便签"],notepad:["Notepad","记事本"],idea:["Idea","想法"],table:["Table","表格"],audio:["Audio","音频"],image:["Image","图片"],recording:["Video","视频"],frame:["Frame","帧"],question:["Question","追问"],link:["Link","链接"],group:["Group","分组"],direction:["Direction","方向"],proof:["Proof","原型"],print:["Snapshot","快照"],list:["Action list","行动清单"],kanban:["Kanban","看板"],treemap:["Tree map","树状图"],synthesis:["Synthesis","综合"]};
+const EB_WORD={note:["Sticky","便签"],notepad:["Notepad","记事本"],idea:["Idea","想法"],table:["Table","表格"],audio:["Audio","音频"],image:["Image","图片"],recording:["Video","视频"],frame:["Frame","帧"],question:["Question","追问"],research:["Research","调研"],link:["Link","链接"],group:["Group","分组"],direction:["Direction","方向"],proof:["Proof","原型"],print:["Snapshot","快照"],list:["Action list","行动清单"],kanban:["Kanban","看板"],treemap:["Tree map","树状图"],synthesis:["Synthesis","综合"]};
 const EB_FILE={pdf:["Document","文档"],word:["Document","文档"],txt:["Document","文档"],pptx:["Slides","幻灯片"],excel:["Spreadsheet","电子表格"],json:["Data","数据"],html:["Page","网页"],link:["Link","链接"]};
 const EB_KIND={claim:["Claim","论点"],"core thesis":["Core thesis","核心论点"],idea:["Idea","想法"],html:["Page","网页"],source:["File","文件"],file:["File","文件"],attachment:["File","文件"]};
 const ebT=p=>uiLang()==="zh"?p[1]:p[0];
@@ -21538,8 +21604,8 @@ function ebTitle(n,fmt,word){
   if(g&&g.format==="gif"&&g.dur)bits.push(`${g.dur}s`);
   if(g&&g.seed)bits.push(zh?`种子 ${g.seed}`:`seed ${g.seed}`);
   if(sr)bits.push(zh?`来自 ${sr.source||"网络"}`:`From ${sr.source||"the web"}`);
-  const rel=n.type==="question"?byId(n.on):n.type==="frame"?byId(n.from):null;
-  if(rel)bits.push(n.type==="question"?(zh?`关于「${titleOf(rel)}」`:`On “${titleOf(rel)}”`):(zh?`截自「${rel.title||titleOf(rel)}」`:`From “${rel.title||titleOf(rel)}”`));
+  const rel=n.type==="question"||n.type==="research"?byId(n.on):n.type==="frame"?byId(n.from):null;
+  if(rel)bits.push(n.type==="question"||n.type==="research"?(zh?`关于「${titleOf(rel)}」`:`On “${titleOf(rel)}”`):(zh?`截自「${rel.title||titleOf(rel)}」`:`From “${rel.title||titleOf(rel)}”`));
   return bits.join(" · ");
 }
 function ebHTML(n,fmt,customKind){
@@ -21625,6 +21691,298 @@ $("copilotPanel").addEventListener("keydown",e=>{
   if(e.key==="Enter"&&!e.shiftKey&&/^\//.test(e.target.value.trim())&&runSlashFromCopilot(e.target.value)){e.preventDefault();e.stopPropagation()}
 },true);
 $("copilotPanel").addEventListener("input",e=>{if(e.target.id==="cpInput"){cpSlashIdx=0;paintCpSlash()}});
+/* ── Dig in: a chain of questions grown from one line of a card ───────────
+   Select words in a selected card and dig in: Scout answers in a research card that hangs off those words. Anything
+   unclear in an answer can be dug again, so the chain grows to the right. A chain line only says which words a card asks
+   about; it is never evidence (groundOf never reads it). Evidence is what the person drags back: dropping a research
+   card, or words selected in one, onto a card makes a NEW card with their own caption on top and the quote below,
+   snapped to that card. The research card goes home and stays in the chain, marked "Brought back", so the chain never
+   breaks. Clicking the words folds the chain into them; a small count shows how deep it went. */
+ICONS.layers='<path d="M12 4 3.5 8.5 12 13l8.5-4.5z"/><path d="m3.5 12.5 8.5 4.5 8.5-4.5"/>';
+const digKids=id=>board.nodes.filter(m=>m.type==="research"&&m.on===id&&!m.tombstone&&!m.archived);
+function digFolded(n){
+  /* a research card is off the canvas while it, or any layer above it, is folded */
+  for(let m=n,d=0;m&&m.type==="research"&&d<40;m=byId(m.on),d++)if(m.digFold)return true;
+  return false;
+}
+function digChain(n){const out=[];for(let m=n,d=0;m&&m.type==="research"&&!m.tombstone&&d<40;m=byId(m.on),d++)out.unshift(m);return out}
+function digSubtree(id){const out=[],walk=(i,d)=>{if(d>40)return;for(const k of digKids(i)){out.push(k);walk(k.id,d+1)}};walk(id,0);return out}
+function digLayers(k){let best=1;const walk=(i,d)=>{best=Math.max(best,d);if(d>40)return;for(const c of digKids(i))walk(c.id,d+1)};walk(k.id,1);return best}
+const digFindings=()=>board.nodes.filter(m=>m.dug&&!m.tombstone&&!m.archived);
+const digKeptOf=r=>r?digFindings().filter(m=>m.dug.research===r.id):[];
+function digKeptIn(k){const ids=new Set([k.id,...digSubtree(k.id).map(m=>m.id)]);return digFindings().filter(m=>ids.has(m.dug.research)).length}
+const digQuestion=q=>L(`What does “${clip(q,70)}” mean here?`,`「${clip(q,40)}」在这里指什么？`);
+const digNorm=s=>String(s||"").replace(/\s+/g," ").trim();
+
+/* a card's look depends on its digs: the words they hang off, folded or not, and what came back */
+{const _s=sigOf;sigOf=function(n){
+  const ks=digKids(n.id),own=n.type==="research"?"r"+(n.digBusy?1:0)+(n.digOffline?1:0)+digKeptOf(n).length:"",fd=n.dug?"f"+(n.dug.from||[]).filter(id=>byId(id)&&!byId(id).tombstone).length:"";
+  return _s(n)+(ks.length||own||fd?"|dig:"+ks.map(k=>k.id+(k.digFold?"F":"")+digLayers(k)+"."+digKeptIn(k)).join()+own+fd:"");
+}}
+
+/* ── the words a dig hangs off ── */
+function digWrap(root,quote,id){
+  const q=digNorm(quote);if(!q)return null;
+  const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:t=>t.parentElement?.closest(".card-k,.foot,.dig-chip,button,.lineage-bar")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  const parts=[];let full="";for(let t;(t=tw.nextNode());){parts.push({t,at:full.length});full+=t.data}
+  const rx=new RegExp(q.split(" ").map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("\\s+"));
+  const m=rx.exec(full);if(!m)return null;
+  const i=m.index,j=i+m[0].length,at=pos=>{for(let k=parts.length-1;k>=0;k--)if(parts[k].at<=pos)return parts[k]};
+  const a=at(i),b=at(j-1);if(!a||!b)return null;
+  const r=document.createRange();r.setStart(a.t,i-a.at);r.setEnd(b.t,j-b.at);
+  const sp=document.createElement("span");sp.className="dig-mk";sp.dataset.dig=id;sp.dataset.a="dig-fold";
+  try{r.surroundContents(sp)}catch{sp.appendChild(r.extractContents());r.insertNode(sp)}
+  return sp;
+}
+function paintDigMarks(){
+  for(const n of visibleNodes()){
+    const el=nodeEl(n.id);if(!el)continue;
+    if(n.dug){const h=el.querySelector('h4[data-edit="title"]');if(h)h.dataset.ph=L("Why it matters, in your words","用你的话说，它为什么重要")}
+    const ks=digKids(n.id);if(!ks.length)continue;
+    const root=el.querySelector(".in")||el;
+    for(const k of ks){
+      let mk=root.querySelector(`.dig-mk[data-dig="${k.id}"]`);
+      if(!mk)mk=digWrap(root,k.quote,k.id);if(!mk)continue;
+      const folded=!!k.digFold;mk.classList.toggle("is-folded",folded);
+      mk.title=folded?L("Open this chain","展开这条追问"):L("Fold this chain","收起这条追问");
+      let chip=root.querySelector(`.dig-chip[data-dig="${k.id}"]`);
+      if(folded){
+        const layers=digLayers(k),kept=digKeptIn(k),lbl=kept?L(`${layers} ${layers===1?"layer":"layers"}, ${kept} kept`,`${layers} 层，留下 ${kept} 条`):L(`${layers} ${layers===1?"layer":"layers"}`,`${layers} 层`);
+        if(!chip){chip=document.createElement("span");chip.className="dig-chip";chip.dataset.dig=k.id;chip.dataset.a="dig-fold";mk.after(chip)}
+        chip.innerHTML=`${ic("layers")}${layers}`;chip.title=lbl+" · "+L("click to open","点击展开");chip.setAttribute("aria-label",lbl);
+      }else chip?.remove();
+    }
+  }
+}
+{const _rn=renderNodes;renderNodes=function(){_rn();paintDigMarks()}}
+
+/* ── chain lines: from the end of the words to the head of the card that asks about them ── */
+function digAnchor(p,k){
+  const el=nodeEl(p.id),mk=el?.querySelector(`.dig-mk[data-dig="${k.id}"]`);
+  if(el&&mk){const cr=el.getBoundingClientRect(),rs=mk.getClientRects(),last=rs[rs.length-1],s=cr.width/nodeW(p);
+    if(last&&s>0)return {x:p.x+(last.right-cr.left)/s+2,y:p.y+(last.bottom-cr.top)/s-2}}
+  return {x:p.x+nodeW(p),y:p.y+30};
+}
+let digHot=null;
+function digLinesSVG(){
+  let h="";
+  for(const k of board.nodes){
+    if(k.type!=="research"||isNodeHidden(k))continue;const p=byId(k.on);if(!p||isNodeHidden(p))continue;
+    const s=digAnchor(p,k),x2=k.x,y2=k.y+30,dx=Math.max(28,Math.abs(x2-s.x)*.5);
+    h+=`<path class="w dig-line${digHot===k.id?" hot":""}" d="M${s.x},${s.y} C${s.x+dx},${s.y} ${x2-dx},${y2} ${x2},${y2}"/><circle class="dig-end" cx="${x2}" cy="${y2}" r="2.4"/>`;
+  }
+  return h;
+}
+
+/* ── selecting words: on a selected card, a press in its words selects them instead of moving the card ── */
+const DIG_TXT=".rs-ans,.notepad-body,p[data-edit='text'],h4[data-edit],.pb";
+let digPress=null,digBarState=null;
+function digSelText(s){return s&&!s.isCollapsed?digNorm(s.toString()).slice(0,400):""}
+function digInSel(s,x,y){for(let i=0;i<s.rangeCount;i++)for(const r of s.getRangeAt(i).getClientRects())if(x>=r.left-2&&x<=r.right+2&&y>=r.top-2&&y<=r.bottom+2)return true;return false}
+function digTextDown(e,card){
+  if(!card||e.button!==0||tool!=="select"||spaceHeld||e.shiftKey||e.metaKey||e.ctrlKey||e.altKey||e.pointerType==="pen")return false;
+  const id=card.dataset.id,n=byId(id);if(!n||n.status==="sketch"||n.type==="group"||!(sel.length===1&&sel[0]===id))return false;
+  if(e.target.closest(".dig-mk,.dig-chip,[data-a]:not(p):not(h4):not(.notepad-body)"))return false;
+  const txt=e.target.closest(DIG_TXT);if(!txt||!card.contains(txt)||txt.isContentEditable)return false;
+  const s=getSelection();
+  if(n.type==="research"&&digSelText(s)&&card.contains(s.anchorNode)&&digInSel(s,e.clientX,e.clientY)){digQuoteDrag(e,n,digSelText(s));return true}
+  closeDigBar();digPress={id,x:e.clientX,y:e.clientY};return true;
+}
+addEventListener("pointerup",e=>{
+  if(!digPress)return;const p=digPress;digPress=null;
+  setTimeout(()=>{
+    const s=getSelection(),t=digSelText(s),el=nodeEl(p.id),n=byId(p.id);
+    if(t&&el&&el.contains(s.anchorNode)&&el.contains(s.focusNode))openDigBar(p.id,s,t);
+    else if(Math.hypot(e.clientX-p.x,e.clientY-p.y)<4&&n?.type==="note"&&n.status!=="sketch")startEdit(p.id,"text",{clientX:e.clientX,clientY:e.clientY});
+  },0);
+},true);
+
+/* ── the bar over a selection: Ask… / Dig in ── */
+function digBarEl(){
+  let b=$("digBar");if(b)return b;
+  b=document.createElement("div");b.id="digBar";b.hidden=true;b.setAttribute("role","toolbar");document.body.appendChild(b);
+  b.addEventListener("mousedown",e=>{if(!e.target.closest("input"))e.preventDefault()});
+  b.addEventListener("click",e=>{const a=e.target.closest("[data-dig-bar]")?.dataset.digBar;if(!a)return;
+    if(a==="ask")digBarAsk();else if(a==="go"){const q=b.querySelector("input")?.value;createDig(digBarState?.id,digBarState?.quote,q)}});
+  b.addEventListener("keydown",e=>{if(e.target.tagName!=="INPUT")return;e.stopPropagation();
+    if(e.isComposing||e.keyCode===229)return;
+    if(e.key==="Enter"){e.preventDefault();createDig(digBarState?.id,digBarState?.quote,e.target.value)}
+    else if(e.key==="Escape"){e.preventDefault();closeDigBar()}});
+  return b;
+}
+function paintDigBar(asking){
+  const b=digBarEl();
+  b.innerHTML=asking
+    ?`<input type="text" maxlength="200" placeholder="${esc(L("Ask about these words…","就这几个字问点什么…"))}" aria-label="${esc(L("Your question","你的问题"))}"><button type="button" class="pri" data-dig-bar="go">${ic("search")}${L("Dig in","深挖")}</button>`
+    :`<button type="button" data-dig-bar="ask">${L("Ask…","问一句…")}</button><button type="button" class="pri" data-dig-bar="go" title="${esc(L("Scout explains these words in a card beside them","Scout 在旁边开一张卡解释这几个字"))}">${ic("search")}${L("Dig in","深挖")}<kbd>↵</kbd></button>`;
+}
+function openDigBar(id,s,quote){
+  const r=s.getRangeAt(0).getBoundingClientRect();if(!r.width&&!r.height)return;
+  digBarState={id,quote,rect:{top:r.top,bottom:r.bottom,left:r.left,right:r.right},asking:false};
+  const b=digBarEl();paintDigBar(false);b.hidden=false;
+  const x=clamp(r.left+r.width/2,140,innerWidth-140),above=r.top>110;
+  b.style.left=x+"px";b.style.top=(above?r.top-8:r.bottom+8)+"px";b.style.transform=above?"translate(-50%,-100%)":"translate(-50%,0)";
+}
+function digBarAsk(){if(!digBarState)return;digBarState.asking=true;paintDigBar(true);digBarEl().querySelector("input")?.focus()}
+function closeDigBar(){const b=$("digBar");if(b&&!b.hidden)b.hidden=true;digBarState=null}
+document.addEventListener("selectionchange",()=>{if(digBarState&&!digBarState.asking&&!digSelText(getSelection()))closeDigBar()});
+addEventListener("keydown",e=>{
+  if(!digBarState||digBarState.asking||e.target.closest?.("input,textarea,[contenteditable='true']"))return;
+  if(e.key==="Enter"&&!e.shiftKey&&!e.metaKey&&!e.ctrlKey){e.preventDefault();e.stopImmediatePropagation();createDig(digBarState.id,digBarState.quote)}
+  else if(e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();closeDigBar();getSelection()?.removeAllRanges()}
+},true);
+wall.addEventListener("wheel",()=>closeDigBar(),{passive:true});
+wall.addEventListener("pointerdown",e=>{if(!digPress&&!e.target.closest?.("#digBar"))closeDigBar()},true);
+
+/* ── a dig: a research card beside the words, Scout fills it ── */
+function createDig(pid,quote,question){
+  const p=byId(pid),q0=digNorm(quote);if(!p||!q0)return null;
+  const q=digNorm(question)||digQuestion(q0);
+  let y=p.y+16;
+  const el=nodeEl(p.id),r=digBarState?.rect;
+  if(el&&r){const cr=el.getBoundingClientRect(),s=cr.width/nodeW(p);if(s>0)y=p.y+Math.max(0,(r.top-cr.top)/s-30)}
+  checkpoint();
+  const spot=freeSpot(p.x+nodeW(p)+72,Math.round(y),W.research,HGUESS.research,[p.id]);
+  const n=node("research",{title:q,text:"",quote:q0,on:p.id,depth:p.type==="research"?(p.depth||1)+1:1,by:"scout",digBusy:true},spot);
+  edge(p.id,n.id,"ask");
+  log("you",L(`Dug into “${esc(clip(q0,50))}” in <b>${esc(clip(titleOf(p),40))}</b>`,`深挖了 <b>${esc(clip(titleOf(p),40))}</b> 里的“${esc(clip(q0,50))}”`),n.id);
+  closeDigBar();getSelection()?.removeAllRanges();
+  sfx("create");select([n.id],{menus:false});renderAll();persist();nodeEl(n.id)?.classList.add("born");
+  if(!visible(n))focusNodes([p,n],.9);
+  runDig(n);
+  return n;
+}
+async function runDig(n){
+  const chain=digChain(n),root=byId(chain[0]?.on),layers=chain.slice(0,-1);
+  const paint=t=>{const p=nodeEl(n.id)?.querySelector(".rs-ans");if(p){p.classList.remove("rs-wait");p.textContent=t}};
+  let v="",live=false;
+  try{
+    ({v,live}=await runAgent("scout",{read:[root,...layers].filter(Boolean).slice(-2),places:[],label:"digging in",work:()=>askAI({system:`${ROLE.scout}\n${STYLE}`,
+      prompt:`The designer is digging into one line of a card to understand it, one question at a time.\n\nWhere it started:\n${root?wallText([root]):"(card gone)"}\n${layers.map((l,i)=>`\nLayer ${i+1}. They asked about “${l.quote}”: ${l.title}\nAnswer: ${l.text||"(none yet)"}`).join("\n")}\n\nNow they selected: “${n.quote}”\nTheir question: ${n.title}\n\nAnswer that question in 3 to 5 plain sentences, in the language of the question, for this card's context. Give concrete facts or numbers where you know them, and say plainly what is uncertain or would need checking. No headings, no lists, no preamble.`,
+      onText:({text})=>{n.text=text;paint(text)}},()=>"").then(r=>r&&!r.live&&!String(r.v||"").trim()?{...r,why:"no model"}:r)}));
+  }catch{v="";live=false}
+  if(!byId(n.id)||n.tombstone)return;
+  n.text=String(v||"").trim();delete n.digBusy;
+  if(!n.text&&!live)n.digOffline=true;else delete n.digOffline;
+  n.updated=NOW();renderAll();persist();
+}
+
+/* ── bringing it back: the person drags; a new card lands on the target, the research card goes home ── */
+{const _sp=snapPoolFor;snapPoolFor=function(ids){const pool=_sp(ids);return ids.length===1&&byId(ids[0])?.type==="research"?pool.filter(m=>m.type!=="research"):pool}}
+function digPlaceFor(t,w){
+  const T=relRect(t),h=HGUESS.notepad;
+  const free=(x,y)=>!visibleNodes().some(m=>m.id!==t.id&&m.type!=="group"&&x<m.x+nodeW(m)&&x+w>m.x&&y<m.y+nodeH(m)&&y+h>m.y);
+  for(const p of [{x:T.x,y:T.y+T.h+BOND_GAP},{x:T.x+T.w+BOND_GAP,y:T.y},{x:T.x-w-BOND_GAP,y:T.y}])if(free(p.x,p.y))return {x:Math.round(p.x),y:Math.round(p.y),side:"auto"};
+  return freeSpot(T.x,T.y+T.h+BOND_GAP,w,h,[t.id]);
+}
+function digBringBack(r,target,quote,{pos=null,side="",cp=true}={}){
+  const q=String(quote||"").trim();if(!r||!target||!q)return null;
+  if(cp)checkpoint();
+  const w=nodeW(r),at=pos||digPlaceFor(target,w);
+  const f=node("notepad",{title:"",text:q.split(/\n+/).map(l=>"> "+l).join("\n")+`\n> — ${clip(r.title||"",90)}`,weight:"reported",gw:w,dug:{research:r.id,from:digChain(r).map(m=>m.id),quote:q}},at);
+  const starBefore=starOf(target.id),{e}=makeRelation(f.id,target.id,{via:"snap"});
+  if(e)settleStar([f.id],target.id,starBefore);
+  log("you",L(`Brought back from <b>${esc(clip(r.title,50))}</b> to <b>${esc(clip(titleOf(target),40))}</b>`,`把 <b>${esc(clip(r.title,50))}</b> 带回到 <b>${esc(clip(titleOf(target),40))}</b>`),f.id);
+  renderAll();
+  /* drawn now, so its height is known: a card brought back above its target sits flush on the seam */
+  if(side==="top"){f.y=Math.round(target.y-nodeH(f)-BOND_GAP);renderAll()}
+  persist();sfx("snap");relHaptic();
+  if(e){freshClasps.add(e.id);setTimeout(()=>freshClasps.delete(e.id),900)}
+  for(const id of [f.id,target.id]){const el=nodeEl(id);if(el&&!calm()){el.classList.remove("bond-pulse");void el.offsetWidth;el.classList.add("bond-pulse");setTimeout(()=>el.classList.remove("bond-pulse"),700)}}
+  select([f.id],{menus:false});
+  if(!visible(f)||!visible({x:f.x+nodeW(f),y:f.y+nodeH(f)}))focusNodes([target,f],.9);
+  requestAnimationFrame(()=>{startEdit(f.id,"title");if(e)openRelPick(e.id)});
+  return f;
+}
+function digDropBack(g){
+  const r=byId(g.id);if(!r||r.type!=="research"||!g.snap||g.ids.length!==1)return false;
+  const t=byId(g.snap.id);if(!t)return false;
+  const c=g.snap,o=g.orig[0];g.snap=null;
+  document.body.classList.remove("snap-skip");paintSnapGuide(null);
+  const el=nodeEl(r.id);if(el){el.style.translate="";if(!calm()){el.classList.add("dig-home");setTimeout(()=>el.classList.remove("dig-home"),440)}}
+  r.x=o.x;r.y=o.y;
+  digBringBack(r,t,r.text||r.title,{pos:{x:c.x,y:c.y},side:c.side,cp:false});
+  return true;
+}
+function digDropTarget(x,y,r){
+  const el=document.elementsFromPoint(x,y).map(e=>e.closest?.(".card[data-id]")).find(Boolean),t=el&&byId(el.dataset.id);
+  return t&&t.type!=="research"&&t.type!=="group"&&t.status!=="sketch"&&t.id!==r.id?t:null;
+}
+function digQuoteDrag(e,r,quote){
+  e.preventDefault();
+  const ghost=document.createElement("div");ghost.className="dig-ghost";ghost.textContent=clip(quote,90);document.body.appendChild(ghost);
+  const st={sx:e.clientX,sy:e.clientY,moved:false,t:null};closeDigBar();
+  const lit=t=>{qsa(".card.snap-target",nodesEl).forEach(x=>x.classList.remove("snap-target"));if(t)nodeEl(t.id)?.classList.add("snap-target")};
+  const mv=ev=>{if(!st.moved&&Math.hypot(ev.clientX-st.sx,ev.clientY-st.sy)<4)return;st.moved=true;
+    ghost.style.transform=`translate(${ev.clientX+14}px,${ev.clientY+12}px)`;ghost.classList.add("on");
+    const t=digDropTarget(ev.clientX,ev.clientY,r);if(t?.id!==st.t?.id){st.t=t;lit(t);if(t)sfx("tick")}};
+  const up=()=>{removeEventListener("pointermove",mv,true);removeEventListener("pointerup",up,true);ghost.remove();lit(null);
+    if(st.moved&&st.t){getSelection()?.removeAllRanges();digBringBack(r,st.t,quote)}};
+  addEventListener("pointermove",mv,true);addEventListener("pointerup",up,true);
+}
+
+/* ── folding: click the words; the cards slide back into them ── */
+function digToggleFold(k,force){
+  if(!k)return;const on=force??!k.digFold;if(!!k.digFold===on)return;
+  const p=byId(k.on),sub=[k,...digSubtree(k.id)].filter(m=>!isNodeHidden(m));
+  const apply=()=>{checkpoint();if(on)k.digFold=true;else delete k.digFold;
+    if(on&&sel.some(id=>sub.some(m=>m.id===id)))select(p?[p.id]:[],{menus:false});
+    sfx(on?"tick":"pop");renderAll();persist();
+    if(!on){const ns=[k,...digSubtree(k.id)].filter(m=>!isNodeHidden(m));ns.forEach(m=>nodeEl(m.id)?.classList.add("born"));if(ns.some(m=>!visible(m)))focusNodes([p,...ns].filter(Boolean),.9)}};
+  if(on&&p&&!calm()){
+    const a=digAnchor(p,k);
+    for(const m of sub){const el=nodeEl(m.id);if(!el)continue;el.style.transformOrigin="0 0";el.classList.add("dig-fold-out");el.style.transform=`translate(${a.x-m.x}px,${a.y-m.y}px) scale(.12)`}
+    setTimeout(()=>{for(const m of sub){const el=nodeEl(m.id);if(el){el.classList.remove("dig-fold-out");el.style.transform="";el.style.transformOrigin=""}}apply()},230);
+  }else apply();
+}
+{const _act=act;act=function(a,n,el){if(a==="dig-fold"){digToggleFold(byId(el?.dataset.dig));return}return _act(a,n,el)}}
+
+/* ── how you got here: the trail behind a card brought back ── */
+function digTrailBtn(n){
+  const k=(n.dug?.from||[]).filter(id=>{const m=byId(id);return m&&!m.tombstone}).length;
+  const lbl=k?L(`${k} ${k===1?"layer":"layers"}`,`${k} 层`):L("Trail","来路");
+  return `<button type="button" class="dig-trail" data-dig-trail="${n.id}" aria-haspopup="dialog" aria-label="${esc(L("How you got here","怎么想到的")+" · "+lbl)}">${ic("layers")}${esc(lbl)}</button>`;
+}
+function digOpenTrail(f){
+  const ids=(f?.dug?.from||[]).map(byId).filter(m=>m&&!m.tombstone);if(!ids.length)return;
+  const folded=new Set();for(const m of ids)for(let x=m;x&&x.type==="research";x=byId(x.on))if(x.digFold)folded.add(x);
+  if(folded.size){checkpoint();folded.forEach(x=>delete x.digFold);renderAll();persist()}
+  const r=byId(f.dug.research)||ids.at(-1),root=byId(ids[0].on);closeDigTrail();
+  select([r.id],{menus:false});focusNodes([root,...ids].filter(Boolean),.9);
+  ids.forEach(m=>nodeEl(m.id)?.classList.add("born"));
+}
+let digTrailT=0;
+function digTrailEl(){
+  let b=$("digTrail");if(b)return b;
+  b=document.createElement("div");b.id="digTrail";b.hidden=true;b.setAttribute("role","dialog");document.body.appendChild(b);
+  b.addEventListener("mouseenter",()=>clearTimeout(digTrailT));b.addEventListener("mouseleave",()=>{digTrailT=setTimeout(closeDigTrail,160)});
+  b.addEventListener("click",e=>{if(e.target.closest("[data-dig-open]"))digOpenTrail(byId(b.dataset.f))});
+  return b;
+}
+function openDigTrail(btn){
+  const f=byId(btn.dataset.digTrail);if(!f?.dug)return;
+  const ids=(f.dug.from||[]).map(byId).filter(m=>m&&!m.tombstone),root=ids[0]&&byId(ids[0].on);
+  const e=board.edges.find(x=>x.by==="you"&&x.rel&&(x.a===f.id||x.b===f.id));
+  const b=digTrailEl();b.dataset.f=f.id;clearTimeout(digTrailT);
+  b.innerHTML=`<h5>${L("How you got here","怎么想到的")}</h5><ol>${ids.length?`<li>“${esc(clip(ids[0].quote,90))}”${root?`<small>${esc(clip(titleOf(root),60))}</small>`:""}</li>`:""}${ids.map(m=>`<li>${esc(clip(m.title,90))}</li>`).join("")}<li class="me">${esc(clip(f.title,90)||L("No note yet","还没写说明"))}<small>${L("Your note","你的说明")}${e?" · "+esc(relName(e.rel||"related")):""}</small></li></ol>${ids.length?`<div class="dt-act"><button type="button" data-dig-open>${L("Open the chain","展开整条链")}</button></div>`:""}`;
+  b.hidden=false;
+  const r=btn.getBoundingClientRect(),bw=300,bh=b.offsetHeight;
+  b.style.left=clamp(r.left,12,innerWidth-bw-12)+"px";b.style.top=(r.bottom+8+bh>innerHeight-12?r.top-8-bh:r.bottom+8)+"px";
+  const tw=nodeEl(f.dug.research);tw?.classList.add("dig-twin");
+}
+function closeDigTrail(){const b=$("digTrail");if(b)b.hidden=true;qsa(".card.dig-twin",nodesEl).forEach(x=>x.classList.remove("dig-twin"))}
+nodesEl.addEventListener("mouseover",e=>{
+  const tb=e.target.closest(".dig-trail");if(tb){openDigTrail(tb);return}
+  const kept=e.target.closest(".dig-kept");if(kept){const r=byId(kept.dataset.digTwin);digKeptOf(r).forEach(f=>nodeEl(f.id)?.classList.add("dig-twin"))}
+  const mk=e.target.closest(".dig-mk,.dig-chip");if(mk&&digHot!==mk.dataset.dig){digHot=mk.dataset.dig;drawWires()}
+});
+nodesEl.addEventListener("mouseout",e=>{
+  if(e.target.closest(".dig-trail")&&!e.relatedTarget?.closest?.("#digTrail")){clearTimeout(digTrailT);digTrailT=setTimeout(closeDigTrail,160)}
+  if(e.target.closest(".dig-kept"))qsa(".card.dig-twin",nodesEl).forEach(x=>x.classList.remove("dig-twin"));
+  if(e.target.closest(".dig-mk,.dig-chip")&&!e.relatedTarget?.closest?.(".dig-mk,.dig-chip")&&digHot){digHot=null;drawWires()}
+});
+nodesEl.addEventListener("click",e=>{const tb=e.target.closest(".dig-trail");if(tb){e.stopPropagation();digOpenTrail(byId(tb.dataset.digTrail))}},true);
+
 boot();
 
 </script>

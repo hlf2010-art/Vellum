@@ -11759,7 +11759,7 @@ async function runAgent(k,{read=[],places=[],label,work,task:tk={}}){
   // after the reading, the pill says what the job is doing (it used to keep saying "reading" for a job with no drafts to place)
   if(!stopped()&&!fin)voice(places.length?aiLbl:label);
   // then the work itself, in the words of the job (media jobs report their own steps as they go)
-  if(!media&&!parent&&!fin&&!stopped()&&task.steps.length)task.step("work",islCap(phaseL(places.length?aiLbl:label)));
+  if(!media&&!parent&&!fin&&!stopped()&&task.steps.length)task.step("work",islCap(phaseL(places.length?"drafting":label)));  // which engine answered is said once, when the job ends
   for(const pl of places){moveCursor(k,pl.x+pl.w*.85,pl.y+pl.h*.4);outlines.push(drawOutline(pl));await wait(calm()||fin?0:180)}
   let dots=0;const tick=setInterval(()=>{if(!places.length)return;const pl=places[dots%places.length];dots++;moveCursor(k,pl.x+pl.w*(.3+Math.random()*.6),pl.y+40+Math.random()*(pl.h-60))},900);
   await Promise.race([p,new Promise(res=>{const iv=setInterval(()=>{if(stopped()){clearInterval(iv);res()}},120);p.then(()=>clearInterval(iv))})]);clearInterval(tick);

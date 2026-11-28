@@ -366,6 +366,37 @@ button.weight.illustrative:hover{color:var(--label-2);background:var(--hover)}
 .pb-quote{margin:0;padding:1px 0 1px 12px;border-left:2px solid var(--hair-2)}
 .pb-quote p{margin:0;font:450 14.5px/1.5 var(--ui);color:var(--label);white-space:pre-wrap;text-wrap:pretty}
 .pb-quote cite{display:block;margin-top:4px;font:var(--text-meta);font-style:normal;color:var(--label-3)}
+/* survey evidence: answers as quiet bars, then who answered */
+.sv-dist{display:grid;gap:5px;margin:8px 0 2px}
+.sv-row{display:grid;grid-template-columns:minmax(0,38%) 1fr 34px;align-items:center;gap:8px;font:500 12.5px/1.25 var(--ui);color:var(--label-2)}
+.sv-v{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-bar{height:6px;border-radius:3px;background:var(--label-4);overflow:hidden}
+.sv-bar i{display:block;height:100%;width:calc(var(--p)*100%);border-radius:3px;background:var(--label-3);transform-origin:left;animation:sv-grow .5s var(--ease-out,cubic-bezier(.2,.8,.2,1)) both}
+.sv-p{text-align:right;font-variant-numeric:tabular-nums;color:var(--label)}
+@keyframes sv-grow{from{transform:scaleX(0)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.sv-bar i{animation:none}}
+.sv-avg,.sv-more{margin:4px 0 0;font:var(--text-meta);color:var(--label-3)}
+.sv-quote{margin-top:8px}.sv-quote p{font-size:13.5px}
+.sv-sample{display:grid;gap:2px;margin:10px 0 0;font:var(--text-meta);color:var(--label-3)}
+.sv-where{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-where span+span::before{content:"·";margin:0 6px;color:var(--label-4)}
+.sv-small{font-style:normal;color:var(--A)}
+.sv-form{display:grid;gap:12px;width:min(460px,calc(100vw - 64px))}
+.sv-lede,.sv-hint{margin:0;font:400 13.5px/1.5 var(--ui);color:var(--label-2)}
+.sv-hint{font-size:12.5px;color:var(--label-3)}
+.sv-qs{display:grid;gap:2px;max-height:min(260px,36vh);overflow:auto;padding:4px;border-radius:var(--radius-md);background:var(--hover)}
+.sv-q{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:start;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer}
+.sv-q:hover{background:color-mix(in srgb,var(--card) 60%,transparent)}
+.sv-q input{grid-row:span 2;margin:2px 0 0;accent-color:var(--label)}
+.sv-qt{font:550 13.5px/1.35 var(--ui);color:var(--label);overflow-wrap:anywhere}
+.sv-qb{font:var(--text-meta);color:var(--label-3);font-variant-numeric:tabular-nums}
+.sv-field{display:grid;gap:6px;font:550 12.5px/1.2 var(--ui);color:var(--label-2)}
+.sv-field select,.sv-field input{width:100%;min-width:0;height:40px;padding:0 12px;border-radius:var(--radius-media);border:0;outline:0;background:var(--card-2);font:500 14px/1 var(--ui);color:var(--label);box-shadow:none}
+.sv-field select{appearance:none;-webkit-appearance:none;padding-right:32px;background:var(--card-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center/12px no-repeat;text-overflow:ellipsis}
+.sv-field select:focus,.sv-field input:focus{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--focus) 48%,transparent)}
+.sv-field input::placeholder{color:var(--label-3)}
+.sv-acts .cbtn[disabled]{opacity:.45;pointer-events:none}
+.sv-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}
 .pb-code{position:relative;margin:0;padding:10px 12px;border-radius:var(--radius-sm);background:var(--card-2);box-shadow:inset 0 0 0 .5px var(--hair);font:var(--text-mono-small);color:var(--label-2);white-space:pre;overflow-x:auto;tab-size:2;cursor:text}
 .pb-code[data-lang]::after{content:attr(data-lang);position:absolute;top:8px;right:10px;font:600 10px/1 var(--ui);letter-spacing:.03em;color:var(--label-3)}
 .pb-code code{font:inherit}
@@ -7972,11 +8003,14 @@ function cardBody(n){
     const readAt=live&&src.at?`<time title="${esc(tr("Read from ","读取自 ")+where+" · "+new Date(src.at).toLocaleString(uiLang()==="zh"?"zh-CN":"en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}))}">${esc(exactTime(src.at))}</time>`:"";
     const refresh=live?`<button type="button" class="tbl-refresh${busy?" busy":""}" data-tbl-refresh ${busy?'aria-busy="true" disabled':""} title="${esc(busy?tr("Reading ","正在读取 ")+where+"…":tr("Refresh from ","从 ")+where+tr(""," 刷新"))}" aria-label="${esc(tr("Refresh from ","从 ")+where+tr(""," 刷新"))}">${ic("redo")}</button>`:"";
     const conflict=pend?`<div class="tbl-conflict" role="group" aria-label="${esc(tr("Newer data from ","来自 ")+where+tr(""," 的新数据"))}"><span>${esc(tr(`${where} has newer data, and you've edited this table.`,`${where} 有新数据，而你也修改过这个表格。`))}</span><span class="tbl-conflict-acts"><button type="button" class="sp-mini" data-tbl-conflict="replace">${tr("Replace my edits","替换我的修改")}</button><button type="button" class="sp-mini" data-tbl-conflict="both">${tr("Keep both","两者都保留")}</button><button type="button" class="sp-mini quiet" data-tbl-conflict="cancel">${tr("Cancel","取消")}</button></span></div>`:"";
+    const svN=svLive(n).length,svBtn=sk||!(svN||looksLikeSurvey(ds))?"":svN?`<button type="button" class="sp-mini tbl-sv" data-tbl-survey="show" title="${esc(tr("Show the evidence cards read from these answers","查看由这些回答生成的证据卡"))}">${esc(tr(`${svN} evidence card${svN>1?"s":""}`,`${svN} 张证据卡`))}</button>`:`<button type="button" class="sp-mini tbl-sv" data-tbl-survey="read" title="${esc(tr("One evidence card per question, with how many answered","每道题一张证据卡，并写明多少人作答"))}">${esc(tr("Read as survey","按问卷读取"))}</button>`;
     return `<div class="in">${head(ebHTML(n))}
-    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol,editable:!sk,sort:n.tblSort})}${conflict}${sk?sketchActs(n):foot(fL(from?`<span class="tbl-src">${esc(from)}${refresh}</span>`:""),live?group("foot-r",threadCount(n),readAt):fR(threadCount(n)))}</div>`;}
+    <h4 data-edit="title">${esc(n.title||tr("Table","表格"))}</h4>${tblBlockHTML(ds,{view:n.tblView,col:n.tblCol,editable:!sk,sort:n.tblSort})}${conflict}${sk?sketchActs(n):foot(fL(from?`<span class="tbl-src">${esc(from)}${refresh}</span>`:""),live?group("foot-r",svBtn,threadCount(n),readAt):fR(svBtn,threadCount(n)))}</div>`;}
   case"idea":return `<div class="in">${head(ebHTML(n)+(n.round>1?`<span class="round"> · ${uiLang()==="zh"?`第 ${n.round} 轮`:`Round ${n.round}`}</span>`:""))}
     <h4 data-edit="text">${esc(n.text)}</h4>${foot(evidenceScale(n),fR(threadCount(n)))}</div>`;
   case"source":{
+    if(n.survey)return `<div class="in">${head(ebHTML(n,null,Lang("Survey","问卷")))}
+      <h4 data-edit="title">${esc(n.title)}</h4>${svCardHTML(n)}${sk?sketchActs(n):foot(weightHTML(n.weight,false,n),fR(threadCount(n)))}</div>`;
     if(isHtmlSource(n)){
       const thumb=!!(htmlSourceText(n)||n.media);
       const htmlHead=ebHTML(n,fmt);
@@ -8626,6 +8660,136 @@ function makeTableCard(ds,{title,source,at,by}={}){
   const spot=at?freeSpot(at.x-gw/2,at.y-100,gw,HGUESS.table):planCenter(gw,HGUESS.table,-140,-100);
   return node("table",{title:clip(title||L("Table","表格"),60),data,gw,...(by?{by}:{})},spot);
 }
+/* ── survey answers → evidence cards ───────────────────────────────────────────────
+   A table of answers (one row per person: a CSV from Tencent Survey, Wenjuanxing, Tally, Google Forms, Prolific…) is read
+   as one evidence card per question: what people said, how many answered, where the survey ran and who chose to answer.
+   Answers are what people say, not what anyone watched, so every card is Reported. Whether a card supports or counters
+   a judgment is the person's call, made on the relation; nothing here guesses it. Local rules only, no model. */
+const SV_SKIP=/^(id|#|no\.?|序号|编号|respondent(\s*id)?|response(\s*id)?|submission(\s*id)?|participant(\s*id)?|prolific(\s*_?\s*pid)?|答卷编号|用户\s*id|ip|ip\s*address|ip地址|来源ip|email|e-?mail(\s*address)?|邮箱|电子邮箱|name|full\s*name|姓名|昵称|phone|电话|手机号?|time|timestamp|date|submitted(\s*at)?|submit\s*time|start(ed)?(\s*(at|time|date))?|end(ed)?(\s*(at|time|date))?|completed(\s*at)?|duration|time\s*taken|提交时间|提交答卷时间|开始时间|结束时间|答题时间|所用时间|填写时间|答题时长|来源|来源详情|来自|source|referrer|user\s*agent|设备|浏览器|操作系统|地理位置|总分|status|状态|network\s*id|token)$/i;
+const SV_STAMP=/^(timestamp|submitted(\s*at)?|submit\s*time|提交时间|提交答卷时间|答题时间|开始时间|response\s*id|respondent(\s*id)?|submission\s*id|答卷编号|序号)$/i;
+const SV_QLIKE=/[?？]\s*$|^(do|does|did|would|will|could|how|what|which|why|when|where|who|are|is|was|have|has|rate|please|overall)\b|吗|是否|多少|哪|如何|怎么|为什么|您|你的|你会|你是|评分|打分|满意/i;
+const SV_MULTI=/\s*[┋|；;]\s*/;
+const SV_NUM=/^-?\d+(\.\d+)?$/;
+/* a date or time in any export format: when someone answered, not what they said */
+const SV_WHEN=/^\d{4}[-/.年]\d{1,2}[-/.月]\d{1,2}日?([ T]\d{1,2}:\d{2}(:\d{2})?.*)?$|^\d{1,2}\/\d{1,2}\/\d{2,4}( \d{1,2}:\d{2}.*)?$/;
+/* the questions in a table of answers: choice (single or multi), scale (0–10) or open text; ids, times and contact details are skipped */
+function svColumns(ds){
+  const rows=ds?.rows||[],cols=ds?.columns||[],out=[];
+  cols.forEach((c,ci)=>{
+    const name=String(c?.name||"").replace(/\s+/g," ").trim(),filled=rows.map(r=>String(r[ci]??"").trim()).filter(Boolean);
+    if(!filled.length||SV_SKIP.test(name.replace(/[:：]\s*$/,""))||filled.every(v=>SV_WHEN.test(v)))return;
+    let parts=filled,multi=false;
+    if(filled.some(v=>SV_MULTI.test(v))){const sp=filled.flatMap(v=>v.split(SV_MULTI).filter(Boolean)),u=new Set(sp);if(u.size<=12&&u.size<new Set(filled).size){parts=sp;multi=true}}
+    const uniq=new Set(parts),isNum=filled.every(v=>SV_NUM.test(v)),nums=isNum?filled.map(Number):null;
+    const avgLen=filled.reduce((a,v)=>a+v.length,0)/filled.length;
+    let kind=null;
+    if(isNum&&nums.every(x=>x>=0&&x<=10)&&uniq.size<=11&&filled.length>=3)kind="scale";
+    else if(!isNum&&avgLen<=40&&(multi||(uniq.size<=8&&uniq.size<filled.length)||(uniq.size<=12&&uniq.size<=filled.length*.5)))kind="choice";
+    else if(!isNum&&avgLen>=6&&uniq.size>filled.length*.5&&!(avgLen<14&&filled.every(v=>!/\s/.test(v))))kind="open";
+    if(!kind)return;
+    const cnt=new Map();for(const v of parts)cnt.set(v,(cnt.get(v)||0)+1);
+    const dist=[...cnt].map(([v,c])=>({v,c})).sort((a,b)=>kind==="scale"?(+a.v)-(+b.v):b.c-a.c);
+    const max=nums?Math.max(...nums):0,top=kind==="scale"?(max<=5?5:max<=7?7:10):null;
+    out.push({ci,q:name||L(`Column ${ci+1}`,`第 ${ci+1} 列`),kind,multi,n:filled.length,dist,mean:nums?nums.reduce((a,b)=>a+b,0)/nums.length:null,top,quotes:kind==="open"?filled.slice(0,3):null});
+  });
+  return out;
+}
+/* worth offering on the card: a few rows, at least one closed question, and either a submit-time/id column or a header that reads as a question */
+function looksLikeSurvey(ds){
+  if(!ds||(ds.rows||[]).length<3)return false;
+  const qs=svColumns(ds);if(!qs.some(q=>q.kind!=="open"))return false;
+  return (ds.columns||[]).some(c=>SV_STAMP.test(String(c?.name||"").trim()))||qs.some(q=>SV_QLIKE.test(q.q));
+}
+const canReadSurvey=ds=>!!ds&&(ds.rows||[]).length>=3&&svColumns(ds).some(q=>q.kind!=="open");
+const svPct=(c,n)=>Math.round(c*100/Math.max(1,n));
+const svMean=q=>(Math.round(q.mean*10)/10).toFixed(1).replace(/\.0$/,"");
+/* one sentence a person (and a model reading the board) can repeat: the answer most people gave, out of how many */
+function svSummary(q){
+  const t=q.dist[0];
+  if(q.kind==="scale")return L(`Average ${svMean(q)} out of ${q.top}, from ${q.n} answers.`,`平均 ${svMean(q)} 分（满分 ${q.top}），${q.n} 人作答。`);
+  if(q.kind==="open")return L(`${q.n} open answers.`,`${q.n} 条开放回答。`);
+  if(q.multi)return L(`${t.c} of ${q.n} (${svPct(t.c,q.n)}%) picked “${t.v}”. More than one answer was allowed.`,`${q.n} 人中有 ${t.c} 人（${svPct(t.c,q.n)}%）勾选了“${t.v}”（可多选）。`);
+  return L(`${t.c} of ${q.n} (${svPct(t.c,q.n)}%) answered “${t.v}”.`,`${q.n} 人中有 ${t.c} 人（${svPct(t.c,q.n)}%）选了“${t.v}”。`);
+}
+/* the short reading in the sheet's question list */
+function svBrief(q){
+  if(q.kind==="scale")return L(`Average ${svMean(q)} / ${q.top}`,`平均 ${svMean(q)} / ${q.top}`);
+  if(q.kind==="open")return L(`${q.n} written answers`,`${q.n} 条文字回答`);
+  return q.dist.slice(0,2).map(d=>`${clip(d.v,18)} ${svPct(d.c,q.n)}%`).join(" · ");
+}
+const svSampleWord=s=>s==="recruited"?L("Recruited","招募样本"):L("Self-selected","自愿作答");
+const SV_SMALL=30;
+/* the body of a survey evidence card: the answers as quiet bars (or a few written answers), then who answered */
+function svCardHTML(n){
+  const s=n.survey||{},dist=s.dist||[],nn=s.n||0;let body="";
+  if(s.kind==="open")body=(s.quotes||[]).map(x=>`<blockquote class="pb-quote sv-quote"><p>${esc(clip(x,160))}</p></blockquote>`).join("");
+  else{
+    const shown=s.kind==="scale"?dist:dist.slice(0,5),more=dist.length-shown.length,peak=Math.max(1,...shown.map(d=>d.c));
+    body=`<div class="sv-dist" role="list">${shown.map(d=>`<div class="sv-row" role="listitem" style="--p:${(d.c/peak).toFixed(3)}"><span class="sv-v" title="${esc(d.v)}">${esc(d.v)}</span><span class="sv-bar" aria-hidden="true"><i></i></span><span class="sv-p">${svPct(d.c,nn)}%</span></div>`).join("")}</div>`
+      +(s.kind==="scale"?`<p class="sv-avg">${esc(L(`Average ${svMean(s)} / ${s.top}`,`平均 ${svMean(s)} / ${s.top}`))}</p>`:more>0?`<p class="sv-more">${esc(L(`+${more} more answer${more>1?"s":""}`,`另有 ${more} 个选项`))}</p>`:"");
+  }
+  /* how many answered comes first; under 30 it says so in the same breath, in the caution colour */
+  const small=nn<SV_SMALL?`<em class="sv-small" title="${esc(L(`Fewer than ${SV_SMALL} answers: one or two people can swing it.`,`少于 ${SV_SMALL} 人作答，一两个人就能改变结果。`))}">${esc(L(", small sample","，样本偏小"))}</em>`:"";
+  const where=[s.channel?clip(s.channel,40):"",svSampleWord(s.sample)].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join("");
+  return `${body}<p class="sv-sample"><span>${esc(L(`${nn} answered`,`${nn} 人作答`))}${small}</span><span class="sv-where">${where}</span></p>`;
+}
+/* judgments the answers could test, nearest to the table first */
+function svTargets(tbl){
+  const c={x:tbl.x+nodeW(tbl)/2,y:tbl.y+nodeH(tbl)/2},d=n=>Math.hypot(n.x+nodeW(n)/2-c.x,n.y+nodeH(n)/2-c.y);
+  return board.nodes.filter(n=>isJudgment(n)&&n.status==="ink"&&!n.tombstone&&!n.archived&&!isNodeHidden(n)).sort((a,b)=>d(a)-d(b));
+}
+const svLive=tbl=>(tbl?.svy?.cards||[]).map(byId).filter(n=>n&&!n.tombstone&&!n.archived);
+function surveyDialog(tbl){
+  if(!tbl||tbl.type!=="table")return;
+  const qs0=svColumns(tbl.data),total=(tbl.data?.source?.total)||(tbl.data?.rows||[]).length;
+  if(!qs0.some(q=>q.kind!=="open"))return toast(L("No questions with answers to count here. A survey export has one row per person and one column per question.","这里没有可统计的问题。问卷导出的表格应当一行是一个人，一列是一道题。"));
+  const picked=new Set(qs0.map(q=>q.ci));let sample=tbl.svy?.sample||"self";
+  const targets=svTargets(tbl),selJ=sel.map(byId).find(isJudgment),linked=targets.find(t=>relBetween(t.id,tbl.id));
+  const pre=(selJ||linked||null)?.id||tbl.svy?.target||"";
+  const segH=()=>[["self",L("Anyone who saw it","看到就能答")],["recruited",L("People we recruited","我们招募的人")]].map(([k,t])=>`<button type="button" data-s="${k}" aria-pressed="${sample===k}">${esc(t)}</button>`).join("");
+  const addLbl=()=>{const k=picked.size;return k?L(`Add ${k} evidence card${k>1?"s":""}`,`添加 ${k} 张证据卡`):L("Choose a question","请选择问题")};
+  openDialog(esc(L("Read as survey answers","按问卷结果读取")),`<form id="svForm" class="sv-form">
+    <p class="sv-lede">${esc(L(`${total} responses. Each question you keep becomes an evidence card. Answers are what people say, so the cards are labelled Reported.`,`共 ${total} 份回答。保留的每道题会变成一张证据卡。回答是大家说的话，所以卡片标为「转述」。`))}</p>
+    <div class="sv-qs" role="group" aria-label="${esc(L("Questions","问题"))}">${qs0.map(q=>`<label class="sv-q"><input type="checkbox" data-sv-q="${q.ci}" checked><span class="sv-qt">${esc(q.q)}</span><span class="sv-qb">${esc(svBrief(q))}</span></label>`).join("")}</div>
+    <label class="sv-field"><span>${esc(L("Tests which card","验证哪张卡"))}</span><select name="target"><option value="">${esc(L("Not linked yet","暂不关联"))}</option>${targets.slice(0,40).map(t=>`<option value="${esc(t.id)}"${t.id===pre?" selected":""}>${esc(clip(titleOf(t),60))}</option>`).join("")}</select></label>
+    <label class="sv-field"><span>${esc(L("Where it ran","在哪里发的"))}</span><input name="channel" maxlength="60" value="${esc(tbl.svy?.channel||"")}" placeholder="${esc(L("My followers on X, a Prolific panel, a WeChat group","我的小红书粉丝、一个微信群、Prolific 样本"))}"></label>
+    <div class="sv-field"><span>${esc(L("Who answered","谁来回答"))}</span><div class="seg sv-seg" role="group" aria-label="${esc(L("Who answered","谁来回答"))}">${segH()}</div></div>
+    <p class="sv-hint">${esc(L("People who choose to answer tend to care more than most. The cards say so, so nobody mistakes them for everyone.","主动来答的人往往比一般人更在意这个话题。卡片上会写明，免得被当成所有人的看法。"))}</p>
+    <div class="sv-acts"><button type="button" class="cbtn" data-d="close">${esc(L("Cancel","取消"))}</button><button type="submit" class="cbtn solid" data-sv-go>${esc(addLbl())}</button></div>
+  </form>`,dl=>{
+    const form=qs("#svForm",dl),sg=qs(".sv-seg",form),go=qs("[data-sv-go]",form);
+    const sync=()=>{go.textContent=addLbl();go.disabled=!picked.size};
+    form.addEventListener("change",e=>{const c=e.target.closest("[data-sv-q]");if(!c)return;c.checked?picked.add(+c.dataset.svQ):picked.delete(+c.dataset.svQ);sync()});
+    sg.onclick=e=>{const b=e.target.closest("[data-s]");if(!b)return;sample=b.dataset.s;sg.innerHTML=segH()};
+    form.onsubmit=e=>{e.preventDefault();if(!picked.size)return;const target=form.target.value,channel=form.channel.value.replace(/\s+/g," ").trim();dl.close();
+      readSurvey(byId(tbl.id),{cis:[...picked],target,channel,sample})};
+    sync();setTimeout(()=>go.focus(),40);
+  });
+}
+function readSurvey(tbl,{cis=[],target="",channel="",sample="self"}={}){
+  if(!tbl||tbl.type!=="table")return [];
+  const qs0=svColumns(tbl.data).filter(q=>cis.includes(q.ci));if(!qs0.length)return [];
+  const total=(tbl.data?.source?.total)||(tbl.data?.rows||[]).length,tgt=target?byId(target):null;
+  checkpoint();
+  const made=[];let x=tbl.x+nodeW(tbl)+64,y=tbl.y;
+  const hOf=q=>q.kind==="open"?136+(q.quotes||[]).length*54:132+Math.min(q.kind==="scale"?11:5,q.dist.length)*20+(q.kind==="scale"||q.dist.length>5?22:0);
+  for(const q of qs0){
+    const n=node("source",{kind:"Survey",title:clip(q.q,90),text:svSummary(q),weight:"reported",wBy:{who:"you",t:NOW(),why:L("Survey answers are what people say.","问卷回答是大家说的话。")},
+      survey:{q:q.q,kind:q.kind,multi:q.multi,n:q.n,total,dist:q.dist.slice(0,q.kind==="scale"?11:8),mean:q.mean,top:q.top,quotes:q.quotes,channel,sample,from:tbl.id,at:NOW()}},
+      freeSpot(x,y,W.source,hOf(q)));
+    made.push(n);y=n.y+hOf(q)+28;
+    if(tgt)makeRelation(n.id,tgt.id,{via:"wire"});
+  }
+  tbl.svy={at:NOW(),cards:made.map(n=>n.id),channel,sample,target:tgt?.id||""};tbl.updated=NOW();
+  log("you",`Read <b>${esc(titleOf(tbl))}</b> as survey answers: ${made.length} evidence card${made.length>1?"s":""} from ${total} responses${tgt?` testing <b>${esc(clip(titleOf(tgt),60))}</b>`:""}`,tbl.id);
+  select(made.map(n=>n.id),{menus:false});renderAll();
+  /* the cards' real heights are known once drawn: keep the column evenly spaced so none sits on another */
+  for(let i=1;i<made.length;i++){const a=made[i-1],b=made[i],h=nodeEl(a.id)?.offsetHeight||nodeH(a),gap=b.y-(a.y+h);if(Math.abs(b.x-a.x)<4&&gap<20)b.y=Math.round(a.y+h+28)}
+  renderAll();persist();made.forEach(n=>nodeEl(n.id)?.classList.add("born"));follow(made);sfx("pop");
+  toast(tgt?L(`Added ${made.length} evidence card${made.length>1?"s":""} from ${total} responses and linked ${made.length>1?"them":"it"} to the card ${made.length>1?"they test":"it tests"}. Mark each link as supports or counters.`,`已从 ${total} 份回答添加 ${made.length} 张证据卡，并连到要验证的卡片。请把每条连线标为支持或反驳。`)
+    :L(`Added ${made.length} evidence card${made.length>1?"s":""} from ${total} responses. Connect each to the card it tests.`,`已从 ${total} 份回答添加 ${made.length} 张证据卡。请把它们连到要验证的卡片上。`),{undo:true});
+  return made;
+}
 /* A table from an address: CSV, TSV or JSON at a URL. Share links become data links (Google Sheets -> CSV export of
    that tab, GitHub file page -> raw file). Read directly; if the site blocks cross-origin reads and Vellum's local
    server is serving the page, it reads it instead (public addresses only, redirects checked, data not web pages). */
@@ -9066,7 +9230,7 @@ function nodeLineageSig(n){
 
 function sigOf(n){return sigOf0(n)+spotSig(n)}
 function sigOf0(n){const pList=(board.pins?.[n.id]||[]);return JSON.stringify([n.type==="align"?JSON.stringify([n.step,n.state,n.qs,n.take,outputsOf(n.id).length]):"",isLocked(n)?(n.locked?"L":"l"):"",openProps(n.id).map(p=>p.id+(p.stale?"!":"")+(expandedProps.has(p.id)?"+":"")).join(),n.type,n.status,n.by,cardAuthorAgent(n)?.key||"",creatorKey(n)||"",creatorKept(n),uiLang(),personName(n),myName(),JSON.stringify(n.contrib||0),n.vote,n.rev,n.tag,n.title,n.text,n.kind,n.weight,n.wSug&&n.wSug.w,n.splitSug&&n.splitSug.at,!!n.fmtOff,n.test,n.outcome,n.round,n.mode,n.letter,n.items,n.cols,n.cards,n.tree,n.points,n.spec&&n.spec.title,n.fixed,n.ver,n.ed,n.media,n.t,n.url,n.host,n.path,!!n.full,!!htmlSourceText(n),n.gw,n.gh,
-  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(n.whyYes||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="direction"&&dirFlagHTML(n),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id)]])}
+  n.type==="direction"&&board.adopted[n.idea],n.type==="direction"&&(n.whyNot||"")+"|"+(n.whyYes||"")+"|"+(setAsideFor(n)?.title||""),n.type==="direction"&&outputsOf(n.id).some(o=>o.type==="proof"),n.type==="direction"&&dirFlagHTML(n),n.type==="proof"&&driftOf(n).moved,(board.threads[n.id]||[]).length,pList.map(x=>x.id+x.agent+(x.seen?1:0)+":"+(x.replies?.length||0)),typeof advThinking!=="undefined"&&advThinking.get(n.id)||"",typeof openAdvNodeId!=="undefined"&&openAdvNodeId===n.id,lin(n),n.type==="idea"&&sourcesFor(n).map(s=>s.weight).join(),relSig(n),n.type==="recording"&&outputsOf(n.id).length,n.type==="question"&&titleOf(byId(n.on)),n.pid&&board.nodes.filter(x=>x.pid===n.pid).length,n.pid&&n.pid===latestPid(),nodeLineageSig(n),uiLang(),n.type==="table"&&[n.data?.rev||0,n.data?.source?.at,n.data?.rows?.length,(n.data?.columns||[]).map(c=>c.name).join("\t"),n.tblView||"",n.tblCol??"",!!n.data?.source?.edited,tblPending.has(n.id),tblRefreshing.has(n.id),svLive(n).length],n.survey&&JSON.stringify(n.survey)])}
 const iframeDocs=new Map();
 function advPinHTML(n){
   if(!n||n.status==="sketch"||n.type==="group")return "";
@@ -10395,6 +10559,9 @@ document.addEventListener("dblclick",e=>{
 },true);
 document.addEventListener("click",e=>{
   const rf=e.target.closest("[data-tbl-refresh]");if(rf){const id=rf.closest(".card")?.dataset.id;if(id)tblRefresh(id);return}
+  const sv=e.target.closest("[data-tbl-survey]");if(sv){e.stopPropagation();const n=byId(sv.closest(".card")?.dataset.id);if(!n)return;
+    if(sv.dataset.tblSurvey==="show"){const cs=svLive(n);if(cs.length){select(cs.map(c=>c.id),{menus:false});renderAll();focusNodes([n,...cs],Math.max(.5,Math.min(cam.s,.9)))}return}
+    return surveyDialog(n)}
   const cf=e.target.closest("[data-tbl-conflict]");if(cf){const id=cf.closest(".card")?.dataset.id;if(id)tblResolve(id,cf.dataset.tblConflict);return}
   const addRow=e.target.closest("[data-tbl-addrow]");
   if(addRow){const n=byId(addRow.closest(".card")?.dataset.id);if(!n)return;tblCommit(n,d=>d.rows.push(d.columns.map(()=>"")));tblOpenEditor(n,n.data.rows.length-1,0,false);return}
@@ -14364,6 +14531,7 @@ function stripActs(n){
     case"audio":return [A("gather","Ask Scout","","","book"),A("copilot","Ask Copilot","","","ask"),open];
     case"link":return [A("look","Preview","","Space","eye"),A("open-url","Open Link","","","link"),open];
     case"group":return [open];
+    case"table":return canReadSurvey(n.data)?[A("survey",svLive(n).length?"Read Survey Again":"Read as Survey","","","table"),open]:[open];
     case"frame":return [A("look","View","","Space","eye"),A("reverse-prompt",n.plPack?"Prompt Pack":"Reverse Prompt","","","sparkles"),A("to-gif","To GIF","","","gif"),A("to-video","To Video","","","video"),A("askframe","Ask About Frame","","","frame"),open];
     case"question":return [A("answer","Ask Critic","","","question"),open];
     case"direction":return board.adopted[n.idea]===n.id?[A("look","Preview","","Space","eye"),A("build",outputsOf(n.id).some(o=>o.type==="proof")?"Rebuild Proof":"Build Proof","pg","","grid"),...result,open]:[A("look","Preview","","Space","eye"),A("adopt","Adopt","pg","","stamp"),...result,open];
@@ -19825,6 +19993,7 @@ function act(a,n,el){
     case"hide":return hideFromCanvasNodes([n.id]);
     case"adopt":return adopt(n);
     case"result":return resultDialog(n);
+    case"survey":return surveyDialog(n);
     case"go-back":return goBack(n.type==="direction"?byId(n.idea):n);
     case"new-round":return newRound(n.type==="direction"?byId(n.idea):n);
     case"goto-proof":{const ps=outputsOf(n.id).filter(o=>o.type==="proof");const pr=ps.at(-1);if(pr){select([pr.id]);focusNodes([pr],1)}return}
@@ -23035,8 +23204,8 @@ function ebHTML(n,fmt,customKind){
 /* the direction card's eyebrow line is being changed by other open work; say "方向" there, not the zone's name "探索方向" */
 {const _cb=cardBody;cardBody=function(n){const h=_cb(n);return n&&n.type==="direction"&&uiLang()==="zh"?h.replace('<span class="pgname">探索方向</span>','<span class="pgname">方向</span>'):h}}
 /* ── Action words: sentence case in English, written for Chinese; used by the strip, the card menu and the side panel ── */
-const ACT_LBL={"Details":"详情","Go back here":"回到这里","New round":"开始新一轮","Change result":"修改结果","Record result":"记录结果","Tag":"标签","Explore directions":"探索方向","Check evidence":"检查依据","Action list":"行动清单","Kanban":"看板","Ask Copilot":"问问 Copilot","View":"查看","Prompt":"提示词","Read the prompt":"反推提示词","Make a video":"生成视频","Make a GIF":"生成动图","Variations":"变体","Ask Scout":"问问 Scout","Preview":"预览","Download":"下载","Play":"播放","Split into shots":"拆分镜头","Open link":"打开链接","Ask about this frame":"问问这一帧","Ask Critic":"问问 Critic","Rebuild proof":"重新做原型","Build proof":"做原型","Adopt":"采纳","Open":"打开","Snapshot":"生成快照","Turn into a kanban":"转为看板","Tree map":"树状图","Notepad brief":"写成记事本","Turn into directions":"生成方向","Build UI":"做界面","Slide deck":"做幻灯片","Try":"试试","Ask Critic to test":"请 Critic 检查","Open video":"打开视频","Open recording":"打开录屏","Critique":"找漏洞","To notepad":"转为记事本","Expand brief":"展开简述","Open preview":"打开预览","Synthesize":"综合","Remove":"移除","AI brief":"AI 简述"};
-const ACT_EN={"Go Back Here":"Go back here","New Round":"New round","Change Result":"Change result","Record Result":"Record result","Explore Directions":"Explore directions","Check Evidence":"Check evidence","Action List":"Action list","Prompt Pack":"Prompt","Reverse Prompt":"Read the prompt","To Video":"Make a video","To GIF":"Make a GIF","Make Video":"Make a video","Make GIF":"Make a GIF","Split Shots":"Split into shots","Open Link":"Open link","Ask About Frame":"Ask about this frame","Rebuild Proof":"Rebuild proof","Build Proof":"Build proof","Turn into Kanban":"Turn into a kanban","Tree Map":"Tree map","Notepad Brief":"Notepad brief","To Directions":"Turn into directions","Slide Deck":"Slide deck","Open Video":"Open video","Open Recording":"Open recording","To Notepad":"To notepad","Expand Brief":"Expand brief","Open Preview":"Open preview","AI Brief":"AI brief"};
+const ACT_LBL={"Read as survey":"按问卷读取","Read survey again":"重新读取问卷","Details":"详情","Go back here":"回到这里","New round":"开始新一轮","Change result":"修改结果","Record result":"记录结果","Tag":"标签","Explore directions":"探索方向","Check evidence":"检查依据","Action list":"行动清单","Kanban":"看板","Ask Copilot":"问问 Copilot","View":"查看","Prompt":"提示词","Read the prompt":"反推提示词","Make a video":"生成视频","Make a GIF":"生成动图","Variations":"变体","Ask Scout":"问问 Scout","Preview":"预览","Download":"下载","Play":"播放","Split into shots":"拆分镜头","Open link":"打开链接","Ask about this frame":"问问这一帧","Ask Critic":"问问 Critic","Rebuild proof":"重新做原型","Build proof":"做原型","Adopt":"采纳","Open":"打开","Snapshot":"生成快照","Turn into a kanban":"转为看板","Tree map":"树状图","Notepad brief":"写成记事本","Turn into directions":"生成方向","Build UI":"做界面","Slide deck":"做幻灯片","Try":"试试","Ask Critic to test":"请 Critic 检查","Open video":"打开视频","Open recording":"打开录屏","Critique":"找漏洞","To notepad":"转为记事本","Expand brief":"展开简述","Open preview":"打开预览","Synthesize":"综合","Remove":"移除","AI brief":"AI 简述"};
+const ACT_EN={"Read as Survey":"Read as survey","Read Survey Again":"Read survey again","Go Back Here":"Go back here","New Round":"New round","Change Result":"Change result","Record Result":"Record result","Explore Directions":"Explore directions","Check Evidence":"Check evidence","Action List":"Action list","Prompt Pack":"Prompt","Reverse Prompt":"Read the prompt","To Video":"Make a video","To GIF":"Make a GIF","Make Video":"Make a video","Make GIF":"Make a GIF","Split Shots":"Split into shots","Open Link":"Open link","Ask About Frame":"Ask about this frame","Rebuild Proof":"Rebuild proof","Build Proof":"Build proof","Turn into Kanban":"Turn into a kanban","Tree Map":"Tree map","Notepad Brief":"Notepad brief","To Directions":"Turn into directions","Slide Deck":"Slide deck","Open Video":"Open video","Open Recording":"Open recording","To Notepad":"To notepad","Expand Brief":"Expand brief","Open Preview":"Open preview","AI Brief":"AI brief"};
 const ACT_RX=[[/^Fix (\d+) failed$/,"修复 $1 项失败"],[/^Rebuild with (\d+) changes?$/,"按 $1 处修改重做"],[/^Test (\d+) waiting$/,"检查 $1 项待测"]];
 function actLabel(l){
   const en=ACT_EN[l]||l;if(uiLang()!=="zh")return en;

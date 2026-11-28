@@ -81,7 +81,7 @@ function serve() { return new Promise(res => { const s = http.createServer((q, r
   const objections = done.filter(r => r.critic === 'objects');
   const sum = {
     label: LABEL, engine, runs: ran.length, shown: done.length, right: done.filter(r => r.right).length,
-    fellBack: ran.length - done.length, objections: objections.length, droppedObjections: done.filter(r => (r.dropped || []).length).length,
+    fellBack: ran.length - done.length, objections: objections.length, criticQuiet: done.filter(r => r.critic === 'quiet').length, droppedObjections: done.filter(r => (r.dropped || []).length).length,
     medianSeconds: med(ran.map(r => r.seconds)), medianCalls: med(ran.map(r => r.calls)), decisionsChanged: ran.filter(r => !r.adoptedSame).length, pageErrors: errs.length,
   };
   const md = [`# Re-check eval · ${LABEL}`, '', `Engine: ${engine} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC · ${N} run(s) per case`, '',
@@ -90,7 +90,7 @@ function serve() { return new Promise(res => { const s = http.createServer((q, r
     `| Verdict in the right range, of those shown | ${sum.right} of ${sum.shown} (${pct(sum.right, sum.shown)}) |`,
     `| Verdict in the right range, of all runs | ${pct(sum.right, sum.runs)} |`,
     `| Fell back to the board check | ${sum.fellBack} |`,
-    `| Critic objections shown (each with evidence and a fix) | ${sum.objections} · dropped by the watchdog: ${sum.droppedObjections} |`,
+    `| Critic objections shown (each with evidence and a fix) | ${sum.objections} · dropped by the watchdog: ${sum.droppedObjections} · "no strong objection": ${sum.criticQuiet} |`,
     `| Median time / model calls per re-check | ${sum.medianSeconds.toFixed(0)} s / ${sum.medianCalls} |`,
     `| Decisions changed without the designer | ${sum.decisionsChanged} |`,
     '', 'Before (board checks only) the note can say only how the evidence was linked ("counters", "supports", "bears on"); it never says whether the decision still holds or why.', '',

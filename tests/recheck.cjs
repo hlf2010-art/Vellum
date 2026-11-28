@@ -5,8 +5,11 @@
  *   it counters the decision or the verdict moves; one note on the decision says the verdict, why, Critic's objection and fix,
  *   the cheapest check, and that the decision stays as it is. The decision view shows the same reading.
  * - several pieces of evidence on one decision are re-checked together and shown as one note
+ * - Critic works in steps: a survey (what conflicts with the decision, what it assumes), then an objection or "no strong
+ *   objection"; the note says which
  * - the watchdog: an answer citing cards that are not in the pack, saying it changed the decision, or in the wrong language is
- *   repaired once and otherwise replaced by the board check's own words; an objection without a fix is dropped
+ *   repaired once and otherwise replaced by the board check's own words; an objection that is thin, cites no real card, says
+ *   nothing its cards say, repeats Strategist, or has no fix the designer can do is dropped
  * - Focus: the re-check runs quietly and its note waits for the catch-up; a crew move pre-empts it and it runs again later
  * - with no model, the board check's note comes at once and nothing is sent anywhere
  * - nothing about the decision changes on its own
@@ -20,7 +23,7 @@ function check(name, ok, detail = '') { results.push(`${ok ? 'PASS' : 'FAIL'}  $
 
 /* the scripted model: each reply is picked by what the request is (strategist, critic, a repair), in order */
 let script = [], requests = [];
-const kindOf = flat => /Fix only these problems/.test(flat) ? 'repair' : /Strategist has re-checked/.test(flat) ? 'critic' : /re-checking a decision/.test(flat) ? 'strategist' : 'other';
+const kindOf = flat => /Fix only these problems/.test(flat) ? 'repair' : /Survey the cards: steps 1 and 2/.test(flat) ? 'survey' : /Step 3: object with evidence/.test(flat) ? 'critic' : /re-checking a decision/.test(flat) ? 'strategist' : 'other';
 function serve() {
   return new Promise(res => {
     const srv = http.createServer((req, rsp) => {
@@ -70,17 +73,21 @@ function serve() {
     const settle = async (max = 8000) => { const t0 = Date.now(); while (Date.now() - t0 < max) { await p.evaluate(() => { lastUserAct = NOW() - 60000; tickChecks(); }); await p.waitForTimeout(250); if (await p.evaluate(() => !rcRunning && !(board.watch?.queue || []).length)) break; } await p.waitForTimeout(150); };
     const pinsOn = id => p.evaluate(id => (board.pins?.[id] || []).filter(x => x.check === 'revisit'), id);
     const S = (verdict, why, cites, next = '') => ({ kind: 'strategist', text: { verdict, why, cites, next } });
+    const SV = (conflicts, assumptions = []) => ({ kind: 'survey', text: { conflicts, assumptions } });
 
     /* 1. a counter, observed: Strategist weighs it, Critic objects with a fix */
     let r = await fresh(); requests = [];
     script = [S('weaker', 'Rain hides the glow for most players, which undercuts the pager being noticed at a glance.', ['N1', 'S1'], 'Watch three players cross the rooftop in rain.'),
-      { kind: 'critic', text: { agree: false, objection: 'The rain test (N1) had six players and no haptic cue, so it says the glow alone fails, not the pager.', cites: ['N1'], fix: 'Add a short wrist buzz and rerun the rain crossing.' } }];
+      SV([{ id: 'N1', how: '4 of 6 missed the glow in rain' }], [{ text: 'Players notice the glow at a glance', rests_on: ['N1'], status: 'contradicted' }]),
+      { kind: 'critic', text: { stance: 'object', objection: 'The rain test (N1) had six players and no haptic cue, so it says the glow alone fails, not the pager.', cites: ['N1'], fix: 'Add a short wrist buzz and rerun the rain crossing.' } }];
     const [e1] = await addEv(r, [['source', 'Playtest 3: pager missed in rain', '4 of 6 missed the glow in rain.', 'observed', 'conflicts']]);
     await settle();
     let pins = await pinsOn(r.dir);
     const req1 = requests.find(q => q.kind === 'strategist')?.flat || '';
     check('the re-check reasons from a numbered pack: the decision, what it rests on, the options set aside and the new evidence', /\[D\] chosen direction/.test(req1) && /\[S1\]/.test(req1) && /\[A1\] set aside/.test(req1) && /\[N1\] observed · designer marked it as countering · Playtest 3: pager missed in rain/.test(req1), req1.slice(0, 600));
-    check('Strategist, then Critic for a counter: two calls', requests.map(q => q.kind).join() === 'strategist,critic', requests.map(q => q.kind).join());
+    check('Strategist, then Critic in steps for a counter: survey, then objection', requests.map(q => q.kind).join() === 'strategist,survey,critic', requests.map(q => q.kind).join());
+    const crit1 = requests.find(q => q.kind === 'critic')?.flat || '';
+    check('Critic\'s last step sees its own survey', /Your survey:\n- N1 cuts against D: 4 of 6 missed the glow in rain/.test(crit1) && /D assumes: Players notice the glow at a glance \(contradicted; cards: N1\)/.test(crit1), crit1.slice(-700));
     check('one note on the decision: the verdict, why, Critic\'s objection with a fix, the cheapest check, and the decision stays', pins.length === 1 && pins[0].engine === 'model' && /\*\*weakens\*\*/.test(pins[0].note) && /Rain hides the glow/.test(pins[0].note) && /\*\*Critic:\*\* The rain test had six players.+Fix: Add a short wrist buzz/.test(pins[0].note) && /Cheapest check: Watch three players/.test(pins[0].note) && /The decision stays as you made it\./.test(pins[0].note), JSON.stringify(pins));
     check('pack ids never reach the designer: "(N1)" is dropped', !/\(N1\)|\bN1\b/.test(pins[0]?.note || ''), pins[0]?.note);
     check('Strategist leads the note; it is marked as a re-check, not a board check', pins[0]?.agent === 'muse' && !!pins[0]?.recheck, JSON.stringify(pins[0]?.recheck));
@@ -113,11 +120,41 @@ function serve() {
 
     /* 4. an objection without a fix is dropped; the reading stands */
     r = await fresh(); requests = [];
-    script = [S('stronger', 'Players found the pager in the dark market, which is the decision\'s main reason.', ['N1', 'S1']), { kind: 'critic', text: { agree: false, objection: 'This feels too optimistic.', cites: [] } }, { kind: 'repair', text: { agree: false, objection: 'Too optimistic.', cites: [] } }];
+    script = [S('stronger', 'Players found the pager in the dark market, which is the decision\'s main reason.', ['N1', 'S1']), SV([]), { kind: 'critic', text: { stance: 'object', objection: 'This feels too optimistic.', cites: [] } }, { kind: 'repair', text: { stance: 'object', objection: 'Too optimistic.', cites: [] } }];
     await addEv(r, [['source', 'Night market test', '5 of 6 found the pager in the dark market.', 'observed', 'supports']]);
     await settle();
     pins = await pinsOn(r.dir);
-    check('an objection without evidence or a fix is dropped; Strategist\'s reading stands', pins.length === 1 && pins[0].engine === 'model' && /\*\*stronger\*\*/.test(pins[0].note) && !/Critic/.test(pins[0].note), JSON.stringify(pins.map(x => x.note)));
+    check('an objection without evidence or a fix is dropped; Strategist\'s reading stands and Critic says it has no strong objection', pins.length === 1 && pins[0].engine === 'model' && /\*\*stronger\*\*/.test(pins[0].note) && /\*\*Critic:\*\* no strong objection\./.test(pins[0].note) && !/optimistic/.test(pins[0].note), JSON.stringify(pins.map(x => x.note)));
+    const rep4 = requests.find(q => q.kind === 'repair')?.flat || '';
+    check('the repair names what makes it thin: too short, no card cited, no fix', /too thin/.test(rep4) && /must cite the pack ids/.test(rep4) && /needs "fix"/.test(rep4), rep4.slice(-500));
+
+    /* 4b. thin objections the old watchdog let through: vague fix, nothing from the cards, a repeat of Strategist */
+    const thin = [
+      ['a fix that is only advice ("be careful")', { stance: 'object', objection: 'Five of six players finding the pager in one market does not mean it works on the rooftop route.', cites: ['N1'], fix: 'Be careful about drawing conclusions.' }, /something the designer can do/],
+      ['an objection that says nothing its cited card says', { stance: 'object', objection: 'Battery life could suffer badly when the emissive curve runs at full brightness all evening long.', cites: ['N1'], fix: 'Measure battery drain over a two-hour session.' }, /what the cited cards actually say/],
+      ['an objection that only repeats Strategist', { stance: 'object', objection: 'Players found the pager in the dark market, which is the decision\'s main reason.', cites: ['N1'], fix: 'Watch three more players in the market.' }, /only repeats Strategist/],
+    ];
+    for (const [name, bad, why] of thin) {
+      r = await fresh(); requests = [];
+      script = [S('stronger', 'Players found the pager in the dark market, which is the decision\'s main reason.', ['N1', 'S1']), SV([], [{ text: 'The market is dark enough to test the glow', rests_on: ['N1'], status: 'observed' }]), { kind: 'critic', text: bad }, { kind: 'repair', text: bad }];
+      await addEv(r, [['source', 'Night market test', '5 of 6 found the pager in the dark market.', 'observed', 'supports']]);
+      await settle();
+      pins = await pinsOn(r.dir);
+      const rep = requests.find(q => q.kind === 'repair')?.flat || '';
+      check(`dropped: ${name}`, why.test(rep) && pins.length === 1 && /\*\*Critic:\*\* no strong objection\./.test(pins[0].note) && !/Critic:\*\* (?!no strong objection)/.test(pins[0].note), JSON.stringify({ rep: rep.slice(-300), note: pins[0]?.note }));
+    }
+
+    /* 4c. Critic finds nothing worth saying: it says so, in one short line, and makes no repair */
+    r = await fresh(); requests = [];
+    script = [S('weaker', 'Four of six players missed the glow in rain, which undercuts noticing the pager at a glance.', ['N1', 'S1']), SV([{ id: 'N1', how: '4 of 6 missed the glow in rain' }]), { kind: 'critic', text: { stance: 'none' } }];
+    await addEv(r, [['source', 'Rain test', '4 of 6 missed the glow in rain.', 'observed', 'conflicts']]);
+    await settle();
+    pins = await pinsOn(r.dir);
+    check('"no strong objection" is a full answer: no repair, one short line in the note', requests.map(q => q.kind).join() === 'strategist,survey,critic' && pins.length === 1 && /\*\*Critic:\*\* no strong objection\./.test(pins[0].note) && pins[0].recheck?.critic === 'quiet', JSON.stringify({ k: requests.map(q => q.kind), note: pins[0]?.note }));
+    await p.evaluate(() => openDecisions(true)); await p.waitForTimeout(400);
+    const dvq = await p.evaluate(() => document.querySelector('.dv-rc .dv-rc-c')?.textContent || '');
+    check('the decision view says it too', /Critic\s*No strong objection\./.test(dvq), dvq);
+    await p.evaluate(() => openDecisions(false));
 
     /* 5. Focus: runs quietly, the note waits for the catch-up */
     r = await fresh(); requests = [];
@@ -148,12 +185,20 @@ function serve() {
     /* 7. Chinese: an English answer is sent back once for Chinese */
     await p.evaluate(() => store.set('.lang', 'zh'));
     r = await fresh(); requests = [];
-    script = [S('weaker', 'Rain hides the glow.', ['N1']), { kind: 'repair', text: { verdict: 'weaker', why: '雨天时多数玩家看不到光晕，削弱了“一眼就能注意到”这个理由。', cites: ['N1'], next: '雨天让三名玩家走一遍屋顶路线。' } }, { kind: 'critic', text: { agree: true } }];
+    script = [S('weaker', 'Rain hides the glow.', ['N1']), { kind: 'repair', text: { verdict: 'weaker', why: '雨天时多数玩家看不到光晕，削弱了“一眼就能注意到”这个理由。', cites: ['N1'], next: '雨天让三名玩家走一遍屋顶路线。' } }, SV([{ id: 'N1', how: '6 人中 4 人没看到光晕' }]), { kind: 'critic', text: { agree: true } }];
     await addEv(r, [['source', '雨天测试', '6 人中 4 人没看到光晕。', 'observed', null]]);
     await p.evaluate(r => { const e = board.nodes.at(-1); makeRelation(e.id, r.dir, { via: 'wire' }); }, r);
     await settle();
     pins = await pinsOn(r.dir);
-    check('in Chinese, an English answer is repaired into Chinese; Critic agreeing adds nothing', /write "why" in Chinese/.test(requests.find(q => q.kind === 'repair')?.flat || '') && pins.length === 1 && /削弱/.test(pins[0].note) && /最省事的验证/.test(pins[0].note) && /决定仍按你定的来/.test(pins[0].note) && !/Critic/.test(pins[0].note), JSON.stringify(pins.map(x => x.note)));
+    check('in Chinese, an English answer is repaired into Chinese; Critic agreeing says only that it has no strong objection', /write "why" in Chinese/.test(requests.find(q => q.kind === 'repair')?.flat || '') && pins.length === 1 && /削弱/.test(pins[0].note) && /最省事的验证/.test(pins[0].note) && /决定仍按你定的来/.test(pins[0].note) && /\*\*Critic：\*\*没有有力的反对。/.test(pins[0].note), JSON.stringify(pins.map(x => x.note)));
+
+    /* 7b. Chinese objection: grounded in the card's own words, with a fix to do */
+    r = await fresh(); requests = [];
+    script = [S('holds', '雨天测试人数太少，决定仍然成立。', ['N1']), SV([{ id: 'N1', how: '6 人中 4 人没看到光晕' }]), { kind: 'critic', text: { stance: 'object', objection: '这个解读低估了反证：雨天测试里 6 人中 4 人没看到光晕，正好打在“一眼就能注意到”这个理由上。', cites: ['N1'], fix: '雨天再找 6 名玩家走一遍屋顶路线，记录有几人注意到。' } }];
+    await addEv(r, [['source', '雨天测试', '6 人中 4 人没看到光晕。', 'observed', 'conflicts']]);
+    await settle();
+    pins = await pinsOn(r.dir);
+    check('in Chinese, a grounded objection with a fix is shown', pins.length === 1 && /\*\*Critic：\*\*这个解读低估了反证.+建议：雨天再找 6 名玩家/.test(pins[0].note), JSON.stringify(pins.map(x => x.note)));
     await p.evaluate(() => store.set('.lang', 'en'));
 
     /* 8. no model: the board check speaks at once, nothing is sent */

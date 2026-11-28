@@ -5191,15 +5191,40 @@ function rcStratProblems(v,pack){
   if(rcLangOff(why,pack.zh))p.push(pack.zh?'write "why" in Chinese':'write "why" in English');
   return p;
 }
-function rcCriticProblems(v,pack){
+/* Critic's objection must be worth reading. A thin one does more harm than silence, so the watchdog drops any objection that
+   doesn't cite a real card from the pack, doesn't say something those cards actually contain, only repeats Strategist,
+   doesn't follow from Critic's own survey (steps 1 and 2), or comes without a fix the designer can do. Saying "no strong
+   objection" is always allowed. */
+const RC_DO_EN=/\b(test|tests|retest|re-test|re-run|rerun|run|count|ask|measure|visit|watch|observe|try|check|compare|survey|interview|call|record|prototype|tag|mark|link|find|list|time|weigh|verify|source|look up|log|photograph|buy|order|sample|repeat|recruit|email|contact|track|map|sketch|build|swap|rate|label|note how many|find out)\b/i;
+const RC_DO_ZH=/(测|试|问|数一数|数清|统计|访谈|走访|观察|记录|对比|比较|核实|查|找|标|量|计时|调研|做一|做个|原型|拍|买|联系|追踪|重复|抽样|列出|核对|验证|采访|评估一下|看看.{0,6}(多少|几|是否))/;
+const RC_STOP=new Set("the a an and or but of to in on at for with from by is are was were be been it its this that these those as not no so than then there their they them which who what when where how why most more some any all can could would should may might will just only also into about over under very much many one two".split(" "));
+const rcWords=t=>String(t||"").toLowerCase().match(/[a-z][a-z'-]{3,}|\d+(?:\.\d+)?/g)?.filter(w=>!RC_STOP.has(w))||[];
+const rcGrams=t=>{const c=String(t||"").replace(/[^一-鿿0-9]/g," ").split(/\s+/).filter(Boolean),g=[];for(const r of c){if(/^\d+$/.test(r)){g.push(r);continue}for(let i=0;i+1<r.length;i++)g.push(r.slice(i,i+2))}return g};
+function rcCardText(pack,k){const n=byId(pack.ids[k]);return n?`${titleOf(n)} ${fullTextOf(n)||""} ${n.whyNot||""} ${n.test||""} ${n.whyYes||""}`:""}
+/* does the objection say something the cited cards actually say? (a shared number or content word; for Chinese, a shared pair of characters) */
+function rcGrounded(t,cites,pack){
+  const zh=pack.zh,src=cites.map(k=>rcCardText(pack,k)).join(" ");
+  const a=new Set(zh?rcGrams(t):rcWords(t)),b=new Set(zh?rcGrams(src):rcWords(src));
+  let hit=0;for(const w of a)if(b.has(w))hit++;
+  return hit>=(zh?2:1);
+}
+function rcSameAs(a,b,zh){const A=new Set(zh?rcGrams(a):rcWords(a)),B=new Set(zh?rcGrams(b):rcWords(b));if(!A.size||!B.size)return false;let n=0;for(const w of A)if(B.has(w))n++;return n/Math.min(A.size,B.size)>.75}
+const rcQuiet=v=>{const st=String(v?.stance||"").toLowerCase();return v?.agree===true||String(v?.agree).toLowerCase()==="true"||/^(none|no|agree|agrees|quiet|no strong objection|no_objection|no objection)$/.test(st)};
+function rcCriticProblems(v,pack,survey=null,strat=null){
   if(!v||typeof v!=="object")return ["not a JSON object"];
-  if(v.agree===true||String(v.agree).toLowerCase()==="true")return [];
-  const p=[],cites=rcCiteKeys(v);
-  if(!String(v.objection||"").trim())p.push('an objection needs "objection"');
+  if(rcQuiet(v))return [];
+  const p=[],cites=rcCiteKeys(v),zh=pack.zh,obj=String(v.objection||"").trim(),fix=String(v.fix||"").trim();
+  if(!obj)p.push('an objection needs "objection"');
+  else if(zh?(obj.match(/[一-鿿]/g)||[]).length<12:obj.split(/\s+/).length<8)p.push('"objection" is too thin: say what the cards show and why it matters, or answer {"stance":"none"}');
   if(!cites.length||cites.some(k=>!pack.ids[k]))p.push('an objection must cite the pack ids it rests on');
-  if(!String(v.fix||"").trim())p.push('an objection needs "fix": what to do about it');
-  if(RC_ACTED.test(String(v.objection||"")))p.push("never say you changed the decision");
-  if(rcLangOff(v.objection,pack.zh))p.push(pack.zh?"write it in Chinese":"write it in English");
+  else if(!cites.some(k=>/^[SXAN]\d$/.test(k)))p.push('cite the evidence or set-aside option the objection rests on (an S, X, A or N card), not only the decision');
+  else if(obj&&!rcGrounded(obj,cites,pack))p.push('the objection must say what the cited cards actually say (a number or fact from them)');
+  if(survey&&obj){const seen=new Set([...(survey.conflicts||[]).map(c=>c.id),...(survey.assumptions||[]).flatMap(a=>a.rests_on||[])]);if(seen.size&&!cites.some(k=>seen.has(k)))p.push(`the objection must follow from your survey: cite one of ${[...seen].join(", ")}`)}
+  if(strat&&obj&&rcSameAs(obj,strat.why,zh))p.push("the objection only repeats Strategist's reading: say what it gets wrong, or answer {\"stance\":\"none\"}");
+  if(!fix)p.push('an objection needs "fix": what to do about it');
+  else if(!(zh?RC_DO_ZH:RC_DO_EN).test(fix))p.push('"fix" must be something the designer can do: a check, a count, a question to ask someone, a test to run');
+  if(RC_ACTED.test(obj))p.push("never say you changed the decision");
+  if(rcLangOff(obj,zh)||rcLangOff(fix,zh))p.push(zh?"write it in Chinese":"write it in English");
   return p;
 }
 const RC_RULES=`Rules: judge only from the cards in the pack. Observed evidence (someone watched it happen) outweighs reported (someone said it), which outweighs proposals; an unrated card could be either. One anecdote does not overturn observed evidence. Evidence that only shares a topic may not bear on the decision at all: say so when it doesn't. The decision belongs to the designer: you never change it, you only say what the new evidence means for it.`;
@@ -5221,13 +5246,35 @@ async function rcAsk({system,prompt,maxTokens,signal},problems){
   }
   return {v,engine:r.engine,raw};
 }
-async function rcCritic(pack,strat,signal){
-  const lang=pack.zh?"Chinese (简体中文)":"English";
-  const system=`${ROLE.critic}\nStrategist has re-checked a decision against new evidence. Review that reading. ${RC_RULES}\nObject only when the cards give you a reason: an objection must cite the pack ids it rests on and come with a concrete fix the designer can act on. Research before objecting: read every card first. Never argue for its own sake; when the reading is sound, agree.\nReply in ${lang}. Return only one JSON object. When the reading is sound: {"agree":true}. When you object: {"agree":false,"objection":"what is wrong with the reading, max 35 words","cites":["N1"],"fix":"what the designer can do about it, max 22 words"}`;
-  const prompt=`${pack.text}\n\nStrategist's reading: verdict "${strat.verdict}". ${strat.why}${strat.next?` Cheapest check: ${strat.next}`:""} (cites ${rcCiteKeys(strat).join(", ")})\n\nReview it.`;
-  const r=await rcAsk({system,prompt,maxTokens:300,signal},v=>rcCriticProblems(v,pack));
-  if(r)rcRunning?.job&&(rcRunning.job.rawCritic=r.raw);
-  return r?r.v:null;
+/* Critic reviews Strategist's reading in steps, because a small model that writes everything at once tends to write a
+   thin objection. Step 1 and 2 (one call, the survey): which cards conflict with the decision, and which assumptions it
+   rests on, each tied to the cards that show it. Step 3 (one call): with the survey in hand, either an objection that cites
+   the cards and comes with a fix, or "no strong objection". The survey is cleaned by rules, never repaired; step 3 gets one
+   repair, then the watchdog decides. Returns {stance:"object"|"quiet", objection, fix, cites, steps, dropped, raw}. */
+function rcSurveyClean(v,pack){
+  const ok=k=>!!pack.ids[k],key=x=>String(x||"").trim().replace(/^\[|\]$/g,"").toUpperCase();
+  const conflicts=(Array.isArray(v?.conflicts)?v.conflicts:[]).map(c=>({id:key(c?.id),how:clip(String(c?.how||"").trim(),140)})).filter(c=>ok(c.id)&&c.id!=="D"&&c.id!=="C").slice(0,5);
+  const assumptions=(Array.isArray(v?.assumptions)?v.assumptions:[]).map(a=>({text:clip(String(a?.text||"").trim(),140),rests_on:(Array.isArray(a?.rests_on)?a.rests_on:String(a?.rests_on||"").split(/[,\s]+/)).map(key).filter(ok),status:String(a?.status||"").toLowerCase().trim()})).filter(a=>a.text).slice(0,4);
+  return {conflicts,assumptions};
+}
+async function rcCriticReview(pack,strat,signal){
+  const zh=pack.zh,lang=zh?"Chinese (简体中文)":"English";
+  const reading=`Strategist's reading: verdict "${strat.verdict}". ${strat.why}${strat.next?` Cheapest check: ${strat.next}`:""} (cites ${rcCiteKeys(strat).join(", ")})`;
+  /* steps 1 and 2: the survey */
+  const sys1=`${ROLE.critic}\nStrategist has re-checked a decision against new evidence, and you will review that reading. First, survey the cards; do not judge yet. ${RC_RULES}\nReply in ${lang}. Return only one JSON object with these keys, in this order:\n- "conflicts": STEP 1. Every card that cuts against the decision D or its reason, as {"id":"N1","how":"what in that card cuts against it, with its numbers, max 20 words"}. Use [] when none does.\n- "assumptions": STEP 2. The two or three things D must be true about to work, as {"text":"the assumption, max 15 words","rests_on":["S2"],"status":"one of: observed, reported, untested, contradicted"}. rests_on lists the cards that back or contradict it; status says how well the cards back it.\nExample of the shape (not of the content): {"conflicts":[{"id":"N1","how":"7 of 10 tents had aluminium poles the magnet cannot hold"}],"assumptions":[{"text":"Most tents use steel poles","rests_on":["S2","N1"],"status":"contradicted"}]}`;
+  const r1=await askAI({system:sys1,prompt:`${pack.text}\n\n${reading}\n\nSurvey the cards: steps 1 and 2.`,json:true,maxTokens:380,quiet:true,memoryMode:"compact",signal},()=>null);
+  if(!r1.live)return null;
+  const survey=rcSurveyClean(r1.v,pack),raw=[clip(JSON.stringify(r1.v),600)];
+  const surveyTxt=[...survey.conflicts.map(c=>`- ${c.id} cuts against D: ${c.how}`),...survey.assumptions.map(a=>`- D assumes: ${a.text} (${a.status||"?"}; cards: ${a.rests_on.join(", ")||"none"})`)].join("\n")||"- nothing cuts against D, and no assumption stands out";
+  /* step 3: object, or say there is no strong objection */
+  const sys3=`${ROLE.critic}\nYou are reviewing Strategist's reading of new evidence on a decision. You have already surveyed the cards. ${RC_RULES}\nSTEP 3. Decide whether the reading has a real flaw. Real flaws: the verdict is too strong or too weak for the weight of the evidence (one anecdote or an unsourced claim treated as proof, or observed evidence brushed aside); the reading misses a conflict or a contradicted assumption from your survey; or it misses that new evidence removes the reason an option was set aside. A wording quibble or a general worry is not a flaw.\nWhen there is a real flaw, object: say what the reading gets wrong and what the cited cards actually show (use their numbers), and give one fix the designer can do (a check, a count, a question to ask someone, a test to run). Never argue for its own sake: a thin objection is worse than none. When you find no real flaw, answer {"stance":"none"}.\nReply in ${lang}. Return only one JSON object. No real flaw: {"stance":"none"}. A real flaw: {"stance":"object","objection":"max 40 words","cites":["N1","S2"],"fix":"max 22 words"}\nExample of an objection (shape, not content): {"stance":"object","objection":"The reading says the decision holds, but N1 found 7 of 10 tents with aluminium poles, so the steel-pole half of the reason (S2) fails.","cites":["N1","S2"],"fix":"Count pole materials at the next two campsite visits."}`;
+  const prompt3=`${pack.text}\n\n${reading}\n\nYour survey:\n${surveyTxt}\n\nStep 3: object with evidence and a fix, or answer {"stance":"none"}.`;
+  const r=await rcAsk({system:sys3,prompt:prompt3,maxTokens:300,signal},v=>rcCriticProblems(v,pack,survey,strat));
+  if(!r)return {stance:"quiet",steps:survey,dropped:["no answer to step 3"],raw};
+  raw.push(...r.raw);
+  const v=r.v,probs=rcCriticProblems(v,pack,survey,strat);
+  if(!probs.length&&!rcQuiet(v))return {stance:"object",objection:String(v.objection).trim(),fix:String(v.fix).trim(),cites:rcCiteKeys(v),steps:survey,dropped:[],raw};
+  return {stance:"quiet",steps:survey,dropped:probs,raw};
 }
 /* the pack's ids are for the model; the designer reads card names: "(N1)" goes, a bare "S2" becomes the card's title */
 function rcHuman(t,pack){
@@ -5253,11 +5300,11 @@ async function runRecheck(dirId,obs){
     const ctr=obs.some(o=>o.rel==="conflicts");
     let critic=null,dropped=[];
     if(ctr||strat.verdict!=="holds"){
-      const c=await rcCritic(pack,strat,ac.signal);
-      const cp=c?rcCriticProblems(c,pack):["no answer"];
-      if(c&&!cp.length&&!(c.agree===true||String(c.agree).toLowerCase()==="true"))critic={objection:rcHuman(c.objection,pack),fix:rcHuman(c.fix,pack),cites:rcCiteKeys(c)};
-      else if(c&&cp.length)dropped=cp;
-      job.critic=critic?"objects":c&&!cp.length?"agrees":"none";
+      const c=await rcCriticReview(pack,strat,ac.signal);
+      if(c){job.rawCritic=c.raw;job.steps=c.steps}
+      if(c?.stance==="object")critic={objection:rcHuman(c.objection,pack),fix:rcHuman(c.fix,pack),cites:c.cites};
+      else if(c?.dropped?.length)dropped=c.dropped;
+      job.critic=critic?"objects":c?"quiet":"none";   // quiet: Critic looked and found no strong objection
     }
     const cites=[...new Set([...strat.cites,...(critic?.cites||[])])].map(k=>pack.ids[k]).filter(Boolean);
     return finishRc(job,"done","",{strat,crit:critic,cites,engine:s.engine,ms:Math.round(performance.now()-t0),dropped});
@@ -5308,6 +5355,7 @@ function recheckPin(job,obsList){
   }[s.verdict];
   const parts=[`${head} ${s.why}`];
   if(c)parts.push(L(`**Critic:** ${c.objection} Fix: ${c.fix}`,`**Critic：**${c.objection} 建议：${c.fix}`));
+  else if(job.critic==="quiet")parts.push(L("**Critic:** no strong objection.","**Critic：**没有有力的反对。"));
   parts.push(`${s.next?L(`Cheapest check: ${s.next} `,`最省事的验证：${s.next} `):""}${L("The decision stays as you made it.","决定仍按你定的来。")}`);
   const basis=job.cites.map(byId).filter(Boolean).slice(0,5).map(n=>({id:n.id,rev:n.rev||1,relation:"related",why:es.some(e=>e.id===n.id)?L("new evidence","新证据"):weightLabel(n.weight)||L("cited","引用")}));
   return {id:"pin-"+uid(),agent:"muse",t:NOW(),note:parts.join("\n"),check:"revisit",sig:job.id,sigs:job.sigs,engine:"model",recheck:{verdict:s.verdict,critic:job.critic||"none",model:job.engine},basis};
@@ -20147,7 +20195,7 @@ const RC_LABEL={stronger:["Stronger","更站得住"],holds:["Still holds","仍�
 function decRecheckHTML(dir,fresh){
   const r=dir.recheck;if(!r||!RC_LABEL[r.verdict])return "";
   const latest=Math.max(...fresh.map(s=>s.t||0));if(latest&&r.at+1000<latest)return "";   // newer evidence than the re-check: it is not the reading of these
-  return `<div class="dv-rc rc-${esc(r.verdict)}"><span class="dv-rc-h"><b>${esc(L("Crew re-check","成员复核"))}</b><span class="dv-rc-v">${esc(L(...RC_LABEL[r.verdict]))}</span></span><p>${esc(r.why)}</p>${r.objection?`<p class="dv-rc-c"><b>Critic</b> ${esc(r.objection)}${r.fix?` <span>${esc(L("Fix: ","建议："))}${esc(r.fix)}</span>`:""}</p>`:""}${r.next?`<p class="dv-rc-n">${esc(L("Cheapest check: ","最省事的验证："))}${esc(r.next)}</p>`:""}</div>`;
+  return `<div class="dv-rc rc-${esc(r.verdict)}"><span class="dv-rc-h"><b>${esc(L("Crew re-check","成员复核"))}</b><span class="dv-rc-v">${esc(L(...RC_LABEL[r.verdict]))}</span></span><p>${esc(r.why)}</p>${r.objection?`<p class="dv-rc-c"><b>Critic</b> ${esc(r.objection)}${r.fix?` <span>${esc(L("Fix: ","建议："))}${esc(r.fix)}</span>`:""}</p>`:r.critic==="quiet"?`<p class="dv-rc-c"><b>Critic</b> ${esc(L("No strong objection.","没有有力的反对。"))}</p>`:""}${r.next?`<p class="dv-rc-n">${esc(L("Cheapest check: ","最省事的验证："))}${esc(r.next)}</p>`:""}</div>`;
 }
 function decCardHTML(x,i){
   const {claim,dir,rests,since,fresh}=x,zh=uiLang()==="zh";
